@@ -1,0 +1,26 @@
+export const texts = {
+  en: {
+    tutorialTitle: 'How to Play?',
+    tutorialDesc: 'Trash is falling! Drag each item to the correct bin. Every mistake or item that falls to the bottom costs a life. Good luck!',
+    gotIt: 'Got it!',
+    score: 'Score',
+    pts: 'pts',
+    finishTitle: 'Stage Complete!',
+    finishDesc: 'Great sorting skills!',
+    continueBtn: 'Continue',
+    correct: 'Correct',
+    wrong: 'Wrong',
+  },
+  he: {
+    tutorialTitle: 'איך משחקים?',
+    tutorialDesc: 'האשפה נופלת! עליכם לגרור כל סוג אשפה לפח הנכון. כל טעות במיון או אשפה שנופלת לתחתית המסך יורידו לכם חיים. בהצלחה!',
+    gotIt: 'הבנתי',
+    score: 'ניקוד',
+    pts: 'נק׳',
+    finishTitle: 'השלב הושלם!',
+    finishDesc: 'כל הכבוד! התדר סונכרן בהצלחה.',
+    continueBtn: 'עבור לשלב הבא',
+    correct: 'נכון',
+    wrong: 'לא נכון',
+  },
+};

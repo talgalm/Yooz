@@ -1,0 +1,613 @@
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useGameSounds } from '../../../hooks/useGameSounds';
+import { useTranslations } from '../../../context/LanguageContext';
+import { texts } from './OrderGame.i18n';
+import { shuffleArray } from '../../../utils/shuffleArray';
+import { useGameHint } from '../../../hooks/useGameHint';
+import HintModals from '../HintModals';
+import HintButton from '../HintButton';
+import { GameProps, HintConfig, AgeRange, GAME_CONSTANTS } from '../types';
+import GolfChallenge from './GolfChallenge';
+import { golfTexts } from './GolfChallenge.i18n';
+import {
+  OrderContainer,
+  OrderTopBar,
+  OrderTopBarItem,
+  OrderTopBarTimer,
+  OrderRoundBanner,
+  OrderRoundBannerText,
+  NatureCardsList,
+  NatureCard,
+  NatureCardNumber,
+  NatureCardText,
+  NatureDragHandle,
+  OrderActionBar,
+  NatureCheckButton,
+  OrderFeedbackFloater,
+  OrderFeedbackContainer,
+  OrderCorrectText,
+  OrderWrongText,
+  OrderPointsBadge,
+  NatureHintWrapper,
+  InstructionsWrapper,
+  InstructionsCard,
+  InstructionsTitle,
+  InstructionsText,
+  GolfIntroOverlay,
+  FinishContainer,
+  FinishContent,
+  FinishTitleBanner,
+  FinishStump,
+  FinishScoreNumber,
+  FinishScoreLabel,
+  FinishContinueButton,
+} from './styled';
+
+interface OrderRound {
+  title?: string;
+  cards: string[];
+  ageRange?: AgeRange;
+}
+
+interface OrderScoring {
+  firstAttemptPoints: number;
+  retryPoints: number;
+  speedBonus: boolean;
+  timeLimitSeconds?: number;
+}
+
+interface OrderSettings {
+  instructions?: string;
+  hint?: HintConfig;
+  rounds: OrderRound[];
+  scoring: OrderScoring;
+}
+
+type CardStatus = 'neutral' | 'correct' | 'incorrect';
+
+// ─── Nature SVG decorations ───
+
+
+/** Leaf vein pattern inside banners */
+function LeafVeinSvg() {
+  return (
+    <svg
+      width="100%" height="100%"
+      viewBox="0 0 340 60"
+      preserveAspectRatio="none"
+      style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.12 }}
+    >
+      <line x1="10" y1="30" x2="330" y2="30" stroke="#fff" strokeWidth="1.5" />
+      <line x1="60" y1="30" x2="30" y2="10" stroke="#fff" strokeWidth="1" />
+      <line x1="60" y1="30" x2="30" y2="50" stroke="#fff" strokeWidth="1" />
+      <line x1="120" y1="30" x2="85" y2="8" stroke="#fff" strokeWidth="1" />
+      <line x1="120" y1="30" x2="85" y2="52" stroke="#fff" strokeWidth="1" />
+      <line x1="180" y1="30" x2="150" y2="10" stroke="#fff" strokeWidth="1" />
+      <line x1="180" y1="30" x2="150" y2="50" stroke="#fff" strokeWidth="1" />
+      <line x1="240" y1="30" x2="210" y2="8" stroke="#fff" strokeWidth="1" />
+      <line x1="240" y1="30" x2="210" y2="52" stroke="#fff" strokeWidth="1" />
+      <line x1="300" y1="30" x2="270" y2="12" stroke="#fff" strokeWidth="1" />
+      <line x1="300" y1="30" x2="270" y2="48" stroke="#fff" strokeWidth="1" />
+    </svg>
+  );
+}
+
+/** Tree ring lines inside stump score circle */
+function StumpRingsSvg() {
+  return (
+    <svg
+      width="100%" height="100%"
+      viewBox="0 0 200 200"
+      style={{ position: 'absolute', inset: 0, zIndex: 0 }}
+    >
+      <circle cx="100" cy="100" r="12" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.4" />
+      <circle cx="100" cy="100" r="24" fill="none" stroke="#a88440" strokeWidth="1.2" opacity="0.35" />
+      <circle cx="100" cy="100" r="36" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.3" />
+      <circle cx="100" cy="100" r="48" fill="none" stroke="#a07838" strokeWidth="1.5" opacity="0.25" />
+      <circle cx="100" cy="100" r="60" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.22" />
+      <circle cx="100" cy="100" r="72" fill="none" stroke="#907030" strokeWidth="1.5" opacity="0.2" />
+      <circle cx="100" cy="100" r="84" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.18" />
+      <path d="M100,100 L98,60 L102,35 L99,12" fill="none" stroke="#7a5828" strokeWidth="2" opacity="0.35" strokeLinecap="round" />
+      <path d="M100,100 L104,70 L108,50" fill="none" stroke="#7a5828" strokeWidth="1.2" opacity="0.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// ─── Nature-themed card colors ───
+
+const CARD_COLORS = {
+  neutral: { border: '#4a6572', bg: '#e3ebf3' },
+  correct: { border: '#27ae60', bg: '#d5f5e3' },
+  incorrect: { border: '#e74c3c', bg: '#fde8e8' },
+  tapped: { border: '#2980b9', bg: '#dbeeff' },
+  over: { border: '#2980b9', bg: '#eef5ff' },
+};
+
+// ─── Component ───
+
+export default function OrderGame({ game, onComplete, participantAge }: GameProps) {
+  const settings = game.settings as unknown as OrderSettings;
+  const t = useTranslations(texts);
+  const hint = useGameHint(settings.hint);
+  const sounds = useGameSounds({
+    correct: '/sounds/applause.mp3',
+    bgMusic: '/sounds/backgtound-music.mp3',
+  });
+
+  const [currentRound, setCurrentRound] = useState(0);
+  const [cards, setCards] = useState<string[]>([]);
+  const [cardStatuses, setCardStatuses] = useState<CardStatus[]>([]);
+  const [roundScore, setRoundScore] = useState(0);
+  const [totalScore, setTotalScore] = useState(0);
+  const [showFeedback, setShowFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [checked, setChecked] = useState(false);
+  const [gameComplete, setGameComplete] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(true);
+  const [noContent, setNoContent] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const gameStartTime = useRef(Date.now());
+
+  // Refs for timeout-safe access (avoid stale closures)
+  const currentRoundRef = useRef(0);
+  const roundsRef = useRef<OrderRound[]>([]);
+  const initRoundRef = useRef<(idx: number) => void>(() => {});
+
+  // Golf challenge
+  const golfEnabled = (settings as unknown as Record<string, unknown>).golfChallenge !== false;
+  const [showGolf, setShowGolf] = useState(false);
+  const [golfBonus, setGolfBonus] = useState(0);
+  const [golfDone, setGolfDone] = useState(false);
+  const golfT = useTranslations(golfTexts);
+
+  // Timer
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Pointer-based drag reordering (works on touch + mouse)
+  const [dragInfo, setDragInfo] = useState<{
+    index: number;
+    startY: number;
+    currentY: number;
+    cardHeight: number;
+  } | null>(null);
+  const didDragRef = useRef(false);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Touch-based swap: tap two cards to swap (fallback for quick taps)
+  const [tapIndex, setTapIndex] = useState<number | null>(null);
+
+  const rounds = useMemo(() => {
+    const src = settings.rounds || [];
+    return participantAge !== undefined
+      ? src.filter((r) => !r.ageRange || (participantAge >= r.ageRange.minAge && participantAge <= r.ageRange.maxAge))
+      : src;
+  }, [settings.rounds, participantAge]);
+  const scoring = useMemo(
+    () => settings.scoring || { firstAttemptPoints: 100, retryPoints: 50, speedBonus: false },
+    [settings.scoring],
+  );
+
+  // Auto-complete when all content filtered by age
+  useEffect(() => {
+    if (noContent && gameComplete) {
+      onComplete({
+        score: 0,
+        maxPossibleScore: 0,
+        durationMs: Date.now() - gameStartTime.current,
+        hintUsed: false,
+        attempts: 0,
+      });
+    }
+  }, [noContent, gameComplete]);
+
+  // Initialize round
+  const initRound = useCallback((roundIdx: number) => {
+    const round = rounds[roundIdx];
+    if (!round) return;
+    const correctOrder = round.cards;
+    let shuffled = shuffleArray(correctOrder);
+    let shuffleAttempts = 0;
+    while (shuffled.length > 1 && shuffled.every((c, i) => c === correctOrder[i]) && shuffleAttempts < 20) {
+      shuffled = shuffleArray(correctOrder);
+      shuffleAttempts++;
+    }
+    setCards(shuffled);
+    setCardStatuses(shuffled.map(() => 'neutral'));
+    setRoundScore(0);
+    setShowFeedback(null);
+    setChecked(false);
+    setTapIndex(null);
+    setDragInfo(null);
+
+    if (scoring.timeLimitSeconds && scoring.timeLimitSeconds > 0) {
+      setTimeLeft(scoring.timeLimitSeconds);
+    } else {
+      setTimeLeft(null);
+    }
+  }, [rounds, scoring]);
+
+  // Keep refs in sync
+  currentRoundRef.current = currentRound;
+  roundsRef.current = rounds;
+  initRoundRef.current = initRound;
+
+  useEffect(() => {
+    if (rounds.length > 0) {
+      initRound(0);
+    } else {
+      setNoContent(true);
+      setGameComplete(true);
+    }
+  }, []);
+
+  // Timer countdown — uses functional updater to avoid stale closure
+  useEffect(() => {
+    if (timeLeft === null || timeLeft <= 0 || checked) return;
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev === null || prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [timeLeft === null, timeLeft === 0, checked]);
+
+  // Time's up
+  useEffect(() => {
+    if (timeLeft === 0 && !checked) {
+      handleCheck();
+    }
+  }, [timeLeft]);
+
+  const handleCheck = () => {
+    if (checked) return;
+    setAttempts((prev) => prev + 1);
+    const round = rounds[currentRound];
+    if (!round) return;
+    const correctOrder = round.cards;
+
+    const statuses: CardStatus[] = cards.map((card, i) => (card === correctOrder[i] ? 'correct' : 'incorrect'));
+    setCardStatuses(statuses);
+    setChecked(true);
+    if (timerRef.current) clearInterval(timerRef.current);
+
+    const allCorrect = statuses.every((s) => s === 'correct');
+
+    if (allCorrect) {
+      const points = scoring.firstAttemptPoints;
+      setRoundScore(points);
+      setTotalScore((prev) => prev + points);
+      setShowFeedback('correct');
+      sounds.playCorrect();
+    } else {
+      setRoundScore(0);
+      setShowFeedback('incorrect');
+      sounds.playWrong();
+    }
+
+    // Auto-advance to next round after brief feedback (refs avoid stale closures)
+    setTimeout(() => {
+      const next = currentRoundRef.current + 1;
+      if (next >= roundsRef.current.length) {
+        setGameComplete(true);
+      } else {
+        setCurrentRound(next);
+        initRoundRef.current(next);
+      }
+    }, 1500);
+  };
+
+  const handleFinish = () => {
+    const adjusted = hint.applyHintPenalty(totalScore) + golfBonus;
+    const maxPossibleScore = rounds.length * (scoring.firstAttemptPoints || 100);
+    onComplete({
+      score: adjusted,
+      maxPossibleScore,
+      durationMs: Date.now() - gameStartTime.current,
+      hintUsed: hint.hintUsed,
+      attempts,
+    });
+  };
+
+  // Instructions screen — nature themed inside OrderContainer
+  if (showInstructions && settings.instructions) {
+    return (
+      <OrderContainer dir="rtl">
+
+        <InstructionsWrapper>
+          <OrderRoundBanner style={{ width: 'auto', padding: '16px 40px', transform: 'rotate(-1.5deg)' }}>
+            <LeafVeinSvg />
+            <OrderRoundBannerText style={{ fontSize: 20 }}>{game.name}</OrderRoundBannerText>
+          </OrderRoundBanner>
+          <InstructionsCard>
+            <InstructionsText>{settings.instructions}</InstructionsText>
+          </InstructionsCard>
+          <NatureCheckButton onClick={() => { setShowInstructions(false); sounds.startBgMusic(); }} style={{ maxWidth: 340, fontSize: 20, padding: '16px 28px' }}>
+            {t.continue}
+          </NatureCheckButton>
+        </InstructionsWrapper>
+      </OrderContainer>
+    );
+  }
+
+  // Golf challenge — playing
+  if (showGolf) {
+    return (
+      <GolfChallenge
+        onComplete={(bonus) => { setGolfBonus(bonus); setShowGolf(false); setGolfDone(true); }}
+        onSkip={() => { setGolfBonus(0); setShowGolf(false); setGolfDone(true); }}
+      />
+    );
+  }
+
+  // Finish screen — shown AFTER golf (or when golf disabled)
+  if (gameComplete && (!golfEnabled || golfDone)) {
+    if (noContent) {
+      return null;
+    }
+    const finalScore = hint.applyHintPenalty(totalScore) + golfBonus;
+    return (
+      <FinishContainer dir="rtl">
+        <FinishContent>
+          <FinishTitleBanner>
+            <LeafVeinSvg />
+            <span style={{ position: 'relative', zIndex: 1 }}>{t.gameComplete}</span>
+          </FinishTitleBanner>
+
+          <FinishStump>
+            <StumpRingsSvg />
+            <FinishScoreNumber>{finalScore}</FinishScoreNumber>
+            <FinishScoreLabel>{t.points}</FinishScoreLabel>
+          </FinishStump>
+
+          <div style={{ fontSize: 18, fontWeight: 700, color: '#5a3e1b', marginBottom: 6 }}>
+            {t.finalScore}
+          </div>
+
+          <FinishContinueButton onClick={handleFinish}>
+            {t.continue}
+          </FinishContinueButton>
+        </FinishContent>
+      </FinishContainer>
+    );
+  }
+
+  // Golf intro popup — shown after rounds complete, before golf starts
+  if (gameComplete && golfEnabled && !golfDone) {
+    return (
+      <OrderContainer dir="rtl">
+
+        <GolfIntroOverlay>
+          <InstructionsCard style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 40, marginBottom: 8 }}>⛳</div>
+            <InstructionsTitle>{golfT.title}</InstructionsTitle>
+            <InstructionsText>{golfT.disclaimer}</InstructionsText>
+            <NatureCheckButton onClick={() => setShowGolf(true)} style={{ marginTop: 20 }}>
+              {golfT.continueBtn}
+            </NatureCheckButton>
+          </InstructionsCard>
+        </GolfIntroOverlay>
+      </OrderContainer>
+    );
+  }
+
+  const round = rounds[currentRound];
+  if (!round) return null;
+
+  // ─── Pointer-based drag reordering ───
+
+  const handlePointerDown = (index: number, e: React.PointerEvent) => {
+    if (checked) return;
+    // Measure card height from the list grid
+    const listEl = listRef.current;
+    if (!listEl) return;
+    const firstCard = listEl.children[0] as HTMLElement | undefined;
+    if (!firstCard) return;
+    const cardHeight = firstCard.getBoundingClientRect().height + 5; // include gap
+    didDragRef.current = false;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    setDragInfo({ index, startY: e.clientY, currentY: e.clientY, cardHeight });
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragInfo) return;
+    const deltaY = e.clientY - dragInfo.startY;
+    if (Math.abs(deltaY) > 5) didDragRef.current = true;
+    setDragInfo({ ...dragInfo, currentY: e.clientY });
+  };
+
+  const handlePointerUp = () => {
+    if (!dragInfo) return;
+    const deltaY = dragInfo.currentY - dragInfo.startY;
+    const shift = Math.round(deltaY / dragInfo.cardHeight);
+    const fromIdx = dragInfo.index;
+    const toIdx = Math.max(0, Math.min(cards.length - 1, fromIdx + shift));
+
+    if (didDragRef.current && fromIdx !== toIdx) {
+      const newCards = [...cards];
+      const [removed] = newCards.splice(fromIdx, 1);
+      newCards.splice(toIdx, 0, removed);
+      setCards(newCards);
+      setCardStatuses(newCards.map(() => 'neutral'));
+      setShowFeedback(null);
+      setTapIndex(null);
+    }
+    setDragInfo(null);
+  };
+
+  // Tap-to-swap fallback (fires only on quick taps, not drags)
+  const handleCardTap = (index: number) => {
+    if (checked || didDragRef.current) return;
+    if (tapIndex === null) {
+      setTapIndex(index);
+    } else if (tapIndex === index) {
+      setTapIndex(null);
+    } else {
+      const newCards = [...cards];
+      [newCards[tapIndex], newCards[index]] = [newCards[index], newCards[tapIndex]];
+      setCards(newCards);
+      setCardStatuses(newCards.map(() => 'neutral'));
+      setTapIndex(null);
+      setShowFeedback(null);
+    }
+  };
+
+  // Helper: compute translateY for each card during drag
+  const getCardDragStyle = (index: number): React.CSSProperties => {
+    if (!dragInfo) return {};
+    const deltaY = dragInfo.currentY - dragInfo.startY;
+    if (index === dragInfo.index) {
+      // Dragged card follows the pointer
+      return {
+        transform: `translateY(${deltaY}px) scale(1.03)`,
+        zIndex: 10,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+        transition: 'box-shadow 0.15s ease',
+      };
+    }
+    // Shift other cards to make room
+    const shift = Math.round(deltaY / dragInfo.cardHeight);
+    const targetIdx = Math.max(0, Math.min(cards.length - 1, dragInfo.index + shift));
+    const draggedFrom = dragInfo.index;
+
+    if (draggedFrom < targetIdx && index > draggedFrom && index <= targetIdx) {
+      return { transform: `translateY(-${dragInfo.cardHeight}px)`, transition: 'transform 0.15s ease' };
+    }
+    if (draggedFrom > targetIdx && index < draggedFrom && index >= targetIdx) {
+      return { transform: `translateY(${dragInfo.cardHeight}px)`, transition: 'transform 0.15s ease' };
+    }
+    return { transition: 'transform 0.15s ease' };
+  };
+
+  return (
+    <OrderContainer dir="rtl">
+
+      {/* Top bar (glass effect) */}
+      <OrderTopBar>
+        <OrderTopBarItem>
+          {t.roundOf} {currentRound + 1} {t.of} {rounds.length}
+        </OrderTopBarItem>
+        {timeLeft !== null && (
+          <OrderTopBarTimer critical={timeLeft <= GAME_CONSTANTS.TIMER_WARNING_SECONDS}>
+            {t.timeLeft}: {timeLeft}s
+          </OrderTopBarTimer>
+        )}
+        <OrderTopBarItem>
+          {t.score}: {totalScore} {t.points}
+        </OrderTopBarItem>
+      </OrderTopBar>
+
+      {/* Round title (leaf banner) */}
+      {round.title && (
+        <OrderRoundBanner compact>
+          <LeafVeinSvg />
+          <OrderRoundBannerText>{round.title}</OrderRoundBannerText>
+        </OrderRoundBanner>
+      )}
+
+      {/* Hint button */}
+      {settings.hint?.enabled && settings.hint.text && !checked && (
+        <NatureHintWrapper>
+          <HintButton
+            hintUsed={hint.hintUsed}
+            useHintLabel={t.useHint}
+            showHintLabel={t.showHint}
+            onClick={hint.handleHintClick}
+          />
+        </NatureHintWrapper>
+      )}
+
+      {/* Cards list */}
+      <NatureCardsList
+        ref={listRef}
+        cardCount={cards.length}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={() => setDragInfo(null)}
+      >
+        {cards.map((card, index) => {
+          const status = cardStatuses[index];
+          const isDragging = dragInfo?.index === index;
+          const isTapped = tapIndex === index;
+
+          let borderColor = CARD_COLORS.neutral.border;
+          let bgColor = CARD_COLORS.neutral.bg;
+
+          if (status === 'correct') {
+            borderColor = CARD_COLORS.correct.border;
+            bgColor = CARD_COLORS.correct.bg;
+          } else if (status === 'incorrect') {
+            borderColor = CARD_COLORS.incorrect.border;
+            bgColor = CARD_COLORS.incorrect.bg;
+          } else if (isTapped) {
+            borderColor = CARD_COLORS.tapped.border;
+            bgColor = CARD_COLORS.tapped.bg;
+          }
+
+          return (
+            <NatureCard
+              key={`${currentRound}-${index}`}
+              borderColor={borderColor}
+              bgColor={bgColor}
+              isDragging={isDragging}
+              roundComplete={checked}
+              onPointerDown={(e) => handlePointerDown(index, e)}
+              onClick={() => handleCardTap(index)}
+              style={getCardDragStyle(index)}
+            >
+              <NatureCardNumber status={status}>
+                {index + 1}
+              </NatureCardNumber>
+              <NatureCardText>{card}</NatureCardText>
+              {!checked && (
+                <NatureDragHandle>&#x2807;</NatureDragHandle>
+              )}
+            </NatureCard>
+          );
+        })}
+      </NatureCardsList>
+
+      {/* Check button */}
+      {!checked && (
+        <OrderActionBar>
+          <NatureCheckButton onClick={handleCheck} disabled={timeLeft === 0}>
+            {t.checkAnswer}
+          </NatureCheckButton>
+        </OrderActionBar>
+      )}
+
+      {/* Feedback (absolute overlay centered on game area) */}
+      {showFeedback && (
+        <OrderFeedbackFloater>
+          <OrderFeedbackContainer>
+            {showFeedback === 'correct' ? (
+              <>
+                <OrderCorrectText>{t.correct}</OrderCorrectText>
+                {roundScore > 0 && (
+                  <OrderPointsBadge>+{roundScore} {t.points}</OrderPointsBadge>
+                )}
+              </>
+            ) : (
+              <OrderWrongText>{t.incorrect}</OrderWrongText>
+            )}
+          </OrderFeedbackContainer>
+        </OrderFeedbackFloater>
+      )}
+
+      <HintModals
+        hintText={settings.hint?.text}
+        showHintWarning={hint.showHintWarning}
+        showHintText={hint.showHintText}
+        onConfirm={hint.confirmHint}
+        onDismissWarning={hint.dismissHintWarning}
+        onDismissText={hint.dismissHintText}
+        t={t}
+      />
+    </OrderContainer>
+  );
+}

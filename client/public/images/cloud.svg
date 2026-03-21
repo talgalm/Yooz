@@ -1,0 +1,25 @@
+<svg width="350" height="195" viewBox="-10 0 360 195" xmlns="http://www.w3.org/2000/svg">
+  <!-- Bottom shadow layer -->
+  <ellipse cx="170" cy="160" rx="145" ry="30" fill="#d0d5dd" opacity="0.25"/>
+  <!-- Base cloud mass -->
+  <ellipse cx="170" cy="135" rx="155" ry="45" fill="#f7f9fc"/>
+  <!-- Mid puffs -->
+  <ellipse cx="80" cy="110" rx="75" ry="55" fill="#fafbfd"/>
+  <ellipse cx="250" cy="105" rx="80" ry="58" fill="#fafbfd"/>
+  <ellipse cx="165" cy="90" rx="85" ry="60" fill="#ffffff"/>
+  <!-- Upper puffs -->
+  <ellipse cx="110" cy="75" rx="60" ry="48" fill="#ffffff"/>
+  <ellipse cx="220" cy="70" rx="65" ry="50" fill="#ffffff"/>
+  <!-- Top highlights -->
+  <ellipse cx="155" cy="55" rx="50" ry="38" fill="#ffffff"/>
+  <ellipse cx="200" cy="50" rx="40" ry="32" fill="#ffffff"/>
+  <ellipse cx="130" cy="48" rx="35" ry="28" fill="#ffffff"/>
+  <!-- Wispy edges -->
+  <ellipse cx="30" cy="125" rx="40" ry="22" fill="#f0f3f8" opacity="0.7"/>
+  <ellipse cx="310" cy="120" rx="38" ry="20" fill="#f0f3f8" opacity="0.7"/>
+  <ellipse cx="270" cy="55" rx="28" ry="18" fill="#fafbfd" opacity="0.6"/>
+  <ellipse cx="70" cy="60" rx="25" ry="16" fill="#fafbfd" opacity="0.6"/>
+  <!-- Subtle inner shading for volume -->
+  <ellipse cx="120" cy="130" rx="60" ry="25" fill="#e4e8ef" opacity="0.2"/>
+  <ellipse cx="220" cy="128" rx="55" ry="22" fill="#e4e8ef" opacity="0.18"/>
+</svg>

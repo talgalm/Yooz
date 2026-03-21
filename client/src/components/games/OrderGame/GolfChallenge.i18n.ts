@@ -1,0 +1,26 @@
+export const golfTexts = {
+  en: {
+    title: 'Golf Challenge',
+    hits: 'Hits',
+    skip: 'Skip >>',
+    disclaimer: 'You have a maximum of 7 hits and minimum time to sink the ball in the hole',
+    success: 'In the hole!',
+    failed: 'Out of hits!',
+    bonus: 'Bonus',
+    points: 'pts',
+    continueBtn: 'Continue',
+    tapToHit: 'Swipe from the ball to hit',
+  },
+  he: {
+    title: 'אתגר גולף',
+    hits: 'חבטות',
+    skip: 'דלג >>',
+    disclaimer: 'לרשותך מקסימום 7 חבטות ובמינימום זמן כדי לקלוע לחור',
+    success: 'בחור!',
+    failed: 'נגמרו החבטות!',
+    bonus: 'בונוס',
+    points: 'נק׳',
+    continueBtn: 'המשך',
+    tapToHit: 'החליקו מהכדור כדי לחבוט',
+  },
+};
