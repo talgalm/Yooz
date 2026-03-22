@@ -12,7 +12,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminCreateActivityPage from './pages/admin/AdminCreateActivityPage';
 import AdminViewActivityPage from './pages/admin/AdminViewActivityPage';
 import AdminGameConfigPage from './pages/admin/AdminGameConfigPage';
-import AdminMissionConfigPage from './pages/admin/AdminMissionConfigPage';
+// AdminMissionConfigPage removed — missions are now built-in and read-only
 import ManagerLoginPage from './pages/manager/ManagerLoginPage';
 import ManagerDashboardPage from './pages/manager/ManagerDashboardPage';
 import LandingPage from './pages/LandingPage';
@@ -63,8 +63,7 @@ export default function App() {
                 <Route path="/admin/activities/:id" element={<AdminProtectedRoute><AdminViewActivityPage /></AdminProtectedRoute>} />
                 <Route path="/admin/games/new" element={<AdminProtectedRoute><AdminGameConfigPage /></AdminProtectedRoute>} />
                 <Route path="/admin/games/:id" element={<AdminProtectedRoute><AdminGameConfigPage /></AdminProtectedRoute>} />
-                <Route path="/admin/missions/new" element={<AdminProtectedRoute><AdminMissionConfigPage /></AdminProtectedRoute>} />
-                <Route path="/admin/missions/:id" element={<AdminProtectedRoute><AdminMissionConfigPage /></AdminProtectedRoute>} />
+                {/* Mission config routes removed — missions are built-in and read-only */}
 
                 {/* Manager routes — full width desktop */}
                 <Route path="/manager" element={<ManagerPublicRoute><ManagerLoginPage /></ManagerPublicRoute>} />

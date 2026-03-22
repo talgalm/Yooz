@@ -272,6 +272,7 @@ interface MissionTrashSortProps {
   description?: string;
   participantName?: string;
   activityCode?: string;
+  onComplete?: (score: number) => void;
 }
 
 // Countdown steps: 3, 2, 1, "start!"
@@ -355,6 +356,7 @@ export default function MissionTrashSort({
   description = 'עכשיו התמונה ברורה, אבל הזבל עדיין\nמסתיר את האות!\n\nליחצו על הפח הנכון עבור סוג\nהאשפה.',
   participantName,
   activityCode,
+  onComplete,
 }: MissionTrashSortProps) {
   type Phase = 'intro' | 'throwing' | 'countdown' | 'game' | 'complete' | 'badge';
   type ScoreFlash = 'positive' | 'negative' | null;
@@ -871,10 +873,15 @@ export default function MissionTrashSort({
             </div>
           </MissionContent>
 
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
             <MissionButton step={1}>
               שתפו עם חברים
             </MissionButton>
+            {onComplete && (
+              <MissionButton step={1} onClick={() => onComplete(gameScore)}>
+                המשך
+              </MissionButton>
+            )}
           </div>
         </FrameContainer>
       </MissionWrapper>

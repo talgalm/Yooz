@@ -4,7 +4,7 @@ import cors from 'cors';
 import path from 'path';
 import { PORT, CLIENT_BUILD_PATH } from './config';
 import { connectDB } from './db/connection';
-import { migrateActivities, seedSuperAdmin } from './db/seed';
+import { migrateActivities, seedSuperAdmin, seedBuiltInMission } from './db/seed';
 import authRouter from './routes/auth';
 import adminRouter from './routes/admin';
 import activitiesRouter from './routes/activities';
@@ -72,6 +72,7 @@ async function start() {
   await connectDB();
   await migrateActivities();
   await seedSuperAdmin();
+  await seedBuiltInMission();
   app.listen(PORT, () => {
     console.log(`🚀 Yooz server running on http://localhost:${PORT}`);
   });

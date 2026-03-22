@@ -87,24 +87,39 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   // Collect IDs by type from module items
   const gameIds: string[] = [];
   const stationIds: string[] = [];
+  const missionIds: string[] = [];
   for (const item of activity.module.items || []) {
     if (item.type === 'game') gameIds.push(item.ref.toString());
     else if (item.type === 'station') stationIds.push(item.ref.toString());
+    else if (item.type === 'mission') missionIds.push(item.ref.toString());
   }
 
-  // Batch fetch games and stations
-  const [games, stations] = await Promise.all([
+  // Batch fetch games, stations, and missions
+  const [games, stations, missions] = await Promise.all([
     gameIds.length > 0 ? Game.find({ _id: { $in: gameIds } }).lean() : [],
     stationIds.length > 0 ? Station.find({ _id: { $in: stationIds } }).lean() : [],
+    missionIds.length > 0 ? Mission.find({ _id: { $in: missionIds } }).lean() : [],
   ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gameMap = new Map(games.map((g: any) => [g._id.toString(), g]));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stationMap = new Map(stations.map((s: any) => [s._id.toString(), s]));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const missionMap = new Map(missions.map((m: any) => [m._id.toString(), m]));
 
   // Build populated items array in order
   const populatedItems = (activity.module.items || []).map((item) => {
+    if (item.type === 'mission') {
+      const data = missionMap.get(item.ref.toString());
+      if (!data) return null;
+      return {
+        type: 'mission' as const,
+        _id: data._id,
+        name: data.name,
+        explanationScreens: data.explanationScreens || [],
+      };
+    }
     const data = item.type === 'game'
       ? gameMap.get(item.ref.toString())
       : stationMap.get(item.ref.toString());

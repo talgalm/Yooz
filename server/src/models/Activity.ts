@@ -6,7 +6,7 @@ export interface IPopupTrigger {
 }
 
 export interface IModuleItem {
-  type: 'game' | 'station';
+  type: 'game' | 'station' | 'mission';
   ref: Types.ObjectId;
 }
 
@@ -96,7 +96,7 @@ const popupMessageSchema = new Schema({
 });
 
 const moduleItemSchema = new Schema<IModuleItem>({
-  type: { type: String, required: true, enum: ['game', 'station'] },
+  type: { type: String, required: true, enum: ['game', 'station', 'mission'] },
   ref: { type: Schema.Types.ObjectId, required: true },
 }, { _id: false });
 

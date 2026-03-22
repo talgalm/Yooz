@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
+import { QRCodeCanvas } from 'qrcode.react';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminViewActivityPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
@@ -227,6 +228,64 @@ const LinkSection = styled('div')({
   border: '1px solid #e8e0ff',
 });
 
+const QrSection = styled('div')({
+  margin: '20px 0 0',
+  padding: '24px 22px',
+  borderRadius: 14,
+  background: '#fff',
+  border: '1px solid #e8e0ff',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 24,
+  flexWrap: 'wrap',
+  '@media (max-width: 600px)': {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+});
+
+const QrWrapper = styled('div')({
+  background: '#fff',
+  borderRadius: 12,
+  padding: 12,
+  boxShadow: '0 2px 12px rgba(108,92,231,0.10)',
+  lineHeight: 0,
+});
+
+const QrInfo = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+  flex: 1,
+});
+
+const QrTitle = styled('div')({
+  fontSize: 14,
+  fontWeight: 700,
+  color: '#6c5ce7',
+  textTransform: 'uppercase',
+  letterSpacing: 0.5,
+});
+
+const QrHint = styled('div')({
+  fontSize: 13,
+  color: '#888',
+});
+
+const DownloadQrButton = styled('button')({
+  padding: '8px 20px',
+  fontSize: 13,
+  fontWeight: 700,
+  color: '#6c5ce7',
+  background: '#f5f3ff',
+  border: '1px solid #e8e0ff',
+  borderRadius: 8,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  transition: 'background 0.15s',
+  '&:hover': { background: '#ede9fe' },
+});
+
 const LinkLabel = styled('div')({
   fontSize: 12,
   fontWeight: 700,
@@ -315,6 +374,7 @@ export default function AdminViewActivityPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showGoLiveModal, setShowGoLiveModal] = useState(false);
   const [togglingStatus, setTogglingStatus] = useState(false);
+  const qrRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const t = useTranslations(texts);
 
@@ -326,6 +386,16 @@ export default function AdminViewActivityPage() {
   }, [id, navigate]);
 
   const playUrl = activity ? `${window.location.origin}/play/${activity.code}` : '';
+
+  const handleDownloadQr = useCallback(() => {
+    const canvas = qrRef.current?.querySelector('canvas');
+    if (!canvas) return;
+    const url = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = `yooz-qr-${activity?.code || 'activity'}.png`;
+    link.href = url;
+    link.click();
+  }, [activity?.code]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(playUrl);
@@ -472,6 +542,27 @@ export default function AdminViewActivityPage() {
                 <CopyButton onClick={handleCopy}>{copied ? t.copied : t.copy}</CopyButton>
               </LinkRow>
             </LinkSection>
+
+            {/* QR Code */}
+            <QrSection>
+              <QrWrapper ref={qrRef}>
+                <QRCodeCanvas
+                  value={playUrl}
+                  size={140}
+                  level="H"
+                  marginSize={1}
+                />
+              </QrWrapper>
+              <QrInfo>
+                <QrTitle>{t.qrCode}</QrTitle>
+                <QrHint>{t.scanToPlay}</QrHint>
+                <div>
+                  <DownloadQrButton onClick={handleDownloadQr}>
+                    {t.downloadQr}
+                  </DownloadQrButton>
+                </div>
+              </QrInfo>
+            </QrSection>
           </BodySection>
 
           {/* Footer */}

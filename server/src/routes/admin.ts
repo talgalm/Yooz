@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { JWT_SECRET } from '../config';
 import { authenticateAdmin } from '../middleware/adminAuth';
 import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginField } from '../types';
-import { Activity, Report, Game, Station, AdminAuditLog, User } from '../models';
+import { Activity, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
 
 const router = Router();
 
@@ -78,7 +78,7 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
   // Handle module config
   if (moduleConfig) {
     if (moduleConfig.type === 'mission') {
-      // Mission module: just store the type and mission reference
+      // Legacy mission module: just store the type and mission reference
       data.module = {
         type: 'mission',
         missionRef: moduleConfig.missionRef || undefined,
@@ -86,7 +86,7 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
         popups: [],
       };
     } else {
-      // Story module: existing logic
+      // Story module: supports games, stations, and missions as items
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mod = moduleConfig as any;
       data.module = {
@@ -94,7 +94,7 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
         backgroundImage: moduleConfig.backgroundImage || undefined,
         items: Array.isArray(mod.items)
           ? mod.items
-              .filter((item: { type: string; ref: string }) => item.type && item.ref && ['game', 'station'].includes(item.type))
+              .filter((item: { type: string; ref: string }) => item.type && item.ref && ['game', 'station', 'mission'].includes(item.type))
               .map((item: { type: string; ref: string }) => ({
                 type: item.type,
                 ref: item.ref,
@@ -157,41 +157,46 @@ function stripManagerPassword(activity: any) {
   return obj;
 }
 
-// Helper: populate module items (games and stations) for activities
+// Helper: populate module items (games, stations, and missions) for activities
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function populateActivityItems(activities: any[]): Promise<any[]> {
   const gameIds = new Set<string>();
   const stationIds = new Set<string>();
+  const missionIds = new Set<string>();
 
   for (const a of activities) {
     const items = a.module?.items || [];
     for (const item of items) {
       if (item.type === 'game') gameIds.add(item.ref.toString());
       else if (item.type === 'station') stationIds.add(item.ref.toString());
+      else if (item.type === 'mission') missionIds.add(item.ref.toString());
     }
   }
 
-  const [games, stations] = await Promise.all([
+  const [games, stations, missions] = await Promise.all([
     gameIds.size > 0 ? Game.find({ _id: { $in: [...gameIds] } }).lean() : [],
     stationIds.size > 0 ? Station.find({ _id: { $in: [...stationIds] } }).lean() : [],
+    missionIds.size > 0 ? Mission.find({ _id: { $in: [...missionIds] } }).lean() : [],
   ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gameMap = new Map(games.map((g: any) => [g._id.toString(), g]));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stationMap = new Map(stations.map((s: any) => [s._id.toString(), s]));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const missionMap = new Map(missions.map((m: any) => [m._id.toString(), m]));
 
   return activities.map((a) => {
     const obj = typeof a.toObject === 'function' ? a.toObject() : { ...a };
     if (obj.module?.items) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      obj.module.items = obj.module.items.map((item: any) => ({
-        type: item.type,
-        ref: item.ref,
-        data: item.type === 'game'
-          ? gameMap.get(item.ref.toString())
-          : stationMap.get(item.ref.toString()),
-      }));
+      obj.module.items = obj.module.items.map((item: any) => {
+        let data;
+        if (item.type === 'game') data = gameMap.get(item.ref.toString());
+        else if (item.type === 'station') data = stationMap.get(item.ref.toString());
+        else if (item.type === 'mission') data = missionMap.get(item.ref.toString());
+        return { type: item.type, ref: item.ref, data };
+      });
     }
     return obj;
   });

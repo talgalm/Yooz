@@ -36,8 +36,9 @@ import {
   StationBodyText,
   StationContinueButton,
 } from '../../components/games/styled';
+import MissionInlinePlayer from './MissionInlinePlayer';
 import type { GameResult } from '../../components/games/types';
-import type { ModuleItemData, GameItemData, StationItemData, GameData } from './types';
+import type { ModuleItemData, GameItemData, StationItemData, MissionItemData, GameData } from './types';
 
 // ─── Local styled components ───
 
@@ -191,6 +192,7 @@ interface PlayingPhaseProps {
   participantAge?: number;
   bgStyle: React.CSSProperties;
   theme?: string;
+  code?: string;
   onGameComplete: (result: GameResult) => void;
   onLogout: () => void;
   onViewLeaderboard?: () => void;
@@ -218,6 +220,7 @@ export default function PlayingPhase({
   participantAge,
   bgStyle,
   theme,
+  code,
   onGameComplete,
   onLogout,
   onViewLeaderboard,
@@ -239,6 +242,17 @@ export default function PlayingPhase({
   const isBallGameItem = currentItem.type === 'game' && (currentItem as GameItemData).gameType === 'ballGame';
 
   const renderContent = () => {
+    if (currentItem.type === 'mission') {
+      const missionItem = currentItem as MissionItemData;
+      return (
+        <MissionInlinePlayer
+          mission={missionItem}
+          onComplete={onGameComplete}
+          code={code}
+        />
+      );
+    }
+
     if (currentItem.type === 'station') {
       const station = currentItem as StationItemData;
 
@@ -461,6 +475,11 @@ export default function PlayingPhase({
       {popupModal}
     </>
   );
+
+  // Missions render their own full-screen layout
+  if (currentItem.type === 'mission') {
+    return renderContent();
+  }
 
   const Wrapper = theme === 'spy' ? SpyThemeWrapper : NatureBackground;
 

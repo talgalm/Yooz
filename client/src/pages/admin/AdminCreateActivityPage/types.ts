@@ -1,6 +1,6 @@
 export type LoginField = 'email' | 'phoneNumber' | 'name';
 export type ConnectionType = 'single' | 'group';
-export type ModuleType = 'none' | 'story' | 'mission';
+export type ModuleType = 'none' | 'story';
 export type QuestionMode = 'same' | 'byAge';
 export type OpeningType = 'none' | 'video' | 'image';
 export type TriggerPoint = 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
@@ -46,7 +46,7 @@ export interface StationOption {
 }
 
 export interface ModuleItem {
-  itemType: 'game' | 'station';
+  itemType: 'game' | 'station' | 'mission';
   ref: string;
   name: string;
   subType?: string;

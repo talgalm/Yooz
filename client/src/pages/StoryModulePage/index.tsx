@@ -436,7 +436,7 @@ export default function StoryModulePage() {
     const itemResult = {
       itemIndex: currentItemIndex,
       itemId: currentItem._id,
-      itemType: currentItem.type as 'game' | 'station',
+      itemType: currentItem.type as 'game' | 'station' | 'mission',
       itemName: currentItem.name,
       gameType: currentItem.type === 'game' ? (currentItem as { gameType?: string }).gameType : undefined,
       score: result.score,
@@ -791,6 +791,7 @@ export default function StoryModulePage() {
         participantAge={data.questionMode === 'byAge' ? participant?.age : undefined}
         bgStyle={bgStyle}
         theme={data.module.theme}
+        code={code}
         onGameComplete={handleGameComplete}
         onLogout={handleExit}
         onViewLeaderboard={handleViewLeaderboard}

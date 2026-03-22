@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { Activity, User } from '../models';
+import { Activity, User, Mission } from '../models';
 import { ADMIN_EMAIL, ADMIN_PASSWORD } from '../config';
 
 /**
@@ -36,6 +36,41 @@ export async function migrateActivities(): Promise<void> {
   }
 
   console.log(`✅ Migrated ${count} activit${count === 1 ? 'y' : 'ies'}`);
+}
+
+/**
+ * Seeds the built-in recycling mission if no missions exist yet.
+ */
+export async function seedBuiltInMission(): Promise<void> {
+  const count = await Mission.countDocuments();
+  if (count > 0) return;
+
+  await Mission.create({
+    name: 'פעילות מיחזור גני יהושוע',
+    description: 'משימת מיחזור אינטראקטיבית בפארק גני יהושוע',
+    customer: 'גני יהושוע',
+    explanationScreens: [
+      {
+        header: 'ברוכים הבאים!',
+        description: 'ברוכים הבאים למשימת המיחזור בפארק גני יהושוע!',
+        buttonText: 'התחילו',
+        backgroundImage: '/images/mission-bg-1.svg',
+      },
+      {
+        header: 'על המשימה',
+        description: 'במשימה זו תלמדו על חשיבות המיחזור ותעזרו לנו לשמור על הסביבה.',
+        buttonText: 'המשך',
+        backgroundImage: '/images/mission-bg-1.svg',
+      },
+      {
+        header: 'איך זה עובד?',
+        description: 'תעברו מסכי הסבר, תפתרו פאזל ותמיינו פסולת לפחים הנכונים.',
+        buttonText: 'יוצאים למשימה!',
+        backgroundImage: '/images/mission-bg-1.svg',
+      },
+    ],
+  });
+  console.log('✅ Seeded built-in recycling mission');
 }
 
 /**

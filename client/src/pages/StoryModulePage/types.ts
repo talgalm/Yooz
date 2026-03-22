@@ -23,7 +23,22 @@ export interface StationItemData {
   settings?: Record<string, unknown>;
 }
 
-export type ModuleItemData = GameItemData | StationItemData;
+export interface MissionScreen {
+  header?: string;
+  description?: string;
+  buttonText?: string;
+  image?: string;
+  backgroundImage?: string;
+}
+
+export interface MissionItemData {
+  type: 'mission';
+  _id: string;
+  name: string;
+  explanationScreens: MissionScreen[];
+}
+
+export type ModuleItemData = GameItemData | StationItemData | MissionItemData;
 
 export interface PopupData {
   _id: string;

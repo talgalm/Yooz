@@ -212,8 +212,7 @@ export default function AdminCreateActivityPage() {
   const [moduleTheme, setModuleTheme] = useState<string>('');
   const [backgroundImage, setBackgroundImage] = useState('');
   const [selectedItems, setSelectedItems] = useState<ModuleItem[]>([]);
-  const [missionRef, setMissionRef] = useState('');
-  const [availableMissions, setAvailableMissions] = useState<{ _id: string; name: string }[]>([]);
+  const [missionRef, setMissionRef] = useState('');  // kept for backward compat with existing mission-type activities
 
   const [openingType, setOpeningType] = useState<OpeningType>('none');
   const [openingUrl, setOpeningUrl] = useState('');
@@ -253,12 +252,11 @@ export default function AdminCreateActivityPage() {
           setOpeningUrl(a.opening.url || '');
         }
         if (a.module) {
-          setModuleType(a.module.type as ModuleType);
+          // Legacy mission-type activities are treated as story for editing
+          const mType = a.module.type === 'mission' ? 'story' : a.module.type;
+          setModuleType(mType as ModuleType);
           setModuleTheme(a.module.theme || '');
           setBackgroundImage(a.module.backgroundImage || '');
-          if (a.module.type === 'mission' && a.module.missionRef) {
-            setMissionRef(a.module.missionRef);
-          }
           if (a.module.items && a.module.items.length > 0) {
             setSelectedItems(
               a.module.items.map((item) => ({
@@ -300,13 +298,6 @@ export default function AdminCreateActivityPage() {
       })
       .catch(() => navigate('/admin/dashboard'));
   }, [id, navigate]);
-
-  // Fetch available missions for the mission module type selector
-  useEffect(() => {
-    adminApiFetch<{ missions: { _id: string; name: string }[] }>('/api/admin/missions')
-      .then((data) => setAvailableMissions(data.missions))
-      .catch(() => {});
-  }, []);
 
   const toggleField = (field: LoginField) => {
     setLoginFields((prev) => {
@@ -459,39 +450,32 @@ export default function AdminCreateActivityPage() {
       if (openingType !== 'none' && openingUrl.trim()) {
         payload.opening = { type: openingType, url: openingUrl.trim() };
       }
-      if (moduleType !== 'none') {
-        if (moduleType === 'mission') {
-          payload.module = {
-            type: 'mission',
-            missionRef: missionRef || undefined,
-          };
-        } else {
-          const modulePayload: Record<string, unknown> = {
-            type: moduleType,
-            theme: moduleTheme || undefined,
-            backgroundImage: backgroundImage.trim() || undefined,
-            items: selectedItems.map((i) => ({ type: i.itemType, ref: i.ref })),
-          };
-          if (popups.length > 0) {
-            modulePayload.popups = popups
-              .filter((p) => p.title.trim() && (p.contentType === 'image' ? p.image.trim() : p.text.trim()))
-              .map((p) => ({
-                title: p.title.trim(),
-                contentType: p.contentType,
-                ...(p.contentType === 'text' && { text: p.text.trim() }),
-                ...(p.contentType === 'image' && { image: p.image.trim() }),
-                trigger: {
-                  point: p.triggerPoint,
-                  ...((['beforeItem', 'afterItem'].includes(p.triggerPoint)) && { itemIndex: p.itemIndex }),
-                },
-                ...(p.conditionType === 'participantCount' && {
-                  condition: { type: 'participantCount', threshold: p.threshold },
-                }),
-                enabled: p.enabled,
-              }));
-          }
-          payload.module = modulePayload;
+      if (moduleType === 'story') {
+        const modulePayload: Record<string, unknown> = {
+          type: moduleType,
+          theme: moduleTheme || undefined,
+          backgroundImage: backgroundImage.trim() || undefined,
+          items: selectedItems.map((i) => ({ type: i.itemType, ref: i.ref })),
+        };
+        if (popups.length > 0) {
+          modulePayload.popups = popups
+            .filter((p) => p.title.trim() && (p.contentType === 'image' ? p.image.trim() : p.text.trim()))
+            .map((p) => ({
+              title: p.title.trim(),
+              contentType: p.contentType,
+              ...(p.contentType === 'text' && { text: p.text.trim() }),
+              ...(p.contentType === 'image' && { image: p.image.trim() }),
+              trigger: {
+                point: p.triggerPoint,
+                ...((['beforeItem', 'afterItem'].includes(p.triggerPoint)) && { itemIndex: p.itemIndex }),
+              },
+              ...(p.conditionType === 'participantCount' && {
+                condition: { type: 'participantCount', threshold: p.threshold },
+              }),
+              enabled: p.enabled,
+            }));
         }
+        payload.module = modulePayload;
       }
       payload.guidelines = guidelines.trim() || undefined;
       if (!alwaysOpen) {
@@ -523,7 +507,7 @@ export default function AdminCreateActivityPage() {
 
   const hasAnyField = loginFields.size > 0;
   if (initialLoading) return null;
-  const canGoToStep2 = name.trim().length > 0 && hasAnyField && (moduleType === 'story' || moduleType === 'mission');
+  const canGoToStep2 = name.trim().length > 0 && hasAnyField && moduleType === 'story';
 
   return (
     <AdminPage>
@@ -535,8 +519,8 @@ export default function AdminCreateActivityPage() {
         <AdminCardForm>
           <PageTitle>{isEditMode ? t.editTitle : t.title}</PageTitle>
 
-          {/* Step bar — only for story/mission module */}
-          {(moduleType === 'story' || moduleType === 'mission') && (
+          {/* Step bar — only for story module */}
+          {moduleType === 'story' && (
             <StepBar>
               <StepPill
                 type="button"
@@ -592,41 +576,7 @@ export default function AdminCreateActivityPage() {
                           <div>{t.story}</div>
                           <SelectionSubtext>{t.storyDesc}</SelectionSubtext>
                         </SelectionButton>
-                        <SelectionButton type="button" selected={moduleType === 'mission'} onClick={() => setModuleType('mission')}>
-                          <div>{t.mission}</div>
-                          <SelectionSubtext>{t.missionDesc}</SelectionSubtext>
-                        </SelectionButton>
                       </SelectionGroup>
-                      {moduleType === 'mission' && (
-                        <div>
-                          <SectionLabelSmall>{t.selectMission}</SectionLabelSmall>
-                          <select
-                            value={missionRef}
-                            onChange={(e) => setMissionRef(e.target.value)}
-                            style={{
-                              width: '100%',
-                              padding: '12px 16px',
-                              fontSize: 16,
-                              border: '2px solid #e0e0e0',
-                              borderRadius: 12,
-                              background: '#fafafa',
-                              fontFamily: 'inherit',
-                              cursor: 'pointer',
-                              direction: 'rtl',
-                            }}
-                          >
-                            <option value="">{t.selectMissionPlaceholder}</option>
-                            {availableMissions.map((m) => (
-                              <option key={m._id} value={m._id}>{m.name}</option>
-                            ))}
-                          </select>
-                          {availableMissions.length === 0 && (
-                            <SelectionSubtext style={{ marginTop: 8 }}>
-                              {t.noMissionsAvailable}
-                            </SelectionSubtext>
-                          )}
-                        </div>
-                      )}
                       {moduleType === 'story' && (
                         <div>
                           <SectionLabelSmall>{t.themeLabel}</SectionLabelSmall>
@@ -819,7 +769,7 @@ export default function AdminCreateActivityPage() {
 
                 {/* Step 1 navigation */}
                 <SectionCardWide>
-                  {(moduleType === 'story' || moduleType === 'mission') ? (
+                  {moduleType === 'story' ? (
                     <StepNav>
                       <div />
                       <PrimaryButton
@@ -844,62 +794,44 @@ export default function AdminCreateActivityPage() {
             )}
 
             {/* ──── STEP 2 ──── */}
-            {step === 2 && (moduleType === 'story' || moduleType === 'mission') && (
+            {step === 2 && moduleType === 'story' && (
               <>
-                {moduleType === 'story' && (
-                  <>
-                    <SectionCardWide>
-                      <ModuleItemsSection
-                        backgroundImage={backgroundImage}
-                        setBackgroundImage={setBackgroundImage}
-                        selectedItems={selectedItems}
-                        onAddItem={addItem}
-                        onRemoveItem={removeItem}
-                        onMoveItem={moveItem}
-                        t={t}
-                      />
-                    </SectionCardWide>
+                <SectionCardWide>
+                  <ModuleItemsSection
+                    backgroundImage={backgroundImage}
+                    setBackgroundImage={setBackgroundImage}
+                    selectedItems={selectedItems}
+                    onAddItem={addItem}
+                    onRemoveItem={removeItem}
+                    onMoveItem={moveItem}
+                    t={t}
+                  />
+                </SectionCardWide>
 
-                    <SectionCardWide>
-                      <SectionHeader>
-                        <SectionIcon>📋</SectionIcon>
-                        <SectionHeaderTitle>{t.guidelinesSection}</SectionHeaderTitle>
-                      </SectionHeader>
-                      <SectionDescription style={{ margin: 0 }}>{t.guidelinesDesc}</SectionDescription>
-                      <TextArea
-                        placeholder={t.guidelinesPlaceholder}
-                        value={guidelines}
-                        onChange={(e) => setGuidelines(e.target.value)}
-                        rows={3}
-                      />
-                    </SectionCardWide>
+                <SectionCardWide>
+                  <SectionHeader>
+                    <SectionIcon>📋</SectionIcon>
+                    <SectionHeaderTitle>{t.guidelinesSection}</SectionHeaderTitle>
+                  </SectionHeader>
+                  <SectionDescription style={{ margin: 0 }}>{t.guidelinesDesc}</SectionDescription>
+                  <TextArea
+                    placeholder={t.guidelinesPlaceholder}
+                    value={guidelines}
+                    onChange={(e) => setGuidelines(e.target.value)}
+                    rows={3}
+                  />
+                </SectionCardWide>
 
-                    <SectionCardWide>
-                      <PopupMessagesSection
-                        popups={popups}
-                        selectedItems={selectedItems}
-                        onAddPopup={addPopup}
-                        onRemovePopup={removePopup}
-                        onUpdatePopup={updatePopup}
-                        t={t}
-                      />
-                    </SectionCardWide>
-                  </>
-                )}
-
-                {moduleType === 'mission' && (
-                  <SectionCardWide>
-                    <SectionHeader>
-                      <SectionIcon>🎯</SectionIcon>
-                      <SectionHeaderTitle>{t.missionConfig}</SectionHeaderTitle>
-                    </SectionHeader>
-                    <SectionDescription style={{ margin: 0 }}>
-                      {missionRef
-                        ? `${t.missionSelected}: ${availableMissions.find((m) => m._id === missionRef)?.name || missionRef}`
-                        : t.missionNotSelected}
-                    </SectionDescription>
-                  </SectionCardWide>
-                )}
+                <SectionCardWide>
+                  <PopupMessagesSection
+                    popups={popups}
+                    selectedItems={selectedItems}
+                    onAddPopup={addPopup}
+                    onRemovePopup={removePopup}
+                    onUpdatePopup={updatePopup}
+                    t={t}
+                  />
+                </SectionCardWide>
 
                 <SectionCardWide>
                   {error && <ErrorText>{error}</ErrorText>}

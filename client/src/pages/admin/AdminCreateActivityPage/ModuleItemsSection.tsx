@@ -33,6 +33,14 @@ const STATION_ICONS: Record<string, string> = {
   badge: '🏅',
 };
 
+interface MissionOption {
+  _id: string;
+  name: string;
+  description?: string;
+  customer?: string;
+  explanationScreens?: { header?: string }[];
+}
+
 // ─── Local styled components ───
 
 const TabsRow = styled('div')({
@@ -233,9 +241,18 @@ const RemoveBtn = styled('button')({
   '&:hover': { color: '#c0392b' },
 });
 
+function hebrewFirstCompare(a: string, b: string): number {
+  const hebrewRe = /^[\u0590-\u05FF]/;
+  const aHeb = hebrewRe.test(a);
+  const bHeb = hebrewRe.test(b);
+  if (aHeb && !bHeb) return -1;
+  if (!aHeb && bHeb) return 1;
+  return a.localeCompare(b, aHeb ? 'he' : 'en');
+}
+
 // ─── Component ───
 
-type TabType = 'games' | 'stations';
+type TabType = 'games' | 'stations' | 'missions';
 
 interface ModuleItemsSectionProps {
   backgroundImage: string;
@@ -260,6 +277,7 @@ export default function ModuleItemsSection({
   const [filterText, setFilterText] = useState('');
   const [allGames, setAllGames] = useState<GameOption[]>([]);
   const [allStations, setAllStations] = useState<StationOption[]>([]);
+  const [allMissions, setAllMissions] = useState<MissionOption[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
   const [previewItem, setPreviewItem] = useState<ModuleItem | null>(null);
 
@@ -268,22 +286,24 @@ export default function ModuleItemsSection({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const dragItemRef = useRef<number | null>(null);
 
-  // Fetch all games and stations on mount
+  // Fetch all games, stations, and missions on mount
   useEffect(() => {
     setLoadingItems(true);
     Promise.all([
       adminApiFetch<{ games: GameOption[] }>('/api/admin/games'),
       adminApiFetch<{ stations: StationOption[] }>('/api/admin/stations'),
+      adminApiFetch<{ missions: MissionOption[] }>('/api/admin/missions'),
     ])
-      .then(([gData, sData]) => {
-        setAllGames(gData.games);
-        setAllStations(sData.stations);
+      .then(([gData, sData, mData]) => {
+        setAllGames([...gData.games].sort((a, b) => hebrewFirstCompare(a.name, b.name)));
+        setAllStations([...sData.stations].sort((a, b) => hebrewFirstCompare(a.name, b.name)));
+        setAllMissions([...mData.missions].sort((a, b) => hebrewFirstCompare(a.name, b.name)));
       })
       .catch(() => { /* ignore */ })
       .finally(() => setLoadingItems(false));
   }, []);
 
-  const isSelected = (itemType: 'game' | 'station', id: string) =>
+  const isSelected = (itemType: 'game' | 'station' | 'mission', id: string) =>
     selectedItems.some((item) => item.itemType === itemType && item.ref === id);
 
   const filterLower = filterText.toLowerCase();
@@ -300,10 +320,10 @@ export default function ModuleItemsSection({
 
   const filteredGames = allGames.filter((g) => matchesFilter(g.name, g.description, g.customer, g.theme));
   const filteredStations = allStations.filter((s) => matchesFilter(s.name, s.description, s.customer, s.theme));
+  const filteredMissions = allMissions.filter((m) => matchesFilter(m.name, m.description, m.customer));
 
   const handleCardClick = (itemType: 'game' | 'station', item: GameOption | StationOption) => {
     if (isSelected(itemType, item._id)) {
-      // Deselect — find and remove
       const idx = selectedItems.findIndex((si) => si.itemType === itemType && si.ref === item._id);
       if (idx !== -1) onRemoveItem(idx);
       return;
@@ -320,7 +340,24 @@ export default function ModuleItemsSection({
     });
   };
 
-  const getIcon = (itemType: 'game' | 'station', subType?: string) => {
+  const handleMissionClick = (mission: MissionOption) => {
+    if (isSelected('mission', mission._id)) {
+      const idx = selectedItems.findIndex((si) => si.itemType === 'mission' && si.ref === mission._id);
+      if (idx !== -1) onRemoveItem(idx);
+      return;
+    }
+    onAddItem({
+      itemType: 'mission',
+      ref: mission._id,
+      name: mission.name,
+      subType: 'mission',
+      description: mission.description,
+      customer: mission.customer,
+    });
+  };
+
+  const getIcon = (itemType: 'game' | 'station' | 'mission', subType?: string) => {
+    if (itemType === 'mission') return '🎯';
     if (!subType) return itemType === 'game' ? '🎮' : '📍';
     return itemType === 'game'
       ? (GAME_ICONS[subType] || '🎮')
@@ -388,6 +425,9 @@ export default function ModuleItemsSection({
           </Tab>
           <Tab type="button" active={activeTab === 'stations'} onClick={() => setActiveTab('stations')}>
             {t.tabStations || t.filterStations} ({filteredStations.length})
+          </Tab>
+          <Tab type="button" active={activeTab === 'missions'} onClick={() => setActiveTab('missions')}>
+            {t.tabMissions || 'Missions'} ({filteredMissions.length})
           </Tab>
         </TabsRow>
 
@@ -461,6 +501,38 @@ export default function ModuleItemsSection({
                 })
               )
             )}
+            {activeTab === 'missions' && (
+              filteredMissions.length === 0 ? (
+                <EmptyState>{t.noItemsAvailable || t.noResults}</EmptyState>
+              ) : (
+                filteredMissions.map((mission) => {
+                  const sel = isSelected('mission', mission._id);
+                  return (
+                    <Card
+                      key={mission._id}
+                      selected={sel}
+                      onClick={() => handleMissionClick(mission)}
+                    >
+                      {sel && <CheckMark>✓</CheckMark>}
+                      <CardTopRow>
+                        <CardIcon>🎯</CardIcon>
+                        <CardName>{mission.name}</CardName>
+                      </CardTopRow>
+                      <CardMeta>
+                        <ItemTypeBadge itemType="station" style={{ fontSize: 11, padding: '1px 6px', background: '#fff3e0', color: '#e65100' }}>
+                          {t.mission || 'mission'}
+                        </ItemTypeBadge>
+                      </CardMeta>
+                      {mission.customer && <CardMeta>{t.customer}: {mission.customer}</CardMeta>}
+                      {mission.description && <CardDescription>{mission.description}</CardDescription>}
+                      {mission.explanationScreens && (
+                        <CardMeta>{mission.explanationScreens.length} {t.missionScreensCount || 'screens'}</CardMeta>
+                      )}
+                    </Card>
+                  );
+                })
+              )
+            )}
           </Grid>
         )}
       </div>
@@ -486,8 +558,8 @@ export default function ModuleItemsSection({
                 <DragHandle>⠿</DragHandle>
                 <SmallText style={{ color: '#aaa', fontSize: 13, flexShrink: 0 }}>{index + 1}.</SmallText>
                 <DragItemIcon>{getIcon(item.itemType, item.subType)}</DragItemIcon>
-                <ItemTypeBadge itemType={item.itemType} style={{ fontSize: 11, padding: '1px 6px', flexShrink: 0 }}>
-                  {item.itemType === 'game' ? t.itemGame : t.itemStation}
+                <ItemTypeBadge itemType={item.itemType === 'mission' ? 'station' : item.itemType} style={{ fontSize: 11, padding: '1px 6px', flexShrink: 0, ...(item.itemType === 'mission' ? { background: '#fff3e0', color: '#e65100' } : {}) }}>
+                  {item.itemType === 'game' ? t.itemGame : item.itemType === 'mission' ? (t.mission || 'Mission') : t.itemStation}
                 </ItemTypeBadge>
                 <DragItemName>{item.name}</DragItemName>
                 {item.subType && <SmallText style={{ flexShrink: 0 }}>{item.subType}</SmallText>}

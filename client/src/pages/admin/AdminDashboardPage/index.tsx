@@ -345,9 +345,6 @@ export default function AdminDashboardPage() {
               <>
                 <SectionHeaderRow>
                   <PageTitleNoMargin>{t.missionsTitle}</PageTitleNoMargin>
-                  <SmallActionButton onClick={() => navigate('/admin/missions/new')}>
-                    {t.newMission}
-                  </SmallActionButton>
                 </SectionHeaderRow>
 
                 {missions.length === 0 ? (
@@ -367,7 +364,7 @@ export default function AdminDashboardPage() {
                           </thead>
                           <tbody>
                             {missions.map((m) => (
-                              <tr key={m._id} onClick={() => navigate(`/admin/missions/${m._id}`)}>
+                              <tr key={m._id}>
                                 <td><CellBold>{m.name}</CellBold></td>
                                 <td><Badge>{m.explanationScreens?.length || 0} {t.missionScreens}</Badge></td>
                                 <td><CellMuted>{m.customer || '—'}</CellMuted></td>
@@ -381,7 +378,7 @@ export default function AdminDashboardPage() {
                     <HideOnDesktop>
                       <MobileCardList>
                         {missions.map((m) => (
-                          <MobileCardItem key={m._id} onClick={() => navigate(`/admin/missions/${m._id}`)}>
+                          <MobileCardItem key={m._id}>
                             <MobileCardHeader>
                               <MobileCardNameLarge>{m.name}</MobileCardNameLarge>
                               <Badge>{m.explanationScreens?.length || 0} {t.missionScreens}</Badge>
