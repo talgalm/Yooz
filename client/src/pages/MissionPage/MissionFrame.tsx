@@ -26,6 +26,7 @@ export const MissionWrapper = styled('div')<{ bg?: string, step?: number, ready?
   justifyContent: 'center',
   position: 'relative',
   overflow: 'hidden',
+  overscrollBehavior: 'none',
   isolation: 'isolate',
   opacity: ready ? 1 : 0,
   animation: ready ? `${revealIn} 0.3s ease-out` : 'none',

@@ -173,23 +173,45 @@ export default function MissionPage() {
   const frameReady = useFrameReady(FRAME_IMAGES);
 
   useEffect(() => {
-    const prev = document.body.style.backgroundColor;
-    document.body.style.backgroundColor = BROWSER_CHROME_COLOR;
+    const html = document.documentElement;
+    const body = document.body;
 
-    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-    const created = !meta;
-    if (!meta) {
-      meta = document.createElement('meta');
-      meta.name = 'theme-color';
-      document.head.appendChild(meta);
-    }
-    const prevTheme = meta.content;
-    meta.content = BROWSER_CHROME_COLOR;
+    const prevBodyBg = body.style.backgroundColor;
+    const prevBodyOverflow = body.style.overflow;
+    const prevBodyPosition = body.style.position;
+    const prevBodyWidth = body.style.width;
+    const prevBodyHeight = body.style.height;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevHtmlHeight = html.style.height;
+
+    body.style.backgroundColor = BROWSER_CHROME_COLOR;
+    body.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.width = '100%';
+    body.style.height = '100%';
+    html.style.overflow = 'hidden';
+    html.style.height = '100%';
+
+    const preventScroll = (e: TouchEvent) => {
+      if ((e.target as HTMLElement)?.closest?.('[data-scrollable]')) return;
+      e.preventDefault();
+    };
+    document.addEventListener('touchmove', preventScroll, { passive: false });
+
+    const meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    const prevTheme = meta?.content || '';
+    if (meta) meta.content = BROWSER_CHROME_COLOR;
 
     return () => {
-      document.body.style.backgroundColor = prev;
-      if (created && meta) meta.remove();
-      else if (meta) meta.content = prevTheme;
+      body.style.backgroundColor = prevBodyBg;
+      body.style.overflow = prevBodyOverflow;
+      body.style.position = prevBodyPosition;
+      body.style.width = prevBodyWidth;
+      body.style.height = prevBodyHeight;
+      html.style.overflow = prevHtmlOverflow;
+      html.style.height = prevHtmlHeight;
+      if (meta) meta.content = prevTheme;
+      document.removeEventListener('touchmove', preventScroll);
     };
   }, []);
 

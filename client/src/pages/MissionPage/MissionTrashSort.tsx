@@ -34,11 +34,12 @@ const popOut = keyframes`
 
 const PageWrapper = styled('div')({
   width: '100%',
-  minHeight: '100dvh',
+  height: '100dvh',
   display: 'flex',
   flexDirection: 'column',
   position: 'relative',
   overflow: 'hidden',
+  overscrollBehavior: 'none',
   backgroundImage: 'url(/images/mission-bg-1.svg)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
