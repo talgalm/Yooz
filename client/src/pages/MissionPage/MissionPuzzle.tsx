@@ -568,6 +568,7 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
                 onMouseDown={handleMouseDown}
+                style={{ visibility: dragging ? 'hidden' : 'visible' }}
               >
                 <PieceSvg piece={currentPiece} clipId="jd" />
               </DragPieceContainer>
