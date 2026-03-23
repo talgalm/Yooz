@@ -76,7 +76,7 @@ export default function App() {
                 {/* Participant routes — mobile layout */}
                 <Route path="/play/:code" element={<MobileContainer><PlayPage /><HelpChat /></MobileContainer>} />
                 <Route path="/home" element={<MobileContainer><ProtectedRoute><HomePage /></ProtectedRoute><HelpChat /></MobileContainer>} />
-                <Route path="/story/:code" element={<MobileContainer><ProtectedRoute><StoryModulePage /></ProtectedRoute><HelpChat /></MobileContainer>} />
+                {/* <Route path="/story/:code" element={<MobileContainer><ProtectedRoute><StoryModulePage /></ProtectedRoute><HelpChat /></MobileContainer>} /> */}
                 <Route path="/mission/:code" element={<MobileContainer><ProtectedRoute><MissionPage /></ProtectedRoute><HelpChat /></MobileContainer>} />
 
                 {/* Default: YOOZ landing page */}
