@@ -198,9 +198,9 @@ export default function MissionPage() {
     };
     document.addEventListener('touchmove', preventScroll, { passive: false });
 
-    const meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-    const prevTheme = meta?.content || '';
-    if (meta) meta.content = BROWSER_CHROME_COLOR;
+    const metas = document.querySelectorAll('meta[name="theme-color"]') as NodeListOf<HTMLMetaElement>;
+    const prevThemes = Array.from(metas).map((m) => m.content);
+    metas.forEach((m) => { m.content = BROWSER_CHROME_COLOR; });
 
     return () => {
       body.style.backgroundColor = prevBodyBg;
@@ -210,7 +210,7 @@ export default function MissionPage() {
       body.style.height = prevBodyHeight;
       html.style.overflow = prevHtmlOverflow;
       html.style.height = prevHtmlHeight;
-      if (meta) meta.content = prevTheme;
+      metas.forEach((m, i) => { m.content = prevThemes[i]; });
       document.removeEventListener('touchmove', preventScroll);
     };
   }, []);
