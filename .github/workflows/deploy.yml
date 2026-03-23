@@ -1,0 +1,189 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      update_secrets:
+        description: 'Update AWS Secrets Manager from GitHub Secrets? (yes/no)'
+        required: false
+        default: 'no'
+
+jobs:
+  deploy:
+    name: Build & Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout code ────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Setup SSH key ────────────────────────────────────
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/yooz-key.pem
+          chmod 400 ~/.ssh/yooz-key.pem
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      # ── 3. (Optional) Update AWS Secrets Manager ────────────
+      #    Triggered manually with update_secrets=yes,
+      #    OR automatically when .env.production file changes.
+      - name: Update AWS Secrets Manager
+        if: |
+          github.event.inputs.update_secrets == 'yes' ||
+          contains(github.event.head_commit.modified, '.env.production')
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          echo "Updating AWS Secrets Manager..."
+          python3 - << 'PYEOF'
+          import json, os, subprocess
+
+          # Build secret from GitHub Secrets env vars
+          secret = {
+            "JWT_SECRET":            os.environ["SM_JWT_SECRET"],
+            "PORT":                  "3000",
+            "ADMIN_EMAIL":           os.environ["SM_ADMIN_EMAIL"],
+            "ADMIN_PASSWORD":        os.environ["SM_ADMIN_PASSWORD"],
+            "MONGODB_URI":           os.environ["SM_MONGODB_URI"],
+            "VITE_GOOGLE_CLIENT_ID": os.environ["SM_VITE_GOOGLE_CLIENT_ID"],
+            "CLOUDINARY_CLOUD_NAME": os.environ["SM_CLOUDINARY_CLOUD_NAME"],
+            "CLOUDINARY_API_KEY":    os.environ["SM_CLOUDINARY_API_KEY"],
+            "CLOUDINARY_API_SECRET": os.environ["SM_CLOUDINARY_API_SECRET"],
+            "GEMINI_API_KEY":        os.environ["SM_GEMINI_API_KEY"],
+            "CORS_ORIGIN":           "https://yooz.org.il,https://www.yooz.org.il"
+          }
+
+          result = subprocess.run([
+            "aws", "secretsmanager", "update-secret",
+            "--secret-id", "yooz/production",
+            "--secret-string", json.dumps(secret),
+            "--region", "eu-west-1"
+          ], capture_output=True, text=True)
+
+          if result.returncode == 0:
+            print("✅ Secrets Manager updated successfully")
+          else:
+            print("❌ Failed:", result.stderr)
+            exit(1)
+          PYEOF
+        env:
+          SM_JWT_SECRET:            ${{ secrets.SM_JWT_SECRET }}
+          SM_ADMIN_EMAIL:           ${{ secrets.SM_ADMIN_EMAIL }}
+          SM_ADMIN_PASSWORD:        ${{ secrets.SM_ADMIN_PASSWORD }}
+          SM_MONGODB_URI:           ${{ secrets.SM_MONGODB_URI }}
+          SM_VITE_GOOGLE_CLIENT_ID: ${{ secrets.SM_VITE_GOOGLE_CLIENT_ID }}
+          SM_CLOUDINARY_CLOUD_NAME: ${{ secrets.SM_CLOUDINARY_CLOUD_NAME }}
+          SM_CLOUDINARY_API_KEY:    ${{ secrets.SM_CLOUDINARY_API_KEY }}
+          SM_CLOUDINARY_API_SECRET: ${{ secrets.SM_CLOUDINARY_API_SECRET }}
+          SM_GEMINI_API_KEY:        ${{ secrets.SM_GEMINI_API_KEY }}
+
+      # ── 4. Sync code to EC2 ─────────────────────────────────
+      - name: Sync code to EC2
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/yooz-key.pem -o StrictHostKeyChecking=no" \
+            --exclude 'node_modules' \
+            --exclude 'client/dist' \
+            --exclude 'server/dist' \
+            --exclude '.git' \
+            --exclude 'deploy/.ec2-info' \
+            ./ \
+            ubuntu@${{ secrets.EC2_HOST }}:/opt/yooz/
+
+      # ── 5. Build & restart on EC2 ───────────────────────────
+      - name: Build & restart app
+        run: |
+          ssh -i ~/.ssh/yooz-key.pem -o StrictHostKeyChecking=no \
+            ubuntu@${{ secrets.EC2_HOST }} bash << 'REMOTE'
+          set -e
+
+          echo "=== Fetching secrets from AWS Secrets Manager ==="
+          /usr/local/bin/aws secretsmanager get-secret-value \
+            --secret-id "yooz/production" \
+            --region "eu-west-1" \
+            --query SecretString \
+            --output text | python3 -c "
+          import sys, json
+          secret = json.load(sys.stdin)
+          with open('/etc/yooz/prod.env', 'w') as f:
+              for k, v in secret.items():
+                  f.write(f'{k}={v}\n')
+          print('  ✅ Loaded', len(secret), 'env vars')
+          "
+          chmod 600 /etc/yooz/prod.env
+
+          echo "=== Installing server deps ==="
+          cd /opt/yooz/server
+          npm install 2>&1 | tail -2
+
+          echo "=== Building server (TypeScript) ==="
+          npm run build
+
+          echo "=== Installing client deps ==="
+          cd /opt/yooz/client
+          npm install 2>&1 | tail -2
+
+          echo "=== Building client (Vite) ==="
+          set -a; source /etc/yooz/prod.env; set +a
+          npm run build
+
+          echo "=== Updating PM2 ecosystem with fresh env ==="
+          python3 - << 'PYEOF'
+          import json
+
+          env = {}
+          with open('/etc/yooz/prod.env') as f:
+              for line in f:
+                  line = line.strip()
+                  if line and '=' in line:
+                      k, v = line.split('=', 1)
+                      env[k] = v
+
+          ecosystem = {
+              "apps": [{
+                  "name": "yooz",
+                  "script": "dist/index.js",
+                  "cwd": "/opt/yooz/server",
+                  "instances": 1,
+                  "autorestart": True,
+                  "watch": False,
+                  "max_memory_restart": "400M",
+                  "error_file": "/var/log/yooz/error.log",
+                  "out_file": "/var/log/yooz/out.log",
+                  "merge_logs": True,
+                  "time": True,
+                  "env": env
+              }]
+          }
+
+          with open('/opt/yooz/deploy/ecosystem.config.js', 'w') as f:
+              f.write("module.exports = " + json.dumps(ecosystem, indent=2) + ";\n")
+          print("✅ ecosystem.config.js updated")
+          PYEOF
+
+          echo "=== Restarting PM2 ==="
+          pm2 delete yooz 2>/dev/null || true
+          pm2 start /opt/yooz/deploy/ecosystem.config.js
+          pm2 save
+
+          sleep 4
+          echo "=== Final status ==="
+          pm2 show yooz | grep -E "status|restart|uptime"
+
+          echo ""
+          curl -s -o /dev/null -w "HTTP health check: %{http_code}\n" http://localhost:3000
+          REMOTE
+
+      # ── 6. Summary ──────────────────────────────────────────
+      - name: Done
+        run: |
+          echo "🎉 Deployed successfully to https://yooz.org.il"
+          echo "   Commit: ${{ github.sha }}"
+          echo "   By: ${{ github.actor }}"
