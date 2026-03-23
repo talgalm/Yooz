@@ -323,6 +323,8 @@ interface MissionPuzzleProps {
   muted?: boolean;
   toggleMute?: () => void;
   code?: string;
+  completeHeader?: string;
+  completeButton?: string;
 }
 
 // ─── Session helpers ───
@@ -344,7 +346,7 @@ function savePuzzleSession(code: string, queue: number[], placed: number[]) {
 
 // ─── Component ───
 
-export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect, playClick, playComplete, muted, toggleMute, code }: MissionPuzzleProps) {
+export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect, playClick, playComplete, muted, toggleMute, code, completeHeader = '!כל הכבוד', completeButton = 'לשלב הבא' }: MissionPuzzleProps) {
   const savedPuzzle = useRef(loadPuzzleSession(code));
 
   const [queue, setQueue] = useState<number[]>(() => {
@@ -489,7 +491,7 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
           )}
 
           <MissionHeader>
-            <HeaderText>!כל הכבוד</HeaderText>
+            <HeaderText>{completeHeader}</HeaderText>
           </MissionHeader>
 
           <PuzzleContent>
@@ -498,7 +500,7 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
 
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <MissionButton step={3} onClick={() => { playClick?.(); onComplete(); }}>
-              לשלב הבא
+              {completeButton}
             </MissionButton>
           </div>
         </FrameContainer>

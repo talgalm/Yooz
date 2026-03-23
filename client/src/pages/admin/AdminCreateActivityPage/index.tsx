@@ -42,6 +42,7 @@ import type {
   ModuleItem,
   Activity,
   AgeRange,
+  CustomInstructions,
 } from './types';
 import ModuleItemsSection from './ModuleItemsSection';
 import PopupMessagesSection from './PopupMessagesSection';
@@ -228,6 +229,16 @@ export default function AdminCreateActivityPage() {
 
   const [popups, setPopups] = useState<PopupMessage[]>([]);
 
+  const [useDefaultInstructions, setUseDefaultInstructions] = useState(true);
+  const [customInstructions, setCustomInstructions] = useState<CustomInstructions>({
+    title: '',
+    missionTitle: '',
+    missionItems: [''],
+    guidelinesTitle: '',
+    guidelineItems: [''],
+    buttonText: '',
+  });
+
   const [step, setStep] = useState<1 | 2>(1);
 
   const [error, setError] = useState('');
@@ -276,6 +287,17 @@ export default function AdminCreateActivityPage() {
         if (a.ageRanges && a.ageRanges.length > 0) setAgeRanges(a.ageRanges);
         if (a.managerEmail) setManagerEmail(a.managerEmail);
         if (a.guidelines) setGuidelines(a.guidelines);
+        if (a.customInstructions) {
+          setUseDefaultInstructions(false);
+          setCustomInstructions({
+            title: a.customInstructions.title || '',
+            missionTitle: a.customInstructions.missionTitle || '',
+            missionItems: a.customInstructions.missionItems?.length ? a.customInstructions.missionItems : [''],
+            guidelinesTitle: a.customInstructions.guidelinesTitle || '',
+            guidelineItems: a.customInstructions.guidelineItems?.length ? a.customInstructions.guidelineItems : [''],
+            buttonText: a.customInstructions.buttonText || '',
+          });
+        }
         if (a.scheduledStart || a.scheduledEnd) {
           setAlwaysOpen(false);
           if (a.scheduledStart) setScheduledStart(a.scheduledStart.slice(0, 16));
@@ -478,6 +500,16 @@ export default function AdminCreateActivityPage() {
         payload.module = modulePayload;
       }
       payload.guidelines = guidelines.trim() || undefined;
+      if (!useDefaultInstructions) {
+        payload.customInstructions = {
+          title: customInstructions.title?.trim() || undefined,
+          missionTitle: customInstructions.missionTitle?.trim() || undefined,
+          missionItems: customInstructions.missionItems?.filter((s) => s.trim()),
+          guidelinesTitle: customInstructions.guidelinesTitle?.trim() || undefined,
+          guidelineItems: customInstructions.guidelineItems?.filter((s) => s.trim()),
+          buttonText: customInstructions.buttonText?.trim() || undefined,
+        };
+      }
       if (!alwaysOpen) {
         if (scheduledStart) payload.scheduledStart = new Date(scheduledStart).toISOString();
         if (scheduledEnd) payload.scheduledEnd = new Date(scheduledEnd).toISOString();
@@ -820,6 +852,127 @@ export default function AdminCreateActivityPage() {
                     onChange={(e) => setGuidelines(e.target.value)}
                     rows={3}
                   />
+                </SectionCardWide>
+
+                <SectionCardWide>
+                  <SectionHeader>
+                    <SectionIcon>📜</SectionIcon>
+                    <SectionHeaderTitle>{t.instructionsSection}</SectionHeaderTitle>
+                  </SectionHeader>
+                  <SectionDescription style={{ margin: 0 }}>{t.instructionsDesc}</SectionDescription>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 4 }}>
+                    <input
+                      type="checkbox"
+                      checked={useDefaultInstructions}
+                      onChange={(e) => setUseDefaultInstructions(e.target.checked)}
+                      style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                    />
+                    {t.useDefaultInstructions}
+                  </label>
+                  {!useDefaultInstructions && (
+                    <VerticalStack style={{ marginTop: 8 }}>
+                      <div>
+                        <SectionLabelSmall>{t.customInstructionsTitle}</SectionLabelSmall>
+                        <Input
+                          placeholder={t.customInstructionsTitlePlaceholder}
+                          value={customInstructions.title || ''}
+                          onChange={(e) => setCustomInstructions((prev) => ({ ...prev, title: e.target.value }))}
+                        />
+                      </div>
+                      <FormGrid>
+                        <div>
+                          <SectionLabelSmall>{t.customMissionTitle}</SectionLabelSmall>
+                          <Input
+                            placeholder={t.customMissionTitlePlaceholder}
+                            value={customInstructions.missionTitle || ''}
+                            onChange={(e) => setCustomInstructions((prev) => ({ ...prev, missionTitle: e.target.value }))}
+                          />
+                          <SectionLabelSmall style={{ marginTop: 8 }}>{t.customMissionItems}</SectionLabelSmall>
+                          {(customInstructions.missionItems || ['']).map((item, i) => (
+                            <InlineRowGap12 key={i} style={{ marginBottom: 6 }}>
+                              <FlexInput
+                                placeholder={t.customMissionItemPlaceholder}
+                                value={item}
+                                onChange={(e) => {
+                                  const items = [...(customInstructions.missionItems || [''])];
+                                  items[i] = e.target.value;
+                                  setCustomInstructions((prev) => ({ ...prev, missionItems: items }));
+                                }}
+                              />
+                              {(customInstructions.missionItems || []).length > 1 && (
+                                <OutlineButton
+                                  type="button"
+                                  style={{ fontSize: 12, padding: '4px 10px', whiteSpace: 'nowrap' }}
+                                  onClick={() => {
+                                    const items = (customInstructions.missionItems || []).filter((_, idx) => idx !== i);
+                                    setCustomInstructions((prev) => ({ ...prev, missionItems: items }));
+                                  }}
+                                >
+                                  {t.removeItem}
+                                </OutlineButton>
+                              )}
+                            </InlineRowGap12>
+                          ))}
+                          <OutlineButton
+                            type="button"
+                            style={{ fontSize: 12, padding: '4px 14px', marginTop: 2 }}
+                            onClick={() => setCustomInstructions((prev) => ({ ...prev, missionItems: [...(prev.missionItems || []), ''] }))}
+                          >
+                            + {t.addMissionItem}
+                          </OutlineButton>
+                        </div>
+                        <div>
+                          <SectionLabelSmall>{t.customGuidelinesTitle}</SectionLabelSmall>
+                          <Input
+                            placeholder={t.customGuidelinesTitlePlaceholder}
+                            value={customInstructions.guidelinesTitle || ''}
+                            onChange={(e) => setCustomInstructions((prev) => ({ ...prev, guidelinesTitle: e.target.value }))}
+                          />
+                          <SectionLabelSmall style={{ marginTop: 8 }}>{t.customGuidelineItems}</SectionLabelSmall>
+                          {(customInstructions.guidelineItems || ['']).map((item, i) => (
+                            <InlineRowGap12 key={i} style={{ marginBottom: 6 }}>
+                              <FlexInput
+                                placeholder={t.customGuidelineItemPlaceholder}
+                                value={item}
+                                onChange={(e) => {
+                                  const items = [...(customInstructions.guidelineItems || [''])];
+                                  items[i] = e.target.value;
+                                  setCustomInstructions((prev) => ({ ...prev, guidelineItems: items }));
+                                }}
+                              />
+                              {(customInstructions.guidelineItems || []).length > 1 && (
+                                <OutlineButton
+                                  type="button"
+                                  style={{ fontSize: 12, padding: '4px 10px', whiteSpace: 'nowrap' }}
+                                  onClick={() => {
+                                    const items = (customInstructions.guidelineItems || []).filter((_, idx) => idx !== i);
+                                    setCustomInstructions((prev) => ({ ...prev, guidelineItems: items }));
+                                  }}
+                                >
+                                  {t.removeItem}
+                                </OutlineButton>
+                              )}
+                            </InlineRowGap12>
+                          ))}
+                          <OutlineButton
+                            type="button"
+                            style={{ fontSize: 12, padding: '4px 14px', marginTop: 2 }}
+                            onClick={() => setCustomInstructions((prev) => ({ ...prev, guidelineItems: [...(prev.guidelineItems || []), ''] }))}
+                          >
+                            + {t.addGuidelineItem}
+                          </OutlineButton>
+                        </div>
+                      </FormGrid>
+                      <div>
+                        <SectionLabelSmall>{t.customButtonText}</SectionLabelSmall>
+                        <Input
+                          placeholder={t.customButtonTextPlaceholder}
+                          value={customInstructions.buttonText || ''}
+                          onChange={(e) => setCustomInstructions((prev) => ({ ...prev, buttonText: e.target.value }))}
+                        />
+                      </div>
+                    </VerticalStack>
+                  )}
                 </SectionCardWide>
 
                 <SectionCardWide>

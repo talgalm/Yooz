@@ -691,6 +691,7 @@ export default function StoryModulePage() {
           <GuidelinesPopup
             itemCount={data.module.items.length}
             guidelines={data.guidelines}
+            customInstructions={data.customInstructions}
             onDismiss={handleGuidelinesDismiss}
             t={t}
           />

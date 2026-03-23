@@ -56,10 +56,32 @@ interface MissionScreen {
   backgroundImage?: string;
 }
 
+interface PuzzleConfig {
+  completeHeader?: string;
+  completeButton?: string;
+}
+
+interface TrashSortConfig {
+  title?: string;
+  description?: string;
+  scoreLabel?: string;
+  gameFinalText?: string;
+  completeHeader?: string;
+  completeButton?: string;
+  badgeHeader?: string;
+  badgeCurveText?: string;
+  badgeAwardText?: string;
+  badgeAchievementText?: string;
+  shareButton?: string;
+  continueButton?: string;
+}
+
 interface MissionData {
   _id: string;
   name: string;
   explanationScreens: MissionScreen[];
+  puzzleConfig?: PuzzleConfig;
+  trashSortConfig?: TrashSortConfig;
 }
 
 interface MissionModule {
@@ -135,6 +157,8 @@ function saveSession(code: string, phase: Phase, currentScreen: number) {
 
 const FRAME_IMAGES = ['/images/mission-frame.svg'];
 
+const BROWSER_CHROME_COLOR = '#1a0a2e';
+
 export default function MissionPage() {
   const { code } = useParams<{ code: string }>();
   const { token } = useAuth();
@@ -147,6 +171,27 @@ export default function MissionPage() {
   const [currentScreen, setCurrentScreen] = useState(saved.currentScreen);
   const [phase, setPhase] = useState<Phase>(saved.phase);
   const frameReady = useFrameReady(FRAME_IMAGES);
+
+  useEffect(() => {
+    const prev = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = BROWSER_CHROME_COLOR;
+
+    let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+    const created = !meta;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      document.head.appendChild(meta);
+    }
+    const prevTheme = meta.content;
+    meta.content = BROWSER_CHROME_COLOR;
+
+    return () => {
+      document.body.style.backgroundColor = prev;
+      if (created && meta) meta.remove();
+      else if (meta) meta.content = prevTheme;
+    };
+  }, []);
 
   // Fetch mission module data
   useEffect(() => {
@@ -223,6 +268,8 @@ export default function MissionPage() {
         muted={sounds.muted}
         toggleMute={sounds.toggleMute}
         code={code}
+        completeHeader={mission.puzzleConfig?.completeHeader}
+        completeButton={mission.puzzleConfig?.completeButton}
       />
     );
   }
@@ -235,6 +282,18 @@ export default function MissionPage() {
         muted={sounds.muted}
         toggleMute={sounds.toggleMute}
         startTrashBg={sounds.startTrashBg}
+        title={mission.trashSortConfig?.title}
+        description={mission.trashSortConfig?.description}
+        scoreLabel={mission.trashSortConfig?.scoreLabel}
+        gameFinalText={mission.trashSortConfig?.gameFinalText}
+        completeHeader={mission.trashSortConfig?.completeHeader}
+        completeButton={mission.trashSortConfig?.completeButton}
+        badgeHeader={mission.trashSortConfig?.badgeHeader}
+        badgeCurveText={mission.trashSortConfig?.badgeCurveText}
+        badgeAwardText={mission.trashSortConfig?.badgeAwardText}
+        badgeAchievementText={mission.trashSortConfig?.badgeAchievementText}
+        shareButton={mission.trashSortConfig?.shareButton}
+        continueButton={mission.trashSortConfig?.continueButton}
       />
     );
   }

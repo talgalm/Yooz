@@ -180,6 +180,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     module: moduleResponse,
     questionMode: activity.questionMode || 'same',
     guidelines: activity.guidelines || undefined,
+    customInstructions: activity.customInstructions || undefined,
   });
 });
 

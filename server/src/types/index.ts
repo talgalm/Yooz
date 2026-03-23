@@ -187,6 +187,16 @@ export interface OpeningConfig {
   url: string;
 }
 
+// Custom instructions for the guidelines popup
+export interface CustomInstructionsConfig {
+  title?: string;
+  missionTitle?: string;
+  missionItems?: string[];
+  guidelinesTitle?: string;
+  guidelineItems?: string[];
+  buttonText?: string;
+}
+
 // Activity API types
 export interface CreateActivityRequest {
   name: string;
@@ -199,6 +209,7 @@ export interface CreateActivityRequest {
   questionMode?: QuestionMode;
   ageRanges?: AgeRangeConfig[];
   guidelines?: string;
+  customInstructions?: CustomInstructionsConfig;
   scheduledStart?: string;
   scheduledEnd?: string;
   managerEmail?: string;

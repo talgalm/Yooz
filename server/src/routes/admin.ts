@@ -45,7 +45,7 @@ function validateActivityPayload(body: CreateActivityRequest): string | null {
 }
 
 async function buildActivityData(body: CreateActivityRequest, existingPasswordHash?: string): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groups, opening, module: moduleConfig, questionMode, ageRanges, managerEmail, managerPassword, guidelines, scheduledStart, scheduledEnd } = body;
+  const { name, loginFields, emailGoogle, connectionType, groups, opening, module: moduleConfig, questionMode, ageRanges, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -121,6 +121,24 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
 
   // Handle guidelines
   data.guidelines = guidelines?.trim() || undefined;
+
+  // Handle custom instructions
+  if (customInstructions && typeof customInstructions === 'object') {
+    const ci: Record<string, unknown> = {};
+    if (customInstructions.title?.trim()) ci.title = customInstructions.title.trim();
+    if (customInstructions.missionTitle?.trim()) ci.missionTitle = customInstructions.missionTitle.trim();
+    if (Array.isArray(customInstructions.missionItems) && customInstructions.missionItems.length > 0) {
+      ci.missionItems = customInstructions.missionItems.map((s: string) => (s || '').trim()).filter(Boolean);
+    }
+    if (customInstructions.guidelinesTitle?.trim()) ci.guidelinesTitle = customInstructions.guidelinesTitle.trim();
+    if (Array.isArray(customInstructions.guidelineItems) && customInstructions.guidelineItems.length > 0) {
+      ci.guidelineItems = customInstructions.guidelineItems.map((s: string) => (s || '').trim()).filter(Boolean);
+    }
+    if (customInstructions.buttonText?.trim()) ci.buttonText = customInstructions.buttonText.trim();
+    data.customInstructions = Object.keys(ci).length > 0 ? ci : undefined;
+  } else {
+    data.customInstructions = undefined;
+  }
 
   // Handle question mode & age ranges
   data.questionMode = questionMode || 'same';

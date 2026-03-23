@@ -48,6 +48,15 @@ export interface IOpening {
   url: string;
 }
 
+export interface ICustomInstructions {
+  title?: string;
+  missionTitle?: string;
+  missionItems?: string[];
+  guidelinesTitle?: string;
+  guidelineItems?: string[];
+  buttonText?: string;
+}
+
 export interface IActivity {
   code: string;
   name: string;
@@ -61,6 +70,7 @@ export interface IActivity {
   questionMode: 'same' | 'byAge'; // default 'same'
   ageRanges: IAgeRange[];
   guidelines?: string;
+  customInstructions?: ICustomInstructions;
   scheduledStart?: Date;
   scheduledEnd?: Date;
   managerEmail?: string;
@@ -120,6 +130,15 @@ const openingSchema = new Schema<IOpening>({
   url: { type: String, required: true },
 }, { _id: false });
 
+const customInstructionsSchema = new Schema<ICustomInstructions>({
+  title: { type: String },
+  missionTitle: { type: String },
+  missionItems: { type: [String], default: undefined },
+  guidelinesTitle: { type: String },
+  guidelineItems: { type: [String], default: undefined },
+  buttonText: { type: String },
+}, { _id: false });
+
 const activitySchema = new Schema<IActivity>({
   code: { type: String, required: true, unique: true, default: generateCode },
   name: { type: String, required: true },
@@ -133,6 +152,7 @@ const activitySchema = new Schema<IActivity>({
   questionMode: { type: String, enum: ['same', 'byAge'], default: 'same' },
   ageRanges: { type: [ageRangeSchema], default: [] },
   guidelines: { type: String },
+  customInstructions: { type: customInstructionsSchema },
   scheduledStart: { type: Date },
   scheduledEnd: { type: Date },
   managerEmail: { type: String },

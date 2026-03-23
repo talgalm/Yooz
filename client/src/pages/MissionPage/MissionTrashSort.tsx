@@ -270,6 +270,16 @@ interface MissionTrashSortProps {
   stopTrashBg?: () => void;
   title?: string;
   description?: string;
+  scoreLabel?: string;
+  gameFinalText?: string;
+  completeHeader?: string;
+  completeButton?: string;
+  badgeHeader?: string;
+  badgeCurveText?: string;
+  badgeAwardText?: string;
+  badgeAchievementText?: string;
+  shareButton?: string;
+  continueButton?: string;
   participantName?: string;
   activityCode?: string;
   onComplete?: (score: number) => void;
@@ -354,6 +364,16 @@ export default function MissionTrashSort({
   stopTrashBg,
   title = 'איך משחקים?',
   description = 'עכשיו התמונה ברורה, אבל הזבל עדיין\nמסתיר את האות!\n\nליחצו על הפח הנכון עבור סוג\nהאשפה.',
+  scoreLabel = 'ניקוד:',
+  gameFinalText = 'כל הכבוד!',
+  completeHeader = 'תודה!',
+  completeButton = 'לקבלת תג',
+  badgeHeader = 'תעלומת המזוודה הסודית',
+  badgeCurveText = 'תג סוכן הפארק',
+  badgeAwardText = 'מוענק בזאת',
+  badgeAchievementText = 'על מציאת המזוודה והצלת הפארק!',
+  shareButton = 'שתפו עם חברים',
+  continueButton = 'המשך',
   participantName,
   activityCode,
   onComplete,
@@ -722,7 +742,7 @@ export default function MissionTrashSort({
       <PageWrapper>
         <TopBar>
           <ScoreBox $flash={scoreFlash}>
-            <span>ניקוד:</span>
+            <span>{scoreLabel}</span>
             <span>{gameScore}</span>
           </ScoreBox>
           {toggleMute && (
@@ -735,7 +755,7 @@ export default function MissionTrashSort({
 
         <FunnelArea ref={funnelAreaRef}>
           <FunnelImg src="/images/mission-funnel.svg" alt="" />
-          {isFinalizing && <TitleText>כל הכבוד!</TitleText>}
+          {isFinalizing && <TitleText>{gameFinalText}</TitleText>}
           <FunnelTrashLayer>
             {animatedTrashItems.map((item) => (
               <FunnelTrashItem
@@ -821,7 +841,7 @@ export default function MissionTrashSort({
       <MissionWrapper bg="/images/after-trash-game-bg.png" step={1}>
         <FrameContainer>
           <MissionHeader>
-            <HeaderText>תודה!</HeaderText>
+            <HeaderText>{completeHeader}</HeaderText>
           </MissionHeader>
 
           <MissionContent>
@@ -830,7 +850,7 @@ export default function MissionTrashSort({
 
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <MissionButton step={1} onClick={() => setPhase('badge')}>
-              לקבלת תג
+              {completeButton}
             </MissionButton>
           </div>
         </FrameContainer>
@@ -845,7 +865,7 @@ export default function MissionTrashSort({
       <MissionWrapper bg="/images/mission-bg-1.svg" step={1}>
         <FrameContainer>
           <MissionHeader>
-            <HeaderText>תעלומת המזוודה הסודית</HeaderText>
+            <HeaderText>{badgeHeader}</HeaderText>
           </MissionHeader>
 
           <MissionContent>
@@ -866,7 +886,7 @@ export default function MissionTrashSort({
                   style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}
                 >
                   <textPath href="#badge-curve" startOffset="50%" textAnchor="middle">
-                    תג סוכן הפארק
+                    {badgeCurveText}
                   </textPath>
                 </text>
               </svg>
@@ -900,19 +920,19 @@ export default function MissionTrashSort({
                 padding: '14px 20px',
               }}
             >
-              <div>מוענק בזאת</div>
+              <div>{badgeAwardText}</div>
               <div style={{ color: MISSION_TEAL }}>{badgeName}</div>
-              <div>על מציאת המזוודה והצלת הפארק!</div>
+              <div>{badgeAchievementText}</div>
             </div>
           </MissionContent>
 
           <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
             <MissionButton step={1}>
-              שתפו עם חברים
+              {shareButton}
             </MissionButton>
             {onComplete && (
               <MissionButton step={1} onClick={() => onComplete(gameScore)}>
-                המשך
+                {continueButton}
               </MissionButton>
             )}
           </div>
@@ -947,7 +967,7 @@ export default function MissionTrashSort({
       {/* Top bar: score + mute */}
       <TopBar>
         <ScoreBox $flash={scoreFlash}>
-          <span>ניקוד:</span>
+          <span>{scoreLabel}</span>
           <span>{gameScore}</span>
         </ScoreBox>
         {toggleMute && (

@@ -57,7 +57,7 @@ export const texts = {
     guidelineRule2: 'Complete activities to unlock the next point',
     guidelineRule3: 'Patience and observation are key!',
     guidelinesCustomLabel: 'Additional Guidelines',
-    startAdventure: 'START ADVENTURE',
+    startAdventure: 'START NOW!',
   },
   he: {
     loading: 'טוען...',
@@ -114,9 +114,9 @@ export const texts = {
     guidelineMission2: '!צברו כמה שיותר נקודות',
     guidelinesRulesTitle: 'הנחיות',
     guidelineRule1: 'עקבו אחרי המסלול הממוספר לפי הסדר',
-    guidelineRule2: 'השלימו פעילויות כדי לפתוח את הנקודה הבאה',
+    guidelineRule2: 'השלימו פעילויות כדי לפתוח את השלב הבא',
     guidelineRule3: '!סבלנות ותצפית הם המפתח',
     guidelinesCustomLabel: 'הנחיות נוספות',
-    startAdventure: 'התחילו את ההרפתקה',
+    startAdventure: '!התחילו עכשיו',
   },
 };

@@ -31,12 +31,34 @@ interface MissionScreen {
   backgroundImage: string;
 }
 
+interface PuzzleConfig {
+  completeHeader: string;
+  completeButton: string;
+}
+
+interface TrashSortConfig {
+  title: string;
+  description: string;
+  scoreLabel: string;
+  gameFinalText: string;
+  completeHeader: string;
+  completeButton: string;
+  badgeHeader: string;
+  badgeCurveText: string;
+  badgeAwardText: string;
+  badgeAchievementText: string;
+  shareButton: string;
+  continueButton: string;
+}
+
 interface MissionData {
   _id?: string;
   name: string;
   description?: string;
   customer?: string;
   explanationScreens: MissionScreen[];
+  puzzleConfig?: Partial<PuzzleConfig>;
+  trashSortConfig?: Partial<TrashSortConfig>;
 }
 
 // ─── Preset backgrounds ───
@@ -269,6 +291,26 @@ const DEFAULT_SCREENS: MissionScreen[] = [
   { ...EMPTY_SCREEN },
 ];
 
+const DEFAULT_PUZZLE: PuzzleConfig = {
+  completeHeader: '!כל הכבוד',
+  completeButton: 'לשלב הבא',
+};
+
+const DEFAULT_TRASH: TrashSortConfig = {
+  title: 'איך משחקים?',
+  description: 'עכשיו התמונה ברורה, אבל הזבל עדיין\nמסתיר את האות!\n\nליחצו על הפח הנכון עבור סוג\nהאשפה.',
+  scoreLabel: 'ניקוד:',
+  gameFinalText: 'כל הכבוד!',
+  completeHeader: 'תודה!',
+  completeButton: 'לקבלת תג',
+  badgeHeader: 'תעלומת המזוודה הסודית',
+  badgeCurveText: 'תג סוכן הפארק',
+  badgeAwardText: 'מוענק בזאת',
+  badgeAchievementText: 'על מציאת המזוודה והצלת הפארק!',
+  shareButton: 'שתפו עם חברים',
+  continueButton: 'המשך',
+};
+
 // ─── Component ───
 
 export default function AdminMissionConfigPage() {
@@ -281,6 +323,8 @@ export default function AdminMissionConfigPage() {
   const [description, setDescription] = useState('');
   const [customer, setCustomer] = useState('');
   const [screens, setScreens] = useState<MissionScreen[]>(DEFAULT_SCREENS.map((s) => ({ ...s })));
+  const [puzzleConfig, setPuzzleConfig] = useState<PuzzleConfig>({ ...DEFAULT_PUZZLE });
+  const [trashSortConfig, setTrashSortConfig] = useState<TrashSortConfig>({ ...DEFAULT_TRASH });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(isEdit);
@@ -304,6 +348,24 @@ export default function AdminMissionConfigPage() {
             backgroundImage: s.backgroundImage || '',
           })));
         }
+        setPuzzleConfig({
+          completeHeader: m.puzzleConfig?.completeHeader || DEFAULT_PUZZLE.completeHeader,
+          completeButton: m.puzzleConfig?.completeButton || DEFAULT_PUZZLE.completeButton,
+        });
+        setTrashSortConfig({
+          title: m.trashSortConfig?.title || DEFAULT_TRASH.title,
+          description: m.trashSortConfig?.description || DEFAULT_TRASH.description,
+          scoreLabel: m.trashSortConfig?.scoreLabel || DEFAULT_TRASH.scoreLabel,
+          gameFinalText: m.trashSortConfig?.gameFinalText || DEFAULT_TRASH.gameFinalText,
+          completeHeader: m.trashSortConfig?.completeHeader || DEFAULT_TRASH.completeHeader,
+          completeButton: m.trashSortConfig?.completeButton || DEFAULT_TRASH.completeButton,
+          badgeHeader: m.trashSortConfig?.badgeHeader || DEFAULT_TRASH.badgeHeader,
+          badgeCurveText: m.trashSortConfig?.badgeCurveText || DEFAULT_TRASH.badgeCurveText,
+          badgeAwardText: m.trashSortConfig?.badgeAwardText || DEFAULT_TRASH.badgeAwardText,
+          badgeAchievementText: m.trashSortConfig?.badgeAchievementText || DEFAULT_TRASH.badgeAchievementText,
+          shareButton: m.trashSortConfig?.shareButton || DEFAULT_TRASH.shareButton,
+          continueButton: m.trashSortConfig?.continueButton || DEFAULT_TRASH.continueButton,
+        });
       } catch {
         setError(t.errorLoad);
       } finally {
@@ -349,11 +411,32 @@ export default function AdminMissionConfigPage() {
         backgroundImage: s.backgroundImage.trim() || undefined,
       }));
 
+      const cleanPuzzle = {
+        completeHeader: puzzleConfig.completeHeader.trim() || DEFAULT_PUZZLE.completeHeader,
+        completeButton: puzzleConfig.completeButton.trim() || DEFAULT_PUZZLE.completeButton,
+      };
+      const cleanTrash = {
+        title: trashSortConfig.title.trim() || DEFAULT_TRASH.title,
+        description: trashSortConfig.description.trim() || DEFAULT_TRASH.description,
+        scoreLabel: trashSortConfig.scoreLabel.trim() || DEFAULT_TRASH.scoreLabel,
+        gameFinalText: trashSortConfig.gameFinalText.trim() || DEFAULT_TRASH.gameFinalText,
+        completeHeader: trashSortConfig.completeHeader.trim() || DEFAULT_TRASH.completeHeader,
+        completeButton: trashSortConfig.completeButton.trim() || DEFAULT_TRASH.completeButton,
+        badgeHeader: trashSortConfig.badgeHeader.trim() || DEFAULT_TRASH.badgeHeader,
+        badgeCurveText: trashSortConfig.badgeCurveText.trim() || DEFAULT_TRASH.badgeCurveText,
+        badgeAwardText: trashSortConfig.badgeAwardText.trim() || DEFAULT_TRASH.badgeAwardText,
+        badgeAchievementText: trashSortConfig.badgeAchievementText.trim() || DEFAULT_TRASH.badgeAchievementText,
+        shareButton: trashSortConfig.shareButton.trim() || DEFAULT_TRASH.shareButton,
+        continueButton: trashSortConfig.continueButton.trim() || DEFAULT_TRASH.continueButton,
+      };
+
       const payload: Record<string, unknown> = {
         name: name.trim(),
         description: description.trim() || undefined,
         customer: customer.trim() || undefined,
         explanationScreens: cleanScreens,
+        puzzleConfig: cleanPuzzle,
+        trashSortConfig: cleanTrash,
       };
 
       if (isEdit) {
@@ -562,6 +645,143 @@ export default function AdminMissionConfigPage() {
             <OutlineButton onClick={addScreen} style={{ width: '100%', textAlign: 'center' }}>
               {t.addScreen}
             </OutlineButton>
+          </FormSection>
+
+          {/* Part 2 — Puzzle */}
+          <FormSection>
+            <SectionTitle>{t.part2Title}</SectionTitle>
+            <SectionLabel style={{ marginBottom: 16 }}>{t.part2Desc}</SectionLabel>
+            <FieldGroup>
+              <SectionLabel>{t.puzzleCompleteHeader}</SectionLabel>
+              <Input
+                value={puzzleConfig.completeHeader}
+                onChange={(e) => setPuzzleConfig((p) => ({ ...p, completeHeader: e.target.value }))}
+                placeholder={t.puzzleCompleteHeaderPlaceholder}
+                style={{ direction: 'rtl' }}
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <SectionLabel>{t.puzzleCompleteButton}</SectionLabel>
+              <Input
+                value={puzzleConfig.completeButton}
+                onChange={(e) => setPuzzleConfig((p) => ({ ...p, completeButton: e.target.value }))}
+                placeholder={t.puzzleCompleteButtonPlaceholder}
+                style={{ direction: 'rtl' }}
+              />
+            </FieldGroup>
+          </FormSection>
+
+          {/* Part 3 — Trash Sort */}
+          <FormSection>
+            <SectionTitle>{t.part3Title}</SectionTitle>
+            <SectionLabel style={{ marginBottom: 16 }}>{t.part3Desc}</SectionLabel>
+            <FieldGroup>
+              <SectionLabel>{t.trashIntroTitle}</SectionLabel>
+              <Input
+                value={trashSortConfig.title}
+                onChange={(e) => setTrashSortConfig((p) => ({ ...p, title: e.target.value }))}
+                placeholder={t.trashIntroTitlePlaceholder}
+                style={{ direction: 'rtl' }}
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <SectionLabel>{t.trashIntroDescription}</SectionLabel>
+              <TextArea
+                value={trashSortConfig.description}
+                onChange={(e) => setTrashSortConfig((p) => ({ ...p, description: e.target.value }))}
+                placeholder={t.trashIntroDescriptionPlaceholder}
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <SectionLabel>{t.trashScoreLabel}</SectionLabel>
+              <Input
+                value={trashSortConfig.scoreLabel}
+                onChange={(e) => setTrashSortConfig((p) => ({ ...p, scoreLabel: e.target.value }))}
+                placeholder={t.trashScoreLabelPlaceholder}
+                style={{ direction: 'rtl' }}
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <SectionLabel>{t.trashGameFinalText}</SectionLabel>
+              <Input
+                value={trashSortConfig.gameFinalText}
+                onChange={(e) => setTrashSortConfig((p) => ({ ...p, gameFinalText: e.target.value }))}
+                placeholder={t.trashGameFinalTextPlaceholder}
+                style={{ direction: 'rtl' }}
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <SectionLabel>{t.trashCompleteHeader}</SectionLabel>
+              <Input
+                value={trashSortConfig.completeHeader}
+                onChange={(e) => setTrashSortConfig((p) => ({ ...p, completeHeader: e.target.value }))}
+                placeholder={t.trashCompleteHeaderPlaceholder}
+                style={{ direction: 'rtl' }}
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <SectionLabel>{t.trashCompleteButton}</SectionLabel>
+              <Input
+                value={trashSortConfig.completeButton}
+                onChange={(e) => setTrashSortConfig((p) => ({ ...p, completeButton: e.target.value }))}
+                placeholder={t.trashCompleteButtonPlaceholder}
+                style={{ direction: 'rtl' }}
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <SectionLabel>{t.trashBadgeHeader}</SectionLabel>
+              <Input
+                value={trashSortConfig.badgeHeader}
+                onChange={(e) => setTrashSortConfig((p) => ({ ...p, badgeHeader: e.target.value }))}
+                placeholder={t.trashBadgeHeaderPlaceholder}
+                style={{ direction: 'rtl' }}
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <SectionLabel>{t.trashBadgeCurveText}</SectionLabel>
+              <Input
+                value={trashSortConfig.badgeCurveText}
+                onChange={(e) => setTrashSortConfig((p) => ({ ...p, badgeCurveText: e.target.value }))}
+                placeholder={t.trashBadgeCurveTextPlaceholder}
+                style={{ direction: 'rtl' }}
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <SectionLabel>{t.trashBadgeAwardText}</SectionLabel>
+              <Input
+                value={trashSortConfig.badgeAwardText}
+                onChange={(e) => setTrashSortConfig((p) => ({ ...p, badgeAwardText: e.target.value }))}
+                placeholder={t.trashBadgeAwardTextPlaceholder}
+                style={{ direction: 'rtl' }}
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <SectionLabel>{t.trashBadgeAchievementText}</SectionLabel>
+              <Input
+                value={trashSortConfig.badgeAchievementText}
+                onChange={(e) => setTrashSortConfig((p) => ({ ...p, badgeAchievementText: e.target.value }))}
+                placeholder={t.trashBadgeAchievementTextPlaceholder}
+                style={{ direction: 'rtl' }}
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <SectionLabel>{t.trashShareButton}</SectionLabel>
+              <Input
+                value={trashSortConfig.shareButton}
+                onChange={(e) => setTrashSortConfig((p) => ({ ...p, shareButton: e.target.value }))}
+                placeholder={t.trashShareButtonPlaceholder}
+                style={{ direction: 'rtl' }}
+              />
+            </FieldGroup>
+            <FieldGroup>
+              <SectionLabel>{t.trashContinueButton}</SectionLabel>
+              <Input
+                value={trashSortConfig.continueButton}
+                onChange={(e) => setTrashSortConfig((p) => ({ ...p, continueButton: e.target.value }))}
+                placeholder={t.trashContinueButtonPlaceholder}
+                style={{ direction: 'rtl' }}
+              />
+            </FieldGroup>
           </FormSection>
 
           {error && <ErrorText style={{ marginBottom: 12 }}>{error}</ErrorText>}

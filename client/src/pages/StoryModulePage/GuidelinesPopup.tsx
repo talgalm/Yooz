@@ -1,20 +1,15 @@
 import { useState } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
+import type { CustomInstructionsData } from './types';
 
-// ─── Colors ───
-const FRAME_GREEN = '#B2DA6F';
 const FRAME_BORDER = '#2c1537';
-const BUTTON_YELLOW = '#F0D60E';
-const BUTTON_SHADOW = '#1D3A0F';
 const STAR_GOLD = '#FFD700';
 const COMPASS_PINK = '#E89EAD';
-const COMPASS_BLUE = '#3C9EDD';
 const BACKPACK_BLUE = '#63B4D9';
 const BACKPACK_PINK = '#E89EAD';
-const GUIDELINES_Yooz = '#632e7d';
+const GUIDELINES_PURPLE = '#632e7d';
 const GUIDELINES_BORDER = '#9248a3';
 
-// ─── Animations ───
 const overlayIn = keyframes`
   0% { opacity: 0; }
   100% { opacity: 1; }
@@ -47,8 +42,6 @@ const bounceIn = keyframes`
   100% { transform: translateY(0); opacity: 1; }
 `;
 
-// ─── Styled Components ───
-
 const Overlay = styled('div')<{ exiting?: boolean }>(({ exiting }) => ({
   position: 'fixed',
   inset: 0,
@@ -67,7 +60,7 @@ const PopupFrame = styled('div')<{ exiting?: boolean }>(({ exiting }) => ({
   maxWidth: 380,
   maxHeight: 'calc(100dvh - 20px)',
   overflow: 'hidden',
-  background: GUIDELINES_Yooz,
+  background: GUIDELINES_PURPLE,
   border: `3px solid ${FRAME_BORDER}`,
   borderRadius: 24,
   padding: 'clamp(6px, 1.6vh, 10px)',
@@ -87,7 +80,6 @@ const TitleText = styled('div')({
   fontSize: 'clamp(17px, 2.5vh, 20px)',
   fontWeight: 900,
   color: '#fff',
-  textTransform: 'uppercase',
   letterSpacing: 1.2,
   textShadow: `-1px -1px 0 ${GUIDELINES_BORDER}, 1px -1px 0 ${GUIDELINES_BORDER}, -1px 1px 0 ${FRAME_BORDER}, 1px 1px 0 ${FRAME_BORDER}, 2px 3px 0 #254418`,
   textAlign: 'center',
@@ -95,7 +87,7 @@ const TitleText = styled('div')({
 
 const CloseButton = styled('button')({
   position: 'absolute',
-  right: 8,
+  left: 8,
   top: 4,
   background: 'none',
   border: 'none',
@@ -121,14 +113,6 @@ const ContentArea = styled('div')({
   overflow: 'hidden',
 });
 
-const SubHeader = styled('div')({
-  color: FRAME_BORDER,
-  fontSize: 'clamp(14px, 2.1vh, 16px)',
-  fontWeight: 600,
-  marginBottom: 'clamp(10px, 1.7vh, 16px)',
-  textAlign: 'center',
-});
-
 const IllustrationRow = styled('div')({
   display: 'flex',
   gap: 'clamp(12px, 3vw, 20px)',
@@ -142,13 +126,10 @@ const IllustrationRow = styled('div')({
 });
 
 const SectionTitle = styled('div')({
-  display: 'flex',
-  alignItems: 'center',
-  gap: 8,
   fontWeight: 800,
   fontSize: 'clamp(15px, 2.3vh, 17px)',
-  color: FRAME_BORDER,
-  textTransform: 'uppercase',
+  color: GUIDELINES_PURPLE,
+  textAlign: 'center',
   marginBottom: 'clamp(6px, 1.2vh, 10px)',
   width: '100%',
 });
@@ -197,7 +178,6 @@ const GuidelinesLabel = styled('div')({
   fontWeight: 800,
   fontSize: 'clamp(13px, 2vh, 15px)',
   color: FRAME_BORDER,
-  textTransform: 'uppercase',
   marginBottom: 'clamp(6px, 1vh, 8px)',
 });
 
@@ -213,46 +193,38 @@ const StartButton = styled('button')<{ exiting?: boolean }>(({ exiting }) => ({
   width: '75%',
   margin: 'clamp(10px, 1.7vh, 16px) auto 2px',
   padding: 'clamp(10px, 1.8vh, 13px) 28px',
-  background: BUTTON_YELLOW,
-  color: FRAME_BORDER,
+  background: GUIDELINES_PURPLE,
+  color: '#fff',
   border: `3px solid ${FRAME_BORDER}`,
   borderRadius: 50,
   fontSize: 'clamp(15px, 2.2vh, 17px)',
   fontWeight: 800,
   cursor: 'pointer',
-  textTransform: 'uppercase',
   letterSpacing: 1,
-  boxShadow: `0 4px 0 ${BUTTON_SHADOW}`,
+  boxShadow: `0 4px 0 ${FRAME_BORDER}`,
   transition: 'transform 0.1s, box-shadow 0.1s',
   animation: exiting ? 'none' : `${bounceIn} 0.5s ease-out 0.8s both`,
   '&:active': {
     transform: 'translateY(4px)',
-    boxShadow: `0 0 0 ${BUTTON_SHADOW}`,
+    boxShadow: `0 0 0 ${FRAME_BORDER}`,
   },
   '@media (max-height: 760px)': {
     width: '82%',
   },
 }));
 
-// ─── SVG Illustrations ───
-
 function CompassIcon() {
   return (
     <svg width="70" height="70" viewBox="0 0 70 70">
-      {/* Outer ring */}
       <circle cx="35" cy="35" r="32" fill={COMPASS_PINK} stroke={FRAME_BORDER} strokeWidth="2.5" opacity="0.25" />
       <circle cx="35" cy="35" r="28" fill="#fff" stroke={FRAME_BORDER} strokeWidth="2" />
-      {/* Tick marks */}
       <line x1="35" y1="9" x2="35" y2="14" stroke={FRAME_BORDER} strokeWidth="2" />
       <line x1="35" y1="56" x2="35" y2="61" stroke={FRAME_BORDER} strokeWidth="2" />
       <line x1="9" y1="35" x2="14" y2="35" stroke={FRAME_BORDER} strokeWidth="2" />
       <line x1="56" y1="35" x2="61" y2="35" stroke={FRAME_BORDER} strokeWidth="2" />
-      {/* Compass needle */}
       <polygon points="35,14 39,33 35,36 31,33" fill="#e74c3c" />
       <polygon points="35,56 39,37 35,34 31,37" fill="#bbb" />
-      {/* Center dot */}
       <circle cx="35" cy="35" r="3.5" fill={FRAME_BORDER} />
-      {/* N label */}
       <text x="35" y="22" textAnchor="middle" fontSize="7" fontWeight="bold" fill={FRAME_BORDER}>N</text>
     </svg>
   );
@@ -261,19 +233,12 @@ function CompassIcon() {
 function BackpackIcon() {
   return (
     <svg width="70" height="70" viewBox="0 0 70 70">
-      {/* Main bag body */}
       <rect x="16" y="24" width="38" height="36" rx="6" fill={BACKPACK_BLUE} stroke={FRAME_BORDER} strokeWidth="2.5" />
-      {/* Front pocket */}
       <rect x="22" y="36" width="26" height="14" rx="3" fill="#fff" stroke={FRAME_BORDER} strokeWidth="1.5" />
-      {/* Pocket flap */}
       <path d="M22 36 Q35 32 48 36" fill={BACKPACK_PINK} stroke={FRAME_BORDER} strokeWidth="1.5" />
-      {/* Straps */}
       <path d="M24 24V16a11 11 0 0122 0v8" fill="none" stroke={FRAME_BORDER} strokeWidth="3" strokeLinecap="round" />
-      {/* Buckle */}
       <circle cx="35" cy="42" r="2.5" fill={FRAME_BORDER} />
-      {/* Top handle */}
       <path d="M30 24V20a5 5 0 0110 0v4" fill="none" stroke={FRAME_BORDER} strokeWidth="2" strokeLinecap="round" />
-      {/* Side pockets */}
       <rect x="16" y="40" width="6" height="10" rx="2" fill={BACKPACK_PINK} stroke={FRAME_BORDER} strokeWidth="1" opacity="0.7" />
       <rect x="48" y="40" width="6" height="10" rx="2" fill={BACKPACK_PINK} stroke={FRAME_BORDER} strokeWidth="1" opacity="0.7" />
     </svg>
@@ -288,82 +253,67 @@ function PinIcon() {
   );
 }
 
-function StarIcon({ size = 22 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={STAR_GOLD} stroke={FRAME_BORDER} strokeWidth="0.5">
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-    </svg>
-  );
-}
-
-// ─── Component ───
-
 interface GuidelinesPopupProps {
   itemCount: number;
   guidelines?: string;
+  customInstructions?: CustomInstructionsData;
   onDismiss: () => void;
   t: Record<string, string>;
 }
 
-export default function GuidelinesPopup({ itemCount, guidelines, onDismiss, t }: GuidelinesPopupProps) {
+export default function GuidelinesPopup({ itemCount, guidelines, customInstructions, onDismiss, t }: GuidelinesPopupProps) {
   const [exiting, setExiting] = useState(false);
+  const ci = customInstructions;
 
   const handleDismiss = () => {
     setExiting(true);
     setTimeout(onDismiss, 300);
   };
 
+  const title = ci?.title || t.guidelinesSubHeader;
+  const missionTitle = ci?.missionTitle || t.guidelinesMissionTitle;
+  const missionItems = ci?.missionItems?.length
+    ? ci.missionItems
+    : [t.guidelineMission1.replace('{count}', String(itemCount)), t.guidelineMission2];
+  const ruleSectionTitle = ci?.guidelinesTitle || t.guidelinesRulesTitle;
+  const ruleItems = ci?.guidelineItems?.length
+    ? ci.guidelineItems
+    : [t.guidelineRule1, t.guidelineRule2, t.guidelineRule3];
+  const buttonText = ci?.buttonText || t.startAdventure;
+
   return (
     <Overlay exiting={exiting} onClick={handleDismiss}>
       <PopupFrame exiting={exiting} onClick={(e) => e.stopPropagation()}>
         <HeaderRow>
-          <TitleText>{t.guidelinesTitle}</TitleText>
+          <TitleText>{title}</TitleText>
           <CloseButton onClick={handleDismiss} aria-label="Close">&times;</CloseButton>
         </HeaderRow>
         <ContentArea>
-          <SubHeader>{t.guidelinesSubHeader}</SubHeader>
           <IllustrationRow>
-            <CompassIcon />
             <BackpackIcon />
+            <CompassIcon />
           </IllustrationRow>
 
-          {/* Mission section */}
-          <SectionTitle>
-            <StarIcon />
-            {t.guidelinesMissionTitle}
-          </SectionTitle>
+          <SectionTitle>{missionTitle}</SectionTitle>
           <MissionList>
-            <MissionItem delay={0}>
-              <StarBullet>&#9733;</StarBullet>
-              <span>{t.guidelineMission1.replace('{count}', String(itemCount))}</span>
-            </MissionItem>
-            <MissionItem delay={1}>
-              <StarBullet>&#9733;</StarBullet>
-              <span>{t.guidelineMission2}</span>
-            </MissionItem>
+            {missionItems.map((text, i) => (
+              <MissionItem key={i} delay={i}>
+                <StarBullet>&#9733;</StarBullet>
+                <span>{text}</span>
+              </MissionItem>
+            ))}
           </MissionList>
 
-          {/* Guidelines section */}
-          <SectionTitle>
-            <PinIcon />
-            {t.guidelinesRulesTitle}
-          </SectionTitle>
+          <SectionTitle>{ruleSectionTitle}</SectionTitle>
           <MissionList>
-            <MissionItem delay={2}>
-              <StarBullet>&#9733;</StarBullet>
-              <span>{t.guidelineRule1}</span>
-            </MissionItem>
-            <MissionItem delay={3}>
-              <StarBullet>&#9733;</StarBullet>
-              <span>{t.guidelineRule2}</span>
-            </MissionItem>
-            <MissionItem delay={4}>
-              <StarBullet>&#9733;</StarBullet>
-              <span>{t.guidelineRule3}</span>
-            </MissionItem>
+            {ruleItems.map((text, i) => (
+              <MissionItem key={i} delay={missionItems.length + i}>
+                <StarBullet>&#9733;</StarBullet>
+                <span>{text}</span>
+              </MissionItem>
+            ))}
           </MissionList>
 
-          {/* Custom admin guidelines */}
           {guidelines && (
             <GuidelinesSection>
               <GuidelinesLabel>
@@ -375,7 +325,7 @@ export default function GuidelinesPopup({ itemCount, guidelines, onDismiss, t }:
           )}
 
           <StartButton exiting={exiting} onClick={handleDismiss}>
-            {t.startAdventure}
+            {buttonText}
           </StartButton>
         </ContentArea>
       </PopupFrame>

@@ -94,6 +94,8 @@ export default function MissionInlinePlayer({ mission, onComplete, code }: Missi
         muted={sounds.muted}
         toggleMute={sounds.toggleMute}
         code={code}
+        completeHeader={mission.puzzleConfig?.completeHeader}
+        completeButton={mission.puzzleConfig?.completeButton}
       />
     );
   }
@@ -106,6 +108,18 @@ export default function MissionInlinePlayer({ mission, onComplete, code }: Missi
         toggleMute={sounds.toggleMute}
         startTrashBg={sounds.startTrashBg}
         onComplete={handleTrashSortComplete}
+        title={mission.trashSortConfig?.title}
+        description={mission.trashSortConfig?.description}
+        scoreLabel={mission.trashSortConfig?.scoreLabel}
+        gameFinalText={mission.trashSortConfig?.gameFinalText}
+        completeHeader={mission.trashSortConfig?.completeHeader}
+        completeButton={mission.trashSortConfig?.completeButton}
+        badgeHeader={mission.trashSortConfig?.badgeHeader}
+        badgeCurveText={mission.trashSortConfig?.badgeCurveText}
+        badgeAwardText={mission.trashSortConfig?.badgeAwardText}
+        badgeAchievementText={mission.trashSortConfig?.badgeAchievementText}
+        shareButton={mission.trashSortConfig?.shareButton}
+        continueButton={mission.trashSortConfig?.continueButton}
       />
     );
   }

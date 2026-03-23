@@ -31,11 +31,33 @@ export interface MissionScreen {
   backgroundImage?: string;
 }
 
+export interface MissionPuzzleConfig {
+  completeHeader?: string;
+  completeButton?: string;
+}
+
+export interface MissionTrashSortConfig {
+  title?: string;
+  description?: string;
+  scoreLabel?: string;
+  gameFinalText?: string;
+  completeHeader?: string;
+  completeButton?: string;
+  badgeHeader?: string;
+  badgeCurveText?: string;
+  badgeAwardText?: string;
+  badgeAchievementText?: string;
+  shareButton?: string;
+  continueButton?: string;
+}
+
 export interface MissionItemData {
   type: 'mission';
   _id: string;
   name: string;
   explanationScreens: MissionScreen[];
+  puzzleConfig?: MissionPuzzleConfig;
+  trashSortConfig?: MissionTrashSortConfig;
 }
 
 export type ModuleItemData = GameItemData | StationItemData | MissionItemData;
@@ -60,12 +82,22 @@ export interface ModuleData {
   popups?: PopupData[];
 }
 
+export interface CustomInstructionsData {
+  title?: string;
+  missionTitle?: string;
+  missionItems?: string[];
+  guidelinesTitle?: string;
+  guidelineItems?: string[];
+  buttonText?: string;
+}
+
 export interface ActivityModuleResponse {
   code: string;
   name: string;
   module: ModuleData;
   questionMode?: 'same' | 'byAge';
   guidelines?: string;
+  customInstructions?: CustomInstructionsData;
 }
 
 export interface LeaderboardEntry {

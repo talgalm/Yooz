@@ -281,7 +281,7 @@ export interface Game {
 export interface Station {
   _id: string;
   name: string;
-  type?: 'text' | 'video' | 'image';
+  type?: 'text' | 'video' | 'image' | 'narrative' | 'badge';
   description?: string;
   customer?: string;
   theme?: string;
@@ -587,6 +587,9 @@ export default function AdminDashboardPage() {
               <>
                 <SectionHeaderRow>
                   <PageTitleNoMargin>{t.missionsTitle}</PageTitleNoMargin>
+                  <SmallActionButton onClick={() => navigate('/admin/missions/new')}>
+                    {t.newMission}
+                  </SmallActionButton>
                 </SectionHeaderRow>
 
                 {missions.length === 0 ? (
@@ -608,7 +611,7 @@ export default function AdminDashboardPage() {
                           </thead>
                           <tbody>
                             {missions.map((m) => (
-                              <tr key={m._id}>
+                              <tr key={m._id} onClick={() => navigate(`/admin/missions/${m._id}`)} style={{ cursor: 'pointer' }}>
                                 <td><CellBold>{m.name}</CellBold></td>
                                 <td>
                                   <IconBadge variant="purple">
@@ -628,7 +631,7 @@ export default function AdminDashboardPage() {
                     <MobileOnlyDiv>
                       <MobileList>
                         {missions.map((m) => (
-                          <MobileCard key={m._id} style={{ cursor: 'default' }}>
+                          <MobileCard key={m._id} onClick={() => navigate(`/admin/missions/${m._id}`)}>
                             <MobileCardHeader>
                               <MobileCardNameLarge>{m.name}</MobileCardNameLarge>
                               <IconBadge variant="purple">

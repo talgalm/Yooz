@@ -8,6 +8,26 @@ export interface IMissionScreen {
   backgroundImage?: string;
 }
 
+export interface IPuzzleConfig {
+  completeHeader?: string;
+  completeButton?: string;
+}
+
+export interface ITrashSortConfig {
+  title?: string;
+  description?: string;
+  scoreLabel?: string;
+  gameFinalText?: string;
+  completeHeader?: string;
+  completeButton?: string;
+  badgeHeader?: string;
+  badgeCurveText?: string;
+  badgeAwardText?: string;
+  badgeAchievementText?: string;
+  shareButton?: string;
+  continueButton?: string;
+}
+
 export interface IMission {
   _id: Types.ObjectId;
   name: string;
@@ -15,7 +35,10 @@ export interface IMission {
   customer?: string;
   // Part 1: explanation screens
   explanationScreens: IMissionScreen[];
-  // Future parts will be added here (Part 2, 3, 4)
+  // Part 2: puzzle
+  puzzleConfig?: IPuzzleConfig;
+  // Part 3: trash sort
+  trashSortConfig?: ITrashSortConfig;
   createdAt: Date;
 }
 
@@ -27,11 +50,33 @@ const missionScreenSchema = new Schema<IMissionScreen>({
   backgroundImage: { type: String },
 }, { _id: false });
 
+const puzzleConfigSchema = new Schema<IPuzzleConfig>({
+  completeHeader: { type: String },
+  completeButton: { type: String },
+}, { _id: false });
+
+const trashSortConfigSchema = new Schema<ITrashSortConfig>({
+  title: { type: String },
+  description: { type: String },
+  scoreLabel: { type: String },
+  gameFinalText: { type: String },
+  completeHeader: { type: String },
+  completeButton: { type: String },
+  badgeHeader: { type: String },
+  badgeCurveText: { type: String },
+  badgeAwardText: { type: String },
+  badgeAchievementText: { type: String },
+  shareButton: { type: String },
+  continueButton: { type: String },
+}, { _id: false });
+
 const missionSchema = new Schema<IMission>({
   name: { type: String, required: true },
   description: { type: String },
   customer: { type: String },
   explanationScreens: { type: [missionScreenSchema], default: [] },
+  puzzleConfig: { type: puzzleConfigSchema },
+  trashSortConfig: { type: trashSortConfigSchema },
   createdAt: { type: Date, default: Date.now },
 });
 

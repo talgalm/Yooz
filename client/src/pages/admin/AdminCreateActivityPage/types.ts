@@ -56,6 +56,15 @@ export interface ModuleItem {
   settings?: Record<string, unknown>;
 }
 
+export interface CustomInstructions {
+  title?: string;
+  missionTitle?: string;
+  missionItems?: string[];
+  guidelinesTitle?: string;
+  guidelineItems?: string[];
+  buttonText?: string;
+}
+
 export interface Activity {
   _id: string;
   name: string;
@@ -84,6 +93,7 @@ export interface Activity {
   questionMode?: string;
   ageRanges?: AgeRange[];
   guidelines?: string;
+  customInstructions?: CustomInstructions;
   scheduledStart?: string;
   scheduledEnd?: string;
   managerEmail?: string;
