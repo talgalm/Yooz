@@ -153,8 +153,8 @@ export default function MissionInlinePlayer({ mission, onComplete, code }: Missi
   return (
     <MissionWrapper key={currentScreen} bg={screenBg} step={currentScreen}>
       <FrameContainer>
-        {currentScreen >= 3 && <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />}
-        {currentScreen >= 3 && <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />}
+        <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
+        <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
 
         <MuteButton onClick={sounds.toggleMute} aria-label={sounds.muted ? 'Unmute' : 'Mute'}>
           <MuteIcon src="/images/mic.svg" alt="" muted={sounds.muted} />

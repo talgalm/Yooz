@@ -155,7 +155,7 @@ function saveSession(code: string, phase: Phase, currentScreen: number) {
 
 // ─── Component ───
 
-const FRAME_IMAGES = ['/images/mission-frame.svg'];
+const FRAME_IMAGES = ['/images/mission-frame.svg', '/images/mission-header.svg', '/images/mission-footer.svg'];
 
 const BROWSER_CHROME_COLOR = '#1a0a2e';
 
@@ -339,9 +339,8 @@ export default function MissionPage() {
   return (
     <MissionWrapper key={currentScreen} bg={screenBg} step={currentScreen}>
       <FrameContainer>
-        {/* Decorative overlays — only from step 4 onward (index >= 3) */}
-        {currentScreen >= 3 && <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />}
-        {currentScreen >= 3 && <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />}
+        <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
+        <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
 
         {/* Mic / mute button */}
           <MuteButton onClick={sounds.toggleMute} aria-label={sounds.muted ? 'Unmute' : 'Mute'}>

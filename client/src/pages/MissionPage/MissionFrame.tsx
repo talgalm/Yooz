@@ -81,23 +81,23 @@ export const FrameContainer = styled('div')({
   overflow: 'hidden',
 });
 
-// Decorative header overlay (Pheader) — always on top of frame
+// Decorative header overlay — on top of all content
 export const FrameHeaderOverlay = styled('img')({
   position: 'absolute',
   top: 0,
   left: 0,
   width: '100%',
-  zIndex: 2,
+  zIndex: 10,
   pointerEvents: 'none',
 });
 
-// Decorative footer overlay (Pfooter) — always on top of frame
+// Decorative footer overlay — on top of all content
 export const FrameFooterOverlay = styled('img')({
   position: 'absolute',
   bottom: 0,
   left: 0,
   width: '100%',
-  zIndex: 2,
+  zIndex: 10,
   pointerEvents: 'none',
 });
 

@@ -3,6 +3,8 @@ import { styled, keyframes } from '@mui/material/styles';
 import {
   MissionWrapper,
   FrameContainer,
+  FrameHeaderOverlay,
+  FrameFooterOverlay,
   MissionHeader,
   HeaderText,
   MissionContent,
@@ -841,6 +843,8 @@ export default function MissionTrashSort({
     return (
       <MissionWrapper bg="/images/after-trash-game-bg.png" step={1}>
         <FrameContainer>
+          <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
+          <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
           <MissionHeader>
             <HeaderText>{completeHeader}</HeaderText>
           </MissionHeader>
@@ -865,6 +869,8 @@ export default function MissionTrashSort({
     return (
       <MissionWrapper bg="/images/mission-bg-1.svg" step={1}>
         <FrameContainer>
+          <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
+          <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
           <MissionHeader>
             <HeaderText>{badgeHeader}</HeaderText>
           </MissionHeader>
