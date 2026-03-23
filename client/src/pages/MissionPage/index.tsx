@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslations } from '../../context/LanguageContext';
@@ -19,6 +19,27 @@ import MissionPuzzle from './MissionPuzzle';
 import MissionTrashSort from './MissionTrashSort';
 import { useMissionSounds } from './useMissionSounds';
 import { styled, keyframes } from '@mui/material/styles';
+
+function useFrameReady(imageSrcs: string[]) {
+  const [ready, setReady] = useState(false);
+  const attempted = useRef(false);
+  useEffect(() => {
+    if (attempted.current) return;
+    attempted.current = true;
+    let loaded = 0;
+    const total = imageSrcs.length;
+    if (total === 0) { setReady(true); return; }
+    imageSrcs.forEach((src) => {
+      const img = new Image();
+      img.onload = img.onerror = () => {
+        loaded++;
+        if (loaded >= total) setReady(true);
+      };
+      img.src = src;
+    });
+  }, [imageSrcs]);
+  return ready;
+}
 
 const API = import.meta.env.VITE_API_URL || '';
 
@@ -147,6 +168,8 @@ function saveSession(code: string, phase: Phase, currentScreen: number) {
 
 // ─── Component ───
 
+const FRAME_IMAGES = ['/images/mission-frame.svg'];
+
 export default function MissionPage() {
   const { code } = useParams<{ code: string }>();
   const { token } = useAuth();
@@ -158,6 +181,7 @@ export default function MissionPage() {
   const saved = loadSession(code || '');
   const [currentScreen, setCurrentScreen] = useState(saved.currentScreen);
   const [phase, setPhase] = useState<Phase>(saved.phase);
+  const frameReady = useFrameReady(FRAME_IMAGES);
 
   // Fetch mission module data
   useEffect(() => {
@@ -205,7 +229,7 @@ export default function MissionPage() {
     setPhase('done');
   }, []);
 
-  if (loading) {
+  if (loading || !frameReady) {
     return (
       <LoadingWrapper>
         <LoadingDots>

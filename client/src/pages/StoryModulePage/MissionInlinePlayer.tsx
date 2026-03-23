@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   MissionWrapper,
   FrameContainer,
@@ -17,6 +17,29 @@ import { useMissionSounds } from '../MissionPage/useMissionSounds';
 import type { MissionItemData } from './types';
 import type { GameResult } from '../../components/games/types';
 
+function useFrameReady(imageSrcs: string[]) {
+  const [ready, setReady] = useState(false);
+  const attempted = useRef(false);
+  useEffect(() => {
+    if (attempted.current) return;
+    attempted.current = true;
+    let loaded = 0;
+    const total = imageSrcs.length;
+    if (total === 0) { setReady(true); return; }
+    imageSrcs.forEach((src) => {
+      const img = new Image();
+      img.onload = img.onerror = () => {
+        loaded++;
+        if (loaded >= total) setReady(true);
+      };
+      img.src = src;
+    });
+  }, [imageSrcs]);
+  return ready;
+}
+
+const FRAME_IMAGES = ['/images/mission-frame.svg'];
+
 type MissionPhase = 'screens' | 'puzzle' | 'done';
 
 interface MissionInlinePlayerProps {
@@ -30,6 +53,7 @@ export default function MissionInlinePlayer({ mission, onComplete, code }: Missi
   const [currentScreen, setCurrentScreen] = useState(0);
   const [phase, setPhase] = useState<MissionPhase>('screens');
   const [startTime] = useState(Date.now());
+  const frameReady = useFrameReady(FRAME_IMAGES);
 
   const handleNext = useCallback(() => {
     sounds.playClick();
@@ -80,6 +104,18 @@ export default function MissionInlinePlayer({ mission, onComplete, code }: Missi
         startTrashBg={sounds.startTrashBg}
         onComplete={handleTrashSortComplete}
       />
+    );
+  }
+
+  if (!frameReady) {
+    return (
+      <div style={{ height: '100dvh', background: '#1a0a2e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {[0, 1, 2].map((i) => (
+            <span key={i} style={{ width: 12, height: 12, borderRadius: '50%', background: '#39CABC', opacity: 0.5 }} />
+          ))}
+        </div>
+      </div>
     );
   }
 

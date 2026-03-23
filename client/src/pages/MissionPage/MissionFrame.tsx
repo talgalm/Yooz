@@ -10,10 +10,15 @@ const fadeIn = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `;
 
+const revealIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
+
 // Full-screen wrapper — the background image sits here, behind the frame
-export const MissionWrapper = styled('div')<{ bg?: string, step?: number }>(({ bg, step }) => ({
+export const MissionWrapper = styled('div')<{ bg?: string, step?: number, ready?: boolean }>(({ bg, step, ready = true }) => ({
   width: '100%',
-  minHeight: '100dvh',
+  height: '100dvh',
   background: '#1a0a2e',
   display: 'flex',
   flexDirection: 'column',
@@ -22,6 +27,8 @@ export const MissionWrapper = styled('div')<{ bg?: string, step?: number }>(({ b
   position: 'relative',
   overflow: 'hidden',
   isolation: 'isolate',
+  opacity: ready ? 1 : 0,
+  animation: ready ? `${revealIn} 0.3s ease-out` : 'none',
 
   // Background image layer (behind frame)
   // We blur this layer only, so the content (text/frame) stays sharp.
@@ -62,7 +69,7 @@ export const FrameContainer = styled('div')({
   zIndex: 2,
   width: '100%',
   maxWidth: 480,
-  minHeight: '100dvh',
+  height: '100dvh',
   backgroundImage: 'url(/images/mission-frame.svg)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
@@ -70,6 +77,7 @@ export const FrameContainer = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   boxSizing: 'border-box',
+  overflow: 'hidden',
 });
 
 // Decorative header overlay (Pheader) — always on top of frame
