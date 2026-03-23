@@ -200,6 +200,42 @@ export const MissionButton = styled('button')<{ step?: number }>(({ step }) => (
 
 }));
 
+// ─── Mute button ───
+
+export const MuteButton = styled('button')({
+  position: 'absolute',
+  top: -5,
+  left: 16,
+  zIndex: 10,
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  padding: 6,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  opacity: 0.85,
+  transition: 'opacity 0.2s',
+  '&:hover': { opacity: 1 },
+});
+
+export const MuteIcon = styled('img')<{ muted?: boolean }>(({ muted }) => ({
+  width: 32,
+  height: 32,
+  filter: muted ? 'grayscale(1) brightness(0.5)' : 'brightness(1)',
+  transition: 'filter 0.2s',
+}));
+
+export const MutedSlash = styled('div')({
+  position: 'absolute',
+  width: 3,
+  height: 36,
+  background: '#ff4444',
+  borderRadius: 2,
+  transform: 'rotate(45deg)',
+  pointerEvents: 'none',
+});
+
 // Screen indicator dots
 export const ScreenIndicator = styled('div')({
   display: 'flex',

@@ -14,6 +14,9 @@ import {
   DescriptionText,
   ScreenImage,
   MissionButton,
+  MuteButton,
+  MuteIcon,
+  MutedSlash,
 } from './MissionFrame';
 import MissionPuzzle from './MissionPuzzle';
 import MissionTrashSort from './MissionTrashSort';
@@ -105,44 +108,6 @@ const ErrorWrapper = styled('div')({
   padding: 24,
   direction: 'rtl',
   fontFamily: "'Rubik One', sans-serif",
-});
-
-// ─── Mute button ───
-
-const MuteButton = styled('button')({
-  position: 'absolute',
-  top: 18,
-  left: 16,
-  zIndex: 10,
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  padding: 6,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  opacity: 0.85,
-  transition: 'opacity 0.2s',
-  '&:hover': { opacity: 1 },
-});
-
-const MuteIcon = styled('img')<{ muted?: boolean }>(({ muted }) => ({
-  width: 32,
-  height: 32,
-  filter: muted
-    ? 'grayscale(1) brightness(0.5)'
-    : 'brightness(1)',
-  transition: 'filter 0.2s',
-}));
-
-const MutedSlash = styled('div')({
-  position: 'absolute',
-  width: 3,
-  height: 36,
-  background: '#ff4444',
-  borderRadius: 2,
-  transform: 'rotate(45deg)',
-  pointerEvents: 'none',
 });
 
 // ─── Session helpers ───

@@ -10,6 +10,9 @@ import {
   DescriptionText,
   ScreenImage,
   MissionButton,
+  MuteButton,
+  MuteIcon,
+  MutedSlash,
 } from '../MissionPage/MissionFrame';
 import MissionPuzzle from '../MissionPage/MissionPuzzle';
 import MissionTrashSort from '../MissionPage/MissionTrashSort';
@@ -139,11 +142,17 @@ export default function MissionInlinePlayer({ mission, onComplete, code }: Missi
         {currentScreen >= 3 && <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />}
         {currentScreen >= 3 && <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />}
 
+        <MuteButton onClick={sounds.toggleMute} aria-label={sounds.muted ? 'Unmute' : 'Mute'}>
+          <MuteIcon src="/images/mic.svg" alt="" muted={sounds.muted} />
+          {sounds.muted && <MutedSlash />}
+        </MuteButton>
+
         {hasHeader && (
           <MissionHeader>
             <HeaderText>{screen.header}</HeaderText>
           </MissionHeader>
-        )}
+        )
+        }
 
         <MissionContent>
           {hasDescription && (
