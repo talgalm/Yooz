@@ -418,6 +418,23 @@ export default function StoryModulePage() {
     setShowFootsteps(false);
   }, []);
 
+  // Skip roadmap entirely when there's only 1 station — auto-enter it
+  const singleItemAutoEntered = useRef(false);
+  useEffect(() => {
+    if (
+      phase === 'roadmap' &&
+      data &&
+      data.module.items.length === 1 &&
+      !showGuidelines &&
+      !currentPopup &&
+      !singleItemAutoEntered.current &&
+      entryTransitionStage === 'idle'
+    ) {
+      singleItemAutoEntered.current = true;
+      handleNodeTap(0);
+    }
+  }, [phase, data, showGuidelines, currentPopup, entryTransitionStage]);
+
   const handleGameComplete = (result: GameResult) => {
     if (!data) return;
     const currentItem = data.module.items[currentItemIndex];

@@ -379,6 +379,34 @@ export default function MissionTrashSort({
     rotate: number;
   };
 
+  const [imagesReady, setImagesReady] = useState(false);
+
+  useEffect(() => {
+    const srcs = [
+      '/images/mission-bg-1.svg',
+      '/images/mission-funnel.svg',
+      '/images/bin-icon.svg',
+      '/images/bin-orange.svg',
+      '/images/bin-blue.svg',
+      '/images/bin-brown.svg',
+    ];
+    let cancelled = false;
+    Promise.all(
+      srcs.map(
+        (src) =>
+          new Promise<void>((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+            img.src = src;
+          }),
+      ),
+    ).then(() => {
+      if (!cancelled) setImagesReady(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   const [phase, setPhase] = useState<Phase>(() => {
     try {
       const raw = sessionStorage.getItem(getTrashSortSessionKey(activityCode));
@@ -682,6 +710,11 @@ export default function MissionTrashSort({
       window.clearInterval(fallingTick);
     };
   }, [phase]);
+
+  // ─── Wait for images before showing any phase ───
+  if (!imagesReady && (phase === 'intro' || phase === 'throwing' || phase === 'countdown' || phase === 'game')) {
+    return <PageWrapper />;
+  }
 
   // ─── Game phase ───
   if (phase === 'game') {

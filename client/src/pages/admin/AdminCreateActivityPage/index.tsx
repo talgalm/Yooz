@@ -383,7 +383,7 @@ export default function AdminCreateActivityPage() {
         }),
         adminApiFetch<{ station: { _id: string; name: string } }>('/api/admin/stations', {
           method: 'POST',
-          body: JSON.stringify({ name: 'תדריך משימה', type: 'narrative', description: 'מסך תדריך - רשימת המשימות', settings: { title: 'תדריך המשימה', bodyText: 'המשימה שלכם:\n\n1. מיינו את הפסולת לפחים הנכונים\n2. צפו בסרטון הסיכום של הסיירת\n\nבהצלחה, סוכנים!', buttonText: 'יוצאים למשימה!' } }),
+          body: JSON.stringify({ name: 'תדריך משימה', type: 'narrative', description: 'מסך תדריך - רשימת המשימות', settings: { title: 'תדריך המשימה', bodyText: 'המשימות שלכם:\n\n1. מיינו את הפסולת לפחים הנכונים\n2. צפו בסרטון הסיכום של הסיירת\n\nבהצלחה, סוכנים!', buttonText: 'יוצאים למשימה!' } }),
         }),
         adminApiFetch<{ game: { _id: string; name: string } }>('/api/admin/games', {
           method: 'POST',

@@ -117,8 +117,8 @@ export default function MissionInlinePlayer({ mission, onComplete, code }: Missi
         </MissionContent>
 
         {hasButton && (
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <MissionButton step={currentScreen} onClick={handleNext}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: currentScreen < 3 ? -20 : 70 }}>
+            <MissionButton onClick={handleNext}>
               {screen.buttonText}
             </MissionButton>
           </div>

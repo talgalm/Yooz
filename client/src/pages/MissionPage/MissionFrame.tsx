@@ -118,6 +118,7 @@ export const HeaderText = styled('h1')({
   direction: 'rtl',
   textAlign: 'center',
   width: '100%',
+  marginTop: -20,
 });
 
 // Content area (middle section)
@@ -188,13 +189,7 @@ export const MissionButton = styled('button')<{ step?: number }>(({ step }) => (
   position: 'relative',
   zIndex: 3,
   transition: 'transform 0.15s, box-shadow 0.15s',
-  animation: `${fadeIn} 0.6s ease-out 0.4s both`,
-  '&:active': {
-    transform: 'scale(0.96)',
-  },
-  '&:hover': {
-    boxShadow: `0 6px 28px ${MISSION_TEAL}60`,
-  },
+
 }));
 
 // Screen indicator dots
