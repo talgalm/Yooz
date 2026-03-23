@@ -13,11 +13,12 @@ interface Activity {
 
 interface Props {
   activities: Activity[];
+  initialActivityId?: string | null;
 }
 
-export default function AdminStatisticsTab({ activities }: Props) {
-  const [view, setView] = useState<StatisticsView>('overview');
-  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
+export default function AdminStatisticsTab({ activities, initialActivityId }: Props) {
+  const [view, setView] = useState<StatisticsView>(initialActivityId ? 'activity' : 'overview');
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(initialActivityId ?? null);
 
   const handleSelectActivity = (id: string) => {
     setSelectedActivityId(id);
