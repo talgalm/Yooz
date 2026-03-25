@@ -24,6 +24,7 @@ interface CapturedPhoto {
   missionIndex: number;
   blob: Blob;
   previewUrl: string;
+  isVideo?: boolean;
 }
 
 type Phase = 'intro' | 'capture' | 'review' | 'generating' | 'result';
@@ -224,6 +225,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   // Capture state
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [previewIsVideo, setPreviewIsVideo] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const quickCaptureRef = useRef<HTMLInputElement>(null);
@@ -234,6 +236,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     if (!file) return;
     setPreviewUrl(URL.createObjectURL(file));
     setPreviewBlob(file);
+    setPreviewIsVideo(file.type.startsWith('video/'));
     e.target.value = '';
   };
 
@@ -242,12 +245,13 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     if (!previewBlob || !previewUrl) return;
     const updated = [
       ...photos.filter((p) => p.missionIndex !== currentMission),
-      { missionIndex: currentMission, blob: previewBlob, previewUrl },
+      { missionIndex: currentMission, blob: previewBlob, previewUrl, isVideo: previewIsVideo },
     ].sort((a, b) => a.missionIndex - b.missionIndex);
 
     setPhotos(updated);
     setPreviewUrl('');
     setPreviewBlob(null);
+    setPreviewIsVideo(false);
 
     if (currentMission < missions.length - 1) {
       setCurrentMission((i) => i + 1);
@@ -382,8 +386,10 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
           <CaptureArea>
             {displayUrl
-              ? <CapturePreviewImg src={displayUrl} alt="preview" />
-              : <><PlaceholderIcon>🖼</PlaceholderIcon><PlaceholderText>צלמו או העלו תמונה</PlaceholderText></>
+              ? (previewIsVideo || currentPhotoForMission?.isVideo)
+                ? <video src={displayUrl} autoPlay muted playsInline loop style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <CapturePreviewImg src={displayUrl} alt="preview" />
+              : <><PlaceholderIcon>🖼</PlaceholderIcon><PlaceholderText>צלמו או העלו תמונה / סרטון</PlaceholderText></>
             }
           </CaptureArea>
 
@@ -394,11 +400,11 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             <HalfBtn onClick={() => fileInputRef.current?.click()}>🖼 מהגלריה</HalfBtn>
           </ButtonRow>
 
-          {previewUrl && <OutlineBtn onClick={() => { setPreviewUrl(''); setPreviewBlob(null); }} style={{ marginBottom: 8 }}>בחר מחדש</OutlineBtn>}
+          {previewUrl && <OutlineBtn onClick={() => { setPreviewUrl(''); setPreviewBlob(null); setPreviewIsVideo(false); }} style={{ marginBottom: 8 }}>בחר מחדש</OutlineBtn>}
 
           <PrimaryBtn onClick={confirmPhoto} disabled={!hasCapture}>אישור תמונה והמשך</PrimaryBtn>
 
-          <input ref={quickCaptureRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFileSelected} />
+          <input ref={quickCaptureRef} type="file" accept="image/*,video/*" capture="environment" style={{ display: 'none' }} onChange={handleFileSelected} />
           <input ref={fileInputRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFileSelected} />
         </Content>
       </Wrap>
@@ -423,7 +429,10 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             const mission = missions[photo.missionIndex];
             return (
               <ReviewItem key={i}>
-                <ReviewThumb src={photo.previewUrl} alt="" />
+                {photo.isVideo
+                  ? <video src={photo.previewUrl} muted playsInline style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />
+                  : <ReviewThumb src={photo.previewUrl} alt="" />
+                }
                 <ReviewInfo>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{mission?.title ?? `תמונה ${i + 1}`}</div>
                   {mission?.description && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>{mission.description}</div>}
