@@ -5,6 +5,7 @@ import { HeaderActions } from '../../components/styled';
 import type { ModuleItemData } from './types';
 import storySideWave from '../../assets/story-side-wave.svg';
 import storySideWaveBlue from '../../assets/story-side-wave-blue.svg';
+import storySideWaveDesert from '../../assets/story-side-wave-desert.svg';
 import storyLake from '../../assets/story-lake.svg';
 import { ROADMAP_DECORATIONS } from './roadmapTrees';
 import { getThemeKit, OCEAN_DECORATIONS, DESERT_DECORATIONS, type RoadmapThemeKit } from './roadmapThemes';
@@ -93,9 +94,26 @@ const nodePopIn = keyframes`
   50%  { transform: translate(-50%,-50%) scale(1.15); }
   100% { transform: translate(-50%,-50%) scale(1); opacity: 1; }
 `;
-const cloudDrift = keyframes`
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(calc(100vw + 100%)); }
+const fishSwim = keyframes`
+  0%   { transform: translateX(-120px); }
+  100% { transform: translateX(calc(100vw + 120px)); }
+`;
+const fishWobble = keyframes`
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%      { transform: translateY(-8px) rotate(-2deg); }
+  75%      { transform: translateY(8px) rotate(2deg); }
+`;
+const tumbleweedDrift = keyframes`
+  0%   { transform: translateX(-100px); }
+  100% { transform: translateX(calc(100vw + 100px)); }
+`;
+const tumbleweedBounce = keyframes`
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-28px); }
+`;
+const tumbleweedSpin = keyframes`
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 `;
 
 // ─── Styled Components ───
@@ -185,7 +203,7 @@ const SideWaveDecoration = styled('img')({
   position: 'absolute',
   pointerEvents: 'none',
   userSelect: 'none',
-  zIndex: 1,
+  zIndex: 0,
   opacity: 0.9,
 });
 
@@ -218,19 +236,40 @@ const HouseDecoration = styled('img')({
   opacity: 0.95,
 });
 
-const CloudEl = styled('img')<{ duration: number; top: number }>(({ duration, top }) => ({
+const FishOuter = styled('div')<{ duration: number; top: number }>(({ duration, top }) => ({
   position: 'fixed',
   left: 0,
   top,
-  width: 90,
-  height: 'auto',
   pointerEvents: 'none',
   userSelect: 'none',
   zIndex: 50,
-  opacity: 0.9,
-  filter: 'brightness(1.15)',
-  animation: `${cloudDrift} ${duration}s linear forwards`,
+  animation: `${fishSwim} ${duration}s linear forwards`,
 }));
+
+const FishWobbleWrap = styled('div')<{ wobbleDuration: number }>(({ wobbleDuration }) => ({
+  animation: `${fishWobble} ${wobbleDuration}s ease-in-out infinite`,
+}));
+
+const TumbleweedOuter = styled('div')<{ duration: number; top: number }>(({ duration, top }) => ({
+  position: 'fixed',
+  left: 0,
+  top,
+  pointerEvents: 'none',
+  userSelect: 'none',
+  zIndex: 50,
+  animation: `${tumbleweedDrift} ${duration}s linear forwards`,
+}));
+
+const TumbleweedBounceWrap = styled('div')<{ bounceDuration: number }>(({ bounceDuration }) => ({
+  animation: `${tumbleweedBounce} ${bounceDuration}s ease-in-out infinite`,
+}));
+
+const TumbleweedSpinWrap = styled('img')<{ spinDuration: number }>(({ spinDuration }) => ({
+  display: 'block',
+  opacity: 1,
+  animation: `${tumbleweedSpin} ${spinDuration}s linear infinite`,
+}));
+
 
 const StarIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24">
@@ -250,6 +289,29 @@ const FootprintSvg = () => (
     <ellipse cx="12" cy="17" rx="5" ry="5.5" />
   </svg>
 );
+
+const FISH_PALETTES = [
+  { body: '#FFB84D', fin: '#FF9E33', stripe: '#E89030' },
+  { body: '#5ED4F5', fin: '#3BB8D8', stripe: '#2AA0C0' },
+  { body: '#FF8FAB', fin: '#E86B8A', stripe: '#D05070' },
+  { body: '#7BE87B', fin: '#50C850', stripe: '#38A838' },
+  { body: '#C89BFF', fin: '#A070E8', stripe: '#8850D0' },
+  { body: '#FFD966', fin: '#F0C030', stripe: '#D0A020' },
+];
+
+const SwimmingFishSvg = ({ size, palette }: { size: number; palette: number }) => {
+  const c = FISH_PALETTES[palette % FISH_PALETTES.length];
+  return (
+    <svg width={size} height={size * 0.6} viewBox="0 0 50 30" style={{ transform: 'scaleX(-1)' }}>
+      <path d="M38,15 Q32,6 20,5 Q10,6 4,15 Q10,24 20,25 Q32,24 38,15 Z" fill={c.body} />
+      <path d="M38,15 L48,6 L48,24 Z" fill={c.fin} />
+      <circle cx="12" cy="13" r="2" fill="#333" />
+      <circle cx="11.5" cy="12.5" r="0.8" fill="#fff" />
+      <path d="M20,10 Q25,8 30,10" stroke={c.stripe} strokeWidth="0.8" fill="none" />
+      <path d="M20,20 Q25,22 30,20" stroke={c.stripe} strokeWidth="0.8" fill="none" />
+    </svg>
+  );
+};
 
 // ─── Background ───
 
@@ -869,36 +931,70 @@ export default function RoadmapView({
     return result;
   }, [W, totalHeight, items, numRows]);
 
-  // ─── Animated clouds ───
-  const [clouds, setClouds] = useState<Array<{ id: number; top: number; duration: number; size: number }>>([]);
-  const cloudIdRef = useRef(0);
+  // ─── Animated fish ───
+  const [fish, setFish] = useState<Array<{
+    id: number; top: number; duration: number;
+    wobbleDuration: number; size: number; palette: number;
+  }>>([]);
+  const fishIdRef = useRef(0);
 
   useEffect(() => {
+    if (!kit.showFish) return;
+    const vh = window.innerHeight || 600;
     const interval = setInterval(() => {
-      const roll = Math.floor(Math.random() * 3); // 0, 1, or 2
-      if (roll === 0) return; // no cloud this iteration
-
-      const newClouds: Array<{ id: number; top: number; duration: number; size: number }> = [];
+      const roll = 1 + Math.floor(Math.random() * 2);
+      const batch: typeof fish = [];
       for (let i = 0; i < roll; i++) {
-        cloudIdRef.current += 1;
-        newClouds.push({
-          id: cloudIdRef.current,
-          top: 40 + Math.random() * 200, // random height in upper portion
-          duration: 6 + Math.random() * 5, // 6-11 seconds to cross
-          size: 45 + Math.random() * 30, // 45-75px wide
+        fishIdRef.current += 1;
+        batch.push({
+          id: fishIdRef.current,
+          top: 60 + Math.random() * (vh - 120),
+          duration: 7 + Math.random() * 6,
+          wobbleDuration: 1.2 + Math.random() * 1.0,
+          size: 36 + Math.random() * 28,
+          palette: Math.floor(Math.random() * FISH_PALETTES.length),
         });
       }
-
-      setClouds((prev) => [...prev, ...newClouds]);
-
-      // Clean up old clouds after they've finished animating (max 25s)
+      setFish((prev) => [...prev, ...batch]);
+      const maxDur = Math.max(...batch.map((f) => f.duration));
       setTimeout(() => {
-        setClouds((prev) => prev.filter((c) => !newClouds.some((nc) => nc.id === c.id)));
-      }, 15000);
+        const ids = new Set(batch.map((f) => f.id));
+        setFish((prev) => prev.filter((f) => !ids.has(f.id)));
+      }, (maxDur + 1) * 1000);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [kit.showFish]);
+
+  // ─── Animated tumbleweeds (desert) ───
+  const [tumbleweeds, setTumbleweeds] = useState<Array<{
+    id: number; top: number; duration: number;
+    bounceDuration: number; spinDuration: number; size: number;
+  }>>([]);
+  const tumbleweedIdRef = useRef(0);
+
+  useEffect(() => {
+    if (!kit.showTumbleweed) return;
+    const interval = setInterval(() => {
+      if (Math.random() < 0.35) return;
+      tumbleweedIdRef.current += 1;
+      const vh = window.innerHeight || 600;
+      const newTw = {
+        id: tumbleweedIdRef.current,
+        top: vh * 0.55 + Math.random() * vh * 0.3,
+        duration: 5 + Math.random() * 4,
+        bounceDuration: 0.5 + Math.random() * 0.3,
+        spinDuration: 0.8 + Math.random() * 0.7,
+        size: 45 + Math.random() * 30,
+      };
+      setTumbleweeds((prev) => [...prev, newTw]);
+      setTimeout(() => {
+        setTumbleweeds((prev) => prev.filter((tw) => tw.id !== newTw.id));
+      }, (newTw.duration + 1) * 1000);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [kit.showTumbleweed]);
 
   // Snap-scroll to active station before first paint
   useLayoutEffect(() => {
@@ -1015,8 +1111,8 @@ export default function RoadmapView({
                 top: placement.top,
                 width: placement.width,
                 height: placement.height,
-                zIndex: ['Trees', 'Cactus', 'Coral', 'Seaweed'].includes(placement.category) ? 3
-                  : ['Water', 'Bubbles', 'Fish'].includes(placement.category) ? 2 : 0,
+                zIndex: ['Trees', 'Cactus', 'Coral', 'Seaweed'].includes(placement.category) ? 4
+                  : ['Water', 'Bubbles'].includes(placement.category) ? 3 : 1,
                 transform: placement.flipX ? 'translate(-50%, -100%) scaleX(-1)' : 'translate(-50%, -100%)',
                 transformOrigin: 'center bottom',
               }}
@@ -1046,7 +1142,7 @@ export default function RoadmapView({
           {kit.showSideWaves && sideWavePlacements.left.map((placement, index) => (
             <RoadsideWaveDecoration
               key={`left-wave-${index}`}
-              src={theme === 'ocean' ? storySideWaveBlue : storySideWave}
+              src={theme === 'ocean' ? storySideWaveBlue : theme === 'desert' ? storySideWaveDesert : storySideWave}
               alt=""
               aria-hidden
               style={{
@@ -1062,7 +1158,7 @@ export default function RoadmapView({
           {kit.showSideWaves && sideWavePlacements.right.map((placement, index) => (
             <RoadsideWaveDecoration
               key={`right-wave-${index}`}
-              src={theme === 'ocean' ? storySideWaveBlue : storySideWave}
+              src={theme === 'ocean' ? storySideWaveBlue : theme === 'desert' ? storySideWaveDesert : storySideWave}
               alt=""
               aria-hidden
               style={{
@@ -1097,16 +1193,26 @@ export default function RoadmapView({
         </PathCanvas>
       </ScrollArea>
 
-      {kit.showClouds && clouds.map((c) => (
-        <CloudEl
-          key={`cloud-${c.id}`}
-          src="/images/cloud.svg"
-          alt=""
-          aria-hidden
-          duration={c.duration}
-          top={c.top}
-          style={{ width: c.size }}
-        />
+      {kit.showFish && fish.map((f) => (
+        <FishOuter key={`fish-${f.id}`} duration={f.duration} top={f.top}>
+          <FishWobbleWrap wobbleDuration={f.wobbleDuration}>
+            <SwimmingFishSvg size={f.size} palette={f.palette} />
+          </FishWobbleWrap>
+        </FishOuter>
+      ))}
+
+      {kit.showTumbleweed && tumbleweeds.map((tw) => (
+        <TumbleweedOuter key={`tw-${tw.id}`} duration={tw.duration} top={tw.top}>
+          <TumbleweedBounceWrap bounceDuration={tw.bounceDuration}>
+            <TumbleweedSpinWrap
+              src="/images/tumbleweed.svg"
+              alt=""
+              aria-hidden
+              spinDuration={tw.spinDuration}
+              style={{ width: tw.size, height: tw.size }}
+            />
+          </TumbleweedBounceWrap>
+        </TumbleweedOuter>
       ))}
 
       {popupModal}

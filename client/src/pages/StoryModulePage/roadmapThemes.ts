@@ -20,7 +20,8 @@ export interface RoadmapThemeKit {
   nodeLabelColor: string;
   nodeLabelShadow: string;
   pulseRingColor: string;
-  showClouds: boolean;
+  showFish: boolean;
+  showTumbleweed: boolean;
   showHouses: boolean;
   showSideWaves: boolean;
   decorationCategories: string[];
@@ -48,7 +49,8 @@ export const NATURE_THEME: RoadmapThemeKit = {
   nodeLabelColor: '#fff',
   nodeLabelShadow: '0 1px 4px rgba(0,0,0,.6)',
   pulseRingColor: 'rgba(180,210,50,.5)',
-  showClouds: true,
+  showFish: true,
+  showTumbleweed: false,
   showHouses: true,
   showSideWaves: true,
   decorationCategories: ['Trees', 'Bushes', 'Grass', 'Rocks', 'Water', 'Clouds', 'Shadows'],
@@ -76,21 +78,22 @@ export const OCEAN_THEME: RoadmapThemeKit = {
   nodeLabelColor: '#E0F4FF',
   nodeLabelShadow: '0 1px 4px rgba(0,0,0,.5)',
   pulseRingColor: 'rgba(94,212,245,.5)',
-  showClouds: false,
+  showFish: true,
+  showTumbleweed: false,
   showHouses: false,
   showSideWaves: true,
-  decorationCategories: ['Coral', 'Seaweed', 'OceanRocks', 'Bubbles', 'Fish'],
+  decorationCategories: ['Coral', 'Seaweed', 'OceanRocks', 'Bubbles'],
 };
 
 // ─── Desert ───
 
 export const DESERT_THEME: RoadmapThemeKit = {
-  containerBg: '#D4A84B',
+  containerBg: '#c9983a',
   headerGradient: 'linear-gradient(135deg, rgba(120,70,20,0.94) 0%, rgba(150,90,30,0.90) 100%)',
   headerBorder: 'rgba(255,255,255,0.08)',
-  sceneBgTop: '#D4A040',
-  sceneBgMid: '#C89838',
-  sceneBgBottom: '#BC8830',
+  sceneBgTop: '#c9983a',
+  sceneBgMid: '#c9983a',
+  sceneBgBottom: '#c9983a',
   roadBorder: '#3A2510',
   roadSurface: '#6B4F30',
   roadCenterLine: 'rgba(255,255,255,.12)',
@@ -104,9 +107,10 @@ export const DESERT_THEME: RoadmapThemeKit = {
   nodeLabelColor: '#FFF8E8',
   nodeLabelShadow: '0 1px 4px rgba(0,0,0,.5)',
   pulseRingColor: 'rgba(240,200,96,.5)',
-  showClouds: true,
+  showFish: false,
+  showTumbleweed: true,
   showHouses: false,
-  showSideWaves: false,
+  showSideWaves: true,
   decorationCategories: ['Cactus', 'DesertRocks', 'SandDunes', 'DesertPlants'],
 };
 
@@ -196,31 +200,6 @@ export const OCEAN_DECORATIONS: RoadmapDecoration[] = [
 <circle cx="33" cy="13" r="1.5" fill="rgba(255,255,255,0.12)"/>
 <circle cx="30" cy="48" r="4" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="0.6"/>
 <circle cx="10" cy="45" r="3" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.6"/>
-</svg>`,
-  },
-  {
-    name: 'Small fish',
-    category: 'Fish',
-    viewBoxWidth: 50,
-    viewBoxHeight: 30,
-    svg: `<svg viewBox="0 0 50 30" xmlns="http://www.w3.org/2000/svg">
-<path d="M38,15 Q32,6 20,5 Q10,6 4,15 Q10,24 20,25 Q32,24 38,15 Z" fill="#FFB84D"/>
-<path d="M38,15 L48,6 L48,24 Z" fill="#FF9E33"/>
-<circle cx="12" cy="13" r="2" fill="#333"/>
-<circle cx="11.5" cy="12.5" r="0.8" fill="#fff"/>
-<path d="M20,10 Q25,8 30,10" stroke="#E89030" stroke-width="0.8" fill="none"/>
-<path d="M20,20 Q25,22 30,20" stroke="#E89030" stroke-width="0.8" fill="none"/>
-</svg>`,
-  },
-  {
-    name: 'Starfish',
-    category: 'Fish',
-    viewBoxWidth: 50,
-    viewBoxHeight: 50,
-    svg: `<svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
-<path d="M25,2 L29,18 L46,18 L32,28 L37,45 L25,35 L13,45 L18,28 L4,18 L21,18 Z" fill="#E8785A"/>
-<path d="M25,8 L28,18 L38,18 L30,25 L33,38 L25,31 L17,38 L20,25 L12,18 L22,18 Z" fill="#F08A6A" opacity="0.6"/>
-<circle cx="25" cy="22" r="3" fill="#F8A888" opacity="0.5"/>
 </svg>`,
   },
   {
