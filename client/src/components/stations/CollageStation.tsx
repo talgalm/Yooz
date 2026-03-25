@@ -9,7 +9,7 @@
  *   result     → play the finished MP4 collage video, download or continue
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 
@@ -108,7 +108,6 @@ const CaptureArea = styled('div')({
   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
 });
 const CapturePreviewImg = styled('img')({ width: '100%', height: '100%', objectFit: 'cover' });
-const CaptureVideo = styled('video')({ width: '100%', height: '100%', objectFit: 'cover' });
 const PlaceholderIcon = styled('div')({ fontSize: 48, marginBottom: 8, opacity: 0.38 });
 const PlaceholderText = styled('div')({ fontSize: 13, color: 'rgba(255,255,255,0.38)' });
 
@@ -119,12 +118,6 @@ const HalfBtn = styled('button')({
   cursor: 'pointer', fontFamily: 'inherit',
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
   '&:disabled': { opacity: 0.35, cursor: 'not-allowed' },
-});
-const GalleryBtn = styled('button')({
-  width: '100%', padding: 12, borderRadius: 12,
-  border: '1px solid rgba(255,255,255,0.14)', background: 'transparent',
-  color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 14,
 });
 
 // Review phase
@@ -231,58 +224,14 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   // Capture state
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
-  const [cameraActive, setCameraActive] = useState(false);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const quickCaptureRef = useRef<HTMLInputElement>(null);
   const serverTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Camera teardown ─────────────────────────────────────────────────────────
-  const stopCamera = useCallback(() => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    setCameraActive(false);
-  }, []);
-
-  useEffect(() => () => { stopCamera(); clearInterval(serverTickRef.current!); }, [stopCamera]);
-  useEffect(() => { if (phase !== 'capture') stopCamera(); }, [phase, stopCamera]);
-
-  // ── Camera helpers ──────────────────────────────────────────────────────────
-  const handleActivateCamera = async () => {
-    setError('');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      streamRef.current = stream;
-      if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); }
-      setCameraActive(true);
-      setPreviewUrl('');
-      setPreviewBlob(null);
-    } catch {
-      setError('לא ניתן לגשת למצלמה');
-    }
-  };
-
-  const handleTakePhoto = () => {
-    if (!videoRef.current) return;
-    const v = videoRef.current;
-    const canvas = document.createElement('canvas');
-    canvas.width = v.videoWidth || 1080;
-    canvas.height = v.videoHeight || 1920;
-    canvas.getContext('2d')!.drawImage(v, 0, 0);
-    canvas.toBlob((b) => {
-      if (!b) return;
-      stopCamera();
-      setPreviewUrl(URL.createObjectURL(b));
-      setPreviewBlob(b);
-    }, 'image/jpeg', 0.92);
-  };
-
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    stopCamera();
     setPreviewUrl(URL.createObjectURL(file));
     setPreviewBlob(file);
     e.target.value = '';
@@ -297,7 +246,6 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     ].sort((a, b) => a.missionIndex - b.missionIndex);
 
     setPhotos(updated);
-    stopCamera();
     setPreviewUrl('');
     setPreviewBlob(null);
 
@@ -377,7 +325,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const currentPhotoForMission = photos.find((p) => p.missionIndex === currentMission);
   const displayUrl = previewUrl || currentPhotoForMission?.previewUrl || '';
-  const hasCapture = !!(previewUrl || currentPhotoForMission);
+  const hasCapture = !!(previewBlob || currentPhotoForMission);
 
   // ════════════════════════════════════════════════════════════════════════════
   // INTRO
@@ -433,29 +381,20 @@ export default function CollageStation({ station, onContinue, code }: Props) {
           </ProgressDots>
 
           <CaptureArea>
-            {cameraActive && !previewUrl
-              ? <CaptureVideo ref={videoRef} muted playsInline autoPlay />
-              : displayUrl
-                ? <CapturePreviewImg src={displayUrl} alt="preview" />
-                : <><PlaceholderIcon>🖼</PlaceholderIcon><PlaceholderText>הדליקו מצלמה או העלו תמונה</PlaceholderText></>
+            {displayUrl
+              ? <CapturePreviewImg src={displayUrl} alt="preview" />
+              : <><PlaceholderIcon>🖼</PlaceholderIcon><PlaceholderText>צלמו או העלו תמונה</PlaceholderText></>
             }
           </CaptureArea>
 
           {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: 13, marginBottom: 8 }}>{error}</p>}
 
-          {cameraActive && !previewUrl ? (
-            <PrimaryBtn onClick={handleTakePhoto} style={{ marginBottom: 10 }}>📸 צלם עכשיו</PrimaryBtn>
-          ) : (
-            <>
-              <ButtonRow>
-                <HalfBtn onClick={() => quickCaptureRef.current?.click()}>📷 צילום ברגע</HalfBtn>
-                <HalfBtn onClick={handleActivateCamera}>🎥 הפעלת מצלמה</HalfBtn>
-              </ButtonRow>
-              <GalleryBtn onClick={() => fileInputRef.current?.click()}>🖼 העלאה מהגלריה</GalleryBtn>
-            </>
-          )}
+          <ButtonRow>
+            <HalfBtn onClick={() => quickCaptureRef.current?.click()}>📷 צילום ברגע</HalfBtn>
+            <HalfBtn onClick={() => fileInputRef.current?.click()}>🖼 מהגלריה</HalfBtn>
+          </ButtonRow>
 
-          {previewUrl && <OutlineBtn onClick={() => { stopCamera(); setPreviewUrl(''); setPreviewBlob(null); }} style={{ marginBottom: 8 }}>צלם מחדש</OutlineBtn>}
+          {previewUrl && <OutlineBtn onClick={() => { setPreviewUrl(''); setPreviewBlob(null); }} style={{ marginBottom: 8 }}>בחר מחדש</OutlineBtn>}
 
           <PrimaryBtn onClick={confirmPhoto} disabled={!hasCapture}>אישור תמונה והמשך</PrimaryBtn>
 

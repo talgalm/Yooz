@@ -653,6 +653,22 @@ export default function StoryModulePage() {
   const shellColor = getThemeShellColor(activityTheme);
   const transitionBg = getThemeTransitionBackground(activityTheme);
 
+  useEffect(() => {
+    const body = document.body;
+    const prevBodyBg = body.style.backgroundColor;
+
+    body.style.backgroundColor = shellColor;
+
+    const metas = document.querySelectorAll('meta[name="theme-color"]') as NodeListOf<HTMLMetaElement>;
+    const prevThemes = Array.from(metas).map((m) => m.content);
+    metas.forEach((m) => { m.content = shellColor; });
+
+    return () => {
+      body.style.backgroundColor = prevBodyBg;
+      metas.forEach((m, i) => { m.content = prevThemes[i]; });
+    };
+  }, [shellColor]);
+
   // Popup modal (shared across all phases)
   const popupModal = currentPopup ? (
     <ModalOverlay>

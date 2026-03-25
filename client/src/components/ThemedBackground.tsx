@@ -21,9 +21,9 @@ export default function ThemedBackground({ theme, children }: ThemedBackgroundPr
 
 export function getThemeShellColor(theme?: string): string {
   switch (theme) {
-    case 'ocean':  return '#1a5276';
-    case 'desert': return '#C89838';
-    default:       return '#9cd060';
+    case 'ocean':  return '#428bad';
+    case 'desert': return '#D4A84B';
+    default:       return '#a9cb4f';
   }
 }
 
