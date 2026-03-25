@@ -91,6 +91,7 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
       const mod = moduleConfig as any;
       data.module = {
         type: moduleConfig.type || 'story',
+        theme: mod.theme || undefined,
         backgroundImage: moduleConfig.backgroundImage || undefined,
         items: Array.isArray(mod.items)
           ? mod.items

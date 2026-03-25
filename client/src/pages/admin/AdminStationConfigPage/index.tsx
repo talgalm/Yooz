@@ -34,7 +34,7 @@ import {
   SelectionSubtextSmall,
 } from '../styled';
 
-type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge';
+type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage';
 
 interface StationData {
   _id: string;
@@ -71,7 +71,7 @@ export default function AdminStationConfigPage() {
   const navigate = useNavigate();
   const t = useTranslations(texts);
 
-  const validTypes: StationTypeOption[] = ['text', 'video', 'image', 'narrative', 'badge'];
+  const validTypes: StationTypeOption[] = ['text', 'video', 'image', 'narrative', 'badge', 'collage'];
   const typeFromUrl = searchParams.get('type') as StationTypeOption | null;
   const defaultType: StationTypeOption = typeFromUrl && validTypes.includes(typeFromUrl) ? typeFromUrl : 'text';
 
@@ -98,6 +98,12 @@ export default function AdminStationConfigPage() {
   const [badgeTitle, setBadgeTitle] = useState('');
   const [badgeSubtitle, setBadgeSubtitle] = useState('');
   const [badgeImageUrl, setBadgeImageUrl] = useState('');
+  // Collage station
+  const [collageHeader, setCollageHeader] = useState('');
+  const [collageDescription, setCollageDescription] = useState('');
+  const [collageMissions, setCollageMissions] = useState<{ title: string; description: string }[]>([
+    { title: '', description: '' },
+  ]);
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -131,6 +137,13 @@ export default function AdminStationConfigPage() {
           if (settings.subtitle) setBadgeSubtitle(settings.subtitle as string);
           if (settings.badgeImageUrl) setBadgeImageUrl(settings.badgeImageUrl as string);
         }
+        if (s.type === 'collage') {
+          if (settings.header) setCollageHeader(settings.header as string);
+          if (settings.description) setCollageDescription(settings.description as string);
+          if (Array.isArray(settings.missions) && (settings.missions as unknown[]).length > 0) {
+            setCollageMissions(settings.missions as { title: string; description: string }[]);
+          }
+        }
         setInitialLoading(false);
       })
       .catch(() => navigate('/admin/dashboard'));
@@ -162,6 +175,13 @@ export default function AdminStationConfigPage() {
         settings.title = badgeTitle.trim();
         settings.subtitle = badgeSubtitle.trim();
         settings.badgeImageUrl = badgeImageUrl.trim();
+      }
+      if (stationType === 'collage') {
+        settings.header = collageHeader.trim();
+        settings.description = collageDescription.trim();
+        settings.missions = collageMissions
+          .filter((m) => m.title.trim())
+          .map((m) => ({ title: m.title.trim(), description: m.description.trim() }));
       }
 
       const payload = {
@@ -198,11 +218,12 @@ export default function AdminStationConfigPage() {
     image: 'תחנת תמונה - טסט',
     narrative: 'תחנת נרטיב - טסט',
     badge: 'תחנת תג - טסט',
+    collage: 'תחנת קולאז׳ - טסט',
   };
 
   const handleFillRandom = () => {
     const ts = Date.now().toString().slice(-4);
-    const types: StationTypeOption[] = ['text', 'video', 'image', 'narrative', 'badge'];
+    const types: StationTypeOption[] = ['text', 'video', 'image', 'narrative', 'badge', 'collage'];
     const randomType = types[Math.floor(Math.random() * types.length)];
     setStationType(randomType);
     setName(`${stationNames[randomType]} #${ts}`);
@@ -220,6 +241,9 @@ export default function AdminStationConfigPage() {
     setBadgeTitle('');
     setBadgeSubtitle('');
     setBadgeImageUrl('');
+    setCollageHeader('');
+    setCollageDescription('');
+    setCollageMissions([{ title: '', description: '' }]);
     if (randomType === 'text') {
       setTextContent('זהו תוכן טקסט לדוגמה עבור תחנת בדיקה. כאן יופיע המידע שהמשתתף צריך לקרוא.');
     } else if (randomType === 'video') {
@@ -235,6 +259,14 @@ export default function AdminStationConfigPage() {
       setBadgeTitle('כל הכבוד!');
       setBadgeSubtitle('השלמת את המשימה בהצלחה');
       setBadgeImageUrl('https://picsum.photos/400/400');
+    } else if (randomType === 'collage') {
+      setCollageHeader('בואו ניצור יחד קולאז׳ חי');
+      setCollageDescription('קחו בין תמונה אחת לשלוש לפי ההנחיות. אנחנו מחפשים רגעים אמיתיים.');
+      setCollageMissions([
+        { title: 'מעגל הצוות', description: 'צלמו את כל הצוות עומד במעגל ומביט אל המרכז.' },
+        { title: 'אביזר מצחיק', description: 'צלמו תמונה עם חפץ אקראי ומצחיק שמצאתם בחדר.' },
+        { title: 'קרני אצבעות', description: 'צרו זוגות ועשו עם האצבעות "קרניים" אחד אל השני עם חיוך.' },
+      ]);
     }
   };
 
@@ -283,6 +315,10 @@ export default function AdminStationConfigPage() {
                     <SelectionButton type="button" selected={stationType === 'badge'} onClick={() => setStationType('badge')}>
                       <div>{t.typeBadge}</div>
                       <SelectionSubtextSmall>{t.typeBadgeDesc}</SelectionSubtextSmall>
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={stationType === 'collage'} onClick={() => setStationType('collage')}>
+                      <div>{t.typeCollage}</div>
+                      <SelectionSubtextSmall>{t.typeCollageDesc}</SelectionSubtextSmall>
                     </SelectionButton>
                   </SelectionGroup>
                 </div>
@@ -443,6 +479,61 @@ export default function AdminStationConfigPage() {
                       onChange={(e) => setBadgeImageUrl(e.target.value)}
                     />
                   </InlineRow>
+                </VerticalStack>
+              )}
+
+              {stationType === 'collage' && (
+                <VerticalStack>
+                  <SectionLabelNoMargin>{t.collageHeader}</SectionLabelNoMargin>
+                  <Input
+                    placeholder={t.collageHeaderPlaceholder}
+                    value={collageHeader}
+                    onChange={(e) => setCollageHeader(e.target.value)}
+                  />
+                  <SectionLabelNoMargin>{t.collageDescription}</SectionLabelNoMargin>
+                  <Input
+                    placeholder={t.collageDescriptionPlaceholder}
+                    value={collageDescription}
+                    onChange={(e) => setCollageDescription(e.target.value)}
+                  />
+
+                  <SectionLabelNoMargin>{t.collageMissions}</SectionLabelNoMargin>
+                  {collageMissions.map((mission, idx) => (
+                    <div key={idx} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <SectionLabelNoMargin style={{ margin: 0 }}>
+                          {t.collageMissionNum} {idx + 1}
+                        </SectionLabelNoMargin>
+                        {collageMissions.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setCollageMissions((ms) => ms.filter((_, i) => i !== idx))}
+                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
+                          >
+                            {t.collageMissionRemove}
+                          </button>
+                        )}
+                      </div>
+                      <Input
+                        placeholder={t.collageMissionTitle}
+                        value={mission.title}
+                        onChange={(e) => setCollageMissions((ms) => ms.map((m, i) => i === idx ? { ...m, title: e.target.value } : m))}
+                        style={{ marginBottom: 8 }}
+                      />
+                      <Input
+                        placeholder={t.collageMissionDesc}
+                        value={mission.description}
+                        onChange={(e) => setCollageMissions((ms) => ms.map((m, i) => i === idx ? { ...m, description: e.target.value } : m))}
+                      />
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setCollageMissions((ms) => [...ms, { title: '', description: '' }])}
+                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    + {t.collageMissionAdd}
+                  </button>
                 </VerticalStack>
               )}
             </FormSectionCardWide>

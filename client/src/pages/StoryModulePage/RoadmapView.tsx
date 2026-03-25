@@ -4,8 +4,10 @@ import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HeaderActions } from '../../components/styled';
 import type { ModuleItemData } from './types';
 import storySideWave from '../../assets/story-side-wave.svg';
+import storySideWaveBlue from '../../assets/story-side-wave-blue.svg';
 import storyLake from '../../assets/story-lake.svg';
 import { ROADMAP_DECORATIONS } from './roadmapTrees';
+import { getThemeKit, OCEAN_DECORATIONS, DESERT_DECORATIONS, type RoadmapThemeKit } from './roadmapThemes';
 
 // ─── Constants ───
 
@@ -27,9 +29,7 @@ const GameHeader = styled('div')({
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '10px 16px',
-  background: 'linear-gradient(135deg, rgba(45,80,22,0.92) 0%, rgba(56,100,30,0.88) 100%)',
   backdropFilter: 'blur(8px)',
-  borderBottom: '1px solid rgba(255,255,255,0.08)',
   boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
 });
 
@@ -102,7 +102,7 @@ const cloudDrift = keyframes`
 
 const RoadmapContainer = styled('div')({
   display: 'flex', flexDirection: 'column', height: '100dvh',
-  background: '#a9cb4f', overflow: 'hidden',
+  overflow: 'hidden',
 });
 
 const ScrollArea = styled('div')({
@@ -121,8 +121,8 @@ const NodeWrapper = styled('div')<{ state: 'completed' | 'active' | 'locked'; an
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     cursor: state === 'active' ? 'pointer' : 'default',
     zIndex: 10,
-    border: `5px solid ${state === 'locked' ? '#a0a080' : '#6c5ce7'}`,
-    background: state === 'locked' ? '#c8cc88' : '#d4e84e',
+    border: `5px solid var(--node-${state}-border)`,
+    background: `var(--node-${state}-bg)`,
     boxShadow: state === 'active' ? '0 6px 20px rgba(0,0,0,.3)' : '0 4px 12px rgba(0,0,0,.2)',
     animation: state === 'active'
       ? `${pulse} 1.5s ease-in-out infinite`
@@ -137,7 +137,7 @@ const NodeWrapper = styled('div')<{ state: 'completed' | 'active' | 'locked'; an
 
 const PulseRingEl = styled('div')({
   position: 'absolute', width: NODE_SIZE + 24, height: NODE_SIZE + 24,
-  borderRadius: '50%', border: '3px solid rgba(180,210,50,.5)',
+  borderRadius: '50%', border: '3px solid var(--pulse-ring-color, rgba(180,210,50,.5))',
   top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
   animation: `${pulseRing} 2s ease-out infinite`,
   pointerEvents: 'none', zIndex: 9,
@@ -152,8 +152,9 @@ const NodeNumber = styled('span')<{ state: 'completed' | 'active' | 'locked' }>(
 const NodeLabel = styled('div')({
   position: 'absolute', top: NODE_SIZE / 2 + 10, left: '50%',
   transform: 'translateX(-50%)', whiteSpace: 'nowrap',
-  fontSize: 11, fontWeight: 700, color: '#fff',
-  textShadow: '0 1px 4px rgba(0,0,0,.6)',
+  fontSize: 11, fontWeight: 700,
+  color: 'var(--node-label-color, #fff)',
+  textShadow: 'var(--node-label-shadow, 0 1px 4px rgba(0,0,0,.6))',
   textAlign: 'center', maxWidth: 100, overflow: 'hidden',
   textOverflow: 'ellipsis', letterSpacing: 0.3,
 });
@@ -252,15 +253,15 @@ const FootprintSvg = () => (
 
 // ─── Background ───
 
-function SceneBackground({ width: W, height: H }: { width: number; height: number }) {
+function SceneBackground({ width: W, height: H, kit }: { width: number; height: number; kit: RoadmapThemeKit }) {
   return (
     <svg style={{ position: 'absolute', top: 0, left: 0, zIndex: 0 }}
       width={W} height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
       <defs>
         <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#8fb248" />
-          <stop offset="55%" stopColor="#8fb248" />
-          <stop offset="100%" stopColor="#8fb248" />
+          <stop offset="0%" stopColor={kit.sceneBgTop} />
+          <stop offset="55%" stopColor={kit.sceneBgMid} />
+          <stop offset="100%" stopColor={kit.sceneBgBottom} />
         </linearGradient>
       </defs>
       <rect x="0" y="0" width={W} height={H} fill="url(#bgGrad)" />
@@ -564,12 +565,14 @@ interface RoadmapViewProps {
   groupName?: string;
   popupModal: React.ReactNode;
   t: Record<string, string>;
+  theme?: string;
 }
 
 export default function RoadmapView({
   items, currentItemIndex, completedCount, showFootsteps,
-  onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, activityName, groupName, popupModal, t,
+  onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, activityName, groupName, popupModal, t, theme,
 }: RoadmapViewProps) {
+  const kit = useMemo(() => getThemeKit(theme), [theme]);
   const scrollRef   = useRef<HTMLDivElement>(null);
   const canvasRef   = useRef<HTMLDivElement>(null);
   const activeNodeRef = useRef<HTMLDivElement>(null);
@@ -715,6 +718,12 @@ export default function RoadmapView({
     });
   }, [W, items]);
 
+  const themedDecorations = useMemo(() => {
+    if (theme === 'ocean') return OCEAN_DECORATIONS;
+    if (theme === 'desert') return DESERT_DECORATIONS;
+    return ROADMAP_DECORATIONS;
+  }, [theme]);
+
   const treePlacements = useMemo(() => {
     if (W <= 0 || totalHeight <= 0 || items.length < 2) {
       return [] as Array<{
@@ -731,12 +740,15 @@ export default function RoadmapView({
     const { trackLeft, trackRight } = getTrackMetrics(W);
     const seed = hashString(items.map((item) => item._id).join('|')) + W * 11 + totalHeight * 3 + treeSeedRef.current;
     const rng = createSeededRandom(seed);
-    const wantedTreeCount = 30;
-    const wantedOtherCount = 40;
+
+    const primaryCategory = kit.decorationCategories[0] || 'Trees';
+    const primaryDecorations = themedDecorations.filter((item) => item.category === primaryCategory);
+    const otherDecorations = themedDecorations.filter((item) => item.category !== primaryCategory);
+    const wantedPrimaryCount = primaryDecorations.length > 0 ? 30 : 0;
+    const wantedOtherCount = otherDecorations.length > 0 ? 40 : 0;
 
     const forbiddenRects: Rect[] = [];
 
-    // Keep decorations off only the core road stroke, so they can appear very close.
     const roadHalf = ROAD_WIDTH / 2 + 2;
     for (let row = 0; row < numRows; row += 1) {
       const y = getRowY(row);
@@ -768,11 +780,12 @@ export default function RoadmapView({
       height: number;
       flipX: boolean;
     }> = [];
-    const treeDecorations = ROADMAP_DECORATIONS.filter((item) => item.category === 'Trees');
-    const otherDecorations = ROADMAP_DECORATIONS.filter((item) => item.category !== 'Trees');
+
     const wantedDecorations = [
-      ...Array.from({ length: wantedTreeCount }, () => treeDecorations[Math.floor(rng() * treeDecorations.length)]),
-      ...Array.from({ length: wantedOtherCount }, () => otherDecorations[Math.floor(rng() * otherDecorations.length)]),
+      ...Array.from({ length: wantedPrimaryCount }, () =>
+        primaryDecorations[Math.floor(rng() * primaryDecorations.length)]),
+      ...Array.from({ length: wantedOtherCount }, () =>
+        otherDecorations[Math.floor(rng() * otherDecorations.length)]),
     ];
 
     for (let i = wantedDecorations.length - 1; i > 0; i -= 1) {
@@ -809,7 +822,7 @@ export default function RoadmapView({
     }
 
     return placements;
-  }, [W, totalHeight, items, numRows]);
+  }, [W, totalHeight, items, numRows, kit, themedDecorations]);
 
   // ─── House placements (2 small houses anywhere except on the road) ───
   const housePlacements = useMemo(() => {
@@ -920,8 +933,24 @@ export default function RoadmapView({
     [completedCount, currentItemIndex],
   );
 
+  const themeVars: React.CSSProperties & Record<string, string> = {
+    '--node-active-border': kit.nodeActiveBorder,
+    '--node-active-bg': kit.nodeActiveBg,
+    '--node-completed-border': kit.nodeCompletedBorder,
+    '--node-completed-bg': kit.nodeCompletedBg,
+    '--node-locked-border': kit.nodeLockedBorder,
+    '--node-locked-bg': kit.nodeLockedBg,
+    '--node-label-color': kit.nodeLabelColor,
+    '--node-label-shadow': kit.nodeLabelShadow,
+    '--pulse-ring-color': kit.pulseRingColor,
+  } as React.CSSProperties & Record<string, string>;
+
   const header = (
-    <GameHeader style={{ position: 'sticky', top: 0, zIndex: 30, flexShrink: 0 }}>
+    <GameHeader style={{
+      position: 'sticky', top: 0, zIndex: 30, flexShrink: 0,
+      background: kit.headerGradient,
+      borderBottom: `1px solid ${kit.headerBorder}`,
+    }}>
       <HeaderLeft>
         <HeaderActivityName>{activityName}</HeaderActivityName>
         {groupName && <HeaderGroupName>{groupName}</HeaderGroupName>}
@@ -939,7 +968,7 @@ export default function RoadmapView({
 
   if (W <= 0) {
     return (
-      <RoadmapContainer>
+      <RoadmapContainer style={{ background: kit.containerBg, ...themeVars }}>
         {header}
         <ScrollArea ref={scrollRef}>
           <div ref={canvasRef} style={{ width: '100%', minHeight: '100dvh' }} />
@@ -949,26 +978,22 @@ export default function RoadmapView({
   }
 
   return (
-    <RoadmapContainer>
+    <RoadmapContainer style={{ background: kit.containerBg, ...themeVars }}>
       {header}
 
       <ScrollArea ref={scrollRef}>
         <PathCanvas ref={canvasRef} height={totalHeight}>
-          <SceneBackground width={W} height={totalHeight} />
+          <SceneBackground width={W} height={totalHeight} kit={kit} />
           <WorldDecorations W={W} numRows={numRows} totalH={totalHeight} />
 
-          {/* Road */}
           <svg style={{ position: 'absolute', top: 0, left: 0, zIndex: 2 }}
             width={W} height={totalHeight} viewBox={`0 0 ${W} ${totalHeight}`}
             overflow="visible">
-            {/* Outer border */}
-            <path d={svgPath} fill="none" stroke="#2a1a0a"
+            <path d={svgPath} fill="none" stroke={kit.roadBorder}
               strokeWidth={ROAD_BORDER} strokeLinecap="round" strokeLinejoin="round" />
-            {/* Road surface */}
-            <path d={svgPath} fill="none" stroke="#3A291A"
+            <path d={svgPath} fill="none" stroke={kit.roadSurface}
               strokeWidth={ROAD_WIDTH} strokeLinecap="round" strokeLinejoin="round" />
-            {/* Centre-line dashes */}
-            <path d={svgPath} fill="none" stroke="rgba(255,255,255,.14)"
+            <path d={svgPath} fill="none" stroke={kit.roadCenterLine}
               strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"
               strokeDasharray="20 24" />
           </svg>
@@ -990,7 +1015,8 @@ export default function RoadmapView({
                 top: placement.top,
                 width: placement.width,
                 height: placement.height,
-                zIndex: placement.category === 'Trees' ? 3 : placement.category === 'Water' ? 2 : 0,
+                zIndex: ['Trees', 'Cactus', 'Coral', 'Seaweed'].includes(placement.category) ? 3
+                  : ['Water', 'Bubbles', 'Fish'].includes(placement.category) ? 2 : 0,
                 transform: placement.flipX ? 'translate(-50%, -100%) scaleX(-1)' : 'translate(-50%, -100%)',
                 transformOrigin: 'center bottom',
               }}
@@ -1001,8 +1027,7 @@ export default function RoadmapView({
 
 
 
-          {/* Houses */}
-          {housePlacements.map((h, i) => (
+          {kit.showHouses && housePlacements.map((h, i) => (
             <HouseDecoration
               key={`house-${i}`}
               src="/images/village-house.svg"
@@ -1018,10 +1043,10 @@ export default function RoadmapView({
             />
           ))}
 
-          {sideWavePlacements.left.map((placement, index) => (
+          {kit.showSideWaves && sideWavePlacements.left.map((placement, index) => (
             <RoadsideWaveDecoration
               key={`left-wave-${index}`}
-              src={storySideWave}
+              src={theme === 'ocean' ? storySideWaveBlue : storySideWave}
               alt=""
               aria-hidden
               style={{
@@ -1034,10 +1059,10 @@ export default function RoadmapView({
             />
           ))}
 
-          {sideWavePlacements.right.map((placement, index) => (
+          {kit.showSideWaves && sideWavePlacements.right.map((placement, index) => (
             <RoadsideWaveDecoration
               key={`right-wave-${index}`}
-              src={storySideWave}
+              src={theme === 'ocean' ? storySideWaveBlue : storySideWave}
               alt=""
               aria-hidden
               style={{
@@ -1072,8 +1097,7 @@ export default function RoadmapView({
         </PathCanvas>
       </ScrollArea>
 
-      {/* Floating clouds */}
-      {clouds.map((c) => (
+      {kit.showClouds && clouds.map((c) => (
         <CloudEl
           key={`cloud-${c.id}`}
           src="/images/cloud.svg"

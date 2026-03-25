@@ -1,7 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
-import NatureBackground from '../../components/NatureBackground';
-import SpyThemeWrapper from '../../components/themes/SpyThemeWrapper';
+import ThemedBackground from '../../components/ThemedBackground';
 import OrderGame from '../../components/games/OrderGame';
 import TriviaGame from '../../components/games/TriviaGame';
 import PuzzleGame from '../../components/games/PuzzleGame';
@@ -10,6 +9,7 @@ import BallGame from '../../components/games/BallGame';
 import TrashSortGame from '../../components/games/TrashSortGame';
 import NarrativeStation from '../../components/stations/NarrativeStation';
 import BadgeStation from '../../components/stations/BadgeStation';
+import CollageStation from '../../components/stations/CollageStation';
 import { styled, keyframes } from '@mui/material/styles';
 import {
   PageContainer,
@@ -237,7 +237,7 @@ export default function PlayingPhase({
   stationHintText,
   stationHintUsed,
   participantAge,
-  bgStyle,
+  bgStyle: _bgStyle,
   theme,
   code,
   onGameComplete,
@@ -330,6 +330,10 @@ export default function PlayingPhase({
 
       if (station.stationType === 'badge') {
         return <BadgeStation station={station} onContinue={onStationContinue} />;
+      }
+
+      if (station.stationType === 'collage') {
+        return <CollageStation station={station} onContinue={onStationContinue} code={code} />;
       }
 
       // Unknown station type fallback
@@ -495,15 +499,22 @@ export default function PlayingPhase({
     </>
   );
 
-  // Missions render their own full-screen layout
+  // Missions and collage stations render their own full-screen layout
   if (currentItem.type === 'mission') {
     return renderContent();
   }
 
-  const Wrapper = theme === 'spy' ? SpyThemeWrapper : NatureBackground;
+  if (currentItem.type === 'station' && (currentItem as StationItemData).stationType === 'collage') {
+    return (
+      <>
+        {renderContent()}
+        {hintModals}
+      </>
+    );
+  }
 
   return (
-    <Wrapper>
+    <ThemedBackground theme={theme}>
       <AnimatedStage>
         <AnimatedHeader>
           {headerBar}
@@ -515,7 +526,7 @@ export default function PlayingPhase({
         </AnimatedContent>
       </AnimatedStage>
       {hintModals}
-    </Wrapper>
+    </ThemedBackground>
   );
 }
 

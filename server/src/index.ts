@@ -16,6 +16,7 @@ import helpRouter from './routes/help';
 import analyticsRouter from './routes/analytics';
 import usersRouter from './routes/users';
 import missionsRouter from './routes/missions';
+import collageRouter from './routes/collage';
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.use('/api/help', helpRouter);
 app.use('/api/admin/analytics', analyticsRouter);
 app.use('/api/admin/users', usersRouter);
 app.use('/api/admin/missions', missionsRouter);
+app.use('/api/collage', collageRouter);
 
 // Serve static client build in production
 app.use(express.static(CLIENT_BUILD_PATH));

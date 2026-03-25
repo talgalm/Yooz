@@ -9,6 +9,7 @@ import { texts } from './StoryModulePage.i18n';
 import { GAME_CONSTANTS, type GameResult } from '../../components/games/types';
 import LangDrawer from '../../components/LangDrawer';
 import NatureBackground from '../../components/NatureBackground';
+import ThemedBackground, { getThemeShellColor, getThemeTransitionBackground } from '../../components/ThemedBackground';
 import { styled, keyframes } from '@mui/material/styles';
 import {
   PageContainer,
@@ -48,11 +49,10 @@ import PlayingPhase from './PlayingPhase';
 
 // ─── Local styled components (only those used in this file) ───
 
-// Green wrapper so there's never a white flash — covers MobileContainer's white bg
-const PageShell = styled('div')({
+const PageShell = styled('div')<{ shellColor?: string }>(({ shellColor }) => ({
   minHeight: '100dvh',
-  background: '#9cd060',
-});
+  background: shellColor || '#9cd060',
+}));
 
 const FullScreenLoader = styled('div')({
   minHeight: '100dvh',
@@ -109,12 +109,12 @@ const sceneTransitionOpen = keyframes`
   }
 `;
 
-const SceneTransitionOverlay = styled('div')<{ stage: 'closing' | 'opening' }>(({ stage }) => ({
+const SceneTransitionOverlay = styled('div')<{ stage: 'closing' | 'opening'; transitionBg?: string }>(({ stage, transitionBg }) => ({
   position: 'fixed',
   inset: 0,
   zIndex: 1400,
   pointerEvents: 'auto',
-  background: `
+  background: transitionBg || `
     radial-gradient(circle at center, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.08) 26%, rgba(156,208,96,0.2) 56%, rgba(88,152,58,0.42) 100%),
     linear-gradient(180deg, rgba(184,232,240,0.18) 0%, rgba(156,208,96,0.2) 42%, rgba(84,146,50,0.34) 100%)
   `,
@@ -649,6 +649,10 @@ export default function StoryModulePage() {
       }
     : {};
 
+  const activityTheme = data.module.theme;
+  const shellColor = getThemeShellColor(activityTheme);
+  const transitionBg = getThemeTransitionBackground(activityTheme);
+
   // Popup modal (shared across all phases)
   const popupModal = currentPopup ? (
     <ModalOverlay>
@@ -686,6 +690,7 @@ export default function StoryModulePage() {
           groupName={participant?.group}
           popupModal={popupModal}
           t={t}
+          theme={data.module.theme}
         />
         {showGuidelines && !currentPopup && (
           <GuidelinesPopup
@@ -697,7 +702,7 @@ export default function StoryModulePage() {
           />
         )}
         {entryTransitionStage !== 'idle' && (
-          <SceneTransitionOverlay stage={entryTransitionStage} />
+          <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
         )}
       </>
     );
@@ -726,7 +731,7 @@ export default function StoryModulePage() {
           t={t}
         />
         {entryTransitionStage !== 'idle' && (
-          <SceneTransitionOverlay stage={entryTransitionStage} />
+          <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
         )}
       </>
     );
@@ -746,7 +751,7 @@ export default function StoryModulePage() {
           t={t}
         />
         {entryTransitionStage !== 'idle' && (
-          <SceneTransitionOverlay stage={entryTransitionStage} />
+          <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
         )}
       </>
     );
@@ -759,7 +764,7 @@ export default function StoryModulePage() {
     const totalScore = Math.max(0, rawTotal - totalHintPenalty);
 
     return (
-      <NatureBackground>
+      <ThemedBackground theme={activityTheme}>
         <HeaderBar style={{ background: 'rgba(0,0,0,0.1)', borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
           <AccentText style={{ color: '#fff' }}>{data.name}</AccentText>
           <HeaderActions>
@@ -789,7 +794,7 @@ export default function StoryModulePage() {
           </OutlineButton>
         </CenteredContent>
         {popupModal}
-      </NatureBackground>
+      </ThemedBackground>
     );
   }
 
@@ -828,7 +833,7 @@ export default function StoryModulePage() {
         t={t}
       />
       {entryTransitionStage !== 'idle' && (
-        <SceneTransitionOverlay stage={entryTransitionStage} />
+        <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
       )}
     </>
   );

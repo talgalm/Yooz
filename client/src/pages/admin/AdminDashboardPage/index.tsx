@@ -242,20 +242,10 @@ const MobileCard = styled('div')({
   },
 });
 
-const CONNECTION_ICONS: Record<string, string> = {
-  single: '👤',
-  group: '👥',
-};
-
-const MODULE_ICONS: Record<string, string> = {
-  mission: '🗺️',
-  story: '✏️',
-};
-
 // ─── Types ───
 
 type MainTab = 'activities' | 'statistics' | 'stations' | 'users';
-type StationsSection = 'stations' | 'games' | 'missions';
+type StationsSection = 'stations' | 'games' | 'missions' | 'collage';
 type GameSubTab = 'order' | 'trivia' | 'puzzle' | 'trueFalse' | 'ballGame' | 'trashSort';
 
 interface Activity {
@@ -281,7 +271,7 @@ export interface Game {
 export interface Station {
   _id: string;
   name: string;
-  type?: 'text' | 'video' | 'image' | 'narrative' | 'badge';
+  type?: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage';
   description?: string;
   customer?: string;
   theme?: string;
@@ -457,24 +447,24 @@ export default function AdminDashboardPage() {
                             <td><code style={{ color: '#666' }}>{activity.code}</code></td>
                             <td>
                               <StatusBadge status={activity.status}>
-                                {activity.status === 'live' ? `🟢 ${t.live}` : `📱 ${t.preview}`}
+                                {activity.status === 'live' ? t.live : t.preview}
                               </StatusBadge>
                             </td>
                             <td>
                               <BadgeGroup>
                                 <IconBadge variant="blue">
-                                  {CONNECTION_ICONS[activity.connectionType] || '📋'} {activity.connectionType}
+                                  {activity.connectionType}
                                 </IconBadge>
                                 {activity.module && (
                                   <IconBadge variant="purple">
-                                    {MODULE_ICONS[activity.module.type] || '🧩'} {activity.module.type}
+                                    {activity.module.type}
                                   </IconBadge>
                                 )}
                               </BadgeGroup>
                             </td>
                             <td>
                               <DateCell>
-                                📅 {new Date(activity.createdAt).toLocaleDateString()}
+                                {new Date(activity.createdAt).toLocaleDateString()}
                               </DateCell>
                             </td>
                           </tr>
@@ -498,14 +488,14 @@ export default function AdminDashboardPage() {
                         <MobileCardDetails>
                           <MobileCardCode>{activity.code}</MobileCardCode>
                           <IconBadge variant="blue">
-                            {CONNECTION_ICONS[activity.connectionType] || '📋'} {activity.connectionType}
+                            {activity.connectionType}
                           </IconBadge>
                           {activity.module && (
                             <IconBadge variant="purple">
-                              {MODULE_ICONS[activity.module.type] || '🧩'} {activity.module.type}
+                              {activity.module.type}
                             </IconBadge>
                           )}
-                          <MobileCardDate>📅 {new Date(activity.createdAt).toLocaleDateString()}</MobileCardDate>
+                          <MobileCardDate>{new Date(activity.createdAt).toLocaleDateString()}</MobileCardDate>
                         </MobileCardDetails>
                       </MobileCard>
                     ))}
@@ -534,6 +524,9 @@ export default function AdminDashboardPage() {
                 </SegmentedButton>
                 <SegmentedButton active={stationsSection === 'missions'} onClick={() => setStationsSection('missions')}>
                   {t.sectionMissions}
+                </SegmentedButton>
+                <SegmentedButton active={stationsSection === 'collage'} onClick={() => setStationsSection('collage')}>
+                  {t.sectionCollage}
                 </SegmentedButton>
               </SegmentedControl>
             </SegmentedControlCenter>
@@ -620,7 +613,7 @@ export default function AdminDashboardPage() {
                                 </td>
                                 <td><CellMuted>{m.customer || '—'}</CellMuted></td>
                                 <td>
-                                  <DateCell>📅 {new Date(m.createdAt).toLocaleDateString()}</DateCell>
+                                  <DateCell>{new Date(m.createdAt).toLocaleDateString()}</DateCell>
                                 </td>
                               </tr>
                             ))}
@@ -639,7 +632,7 @@ export default function AdminDashboardPage() {
                               </IconBadge>
                             </MobileCardHeader>
                             <MobileCardDetails>
-                              <MobileCardDate>📅 {new Date(m.createdAt).toLocaleDateString()}</MobileCardDate>
+                              <MobileCardDate>{new Date(m.createdAt).toLocaleDateString()}</MobileCardDate>
                             </MobileCardDetails>
                           </MobileCard>
                         ))}
@@ -648,6 +641,14 @@ export default function AdminDashboardPage() {
                   </>
                 )}
               </>
+            )}
+
+            {stationsSection === 'collage' && (
+              <AdminStationsTab
+                stations={stations.filter((s) => s.type === 'collage')}
+                onRefresh={refreshStations}
+                defaultType="collage"
+              />
             )}
           </>
         )}

@@ -39,6 +39,7 @@ export const texts = {
     badgeImage: 'Badge Image URL',
     customer: 'Customer (optional)',
     theme: 'Theme (optional)',
+    typeCollage: 'Collage',
   },
   he: {
     title: 'תחנות',
@@ -80,5 +81,6 @@ export const texts = {
     badgeImage: 'כתובת תמונת תג',
     customer: 'לקוח (אופציונלי)',
     theme: 'נושא (אופציונלי)',
+    typeCollage: 'קולאז׳',
   },
 };

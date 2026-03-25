@@ -20,7 +20,7 @@ router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateStationReq
     return;
   }
 
-  const stationType = type && ['text', 'video', 'image', 'narrative', 'badge'].includes(type) ? type : 'text';
+  const stationType = type && ['text', 'video', 'image', 'narrative', 'badge', 'collage'].includes(type) ? type : 'text';
 
   const station = await Station.create({
     name: name.trim(),
@@ -50,7 +50,7 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
     return;
   }
 
-  const stationType = type && ['text', 'video', 'image', 'narrative', 'badge'].includes(type) ? type : 'text';
+  const stationType = type && ['text', 'video', 'image', 'narrative', 'badge', 'collage'].includes(type) ? type : 'text';
 
   const station = await Station.findByIdAndUpdate(
     req.params.id,

@@ -77,11 +77,6 @@ const SectionHeader = styled('div')({
   marginBottom: 2,
 });
 
-const SectionIcon = styled('span')({
-  fontSize: 20,
-  lineHeight: 1,
-  flexShrink: 0,
-});
 
 const SectionHeaderTitle = styled('h3')({
   margin: 0,
@@ -522,7 +517,6 @@ export default function AdminCreateActivityPage() {
                     {/* Module type */}
                     <SectionCard>
                       <SectionHeader>
-                        <SectionIcon>🎯</SectionIcon>
                         <SectionHeaderTitle>{t.moduleType}</SectionHeaderTitle>
                       </SectionHeader>
                       <SelectionGroup>
@@ -542,8 +536,11 @@ export default function AdminCreateActivityPage() {
                             <SelectionButton type="button" selected={moduleTheme === ''} onClick={() => setModuleTheme('')}>
                               {t.themeDefault}
                             </SelectionButton>
-                            <SelectionButton type="button" selected={moduleTheme === 'spy'} onClick={() => setModuleTheme('spy')}>
-                              {t.themeSpy}
+                            <SelectionButton type="button" selected={moduleTheme === 'ocean'} onClick={() => setModuleTheme('ocean')}>
+                              {t.themeOcean}
+                            </SelectionButton>
+                            <SelectionButton type="button" selected={moduleTheme === 'desert'} onClick={() => setModuleTheme('desert')}>
+                              {t.themeDesert}
                             </SelectionButton>
                           </SelectionGroup>
                         </div>
@@ -553,7 +550,6 @@ export default function AdminCreateActivityPage() {
                     {/* Login fields */}
                     <SectionCard>
                       <SectionHeader>
-                        <SectionIcon>👤</SectionIcon>
                         <SectionHeaderTitle>{t.loginFields}</SectionHeaderTitle>
                       </SectionHeader>
                       <SelectionGroup>
@@ -579,7 +575,6 @@ export default function AdminCreateActivityPage() {
                     {/* Connection type */}
                     <SectionCard>
                       <SectionHeader>
-                        <SectionIcon>🔗</SectionIcon>
                         <SectionHeaderTitle>{t.connectionType}</SectionHeaderTitle>
                       </SectionHeader>
                       <SelectionGroup>
@@ -615,7 +610,6 @@ export default function AdminCreateActivityPage() {
                     {/* Opening */}
                     <SectionCard>
                       <SectionHeader>
-                        <SectionIcon>🎬</SectionIcon>
                         <SectionHeaderTitle>{t.openingSection}</SectionHeaderTitle>
                       </SectionHeader>
                       <SectionDescription style={{ margin: 0 }}>{t.openingDesc}</SectionDescription>
@@ -646,7 +640,6 @@ export default function AdminCreateActivityPage() {
                     {/* Scheduling */}
                     <SectionCard>
                       <SectionHeader>
-                        <SectionIcon>📅</SectionIcon>
                         <SectionHeaderTitle>{t.schedulingSection}</SectionHeaderTitle>
                       </SectionHeader>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14 }}>
@@ -691,7 +684,6 @@ export default function AdminCreateActivityPage() {
                     {/* Manager */}
                     <SectionCard>
                       <SectionHeader>
-                        <SectionIcon>🔐</SectionIcon>
                         <SectionHeaderTitle>{t.managerSection}</SectionHeaderTitle>
                       </SectionHeader>
                       <VerticalStack>
@@ -750,7 +742,6 @@ export default function AdminCreateActivityPage() {
 
                 <SectionCardWide>
                   <SectionHeader>
-                    <SectionIcon>📋</SectionIcon>
                     <SectionHeaderTitle>{t.guidelinesSection}</SectionHeaderTitle>
                   </SectionHeader>
                   <SectionDescription style={{ margin: 0 }}>{t.guidelinesDesc}</SectionDescription>
@@ -764,7 +755,6 @@ export default function AdminCreateActivityPage() {
 
                 <SectionCardWide>
                   <SectionHeader>
-                    <SectionIcon>📜</SectionIcon>
                     <SectionHeaderTitle>{t.instructionsSection}</SectionHeaderTitle>
                   </SectionHeader>
                   <SectionDescription style={{ margin: 0 }}>{t.instructionsDesc}</SectionDescription>

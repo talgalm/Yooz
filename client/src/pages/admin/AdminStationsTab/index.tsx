@@ -32,9 +32,10 @@ import {
 interface AdminStationsTabProps {
   stations: Station[];
   onRefresh: () => void;
+  defaultType?: string;
 }
 
-export default function AdminStationsTab({ stations, onRefresh }: AdminStationsTabProps) {
+export default function AdminStationsTab({ stations, onRefresh, defaultType }: AdminStationsTabProps) {
   const navigate = useNavigate();
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const t = useTranslations(texts);
@@ -56,6 +57,7 @@ export default function AdminStationsTab({ stations, onRefresh }: AdminStationsT
       case 'image': return t.typeImage;
       case 'narrative': return t.typeNarrative;
       case 'badge': return t.typeBadge;
+      case 'collage': return t.typeCollage;
       default: return type || '—';
     }
   };
@@ -64,7 +66,7 @@ export default function AdminStationsTab({ stations, onRefresh }: AdminStationsT
     <>
       <SectionHeaderRow>
         <PageTitleNoMargin>{t.title}</PageTitleNoMargin>
-        <SmallActionButton onClick={() => navigate('/admin/stations/new')}>
+        <SmallActionButton onClick={() => navigate(`/admin/stations/new${defaultType ? `?type=${defaultType}` : ''}`)}>
           {t.createNew}
         </SmallActionButton>
       </SectionHeaderRow>
