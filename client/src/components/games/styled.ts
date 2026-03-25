@@ -710,17 +710,19 @@ export const MediaStationImage = styled('img')({
 
 // ─── Station Design (unified: purple window, white headline, white btn + purple text) ───
 
-export const STATION_PURPLE = '#6c5ce7';
-export const STATION_PURPLE_DARK = '#5b4cd4';
+export const STATION_PURPLE = '#632e7d';
+export const STATION_PURPLE_DARK = '#9248a3';
 
-export const StationWindow = styled('div')({
-  background: STATION_PURPLE,
-  border: `2px solid ${STATION_PURPLE_DARK}`,
+export const StationWindow = styled('div', {
+  shouldForwardProp: (prop) => prop !== 'isDynamic',
+})<{ isDynamic?: boolean }>(({ isDynamic }) => ({
+  background: isDynamic ? 'transparent' : STATION_PURPLE,
+  border: isDynamic ? 'transparent' :  `2px solid ${STATION_PURPLE_DARK}`,
   borderRadius: 16,
-  padding: '20px 24px',
+  padding: isDynamic ? '24px 0px' : '20px 24px',
   width: '100%',
   maxWidth: 400,
-});
+}));
 
 export const StationHeadline = styled('h2')({
   color: '#fff',

@@ -153,7 +153,7 @@ const MissionItem = styled('li')<{ delay?: number }>(({ delay = 0 }) => ({
 }));
 
 const StarBullet = styled('span')({
-  color: STAR_GOLD,
+  color: '#632e7d',
   fontSize: 'clamp(15px, 2.2vh, 18px)',
   flexShrink: 0,
   marginTop: 0,

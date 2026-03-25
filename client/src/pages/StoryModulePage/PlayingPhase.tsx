@@ -161,7 +161,26 @@ const HeaderIconButton = styled(OutlineButton)({
 });
 
 const StationDescriptionText = styled(StationHeadline)({
-  marginBottom: 16,
+  marginBottom: 0,
+  marginTop: -4,
+});
+
+const StationTopLayout = styled('div')({
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  padding: '8px 24px 100px',
+  textAlign: 'center',
+});
+
+const FixedContinueButton = styled(StationContinueButton)({
+  position: 'fixed',
+  bottom: 24,
+  left: '50%',
+  transform: 'translateX(-50%)',
+  zIndex: 40,
+  boxShadow: '0 4px 20px rgba(108,92,231,0.35)',
 });
 
 const SkipButton = styled(PrimaryButton)({
@@ -258,19 +277,19 @@ export default function PlayingPhase({
 
       if (station.stationType === 'text') {
         return (
-          <CenteredContent>
+          <StationTopLayout>
             {station.description && (
               <StationDescriptionText>{station.description}</StationDescriptionText>
             )}
-            <StationWindow>
+            <StationWindow style={{ marginTop: 16 }}>
               <StationBodyText>
                 {(station.settings?.content as string) || ''}
               </StationBodyText>
             </StationWindow>
-            <StationContinueButton onClick={onStationContinue}>
+            <FixedContinueButton onClick={onStationContinue}>
               {t.continueButton}
-            </StationContinueButton>
-          </CenteredContent>
+            </FixedContinueButton>
+          </StationTopLayout>
         );
       }
 
@@ -286,11 +305,11 @@ export default function PlayingPhase({
 
       if (station.stationType === 'image') {
         return (
-          <CenteredContent>
+          <StationTopLayout>
             {station.description && (
               <StationDescriptionText>{station.description}</StationDescriptionText>
             )}
-            <StationWindow>
+            <StationWindow style={{ marginTop: 16 }} isDynamic>
               <MediaStationImageWrapper style={{ marginBottom: 0 }}>
                 <MediaStationImage
                   src={station.settings?.mediaUrl as string}
@@ -298,10 +317,10 @@ export default function PlayingPhase({
                 />
               </MediaStationImageWrapper>
             </StationWindow>
-            <StationContinueButton onClick={onStationContinue}>
+            <FixedContinueButton onClick={onStationContinue}>
               {t.continueButton}
-            </StationContinueButton>
-          </CenteredContent>
+            </FixedContinueButton>
+          </StationTopLayout>
         );
       }
 
@@ -315,14 +334,14 @@ export default function PlayingPhase({
 
       // Unknown station type fallback
       return (
-        <CenteredContent>
-          <StationWindow>
+        <StationTopLayout>
+          <StationWindow style={{ marginTop: 16 }}>
             <StationBodyText>Unknown station type</StationBodyText>
           </StationWindow>
-          <StationContinueButton onClick={onStationContinue}>
+          <FixedContinueButton onClick={onStationContinue}>
             {t.continueButton}
-          </StationContinueButton>
-        </CenteredContent>
+          </FixedContinueButton>
+        </StationTopLayout>
       );
     }
 
@@ -553,11 +572,11 @@ function VideoStationPlayer({ station, onContinue, t }: {
   }, []);
 
   return (
-    <CenteredContent>
+    <StationTopLayout>
       {station.description && (
         <StationDescriptionText>{station.description}</StationDescriptionText>
       )}
-      <StationWindow>
+      <StationWindow isDynamic style={{ marginTop: 50 }}>
         <MediaStationWrapper style={{ position: 'relative', marginBottom: 0 }}>
           <MediaStationVideo
             ref={videoRef}
@@ -578,12 +597,10 @@ function VideoStationPlayer({ station, onContinue, t }: {
           )}
         </MediaStationWrapper>
       </StationWindow>
-      {(!buttonAfterEnd || hasEnded) && (
-        <StationContinueButton onClick={onContinue}>
+      <FixedContinueButton onClick={onContinue}>
           {t.continueButton}
-        </StationContinueButton>
-      )}
-    </CenteredContent>
+        </FixedContinueButton>
+    </StationTopLayout>
   );
 }
 

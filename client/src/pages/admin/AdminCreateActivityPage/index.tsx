@@ -185,12 +185,6 @@ const NameInput = styled(Input)({
   },
 });
 
-const QuickActions = styled('div')({
-  display: 'flex',
-  gap: 8,
-  flexWrap: 'wrap',
-});
-
 export default function AdminCreateActivityPage() {
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
@@ -367,74 +361,6 @@ export default function AdminCreateActivityPage() {
       [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
       return next;
     });
-  };
-
-  const [randomLoading, setRandomLoading] = useState(false);
-  const [recyclingLoading, setRecyclingLoading] = useState(false);
-
-  const handleRandom = async () => {
-    setRandomLoading(true);
-    try {
-      const data = await adminApiFetch<{
-        items: { itemType: 'game' | 'station'; _id: string; name: string; subType: string }[];
-      }>('/api/admin/random-items?games=4&stations=2');
-      setModuleType('story');
-      setSelectedItems(data.items.map((i) => ({
-        itemType: i.itemType,
-        ref: i._id,
-        name: i.name,
-        subType: i.subType,
-      })));
-    } catch { /* silent */ } finally { setRandomLoading(false); }
-  };
-
-  const handleRecyclingActivity = async () => {
-    setRecyclingLoading(true);
-    try {
-      const [
-        narrative1Res, narrative2Res, narrative3Res,
-        trashSortRes, videoRes, badgeRes,
-      ] = await Promise.all([
-        adminApiFetch<{ station: { _id: string; name: string } }>('/api/admin/stations', {
-          method: 'POST',
-          body: JSON.stringify({ name: 'מפת הפארק', type: 'narrative', description: 'מסך פתיחה - מפת הפארק', settings: { title: 'ברוכים הבאים לפארק!', bodyText: 'פארק העיר זקוק לעזרתכם. בואו נצא למשימה חשובה לשמירה על הטבע והסביבה!', buttonText: 'התחל משימה', imageUrl: 'https://res.cloudinary.com/demo/image/upload/sample.jpg' } }),
-        }),
-        adminApiFetch<{ station: { _id: string; name: string } }>('/api/admin/stations', {
-          method: 'POST',
-          body: JSON.stringify({ name: 'אות מצוקה!', type: 'narrative', description: 'מסך סיפורי - אות מצוקה', settings: { title: 'אות מצוקה התגלה!', bodyText: 'קלטנו אות מצוקה מהפארק. מישהו משליך פסולת ומזהם את הסביבה! נדרשת עזרתכם בדחיפות כדי להציל את הפארק.', buttonText: 'המשך' } }),
-        }),
-        adminApiFetch<{ station: { _id: string; name: string } }>('/api/admin/stations', {
-          method: 'POST',
-          body: JSON.stringify({ name: 'תדריך משימה', type: 'narrative', description: 'מסך תדריך - רשימת המשימות', settings: { title: 'תדריך המשימה', bodyText: 'המשימות שלכם:\n\n1. מיינו את הפסולת לפחים הנכונים\n2. צפו בסרטון הסיכום של הסיירת\n\nבהצלחה, סוכנים!', buttonText: 'יוצאים למשימה!' } }),
-        }),
-        adminApiFetch<{ game: { _id: string; name: string } }>('/api/admin/games', {
-          method: 'POST',
-          body: JSON.stringify({ name: 'מיון פסולת', type: 'trashSort', description: 'מיינו את הפסולת לפחים הנכונים', settings: { bins: [{ id: 'organic', label: 'אורגני', color: '#8B4513' }, { id: 'paper', label: 'נייר', color: '#2196F3' }, { id: 'packaging', label: 'אריזות', color: '#FF9800' }], items: [{ id: 'banana', label: 'קליפת בננה', imageUrl: 'https://res.cloudinary.com/demo/image/upload/sample.jpg', correctBinId: 'organic' }, { id: 'cardboard', label: 'קרטון', imageUrl: 'https://res.cloudinary.com/demo/image/upload/sample.jpg', correctBinId: 'paper' }, { id: 'bottle', label: 'בקבוק פלסטיק', imageUrl: 'https://res.cloudinary.com/demo/image/upload/sample.jpg', correctBinId: 'packaging' }], scoring: { correctPoints: 10 }, countdownSeconds: 3, fallSpeedMs: 3000 } }),
-        }),
-        adminApiFetch<{ station: { _id: string; name: string } }>('/api/admin/stations', {
-          method: 'POST',
-          body: JSON.stringify({ name: 'סרטון הסיירת', type: 'video', description: 'סרטון סיכום מהסייר', settings: { mediaUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', buttonAfterEnd: true } }),
-        }),
-        adminApiFetch<{ station: { _id: string; name: string } }>('/api/admin/stations', {
-          method: 'POST',
-          body: JSON.stringify({ name: 'תג סיירת הפארק', type: 'badge', description: 'תג הישג - סיירת הפארק', settings: { title: 'כל הכבוד, סוכנים!', subtitle: 'השלמתם את משימת המיחזור בהצלחה!\nקיבלתם את תג סיירת הפארק', badgeImageUrl: 'https://res.cloudinary.com/demo/image/upload/sample.jpg', shareEnabled: true } }),
-        }),
-      ]);
-      setName('משימת המיחזור');
-      setModuleType('story');
-      setModuleTheme('spy');
-      setLoginFields(new Set(['name'] as LoginField[]));
-      setConnectionType('single');
-      setGuidelines('ברוכים הבאים למשימת המיחזור! עקבו אחר ההוראות במסך ועזרו לנו להציל את הפארק.');
-      setSelectedItems([
-        { itemType: 'station', ref: narrative1Res.station._id, name: narrative1Res.station.name, subType: 'narrative' },
-        { itemType: 'station', ref: narrative2Res.station._id, name: narrative2Res.station.name, subType: 'narrative' },
-        { itemType: 'station', ref: narrative3Res.station._id, name: narrative3Res.station.name, subType: 'narrative' },
-        { itemType: 'game', ref: trashSortRes.game._id, name: trashSortRes.game.name, subType: 'trashSort' },
-        { itemType: 'station', ref: videoRes.station._id, name: videoRes.station.name, subType: 'video' },
-        { itemType: 'station', ref: badgeRes.station._id, name: badgeRes.station.name, subType: 'badge' },
-      ]);
-    } catch { /* silent */ } finally { setRecyclingLoading(false); }
   };
 
   const addAgeRange = () => setAgeRanges((prev) => [...prev, { label: '', minAge: 0, maxAge: 120 }]);
@@ -622,24 +548,6 @@ export default function AdminCreateActivityPage() {
                           </SelectionGroup>
                         </div>
                       )}
-                      <QuickActions>
-                        <OutlineButton
-                          type="button"
-                          onClick={handleRandom}
-                          disabled={randomLoading || recyclingLoading}
-                          style={{ fontSize: 13, padding: '6px 16px' }}
-                        >
-                          {randomLoading ? t.randomLoading : t.randomButton}
-                        </OutlineButton>
-                        <OutlineButton
-                          type="button"
-                          onClick={handleRecyclingActivity}
-                          disabled={recyclingLoading || randomLoading}
-                          style={{ fontSize: 13, padding: '6px 16px', borderColor: '#1fd5c8', color: '#0ea89e' }}
-                        >
-                          {recyclingLoading ? t.randomLoading : t.recyclingButton}
-                        </OutlineButton>
-                      </QuickActions>
                     </SectionCard>
 
                     {/* Login fields */}
