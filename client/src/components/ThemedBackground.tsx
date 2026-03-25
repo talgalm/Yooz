@@ -23,7 +23,7 @@ export function getThemeShellColor(theme?: string): string {
   switch (theme) {
     case 'ocean':  return '#428bad';
     case 'desert': return '#D4A84B';
-    default:       return '#a9cb4f';
+    default:       return '#8fb248';
   }
 }
 

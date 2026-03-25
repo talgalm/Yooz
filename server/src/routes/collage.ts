@@ -83,16 +83,21 @@ function buildFilterComplex(numImages: number): string {
 }
 
 /**
- * Run ffmpeg to create a slideshow MP4 from image files.
+ * Run ffmpeg to create a slideshow MP4 from image/video files.
  * Returns a promise that resolves when ffmpeg exits 0.
  */
-function runFfmpeg(imagePaths: string[], outputPath: string, musicPath: string | null): Promise<void> {
-  const n = imagePaths.length;
+function runFfmpeg(mediaFiles: Array<{ path: string; isVideo: boolean }>, outputPath: string, musicPath: string | null): Promise<void> {
+  const n = mediaFiles.length;
   const args: string[] = ['-y'];
 
-  // Each image as a looping input (we give it a bit more than needed so xfade has frames)
-  for (const imgPath of imagePaths) {
-    args.push('-loop', '1', '-t', String(IMG_DURATION + FADE_DURATION + 0.1), '-i', imgPath);
+  // Images: loop a still frame for the slot duration.
+  // Videos: trim to slot duration (no -loop needed — they already have frames).
+  for (const media of mediaFiles) {
+    if (media.isVideo) {
+      args.push('-t', String(IMG_DURATION + FADE_DURATION + 0.1), '-i', media.path);
+    } else {
+      args.push('-loop', '1', '-t', String(IMG_DURATION + FADE_DURATION + 0.1), '-i', media.path);
+    }
   }
 
   // Optional: background music (stream-looped so it covers any video length)
@@ -178,23 +183,24 @@ router.post(
     const tmpDir = path.join(os.tmpdir(), sessionId);
     fs.mkdirSync(tmpDir, { recursive: true });
 
-    const imagePaths: string[] = [];
+    const mediaFiles: Array<{ path: string; isVideo: boolean }> = [];
     const outputPath = path.join(tmpDir, 'output.mp4');
 
     // Path to optional background music bundled with the server
     const musicPath = path.join(process.cwd(), 'assets', 'collage-music.mp3');
 
     try {
-      // Write uploaded image buffers to disk
+      // Write uploaded files to disk
       for (let i = 0; i < files.length; i++) {
-        const ext = files[i].mimetype.includes('png') ? 'png' : 'jpg';
-        const imgPath = path.join(tmpDir, `img_${i}.${ext}`);
-        fs.writeFileSync(imgPath, files[i].buffer);
-        imagePaths.push(imgPath);
+        const isVideo = files[i].mimetype.startsWith('video/');
+        const ext = isVideo ? 'mp4' : (files[i].mimetype.includes('png') ? 'png' : 'jpg');
+        const filePath = path.join(tmpDir, `media_${i}.${ext}`);
+        fs.writeFileSync(filePath, files[i].buffer);
+        mediaFiles.push({ path: filePath, isVideo });
       }
 
       // Run ffmpeg
-      await runFfmpeg(imagePaths, outputPath, musicPath);
+      await runFfmpeg(mediaFiles, outputPath, musicPath);
 
       // Upload the generated MP4 to Cloudinary
       const cloudResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
