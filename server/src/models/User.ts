@@ -1,6 +1,6 @@
 import { Schema, model, Types } from 'mongoose';
 
-export type UserRole = 'viewer' | 'admin' | 'super_admin';
+export type UserRole = 'viewer' | 'admin' | 'super_admin' | 'customer';
 
 export interface IUser {
   _id: Types.ObjectId;
@@ -16,7 +16,7 @@ export interface IUser {
 const userSchema = new Schema<IUser>({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String },
-  role: { type: String, required: true, enum: ['viewer', 'admin', 'super_admin'], default: 'viewer' },
+  role: { type: String, required: true, enum: ['viewer', 'admin', 'super_admin', 'customer'], default: 'viewer' },
   googleId: { type: String },
   name: { type: String, trim: true },
   createdAt: { type: Date, default: Date.now },

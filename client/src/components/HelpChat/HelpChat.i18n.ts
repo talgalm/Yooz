@@ -1,5 +1,6 @@
 export const texts = {
   en: {
+    helpAria: 'Help and support',
     headerTitle: 'Help & Support',
     greeting: 'Hi! How can we help you?',
     faq1Label: "I can't log in",
@@ -51,6 +52,7 @@ export const texts = {
       "If you're having trouble, try refreshing the page first. If the issue persists, contact the activity organizer or call our support line.",
   },
   he: {
+    helpAria: 'עזרה ותמיכה',
     headerTitle: 'עזרה ותמיכה',
     greeting: 'היי! איך אפשר לעזור?',
     faq1Label: 'לא מצליח/ה להתחבר',

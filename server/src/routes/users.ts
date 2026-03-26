@@ -23,7 +23,7 @@ router.post('/', async (req: Request, res: Response) => {
     res.status(400).json({ error: 'Email is required' });
     return;
   }
-  if (!role || !['viewer', 'admin', 'super_admin'].includes(role)) {
+  if (!role || !['viewer', 'admin', 'super_admin', 'customer'].includes(role)) {
     res.status(400).json({ error: 'Invalid role' });
     return;
   }
@@ -56,7 +56,7 @@ router.put('/:id', async (req: Request<{ id: string }>, res: Response) => {
   const update: Record<string, unknown> = { updatedAt: new Date() };
 
   if (email) update.email = email.toLowerCase().trim();
-  if (role && ['viewer', 'admin', 'super_admin'].includes(role)) {
+  if (role && ['viewer', 'admin', 'super_admin', 'customer'].includes(role)) {
     // Prevent demoting the last super_admin
     const target = await User.findById(req.params.id);
     if (target && target.role === 'super_admin' && role !== 'super_admin') {

@@ -1,0 +1,74 @@
+import { Request } from 'express';
+import { Game, Station, Mission } from '../models';
+
+export function isCustomerRole(req: Request): boolean {
+  return req.admin?.role === 'customer';
+}
+
+export function customerOwnerEmail(req: Request): string | null {
+  if (!req.admin?.email) return null;
+  return req.admin.email.toLowerCase().trim();
+}
+
+/** Mongo filter for list queries — customers only see rows they own */
+export function customerMongoFilter(req: Request): Record<string, unknown> {
+  if (!isCustomerRole(req)) return {};
+  const email = customerOwnerEmail(req);
+  if (!email) return { _id: { $exists: false } };
+  return { createdByEmail: email };
+}
+
+export function customerOwnsDoc(req: Request, doc: { createdByEmail?: string } | null | undefined): boolean {
+  if (!doc) return false;
+  if (!isCustomerRole(req)) return true;
+  const email = customerOwnerEmail(req);
+  if (!email) return false;
+  return doc.createdByEmail === email;
+}
+
+export function createdByEmailForNewResource(req: Request): string {
+  return customerOwnerEmail(req) || 'unknown';
+}
+
+/** Ensures story/mission module only references games/stations/missions the customer owns */
+export async function assertModuleOwnedByCustomer(req: Request, moduleConfig: unknown): Promise<string | null> {
+  if (!isCustomerRole(req)) return null;
+  const email = customerOwnerEmail(req);
+  if (!email) return 'Unauthorized';
+
+  if (!moduleConfig || typeof moduleConfig !== 'object') return null;
+  const mod = moduleConfig as {
+    type?: string;
+    missionRef?: string;
+    items?: Array<{ type: string; ref: string }>;
+  };
+
+  if (mod.type === 'mission' && mod.missionRef) {
+    const m = await Mission.findById(mod.missionRef).lean();
+    if (!m || !customerOwnsDoc(req, m as { createdByEmail?: string })) {
+      return 'Mission reference not found or access denied';
+    }
+    return null;
+  }
+
+  for (const item of mod.items || []) {
+    if (!item?.ref) continue;
+    if (item.type === 'game') {
+      const g = await Game.findById(item.ref).lean();
+      if (!g || !customerOwnsDoc(req, g as { createdByEmail?: string })) {
+        return 'Game reference not found or access denied';
+      }
+    } else if (item.type === 'station') {
+      const s = await Station.findById(item.ref).lean();
+      if (!s || !customerOwnsDoc(req, s as { createdByEmail?: string })) {
+        return 'Station reference not found or access denied';
+      }
+    } else if (item.type === 'mission') {
+      const m = await Mission.findById(item.ref).lean();
+      if (!m || !customerOwnsDoc(req, m as { createdByEmail?: string })) {
+        return 'Mission reference not found or access denied';
+      }
+    }
+  }
+  return null;
+}

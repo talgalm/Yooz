@@ -431,9 +431,13 @@ export const SegmentedControl = styled('div')({
   padding: 4,
   margin: '0 auto 24px',
   width: 'auto',
-  maxWidth: 520,
+  maxWidth: 620,
   border: `2px solid #d4cae8`,
   boxShadow: '0 2px 8px rgba(108,92,231,0.10)',
+  '@media (max-width: 600px)': {
+    maxWidth: '100%',
+    overflowX: 'auto',
+  },
 });
 
 export const SegmentedControlCenter = styled('div')({
@@ -443,8 +447,8 @@ export const SegmentedControlCenter = styled('div')({
 });
 
 export const SegmentedButton = styled('button')<{ active?: boolean }>(({ active }) => ({
-  padding: '12px 32px',
-  fontSize: 15,
+  padding: '12px 22px',
+  fontSize: 14,
   fontWeight: 700,
   border: 'none',
   borderRadius: 24,
@@ -461,8 +465,8 @@ export const SegmentedButton = styled('button')<{ active?: boolean }>(({ active 
     background: active ? PRIMARY : 'rgba(108,92,231,0.08)',
   },
   '@media (max-width: 600px)': {
-    padding: '10px 20px',
-    fontSize: 13,
+    padding: '10px 14px',
+    fontSize: 12,
   },
 }));
 

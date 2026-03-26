@@ -34,7 +34,7 @@ import {
   SelectionSubtextSmall,
 } from '../styled';
 
-type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage';
+type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback';
 
 interface StationData {
   _id: string;
@@ -73,7 +73,8 @@ export default function AdminStationConfigPage() {
   const location = useLocation();
   const t = useTranslations(texts);
 
-  const validTypes: StationTypeOption[] = ['text', 'video', 'image', 'narrative', 'badge', 'collage'];
+  const validTypes: StationTypeOption[] = ['text', 'video', 'image', 'narrative', 'badge', 'collage', 'feedback'];
+  const stationTypesWithoutHint: StationTypeOption[] = ['text', 'video', 'image', 'feedback'];
   const typeFromUrl = searchParams.get('type') as StationTypeOption | null;
   const defaultType: StationTypeOption = typeFromUrl && validTypes.includes(typeFromUrl) ? typeFromUrl : 'text';
 
@@ -108,6 +109,12 @@ export default function AdminStationConfigPage() {
   const [collageMissions, setCollageMissions] = useState<{ title: string; description: string }[]>([
     { title: '', description: '' },
   ]);
+  // Feedback station
+  const [feedbackTitle, setFeedbackTitle] = useState('');
+  const [feedbackIntroText, setFeedbackIntroText] = useState('');
+  const [feedbackQuestions, setFeedbackQuestions] = useState<{ text: string }[]>([{ text: '' }]);
+  const [feedbackNotesEnabled, setFeedbackNotesEnabled] = useState(true);
+  const [feedbackNotesPlaceholder, setFeedbackNotesPlaceholder] = useState('');
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -148,6 +155,15 @@ export default function AdminStationConfigPage() {
           if (Array.isArray(settings.missions) && (settings.missions as unknown[]).length > 0) {
             setCollageMissions(settings.missions as { title: string; description: string }[]);
           }
+        }
+        if (s.type === 'feedback') {
+          if (settings.title) setFeedbackTitle(settings.title as string);
+          if (settings.introText) setFeedbackIntroText(settings.introText as string);
+          if (Array.isArray(settings.questions) && (settings.questions as unknown[]).length > 0) {
+            setFeedbackQuestions(settings.questions as { text: string }[]);
+          }
+          setFeedbackNotesEnabled(settings.notesEnabled !== false);
+          if (settings.notesPlaceholder) setFeedbackNotesPlaceholder(settings.notesPlaceholder as string);
         }
         setInitialLoading(false);
       })
@@ -192,6 +208,15 @@ export default function AdminStationConfigPage() {
         setCollageMissions(settings.missions as { title: string; description: string }[]);
       }
     }
+    if (lib.type === 'feedback') {
+      if (settings.title) setFeedbackTitle(settings.title as string);
+      if (settings.introText) setFeedbackIntroText(settings.introText as string);
+      if (Array.isArray(settings.questions) && (settings.questions as unknown[]).length > 0) {
+        setFeedbackQuestions(settings.questions as { text: string }[]);
+      }
+      setFeedbackNotesEnabled(settings.notesEnabled !== false);
+      if (settings.notesPlaceholder) setFeedbackNotesPlaceholder(settings.notesPlaceholder as string);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -202,7 +227,8 @@ export default function AdminStationConfigPage() {
 
     try {
       const settings: Record<string, unknown> = {};
-      if (hintEnabled && hintText.trim()) {
+      const allowStationHint = !stationTypesWithoutHint.includes(stationType);
+      if (allowStationHint && hintEnabled && hintText.trim()) {
         settings.hint = { enabled: true, text: hintText.trim() };
       }
       if (stationType === 'text') {
@@ -228,6 +254,15 @@ export default function AdminStationConfigPage() {
         settings.missions = collageMissions
           .filter((m) => m.title.trim())
           .map((m) => ({ title: m.title.trim(), description: m.description.trim() }));
+      }
+      if (stationType === 'feedback') {
+        settings.title = feedbackTitle.trim();
+        settings.introText = feedbackIntroText.trim();
+        settings.questions = feedbackQuestions
+          .filter((q) => q.text.trim())
+          .map((q) => ({ text: q.text.trim() }));
+        settings.notesEnabled = feedbackNotesEnabled;
+        settings.notesPlaceholder = feedbackNotesPlaceholder.trim() || undefined;
       }
 
       const payload = {
@@ -266,19 +301,21 @@ export default function AdminStationConfigPage() {
     narrative: 'תחנת נרטיב - טסט',
     badge: 'תחנת תג - טסט',
     collage: 'תחנת קולאז׳ - טסט',
+    feedback: 'תחנת משוב - טסט',
   };
 
   const handleFillRandom = () => {
     const ts = Date.now().toString().slice(-4);
-    const types: StationTypeOption[] = ['text', 'video', 'image', 'narrative', 'badge', 'collage'];
+    const types: StationTypeOption[] = ['text', 'video', 'image', 'narrative', 'badge', 'collage', 'feedback'];
     const randomType = types[Math.floor(Math.random() * types.length)];
     setStationType(randomType);
     setName(`${stationNames[randomType]} #${ts}`);
     setDescription('תחנה לבדיקה');
     setCustomer('לקוח טסט');
     setTheme('נושא טסט');
-    setHintEnabled(true);
-    setHintText('זהו רמז לדוגמה');
+    const supportsHint = !stationTypesWithoutHint.includes(randomType);
+    setHintEnabled(supportsHint);
+    setHintText(supportsHint ? 'זהו רמז לדוגמה' : '');
     setTextContent('');
     setMediaUrl('');
     setNarrativeTitle('');
@@ -291,6 +328,11 @@ export default function AdminStationConfigPage() {
     setCollageHeader('');
     setCollageDescription('');
     setCollageMissions([{ title: '', description: '' }]);
+    setFeedbackTitle('');
+    setFeedbackIntroText('');
+    setFeedbackQuestions([{ text: '' }]);
+    setFeedbackNotesEnabled(true);
+    setFeedbackNotesPlaceholder('');
     if (randomType === 'text') {
       setTextContent('זהו תוכן טקסט לדוגמה עבור תחנת בדיקה. כאן יופיע המידע שהמשתתף צריך לקרוא.');
     } else if (randomType === 'video') {
@@ -314,10 +356,25 @@ export default function AdminStationConfigPage() {
         { title: 'אביזר מצחיק', description: 'צלמו תמונה עם חפץ אקראי ומצחיק שמצאתם בחדר.' },
         { title: 'קרני אצבעות', description: 'צרו זוגות ועשו עם האצבעות "קרניים" אחד אל השני עם חיוך.' },
       ]);
+    } else if (randomType === 'feedback') {
+      setFeedbackTitle('משוב על ההרצאה');
+      setFeedbackIntroText('נשמח לשמוע את דעתכם על ההרצאה. דרגו כל שאלה בסולם 1-6.');
+      setFeedbackQuestions([
+        { text: 'באיזו מידה אתה שבע רצון מההרצאה (1-6)' },
+        { text: 'באיזו מידה את/ה מעריך/ה כי תוכל/י ליישם חלק מהתוכן שהועבר בהרצאה' },
+        { text: 'באיזו מידה ההרצאה תרמה לך מבחינה מקצועית' },
+        { text: 'באיזו מידה המרצה הצליח/ה להעביר את התוכן בצורה ברורה' },
+        { text: 'באיזו מידה הדוגמאות שהובאו היו רלוונטיות' },
+        { text: 'באיזו מידה היית ממליץ/ה על ההרצאה לעמית/ה' },
+      ]);
+      setFeedbackNotesEnabled(true);
+      setFeedbackNotesPlaceholder('עוד הערות?');
     }
   };
 
   if (initialLoading) return null;
+
+  const showHintSection = !stationTypesWithoutHint.includes(stationType);
 
   return (
     <AdminPage>
@@ -367,6 +424,10 @@ export default function AdminStationConfigPage() {
                       <div>{t.typeCollage}</div>
                       <SelectionSubtextSmall>{t.typeCollageDesc}</SelectionSubtextSmall>
                     </SelectionButton>
+                    <SelectionButton type="button" selected={stationType === 'feedback'} onClick={() => setStationType('feedback')}>
+                      <div>{t.typeFeedback}</div>
+                      <SelectionSubtextSmall>{t.typeFeedbackDesc}</SelectionSubtextSmall>
+                    </SelectionButton>
                   </SelectionGroup>
                 </div>
                 <Input
@@ -413,28 +474,29 @@ export default function AdminStationConfigPage() {
                 </div>
               </FormSectionCard>
 
-              <FormSectionCard>
-                {/* Hint */}
-                <div>
-                  <HintToggleRow>
-                    <SectionLabelNoMargin>{t.hintLabel}</SectionLabelNoMargin>
-                    <ToggleButton
-                      type="button"
-                      selected={hintEnabled}
-                      onClick={() => setHintEnabled((v) => !v)}
-                    >
-                      {hintEnabled ? 'ON' : 'OFF'}
-                    </ToggleButton>
-                  </HintToggleRow>
-                  {hintEnabled && (
-                    <Input
-                      placeholder={t.hintPlaceholder}
-                      value={hintText}
-                      onChange={(e) => setHintText(e.target.value)}
-                    />
-                  )}
-                </div>
-              </FormSectionCard>
+              {showHintSection && (
+                <FormSectionCard>
+                  <div>
+                    <HintToggleRow>
+                      <SectionLabelNoMargin>{t.hintLabel}</SectionLabelNoMargin>
+                      <ToggleButton
+                        type="button"
+                        selected={hintEnabled}
+                        onClick={() => setHintEnabled((v) => !v)}
+                      >
+                        {hintEnabled ? 'ON' : 'OFF'}
+                      </ToggleButton>
+                    </HintToggleRow>
+                    {hintEnabled && (
+                      <Input
+                        placeholder={t.hintPlaceholder}
+                        value={hintText}
+                        onChange={(e) => setHintText(e.target.value)}
+                      />
+                    )}
+                  </div>
+                </FormSectionCard>
+              )}
             </DesktopFormGrid>
 
             {/* Type-specific settings */}
@@ -608,6 +670,73 @@ export default function AdminStationConfigPage() {
                   >
                     + {t.collageMissionAdd}
                   </button>
+                </VerticalStack>
+              )}
+
+              {/* Feedback config */}
+              {stationType === 'feedback' && (
+                <VerticalStack>
+                  <SectionLabel>{t.feedbackTitle}</SectionLabel>
+                  <Input
+                    placeholder={t.feedbackTitlePlaceholder}
+                    value={feedbackTitle}
+                    onChange={(e) => setFeedbackTitle(e.target.value)}
+                  />
+                  <Input
+                    placeholder={t.feedbackIntroPlaceholder}
+                    value={feedbackIntroText}
+                    onChange={(e) => setFeedbackIntroText(e.target.value)}
+                  />
+
+                  <SectionLabel>{t.feedbackQuestions}</SectionLabel>
+                  {feedbackQuestions.map((q, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#999', minWidth: 24 }}>{t.feedbackQuestionNum} {i + 1}</span>
+                      <Input
+                        placeholder={t.feedbackQuestionText}
+                        value={q.text}
+                        onChange={(e) => {
+                          const updated = [...feedbackQuestions];
+                          updated[i] = { text: e.target.value };
+                          setFeedbackQuestions(updated);
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                      {feedbackQuestions.length > 1 && (
+                        <SmallOutlineButton
+                          type="button"
+                          onClick={() => setFeedbackQuestions(feedbackQuestions.filter((_, j) => j !== i))}
+                        >
+                          {t.feedbackQuestionRemove}
+                        </SmallOutlineButton>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setFeedbackQuestions((qs) => [...qs, { text: '' }])}
+                    style={{ background: '#6c5ce7', border: '1px solid #6c5ce7', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 600, padding: '10px 20px', cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.15s' }}
+                  >
+                    + {t.feedbackQuestionAdd}
+                  </button>
+
+                  <SectionLabel style={{ marginTop: 16 }}>{t.feedbackNotesEnabled}</SectionLabel>
+                  <InlineRowGap12>
+                    <ToggleButton
+                      type="button"
+                      selected={feedbackNotesEnabled}
+                      onClick={() => setFeedbackNotesEnabled((v) => !v)}
+                    >
+                      {feedbackNotesEnabled ? 'ON' : 'OFF'}
+                    </ToggleButton>
+                  </InlineRowGap12>
+                  {feedbackNotesEnabled && (
+                    <Input
+                      placeholder={t.feedbackNotesPlaceholderDefault}
+                      value={feedbackNotesPlaceholder}
+                      onChange={(e) => setFeedbackNotesPlaceholder(e.target.value)}
+                    />
+                  )}
                 </VerticalStack>
               )}
             </FormSectionCardWide>

@@ -1,5 +1,5 @@
 import { styled, keyframes } from '@mui/material/styles';
-import { PRIMARY, PRIMARY_LIGHT, TEXT, TEXT_LIGHT, BORDER, BG_INPUT } from '../styled';
+import { IconButton, PRIMARY, PRIMARY_LIGHT, TEXT, TEXT_LIGHT, BORDER, BG_INPUT } from '../styled';
 
 // ─── Animations ───
 
@@ -59,12 +59,11 @@ export const ChatBackdrop = styled('div')({
   animation: `${fadeIn} 0.2s ease`,
 });
 
-export const ChatPanel = styled('div')({
+export const ChatPanel = styled('div', {
+  shouldForwardProp: (prop) => prop !== '$anchor',
+})<{ $anchor?: 'fab' | 'header' }>(({ $anchor = 'fab' }) => ({
   position: 'fixed',
-  bottom: 88,
-  insetInlineEnd: 24,
   width: 340,
-  maxHeight: 'calc(100dvh - 120px)',
   background: '#fff',
   borderRadius: 20,
   boxShadow: '0 12px 48px rgba(0,0,0,0.15)',
@@ -73,13 +72,24 @@ export const ChatPanel = styled('div')({
   flexDirection: 'column',
   overflow: 'hidden',
   animation: `${slideUp} 0.25s ease`,
+  ...($anchor === 'fab'
+    ? {
+        bottom: 88,
+        insetInlineEnd: 24,
+        maxHeight: 'calc(100dvh - 120px)',
+      }
+    : {
+        bottom: 24,
+        insetInlineEnd: 12,
+        maxHeight: 'calc(100dvh - 40px)',
+      }),
   '@media (max-width: 480px)': {
     insetInlineEnd: 12,
     insetInlineStart: 12,
     width: 'auto',
-    bottom: 80,
+    ...($anchor === 'fab' ? { bottom: 80 } : { bottom: 16 }),
   },
-});
+}));
 
 export const ChatHeader = styled('div')({
   display: 'flex',
@@ -320,5 +330,31 @@ export const BackButton = styled('button')({
   transition: 'opacity 0.2s',
   '&:hover': {
     opacity: 0.7,
+  },
+});
+
+/** Matches `ActivityLogoutButton` — for header ? next to exit (dark / tinted headers) */
+export const HelpHeaderIconButton = styled(IconButton)({
+  color: '#fff',
+  borderColor: 'rgba(255,255,255,0.45)',
+  background: 'rgba(255,255,255,0.08)',
+  fontSize: 17,
+  fontWeight: 700,
+  lineHeight: 1,
+  '&:active': {
+    background: 'rgba(255,255,255,0.14)',
+  },
+});
+
+/** Same control on light bars (e.g. home) */
+export const HelpHeaderIconButtonLight = styled(IconButton)({
+  color: PRIMARY,
+  borderColor: PRIMARY_LIGHT,
+  background: 'rgba(108, 92, 231, 0.06)',
+  fontSize: 17,
+  fontWeight: 700,
+  lineHeight: 1,
+  '&:active': {
+    background: 'rgba(108, 92, 231, 0.12)',
   },
 });

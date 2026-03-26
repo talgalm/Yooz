@@ -78,6 +78,8 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
           _id: mission._id,
           name: mission.name,
           explanationScreens: mission.explanationScreens,
+          puzzleConfig: mission.puzzleConfig,
+          trashSortConfig: mission.trashSortConfig,
         },
       },
     });
@@ -118,6 +120,8 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         _id: data._id,
         name: data.name,
         explanationScreens: data.explanationScreens || [],
+        puzzleConfig: data.puzzleConfig,
+        trashSortConfig: data.trashSortConfig,
       };
     }
     const data = item.type === 'game'
@@ -170,6 +174,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
       contentType: p.contentType || 'text',
       text: p.text,
       image: p.image,
+      includeUsername: p.includeUsername === true,
       trigger: p.trigger,
     })),
   };

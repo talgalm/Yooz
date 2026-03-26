@@ -227,8 +227,10 @@ export const ScoringInput = styled(Input)({
 // ─── Button Variants ───
 
 export const SmallDangerButton = styled(DangerButton)({
-  padding: '4px 12px',
-  fontSize: 12,
+  padding: '10px 24px',
+  fontSize: 14,
+  fontWeight: 700,
+  borderRadius: 12,
 });
 
 export const TinyDangerButton = styled(DangerButton)({
@@ -1132,12 +1134,20 @@ export const RemoveItemButton = styled('button')({
 
 // ─── Role Badge (Users tab) ───
 
-export const RoleBadge = styled('span')<{ role: 'viewer' | 'admin' | 'super_admin' }>(({ role }) => ({
+export const RoleBadge = styled('span')<{ role: 'viewer' | 'admin' | 'super_admin' | 'customer' }>(({ role }) => ({
   display: 'inline-block',
   padding: '4px 10px',
   fontSize: 11,
   fontWeight: 700,
   borderRadius: 6,
-  background: role === 'super_admin' ? '#fde8e8' : role === 'admin' ? '#e8f5e9' : '#f0eefa',
-  color: role === 'super_admin' ? '#c0392b' : role === 'admin' ? '#2e7d32' : PRIMARY,
+  background:
+    role === 'super_admin' ? '#fde8e8'
+      : role === 'admin' ? '#e8f5e9'
+        : role === 'customer' ? '#fff8e1'
+          : '#f0eefa',
+  color:
+    role === 'super_admin' ? '#c0392b'
+      : role === 'admin' ? '#2e7d32'
+        : role === 'customer' ? '#e65100'
+          : PRIMARY,
 }));

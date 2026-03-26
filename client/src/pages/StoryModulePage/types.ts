@@ -18,7 +18,7 @@ export interface StationItemData {
   type: 'station';
   _id: string;
   name: string;
-  stationType: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage';
+  stationType: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback';
   description?: string;
   settings?: Record<string, unknown>;
 }
@@ -68,6 +68,7 @@ export interface PopupData {
   contentType?: 'text' | 'image';
   text?: string;
   image?: string;
+  includeUsername?: boolean;
   trigger: {
     point: 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
     itemIndex?: number;

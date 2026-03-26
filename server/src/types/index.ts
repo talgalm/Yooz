@@ -10,7 +10,7 @@ export interface GroupConfig {
 }
 
 // Admin types
-export type AdminRole = 'viewer' | 'admin' | 'super_admin';
+export type AdminRole = 'viewer' | 'admin' | 'super_admin' | 'customer';
 
 export interface AdminJwtPayload {
   email: string;
@@ -72,6 +72,7 @@ export interface PopupMessageConfig {
   contentType: 'text' | 'image';
   text?: string;
   image?: string;
+  includeUsername?: boolean;
   trigger: PopupTriggerConfig;
   condition?: PopupConditionConfig;
   enabled: boolean;

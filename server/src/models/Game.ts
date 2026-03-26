@@ -10,6 +10,7 @@ export interface IGame {
   tags?: string[];
   settings: Record<string, unknown>;
   createdAt: Date;
+  createdByEmail?: string;
 }
 
 const gameSchema = new Schema<IGame>({
@@ -21,6 +22,7 @@ const gameSchema = new Schema<IGame>({
   tags: { type: [String], default: [] },
   settings: { type: Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now },
+  createdByEmail: { type: String, lowercase: true, trim: true },
 });
 
 gameSchema.index({ tags: 1 });

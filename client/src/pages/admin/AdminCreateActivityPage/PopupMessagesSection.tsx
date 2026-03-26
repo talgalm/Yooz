@@ -19,6 +19,12 @@ import {
   SmallSelectionButton,
 } from '../styled';
 
+function itemTypeLabel(itemType: ModuleItem['itemType'], t: Record<string, string>): string {
+  if (itemType === 'game') return t.popupStepGame;
+  if (itemType === 'station') return t.popupStepStation;
+  return t.popupStepMission;
+}
+
 // ─── Props ───
 
 interface PopupMessagesSectionProps {
@@ -87,6 +93,14 @@ export default function PopupMessagesSection({
                   {t.popupContentImage}
                 </SmallSelectionButton>
               </SelectionGroupNoFlex>
+              <PopupLabel>
+                <input
+                  type="checkbox"
+                  checked={popup.includeUsername}
+                  onChange={(e) => onUpdatePopup(i, 'includeUsername', e.target.checked)}
+                />
+                {t.popupIncludeUsername}
+              </PopupLabel>
               {popup.contentType === 'image' ? (
                 <>
                   <FileUploadButton
@@ -126,16 +140,30 @@ export default function PopupMessagesSection({
               </PopupFieldColumn>
 
               {(popup.triggerPoint === 'beforeItem' || popup.triggerPoint === 'afterItem') && (
-                <PopupFieldColumnSmall>
+                <PopupFieldColumn style={{ minWidth: 200, flex: '1 1 220px' }}>
                   <TinyLabel>{t.popupItemIndex}</TinyLabel>
-                  <PopupNumberInput
-                    type="number"
-                    value={popup.itemIndex + 1}
-                    onChange={(e) => onUpdatePopup(i, 'itemIndex', Math.max(0, Number(e.target.value) - 1))}
-                    min={1}
-                    max={selectedItems.length || 1}
-                  />
-                </PopupFieldColumnSmall>
+                  {selectedItems.length === 0 ? (
+                    <span style={{ fontSize: 13, color: 'var(--mui-palette-text-secondary, #666)' }}>
+                      {t.popupNoItemsForTrigger}
+                    </span>
+                  ) : (
+                    <PopupSelect
+                      value={String(
+                        Math.min(
+                          Math.max(0, popup.itemIndex),
+                          selectedItems.length - 1,
+                        ),
+                      )}
+                      onChange={(e) => onUpdatePopup(i, 'itemIndex', Number(e.target.value))}
+                    >
+                      {selectedItems.map((item, idx) => (
+                        <option key={`${item.ref}-${idx}`} value={idx}>
+                          {idx + 1}. {item.name} ({itemTypeLabel(item.itemType, t)})
+                        </option>
+                      ))}
+                    </PopupSelect>
+                  )}
+                </PopupFieldColumn>
               )}
 
               <PopupFieldColumn>

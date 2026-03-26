@@ -1,6 +1,6 @@
 import { Schema, model, Types } from 'mongoose';
 
-export type StationType = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage';
+export type StationType = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback';
 
 export interface IStation {
   _id: Types.ObjectId;
@@ -12,17 +12,19 @@ export interface IStation {
   tags?: string[];
   settings: Record<string, unknown>;
   createdAt: Date;
+  createdByEmail?: string;
 }
 
 const stationSchema = new Schema<IStation>({
   name: { type: String, required: true },
-  type: { type: String, enum: ['text', 'video', 'image', 'narrative', 'badge', 'collage'], default: 'text' },
+  type: { type: String, enum: ['text', 'video', 'image', 'narrative', 'badge', 'collage', 'feedback'], default: 'text' },
   description: { type: String },
   customer: { type: String },
   theme: { type: String },
   tags: { type: [String], default: [] },
   settings: { type: Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now },
+  createdByEmail: { type: String, lowercase: true, trim: true },
 });
 
 stationSchema.index({ tags: 1 });

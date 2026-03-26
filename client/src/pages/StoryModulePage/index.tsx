@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
+import { HelpChatHeaderButton } from '../../components/HelpChat';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslations } from '../../context/LanguageContext';
 import { apiFetch } from '../../utils/api';
@@ -20,7 +21,6 @@ import {
   CenteredContent,
   Title,
   BodyText,
-  PrimaryButton,
   ModalOverlay,
   ModalCard,
   PRIMARY,
@@ -40,6 +40,7 @@ import type {
   Phase,
   GameScore,
   ModuleItemData,
+  StationItemData,
 } from './types';
 import GuidelinesPopup from './GuidelinesPopup';
 import RoadmapView from './RoadmapView';
@@ -66,10 +67,70 @@ const SummaryTotal = styled(Title)({
   color: PRIMARY,
 });
 
-const PopupDismissButton = styled(PrimaryButton)({
-  width: 'auto',
-  padding: '10px 24px',
-  fontSize: 14,
+/** Rounded square — reference purple, dark ring, glossy top (no drop shadow) */
+const PopupDismissButton = styled('button')({
+  position: 'relative',
+  boxSizing: 'border-box',
+  width: 96,
+  height: 50,
+  minWidth: 96,
+  minHeight: 50,
+  padding: 8,
+  margin: '0 auto',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: '2px solid #5b21b6',
+  borderRadius: 22,
+  cursor: 'pointer',
+  fontFamily: "'Rubik One', 'Encode Sans Expanded', sans-serif",
+  fontWeight: 800,
+  fontSize: 19,
+  lineHeight: 1.15,
+  letterSpacing: 0.03,
+  color: '#f8f0d8',
+  textAlign: 'center',
+  unicodeBidi: 'plaintext',
+  overflow: 'hidden',
+  background: '#a78bfb',
+  boxShadow: 'none',
+  textShadow: `
+    -1px -1px 0 #4a2c18,
+    1px -1px 0 #4a2c18,
+    -1px 1px 0 #4a2c18,
+    1px 1px 0 #4a2c18,
+    0 -1px 0 #4a2c18,
+    0 1px 0 #4a2c18,
+    -1px 0 0 #4a2c18,
+    1px 0 0 #4a2c18
+  `,
+  transition: 'filter 0.15s, background 0.15s',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '48%',
+    borderRadius: '20px 20px 55% 55%',
+    background: 'linear-gradient(160deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.12) 38%, transparent 72%)',
+    pointerEvents: 'none',
+  },
+  '& > span': {
+    position: 'relative',
+    zIndex: 1,
+  },
+  '&:hover': {
+    filter: 'brightness(0.97)',
+    background: '#9b7ef8',
+  },
+  '&:active': {
+    filter: 'brightness(0.93)',
+  },
+  '@media (prefers-reduced-motion: reduce)': {
+    transition: 'none',
+    '&::before': { opacity: 0.85 },
+  },
 });
 
 const PopupTitle = styled(Title)({
@@ -81,6 +142,51 @@ const PopupText = styled(BodyText)({
   marginBottom: 20,
   whiteSpace: 'pre-wrap',
   color: '#444',
+});
+
+const PopupParticipantName = styled(BodyText)({
+  marginBottom: 10,
+  fontWeight: 600,
+  fontSize: 17,
+  color: '#333',
+});
+
+const popupBackdropIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
+
+const popupCardPop = keyframes`
+  0% {
+    opacity: 0;
+    transform: scale(0.88) translateY(18px);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.03) translateY(-3px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+`;
+
+const PopupModalOverlay = styled(ModalOverlay)({
+  animation: `${popupBackdropIn} 240ms ease-out forwards`,
+  '@media (prefers-reduced-motion: reduce)': {
+    animation: 'none',
+    opacity: 1,
+  },
+});
+
+const PopupModalCard = styled(ModalCard)({
+  animation: `${popupCardPop} 480ms cubic-bezier(0.34, 1.45, 0.64, 1) forwards`,
+  transformOrigin: 'center center',
+  '@media (prefers-reduced-motion: reduce)': {
+    animation: 'none',
+    opacity: 1,
+    transform: 'none',
+  },
 });
 
 const sceneTransitionClose = keyframes`
@@ -162,6 +268,8 @@ export default function StoryModulePage() {
   const [currentPopup, setCurrentPopup] = useState<PopupData | null>(null);
   const shownPopupIds = useRef<Set<string>>(new Set());
   const pendingAction = useRef<(() => void) | null>(null);
+  /** After completing a step (not the last), show afterItem popups only once the roadmap is visible and footsteps finished */
+  const pendingAfterItemPopupRef = useRef<number | null>(null);
 
   // Finish page state
   const [countdown, setCountdown] = useState(90);
@@ -379,17 +487,17 @@ export default function StoryModulePage() {
 
   const advanceToNextItem = () => {
     if (!data) return;
-    const nextIdx = currentItemIndex + 1;
+    const completedIdx = currentItemIndex;
+    const nextIdx = completedIdx + 1;
     const isLast = nextIdx >= data.module.items.length;
 
     if (!isLast) {
-      showPopupsOrRun('afterItem', currentItemIndex, () => {
-        setCurrentItemIndex(nextIdx);
-        setShowFootsteps(true);
-        setPhase('roadmap');
-      });
+      pendingAfterItemPopupRef.current = completedIdx;
+      setCurrentItemIndex(nextIdx);
+      setShowFootsteps(true);
+      setPhase('roadmap');
     } else {
-      showPopupsOrRun('afterItem', currentItemIndex, () => {
+      showPopupsOrRun('afterItem', completedIdx, () => {
         showPopupsOrRun('endOfActivity', undefined, () => {
           setPhase('finish');
         });
@@ -399,7 +507,8 @@ export default function StoryModulePage() {
 
   const handleNodeTap = (index: number) => {
     if (entryTransitionStage !== 'idle') return;
-    showPopupsOrRun('beforeItem', index, () => {
+
+    const goPlay = () => {
       setEntryTransitionStage('closing');
       const closeTimer = setTimeout(() => {
         itemStartTime.current = Date.now();
@@ -411,12 +520,29 @@ export default function StoryModulePage() {
         entryTransitionTimeouts.current.push(openTimer);
       }, ENTRY_TRANSITION_CLOSE_MS);
       entryTransitionTimeouts.current.push(closeTimer);
-    });
+    };
+
+    const pending = pendingAfterItemPopupRef.current;
+    if (pending !== null) {
+      pendingAfterItemPopupRef.current = null;
+      setShowFootsteps(false);
+      showPopupsOrRun('afterItem', pending, () => {
+        showPopupsOrRun('beforeItem', index, goPlay);
+      });
+      return;
+    }
+
+    showPopupsOrRun('beforeItem', index, goPlay);
   };
 
   const handleFootstepsComplete = useCallback(() => {
     setShowFootsteps(false);
-  }, []);
+    const pending = pendingAfterItemPopupRef.current;
+    if (pending !== null) {
+      pendingAfterItemPopupRef.current = null;
+      showPopupsOrRun('afterItem', pending, () => {});
+    }
+  }, [showPopupsOrRun]);
 
   // Skip roadmap entirely when there's only 1 station — auto-enter it
   const singleItemAutoEntered = useRef(false);
@@ -492,6 +618,49 @@ export default function StoryModulePage() {
     advanceToNextItem();
   };
 
+  const handleFeedbackContinue = (feedbackResult: { answers: { questionIndex: number; questionText: string; value: number; label: string }[]; notes: string }) => {
+    if (!data) return;
+    const currentItem = data.module.items[currentItemIndex];
+    // Save feedback answers as part of progress
+    const now = new Date();
+    const itemResult = {
+      itemIndex: currentItemIndex,
+      itemId: currentItem?._id,
+      itemType: 'station' as const,
+      itemName: currentItem?.name,
+      score: 0,
+      maxPossibleScore: 0,
+      startedAt: new Date(itemStartTime.current),
+      completedAt: now,
+      durationMs: now.getTime() - itemStartTime.current,
+      metadata: {
+        feedbackType: 'rating_6_level',
+        answers: feedbackResult.answers,
+        notes: feedbackResult.notes,
+        averageRating: feedbackResult.answers.length > 0
+          ? +(feedbackResult.answers.reduce((sum, a) => sum + a.value, 0) / feedbackResult.answers.length).toFixed(2)
+          : 0,
+      },
+    };
+
+    const completedCount = currentItemIndex + 1;
+    const runningTotal = scores.reduce((sum, s) => sum + s.score, 0);
+
+    if (code) {
+      apiFetch(`/api/activities/${code}/progress`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          itemResult,
+          totalItemsCompleted: completedCount,
+          lastActiveItemIndex: currentItemIndex,
+          runningTotal,
+        }),
+      }).catch(() => { /* best effort */ });
+    }
+
+    advanceToNextItem();
+  };
+
   const toggleBallGameMute = useCallback(() => {
     setBallGameMuted((prev) => !prev);
     window.dispatchEvent(new CustomEvent('yooz:ballgame-audio-toggle'));
@@ -499,6 +668,8 @@ export default function StoryModulePage() {
 
   const getStationHint = (item: ModuleItemData) => {
     if (item.type !== 'station') return null;
+    const station = item as StationItemData;
+    if (['text', 'video', 'image'].includes(station.stationType)) return null;
     const hint = item.settings?.hint as { enabled?: boolean; text?: string } | undefined;
     return hint?.enabled && hint.text ? hint.text : null;
   };
@@ -671,21 +842,31 @@ export default function StoryModulePage() {
 
   // Popup modal (shared across all phases)
   const popupModal = currentPopup ? (
-    <ModalOverlay>
-      <ModalCard onClick={(e) => e.stopPropagation()}>
+    <PopupModalOverlay key={currentPopup._id}>
+      <PopupModalCard onClick={(e) => e.stopPropagation()}>
         <PopupTitle>{currentPopup.title}</PopupTitle>
         {currentPopup.contentType === 'image' && currentPopup.image ? (
-          <PopupImageWrapper>
-            <PopupImage src={currentPopup.image} alt="" />
-          </PopupImageWrapper>
+          <>
+            {currentPopup.includeUsername && participant?.name && (
+              <PopupParticipantName>{participant.name}</PopupParticipantName>
+            )}
+            <PopupImageWrapper>
+              <PopupImage src={currentPopup.image} alt="" />
+            </PopupImageWrapper>
+          </>
         ) : (
-          <PopupText>{currentPopup.text}</PopupText>
+          <>
+            {currentPopup.includeUsername && participant?.name && (
+              <PopupParticipantName>{participant.name}</PopupParticipantName>
+            )}
+            <PopupText>{currentPopup.text}</PopupText>
+          </>
         )}
-        <PopupDismissButton onClick={dismissPopup}>
-          {t.popupDismiss}
+        <PopupDismissButton type="button" onClick={dismissPopup}>
+          <span>{t.popupDismiss}</span>
         </PopupDismissButton>
-      </ModalCard>
-    </ModalOverlay>
+      </PopupModalCard>
+    </PopupModalOverlay>
   ) : null;
 
   // ─── Phase rendering ───
@@ -784,6 +965,7 @@ export default function StoryModulePage() {
         <HeaderBar style={{ background: 'rgba(0,0,0,0.1)', borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
           <AccentText style={{ color: '#fff' }}>{data.name}</AccentText>
           <HeaderActions>
+            <HelpChatHeaderButton />
             <ActivityLogoutButton onClick={handleExit} ariaLabel={t.exitActivity} />
             <LangDrawer />
           </HeaderActions>
@@ -835,6 +1017,7 @@ export default function StoryModulePage() {
         onLogout={handleExit}
         onViewLeaderboard={handleViewLeaderboard}
         onStationContinue={handleStationContinue}
+        onFeedbackContinue={handleFeedbackContinue}
         onBallGameMuteToggle={toggleBallGameMute}
         ballGameMuted={ballGameMuted}
         onStationHintClick={handleStationHintClick}

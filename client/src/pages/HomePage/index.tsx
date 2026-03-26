@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './HomePage.i18n';
 import LangDrawer from '../../components/LangDrawer';
+import { HelpChatHeaderButton } from '../../components/HelpChat';
 import {
   PageContainer,
   HeaderBar,
@@ -32,6 +33,7 @@ export default function HomePage() {
         <AccentText>{participant?.activityCode}</AccentText>
         <HeaderActions>
           <LangDrawer />
+          <HelpChatHeaderButton tone="light" />
           <OutlineButton onClick={handleLogout}>{t.leave}</OutlineButton>
         </HeaderActions>
       </HeaderBar>

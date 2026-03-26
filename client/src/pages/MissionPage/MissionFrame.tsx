@@ -81,23 +81,22 @@ export const FrameContainer = styled('div')({
   overflow: 'hidden',
 });
 
-// Decorative header overlay — on top of all content
+// Decorative header/footer — must sit *below* text (see MissionHeader / MissionContent z-index)
 export const FrameHeaderOverlay = styled('img')({
   position: 'absolute',
   top: 0,
   left: 0,
   width: '100%',
-  zIndex: 10,
+  zIndex: 1,
   pointerEvents: 'none',
 });
 
-// Decorative footer overlay — on top of all content
 export const FrameFooterOverlay = styled('img')({
   position: 'absolute',
   bottom: 0,
   left: 0,
   width: '100%',
-  zIndex: 10,
+  zIndex: 1,
   pointerEvents: 'none',
 });
 
@@ -105,7 +104,7 @@ export const FrameFooterOverlay = styled('img')({
 export const MissionHeader = styled('div')({
   width: '93%',
   margin: '4% auto 0',
-  padding: '30px 16px',
+  padding: '50px 16px',
   minHeight: '10%',
   display: 'flex',
   alignItems: 'center',
@@ -114,7 +113,7 @@ export const MissionHeader = styled('div')({
   boxSizing: 'border-box',
   animation: `${fadeIn} 0.6s ease-out`,
   position: 'relative',
-  zIndex: 3,
+  zIndex: 5,
 });
 
 export const HeaderText = styled('h1')({
@@ -141,7 +140,7 @@ export const MissionContent = styled('div')({
   gap: 20,
   animation: `${fadeIn} 0.6s ease-out 0.2s both`,
   position: 'relative',
-  zIndex: 3,
+  zIndex: 5,
 });
 
 export const DescriptionText = styled('p')<{ step?: number }>(({ step }) => ({
@@ -173,10 +172,12 @@ export const ScreenImage = styled('img')({
 });
 
 // Teal CTA button at bottom
-export const MissionButton = styled('button')<{ step?: number }>(({ step }) => ({
+export const MissionButton = styled('button', {
+  shouldForwardProp: (prop) => prop !== 'step',
+})<{ step?: number }>(({ step }) => ({
   width: '70%',
   maxWidth: 360,
-  padding: '22px 36px',
+  padding: '45px 36px',
   fontSize: 'clamp(18px, 5vw, 24px)',
   fontWeight: 400,
   fontFamily: MISSION_FONT,
@@ -188,15 +189,14 @@ export const MissionButton = styled('button')<{ step?: number }>(({ step }) => (
   textAlign: 'center',
   direction: 'rtl',
   marginBottom: '3%',
-  ...(step && step === 3 && {
-    marginBottom: '18%',
+  // currentScreen is 0-based: screens 0–2 keep large padding; from index 3 onward use compact padding.
+  ...((step ?? 0) >= 3 ? {
+    padding: '22px 36px',
+    marginBottom: 0,
     fontSize: 'clamp(18px, 10vw, 24px)',
-  }),
-  ...(step && step > 3 && {
-
-  }),
+  } : {}),
   position: 'relative',
-  zIndex: 3,
+  zIndex: 5,
   transition: 'transform 0.15s, box-shadow 0.15s',
 
 }));
@@ -207,7 +207,7 @@ export const MuteButton = styled('button')({
   position: 'absolute',
   top: -5,
   left: 16,
-  zIndex: 10,
+  zIndex: 15,
   background: 'none',
   border: 'none',
   cursor: 'pointer',

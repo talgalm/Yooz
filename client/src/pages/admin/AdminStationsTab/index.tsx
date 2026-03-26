@@ -269,6 +269,7 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType }: A
       case 'narrative': return t.typeNarrative;
       case 'badge': return t.typeBadge;
       case 'collage': return t.typeCollage;
+      case 'feedback': return t.typeFeedback;
       default: return type || '—';
     }
   };

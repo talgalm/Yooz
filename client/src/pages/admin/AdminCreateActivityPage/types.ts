@@ -18,6 +18,7 @@ export interface PopupMessage {
   contentType: PopupContentType;
   text: string;
   image: string;
+  includeUsername: boolean;
   triggerPoint: TriggerPoint;
   itemIndex: number;
   conditionType: ConditionType;
@@ -85,6 +86,7 @@ export interface Activity {
       contentType?: string;
       text?: string;
       image?: string;
+      includeUsername?: boolean;
       trigger: { point: string; itemIndex?: number };
       condition?: { type: string; threshold: number };
       enabled: boolean;

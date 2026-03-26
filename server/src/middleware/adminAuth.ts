@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../config';
 import { AdminJwtPayload, AdminRole } from '../types';
 
-const VALID_ADMIN_ROLES: AdminRole[] = ['viewer', 'admin', 'super_admin'];
+const VALID_ADMIN_ROLES: AdminRole[] = ['viewer', 'admin', 'super_admin', 'customer'];
 
 export function authenticateAdmin(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers['authorization'];

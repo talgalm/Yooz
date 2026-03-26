@@ -298,6 +298,7 @@ export default function AdminCreateActivityPage() {
             contentType: (p.contentType === 'image' ? 'image' : 'text') as PopupContentType,
             text: p.text || '',
             image: p.image || '',
+            includeUsername: p.includeUsername === true,
             triggerPoint: p.trigger.point as PopupMessage['triggerPoint'],
             itemIndex: p.trigger.itemIndex ?? 0,
             conditionType: p.condition?.type === 'participantCount' ? 'participantCount' : 'none',
@@ -366,7 +367,7 @@ export default function AdminCreateActivityPage() {
 
   const addPopup = () => {
     setPopups((prev) => [...prev, {
-      title: '', contentType: 'text' as PopupContentType, text: '', image: '',
+      title: '', contentType: 'text' as PopupContentType, text: '', image: '', includeUsername: false,
       triggerPoint: 'afterLogin', itemIndex: 0, conditionType: 'none', threshold: 20, enabled: true,
     }]);
   };
@@ -408,9 +409,15 @@ export default function AdminCreateActivityPage() {
               contentType: p.contentType,
               ...(p.contentType === 'text' && { text: p.text.trim() }),
               ...(p.contentType === 'image' && { image: p.image.trim() }),
+              ...(p.includeUsername && { includeUsername: true }),
               trigger: {
                 point: p.triggerPoint,
-                ...((['beforeItem', 'afterItem'].includes(p.triggerPoint)) && { itemIndex: p.itemIndex }),
+                ...((['beforeItem', 'afterItem'].includes(p.triggerPoint)) && {
+                  itemIndex:
+                    selectedItems.length > 0
+                      ? Math.min(Math.max(0, p.itemIndex), selectedItems.length - 1)
+                      : 0,
+                }),
               },
               ...(p.conditionType === 'participantCount' && {
                 condition: { type: 'participantCount', threshold: p.threshold },

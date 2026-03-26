@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
+import { HelpChatHeaderButton } from '../../components/HelpChat';
 import LangDrawer from '../../components/LangDrawer';
 import NatureBackground from '../../components/NatureBackground';
 import { styled, keyframes } from '@mui/material/styles';
@@ -369,6 +370,7 @@ export default function FinishScreen({
       <HeaderBar style={{ background: 'rgba(0,0,0,0.1)', borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
         <AccentText style={{ color: '#fff' }}>{activityName}</AccentText>
         <HeaderActions>
+          <HelpChatHeaderButton />
           <ActivityLogoutButton onClick={onExit} ariaLabel={t.exitActivity} />
           <LangDrawer />
         </HeaderActions>

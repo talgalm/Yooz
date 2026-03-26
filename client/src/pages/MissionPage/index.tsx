@@ -335,12 +335,17 @@ export default function MissionPage() {
 
   // Step 3 (index 3) uses the puzzle image as blurred background
   const screenBg = currentScreen === 3 ? PUZZLE_BG : screen.backgroundImage;
+  const showFrameHeaderFooter = currentScreen >= 3;
 
   return (
     <MissionWrapper key={currentScreen} bg={screenBg} step={currentScreen}>
       <FrameContainer>
-        <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
-        <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
+        {showFrameHeaderFooter && (
+          <>
+            <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
+            <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
+          </>
+        )}
 
         {/* Mic / mute button */}
           <MuteButton onClick={sounds.toggleMute} aria-label={sounds.muted ? 'Unmute' : 'Mute'}>

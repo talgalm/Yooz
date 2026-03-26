@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { adminApiFetch } from '../utils/adminApi';
 
-export type AdminRole = 'viewer' | 'admin' | 'super_admin';
+export type AdminRole = 'viewer' | 'admin' | 'super_admin' | 'customer';
 
 interface Admin {
   email: string;
@@ -20,7 +20,7 @@ interface AdminAuthContextType {
 
 const AdminAuthContext = createContext<AdminAuthContextType | null>(null);
 
-const VALID_ROLES: AdminRole[] = ['viewer', 'admin', 'super_admin'];
+const VALID_ROLES: AdminRole[] = ['viewer', 'admin', 'super_admin', 'customer'];
 
 function decodeToken(token: string): Admin | null {
   try {

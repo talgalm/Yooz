@@ -44,7 +44,7 @@ import {
   SpinKeyframe,
 } from '../styled';
 
-type UserRole = 'viewer' | 'admin' | 'super_admin';
+type UserRole = 'viewer' | 'admin' | 'super_admin' | 'customer';
 
 interface User {
   _id: string;
@@ -153,6 +153,7 @@ export default function AdminUsersTab() {
       case 'viewer': return t.roleViewer;
       case 'admin': return t.roleAdmin;
       case 'super_admin': return t.roleSuperAdmin;
+      case 'customer': return t.roleCustomer;
     }
   };
 
@@ -209,6 +210,10 @@ export default function AdminUsersTab() {
                 <SelectionButton type="button" selected={role === 'super_admin'} onClick={() => setRole('super_admin')}>
                   <div>{t.roleSuperAdmin}</div>
                   <SelectionSubtextSmall>{t.roleSuperAdminDesc}</SelectionSubtextSmall>
+                </SelectionButton>
+                <SelectionButton type="button" selected={role === 'customer'} onClick={() => setRole('customer')}>
+                  <div>{t.roleCustomer}</div>
+                  <SelectionSubtextSmall>{t.roleCustomerDesc}</SelectionSubtextSmall>
                 </SelectionButton>
               </SelectionGroup>
             </div>
@@ -276,17 +281,34 @@ function PaginatedUsers({ users, confirmDeleteId, handleEdit, handleDelete, role
                   <td><RoleBadge role={user.role}>{roleLabel(user.role)}</RoleBadge></td>
                   <td><CellMuted>{new Date(user.createdAt).toLocaleDateString()}</CellMuted></td>
                   <CellAlignEnd>
-                    <SmallActionButton onClick={() => handleEdit(user)} style={{ marginInlineEnd: 6 }}>
-                      {t.edit}
-                    </SmallActionButton>
-                    {!isSelf(user._id) && (
-                      <SmallDangerButton
-                        confirm={confirmDeleteId === user._id}
-                        onClick={(e) => { e.stopPropagation(); handleDelete(user._id); }}
-                      >
-                        {confirmDeleteId === user._id ? t.confirmDelete : t.delete}
-                      </SmallDangerButton>
-                    )}
+                    <InlineRowGap6
+                      style={{
+                        justifyContent: 'flex-end',
+                        width: '100%',
+                        direction: 'ltr',
+                      }}
+                    >
+                      {isSelf(user._id) ? (
+                        <SmallDangerButton
+                          type="button"
+                          tabIndex={-1}
+                          aria-hidden
+                          style={{ visibility: 'hidden', pointerEvents: 'none' }}
+                        >
+                          {t.delete}
+                        </SmallDangerButton>
+                      ) : (
+                        <SmallDangerButton
+                          confirm={confirmDeleteId === user._id}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(user._id); }}
+                        >
+                          {confirmDeleteId === user._id ? t.confirmDelete : t.delete}
+                        </SmallDangerButton>
+                      )}
+                      <SmallActionButton onClick={() => handleEdit(user)}>
+                        {t.edit}
+                      </SmallActionButton>
+                    </InlineRowGap6>
                   </CellAlignEnd>
                 </tr>
               ))}
@@ -301,11 +323,17 @@ function PaginatedUsers({ users, confirmDeleteId, handleEdit, handleDelete, role
             <MobileCardItemDefault key={user._id}>
               <MobileCardHeader>
                 <MobileCardName>{user.email}</MobileCardName>
-                <InlineRowGap6>
-                  <SmallActionButton onClick={() => handleEdit(user)}>
-                    {t.edit}
-                  </SmallActionButton>
-                  {!isSelf(user._id) && (
+                <InlineRowGap6 style={{ direction: 'ltr' }}>
+                  {isSelf(user._id) ? (
+                    <SmallDangerButton
+                      type="button"
+                      tabIndex={-1}
+                      aria-hidden
+                      style={{ visibility: 'hidden', pointerEvents: 'none' }}
+                    >
+                      {t.delete}
+                    </SmallDangerButton>
+                  ) : (
                     <SmallDangerButton
                       confirm={confirmDeleteId === user._id}
                       onClick={() => handleDelete(user._id)}
@@ -313,6 +341,9 @@ function PaginatedUsers({ users, confirmDeleteId, handleEdit, handleDelete, role
                       {confirmDeleteId === user._id ? t.confirmDelete : t.delete}
                     </SmallDangerButton>
                   )}
+                  <SmallActionButton onClick={() => handleEdit(user)}>
+                    {t.edit}
+                  </SmallActionButton>
                 </InlineRowGap6>
               </MobileCardHeader>
               <InlineRowGap6>

@@ -40,6 +40,7 @@ export interface IMission {
   // Part 3: trash sort
   trashSortConfig?: ITrashSortConfig;
   createdAt: Date;
+  createdByEmail?: string;
 }
 
 const missionScreenSchema = new Schema<IMissionScreen>({
@@ -78,6 +79,7 @@ const missionSchema = new Schema<IMission>({
   puzzleConfig: { type: puzzleConfigSchema },
   trashSortConfig: { type: trashSortConfigSchema },
   createdAt: { type: Date, default: Date.now },
+  createdByEmail: { type: String, lowercase: true, trim: true },
 });
 
 export const Mission = model<IMission>('Mission', missionSchema, 'missions');

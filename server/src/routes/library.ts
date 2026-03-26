@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authenticateAdmin } from '../middleware/adminAuth';
+import { createdByEmailForNewResource, customerMongoFilter, customerOwnsDoc } from '../middleware/customerScope';
 import { LibraryItem, Game, Station } from '../models';
 
 const router = Router();
@@ -33,20 +34,27 @@ router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
     ];
   }
 
+  const scope = customerMongoFilter(req);
+  const listFilter = Object.keys(scope).length > 0
+    ? (Object.keys(filter).length > 0 ? { $and: [filter, scope] } : scope)
+    : filter;
+
   const [items, total] = await Promise.all([
-    LibraryItem.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-    LibraryItem.countDocuments(filter),
+    LibraryItem.find(listFilter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    LibraryItem.countDocuments(listFilter),
   ]);
 
   res.json({ items, total });
 });
 
 // Get all unique tags
-router.get('/tags', authenticateAdmin, async (_req: Request, res: Response) => {
+router.get('/tags', authenticateAdmin, async (req: Request, res: Response) => {
+  const scope = customerMongoFilter(req);
+  const match = Object.keys(scope).length > 0 ? scope : {};
   const [tags, customers, types] = await Promise.all([
-    LibraryItem.distinct('tags'),
-    LibraryItem.distinct('customer'),
-    LibraryItem.distinct('type'),
+    LibraryItem.distinct('tags', match),
+    LibraryItem.distinct('customer', match),
+    LibraryItem.distinct('type', match),
   ]);
   res.json({
     tags: tags.sort(),
@@ -59,6 +67,7 @@ router.get('/tags', authenticateAdmin, async (_req: Request, res: Response) => {
 router.get('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const item = await LibraryItem.findById(req.params.id);
   if (!item) { res.status(404).json({ error: 'Library item not found' }); return; }
+  if (!customerOwnsDoc(req, item)) { res.status(404).json({ error: 'Library item not found' }); return; }
   res.json({ item });
 });
 
@@ -66,6 +75,8 @@ router.get('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: 
 router.post('/:id/copy', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const item = await LibraryItem.findById(req.params.id);
   if (!item) { res.status(404).json({ error: 'Library item not found' }); return; }
+
+  if (!customerOwnsDoc(req, item)) { res.status(404).json({ error: 'Library item not found' }); return; }
 
   if (item.kind === 'game') {
     const game = await Game.create({
@@ -75,6 +86,7 @@ router.post('/:id/copy', authenticateAdmin, async (req: Request<{ id: string }>,
       customer: item.customer,
       tags: [...item.tags.filter(t => t !== 'imported'), 'from-library'],
       settings: item.settings,
+      createdByEmail: createdByEmailForNewResource(req),
     });
     res.status(201).json({ created: 'game', game });
   } else {
@@ -85,6 +97,7 @@ router.post('/:id/copy', authenticateAdmin, async (req: Request<{ id: string }>,
       customer: item.customer,
       tags: [...item.tags.filter(t => t !== 'imported'), 'from-library'],
       settings: item.settings,
+      createdByEmail: createdByEmailForNewResource(req),
     });
     res.status(201).json({ created: 'station', station });
   }
@@ -92,8 +105,10 @@ router.post('/:id/copy', authenticateAdmin, async (req: Request<{ id: string }>,
 
 // Delete library item
 router.delete('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
-  const item = await LibraryItem.findByIdAndDelete(req.params.id);
-  if (!item) { res.status(404).json({ error: 'Library item not found' }); return; }
+  const existing = await LibraryItem.findById(req.params.id);
+  if (!existing) { res.status(404).json({ error: 'Library item not found' }); return; }
+  if (!customerOwnsDoc(req, existing)) { res.status(404).json({ error: 'Library item not found' }); return; }
+  await LibraryItem.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 });
 

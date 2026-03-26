@@ -1,13 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { authenticateAdmin } from '../middleware/adminAuth';
+import { createdByEmailForNewResource, customerMongoFilter, customerOwnsDoc } from '../middleware/customerScope';
 import { CreateGameRequest } from '../types';
 import { Game } from '../models';
 
 const router = Router();
 
 // List all games
-router.get('/', authenticateAdmin, async (_req: Request, res: Response) => {
-  const games = await Game.find().sort({ createdAt: -1 });
+router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
+  const games = await Game.find(customerMongoFilter(req)).sort({ createdAt: -1 });
   res.json({ games });
 });
 
@@ -28,6 +29,7 @@ router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateGameReques
     theme: theme?.trim() || undefined,
     tags: Array.isArray(tags) ? tags.map(t => t.trim()).filter(Boolean) : [],
     settings: settings || {},
+    createdByEmail: createdByEmailForNewResource(req),
   });
 
   res.status(201).json({ game });
@@ -37,6 +39,7 @@ router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateGameReques
 router.get('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const game = await Game.findById(req.params.id);
   if (!game) { res.status(404).json({ error: 'Game not found' }); return; }
+  if (!customerOwnsDoc(req, game)) { res.status(404).json({ error: 'Game not found' }); return; }
   res.json({ game });
 });
 
@@ -48,6 +51,10 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
     res.status(400).json({ error: 'Game name is required (min 2 characters)' });
     return;
   }
+
+  const existing = await Game.findById(req.params.id);
+  if (!existing) { res.status(404).json({ error: 'Game not found' }); return; }
+  if (!customerOwnsDoc(req, existing)) { res.status(404).json({ error: 'Game not found' }); return; }
 
   const tags = req.body.tags;
   const game = await Game.findByIdAndUpdate(
@@ -62,8 +69,10 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
 
 // Delete game
 router.delete('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
-  const game = await Game.findByIdAndDelete(req.params.id);
-  if (!game) { res.status(404).json({ error: 'Game not found' }); return; }
+  const existing = await Game.findById(req.params.id);
+  if (!existing) { res.status(404).json({ error: 'Game not found' }); return; }
+  if (!customerOwnsDoc(req, existing)) { res.status(404).json({ error: 'Game not found' }); return; }
+  await Game.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 });
 

@@ -3,6 +3,12 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { JWT_SECRET } from '../config';
 import { authenticateAdmin } from '../middleware/adminAuth';
+import {
+  assertModuleOwnedByCustomer,
+  createdByEmailForNewResource,
+  customerMongoFilter,
+  customerOwnsDoc,
+} from '../middleware/customerScope';
 import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginField } from '../types';
 import { Activity, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
 
@@ -108,6 +114,7 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
             contentType: ct,
             text: ct === 'text' ? (p.text as string || '').trim() : undefined,
             image: ct === 'image' ? (p.image as string || '').trim() : undefined,
+            includeUsername: p.includeUsername === true,
             trigger: p.trigger || { point: 'afterLogin' },
             condition: p.condition || undefined,
             enabled: p.enabled !== false,
@@ -296,8 +303,8 @@ router.post('/login/google', async (req: Request, res: Response) => {
 });
 
 // List all activities (with populated items)
-router.get('/activities', authenticateAdmin, async (_req: Request, res: Response) => {
-  const activities = await Activity.find().sort({ createdAt: -1 }).lean();
+router.get('/activities', authenticateAdmin, async (req: Request, res: Response) => {
+  const activities = await Activity.find(customerMongoFilter(req)).sort({ createdAt: -1 }).lean();
   const populated = await populateActivityItems(activities);
   res.json({ activities: populated.map((a) => stripManagerPassword(a)) });
 });
@@ -307,8 +314,14 @@ router.post('/activities', authenticateAdmin, async (req: Request<{}, {}, Create
   const error = validateActivityPayload(req.body);
   if (error) { res.status(400).json({ error }); return; }
 
+  const moduleErr = await assertModuleOwnedByCustomer(req, req.body.module);
+  if (moduleErr) { res.status(403).json({ error: moduleErr }); return; }
+
   const activityData = await buildActivityData(req.body);
-  const activity = await Activity.create(activityData);
+  const activity = await Activity.create({
+    ...activityData,
+    createdByEmail: createdByEmailForNewResource(req),
+  });
   logAdminAction(req, 'create_activity', 'activity', activity._id.toString(), activity.name);
   res.status(201).json({ activity: stripManagerPassword(activity) });
 });
@@ -320,6 +333,10 @@ router.put('/activities/:id', authenticateAdmin, async (req: Request<{ id: strin
 
   const existing = await Activity.findById(req.params.id);
   if (!existing) { res.status(404).json({ error: 'Activity not found' }); return; }
+  if (!customerOwnsDoc(req, existing)) { res.status(404).json({ error: 'Activity not found' }); return; }
+
+  const moduleErr = await assertModuleOwnedByCustomer(req, req.body.module);
+  if (moduleErr) { res.status(403).json({ error: moduleErr }); return; }
 
   const activityData = await buildActivityData(req.body, existing.managerPassword);
   const activity = await Activity.findByIdAndUpdate(req.params.id, { $set: activityData }, { new: true, runValidators: true });
@@ -331,6 +348,10 @@ router.put('/activities/:id', authenticateAdmin, async (req: Request<{ id: strin
 router.get('/activities/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const activity = await Activity.findById(req.params.id).lean();
   if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  if (!customerOwnsDoc(req, activity)) {
     res.status(404).json({ error: 'Activity not found' });
     return;
   }
@@ -351,6 +372,10 @@ router.patch('/activities/:id/status', authenticateAdmin, async (req: Request<{ 
     res.status(404).json({ error: 'Activity not found' });
     return;
   }
+  if (!customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
 
   // When going live, wipe all dynamic data (reports/participants/scores)
   if (status === 'live') {
@@ -365,14 +390,19 @@ router.patch('/activities/:id/status', authenticateAdmin, async (req: Request<{ 
 
 // Delete activity
 router.delete('/activities/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
-  const activity = await Activity.findByIdAndDelete(req.params.id);
-  if (!activity) {
+  const existing = await Activity.findById(req.params.id);
+  if (!existing) {
     res.status(404).json({ error: 'Activity not found' });
     return;
   }
+  if (!customerOwnsDoc(req, existing)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  await Activity.findByIdAndDelete(req.params.id);
   // Cascade-delete all reports linked to this activity
-  await Report.deleteMany({ activityId: activity._id });
-  logAdminAction(req, 'delete_activity', 'activity', req.params.id, activity.name);
+  await Report.deleteMany({ activityId: existing._id });
+  logAdminAction(req, 'delete_activity', 'activity', req.params.id, existing.name);
   res.json({ success: true });
 });
 
@@ -407,14 +437,18 @@ router.get('/search', authenticateAdmin, async (req: Request, res: Response) => 
     return query;
   };
 
+  const scope = customerMongoFilter(req);
+  const withScope = (base: Record<string, unknown>) =>
+    (Object.keys(scope).length > 0 ? { $and: [base, scope] } : base);
+
   if (filter !== 'stations') {
     results.games = await Game.find(
-      buildQuery([{ 'settings.questions.text': regex }])
+      withScope(buildQuery([{ 'settings.questions.text': regex }]))
     ).limit(limit).sort({ name: 1 }).lean();
   }
   if (filter !== 'games') {
     results.stations = await Station.find(
-      buildQuery()
+      withScope(buildQuery())
     ).limit(limit).sort({ name: 1 }).lean();
   }
 
@@ -426,9 +460,12 @@ router.get('/random-items', authenticateAdmin, async (req: Request, res: Respons
   const gameCount = Math.min(Number(req.query.games) || 4, 20);
   const stationCount = Math.min(Number(req.query.stations) || 2, 20);
 
+  const scope = customerMongoFilter(req);
+  const matchStage = Object.keys(scope).length > 0 ? [{ $match: scope }] : [];
+
   const [games, stations] = await Promise.all([
-    Game.aggregate([{ $sample: { size: gameCount } }, { $project: { _id: 1, name: 1, type: 1 } }]),
-    Station.aggregate([{ $sample: { size: stationCount } }, { $project: { _id: 1, name: 1, type: 1 } }]),
+    Game.aggregate([...matchStage, { $sample: { size: gameCount } }, { $project: { _id: 1, name: 1, type: 1 } }]),
+    Station.aggregate([...matchStage, { $sample: { size: stationCount } }, { $project: { _id: 1, name: 1, type: 1 } }]),
   ]);
 
   // Interleave: station, games, station, games...

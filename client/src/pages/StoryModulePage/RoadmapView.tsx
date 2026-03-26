@@ -1,12 +1,12 @@
 import React, { useEffect, useLayoutEffect, useRef, useMemo, useState, useCallback } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
+import { HelpChatHeaderButton } from '../../components/HelpChat';
 import { HeaderActions } from '../../components/styled';
 import type { ModuleItemData } from './types';
 import storySideWave from '../../assets/story-side-wave.svg';
 import storySideWaveBlue from '../../assets/story-side-wave-blue.svg';
 import storySideWaveDesert from '../../assets/story-side-wave-desert.svg';
-import storyLake from '../../assets/story-lake.svg';
 import { ROADMAP_DECORATIONS } from './roadmapTrees';
 import { getThemeKit, OCEAN_DECORATIONS, DESERT_DECORATIONS, type RoadmapThemeKit } from './roadmapThemes';
 
@@ -1087,6 +1087,7 @@ export default function RoadmapView({
             🏆
           </HeaderIconBtn>
         )}
+        <HelpChatHeaderButton />
         <ActivityLogoutButton onClick={onLogout} ariaLabel={t.exitActivity} />
       </HeaderActions>
     </GameHeader>
@@ -1216,7 +1217,6 @@ export default function RoadmapView({
                   onClick={state === 'active' ? () => onNodeTap(index) : undefined}>
                   <NodeNumber state={state}>{index + 1}</NodeNumber>
                 </NodeWrapper>
-                <NodeLabel>{item.name}</NodeLabel>
               </div>
             );
           })}

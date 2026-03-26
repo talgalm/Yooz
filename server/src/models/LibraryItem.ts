@@ -11,6 +11,7 @@ export interface ILibraryItem {
   tags: string[];
   settings: Record<string, unknown>;
   createdAt: Date;
+  createdByEmail?: string;
 }
 
 const libraryItemSchema = new Schema<ILibraryItem>({
@@ -23,6 +24,7 @@ const libraryItemSchema = new Schema<ILibraryItem>({
   tags: { type: [String], default: [] },
   settings: { type: Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now },
+  createdByEmail: { type: String, lowercase: true, trim: true },
 });
 
 libraryItemSchema.index({ tags: 1 });

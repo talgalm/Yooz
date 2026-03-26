@@ -150,11 +150,17 @@ export default function MissionInlinePlayer({ mission, onComplete, code }: Missi
   const hasButton = !!screen.buttonText;
   const screenBg = currentScreen === 3 ? PUZZLE_BG : screen.backgroundImage;
 
+  const showFrameHeaderFooter = currentScreen >= 3;
+
   return (
     <MissionWrapper key={currentScreen} bg={screenBg} step={currentScreen}>
       <FrameContainer>
-        <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
-        <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
+        {showFrameHeaderFooter && (
+          <>
+            <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
+            <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
+          </>
+        )}
 
         <MuteButton onClick={sounds.toggleMute} aria-label={sounds.muted ? 'Unmute' : 'Mute'}>
           <MuteIcon src="/images/mic.svg" alt="" muted={sounds.muted} />
@@ -177,7 +183,7 @@ export default function MissionInlinePlayer({ mission, onComplete, code }: Missi
 
         {hasButton && (
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: currentScreen < 3 ? -20 : 70 }}>
-            <MissionButton onClick={handleNext}>
+            <MissionButton step={currentScreen} onClick={handleNext}>
               {screen.buttonText}
             </MissionButton>
           </div>

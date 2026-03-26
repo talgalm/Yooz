@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
+import { HelpChatHeaderButton } from '../../components/HelpChat';
 import ThemedBackground from '../../components/ThemedBackground';
 import OrderGame from '../../components/games/OrderGame';
 import TriviaGame from '../../components/games/TriviaGame';
@@ -10,6 +11,7 @@ import TrashSortGame from '../../components/games/TrashSortGame';
 import NarrativeStation from '../../components/stations/NarrativeStation';
 import BadgeStation from '../../components/stations/BadgeStation';
 import CollageStation from '../../components/stations/CollageStation';
+import FeedbackStation, { type FeedbackResult } from '../../components/stations/FeedbackStation';
 import { styled, keyframes } from '@mui/material/styles';
 import {
   PageContainer,
@@ -216,6 +218,7 @@ interface PlayingPhaseProps {
   onLogout: () => void;
   onViewLeaderboard?: () => void;
   onStationContinue: () => void;
+  onFeedbackContinue: (result: FeedbackResult) => void;
   onBallGameMuteToggle: () => void;
   ballGameMuted: boolean;
   onStationHintClick: () => void;
@@ -244,6 +247,7 @@ export default function PlayingPhase({
   onLogout,
   onViewLeaderboard,
   onStationContinue,
+  onFeedbackContinue,
   onBallGameMuteToggle,
   ballGameMuted,
   onStationHintClick,
@@ -334,6 +338,10 @@ export default function PlayingPhase({
 
       if (station.stationType === 'collage') {
         return <CollageStation station={station} onContinue={onStationContinue} code={code} />;
+      }
+
+      if (station.stationType === 'feedback') {
+        return <FeedbackStation station={station} onContinue={onFeedbackContinue} />;
       }
 
       // Unknown station type fallback
@@ -464,6 +472,7 @@ export default function PlayingPhase({
             🏆
           </PlayingHeaderIconBtn>
         )}
+        <HelpChatHeaderButton />
         <ActivityLogoutButton onClick={onLogout} ariaLabel={t.exitActivity} />
       </HeaderActions>
     </PlayingHeader>

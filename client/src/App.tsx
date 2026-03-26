@@ -18,7 +18,7 @@ import ManagerLoginPage from './pages/manager/ManagerLoginPage';
 import ManagerDashboardPage from './pages/manager/ManagerDashboardPage';
 import LandingPage from './pages/LandingPage';
 import ErrorBoundary from './components/ErrorBoundary';
-import HelpChat from './components/HelpChat';
+import { HelpChatProvider, HelpChatFab } from './components/HelpChat';
 import { MobileContainer } from './components/styled';
 import './App.css';
 
@@ -74,10 +74,10 @@ export default function App() {
                 <Route path="/manager/dashboard" element={<ManagerProtectedRoute><ManagerDashboardPage /></ManagerProtectedRoute>} />
 
                 {/* Participant routes — mobile layout */}
-                <Route path="/play/:code" element={<MobileContainer><PlayPage /><HelpChat /></MobileContainer>} />
-                <Route path="/home" element={<MobileContainer><ProtectedRoute><HomePage /></ProtectedRoute><HelpChat /></MobileContainer>} />
-                <Route path="/story/:code" element={<MobileContainer><ProtectedRoute><StoryModulePage /></ProtectedRoute><HelpChat /></MobileContainer>} />
-                <Route path="/mission/:code" element={<MobileContainer><ProtectedRoute><MissionPage /></ProtectedRoute><HelpChat /></MobileContainer>} />
+                <Route path="/play/:code" element={<MobileContainer><HelpChatProvider variant="fab"><PlayPage /><HelpChatFab /></HelpChatProvider></MobileContainer>} />
+                <Route path="/home" element={<MobileContainer><HelpChatProvider variant="header"><ProtectedRoute><HomePage /></ProtectedRoute></HelpChatProvider></MobileContainer>} />
+                <Route path="/story/:code" element={<MobileContainer><HelpChatProvider variant="header"><ProtectedRoute><StoryModulePage /></ProtectedRoute></HelpChatProvider></MobileContainer>} />
+                <Route path="/mission/:code" element={<MobileContainer><HelpChatProvider variant="fab"><ProtectedRoute><MissionPage /></ProtectedRoute><HelpChatFab /></HelpChatProvider></MobileContainer>} />
 
                 {/* Default: YOOZ landing page */}
                 <Route path="/" element={<MobileContainer><LandingPage /></MobileContainer>} />

@@ -1,13 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { authenticateAdmin } from '../middleware/adminAuth';
+import { createdByEmailForNewResource, customerMongoFilter, customerOwnsDoc } from '../middleware/customerScope';
 import { CreateStationRequest } from '../types';
 import { Station } from '../models';
 
 const router = Router();
 
 // List all stations
-router.get('/', authenticateAdmin, async (_req: Request, res: Response) => {
-  const stations = await Station.find().sort({ createdAt: -1 });
+router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
+  const stations = await Station.find(customerMongoFilter(req)).sort({ createdAt: -1 });
   res.json({ stations });
 });
 
@@ -20,7 +21,7 @@ router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateStationReq
     return;
   }
 
-  const stationType = type && ['text', 'video', 'image', 'narrative', 'badge', 'collage'].includes(type) ? type : 'text';
+  const stationType = type && ['text', 'video', 'image', 'narrative', 'badge', 'collage', 'feedback'].includes(type) ? type : 'text';
 
   const tags = req.body.tags;
   const station = await Station.create({
@@ -31,6 +32,7 @@ router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateStationReq
     theme: theme?.trim() || undefined,
     tags: Array.isArray(tags) ? tags.map(t => t.trim()).filter(Boolean) : [],
     settings: settings || {},
+    createdByEmail: createdByEmailForNewResource(req),
   });
 
   res.status(201).json({ station });
@@ -40,6 +42,7 @@ router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateStationReq
 router.get('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const station = await Station.findById(req.params.id);
   if (!station) { res.status(404).json({ error: 'Station not found' }); return; }
+  if (!customerOwnsDoc(req, station)) { res.status(404).json({ error: 'Station not found' }); return; }
   res.json({ station });
 });
 
@@ -52,7 +55,11 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
     return;
   }
 
-  const stationType = type && ['text', 'video', 'image', 'narrative', 'badge', 'collage'].includes(type) ? type : 'text';
+  const existing = await Station.findById(req.params.id);
+  if (!existing) { res.status(404).json({ error: 'Station not found' }); return; }
+  if (!customerOwnsDoc(req, existing)) { res.status(404).json({ error: 'Station not found' }); return; }
+
+  const stationType = type && ['text', 'video', 'image', 'narrative', 'badge', 'collage', 'feedback'].includes(type) ? type : 'text';
 
   const tags = req.body.tags;
   const station = await Station.findByIdAndUpdate(
@@ -75,8 +82,10 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
 
 // Delete station
 router.delete('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
-  const station = await Station.findByIdAndDelete(req.params.id);
-  if (!station) { res.status(404).json({ error: 'Station not found' }); return; }
+  const existing = await Station.findById(req.params.id);
+  if (!existing) { res.status(404).json({ error: 'Station not found' }); return; }
+  if (!customerOwnsDoc(req, existing)) { res.status(404).json({ error: 'Station not found' }); return; }
+  await Station.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 });
 

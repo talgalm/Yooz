@@ -249,7 +249,7 @@ const MobileCard = styled('div')({
 // ─── Types ───
 
 type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'users';
-type StationsSection = 'stations' | 'games' | 'missions' | 'collage';
+type StationsSection = 'stations' | 'games' | 'missions' | 'collage' | 'feedback';
 type GameSubTab = 'order' | 'trivia' | 'puzzle' | 'trueFalse' | 'ballGame' | 'trashSort';
 
 interface Activity {
@@ -276,7 +276,7 @@ export interface Game {
 export interface Station {
   _id: string;
   name: string;
-  type?: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage';
+  type?: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback';
   description?: string;
   customer?: string;
   theme?: string;
@@ -329,6 +329,14 @@ export default function AdminDashboardPage() {
     }
     return tabs;
   }, [role, t]);
+
+  const visibleTabKeys = useMemo(() => visibleTabs.map((tab) => tab.key), [visibleTabs]);
+
+  useEffect(() => {
+    if (!visibleTabKeys.includes(activeTab)) {
+      setActiveTab('activities');
+    }
+  }, [visibleTabKeys, activeTab]);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -440,11 +448,14 @@ export default function AdminDashboardPage() {
                 <SegmentedButton active={stationsSection === 'collage'} onClick={() => setStationsSection('collage')}>
                   {t.sectionCollage}
                 </SegmentedButton>
+                <SegmentedButton active={stationsSection === 'feedback'} onClick={() => setStationsSection('feedback')}>
+                  {t.sectionFeedback}
+                </SegmentedButton>
               </SegmentedControl>
             </SegmentedControlCenter>
 
             {stationsSection === 'stations' && (
-              <AdminStationsTab stations={stations} onRefresh={refreshStations} />
+              <AdminStationsTab stations={stations.filter((s) => s.type !== 'collage' && s.type !== 'feedback')} onRefresh={refreshStations} />
             )}
 
             {stationsSection === 'games' && (
@@ -497,6 +508,14 @@ export default function AdminDashboardPage() {
                 stations={stations.filter((s) => s.type === 'collage')}
                 onRefresh={refreshStations}
                 defaultType="collage"
+              />
+            )}
+
+            {stationsSection === 'feedback' && (
+              <AdminStationsTab
+                stations={stations.filter((s) => s.type === 'feedback')}
+                onRefresh={refreshStations}
+                defaultType="feedback"
               />
             )}
           </>

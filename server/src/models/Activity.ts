@@ -21,6 +21,7 @@ export interface IPopupMessage {
   contentType: 'text' | 'image'; // text = show text, image = show image
   text?: string;
   image?: string; // image URL
+  includeUsername?: boolean;
   trigger: IPopupTrigger;
   condition?: IPopupCondition;
   enabled: boolean;
@@ -77,6 +78,8 @@ export interface IActivity {
   managerPassword?: string; // bcrypt hash
   stations: string[]; // legacy
   createdAt: Date;
+  /** Set when created via admin API — used to scope customer role */
+  createdByEmail?: string;
   loginComponent?: string; // legacy
 }
 
@@ -100,6 +103,7 @@ const popupMessageSchema = new Schema({
   contentType: { type: String, enum: ['text', 'image'], default: 'text' },
   text: { type: String },
   image: { type: String },
+  includeUsername: { type: Boolean, default: false },
   trigger: { type: popupTriggerSchema, required: true },
   condition: { type: popupConditionSchema },
   enabled: { type: Boolean, default: true },
@@ -159,6 +163,7 @@ const activitySchema = new Schema<IActivity>({
   managerPassword: { type: String },
   stations: { type: [String], default: [] }, // legacy
   createdAt: { type: Date, default: Date.now },
+  createdByEmail: { type: String, lowercase: true, trim: true },
   loginComponent: { type: String }, // legacy
 });
 
