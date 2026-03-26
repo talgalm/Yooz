@@ -24,6 +24,7 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import ffmpegPath from 'ffmpeg-static';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from '../config';
 import { Activity } from '../models';
 
@@ -43,7 +44,7 @@ const upload = multer({
 
 // ─── ffmpeg helpers ────────────────────────────────────────────────────────────
 
-const FFMPEG_BIN = process.env.FFMPEG_PATH || 'ffmpeg';
+const FFMPEG_BIN = process.env.FFMPEG_PATH || ffmpegPath || 'ffmpeg';
 const FRAME_W = 540;
 const FRAME_H = 960;
 const IMG_DURATION = 3;   // seconds each image is shown
