@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { styled, keyframes } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminLibraryTab.i18n';
@@ -414,9 +415,10 @@ export default function AdminLibraryTab() {
   const [allTypes, setAllTypes] = useState<string[]>([]);
   const [customerFilter, setCustomerFilter] = useState<string>('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [previewItem, setPreviewItem] = useState<LibraryItem | null>(null);
   const [tagDrawerOpen, setTagDrawerOpen] = useState(false);
+  const navigate = useNavigate();
 
   const fetchItems = useCallback(async () => {
     try {
@@ -467,12 +469,59 @@ export default function AdminLibraryTab() {
     return () => window.removeEventListener('keydown', onKey);
   }, [tagDrawerOpen]);
 
-  const handleCopy = async (item: LibraryItem) => {
-    try {
-      await adminApiFetch(`/api/admin/library/${item._id}/copy`, { method: 'POST' });
-      setCopiedId(item._id);
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch {}
+  const validateAndExport = (item: LibraryItem) => {
+    setExportError(null);
+
+    // Basic validation
+    if (!item.name?.trim()) {
+      setExportError(`${t.exportError} ${t.exportErrorNoName}`);
+      return;
+    }
+
+    const SUPPORTED_STATION_TYPES = ['text', 'video', 'image', 'narrative', 'badge', 'collage'];
+    const SUPPORTED_GAME_TYPES = ['trivia', 'order', 'puzzle', 'trueFalse', 'ballGame', 'trashSort'];
+
+    if (item.kind === 'station') {
+      if (!SUPPORTED_STATION_TYPES.includes(item.type)) {
+        setExportError(`${t.exportError} ${t.exportErrorUnsupportedType} "${item.type}"`);
+        return;
+      }
+      // Check minimal settings integrity
+      const s = item.settings || {};
+      if (item.type === 'text' && !s.content) {
+        setExportError(`${t.exportError} ${t.exportErrorCorruptData} ${t.exportSuggestManual}`);
+        return;
+      }
+      if ((item.type === 'video' || item.type === 'image') && !s.mediaUrl) {
+        setExportError(`${t.exportError} ${t.exportErrorCorruptData} ${t.exportSuggestManual}`);
+        return;
+      }
+
+      // Navigate to create station with prefill
+      navigate(`/admin/stations/new?type=${item.type}`, {
+        state: { libraryItem: item },
+      });
+    } else if (item.kind === 'game') {
+      if (!SUPPORTED_GAME_TYPES.includes(item.type)) {
+        setExportError(`${t.exportError} ${t.exportErrorUnsupportedType} "${item.type}"`);
+        return;
+      }
+      // For trivia, check questions exist
+      if (item.type === 'trivia') {
+        const questions = (item.settings as { questions?: unknown[] })?.questions;
+        if (!Array.isArray(questions) || questions.length === 0) {
+          setExportError(`${t.exportError} ${t.exportErrorNoQuestions} ${t.exportSuggestManual}`);
+          return;
+        }
+      }
+
+      // Navigate to create game with prefill
+      navigate(`/admin/games/new?type=${item.type}`, {
+        state: { libraryItem: item },
+      });
+    } else {
+      setExportError(`${t.exportError} ${t.exportErrorUnsupportedType}`);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -679,6 +728,31 @@ export default function AdminLibraryTab() {
         </TagDrawerBackdrop>
       )}
 
+      {/* Export error */}
+      {exportError && (
+        <div style={{
+          padding: '12px 18px',
+          marginBottom: 16,
+          background: '#fef2f2',
+          border: '1px solid #fecaca',
+          borderRadius: 10,
+          color: '#dc2626',
+          fontSize: 14,
+          fontWeight: 500,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <span>{exportError}</span>
+          <button
+            onClick={() => setExportError(null)}
+            style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 18, fontWeight: 700 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Table / Cards */}
       {items.length === 0 ? (
         <AdminCard>
@@ -687,9 +761,8 @@ export default function AdminLibraryTab() {
       ) : (
         <PaginatedLibrary
           items={items}
-          copiedId={copiedId}
           confirmDeleteId={confirmDeleteId}
-          handleCopy={handleCopy}
+          handleExport={validateAndExport}
           handleDelete={handleDelete}
           setPreviewItem={setPreviewItem}
           getQuestionCount={getQuestionCount}
@@ -759,11 +832,8 @@ export default function AdminLibraryTab() {
             )}
 
             <div style={{ marginTop: 20, display: 'flex', gap: 8 }}>
-              <CopyButton
-                disabled={copiedId === previewItem._id}
-                onClick={() => handleCopy(previewItem)}
-              >
-                {copiedId === previewItem._id ? t.copied : t.copy}
+              <CopyButton onClick={() => validateAndExport(previewItem)}>
+                {t.export}
               </CopyButton>
             </div>
           </PreviewCard>
@@ -773,11 +843,10 @@ export default function AdminLibraryTab() {
   );
 }
 
-function PaginatedLibrary({ items, copiedId, confirmDeleteId, handleCopy, handleDelete, setPreviewItem, getQuestionCount, t }: {
+function PaginatedLibrary({ items, confirmDeleteId, handleExport, handleDelete, setPreviewItem, getQuestionCount, t }: {
   items: LibraryItem[];
-  copiedId: string | null;
   confirmDeleteId: string | null;
-  handleCopy: (item: LibraryItem) => void;
+  handleExport: (item: LibraryItem) => void;
   handleDelete: (id: string) => void;
   setPreviewItem: (item: LibraryItem) => void;
   getQuestionCount: (item: LibraryItem) => number;
@@ -826,11 +895,8 @@ function PaginatedLibrary({ items, copiedId, confirmDeleteId, handleCopy, handle
                   </td>
                   <CellAlignEnd>
                     <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
-                      <CopyButton
-                        disabled={copiedId === item._id}
-                        onClick={() => handleCopy(item)}
-                      >
-                        {copiedId === item._id ? t.copied : t.copy}
+                      <CopyButton onClick={() => handleExport(item)}>
+                        {t.export}
                       </CopyButton>
                       <SmallDangerButton
                         confirm={confirmDeleteId === item._id}
@@ -873,11 +939,8 @@ function PaginatedLibrary({ items, copiedId, confirmDeleteId, handleCopy, handle
                   </MobileCardRow>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }} onClick={(e) => e.stopPropagation()}>
-                  <CopyButton
-                    disabled={copiedId === item._id}
-                    onClick={() => handleCopy(item)}
-                  >
-                    {copiedId === item._id ? t.copied : t.copy}
+                  <CopyButton onClick={() => handleExport(item)}>
+                    {t.export}
                   </CopyButton>
                   <SmallDangerButton
                     confirm={confirmDeleteId === item._id}

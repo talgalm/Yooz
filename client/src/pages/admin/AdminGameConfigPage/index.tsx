@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminGameConfigPage.i18n';
@@ -59,6 +59,7 @@ export default function AdminGameConfigPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const t = useTranslations(texts);
 
   const validTypes = ['order', 'trivia', 'puzzle', 'trueFalse', 'ballGame', 'trashSort'];
@@ -115,6 +116,31 @@ export default function AdminGameConfigPage() {
       })
       .catch(() => navigate('/admin/dashboard'));
   }, [id, navigate]);
+
+  // Prefill from library item (export from Content Library)
+  useEffect(() => {
+    if (id) return; // only in create mode
+    const lib = (location.state as { libraryItem?: { name: string; type: string; description?: string; customer?: string; tags?: string[]; settings?: Record<string, unknown> } })?.libraryItem;
+    if (!lib) return;
+
+    setName(lib.name || '');
+    if (lib.type && validTypes.includes(lib.type)) {
+      setType(lib.type);
+    }
+    setDescription(lib.description || '');
+    setCustomer(lib.customer || '');
+    setTags((lib.tags || []).filter(t => t !== 'imported'));
+
+    const s = lib.settings || {};
+    setInstructions((s.instructions as string) || '');
+    if (s.hint && typeof s.hint === 'object') {
+      const h = s.hint as Record<string, unknown>;
+      setHintEnabled(!!h.enabled);
+      setHintText((h.text as string) || '');
+    }
+    setInitialSettings(s);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getActiveRef = () => {
     switch (type) {
