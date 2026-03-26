@@ -258,13 +258,26 @@ const FishWobbleWrap = styled('div')<{ wobbleDuration: number }>(({ wobbleDurati
   animation: `${fishWobble} ${wobbleDuration}s ease-in-out infinite`,
 }));
 
+/** Clips cloud transforms so they don’t widen scroll overflow and shift the roadmap horizontally. */
+const CloudSkyLayer = styled('div')({
+  position: 'absolute',
+  left: 0,
+  right: 0,
+  top: 0,
+  height: 280,
+  overflow: 'hidden',
+  pointerEvents: 'none',
+  // Above road, trees, and station nodes (10); below sticky header (30)
+  zIndex: 15,
+});
+
 const CloudOuter = styled('div')<{ duration: number; top: number }>(({ duration, top }) => ({
   position: 'absolute',
   left: 0,
   top,
   pointerEvents: 'none',
   userSelect: 'none',
-  zIndex: 3,
+  willChange: 'transform',
   animation: `${cloudDrift} ${duration}s linear forwards`,
 }));
 
@@ -684,8 +697,10 @@ export default function RoadmapView({
   const [W, setW]               = useState(0);
   const [scrollAreaH, setScrollAreaH] = useState(0);
 
+  // Measure width from the scroll container (stable), not PathCanvas — animated cloud transforms
+  // must not affect layout width or stations will appear to drift with the clouds.
   useLayoutEffect(() => {
-    const el = canvasRef.current ?? scrollRef.current;
+    const el = scrollRef.current;
     if (!el) return;
     const ro = new ResizeObserver(entries => {
       const w = entries[0]?.contentRect.width;
@@ -1288,18 +1303,22 @@ export default function RoadmapView({
             );
           })}
 
-          {kit.showClouds && clouds.map((c) => (
-            <CloudOuter
-              key={`cloud-${c.id}`}
-              duration={c.duration}
-              top={c.top}
-              onAnimationEnd={() => {
-                setClouds((prev) => prev.filter((x) => x.id !== c.id));
-              }}
-            >
-              <DriftingCloudSvg width={c.size} />
-            </CloudOuter>
-          ))}
+          {kit.showClouds && (
+            <CloudSkyLayer aria-hidden>
+              {clouds.map((c) => (
+                <CloudOuter
+                  key={`cloud-${c.id}`}
+                  duration={c.duration}
+                  top={c.top}
+                  onAnimationEnd={() => {
+                    setClouds((prev) => prev.filter((x) => x.id !== c.id));
+                  }}
+                >
+                  <DriftingCloudSvg width={c.size} />
+                </CloudOuter>
+              ))}
+            </CloudSkyLayer>
+          )}
         </PathCanvas>
       </ScrollArea>
 
