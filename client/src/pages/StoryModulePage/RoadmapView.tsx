@@ -98,10 +98,10 @@ const fishSwim = keyframes`
   0%   { transform: translateX(-120px); }
   100% { transform: translateX(calc(100vw + 120px)); }
 `;
-/** Nature sky: straight L→R drift only (no vertical wobble). */
+/** Nature sky: straight L→R drift; width from --roadmap-w on PathCanvas (scrolls with layout). */
 const cloudDrift = keyframes`
   0%   { transform: translateX(-140px); }
-  100% { transform: translateX(calc(100vw + 140px)); }
+  100% { transform: translateX(calc(var(--roadmap-w, 100vw) + 140px)); }
 `;
 const fishWobble = keyframes`
   0%, 100% { transform: translateY(0) rotate(0deg); }
@@ -131,6 +131,9 @@ const RoadmapContainer = styled('div')({
 const ScrollArea = styled('div')({
   flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden',
   position: 'relative', WebkitOverflowScrolling: 'touch',
+  scrollbarWidth: 'none',
+  msOverflowStyle: 'none',
+  '&::-webkit-scrollbar': { display: 'none' },
 });
 
 const PathCanvas = styled('div')<{ height: number }>(({ height }) => ({
@@ -256,12 +259,12 @@ const FishWobbleWrap = styled('div')<{ wobbleDuration: number }>(({ wobbleDurati
 }));
 
 const CloudOuter = styled('div')<{ duration: number; top: number }>(({ duration, top }) => ({
-  position: 'fixed',
+  position: 'absolute',
   left: 0,
   top,
   pointerEvents: 'none',
   userSelect: 'none',
-  zIndex: 50,
+  zIndex: 3,
   animation: `${cloudDrift} ${duration}s linear forwards`,
 }));
 
@@ -1169,7 +1172,11 @@ export default function RoadmapView({
       {header}
 
       <ScrollArea ref={scrollRef}>
-        <PathCanvas ref={canvasRef} height={totalHeight}>
+        <PathCanvas
+          ref={canvasRef}
+          height={totalHeight}
+          style={{ ['--roadmap-w' as string]: `${W}px` }}
+        >
           <SceneBackground width={W} height={totalHeight} kit={kit} />
           <WorldDecorations W={W} numRows={numRows} totalH={totalHeight} />
 
@@ -1280,6 +1287,19 @@ export default function RoadmapView({
               </div>
             );
           })}
+
+          {kit.showClouds && clouds.map((c) => (
+            <CloudOuter
+              key={`cloud-${c.id}`}
+              duration={c.duration}
+              top={c.top}
+              onAnimationEnd={() => {
+                setClouds((prev) => prev.filter((x) => x.id !== c.id));
+              }}
+            >
+              <DriftingCloudSvg width={c.size} />
+            </CloudOuter>
+          ))}
         </PathCanvas>
       </ScrollArea>
 
@@ -1289,19 +1309,6 @@ export default function RoadmapView({
             <SwimmingFishSvg size={f.size} palette={f.palette} />
           </FishWobbleWrap>
         </FishOuter>
-      ))}
-
-      {kit.showClouds && clouds.map((c) => (
-        <CloudOuter
-          key={`cloud-${c.id}`}
-          duration={c.duration}
-          top={c.top}
-          onAnimationEnd={() => {
-            setClouds((prev) => prev.filter((x) => x.id !== c.id));
-          }}
-        >
-          <DriftingCloudSvg width={c.size} />
-        </CloudOuter>
       ))}
 
       {kit.showTumbleweed && tumbleweeds.map((tw) => (

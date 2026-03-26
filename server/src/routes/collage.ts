@@ -161,7 +161,7 @@ router.post(
       return;
     }
 
-    const activity = await Activity.findOne({ code: activityCode.toUpperCase() });
+    const activity = await Activity.findOne({ code: activityCode });
     if (!activity) {
       res.status(404).json({ error: 'Activity not found' });
       return;

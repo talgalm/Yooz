@@ -268,9 +268,7 @@ export default function ActivityLogin({
         {loading ? t.joining : t.join}
       </LoginButton>
 
-      <div style={{ textAlign: 'end' }}>
-        <HelpLink href="#">{t.needHelp}</HelpLink>
-      </div>
+
 
       {showGoogle && (
         <>
