@@ -21,6 +21,7 @@ export interface RoadmapThemeKit {
   nodeLabelShadow: string;
   pulseRingColor: string;
   showFish: boolean;
+  showClouds: boolean;
   showTumbleweed: boolean;
   showHouses: boolean;
   showSideWaves: boolean;
@@ -49,7 +50,8 @@ export const NATURE_THEME: RoadmapThemeKit = {
   nodeLabelColor: '#fff',
   nodeLabelShadow: '0 1px 4px rgba(0,0,0,.6)',
   pulseRingColor: 'rgba(180,210,50,.5)',
-  showFish: true,
+  showFish: false,
+  showClouds: true,
   showTumbleweed: false,
   showHouses: true,
   showSideWaves: true,
@@ -79,6 +81,7 @@ export const OCEAN_THEME: RoadmapThemeKit = {
   nodeLabelShadow: '0 1px 4px rgba(0,0,0,.5)',
   pulseRingColor: 'rgba(94,212,245,.5)',
   showFish: true,
+  showClouds: false,
   showTumbleweed: false,
   showHouses: false,
   showSideWaves: true,
@@ -108,6 +111,7 @@ export const DESERT_THEME: RoadmapThemeKit = {
   nodeLabelShadow: '0 1px 4px rgba(0,0,0,.5)',
   pulseRingColor: 'rgba(240,200,96,.5)',
   showFish: false,
+  showClouds: false,
   showTumbleweed: true,
   showHouses: false,
   showSideWaves: true,

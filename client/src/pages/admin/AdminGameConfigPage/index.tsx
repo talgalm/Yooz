@@ -91,6 +91,7 @@ export default function AdminGameConfigPage() {
   const triviaRef = useRef<GameConfigHandle>(null);
   const puzzleRef = useRef<GameConfigHandle>(null);
   const trueFalseRef = useRef<GameConfigHandle>(null);
+  const ballRef = useRef<GameConfigHandle>(null);
   const trashSortRef = useRef<GameConfigHandle>(null);
   // Fetch existing game data
   useEffect(() => {
@@ -148,6 +149,7 @@ export default function AdminGameConfigPage() {
       case 'trivia': return triviaRef;
       case 'puzzle': return puzzleRef;
       case 'trueFalse': return trueFalseRef;
+      case 'ballGame': return ballRef;
       case 'trashSort': return trashSortRef;
       default: return null;
     }
@@ -215,6 +217,7 @@ export default function AdminGameConfigPage() {
     trivia: 'טריוויה - טסט',
     puzzle: 'פאזל - טסט',
     trueFalse: 'נכון או לא - טסט',
+    ballGame: 'כדור לסל - טסט',
     trashSort: 'מיון אשפה - טסט',
   };
 
@@ -269,6 +272,9 @@ export default function AdminGameConfigPage() {
                     <SelectionButton type="button" selected={type === 'trueFalse'} onClick={() => setType('trueFalse')}>
                       True/False
                     </SelectionButton>
+                    <SelectionButton type="button" selected={type === 'ballGame'} onClick={() => setType('ballGame')}>
+                      Ball Game
+                    </SelectionButton>
                     <SelectionButton type="button" selected={type === 'trashSort'} onClick={() => setType('trashSort')}>
                       Trash Sort
                     </SelectionButton>
@@ -322,7 +328,19 @@ export default function AdminGameConfigPage() {
                 <div>
                   <SectionLabel>{t.instructions}</SectionLabel>
                   <Input
-                    placeholder={type === 'trueFalse' ? t.trueFalseInstructionsPlaceholder : type === 'puzzle' ? t.puzzleInstructionsPlaceholder : type === 'trivia' ? t.triviaInstructionsPlaceholder : t.instructionsPlaceholder}
+                    placeholder={
+                      type === 'trueFalse'
+                        ? t.trueFalseInstructionsPlaceholder
+                        : type === 'puzzle'
+                          ? t.puzzleInstructionsPlaceholder
+                          : type === 'trivia'
+                            ? t.triviaInstructionsPlaceholder
+                            : type === 'ballGame'
+                              ? t.ballGameInstructionsPlaceholder
+                              : type === 'trashSort'
+                                ? t.trashSortInstructionsPlaceholder
+                                : t.instructionsPlaceholder
+                    }
                     value={instructions}
                     onChange={(e) => setInstructions(e.target.value)}
                   />
@@ -363,6 +381,9 @@ export default function AdminGameConfigPage() {
               )}
               {type === 'trueFalse' && (
                 <TrueFalseGameConfig ref={trueFalseRef} t={t} initialSettings={initialSettings} />
+              )}
+              {type === 'ballGame' && (
+                <BallGameConfig ref={ballRef} t={t} initialSettings={initialSettings} />
               )}
               {type === 'trashSort' && (
                 <TrashSortGameConfig ref={trashSortRef} t={t} initialSettings={initialSettings} />

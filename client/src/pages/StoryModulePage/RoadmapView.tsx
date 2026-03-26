@@ -98,6 +98,11 @@ const fishSwim = keyframes`
   0%   { transform: translateX(-120px); }
   100% { transform: translateX(calc(100vw + 120px)); }
 `;
+/** Nature sky: straight L→R drift only (no vertical wobble). */
+const cloudDrift = keyframes`
+  0%   { transform: translateX(-140px); }
+  100% { transform: translateX(calc(100vw + 140px)); }
+`;
 const fishWobble = keyframes`
   0%, 100% { transform: translateY(0) rotate(0deg); }
   25%      { transform: translateY(-8px) rotate(-2deg); }
@@ -250,6 +255,16 @@ const FishWobbleWrap = styled('div')<{ wobbleDuration: number }>(({ wobbleDurati
   animation: `${fishWobble} ${wobbleDuration}s ease-in-out infinite`,
 }));
 
+const CloudOuter = styled('div')<{ duration: number; top: number }>(({ duration, top }) => ({
+  position: 'fixed',
+  left: 0,
+  top,
+  pointerEvents: 'none',
+  userSelect: 'none',
+  zIndex: 50,
+  animation: `${cloudDrift} ${duration}s linear forwards`,
+}));
+
 const TumbleweedOuter = styled('div')<{ duration: number; top: number }>(({ duration, top }) => ({
   position: 'fixed',
   left: 0,
@@ -298,6 +313,28 @@ const FISH_PALETTES = [
   { body: '#C89BFF', fin: '#A070E8', stripe: '#8850D0' },
   { body: '#FFD966', fin: '#F0C030', stripe: '#D0A020' },
 ];
+
+const DriftingCloudSvg = ({ width }: { width: number }) => {
+  const h = width * 0.48;
+  return (
+    <svg
+      width={width}
+      height={h}
+      viewBox="0 0 100 48"
+      aria-hidden
+      style={{
+        display: 'block',
+        opacity: 0.94,
+        filter: 'drop-shadow(0 1px 3px rgba(0,0,0,.12))',
+      }}
+    >
+      <ellipse cx="28" cy="30" rx="24" ry="15" fill="#fff" />
+      <ellipse cx="50" cy="26" rx="30" ry="17" fill="#fff" />
+      <ellipse cx="74" cy="30" rx="20" ry="13" fill="#fff" />
+      <ellipse cx="42" cy="34" rx="18" ry="11" fill="#f8fafc" />
+    </svg>
+  );
+};
 
 const SwimmingFishSvg = ({ size, palette }: { size: number; palette: number }) => {
   const c = FISH_PALETTES[palette % FISH_PALETTES.length];
@@ -996,6 +1033,29 @@ export default function RoadmapView({
     return () => clearInterval(interval);
   }, [kit.showFish]);
 
+  // ─── Drifting clouds (nature sky only): straight L→R, quick, max 2 on screen ───
+  const [clouds, setClouds] = useState<Array<{ id: number; top: number; duration: number; size: number }>>([]);
+  const cloudIdRef = useRef(0);
+
+  useEffect(() => {
+    if (!kit.showClouds) {
+      setClouds([]);
+      return;
+    }
+    const vh = window.innerHeight || 600;
+    const interval = setInterval(() => {
+      setClouds((prev) => {
+        if (prev.length >= 2) return prev;
+        cloudIdRef.current += 1;
+        const duration = 11 + Math.random() * 7;
+        const top = 40 + Math.random() * Math.min(120, vh * 0.2);
+        const size = 58 + Math.random() * 44;
+        return [...prev, { id: cloudIdRef.current, top, duration, size }];
+      });
+    }, 3800);
+    return () => clearInterval(interval);
+  }, [kit.showClouds]);
+
   // ─── Animated tumbleweeds (desert) ───
   const [tumbleweeds, setTumbleweeds] = useState<Array<{
     id: number; top: number; duration: number;
@@ -1229,6 +1289,19 @@ export default function RoadmapView({
             <SwimmingFishSvg size={f.size} palette={f.palette} />
           </FishWobbleWrap>
         </FishOuter>
+      ))}
+
+      {kit.showClouds && clouds.map((c) => (
+        <CloudOuter
+          key={`cloud-${c.id}`}
+          duration={c.duration}
+          top={c.top}
+          onAnimationEnd={() => {
+            setClouds((prev) => prev.filter((x) => x.id !== c.id));
+          }}
+        >
+          <DriftingCloudSvg width={c.size} />
+        </CloudOuter>
       ))}
 
       {kit.showTumbleweed && tumbleweeds.map((tw) => (
