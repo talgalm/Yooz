@@ -125,32 +125,7 @@ export function getThemeKit(theme?: string): RoadmapThemeKit {
 // ─── Ocean decorations ───
 
 export const OCEAN_DECORATIONS: RoadmapDecoration[] = [
-  {
-    name: 'Branching coral',
-    category: 'Coral',
-    viewBoxWidth: 100,
-    viewBoxHeight: 120,
-    svg: `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
-<path d="M50,118 L48,90 Q45,80 42,70 Q38,58 40,48 Q42,38 48,30 Q44,35 38,32 Q32,28 30,20 Q36,26 42,28 Q46,28 48,26 Q46,20 48,12 Q50,8 52,12 Q54,20 52,26 Q54,28 58,28 Q64,26 70,20 Q68,28 62,32 Q56,35 52,30 Q58,38 60,48 Q62,58 58,70 Q55,80 52,90 Z" fill="#E86B5A"/>
-<path d="M42,70 Q36,60 30,55 Q26,50 28,42 Q34,48 38,54 Q40,58 42,65" fill="#F07A6A" opacity="0.8"/>
-<path d="M58,70 Q64,60 70,55 Q74,50 72,42 Q66,48 62,54 Q60,58 58,65" fill="#F07A6A" opacity="0.8"/>
-<circle cx="30" cy="18" r="3" fill="#FF9080" opacity="0.6"/>
-<circle cx="70" cy="18" r="3" fill="#FF9080" opacity="0.6"/>
-<circle cx="50" cy="8" r="2.5" fill="#FF9080" opacity="0.6"/>
-</svg>`,
-  },
-  {
-    name: 'Pink fan coral',
-    category: 'Coral',
-    viewBoxWidth: 90,
-    viewBoxHeight: 100,
-    svg: `<svg viewBox="0 0 90 100" xmlns="http://www.w3.org/2000/svg">
-<path d="M45,98 L43,80 Q40,70 38,60 L42,58 Q40,50 38,40 Q34,28 40,18 Q44,10 50,10 Q56,10 60,18 Q66,28 62,40 Q60,50 58,58 L62,60 Q60,70 57,80 Z" fill="#E87BAE"/>
-<path d="M38,40 Q30,30 24,26 Q20,22 22,16 Q26,20 32,24 Q36,28 38,34" fill="#F08EC0" opacity="0.7"/>
-<path d="M62,40 Q70,30 76,26 Q80,22 78,16 Q74,20 68,24 Q64,28 62,34" fill="#F08EC0" opacity="0.7"/>
-<ellipse cx="45" cy="28" rx="12" ry="10" fill="#F8A0D0" opacity="0.4"/>
-</svg>`,
-  },
+
   {
     name: 'Tall seaweed',
     category: 'Seaweed',
@@ -214,6 +189,13 @@ export const OCEAN_DECORATIONS: RoadmapDecoration[] = [
 <path d="M22,6 Q22,16 22,26 Q22,32 22,38" stroke="#D8C098" stroke-width="0.8" fill="none"/>
 <path d="M22,4 Q30,6 36,14 Q40,22 40,30" stroke="#D8C098" stroke-width="0.8" fill="none" opacity="0.5"/>
 </svg>`,
+  },
+  {
+    name: 'Anchor',
+    category: 'Anchor',
+    viewBoxWidth: 60,
+    viewBoxHeight: 60,
+    svg: `<img src="/images/anchor.svg" alt="" style="width:100%;height:100%;display:block;opacity:0.85" />`,
   },
 ];
 

@@ -803,9 +803,11 @@ export default function RoadmapView({
     const seed = hashString(items.map((item) => item._id).join('|')) + W * 11 + totalHeight * 3 + treeSeedRef.current;
     const rng = createSeededRandom(seed);
 
+    const singletonCategories = new Set(['Anchor']);
     const primaryCategory = kit.decorationCategories[0] || 'Trees';
-    const primaryDecorations = themedDecorations.filter((item) => item.category === primaryCategory);
-    const otherDecorations = themedDecorations.filter((item) => item.category !== primaryCategory);
+    const primaryDecorations = themedDecorations.filter((item) => item.category === primaryCategory && !singletonCategories.has(item.category));
+    const otherDecorations = themedDecorations.filter((item) => item.category !== primaryCategory && !singletonCategories.has(item.category));
+    const singletonDecorations = themedDecorations.filter((item) => singletonCategories.has(item.category));
     const wantedPrimaryCount = primaryDecorations.length > 0 ? 30 : 0;
     const wantedOtherCount = otherDecorations.length > 0 ? 40 : 0;
 
@@ -843,6 +845,34 @@ export default function RoadmapView({
       flipX: boolean;
     }> = [];
 
+    for (const singleton of singletonDecorations) {
+      const singletonWidth = 70 + rng() * 30;
+      const singletonHeight = singletonWidth * (singleton.viewBoxHeight / singleton.viewBoxWidth);
+      for (let attempt = 0; attempt < 200; attempt += 1) {
+        const x = 20 + rng() * Math.max(1, W - 40);
+        const y = 120 + rng() * Math.max(1, totalHeight - 200);
+        const rect: Rect = {
+          left: x - singletonWidth / 2,
+          right: x + singletonWidth / 2,
+          top: y - singletonHeight,
+          bottom: y,
+        };
+        const overlapsForbidden = forbiddenRects.some((forbidden) => rectsOverlap(rect, forbidden, 4));
+        if (overlapsForbidden) continue;
+        placements.push({
+          svg: singleton.svg,
+          category: singleton.category,
+          left: x,
+          top: y,
+          width: singletonWidth,
+          height: singletonHeight,
+          flipX: false,
+        });
+        forbiddenRects.push(rect);
+        break;
+      }
+    }
+
     const wantedDecorations = [
       ...Array.from({ length: wantedPrimaryCount }, () =>
         primaryDecorations[Math.floor(rng() * primaryDecorations.length)]),
@@ -857,8 +887,8 @@ export default function RoadmapView({
 
     const tryLimit = 12000;
 
-    for (let attempt = 0; attempt < tryLimit && placements.length < wantedDecorations.length; attempt += 1) {
-      const decoration = wantedDecorations[placements.length];
+    for (let attempt = 0; attempt < tryLimit && placements.length - singletonDecorations.length < wantedDecorations.length; attempt += 1) {
+      const decoration = wantedDecorations[placements.length - singletonDecorations.length];
       const x = -14 + rng() * (W + 28);
       const y = 40 + rng() * Math.max(1, totalHeight - 60);
       const width = 24 + rng() * 40;
