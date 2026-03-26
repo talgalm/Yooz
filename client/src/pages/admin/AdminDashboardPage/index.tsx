@@ -6,6 +6,8 @@ import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminDashboardPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
 import LangDrawer from '../../../components/LangDrawer';
+import Pagination from '../../../components/Pagination';
+import { usePagination } from '../../../hooks/usePagination';
 import AdminGamesTab from '../AdminGamesTab';
 import AdminStationsTab from '../AdminStationsTab';
 import AdminStatisticsTab from '../AdminStatisticsTab';
@@ -413,102 +415,7 @@ export default function AdminDashboardPage() {
 
         {/* ── Activities Tab ── */}
         {activeTab === 'activities' && (
-          <>
-            <SectionHeaderRow>
-              <PageTitleNoMargin>{t.title}</PageTitleNoMargin>
-              <SmallActionButton onClick={() => navigate('/admin/activities/new')}>
-                + {t.createNew}
-              </SmallActionButton>
-            </SectionHeaderRow>
-
-            {activities.length === 0 ? (
-              <TableCard style={{ padding: 32 }}>
-                <EmptyText>{t.noActivities}</EmptyText>
-              </TableCard>
-            ) : (
-              <>
-                {/* Desktop table */}
-                <DesktopOnlyDiv>
-                  <TableCard>
-                    <DashTable>
-                      <thead>
-                        <tr>
-                          <th>{t.name}</th>
-                          <th>{t.code}</th>
-                          <th>{t.status}</th>
-                          <th>{t.typeModule}</th>
-                          <th>{t.created}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {activities.map((activity) => (
-                          <tr key={activity._id} onClick={() => navigate(`/admin/activities/${activity._id}`)}>
-                            <td>
-                              <NameCell>
-                                <NameMain>{activity.name}</NameMain>
-                                <NameSub>{activity.code}</NameSub>
-                              </NameCell>
-                            </td>
-                            <td><code style={{ color: '#666' }}>{activity.code}</code></td>
-                            <td>
-                              <StatusBadge status={activity.status}>
-                                {activity.status === 'live' ? t.live : t.preview}
-                              </StatusBadge>
-                            </td>
-                            <td>
-                              <BadgeGroup>
-                                <IconBadge variant="blue">
-                                  {activity.connectionType}
-                                </IconBadge>
-                                {activity.module && (
-                                  <IconBadge variant="purple">
-                                    {activity.module.type}
-                                  </IconBadge>
-                                )}
-                              </BadgeGroup>
-                            </td>
-                            <td>
-                              <DateCell>
-                                {new Date(activity.createdAt).toLocaleDateString()}
-                              </DateCell>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </DashTable>
-                  </TableCard>
-                </DesktopOnlyDiv>
-
-                {/* Mobile cards */}
-                <MobileOnlyDiv>
-                  <MobileList>
-                    {activities.map((activity) => (
-                      <MobileCard key={activity._id} onClick={() => navigate(`/admin/activities/${activity._id}`)}>
-                        <MobileCardHeader>
-                          <MobileCardNameLarge>{activity.name}</MobileCardNameLarge>
-                          <StatusBadge status={activity.status}>
-                            {activity.status === 'live' ? t.live : t.preview}
-                          </StatusBadge>
-                        </MobileCardHeader>
-                        <MobileCardDetails>
-                          <MobileCardCode>{activity.code}</MobileCardCode>
-                          <IconBadge variant="blue">
-                            {activity.connectionType}
-                          </IconBadge>
-                          {activity.module && (
-                            <IconBadge variant="purple">
-                              {activity.module.type}
-                            </IconBadge>
-                          )}
-                          <MobileCardDate>{new Date(activity.createdAt).toLocaleDateString()}</MobileCardDate>
-                        </MobileCardDetails>
-                      </MobileCard>
-                    ))}
-                  </MobileList>
-                </MobileOnlyDiv>
-              </>
-            )}
-          </>
+          <ActivitiesSection activities={activities} navigate={navigate} t={t} />
         )}
 
         {/* ── Statistics Tab ── */}
@@ -582,70 +489,7 @@ export default function AdminDashboardPage() {
             )}
 
             {stationsSection === 'missions' && (
-              <>
-                <SectionHeaderRow>
-                  <PageTitleNoMargin>{t.missionsTitle}</PageTitleNoMargin>
-                  <SmallActionButton onClick={() => navigate('/admin/missions/new')}>
-                    {t.newMission}
-                  </SmallActionButton>
-                </SectionHeaderRow>
-
-                {missions.length === 0 ? (
-                  <TableCard style={{ padding: 32 }}>
-                    <EmptyText>{t.noMissions}</EmptyText>
-                  </TableCard>
-                ) : (
-                  <>
-                    <DesktopOnlyDiv>
-                      <TableCard>
-                        <DashTable>
-                          <thead>
-                            <tr>
-                              <th>{t.name}</th>
-                              <th>{t.missionScreens}</th>
-                              <th>{t.missionCustomer}</th>
-                              <th>{t.created}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {missions.map((m) => (
-                              <tr key={m._id} onClick={() => navigate(`/admin/missions/${m._id}`)} style={{ cursor: 'pointer' }}>
-                                <td><CellBold>{m.name}</CellBold></td>
-                                <td>
-                                  <IconBadge variant="purple">
-                                    {m.explanationScreens?.length || 0} {t.missionScreens}
-                                  </IconBadge>
-                                </td>
-                                <td><CellMuted>{m.customer || '—'}</CellMuted></td>
-                                <td>
-                                  <DateCell>{new Date(m.createdAt).toLocaleDateString()}</DateCell>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </DashTable>
-                      </TableCard>
-                    </DesktopOnlyDiv>
-                    <MobileOnlyDiv>
-                      <MobileList>
-                        {missions.map((m) => (
-                          <MobileCard key={m._id} onClick={() => navigate(`/admin/missions/${m._id}`)}>
-                            <MobileCardHeader>
-                              <MobileCardNameLarge>{m.name}</MobileCardNameLarge>
-                              <IconBadge variant="purple">
-                                {m.explanationScreens?.length || 0} {t.missionScreens}
-                              </IconBadge>
-                            </MobileCardHeader>
-                            <MobileCardDetails>
-                              <MobileCardDate>{new Date(m.createdAt).toLocaleDateString()}</MobileCardDate>
-                            </MobileCardDetails>
-                          </MobileCard>
-                        ))}
-                      </MobileList>
-                    </MobileOnlyDiv>
-                  </>
-                )}
-              </>
+              <MissionsSection missions={missions} navigate={navigate} t={t} />
             )}
 
             {stationsSection === 'collage' && (
@@ -669,5 +513,175 @@ export default function AdminDashboardPage() {
         )}
       </DashContent>
     </PageBg>
+  );
+}
+
+// ─── Activities sub-section with pagination ───
+
+function ActivitiesSection({ activities, navigate, t }: { activities: Activity[]; navigate: ReturnType<typeof useNavigate>; t: Record<string, string> }) {
+  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(activities);
+
+  return (
+    <>
+      <SectionHeaderRow>
+        <PageTitleNoMargin>{t.title}</PageTitleNoMargin>
+        <SmallActionButton onClick={() => navigate('/admin/activities/new')}>
+          + {t.createNew}
+        </SmallActionButton>
+      </SectionHeaderRow>
+
+      {activities.length === 0 ? (
+        <TableCard style={{ padding: 32 }}>
+          <EmptyText>{t.noActivities}</EmptyText>
+        </TableCard>
+      ) : (
+        <>
+          <DesktopOnlyDiv>
+            <TableCard>
+              <DashTable>
+                <thead>
+                  <tr>
+                    <th>{t.name}</th>
+                    <th>{t.code}</th>
+                    <th>{t.status}</th>
+                    <th>{t.typeModule}</th>
+                    <th>{t.created}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageItems.map((activity) => (
+                    <tr key={activity._id} onClick={() => navigate(`/admin/activities/${activity._id}`)}>
+                      <td>
+                        <NameCell>
+                          <NameMain>{activity.name}</NameMain>
+                          <NameSub>{activity.code}</NameSub>
+                        </NameCell>
+                      </td>
+                      <td><code style={{ color: '#666' }}>{activity.code}</code></td>
+                      <td>
+                        <StatusBadge status={activity.status}>
+                          {activity.status === 'live' ? t.live : t.preview}
+                        </StatusBadge>
+                      </td>
+                      <td>
+                        <BadgeGroup>
+                          <IconBadge variant="blue">{activity.connectionType}</IconBadge>
+                          {activity.module && (
+                            <IconBadge variant="purple">{activity.module.type}</IconBadge>
+                          )}
+                        </BadgeGroup>
+                      </td>
+                      <td>
+                        <DateCell>{new Date(activity.createdAt).toLocaleDateString()}</DateCell>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </DashTable>
+            </TableCard>
+          </DesktopOnlyDiv>
+
+          <MobileOnlyDiv>
+            <MobileList>
+              {pageItems.map((activity) => (
+                <MobileCard key={activity._id} onClick={() => navigate(`/admin/activities/${activity._id}`)}>
+                  <MobileCardHeader>
+                    <MobileCardNameLarge>{activity.name}</MobileCardNameLarge>
+                    <StatusBadge status={activity.status}>
+                      {activity.status === 'live' ? t.live : t.preview}
+                    </StatusBadge>
+                  </MobileCardHeader>
+                  <MobileCardDetails>
+                    <MobileCardCode>{activity.code}</MobileCardCode>
+                    <IconBadge variant="blue">{activity.connectionType}</IconBadge>
+                    {activity.module && (
+                      <IconBadge variant="purple">{activity.module.type}</IconBadge>
+                    )}
+                    <MobileCardDate>{new Date(activity.createdAt).toLocaleDateString()}</MobileCardDate>
+                  </MobileCardDetails>
+                </MobileCard>
+              ))}
+            </MobileList>
+          </MobileOnlyDiv>
+
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
+        </>
+      )}
+    </>
+  );
+}
+
+// ─── Missions sub-section with pagination ───
+
+function MissionsSection({ missions, navigate, t }: { missions: Mission[]; navigate: ReturnType<typeof useNavigate>; t: Record<string, string> }) {
+  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(missions);
+
+  return (
+    <>
+      <SectionHeaderRow>
+        <PageTitleNoMargin>{t.missionsTitle}</PageTitleNoMargin>
+        <SmallActionButton onClick={() => navigate('/admin/missions/new')}>
+          {t.newMission}
+        </SmallActionButton>
+      </SectionHeaderRow>
+
+      {missions.length === 0 ? (
+        <TableCard style={{ padding: 32 }}>
+          <EmptyText>{t.noMissions}</EmptyText>
+        </TableCard>
+      ) : (
+        <>
+          <DesktopOnlyDiv>
+            <TableCard>
+              <DashTable>
+                <thead>
+                  <tr>
+                    <th>{t.name}</th>
+                    <th>{t.missionScreens}</th>
+                    <th>{t.missionCustomer}</th>
+                    <th>{t.created}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageItems.map((m) => (
+                    <tr key={m._id} onClick={() => navigate(`/admin/missions/${m._id}`)} style={{ cursor: 'pointer' }}>
+                      <td><CellBold>{m.name}</CellBold></td>
+                      <td>
+                        <IconBadge variant="purple">
+                          {m.explanationScreens?.length || 0} {t.missionScreens}
+                        </IconBadge>
+                      </td>
+                      <td><CellMuted>{m.customer || '—'}</CellMuted></td>
+                      <td>
+                        <DateCell>{new Date(m.createdAt).toLocaleDateString()}</DateCell>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </DashTable>
+            </TableCard>
+          </DesktopOnlyDiv>
+          <MobileOnlyDiv>
+            <MobileList>
+              {pageItems.map((m) => (
+                <MobileCard key={m._id} onClick={() => navigate(`/admin/missions/${m._id}`)}>
+                  <MobileCardHeader>
+                    <MobileCardNameLarge>{m.name}</MobileCardNameLarge>
+                    <IconBadge variant="purple">
+                      {m.explanationScreens?.length || 0} {t.missionScreens}
+                    </IconBadge>
+                  </MobileCardHeader>
+                  <MobileCardDetails>
+                    <MobileCardDate>{new Date(m.createdAt).toLocaleDateString()}</MobileCardDate>
+                  </MobileCardDetails>
+                </MobileCard>
+              ))}
+            </MobileList>
+          </MobileOnlyDiv>
+
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
+        </>
+      )}
+    </>
   );
 }

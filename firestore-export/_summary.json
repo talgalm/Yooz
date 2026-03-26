@@ -1,0 +1,18 @@
+{
+  "exportedAt": "2026-03-25T12:07:09.706Z",
+  "projectId": "yooz-production",
+  "collections": {
+    "activities": 1794,
+    "activitySatisfactionReport": 1208,
+    "cloudinary": 0,
+    "components": 12,
+    "customers": 45,
+    "game_analysis_reports": 24,
+    "games": 16,
+    "gamesDetailedReport": 54632,
+    "panelUsers": 50,
+    "scoreReport": 13550,
+    "submissions": 10,
+    "text_submissions": 23
+  }
+}

@@ -3,6 +3,8 @@ import { useAdminAuth } from '../../../context/AdminAuthContext';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminUsersTab.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
+import Pagination from '../../../components/Pagination';
+import { usePagination } from '../../../hooks/usePagination';
 import {
   Table,
   PrimaryButton,
@@ -235,79 +237,95 @@ export default function AdminUsersTab() {
       ) : users.length === 0 ? (
         <EmptyText>{t.noUsers}</EmptyText>
       ) : (
-        <>
-          {/* Desktop table */}
-          <DesktopOnly>
-            <AdminCardNoPadding>
-              <Table>
-                <thead>
-                  <tr>
-                    <th>{t.email}</th>
-                    <th>{t.name}</th>
-                    <th>{t.role}</th>
-                    <th>{t.created}</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user._id}>
-                      <td><CellBold>{user.email}</CellBold></td>
-                      <td><CellMuted>{user.name || '—'}</CellMuted></td>
-                      <td><RoleBadge role={user.role}>{roleLabel(user.role)}</RoleBadge></td>
-                      <td><CellMuted>{new Date(user.createdAt).toLocaleDateString()}</CellMuted></td>
-                      <CellAlignEnd>
-                        <SmallActionButton onClick={() => handleEdit(user)} style={{ marginInlineEnd: 6 }}>
-                          {t.edit}
-                        </SmallActionButton>
-                        {!isSelf(user._id) && (
-                          <SmallDangerButton
-                            confirm={confirmDeleteId === user._id}
-                            onClick={(e) => { e.stopPropagation(); handleDelete(user._id); }}
-                          >
-                            {confirmDeleteId === user._id ? t.confirmDelete : t.delete}
-                          </SmallDangerButton>
-                        )}
-                      </CellAlignEnd>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </AdminCardNoPadding>
-          </DesktopOnly>
-
-          {/* Mobile cards */}
-          <HideOnDesktop>
-            <MobileCardList>
-              {users.map((user) => (
-                <MobileCardItemDefault key={user._id}>
-                  <MobileCardHeader>
-                    <MobileCardName>{user.email}</MobileCardName>
-                    <InlineRowGap6>
-                      <SmallActionButton onClick={() => handleEdit(user)}>
-                        {t.edit}
-                      </SmallActionButton>
-                      {!isSelf(user._id) && (
-                        <SmallDangerButton
-                          confirm={confirmDeleteId === user._id}
-                          onClick={() => handleDelete(user._id)}
-                        >
-                          {confirmDeleteId === user._id ? t.confirmDelete : t.delete}
-                        </SmallDangerButton>
-                      )}
-                    </InlineRowGap6>
-                  </MobileCardHeader>
-                  <InlineRowGap6>
-                    <RoleBadge role={user.role}>{roleLabel(user.role)}</RoleBadge>
-                    {user.name && <CellMuted>{user.name}</CellMuted>}
-                    <MobileCardDate>{new Date(user.createdAt).toLocaleDateString()}</MobileCardDate>
-                  </InlineRowGap6>
-                </MobileCardItemDefault>
-              ))}
-            </MobileCardList>
-          </HideOnDesktop>
-        </>
+        <PaginatedUsers users={users} confirmDeleteId={confirmDeleteId} handleEdit={handleEdit} handleDelete={handleDelete} roleLabel={roleLabel} isSelf={isSelf} t={t} />
       )}
+    </>
+  );
+}
+
+function PaginatedUsers({ users, confirmDeleteId, handleEdit, handleDelete, roleLabel, isSelf, t }: {
+  users: User[];
+  confirmDeleteId: string | null;
+  handleEdit: (user: User) => void;
+  handleDelete: (id: string) => void;
+  roleLabel: (r: UserRole) => string;
+  isSelf: (id: string) => boolean;
+  t: Record<string, string>;
+}) {
+  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(users);
+
+  return (
+    <>
+      <DesktopOnly>
+        <AdminCardNoPadding>
+          <Table>
+            <thead>
+              <tr>
+                <th>{t.email}</th>
+                <th>{t.name}</th>
+                <th>{t.role}</th>
+                <th>{t.created}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageItems.map((user) => (
+                <tr key={user._id}>
+                  <td><CellBold>{user.email}</CellBold></td>
+                  <td><CellMuted>{user.name || '—'}</CellMuted></td>
+                  <td><RoleBadge role={user.role}>{roleLabel(user.role)}</RoleBadge></td>
+                  <td><CellMuted>{new Date(user.createdAt).toLocaleDateString()}</CellMuted></td>
+                  <CellAlignEnd>
+                    <SmallActionButton onClick={() => handleEdit(user)} style={{ marginInlineEnd: 6 }}>
+                      {t.edit}
+                    </SmallActionButton>
+                    {!isSelf(user._id) && (
+                      <SmallDangerButton
+                        confirm={confirmDeleteId === user._id}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(user._id); }}
+                      >
+                        {confirmDeleteId === user._id ? t.confirmDelete : t.delete}
+                      </SmallDangerButton>
+                    )}
+                  </CellAlignEnd>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </AdminCardNoPadding>
+      </DesktopOnly>
+
+      <HideOnDesktop>
+        <MobileCardList>
+          {pageItems.map((user) => (
+            <MobileCardItemDefault key={user._id}>
+              <MobileCardHeader>
+                <MobileCardName>{user.email}</MobileCardName>
+                <InlineRowGap6>
+                  <SmallActionButton onClick={() => handleEdit(user)}>
+                    {t.edit}
+                  </SmallActionButton>
+                  {!isSelf(user._id) && (
+                    <SmallDangerButton
+                      confirm={confirmDeleteId === user._id}
+                      onClick={() => handleDelete(user._id)}
+                    >
+                      {confirmDeleteId === user._id ? t.confirmDelete : t.delete}
+                    </SmallDangerButton>
+                  )}
+                </InlineRowGap6>
+              </MobileCardHeader>
+              <InlineRowGap6>
+                <RoleBadge role={user.role}>{roleLabel(user.role)}</RoleBadge>
+                {user.name && <CellMuted>{user.name}</CellMuted>}
+                <MobileCardDate>{new Date(user.createdAt).toLocaleDateString()}</MobileCardDate>
+              </InlineRowGap6>
+            </MobileCardItemDefault>
+          ))}
+        </MobileCardList>
+      </HideOnDesktop>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
     </>
   );
 }

@@ -8,7 +8,9 @@ const router = Router();
 router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
   const kind = req.query.kind as string;     // 'game' | 'station'
   const type = req.query.type as string;     // e.g. 'trivia', 'video'
-  const tag = req.query.tag as string;
+  const tagParam = req.query.tag;
+  const tags: string[] = Array.isArray(tagParam) ? tagParam as string[] : tagParam ? [tagParam as string] : [];
+  const customer = req.query.customer as string;
   const q = ((req.query.q as string) || '').trim();
   const limit = Math.min(Number(req.query.limit) || 100, 500);
   const skip = Math.max(Number(req.query.skip) || 0, 0);
@@ -17,7 +19,9 @@ router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
   const filter: any = {};
   if (kind) filter.kind = kind;
   if (type) filter.type = type;
-  if (tag) filter.tags = tag;
+  if (tags.length === 1) filter.tags = tags[0];
+  else if (tags.length > 1) filter.tags = { $all: tags };
+  if (customer) filter.customer = customer;
 
   if (q) {
     const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
@@ -39,8 +43,16 @@ router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
 
 // Get all unique tags
 router.get('/tags', authenticateAdmin, async (_req: Request, res: Response) => {
-  const tags = await LibraryItem.distinct('tags');
-  res.json({ tags: tags.sort() });
+  const [tags, customers, types] = await Promise.all([
+    LibraryItem.distinct('tags'),
+    LibraryItem.distinct('customer'),
+    LibraryItem.distinct('type'),
+  ]);
+  res.json({
+    tags: tags.sort(),
+    customers: customers.filter(Boolean).sort(),
+    types: types.filter(Boolean).sort(),
+  });
 });
 
 // Get single library item

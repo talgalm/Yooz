@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslations } from '../../../context/LanguageContext';
 import { useAuditLog } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
+import Pagination from '../../../components/Pagination';
 import {
   SectionHeader,
   SectionTitle,
@@ -110,52 +111,7 @@ export default function AuditLogView({ onBack }: Props) {
             ))}
           </HideOnDesktop>
 
-          {/* Pagination */}
-          {data.pages > 1 && (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: 12,
-                marginTop: 16,
-              }}
-            >
-              <button
-                onClick={() => setPage(Math.max(1, page - 1))}
-                disabled={page <= 1}
-                style={{
-                  background: 'none',
-                  border: '1px solid #ececf3',
-                  borderRadius: 6,
-                  padding: '4px 12px',
-                  cursor: page <= 1 ? 'default' : 'pointer',
-                  opacity: page <= 1 ? 0.4 : 1,
-                  fontFamily: 'inherit',
-                }}
-              >
-                ←
-              </button>
-              <span style={{ fontSize: 13, color: '#888' }}>
-                {t.page} {page} {t.of} {data.pages}
-              </span>
-              <button
-                onClick={() => setPage(Math.min(data.pages, page + 1))}
-                disabled={page >= data.pages}
-                style={{
-                  background: 'none',
-                  border: '1px solid #ececf3',
-                  borderRadius: 6,
-                  padding: '4px 12px',
-                  cursor: page >= data.pages ? 'default' : 'pointer',
-                  opacity: page >= data.pages ? 0.4 : 1,
-                  fontFamily: 'inherit',
-                }}
-              >
-                →
-              </button>
-            </div>
-          )}
+          <Pagination page={page} totalPages={data.pages} onPageChange={setPage} />
         </>
       )}
     </>

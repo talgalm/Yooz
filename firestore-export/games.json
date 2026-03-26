@@ -1,0 +1,205 @@
+[
+  {
+    "_id": "9IGdQJ6usjztYUgiVBc7",
+    "description": {
+      "en": "Three quick stages: spot infected files, trap the roaming virus, and repeat the security pattern to cleanse the system.",
+      "he": "שלושה שלבים מהירים: מזהים קבצים נגועים, לוכדים את הווירוס הנודד ומשחזרים את דפוס האבטחה כדי לנקות את המערכת."
+    },
+    "name": {
+      "en": "Virus Defender",
+      "he": "מגן וירוסים"
+    },
+    "path": "#/virus-defender",
+    "isConfigurability": false
+  },
+  {
+    "_id": "I7wBOeWZqdDXUkpIN3g2",
+    "isConfigurability": true,
+    "path": "assets/games/jigsaw/index.html",
+    "description": {
+      "he": " יש לענות על השאלות, לקבל חלקי פאזל של התמונה ולהרכיב אותה בתוך הריבוע"
+    },
+    "name": {
+      "en": "Puzzle",
+      "he": "פאזל טריוויה"
+    }
+  },
+  {
+    "_id": "L3txSVIbfBX93EoqEj7C",
+    "path": "assets/games/brain memory/index.html",
+    "name": {
+      "he": "אתגר הזיכרון",
+      "en": "Memory Challenge"
+    },
+    "description": {
+      "he": "אתגר הזיכרון + הפליפר עליך ללחוץ על כל הלחצנים שנדלקים בכל משחקון. ישנן 3 רמות (סה\"כ 16 שלבים). בתום כל שלב תקבל/י בונוס ותוכל/י לשחק במשחק הפליפר שיופיע. ניתן לשחק במשחק בכמות בלתי מוגבלת. התוצאה הטובה ביותר היא זו שתופיע.",
+      "en": "The Memory Challenge Game    You have to press all the buttons that light up. There are 3 levels and 16 stages. At the end of each level the flipper game will appear. You can play the game as much as you want. Only the best score will appear  "
+    },
+    "isConfigurability": true,
+    "isFinishable": false
+  },
+  {
+    "_id": "MKJ32JRmurrkIxXAuhvB",
+    "isConfigurability": true,
+    "description": {
+      "he": "זהו אתגר צוותי.<br> יש לפתור את האתגר ולמצוא את 3 הספרות ולהכניסן לריבועים הכחולים וללחוץ על אישור .<br> <p style='color:blue;'>    איך משחקים ? </p>  יש לבדוק בכל שורת מספרים האם המספרים בה הם בול או פגיעה ולצמצם אפשרויות.<br> <p style='color:blue;'>   לדוגמא: </p> ליד השורה האחרונה 7,8,5 נמצא סימון כתום \"פגיעה\". כלומר אחד מהמספרים בשורה נמצא בתוצאה הסופית אך <br>הוא לא במיקום הנכון בו הוא נמצא כרגע בשורה זו <p style='color:blue;'> רמזים ? </p>  תוכלו להעזר בשני רמזים שיפתחו על פי הטיימר הרמז השני ניתן לפתרון רק באמצעות עבודת צוות הניקוד נגזר מפרק הזמן שהגעתם לפתרון <br>בהצלחה"
+    },
+    "name": {
+      "en": "Numbers",
+      "he": "מספרים"
+    }
+  },
+  {
+    "_id": "NNdr1NRKTfWQlFwKfM5d",
+    "path": "#/factory-game",
+    "isConfigurability": true,
+    "description": {
+      "en": "what is the description of the factory game",
+      "he": "ברוכים הבאים למפעל.  שאלות יופיעו בצג הבקרה של הפקח  ועל גבי המסוע \"יסעו חבילות עם כל התשובות\".  בהתאם לשאלה בחרו את התשובה הנכונה והקליקו עליה.  במידה וצדקתם החבילה תעלם. במידה וטעיתם תקבלו צליל התראה.  תוכלו להגביר ולהאט את קצב מהירות המסוע באמצעות  כפתורי ה + -  הניקוד יתקבל בהתאם להצלחה  צפו להפתעה !"
+    },
+    "name": {
+      "en": "Factory",
+      "he": "המפעל"
+    }
+  },
+  {
+    "_id": "NhInVTDrjAeUJQNbEg8M",
+    "path": "#/matches/game",
+    "name": {
+      "en": "Matches",
+      "he": "גפרורים"
+    },
+    "description": {
+      "en": "This game include 12 stages with increasing difficulty. <br> According to the instructions, you must remove / insert matches and you have to use the entire number of moves required. Do not leave matches that are not part of a closed form.",
+      "he": "לפניך משחק ב 12 שלבים בדרגת קושי עולה.<br> בהתאם להנחיות עליך להוציא/להכניס גפרורים ולהגיע ליעד המבוקש. יש לנצל את כל מספר המהלכים הנדרש. אין להשאיר גפרורים שאינם חלק מצורה סגורה."
+    },
+    "isConfigurability": true
+  },
+  {
+    "_id": "Yd0mqvfhejqye8k1H0oy",
+    "isConfigurability": true,
+    "name": {
+      "he": "טריוויה רב ברירה",
+      "en": "Multi Chooice Trivia"
+    },
+    "description": {
+      "he": "לפניך חידון טריוויה עם שאלות רב-ברירה.<br>יש לבחור את התשובה הנכונה מתוך 4 אפשרויות.<br>לרשותך עומדים שני כלים חד-פעמיים:<br>50/50 – מצמצם את התשובות לשתי אפשרויות בלבד.<br>3/4 – מצמצם את התשובות לשלוש אפשרויות.<br>בהצלחה!",
+      "en": "You are about to take a multiple-choice trivia quiz.<br>Choose the correct answer from 4 possible options.<br>You have two one-time help tools:<br>50/50 – Reduces the options to only two possible answers.<br>3/4 – Reduces the options to three possible answers.<br>Good luck!"
+    },
+    "path": "assets/games/multiChoiceTrivia/index.html"
+  },
+  {
+    "_id": "abC8EiFAcCimZYc9KYRr",
+    "description": {
+      "en": "Group led photo mission that stitches prompts into a remix video.",
+      "he": "משימת צילום קבוצתית שמחברת כמה שלבים לסרטון ערוך."
+    },
+    "isConfigurability": true,
+    "name": {
+      "en": "Photo Collage",
+      "he": "קולאז' תמונות"
+    },
+    "path": "/#/photo-collage"
+  },
+  {
+    "_id": "cqJQ0eq9pKX3T7get995",
+    "isConfigurability": false,
+    "path": "assets\\games\\Rings\\index.html",
+    "description": {
+      "he": "  לפניכם 20 שאלות אודות תחומים שונים הקשורים לישראל.<br> כדי לענות על שאלה יש לגרור את המסגרת הכחולה אל עבר התמונה ולהניח אותה במיקום הנכון. לרשותך 20 שניות לכל שאלה.<br>   יש ללחוץ אישור כל תשובה נכונה שווה 5 נקודות."
+    },
+    "name": {
+      "en": "What's in the box",
+      "he": "מה במסגרת"
+    }
+  },
+  {
+    "_id": "ezuJwgfWRjTYe1VfISFb",
+    "description": {
+      "en": "Pump the balloon to earn points, but don't let it pop!",
+      "he": "נפח את הבלון כדי לצבור נקודות, אבל אל תיתן לו להתפוצץ!"
+    },
+    "name": {
+      "en": "Balloons Game",
+      "he": "משחק הבלונים"
+    },
+    "path": "#/balloon-game"
+  },
+  {
+    "_id": "jyeKPwy8f2CUmq1emCM9",
+    "isConfigurability": true,
+    "path": "#/pair-game",
+    "name": {
+      "en": "Pairs",
+      "he": "זוגות"
+    },
+    "description": {
+      "he": "לפניך 3 מסכים, בכל מסך ישנן 4 שאלות ו 4 תשובות. עליך ללחוץ על קלף שאלה ואחר כך על קלף תשובה. במידה ונמצאה התאמה בינהם אשר/י אותה (בהודעה). במידה ולא לחצ/י לא וחפש/י את התשובה הנכונה.",
+      "en": "In front of you are 3 screens, in each screen there are 4 questions and 4 answers. You must click on a question card and then on an answer card. If a match is found between them, confirm it (in the message). If not, click No and look for the correct answer."
+    }
+  },
+  {
+    "_id": "kugSqiCRCMlC0bXidF26",
+    "isConfigurability": false,
+    "description": {
+      "en": "no desc yet",
+      "he": "תיאור סודוקו צבעים"
+    },
+    "path": "assets\\games\\puzzle\\index.html",
+    "name": {
+      "en": "Sudoku",
+      "he": "סודוקו צבעים"
+    }
+  },
+  {
+    "_id": "mhPqktjWFCLNEfqFhOhO",
+    "path": "#/true-false-game",
+    "isConfigurability": true,
+    "description": {
+      "he": "יש לענות על השאלות מתוך בחירה בין נכון (כפתור ירוק) לבין לא נכון (כפתור אדום) לרשותך זמן מוגבל למענה על  כל שאלה. למשחק ישנם 3 שלבים",
+      "en": "You have to choose between true (green button)  or false (Red button). You have limited time to answer each question. The game have 3 levels"
+    },
+    "name": {
+      "en": "TrueFalse",
+      "he": "נכון/לא נכון"
+    }
+  },
+  {
+    "_id": "tw1RGhpI9Kp7MQqEdsGh",
+    "description": {
+      "en": "Drag the cards into the correct order – can you figure out the right sequence?",
+      "he": "חשבו מהר וגררו את הכרטיסיות למקומן – האם תצליחו לגלות את הסדר הנכון?"
+    },
+    "isConfigurability": true,
+    "path": "#/sort-game",
+    "name": {
+      "en": "Sort Game",
+      "he": "תפוס את הסדר"
+    }
+  },
+  {
+    "_id": "u7HhTRF7IjznvxRQ6JXw",
+    "isConfigurability": true,
+    "path": "assets/games/ballgame/index.html",
+    "name": {
+      "en": "BallGame",
+      "he": "כדורים"
+    },
+    "description": {
+      "he": "המטרה לענות על כל השאלות המופיעות במסגרת הצהובה.  <br>  יש לבחור את הכדור עם התשובה הנכונה ובאמצעות הכדור האדום לגעת ולדחוף אותו  ולהניחו במשפך הכחול (ללא תזוזה).   <br>  יש ללחוץ על כפתור \"לחץ\". מחסומי המשפך יפתחו. במידה והתשובה נכונה הכדור יחליק לתוכו ויעלם. במידה ואינה נכונה  הכדור יקפוץ חזרה ואז יש צורך למצוא כדור אחר.     <br>  בהצלחה",
+      "en": "The goal of the game is to answer all the questions that appear in the yellow frame. You must select the ball with the correct answer. Use the red ball to push it and place it in the bottom of blue funnel .Click on the push button, the funnel will open, If the answer is correct the ball will disappear , if the answer is in correct the ball will bounce back. Try again."
+    }
+  },
+  {
+    "_id": "unItB2jC2iH3ShsFJirl",
+    "description": {
+      "he": " לפניך חידון טריוויה. יש לבחור מתוך 4 התשובות את התשובה הנכונה לעזרתך עומדים שני כלים באופן חד פעמי<br>50/50 - צמצום התשובות ל2 בלבד <br> 3/4 - צמצום ל3 תשובות אפשריות<br> בהצלחה"
+    },
+    "isConfigurability": true,
+    "path": "assets/games/group trivia/index.html",
+    "name": {
+      "en": "Trivia",
+      "he": "טריוויה"
+    }
+  }
+]

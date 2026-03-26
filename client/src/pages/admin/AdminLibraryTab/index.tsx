@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { styled } from '@mui/material/styles';
+import { styled, keyframes } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminLibraryTab.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
+import Pagination from '../../../components/Pagination';
+import { usePagination } from '../../../hooks/usePagination';
 import {
   AdminCard,
   Table,
@@ -50,12 +52,128 @@ interface LibraryItem {
 
 // ─── Styled ───
 
-const SearchRow = styled('div')({
+const SOURCE_TAGS = new Set(['imported', 'IMPORTED', 'from-library']);
+
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 1; }
+`;
+
+const slideUp = keyframes`
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+`;
+
+const TagDrawerBackdrop = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 900,
+  background: 'rgba(0, 0, 0, 0.35)',
   display: 'flex',
-  gap: 12,
+  alignItems: 'flex-end',
+  justifyContent: 'center',
+  animation: `${fadeIn} 0.15s ease-out`,
+});
+
+const TagDrawerPanel = styled('div')({
+  background: '#fff',
+  borderRadius: '16px 16px 0 0',
+  width: '100%',
+  maxWidth: 720,
+  maxHeight: 'min(78vh, 640px)',
+  display: 'flex',
+  flexDirection: 'column',
+  boxShadow: '0 -8px 32px rgba(0,0,0,0.12)',
+  animation: `${slideUp} 0.2s ease-out`,
+});
+
+const TagDrawerHeader = styled('div')({
+  display: 'flex',
   alignItems: 'center',
-  marginBottom: 16,
-  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+  gap: 12,
+  padding: '14px 18px',
+  borderBottom: '1px solid #ece8f0',
+  flexShrink: 0,
+});
+
+const TagDrawerTitle = styled('span')({
+  fontSize: 16,
+  fontWeight: 700,
+  color: '#333',
+});
+
+const TagDrawerActions = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+});
+
+const TagDrawerBody = styled('div')({
+  overflowY: 'auto',
+  padding: '16px 18px 24px',
+  WebkitOverflowScrolling: 'touch',
+});
+
+const OpenTagDrawerButton = styled('button')<{ hasActive?: boolean }>(({ hasActive }) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '8px 14px',
+  fontSize: 13,
+  fontWeight: 600,
+  borderRadius: 10,
+  border: `1.5px solid ${hasActive ? '#2563eb' : '#ddd'}`,
+  background: hasActive ? '#eff6ff' : '#fff',
+  color: hasActive ? '#2563eb' : '#555',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  whiteSpace: 'nowrap',
+  flexShrink: 0,
+  transition: 'all 0.15s',
+  '&:hover': {
+    borderColor: '#2563eb',
+    color: '#2563eb',
+  },
+}));
+
+const TagCountBadge = styled('span')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: 22,
+  height: 22,
+  padding: '0 6px',
+  fontSize: 12,
+  fontWeight: 700,
+  borderRadius: 11,
+  background: '#2563eb',
+  color: '#fff',
+});
+
+const TagDrawerClearButton = styled('button')({
+  padding: '6px 12px',
+  fontSize: 13,
+  fontWeight: 600,
+  border: 'none',
+  background: 'none',
+  color: '#888',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  '&:hover': { color: '#c62828' },
+});
+
+const TagDrawerDoneButton = styled('button')({
+  padding: '8px 16px',
+  fontSize: 13,
+  fontWeight: 600,
+  borderRadius: 8,
+  border: 'none',
+  background: '#6c5ce7',
+  color: '#fff',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  '&:hover': { background: '#5b4fcf' },
 });
 
 const SearchInput = styled(Input)({
@@ -65,28 +183,84 @@ const SearchInput = styled(Input)({
   fontSize: 14,
 });
 
-const TagBar = styled('div')({
+const FilterRow = styled('div')({
+  display: 'flex',
+  gap: 16,
+  alignItems: 'flex-start',
+  marginBottom: 16,
+  flexWrap: 'wrap',
+});
+
+const CustomerSelect = styled('select')({
+  padding: '8px 14px',
+  fontSize: 13,
+  fontWeight: 500,
+  borderRadius: 10,
+  border: '1.5px solid #ddd',
+  background: '#fff',
+  color: '#333',
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+  minWidth: 160,
+  '&:focus': {
+    outline: 'none',
+    borderColor: '#6c5ce7',
+  },
+});
+
+const TagGroupsContainer = styled('div')({
+  display: 'flex',
+  gap: 24,
+  flexWrap: 'wrap',
+  marginBottom: 20,
+  padding: '16px 20px',
+  background: '#fafafe',
+  borderRadius: 14,
+  border: '1px solid #ece8f0',
+});
+
+const TagGroupsInDrawer = styled(TagGroupsContainer)({
+  flexDirection: 'column',
+  flexWrap: 'nowrap',
+  marginBottom: 0,
+});
+
+const TagGroup = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+  minWidth: 0,
+});
+
+const TagGroupLabel = styled('div')({
+  fontSize: 12,
+  fontWeight: 700,
+  color: '#555',
+  whiteSpace: 'nowrap',
+});
+
+const TagGroupChips = styled('div')({
   display: 'flex',
   gap: 6,
   flexWrap: 'wrap',
-  marginBottom: 16,
 });
 
 const TagChip = styled('button')<{ active?: boolean }>(({ active }) => ({
   display: 'inline-block',
-  padding: '4px 12px',
+  padding: '5px 14px',
   fontSize: 12,
-  fontWeight: 600,
+  fontWeight: 500,
   borderRadius: 20,
-  border: `1.5px solid ${active ? '#6c5ce7' : '#e0dce6'}`,
-  background: active ? '#f0eefa' : '#fff',
-  color: active ? '#6c5ce7' : '#888',
+  border: `1.5px solid ${active ? '#2563eb' : '#d0d0d8'}`,
+  background: active ? '#eff6ff' : '#fff',
+  color: active ? '#2563eb' : '#555',
   cursor: 'pointer',
   fontFamily: 'inherit',
   transition: 'all 0.15s',
+  whiteSpace: 'nowrap',
   '&:hover': {
-    borderColor: '#6c5ce7',
-    color: '#6c5ce7',
+    borderColor: '#2563eb',
+    color: '#2563eb',
   },
 }));
 
@@ -234,17 +408,22 @@ export default function AdminLibraryTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [kindFilter, setKindFilter] = useState<'all' | 'game' | 'station'>('all');
-  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [allCustomers, setAllCustomers] = useState<string[]>([]);
+  const [allTypes, setAllTypes] = useState<string[]>([]);
+  const [customerFilter, setCustomerFilter] = useState<string>('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [previewItem, setPreviewItem] = useState<LibraryItem | null>(null);
+  const [tagDrawerOpen, setTagDrawerOpen] = useState(false);
 
   const fetchItems = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (kindFilter !== 'all') params.set('kind', kindFilter);
-      if (activeTag) params.set('tag', activeTag);
+      if (customerFilter) params.set('customer', customerFilter);
+      activeTags.forEach((tag) => params.append('tag', tag));
       if (search.trim()) params.set('q', search.trim());
       params.set('limit', '500');
 
@@ -258,12 +437,14 @@ export default function AdminLibraryTab() {
     } finally {
       setLoading(false);
     }
-  }, [kindFilter, activeTag, search]);
+  }, [kindFilter, activeTags, customerFilter, search]);
 
   const fetchTags = useCallback(async () => {
     try {
-      const data = await adminApiFetch<{ tags: string[] }>('/api/admin/library/tags');
+      const data = await adminApiFetch<{ tags: string[]; customers: string[]; types: string[] }>('/api/admin/library/tags');
       setAllTags(data.tags);
+      setAllCustomers(data.customers || []);
+      setAllTypes(data.types || []);
     } catch {}
   }, []);
 
@@ -276,6 +457,15 @@ export default function AdminLibraryTab() {
     const timer = setTimeout(() => fetchItems(), 300); // debounce search
     return () => clearTimeout(timer);
   }, [fetchItems]);
+
+  useEffect(() => {
+    if (!tagDrawerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setTagDrawerOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [tagDrawerOpen]);
 
   const handleCopy = async (item: LibraryItem) => {
     try {
@@ -295,6 +485,40 @@ export default function AdminLibraryTab() {
     fetchItems();
     fetchTags();
   };
+
+  const toggleTag = (tag: string) => {
+    setActiveTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  };
+
+  const tagGroups = useMemo(() => {
+    const customersLower = new Set(allCustomers.map((c) => c.toLowerCase()));
+    const typesLower = new Set(allTypes.map((t) => t.toLowerCase()));
+
+    const source: string[] = [];
+    const projects: string[] = [];
+    const contentTypes: string[] = [];
+    const general: string[] = [];
+
+    for (const tag of allTags) {
+      const lower = tag.toLowerCase();
+      if (SOURCE_TAGS.has(tag)) {
+        source.push(tag);
+      } else if (customersLower.has(lower)) {
+        projects.push(tag);
+      } else if (typesLower.has(lower)) {
+        contentTypes.push(tag);
+      } else {
+        general.push(tag);
+      }
+    }
+
+    return { source, projects, contentTypes, general };
+  }, [allTags, allCustomers, allTypes]);
 
   // Stats
   const stats = useMemo(() => {
@@ -347,31 +571,112 @@ export default function AdminLibraryTab() {
         </SegmentedControl>
       </div>
 
-      {/* Search */}
-      <SearchRow>
+      {/* Search + Customer filter + tag drawer trigger */}
+      <FilterRow>
+        {allCustomers.length > 0 && (
+          <CustomerSelect
+            value={customerFilter}
+            onChange={(e) => setCustomerFilter(e.target.value)}
+          >
+            <option value="">{t.allCustomers}</option>
+            {allCustomers.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </CustomerSelect>
+        )}
+        {allTags.length > 0 && (
+          <OpenTagDrawerButton
+            type="button"
+            hasActive={activeTags.size > 0}
+            onClick={() => setTagDrawerOpen(true)}
+          >
+            {t.filterByTags}
+            {activeTags.size > 0 && (
+              <TagCountBadge>{activeTags.size}</TagCountBadge>
+            )}
+          </OpenTagDrawerButton>
+        )}
         <SearchInput
           placeholder={t.searchPlaceholder}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-      </SearchRow>
+      </FilterRow>
 
-      {/* Tags */}
-      {allTags.length > 0 && (
-        <TagBar>
-          <TagChip active={!activeTag} onClick={() => setActiveTag(null)}>
-            {t.allTags}
-          </TagChip>
-          {allTags.map((tag) => (
-            <TagChip
-              key={tag}
-              active={activeTag === tag}
-              onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-            >
-              {tag}
-            </TagChip>
-          ))}
-        </TagBar>
+      {/* Tag filters drawer */}
+      {tagDrawerOpen && allTags.length > 0 && (
+        <TagDrawerBackdrop onClick={() => setTagDrawerOpen(false)}>
+          <TagDrawerPanel onClick={(e) => e.stopPropagation()}>
+            <TagDrawerHeader>
+              <TagDrawerTitle>{t.tagFiltersTitle}</TagDrawerTitle>
+              <TagDrawerActions>
+                {activeTags.size > 0 && (
+                  <TagDrawerClearButton
+                    type="button"
+                    onClick={() => setActiveTags(new Set())}
+                  >
+                    {t.clearTagFilters}
+                  </TagDrawerClearButton>
+                )}
+                <TagDrawerDoneButton type="button" onClick={() => setTagDrawerOpen(false)}>
+                  {t.doneTagFilters}
+                </TagDrawerDoneButton>
+              </TagDrawerActions>
+            </TagDrawerHeader>
+            <TagDrawerBody>
+              <TagGroupsInDrawer>
+                {tagGroups.general.length > 0 && (
+                  <TagGroup>
+                    <TagGroupLabel>[{t.generalTags}]</TagGroupLabel>
+                    <TagGroupChips>
+                      {tagGroups.general.map((tag) => (
+                        <TagChip key={tag} active={activeTags.has(tag)} onClick={() => toggleTag(tag)}>
+                          {tag}
+                        </TagChip>
+                      ))}
+                    </TagGroupChips>
+                  </TagGroup>
+                )}
+                {tagGroups.projects.length > 0 && (
+                  <TagGroup>
+                    <TagGroupLabel>[{t.projectsTags}]</TagGroupLabel>
+                    <TagGroupChips>
+                      {tagGroups.projects.map((tag) => (
+                        <TagChip key={tag} active={activeTags.has(tag)} onClick={() => toggleTag(tag)}>
+                          {tag}
+                        </TagChip>
+                      ))}
+                    </TagGroupChips>
+                  </TagGroup>
+                )}
+                {tagGroups.source.length > 0 && (
+                  <TagGroup>
+                    <TagGroupLabel>[{t.sourceTags}]</TagGroupLabel>
+                    <TagGroupChips>
+                      {tagGroups.source.map((tag) => (
+                        <TagChip key={tag} active={activeTags.has(tag)} onClick={() => toggleTag(tag)}>
+                          {tag}
+                        </TagChip>
+                      ))}
+                    </TagGroupChips>
+                  </TagGroup>
+                )}
+                {tagGroups.contentTypes.length > 0 && (
+                  <TagGroup>
+                    <TagGroupLabel>[{t.contentTypeTags}]</TagGroupLabel>
+                    <TagGroupChips>
+                      {tagGroups.contentTypes.map((tag) => (
+                        <TagChip key={tag} active={activeTags.has(tag)} onClick={() => toggleTag(tag)}>
+                          {tag}
+                        </TagChip>
+                      ))}
+                    </TagGroupChips>
+                  </TagGroup>
+                )}
+              </TagGroupsInDrawer>
+            </TagDrawerBody>
+          </TagDrawerPanel>
+        </TagDrawerBackdrop>
       )}
 
       {/* Table / Cards */}
@@ -380,114 +685,16 @@ export default function AdminLibraryTab() {
           <EmptyText>{total === 0 ? t.noItems : t.noResults}</EmptyText>
         </AdminCard>
       ) : (
-        <>
-          {/* Desktop */}
-          <DesktopOnly>
-            <AdminCardNoPadding>
-              <Table>
-                <thead>
-                  <tr>
-                    <th>{t.name}</th>
-                    <th>{t.type}</th>
-                    <th>{t.customer}</th>
-                    <th>{t.tags}</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => (
-                    <tr key={item._id} onClick={() => setPreviewItem(item)} style={{ cursor: 'pointer' }}>
-                      <td>
-                        <CellBold>{item.name}</CellBold>
-                        {item.kind === 'game' && getQuestionCount(item) > 0 && (
-                          <CellMuted style={{ fontSize: 12 }}>
-                            {getQuestionCount(item)} {t.questions}
-                          </CellMuted>
-                        )}
-                      </td>
-                      <td>
-                        <KindBadge kind={item.kind}>
-                          {item.kind === 'game' ? t.game : t.station}
-                        </KindBadge>
-                        <CellMuted style={{ fontSize: 12, marginInlineStart: 6 }}>{item.type}</CellMuted>
-                      </td>
-                      <td><CellMuted>{item.customer || '—'}</CellMuted></td>
-                      <td>
-                        {item.tags.length > 0 ? (
-                          item.tags.map((tag) => <TagBadge key={tag}>{tag}</TagBadge>)
-                        ) : (
-                          <CellMuted>—</CellMuted>
-                        )}
-                      </td>
-                      <CellAlignEnd>
-                        <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
-                          <CopyButton
-                            disabled={copiedId === item._id}
-                            onClick={() => handleCopy(item)}
-                          >
-                            {copiedId === item._id ? t.copied : t.copy}
-                          </CopyButton>
-                          <SmallDangerButton
-                            confirm={confirmDeleteId === item._id}
-                            onClick={() => handleDelete(item._id)}
-                          >
-                            {confirmDeleteId === item._id ? t.confirmDelete : t.delete}
-                          </SmallDangerButton>
-                        </div>
-                      </CellAlignEnd>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </AdminCardNoPadding>
-          </DesktopOnly>
-
-          {/* Mobile */}
-          <HideOnDesktop>
-            <MobileCardList>
-              {items.map((item) => (
-                <MobileCardItem key={item._id} onClick={() => setPreviewItem(item)}>
-                  <MobileCardHeader>
-                    <div>
-                      <MobileCardNameRow>{item.name}</MobileCardNameRow>
-                      <div style={{ display: 'flex', gap: 6, marginTop: 4, alignItems: 'center' }}>
-                        <KindBadge kind={item.kind}>
-                          {item.kind === 'game' ? t.game : t.station}
-                        </KindBadge>
-                        <CellMuted style={{ fontSize: 12 }}>{item.type}</CellMuted>
-                      </div>
-                      {item.customer && (
-                        <CellMuted style={{ fontSize: 12, marginTop: 2 }}>{item.customer}</CellMuted>
-                      )}
-                      {item.tags.length > 0 && (
-                        <div style={{ marginTop: 4 }}>
-                          {item.tags.map((tag) => <TagBadge key={tag}>{tag}</TagBadge>)}
-                        </div>
-                      )}
-                      <MobileCardRow>
-                        <MobileCardDate>{new Date(item.createdAt).toLocaleDateString()}</MobileCardDate>
-                      </MobileCardRow>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }} onClick={(e) => e.stopPropagation()}>
-                      <CopyButton
-                        disabled={copiedId === item._id}
-                        onClick={() => handleCopy(item)}
-                      >
-                        {copiedId === item._id ? t.copied : t.copy}
-                      </CopyButton>
-                      <SmallDangerButton
-                        confirm={confirmDeleteId === item._id}
-                        onClick={() => handleDelete(item._id)}
-                      >
-                        {confirmDeleteId === item._id ? t.confirmDelete : t.delete}
-                      </SmallDangerButton>
-                    </div>
-                  </MobileCardHeader>
-                </MobileCardItem>
-              ))}
-            </MobileCardList>
-          </HideOnDesktop>
-        </>
+        <PaginatedLibrary
+          items={items}
+          copiedId={copiedId}
+          confirmDeleteId={confirmDeleteId}
+          handleCopy={handleCopy}
+          handleDelete={handleDelete}
+          setPreviewItem={setPreviewItem}
+          getQuestionCount={getQuestionCount}
+          t={t}
+        />
       )}
 
       {/* Preview Modal */}
@@ -562,6 +769,130 @@ export default function AdminLibraryTab() {
           </PreviewCard>
         </PreviewOverlay>
       )}
+    </>
+  );
+}
+
+function PaginatedLibrary({ items, copiedId, confirmDeleteId, handleCopy, handleDelete, setPreviewItem, getQuestionCount, t }: {
+  items: LibraryItem[];
+  copiedId: string | null;
+  confirmDeleteId: string | null;
+  handleCopy: (item: LibraryItem) => void;
+  handleDelete: (id: string) => void;
+  setPreviewItem: (item: LibraryItem) => void;
+  getQuestionCount: (item: LibraryItem) => number;
+  t: Record<string, string>;
+}) {
+  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(items);
+
+  return (
+    <>
+      <DesktopOnly>
+        <AdminCardNoPadding>
+          <Table>
+            <thead>
+              <tr>
+                <th>{t.name}</th>
+                <th>{t.type}</th>
+                <th>{t.customer}</th>
+                <th>{t.tags}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageItems.map((item) => (
+                <tr key={item._id} onClick={() => setPreviewItem(item)} style={{ cursor: 'pointer' }}>
+                  <td>
+                    <CellBold>{item.name}</CellBold>
+                    {item.kind === 'game' && getQuestionCount(item) > 0 && (
+                      <CellMuted style={{ fontSize: 12 }}>
+                        {getQuestionCount(item)} {t.questions}
+                      </CellMuted>
+                    )}
+                  </td>
+                  <td>
+                    <KindBadge kind={item.kind}>
+                      {item.kind === 'game' ? t.game : t.station}
+                    </KindBadge>
+                    <CellMuted style={{ fontSize: 12, marginInlineStart: 6 }}>{item.type}</CellMuted>
+                  </td>
+                  <td><CellMuted>{item.customer || '—'}</CellMuted></td>
+                  <td>
+                    {item.tags.length > 0 ? (
+                      item.tags.map((tag) => <TagBadge key={tag}>{tag}</TagBadge>)
+                    ) : (
+                      <CellMuted>—</CellMuted>
+                    )}
+                  </td>
+                  <CellAlignEnd>
+                    <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                      <CopyButton
+                        disabled={copiedId === item._id}
+                        onClick={() => handleCopy(item)}
+                      >
+                        {copiedId === item._id ? t.copied : t.copy}
+                      </CopyButton>
+                      <SmallDangerButton
+                        confirm={confirmDeleteId === item._id}
+                        onClick={() => handleDelete(item._id)}
+                      >
+                        {confirmDeleteId === item._id ? t.confirmDelete : t.delete}
+                      </SmallDangerButton>
+                    </div>
+                  </CellAlignEnd>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </AdminCardNoPadding>
+      </DesktopOnly>
+
+      <HideOnDesktop>
+        <MobileCardList>
+          {pageItems.map((item) => (
+            <MobileCardItem key={item._id} onClick={() => setPreviewItem(item)}>
+              <MobileCardHeader>
+                <div>
+                  <MobileCardNameRow>{item.name}</MobileCardNameRow>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 4, alignItems: 'center' }}>
+                    <KindBadge kind={item.kind}>
+                      {item.kind === 'game' ? t.game : t.station}
+                    </KindBadge>
+                    <CellMuted style={{ fontSize: 12 }}>{item.type}</CellMuted>
+                  </div>
+                  {item.customer && (
+                    <CellMuted style={{ fontSize: 12, marginTop: 2 }}>{item.customer}</CellMuted>
+                  )}
+                  {item.tags.length > 0 && (
+                    <div style={{ marginTop: 4 }}>
+                      {item.tags.map((tag) => <TagBadge key={tag}>{tag}</TagBadge>)}
+                    </div>
+                  )}
+                  <MobileCardRow>
+                    <MobileCardDate>{new Date(item.createdAt).toLocaleDateString()}</MobileCardDate>
+                  </MobileCardRow>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                  <CopyButton
+                    disabled={copiedId === item._id}
+                    onClick={() => handleCopy(item)}
+                  >
+                    {copiedId === item._id ? t.copied : t.copy}
+                  </CopyButton>
+                  <SmallDangerButton
+                    confirm={confirmDeleteId === item._id}
+                    onClick={() => handleDelete(item._id)}
+                  >
+                    {confirmDeleteId === item._id ? t.confirmDelete : t.delete}
+                  </SmallDangerButton>
+                </div>
+              </MobileCardHeader>
+            </MobileCardItem>
+          ))}
+        </MobileCardList>
+      </HideOnDesktop>
+
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
     </>
   );
 }

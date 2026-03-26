@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useManagerAuth } from '../../../context/ManagerAuthContext';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './ManagerDashboardPage.i18n';
 import { managerApiFetch } from '../../../utils/managerApi';
+import Pagination from '../../../components/Pagination';
+import { usePagination } from '../../../hooks/usePagination';
 import LangDrawer from '../../../components/LangDrawer';
 import {
   AdminPage,
@@ -146,64 +148,12 @@ export default function ManagerDashboardPage() {
 
         {/* Leaderboard */}
         {data && data.participants.some((p) => p.totalScore > 0) && (
-          <>
-            <SectionTitle>{t.leaderboard}</SectionTitle>
-            <AdminCardNoPadding sx={{ marginBottom: '24px' }}>
-              <Table>
-                <thead>
-                  <tr>
-                    <th>{t.rank}</th>
-                    <th>{t.name}</th>
-                    {data.connectionType === 'group' && <th>{t.group}</th>}
-                    <th>{t.score}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...data.participants]
-                    .filter((p) => p.totalScore > 0)
-                    .sort((a, b) => b.totalScore - a.totalScore)
-                    .slice(0, 50)
-                    .map((p, i) => (
-                      <tr key={p._id}>
-                        <td><CellBold>#{i + 1}</CellBold></td>
-                        <td><ParticipantName>{p.participantName}</ParticipantName></td>
-                        {data.connectionType === 'group' && (
-                          <td>{p.group ? <Badge>{p.group}</Badge> : '—'}</td>
-                        )}
-                        <td><CellPrimary>{p.totalScore}</CellPrimary></td>
-                      </tr>
-                    ))}
-                </tbody>
-              </Table>
-            </AdminCardNoPadding>
-          </>
+          <LeaderboardSection data={data} t={t} />
         )}
 
         {/* Group standings */}
         {data && data.groupStandings.length > 0 && (
-          <>
-            <SectionTitle>{t.groupStandings}</SectionTitle>
-            <AdminCardNoPadding sx={{ marginBottom: '24px' }}>
-              <Table>
-                <thead>
-                  <tr>
-                    <th>{t.groupName}</th>
-                    <th>{t.groupTotal}</th>
-                    <th>{t.members}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.groupStandings.map((g) => (
-                    <tr key={g.name}>
-                      <td><CellBold>{g.name}</CellBold></td>
-                      <td><CellPrimary>{g.totalScore}</CellPrimary></td>
-                      <td>{g.memberCount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </AdminCardNoPadding>
-          </>
+          <GroupStandingsSection groupStandings={data.groupStandings} t={t} />
         )}
 
         {/* Participants */}
@@ -213,56 +163,136 @@ export default function ManagerDashboardPage() {
             <EmptyText>{t.noParticipants}</EmptyText>
           </AdminCardNoPadding>
         ) : (
-          <AdminCardNoPadding>
-            <OverflowWrapper>
-              <Table>
-                <thead>
-                  <tr>
-                    <th>{t.name}</th>
-                    {data.connectionType === 'group' && <th>{t.group}</th>}
-                    <th>{t.totalScore}</th>
-                    <th>{t.scores}</th>
-                    <th>{t.joined}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.participants.map((p) => (
-                    <tr key={p._id}>
-                      <td>
-                        <ParticipantName>{p.participantName}</ParticipantName>
-                        {p.email && <ParticipantMeta>{p.email}</ParticipantMeta>}
-                        {p.phoneNumber && <ParticipantMeta>{p.phoneNumber}</ParticipantMeta>}
-                      </td>
-                      {data.connectionType === 'group' && (
-                        <td>{p.group ? <Badge>{p.group}</Badge> : '—'}</td>
-                      )}
-                      <td><CellPrimary>{p.totalScore}</CellPrimary></td>
-                      <td>
-                        {Array.isArray(p.scores) && p.scores.length > 0 ? (
-                          <ScoresWrap>
-                            {p.scores.map((s, i) => (
-                              <ScoreBadge key={i}>
-                                {s.gameName}: {s.score}
-                              </ScoreBadge>
-                            ))}
-                          </ScoresWrap>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                      <td>
-                        <JoinedText>
-                          {new Date(p.joinedAt).toLocaleDateString()}
-                        </JoinedText>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </OverflowWrapper>
-          </AdminCardNoPadding>
+          <ParticipantsSection data={data} t={t} />
         )}
       </AdminContent>
     </AdminPage>
+  );
+}
+
+function LeaderboardSection({ data, t }: { data: ReportsResponse; t: Record<string, string> }) {
+  const leaderboard = useMemo(
+    () => [...data.participants].filter((p) => p.totalScore > 0).sort((a, b) => b.totalScore - a.totalScore).slice(0, 50),
+    [data.participants]
+  );
+  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(leaderboard);
+  const startRank = (page - 1) * 10;
+
+  return (
+    <>
+      <SectionTitle>{t.leaderboard}</SectionTitle>
+      <AdminCardNoPadding sx={{ marginBottom: '24px' }}>
+        <Table>
+          <thead>
+            <tr>
+              <th>{t.rank}</th>
+              <th>{t.name}</th>
+              {data.connectionType === 'group' && <th>{t.group}</th>}
+              <th>{t.score}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pageItems.map((p, i) => (
+              <tr key={p._id}>
+                <td><CellBold>#{startRank + i + 1}</CellBold></td>
+                <td><ParticipantName>{p.participantName}</ParticipantName></td>
+                {data.connectionType === 'group' && (
+                  <td>{p.group ? <Badge>{p.group}</Badge> : '—'}</td>
+                )}
+                <td><CellPrimary>{p.totalScore}</CellPrimary></td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </AdminCardNoPadding>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
+    </>
+  );
+}
+
+function GroupStandingsSection({ groupStandings, t }: { groupStandings: GroupStanding[]; t: Record<string, string> }) {
+  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(groupStandings);
+
+  return (
+    <>
+      <SectionTitle>{t.groupStandings}</SectionTitle>
+      <AdminCardNoPadding sx={{ marginBottom: '24px' }}>
+        <Table>
+          <thead>
+            <tr>
+              <th>{t.groupName}</th>
+              <th>{t.groupTotal}</th>
+              <th>{t.members}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pageItems.map((g) => (
+              <tr key={g.name}>
+                <td><CellBold>{g.name}</CellBold></td>
+                <td><CellPrimary>{g.totalScore}</CellPrimary></td>
+                <td>{g.memberCount}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </AdminCardNoPadding>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
+    </>
+  );
+}
+
+function ParticipantsSection({ data, t }: { data: ReportsResponse; t: Record<string, string> }) {
+  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(data.participants);
+
+  return (
+    <>
+      <AdminCardNoPadding>
+        <OverflowWrapper>
+          <Table>
+            <thead>
+              <tr>
+                <th>{t.name}</th>
+                {data.connectionType === 'group' && <th>{t.group}</th>}
+                <th>{t.totalScore}</th>
+                <th>{t.scores}</th>
+                <th>{t.joined}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageItems.map((p) => (
+                <tr key={p._id}>
+                  <td>
+                    <ParticipantName>{p.participantName}</ParticipantName>
+                    {p.email && <ParticipantMeta>{p.email}</ParticipantMeta>}
+                    {p.phoneNumber && <ParticipantMeta>{p.phoneNumber}</ParticipantMeta>}
+                  </td>
+                  {data.connectionType === 'group' && (
+                    <td>{p.group ? <Badge>{p.group}</Badge> : '—'}</td>
+                  )}
+                  <td><CellPrimary>{p.totalScore}</CellPrimary></td>
+                  <td>
+                    {Array.isArray(p.scores) && p.scores.length > 0 ? (
+                      <ScoresWrap>
+                        {p.scores.map((s, i) => (
+                          <ScoreBadge key={i}>
+                            {s.gameName}: {s.score}
+                          </ScoreBadge>
+                        ))}
+                      </ScoresWrap>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                  <td>
+                    <JoinedText>{new Date(p.joinedAt).toLocaleDateString()}</JoinedText>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </OverflowWrapper>
+      </AdminCardNoPadding>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
+    </>
   );
 }

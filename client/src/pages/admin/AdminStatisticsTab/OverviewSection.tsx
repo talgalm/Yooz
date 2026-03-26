@@ -3,6 +3,8 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useTranslations } from '../../../context/LanguageContext';
 import { useOverview, useTimeline } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
+import Pagination from '../../../components/Pagination';
+import { usePagination } from '../../../hooks/usePagination';
 import {
   KpiRow,
   KpiCard,
@@ -49,6 +51,7 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
   const t = useTranslations(texts);
   const { data: overview, loading: overviewLoading } = useOverview();
   const { data: timeline } = useTimeline(30);
+  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(activities);
 
   const chartData = useMemo(() => {
     if (!timeline) return [];
@@ -165,7 +168,7 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
                   </tr>
                 </thead>
                 <tbody>
-                  {activities.map((a) => (
+                  {pageItems.map((a) => (
                     <tr key={a._id} onClick={() => onSelectActivity(a._id)}>
                       <td style={{ fontWeight: 600 }}>{a.name}</td>
                       <td><code>{a.code}</code></td>
@@ -179,7 +182,7 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
           </DesktopOnly>
 
           <HideOnDesktop>
-            {activities.map((a) => (
+            {pageItems.map((a) => (
               <StatsMobileCard key={a._id} onClick={() => onSelectActivity(a._id)}>
                 <StatsMobileRow>
                   <StatsMobileValue>{a.name}</StatsMobileValue>
@@ -192,6 +195,8 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
               </StatsMobileCard>
             ))}
           </HideOnDesktop>
+
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
         </>
       )}
     </>
