@@ -7,6 +7,8 @@ export const texts = {
     description: 'Description (optional)',
     customer: 'Customer (optional)',
     theme: 'Theme (optional)',
+    tags: 'Tags',
+    addTag: 'Add tag...',
     // Shared
     instructions: 'Instructions for participants',
     hintLabel: 'Include hint in game',
@@ -129,6 +131,8 @@ export const texts = {
     description: 'תיאור (אופציונלי)',
     customer: 'לקוח (אופציונלי)',
     theme: 'נושא (אופציונלי)',
+    tags: 'תגיות',
+    addTag: 'הוסף תג...',
     // Shared
     instructions: 'הוראות למשתתפים',
     hintLabel: 'כלול רמז במשחק',

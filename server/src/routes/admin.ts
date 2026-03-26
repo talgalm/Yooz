@@ -388,14 +388,34 @@ router.get('/search', authenticateAdmin, async (req: Request, res: Response) => 
   }
 
   const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+  const tag = (req.query.tag as string) || '';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const results: { games: any[]; stations: any[] } = { games: [], stations: [] };
 
+  // Build query: search name, description, tags, and question content
+  const buildQuery = (extraFields: Record<string, unknown>[] = []) => {
+    const orConditions = [
+      { name: regex },
+      { description: regex },
+      { tags: regex },
+      { customer: regex },
+      ...extraFields,
+    ];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const query: any = { $or: orConditions };
+    if (tag) query.tags = tag;
+    return query;
+  };
+
   if (filter !== 'stations') {
-    results.games = await Game.find({ name: regex }).limit(limit).sort({ name: 1 }).lean();
+    results.games = await Game.find(
+      buildQuery([{ 'settings.questions.text': regex }])
+    ).limit(limit).sort({ name: 1 }).lean();
   }
   if (filter !== 'games') {
-    results.stations = await Station.find({ name: regex }).limit(limit).sort({ name: 1 }).lean();
+    results.stations = await Station.find(
+      buildQuery()
+    ).limit(limit).sort({ name: 1 }).lean();
   }
 
   res.json(results);

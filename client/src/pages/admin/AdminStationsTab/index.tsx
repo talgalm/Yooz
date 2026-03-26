@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminStationsTab.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
@@ -12,6 +13,7 @@ import {
   HideOnDesktop,
   MobileCardList,
   MobileCardItem,
+  Input,
 } from '../../../components/styled';
 import {
   SectionHeaderRow,
@@ -29,6 +31,55 @@ import {
   MobileCardDate,
 } from '../styled';
 
+// ─── Local styled ───
+
+const SearchRow = styled('div')({
+  display: 'flex',
+  gap: 12,
+  alignItems: 'center',
+  marginBottom: 16,
+  flexWrap: 'wrap',
+});
+
+const SearchInput = styled(Input)({
+  flex: 1,
+  minWidth: 200,
+  padding: '10px 14px',
+  fontSize: 14,
+});
+
+const TagBar = styled('div')({
+  display: 'flex',
+  gap: 6,
+  flexWrap: 'wrap',
+  marginBottom: 16,
+});
+
+const TagChip = styled('button')<{ active?: boolean }>(({ active }) => ({
+  display: 'inline-block',
+  padding: '4px 12px',
+  fontSize: 12,
+  fontWeight: 600,
+  borderRadius: 20,
+  border: `1.5px solid ${active ? '#6c5ce7' : '#e0dce6'}`,
+  background: active ? '#f0eefa' : '#fff',
+  color: active ? '#6c5ce7' : '#888',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  transition: 'all 0.15s',
+  '&:hover': {
+    borderColor: '#6c5ce7',
+    color: '#6c5ce7',
+  },
+}));
+
+const TagBadge = styled(Chip)({
+  fontSize: 10,
+  padding: '2px 8px',
+  marginInlineEnd: 4,
+  marginBottom: 2,
+});
+
 interface AdminStationsTabProps {
   stations: Station[];
   onRefresh: () => void;
@@ -38,6 +89,8 @@ interface AdminStationsTabProps {
 export default function AdminStationsTab({ stations, onRefresh, defaultType }: AdminStationsTabProps) {
   const navigate = useNavigate();
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [activeTag, setActiveTag] = useState<string | null>(null);
   const t = useTranslations(texts);
 
   const handleDelete = async (id: string) => {
@@ -62,6 +115,35 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType }: A
     }
   };
 
+  // Collect all unique tags
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    stations.forEach((s) => s.tags?.forEach((tag) => tagSet.add(tag)));
+    return [...tagSet].sort();
+  }, [stations]);
+
+  // Filter by search + active tag
+  const filtered = useMemo(() => {
+    let result = stations;
+
+    if (activeTag) {
+      result = result.filter((s) => s.tags?.includes(activeTag));
+    }
+
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter((s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.description?.toLowerCase().includes(q) ||
+        s.customer?.toLowerCase().includes(q) ||
+        s.theme?.toLowerCase().includes(q) ||
+        s.tags?.some((tag) => tag.toLowerCase().includes(q))
+      );
+    }
+
+    return result;
+  }, [stations, search, activeTag]);
+
   return (
     <>
       <SectionHeaderRow>
@@ -71,9 +153,36 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType }: A
         </SmallActionButton>
       </SectionHeaderRow>
 
-      {stations.length === 0 ? (
+      {/* Search bar */}
+      <SearchRow>
+        <SearchInput
+          placeholder={t.searchPlaceholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </SearchRow>
+
+      {/* Tag filter bar */}
+      {allTags.length > 0 && (
+        <TagBar>
+          <TagChip active={!activeTag} onClick={() => setActiveTag(null)}>
+            {t.allTags}
+          </TagChip>
+          {allTags.map((tag) => (
+            <TagChip
+              key={tag}
+              active={activeTag === tag}
+              onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+            >
+              {tag}
+            </TagChip>
+          ))}
+        </TagBar>
+      )}
+
+      {filtered.length === 0 ? (
         <AdminCard>
-          <EmptyText>{t.noStations}</EmptyText>
+          <EmptyText>{stations.length === 0 ? t.noStations : t.noResults}</EmptyText>
         </AdminCard>
       ) : (
         <>
@@ -85,12 +194,13 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType }: A
                   <tr>
                     <th>{t.name}</th>
                     <th>{t.type}</th>
+                    <th>{t.tags}</th>
                     <th>{t.created}</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {stations.map((station) => (
+                  {filtered.map((station) => (
                     <tr key={station._id} onClick={() => navigate(`/admin/stations/${station._id}`)}>
                       <td>
                         <CellBold>{station.name}</CellBold>
@@ -102,6 +212,13 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType }: A
                       </td>
                       <td>
                         <Chip>{typeLabel(station.type)}</Chip>
+                      </td>
+                      <td>
+                        {station.tags && station.tags.length > 0 ? (
+                          station.tags.map((tag) => <TagBadge key={tag}>{tag}</TagBadge>)
+                        ) : (
+                          <CellMuted>—</CellMuted>
+                        )}
                       </td>
                       <td><CellMuted>{new Date(station.createdAt).toLocaleDateString()}</CellMuted></td>
                       <CellAlignEnd>
@@ -122,7 +239,7 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType }: A
           {/* Mobile cards */}
           <HideOnDesktop>
             <MobileCardList>
-              {stations.map((station) => (
+              {filtered.map((station) => (
                 <MobileCardItem key={station._id} onClick={() => navigate(`/admin/stations/${station._id}`)}>
                   <MobileCardHeader>
                     <div>
@@ -131,6 +248,11 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType }: A
                         <CellMuted style={{ fontSize: 12 }}>
                           {[station.customer, station.theme].filter(Boolean).join(' · ')}
                         </CellMuted>
+                      )}
+                      {station.tags && station.tags.length > 0 && (
+                        <div style={{ marginTop: 4 }}>
+                          {station.tags.map((tag) => <TagBadge key={tag}>{tag}</TagBadge>)}
+                        </div>
                       )}
                       <MobileCardRow>
                         <Chip>{typeLabel(station.type)}</Chip>

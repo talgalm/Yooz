@@ -10,6 +10,7 @@ import AdminGamesTab from '../AdminGamesTab';
 import AdminStationsTab from '../AdminStationsTab';
 import AdminStatisticsTab from '../AdminStatisticsTab';
 import AdminUsersTab from '../AdminUsersTab';
+import AdminLibraryTab from '../AdminLibraryTab';
 import {
   AdminHeader,
   OutlineButton,
@@ -61,7 +62,7 @@ const DashContent = styled('main')({
 const DashTabBar = styled('div')({
   display: 'flex',
   gap: 0,
-  borderBottom: '3px solid #e8e4ee',
+  borderBottom: '3px solid #c9bfe0',
   marginBottom: 32,
   '@media (max-width: 600px)': {
     marginBottom: 20,
@@ -72,18 +73,19 @@ const DashTab = styled('button')<{ active?: boolean }>(({ active }) => ({
   flex: 1,
   padding: '16px 24px',
   fontSize: 16,
-  fontWeight: 600,
+  fontWeight: active ? 700 : 600,
   border: 'none',
   borderBottom: `3px solid ${active ? '#6c5ce7' : 'transparent'}`,
   marginBottom: -3,
-  background: 'none',
-  color: active ? '#6c5ce7' : '#999',
+  background: active ? 'rgba(108,92,231,0.06)' : 'none',
+  color: active ? '#6c5ce7' : '#777',
   cursor: 'pointer',
   fontFamily: 'inherit',
   textAlign: 'center',
   transition: 'all 0.2s',
   '&:hover': {
-    color: active ? '#6c5ce7' : '#555',
+    color: active ? '#6c5ce7' : '#444',
+    background: active ? 'rgba(108,92,231,0.06)' : 'rgba(0,0,0,0.02)',
   },
   '@media (max-width: 600px)': {
     padding: '14px 12px',
@@ -244,7 +246,7 @@ const MobileCard = styled('div')({
 
 // ─── Types ───
 
-type MainTab = 'activities' | 'statistics' | 'stations' | 'users';
+type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'users';
 type StationsSection = 'stations' | 'games' | 'missions' | 'collage';
 type GameSubTab = 'order' | 'trivia' | 'puzzle' | 'trueFalse' | 'ballGame' | 'trashSort';
 
@@ -265,6 +267,7 @@ export interface Game {
   description?: string;
   customer?: string;
   theme?: string;
+  tags?: string[];
   createdAt: string;
 }
 
@@ -275,6 +278,7 @@ export interface Station {
   description?: string;
   customer?: string;
   theme?: string;
+  tags?: string[];
   settings?: Record<string, unknown>;
   createdAt: string;
 }
@@ -298,7 +302,7 @@ export default function AdminDashboardPage() {
   const [stations, setStations] = useState<Station[]>([]);
   const [missions, setMissions] = useState<Mission[]>([]);
   const [activeTab, setActiveTab] = useState<MainTab>(
-    ['activities', 'statistics', 'stations', 'users'].includes(initialTab) ? initialTab : 'activities'
+    ['activities', 'statistics', 'stations', 'library', 'users'].includes(initialTab) ? initialTab : 'activities'
   );
   const [stationsSection, setStationsSection] = useState<StationsSection>('stations');
   const [gameSubTab, setGameSubTab] = useState<GameSubTab>('order');
@@ -317,6 +321,7 @@ export default function AdminDashboardPage() {
       tabs.push({ key: 'statistics', label: t.tabStatistics });
     }
     tabs.push({ key: 'stations', label: t.tabStations });
+    tabs.push({ key: 'library', label: t.tabLibrary });
     if (role === 'super_admin') {
       tabs.push({ key: 'users', label: t.tabUsers });
     }
@@ -651,6 +656,11 @@ export default function AdminDashboardPage() {
               />
             )}
           </>
+        )}
+
+        {/* ── Content Library Tab ── */}
+        {activeTab === 'library' && (
+          <AdminLibraryTab />
         )}
 
         {/* ── Users Tab (super_admin only) ── */}

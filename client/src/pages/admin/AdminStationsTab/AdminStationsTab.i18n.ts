@@ -40,6 +40,10 @@ export const texts = {
     customer: 'Customer (optional)',
     theme: 'Theme (optional)',
     typeCollage: 'Collage',
+    searchPlaceholder: 'Search by name, tag, or keyword...',
+    tags: 'Tags',
+    allTags: 'All',
+    noResults: 'No stations match your search.',
   },
   he: {
     title: 'תחנות',
@@ -82,5 +86,9 @@ export const texts = {
     customer: 'לקוח (אופציונלי)',
     theme: 'נושא (אופציונלי)',
     typeCollage: 'קולאז׳',
+    searchPlaceholder: 'חיפוש לפי שם, תג או מילת מפתח...',
+    tags: 'תגיות',
+    allTags: 'הכל',
+    noResults: 'אין תחנות התואמות את החיפוש.',
   },
 };

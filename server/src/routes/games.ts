@@ -13,7 +13,7 @@ router.get('/', authenticateAdmin, async (_req: Request, res: Response) => {
 
 // Create game
 router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateGameRequest>, res: Response) => {
-  const { name, type, description, customer, theme, settings } = req.body;
+  const { name, type, description, customer, theme, tags, settings } = req.body;
 
   if (!name || name.trim().length < 2) {
     res.status(400).json({ error: 'Game name is required (min 2 characters)' });
@@ -26,6 +26,7 @@ router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateGameReques
     description: description?.trim(),
     customer: customer?.trim() || undefined,
     theme: theme?.trim() || undefined,
+    tags: Array.isArray(tags) ? tags.map(t => t.trim()).filter(Boolean) : [],
     settings: settings || {},
   });
 
@@ -48,9 +49,10 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
     return;
   }
 
+  const tags = req.body.tags;
   const game = await Game.findByIdAndUpdate(
     req.params.id,
-    { name: name.trim(), type: type || 'generic', description: description?.trim(), customer: customer?.trim() || undefined, theme: theme?.trim() || undefined, settings: settings || {} },
+    { name: name.trim(), type: type || 'generic', description: description?.trim(), customer: customer?.trim() || undefined, theme: theme?.trim() || undefined, tags: Array.isArray(tags) ? tags.map(t => t.trim()).filter(Boolean) : [], settings: settings || {} },
     { new: true, runValidators: true }
   );
 

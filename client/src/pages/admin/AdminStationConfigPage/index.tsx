@@ -43,6 +43,7 @@ interface StationData {
   description?: string;
   customer?: string;
   theme?: string;
+  tags?: string[];
   settings: Record<string, unknown>;
 }
 
@@ -79,6 +80,8 @@ export default function AdminStationConfigPage() {
   const [description, setDescription] = useState('');
   const [customer, setCustomer] = useState('');
   const [theme, setTheme] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [stationType, setStationType] = useState<StationTypeOption>(defaultType);
 
   // Hint
@@ -119,6 +122,7 @@ export default function AdminStationConfigPage() {
         setDescription(s.description || '');
         setCustomer(s.customer || '');
         setTheme(s.theme || '');
+        setTags(s.tags || []);
 
         const settings = s.settings || {};
         if (settings.hint && typeof settings.hint === 'object') {
@@ -190,6 +194,7 @@ export default function AdminStationConfigPage() {
         description: description.trim() || undefined,
         customer: customer.trim() || undefined,
         theme: theme.trim() || undefined,
+        tags,
         settings,
       };
 
@@ -337,6 +342,33 @@ export default function AdminStationConfigPage() {
                   value={theme}
                   onChange={(e) => setTheme(e.target.value)}
                 />
+                <div>
+                  <SectionLabel>{t.tags || 'Tags'}</SectionLabel>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                    {tags.map((tag, i) => (
+                      <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 12, fontWeight: 600, borderRadius: 20, background: '#f0eefa', color: '#6c5ce7' }}>
+                        {tag}
+                        <span style={{ cursor: 'pointer', marginInlineStart: 2 }} onClick={() => setTags(tags.filter((_, j) => j !== i))}>×</span>
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <Input
+                      placeholder={t.addTag || 'Add tag...'}
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const v = tagInput.trim();
+                          if (v && !tags.includes(v)) setTags([...tags, v]);
+                          setTagInput('');
+                        }
+                      }}
+                      style={{ flex: 1 }}
+                    />
+                  </div>
+                </div>
               </FormSectionCard>
 
               <FormSectionCard>

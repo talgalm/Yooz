@@ -107,6 +107,9 @@ export interface GameData {
   name: string;
   type: string;
   description?: string;
+  customer?: string;
+  theme?: string;
+  tags?: string[];
   settings: Record<string, unknown>;
 }
 

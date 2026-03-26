@@ -9,6 +9,7 @@ export interface IStation {
   description?: string;
   customer?: string;
   theme?: string;
+  tags?: string[];
   settings: Record<string, unknown>;
   createdAt: Date;
 }
@@ -19,8 +20,11 @@ const stationSchema = new Schema<IStation>({
   description: { type: String },
   customer: { type: String },
   theme: { type: String },
+  tags: { type: [String], default: [] },
   settings: { type: Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now },
 });
+
+stationSchema.index({ tags: 1 });
 
 export const Station = model<IStation>('Station', stationSchema, 'stations');

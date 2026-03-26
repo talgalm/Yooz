@@ -168,6 +168,7 @@ export interface CreateGameRequest {
   description?: string;
   customer?: string;
   theme?: string;
+  tags?: string[];
   settings?: Record<string, unknown>;
 }
 
@@ -178,6 +179,7 @@ export interface CreateStationRequest {
   description?: string;
   customer?: string;
   theme?: string;
+  tags?: string[];
   settings?: Record<string, unknown>;
 }
 

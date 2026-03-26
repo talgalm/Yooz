@@ -7,6 +7,7 @@ export interface IGame {
   description?: string;
   customer?: string;
   theme?: string;
+  tags?: string[];
   settings: Record<string, unknown>;
   createdAt: Date;
 }
@@ -17,8 +18,12 @@ const gameSchema = new Schema<IGame>({
   description: { type: String },
   customer: { type: String },
   theme: { type: String },
+  tags: { type: [String], default: [] },
   settings: { type: Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now },
 });
+
+gameSchema.index({ tags: 1 });
+gameSchema.index({ name: 'text', description: 'text', 'settings.questions.text': 'text' });
 
 export const Game = model<IGame>('Game', gameSchema, 'games');

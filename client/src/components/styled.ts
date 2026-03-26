@@ -426,12 +426,14 @@ export const Tab = styled('button')<{ active?: boolean }>(({ active }) => ({
 
 export const SegmentedControl = styled('div')({
   display: 'inline-flex',
-  background: '#eee',
+  background: '#f0ecf8',
   borderRadius: 28,
   padding: 4,
   margin: '0 auto 24px',
   width: 'auto',
-  maxWidth: 420,
+  maxWidth: 520,
+  border: `2px solid #d4cae8`,
+  boxShadow: '0 2px 8px rgba(108,92,231,0.10)',
 });
 
 export const SegmentedControlCenter = styled('div')({
@@ -441,23 +443,25 @@ export const SegmentedControlCenter = styled('div')({
 });
 
 export const SegmentedButton = styled('button')<{ active?: boolean }>(({ active }) => ({
-  padding: '12px 40px',
+  padding: '12px 32px',
   fontSize: 15,
-  fontWeight: 600,
+  fontWeight: 700,
   border: 'none',
   borderRadius: 24,
   background: active ? PRIMARY : 'transparent',
-  color: active ? '#fff' : TEXT_LIGHT,
+  color: active ? '#fff' : '#5a4e7a',
   cursor: 'pointer',
   fontFamily: 'inherit',
   transition: 'all 0.2s',
   flex: 1,
   whiteSpace: 'nowrap' as const,
+  boxShadow: active ? '0 3px 10px rgba(108,92,231,0.3)' : 'none',
   '&:hover': {
     color: active ? '#fff' : TEXT,
+    background: active ? PRIMARY : 'rgba(108,92,231,0.08)',
   },
   '@media (max-width: 600px)': {
-    padding: '10px 24px',
+    padding: '10px 20px',
     fontSize: 13,
   },
 }));

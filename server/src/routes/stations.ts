@@ -22,12 +22,14 @@ router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateStationReq
 
   const stationType = type && ['text', 'video', 'image', 'narrative', 'badge', 'collage'].includes(type) ? type : 'text';
 
+  const tags = req.body.tags;
   const station = await Station.create({
     name: name.trim(),
     type: stationType,
     description: description?.trim(),
     customer: customer?.trim() || undefined,
     theme: theme?.trim() || undefined,
+    tags: Array.isArray(tags) ? tags.map(t => t.trim()).filter(Boolean) : [],
     settings: settings || {},
   });
 
@@ -52,6 +54,7 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
 
   const stationType = type && ['text', 'video', 'image', 'narrative', 'badge', 'collage'].includes(type) ? type : 'text';
 
+  const tags = req.body.tags;
   const station = await Station.findByIdAndUpdate(
     req.params.id,
     {
@@ -60,6 +63,7 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
       description: description?.trim(),
       customer: customer?.trim() || undefined,
       theme: theme?.trim() || undefined,
+      tags: Array.isArray(tags) ? tags.map(t => t.trim()).filter(Boolean) : [],
       settings: settings || {},
     },
     { new: true, runValidators: true }

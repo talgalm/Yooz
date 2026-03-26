@@ -36,6 +36,10 @@ import {
   InlineRowGap6,
   MobileCardDate,
   RoleBadge,
+  LoadingContainer,
+  LoadingCenter,
+  Spinner,
+  SpinKeyframe,
 } from '../styled';
 
 type UserRole = 'viewer' | 'admin' | 'super_admin';
@@ -60,6 +64,7 @@ export default function AdminUsersTab() {
   const [role, setRole] = useState<UserRole>('viewer');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const { admin } = useAdminAuth();
   const t = useTranslations(texts);
 
@@ -69,6 +74,8 @@ export default function AdminUsersTab() {
       setUsers(data.users);
     } catch {
       // silently fail
+    } finally {
+      setInitialLoading(false);
     }
   }, []);
 
@@ -218,7 +225,14 @@ export default function AdminUsersTab() {
         </FormCard>
       )}
 
-      {users.length === 0 ? (
+      {initialLoading && users.length === 0 ? (
+        <LoadingContainer>
+          <LoadingCenter>
+            <SpinKeyframe />
+            <Spinner />
+          </LoadingCenter>
+        </LoadingContainer>
+      ) : users.length === 0 ? (
         <EmptyText>{t.noUsers}</EmptyText>
       ) : (
         <>
