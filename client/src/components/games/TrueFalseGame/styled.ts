@@ -5,17 +5,16 @@ import { styled, keyframes } from '@mui/material/styles';
 const WHITE = '#fff';
 const TIMER_RED = '#c0392b';
 
-// Timer circle — white center + sage green rings (like reference image)
-const TIMER_RING_DARK = '#8dae63';   // darker sage (like HILL_2)
-const TIMER_RING_MID = '#9dbb76';    // medium sage (like HILL_1)
-const TIMER_RING_LIGHT = '#b1c68e';  // light sage (like GAME_BG)
-const TIMER_INNER_WHITE = '#8dae63'; 
-const TIMER_NUMBER_STROKE = '#2c2c2c';
+// Timer circle — flat purple + dark rim (reference: countdown “6” on hills)
+const TIMER_PURPLE_FILL = '#8E24AA';
+const TIMER_PURPLE_BORDER = '#4A148C';
+const TIMER_NUMBER_STROKE = '#000000';
 
-// Game screen palette (from SCSS)
+// Game screen palette
 const HILL_1 = '#9dbb76';
 const HILL_2 = '#8dae63';
 const QUESTION_BG = '#2b492b';
+
 const BTN_RED_BG = '#a55a4c';
 const BTN_RED_BORDER = '#622e22';
 const BTN_GREEN_BG = '#6cac5e';
@@ -132,7 +131,7 @@ export const TFProgressBadge = styled('div')({
   color: '#2c3e50',
 });
 
-// ─── Question Banner (Leaf-shaped) ───
+// ─── Question banner — white card, purple frame (matches play-phase purple theme) ───
 
 const FINISH_PURPLE = '#6c5ce7';
 const FINISH_PURPLE_DARK = '#5b4cd4';
@@ -140,34 +139,33 @@ const LEAF_BANNER_BG = FINISH_PURPLE;
 const LEAF_BANNER_DARK = FINISH_PURPLE_DARK;
 
 export const QuestionBanner = styled('div')({
-  background: `linear-gradient(135deg, ${LEAF_BANNER_BG} 0%, ${LEAF_BANNER_DARK} 100%)`,
-  color: WHITE,
+  background: '#ffffff',
+  color: FINISH_PURPLE,
   textAlign: 'center',
-  padding: '14px 20px',
-  borderRadius: 16,
+  padding: '14px 18px',
+  borderRadius: 22,
   width: '100%',
-  lineHeight: 1.3,
-  boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
+  lineHeight: 1.35,
+  border: `4px solid ${FINISH_PURPLE}`,
+  boxShadow: '0 4px 0 rgba(108, 92, 231, 0.22), 0 8px 18px rgba(0,0,0,0.08)',
   position: 'relative',
   zIndex: 2,
   overflow: 'hidden',
-  // Space below score bar: flex gap is tight and rotate(-2deg) draws above the layout box
   marginTop: 'clamp(14px, 4vw, 22px)',
-  transform: 'rotate(-2deg)',
   animation: `${slideUp} 0.3s ease-out`,
   flexShrink: 1,
   minHeight: 0,
 });
 
 export const QuestionBannerText = styled('p')({
-  fontSize: 'clamp(19px, 3.8vw, 20px)',
+  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontSize: 'clamp(18px, 3.6vw, 21px)',
   fontWeight: 700,
-  color: WHITE,
-  lineHeight: 1.3,
+  color: FINISH_PURPLE,
+  lineHeight: 1.35,
   margin: 0,
   position: 'relative',
   zIndex: 1,
-  textShadow: '0 1px 2px rgba(0,0,0,0.15)',
 });
 
 // ─── Timer Circle (double-ring design) ───
@@ -178,47 +176,41 @@ export const TimerCircleWrapper = styled('div')({
   justifyContent: 'center',
   position: 'relative',
   zIndex: 1,
-  flex: '1 1 auto',
-  minHeight: 120,
+  flex: '1 0 auto',
+  minHeight: 'clamp(150px, 28vh, 200px)',
   width: '100%',
+  // Nudge toward vertical screen center (flex slot sits low due to header + question + buttons)
+  transform: 'translateY(clamp(-28px, -5.5vh, -10px))',
 });
 
+/** Single flat purple disc + thick dark purple rim (reference image) */
 export const TimerCircle = styled('div')<{ critical?: boolean }>(({ critical }) => ({
-  width: 'clamp(140px, 26vh, 180px)',
+  width: 'clamp(150px, 28vh, 200px)',
   aspectRatio: '1 / 1',
-  backgroundColor: critical ? 'rgba(192,57,43,0.3)' : TIMER_RING_DARK,
+  backgroundColor: critical ? '#b71c1c' : TIMER_PURPLE_FILL,
   borderRadius: '50%',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
-  border: `8px solid ${critical ? TIMER_RED : TIMER_RING_MID}`,
+  border: critical
+    ? `clamp(8px, 1.8vw, 14px) solid #5c0a0a`
+    : `clamp(8px, 1.8vw, 14px) solid ${TIMER_PURPLE_BORDER}`,
+  boxSizing: 'border-box',
   boxShadow: critical
-    ? 'inset 0 0 0 10px rgba(192,57,43,0.2), 0 4px 10px rgba(0,0,0,0.1)'
-    : `inset 0 0 0 10px ${TIMER_RING_LIGHT}, 0 4px 10px rgba(0,0,0,0.08)`,
-  transition: 'all 0.3s ease',
-}));
-
-export const TimerCircleInner = styled('div')<{ critical?: boolean }>(({ critical }) => ({
-  width: 'clamp(110px, 20vh, 140px)',
-  aspectRatio: '1 / 1',
-  backgroundColor: critical ? 'rgba(192,57,43,0.15)' : TIMER_INNER_WHITE,
-  borderRadius: '50%',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  border: `6px solid ${critical ? TIMER_RED : TIMER_RING_MID}`,
-  transition: 'all 0.3s ease',
+    ? '0 4px 0 rgba(0,0,0,0.2)'
+    : '0 4px 0 rgba(0,0,0,0.15)',
+  transition: 'background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
 }));
 
 export const TimerCircleNumber = styled('span')<{ critical?: boolean }>(({ critical }) => ({
-  fontSize: 'clamp(62px, 11vh, 80px)',
-  fontWeight: 900,
-  color: critical ? TIMER_RED : WHITE,
-  WebkitTextStroke: critical ? 'none' : `4px ${TIMER_NUMBER_STROKE}`,
-  textShadow: critical ? 'none' : '0 2px 4px rgba(0,0,0,0.12)',
+  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontSize: 'clamp(64px, 12vh, 92px)',
+  fontWeight: 400,
+  color: WHITE,
+  WebkitTextStroke: `clamp(2px, 0.35vw, 3px) ${critical ? '#3d0a0a' : TIMER_NUMBER_STROKE}`,
   paintOrder: 'stroke fill',
   lineHeight: 1,
-  transition: 'all 0.3s ease',
+  transition: 'color 0.3s ease, -webkit-text-stroke 0.3s ease',
 }));
 
 // ─── True/False Action Buttons ───
@@ -318,26 +310,34 @@ export const CorrectButton = styled('button')<{
   };
 });
 
-// ─── Feedback Overlay ───
+// ─── Feedback Overlay (fixed center; transform only on inner card so timer layout is stable) ───
 
-export const FeedbackOverlay = styled('div')<{ variant: 'correct' | 'incorrect' | 'timeout' }>(({ variant }) => ({
-  position: 'absolute',
-  bottom: 160,
-  left: '50%',
-  transform: 'translateX(-50%)',
-  zIndex: 20,
+export const FeedbackOverlayRoot = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 100,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  pointerEvents: 'none',
+  padding: 24,
+  boxSizing: 'border-box',
+});
+
+export const FeedbackOverlayCard = styled('div')<{ variant: 'correct' | 'incorrect' | 'timeout' }>(({ variant }) => ({
   background: variant === 'correct' ? 'rgba(61,139,55,0.95)'
     : variant === 'incorrect' ? 'rgba(192,57,43,0.95)'
-    : 'rgba(0,0,0,0.7)',
+    : 'rgba(0,0,0,0.78)',
   color: WHITE,
-  padding: '12px 28px',
-  borderRadius: 20,
-  fontSize: 18,
+  padding: '16px 32px',
+  borderRadius: 22,
+  fontSize: 'clamp(17px, 4.2vw, 20px)',
   fontWeight: 800,
   textAlign: 'center',
-  boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-  animation: `${feedbackPop} 0.3s ease-out`,
+  boxShadow: '0 8px 28px rgba(0,0,0,0.35)',
+  animation: `${feedbackPop} 0.35s ease-out`,
   whiteSpace: 'nowrap',
+  maxWidth: 'min(92vw, 360px)',
 }));
 
 // ─── Countdown ───
@@ -692,12 +692,14 @@ export const FinishContent = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
+  justifyContent: 'flex-start',
   position: 'relative',
   zIndex: 1,
-  padding: '30px 20px 20px',
+  padding: 'clamp(12px, 4vh, 36px) 20px clamp(20px, 6vh, 48px)',
   textAlign: 'center',
   width: '100%',
-  maxWidth: 400,
+  maxWidth: 420,
+  minHeight: 0,
 });
 
 // Title banner (leaf-shaped, like question banner)
@@ -717,7 +719,7 @@ export const FinishTitleBanner = styled('div')({
   animation: `${floatIn} 0.4s ease-out`,
 });
 
-// Purple score circle (matches nature landscape theme)
+/** Gradient score disc + rings (e.g. BallGame finish); True/False summary uses `TimerCircle` + `FinishScoreCircleWrap` */
 export const FinishStump = styled('div')({
   width: 210,
   height: 210,
@@ -744,30 +746,62 @@ export const FinishScoreNumber = styled('span')({
   zIndex: 1,
 });
 
+/** Score timer disc — sits in the same vertical band as intro instructions (below mid spacer) */
+export const FinishScoreCircleWrap = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '100%',
+  flexShrink: 0,
+  marginBottom: 4,
+  animation: `${floatIn} 0.5s ease-out 0.15s both`,
+});
+
+export const FinishScoreCircleInner = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 2,
+  lineHeight: 1,
+});
+
 export const FinishScoreLabel = styled('span')({
-  fontSize: 22,
+  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontSize: 'clamp(15px, 3.2vw, 20px)',
   fontWeight: 700,
-  color: 'rgba(255,255,255,0.95)',
+  color: WHITE,
+  WebkitTextStroke: 'clamp(1px, 0.2vw, 2px) rgba(0,0,0,0.45)',
+  paintOrder: 'stroke fill',
   marginTop: 2,
   position: 'relative',
   zIndex: 1,
 });
 
+/** Summary copy: same rhythm as intro instructions, green on play-phase backdrop */
+const FINISH_SUMMARY_GREEN = '#8fefb0';
+const FINISH_SUMMARY_GREEN_DEEP = '#5dce7a';
+
 export const FinishFinalLabel = styled('div')({
-  fontSize: 18,
+  fontSize: 'clamp(15px, 3.9vw, 18px)',
   fontWeight: 700,
-  color: FINISH_PURPLE_DARK,
-  marginBottom: 6,
-  animation: `${floatIn} 0.4s ease-out 0.3s both`,
+  color: FINISH_SUMMARY_GREEN,
+  lineHeight: 1.55,
+  margin: '0 0 6px',
+  fontFamily: 'inherit',
+  letterSpacing: '0.01em',
+  textShadow: '0 1px 5px rgba(0,0,0,0.55), 0 0 1px rgba(0,0,0,0.4)',
 });
 
 export const FinishStats = styled('div')({
-  fontSize: 16,
+  fontSize: 'clamp(15px, 3.9vw, 18px)',
   fontWeight: 600,
-  color: '#5a9a3a',
-  lineHeight: 1.7,
-  marginBottom: 30,
-  animation: `${floatIn} 0.4s ease-out 0.35s both`,
+  color: FINISH_SUMMARY_GREEN_DEEP,
+  lineHeight: 1.65,
+  margin: 0,
+  fontFamily: 'inherit',
+  letterSpacing: '0.01em',
+  textShadow: '0 1px 5px rgba(0,0,0,0.55), 0 0 1px rgba(0,0,0,0.4)',
 });
 
 export const FinishContinueButton = styled('button')({
@@ -785,13 +819,4 @@ export const FinishContinueButton = styled('button')({
   '&:active': {
     transform: 'scale(0.98)',
   },
-});
-
-export const FinishYoozLogo = styled('div')({
-  marginTop: 'auto',
-  paddingBottom: 20,
-  fontSize: 36,
-  fontWeight: 900,
-  color: FINISH_PURPLE,
-  letterSpacing: 2,
 });

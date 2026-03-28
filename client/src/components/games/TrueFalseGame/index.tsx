@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './TrueFalseGame.i18n';
 import { useGameHint } from '../../../hooks/useGameHint';
@@ -24,12 +25,12 @@ import {
   QuestionBannerText,
   TimerCircleWrapper,
   TimerCircle,
-  TimerCircleInner,
   TimerCircleNumber,
   NatureButtonRow,
   WrongButton,
   CorrectButton,
-  FeedbackOverlay,
+  FeedbackOverlayRoot,
+  FeedbackOverlayCard,
   NatureCountdown,
   NatureCountdownBody,
   NatureCountdownLabel,
@@ -50,14 +51,11 @@ import {
   IntroStartButton,
   FinishContainer,
   FinishContent,
-  FinishTitleBanner,
-  FinishStump,
-  FinishScoreNumber,
+  FinishScoreCircleWrap,
+  FinishScoreCircleInner,
   FinishScoreLabel,
   FinishFinalLabel,
   FinishStats,
-  FinishContinueButton,
-  FinishYoozLogo,
 } from './styled';
 
 // ─── SVG Icons ───
@@ -98,55 +96,6 @@ function WrongMark() {
   );
 }
 
-/** Leaf vein pattern overlaid inside the question banner */
-function LeafVeinSvg() {
-  return (
-    <svg
-      width="100%" height="100%"
-      viewBox="0 0 340 90"
-      preserveAspectRatio="none"
-      style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.12 }}
-    >
-      {/* Main center vein */}
-      <line x1="10" y1="45" x2="330" y2="45" stroke="#fff" strokeWidth="1.5" />
-      {/* Side veins */}
-      <line x1="60" y1="45" x2="30" y2="15" stroke="#fff" strokeWidth="1" />
-      <line x1="60" y1="45" x2="30" y2="75" stroke="#fff" strokeWidth="1" />
-      <line x1="120" y1="45" x2="85" y2="12" stroke="#fff" strokeWidth="1" />
-      <line x1="120" y1="45" x2="85" y2="78" stroke="#fff" strokeWidth="1" />
-      <line x1="180" y1="45" x2="150" y2="15" stroke="#fff" strokeWidth="1" />
-      <line x1="180" y1="45" x2="150" y2="75" stroke="#fff" strokeWidth="1" />
-      <line x1="240" y1="45" x2="210" y2="10" stroke="#fff" strokeWidth="1" />
-      <line x1="240" y1="45" x2="210" y2="80" stroke="#fff" strokeWidth="1" />
-      <line x1="300" y1="45" x2="270" y2="18" stroke="#fff" strokeWidth="1" />
-      <line x1="300" y1="45" x2="270" y2="72" stroke="#fff" strokeWidth="1" />
-    </svg>
-  );
-}
-
-/** Tree ring lines + crack inside the stump score circle */
-function StumpRingsSvg() {
-  return (
-    <svg
-      width="100%" height="100%"
-      viewBox="0 0 200 200"
-      style={{ position: 'absolute', inset: 0, zIndex: 0 }}
-    >
-      {/* Concentric growth rings */}
-      <circle cx="100" cy="100" r="12" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.4" />
-      <circle cx="100" cy="100" r="24" fill="none" stroke="#a88440" strokeWidth="1.2" opacity="0.35" />
-      <circle cx="100" cy="100" r="36" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.3" />
-      <circle cx="100" cy="100" r="48" fill="none" stroke="#a07838" strokeWidth="1.5" opacity="0.25" />
-      <circle cx="100" cy="100" r="60" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.22" />
-      <circle cx="100" cy="100" r="72" fill="none" stroke="#907030" strokeWidth="1.5" opacity="0.2" />
-      <circle cx="100" cy="100" r="84" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.18" />
-      {/* Crack line */}
-      <path d="M100,100 L98,60 L102,35 L99,12" fill="none" stroke="#7a5828" strokeWidth="2" opacity="0.35" strokeLinecap="round" />
-      <path d="M100,100 L104,70 L108,50" fill="none" stroke="#7a5828" strokeWidth="1.2" opacity="0.2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 // ─── Types ───
 
 interface TrueFalseStatement {
@@ -170,6 +119,8 @@ interface TrueFalseSettings {
   showCountdown?: boolean;
   feedbackDurationMs?: number;
 }
+
+const FEEDBACK_POPUP_MS = 3000;
 
 // ─── Component ───
 
@@ -221,6 +172,7 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
   const [timeLeft, setTimeLeft] = useState<number>(scoring.timeLimitSeconds);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const feedbackHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Refs to avoid stale closures in handleAnswer
   const currentIndexRef = useRef(currentIndex);
@@ -285,6 +237,10 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
   }, [countdown]);
 
   const startQuestion = useCallback(() => {
+    if (feedbackHideTimerRef.current) {
+      clearTimeout(feedbackHideTimerRef.current);
+      feedbackHideTimerRef.current = null;
+    }
     setAnswered(false);
     setUserAnswer(null);
     setIsCorrect(false);
@@ -365,7 +321,13 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
       sounds.playWrong(); // timeout = wrong
     }
 
-    // Auto advance after feedback
+    if (feedbackHideTimerRef.current) clearTimeout(feedbackHideTimerRef.current);
+    feedbackHideTimerRef.current = setTimeout(() => {
+      setShowFeedback(false);
+      feedbackHideTimerRef.current = null;
+    }, FEEDBACK_POPUP_MS);
+
+    const advanceAfterMs = Math.max(feedbackDuration, FEEDBACK_POPUP_MS);
     feedbackTimerRef.current = setTimeout(() => {
       const nextIndex = currentIndexRef.current + 1;
       if (nextIndex >= statements.length) {
@@ -374,7 +336,7 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
         setCurrentIndex(nextIndex);
         startQuestion();
       }
-    }, feedbackDuration);
+    }, advanceAfterMs);
   }, [statements, scoring, feedbackDuration, startQuestion]);
 
   // Play game over sound when game completes
@@ -389,6 +351,7 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
+      if (feedbackHideTimerRef.current) clearTimeout(feedbackHideTimerRef.current);
     };
   }, []);
 
@@ -495,34 +458,33 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
             </GameIntroHeaderBar>
           )}
           <FinishContent>
-          {/* Title banner */}
-          <FinishTitleBanner>
-            <LeafVeinSvg />
-            <span style={{ position: 'relative', zIndex: 1 }}>{t.gameComplete}</span>
-          </FinishTitleBanner>
+          <IntroGameTitleSticker dir="auto">
+            <IntroGameTitleLine>{t.gameComplete}</IntroGameTitleLine>
+          </IntroGameTitleSticker>
 
-          {/* Tree stump with score */}
-          <FinishStump>
-            <StumpRingsSvg />
-            <FinishScoreNumber>{totalScore}</FinishScoreNumber>
-            <FinishScoreLabel>{t.pointsFull}</FinishScoreLabel>
-          </FinishStump>
+          <IntroWelcomeMidSpacer aria-hidden />
 
-          {/* Stats */}
-          <FinishFinalLabel>{t.finalScore}</FinishFinalLabel>
-          <FinishStats>
-            {t.correctAnswers}: {correctCount}/{statements.length}
-            <br />
-            {t.accuracy}: {accuracy}%
-          </FinishStats>
+          <FinishScoreCircleWrap>
+            <TimerCircle>
+              <FinishScoreCircleInner>
+                <TimerCircleNumber>{totalScore}</TimerCircleNumber>
+                <FinishScoreLabel>{t.pointsFull}</FinishScoreLabel>
+              </FinishScoreCircleInner>
+            </TimerCircle>
+          </FinishScoreCircleWrap>
 
-          {/* Continue button */}
-          <FinishContinueButton onClick={handleFinish}>
+          <IntroInstructions>
+            <FinishFinalLabel>{t.finalScore}</FinishFinalLabel>
+            <FinishStats>
+              {t.correctAnswers}: {correctCount}/{statements.length}
+              <br />
+              {t.accuracy}: {accuracy}%
+            </FinishStats>
+          </IntroInstructions>
+
+          <IntroStartButton onClick={handleFinish}>
             {t.continue}
-          </FinishContinueButton>
-
-          {/* Logo */}
-          <FinishYoozLogo><img src="/images/logo-purple.png" alt="Yooz" style={{ height: 36 }} /></FinishYoozLogo>
+          </IntroStartButton>
         </FinishContent>
         </FinishContainer>
       </PlayPhaseRoot>
@@ -553,9 +515,8 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
         </TFHeaderRight>
       </TFHeader>
 
-      {/* Question banner (leaf-styled) */}
+      {/* Question — white card, purple border & text */}
       <QuestionBanner key={currentIndex}>
-        <LeafVeinSvg />
         <QuestionBannerText>{statement.text}</QuestionBannerText>
       </QuestionBanner>
 
@@ -566,37 +527,47 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
         </NatureMediaContainer>
       )}
 
-      {/* Hint button */}
-      {settings.hint?.enabled && settings.hint.text && !answered && (
-        <HintButton
-          hintUsed={gameHint.hintUsed}
-          useHintLabel={t.useHint}
-          showHintLabel={t.showHint}
-          onClick={gameHint.handleHintClick}
-        />
+      {/* Hint: keep mounted when answered so flex layout (timer position) does not jump */}
+      {settings.hint?.enabled && settings.hint.text && (
+        <div
+          style={{
+            visibility: answered ? 'hidden' : 'visible',
+            pointerEvents: answered ? 'none' : 'auto',
+          }}
+          aria-hidden={answered ? true : undefined}
+        >
+          <HintButton
+            hintUsed={gameHint.hintUsed}
+            useHintLabel={t.useHint}
+            showHintLabel={t.showHint}
+            onClick={gameHint.handleHintClick}
+          />
+        </div>
       )}
 
-      {/* Timer circle */}
+      {/* Timer — flat purple disc + stroked digit */}
       <TimerCircleWrapper>
         <TimerCircle critical={timerCritical}>
-          <TimerCircleInner critical={timerCritical}>
-            <TimerCircleNumber critical={timerCritical}>{timeLeft}</TimerCircleNumber>
-          </TimerCircleInner>
+          <TimerCircleNumber critical={timerCritical}>{timeLeft}</TimerCircleNumber>
         </TimerCircle>
       </TimerCircleWrapper>
 
-      {/* Feedback */}
-      {showFeedback && (
-        <FeedbackOverlay
-          variant={userAnswer === null ? 'timeout' : isCorrect ? 'correct' : 'incorrect'}
-        >
-          {userAnswer === null
-            ? t.timeUp
-            : isCorrect
-            ? `${t.correct} +${scoring.correctPoints} ${t.points}`
-            : t.incorrect}
-        </FeedbackOverlay>
-      )}
+      {showFeedback &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <FeedbackOverlayRoot aria-live="polite">
+            <FeedbackOverlayCard
+              variant={userAnswer === null ? 'timeout' : isCorrect ? 'correct' : 'incorrect'}
+            >
+              {userAnswer === null
+                ? t.timeUp
+                : isCorrect
+                  ? `${t.correct} +${scoring.correctPoints} ${t.points}`
+                  : t.incorrect}
+            </FeedbackOverlayCard>
+          </FeedbackOverlayRoot>,
+          document.body
+        )}
 
       {/* Wrong / Correct buttons */}
       <NatureButtonRow>
