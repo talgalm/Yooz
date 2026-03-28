@@ -889,8 +889,6 @@ export default function StoryModulePage() {
           onNodeTap={handleNodeTap}
           onLogout={handleExit}
           onViewLeaderboard={handleViewLeaderboard}
-          activityName={data.name}
-          groupName={participant?.group}
           popupModal={popupModal}
           t={t}
           theme={data.module.theme}
@@ -1006,14 +1004,16 @@ export default function StoryModulePage() {
 
   const currentItem = data.module.items[currentItemIndex];
   const currentItemHintText = getStationHint(currentItem);
+  const playingTotalPoints = Math.max(
+    0,
+    scores.reduce((sum, s) => sum + s.score, 0) - stationHintUsed.size * stationHintPenalty,
+  );
 
   return (
     <>
       <ActivityPlayingHeaderProvider>
       <PlayingPhase
         currentItem={currentItem}
-        currentItemIndex={currentItemIndex}
-        totalItems={data.module.items.length}
         stationHintText={currentItemHintText}
         stationHintUsed={stationHintUsed.has(currentItemIndex)}
         participantAge={data.questionMode === 'byAge' ? participant?.age : undefined}
@@ -1023,6 +1023,7 @@ export default function StoryModulePage() {
         onGameComplete={handleGameComplete}
         onLogout={handleExit}
         onViewLeaderboard={handleViewLeaderboard}
+        currentPoints={playingTotalPoints}
         onStationContinue={handleStationContinue}
         onFeedbackContinue={handleFeedbackContinue}
         onBallGameMuteToggle={toggleBallGameMute}
@@ -1033,8 +1034,6 @@ export default function StoryModulePage() {
         onConfirmStationHint={confirmStationHint}
         onCloseHintWarning={() => setShowStationHintWarning(false)}
         onCloseHintText={() => setShowStationHintText(false)}
-        activityName={data.name}
-        groupName={participant?.group}
         popupModal={popupModal}
         t={t}
       />

@@ -1,6 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslations } from '../../../context/LanguageContext';
 import { useGameSounds } from '../../../hooks/useGameSounds';
+import {
+  useActivityPlayingHeaderHostActive,
+  useRegisterActivityGameHeader,
+  type ActivityGameHeaderPhase,
+} from '../../../context/activityPlayingHeaderContext';
 import { texts } from './TrashSortGame.i18n';
 import {
   SortContainer,
@@ -64,6 +69,15 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
   const fallSpeedMs = settings.fallSpeedMs ?? 3000;
 
   const [phase, setPhase] = useState<Phase>('tutorial');
+  const activityHeaderAudio = useActivityPlayingHeaderHostActive();
+  const activityHeaderPhase: ActivityGameHeaderPhase =
+    phase === 'finish' ? 'finish' : phase === 'playing' ? 'playing' : 'intro';
+  useRegisterActivityGameHeader(
+    activityHeaderAudio,
+    activityHeaderPhase,
+    sounds.isMuted,
+    sounds.toggleMute,
+  );
   const [countdownValue, setCountdownValue] = useState(countdownSeconds);
   const [currentItemIdx, setCurrentItemIdx] = useState(0);
   const [score, setScore] = useState(0);

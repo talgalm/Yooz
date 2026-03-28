@@ -71,3 +71,38 @@ export function useRegisterActivityGameHeader(
     };
   }, [hostActive, phase, isMuted, setSlot]);
 }
+
+/**
+ * When the current step is a game but no child registers a slot (e.g. unknown game type),
+ * installs a noop music slot so the header still shows the music control instead of leaderboard.
+ */
+export function useActivityGameHeaderFallbackWhenNeeded(enabled: boolean, itemKey: string) {
+  const setSlot = useContext(ActivityPlayingHeaderSetSlotContext);
+  const fallbackRef = useRef<ActivityGameHeaderSlot | null>(null);
+
+  useEffect(() => {
+    if (!enabled || !setSlot) return;
+    const t = window.setTimeout(() => {
+      setSlot((prev) => {
+        if (prev !== null) return prev;
+        const noop: ActivityGameHeaderSlot = {
+          phase: 'playing',
+          isMuted: false,
+          toggleMute: () => {},
+        };
+        fallbackRef.current = noop;
+        return noop;
+      });
+    }, 0);
+    return () => {
+      clearTimeout(t);
+      setSlot((prev) => {
+        if (prev === fallbackRef.current) {
+          fallbackRef.current = null;
+          return null;
+        }
+        return prev;
+      });
+    };
+  }, [enabled, itemKey, setSlot]);
+}

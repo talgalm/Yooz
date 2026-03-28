@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useGameSounds } from '../../../hooks/useGameSounds';
+import {
+  useActivityPlayingHeaderHostActive,
+  useRegisterActivityGameHeader,
+  type ActivityGameHeaderPhase,
+} from '../../../context/activityPlayingHeaderContext';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './OrderGame.i18n';
 import { shuffleArray } from '../../../utils/shuffleArray';
@@ -162,6 +167,19 @@ export default function OrderGame({ game, onComplete, participantAge }: GameProp
   // Timer
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const activityHeaderAudio = useActivityPlayingHeaderHostActive();
+  const activityHeaderPhase: ActivityGameHeaderPhase = gameComplete
+    ? 'finish'
+    : showInstructions
+      ? 'intro'
+      : 'playing';
+  useRegisterActivityGameHeader(
+    activityHeaderAudio,
+    activityHeaderPhase,
+    sounds.isMuted,
+    sounds.toggleMute,
+  );
 
   // Pointer-based drag reordering (works on touch + mouse)
   const [dragInfo, setDragInfo] = useState<{

@@ -1,6 +1,4 @@
 import React, { useState, useRef, useCallback } from 'react';
-import ActivityLogoutButton from '../../components/ActivityLogoutButton';
-import { HelpChatHeaderButton } from '../../components/HelpChat';
 import ThemedBackground from '../../components/ThemedBackground';
 import OrderGame from '../../components/games/OrderGame';
 import TriviaGame from '../../components/games/TriviaGame';
@@ -14,7 +12,6 @@ import CollageStation from '../../components/stations/CollageStation';
 import FeedbackStation, { type FeedbackResult } from '../../components/stations/FeedbackStation';
 import { styled, keyframes } from '@mui/material/styles';
 import {
-  HeaderActions,
   OutlineButton,
   CenteredContent,
   BodyText,
@@ -26,7 +23,6 @@ import {
 } from '../../components/styled';
 import {
   PlayingContent,
-  StationSubtitle,
   MediaStationWrapper,
   MediaStationVideo,
   MediaStationImageWrapper,
@@ -40,7 +36,14 @@ import {
   StationContinueButton,
 } from '../../components/games/styled';
 import MissionInlinePlayer from './MissionInlinePlayer';
-import { useActivityPlayingHeaderSlot } from '../../context/activityPlayingHeaderContext';
+import ActivitySessionHeader, {
+  SessionHeaderIconPlaceholder,
+  SessionHeaderTrophyIcon,
+} from './ActivitySessionHeader';
+import {
+  useActivityPlayingHeaderSlot,
+  useActivityGameHeaderFallbackWhenNeeded,
+} from '../../context/activityPlayingHeaderContext';
 import type { GameResult } from '../../components/games/types';
 import type { ModuleItemData, GameItemData, StationItemData, MissionItemData, GameData } from './types';
 
@@ -67,42 +70,6 @@ const headerFadeIn = keyframes`
     transform: translateY(0);
   }
 `;
-
-const PlayingHeader = styled('div')({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '8px 16px',
-  background: 'linear-gradient(135deg, rgba(30,30,40,0.55) 0%, rgba(20,20,30,0.45) 100%)',
-  backdropFilter: 'blur(12px)',
-  borderBottom: '1px solid rgba(255,255,255,0.06)',
-});
-
-const PlayingHeaderLeft = styled('div')({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 1,
-  minWidth: 0,
-});
-
-const PlayingHeaderTop = styled('div')({
-  display: 'flex',
-  alignItems: 'center',
-  gap: 8,
-});
-
-const PlayingHeaderName = styled('span')({
-  fontWeight: 700,
-  fontSize: 14,
-  color: '#fff',
-  textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-});
-
-const PlayingHeaderProgress = styled('span')({
-  fontSize: 11,
-  color: 'rgba(255,255,255,0.6)',
-  fontWeight: 600,
-});
 
 const AnimatedStage = styled('div')({
   flex: 1,
@@ -172,8 +139,6 @@ const ModalCloseButton = styled(PrimaryButton)({
 
 interface PlayingPhaseProps {
   currentItem: ModuleItemData;
-  currentItemIndex: number;
-  totalItems: number;
   stationHintText: string | null;
   stationHintUsed: boolean;
   participantAge?: number;
@@ -193,16 +158,14 @@ interface PlayingPhaseProps {
   onConfirmStationHint: () => void;
   onCloseHintWarning: () => void;
   onCloseHintText: () => void;
-  activityName?: string;
-  groupName?: string;
+  /** Running total minus hint penalties — same basis as roadmap / finish. */
+  currentPoints: number;
   popupModal: React.ReactNode;
   t: Record<string, string>;
 }
 
 export default function PlayingPhase({
   currentItem,
-  currentItemIndex,
-  totalItems,
   stationHintText,
   stationHintUsed,
   participantAge,
@@ -222,18 +185,16 @@ export default function PlayingPhase({
   onConfirmStationHint,
   onCloseHintWarning,
   onCloseHintText,
-  activityName,
-  groupName,
+  currentPoints,
   popupModal,
   t,
 }: PlayingPhaseProps) {
-  const progressText = `${t.step} ${currentItemIndex + 1} ${t.of} ${totalItems}`;
   const activityHeaderSlot = useActivityPlayingHeaderSlot();
-  const showGameHeaderSlot = activityHeaderSlot != null;
-  const showLeaderboardInGameSlot =
-    showGameHeaderSlot && activityHeaderSlot.phase === 'finish' && Boolean(onViewLeaderboard);
-  const showMusicInGameSlot = showGameHeaderSlot && activityHeaderSlot.phase !== 'finish';
-  const showStandaloneLeaderboard = !showGameHeaderSlot && Boolean(onViewLeaderboard);
+  const isGameStep = currentItem.type === 'game';
+  useActivityGameHeaderFallbackWhenNeeded(isGameStep, currentItem._id);
+  const showMusicInGameSlot = isGameStep && activityHeaderSlot != null;
+  const showStandaloneLeaderboard =
+    !isGameStep && Boolean(onViewLeaderboard);
 
   const renderContent = () => {
     if (currentItem.type === 'mission') {
@@ -411,53 +372,35 @@ export default function PlayingPhase({
     );
   };
 
+  const headerThirdSlot = showMusicInGameSlot && activityHeaderSlot ? (
+    <DarkHeaderActionIconButton
+      type="button"
+      onClick={activityHeaderSlot.toggleMute}
+      aria-label={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
+      title={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
+    >
+      {activityHeaderSlot.isMuted ? <MutedIcon /> : <SpeakerIcon />}
+    </DarkHeaderActionIconButton>
+  ) : showStandaloneLeaderboard && onViewLeaderboard ? (
+    <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
+      <SessionHeaderTrophyIcon />
+    </DarkHeaderActionIconButton>
+  ) : (
+    <SessionHeaderIconPlaceholder aria-hidden />
+  );
+
   const headerBar = (
-    <PlayingHeader style={{ position: 'sticky', top: 0, zIndex: 30, flexShrink: 0 }}>
-      <PlayingHeaderLeft>
-        <PlayingHeaderTop>
-          {activityName && <PlayingHeaderName>{activityName}</PlayingHeaderName>}
-          <PlayingHeaderProgress>{progressText}</PlayingHeaderProgress>
-        </PlayingHeaderTop>
-        <StationSubtitle style={{ color: 'rgba(255,255,255,0.85)', textShadow: '0 1px 2px rgba(0,0,0,0.15)', fontSize: 12 }}>
-          {currentItem.name}
-          {groupName ? ` · ${groupName}` : ''}
-        </StationSubtitle>
-      </PlayingHeaderLeft>
-      <HeaderActions>
-        {stationHintText && (
-          <StationHintButton type="button" onClick={onStationHintClick}>
-            {stationHintUsed ? t.showStationHint : t.stationHint}
-          </StationHintButton>
-        )}
-        {showLeaderboardInGameSlot && onViewLeaderboard && (
-          <DarkHeaderActionIconButton
-            type="button"
-            onClick={onViewLeaderboard}
-            aria-label={t.leaderboardTitle || 'Leaderboard'}
-            title={t.leaderboardTitle || 'Leaderboard'}
-          >
-            🏆
-          </DarkHeaderActionIconButton>
-        )}
-        {showMusicInGameSlot && activityHeaderSlot && (
-          <DarkHeaderActionIconButton
-            type="button"
-            onClick={activityHeaderSlot.toggleMute}
-            aria-label={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
-            title={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
-          >
-            {activityHeaderSlot.isMuted ? <MutedIcon /> : <SpeakerIcon />}
-          </DarkHeaderActionIconButton>
-        )}
-        {showStandaloneLeaderboard && onViewLeaderboard && (
-          <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
-            🏆
-          </DarkHeaderActionIconButton>
-        )}
-        <HelpChatHeaderButton />
-        <ActivityLogoutButton onClick={onLogout} ariaLabel={t.exitActivity} />
-      </HeaderActions>
-    </PlayingHeader>
+    <ActivitySessionHeader
+      onLogout={onLogout}
+      currentPoints={currentPoints}
+      t={t}
+      thirdSlot={headerThirdSlot}
+      topRow={stationHintText ? (
+        <StationHintButton type="button" onClick={onStationHintClick}>
+          {stationHintUsed ? t.showStationHint : t.stationHint}
+        </StationHintButton>
+      ) : undefined}
+    />
   );
 
   const hintModals = (
