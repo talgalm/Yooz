@@ -17,17 +17,20 @@ const BOX_SHADOW = '#3a5562';
 const TEXT_DARK = '#2c3e50';
 
 // Buttons
-const BTN_RED = '#e74c3c';
-const BTN_RED_DARK = '#c0392b';
 const BTN_GREEN = '#2ecc71';
 const BTN_GREEN_DARK = '#27ae60';
+const BTN_WRONG_RED = '#e74c3c';
+const BTN_WRONG_RED_DARK = '#c0392b';
 
 // Title
 const TITLE_BLUE = '#2980b9';
 
-// Finish screen (purple design, matches nature landscape theme)
+// Finish screen & primary actions (purple — no red CTAs)
 const FINISH_PURPLE = '#6c5ce7';
 const FINISH_PURPLE_DARK = '#5b4cd4';
+const BTN_PURPLE = FINISH_PURPLE;
+const BTN_PURPLE_DARK = FINISH_PURPLE_DARK;
+const BTN_PURPLE_LIGHT = '#ede7ff';
 
 // Finish banner (purple)
 const LEAF_BANNER_BG = FINISH_PURPLE;
@@ -68,7 +71,8 @@ export const IntroContainer = styled('div')({
   background: 'transparent',
   position: 'relative',
   overflow: 'hidden',
-  minHeight: '100dvh',
+  minHeight: 0,
+  width: '100%',
 });
 
 export const IntroDecorations = styled('div')({
@@ -126,21 +130,21 @@ export const IntroInfoText = styled('p')({
 });
 
 export const IntroStartButton = styled('button')({
-  background: BTN_RED,
+  background: BTN_PURPLE,
   color: WHITE,
   fontSize: '1.6rem',
   fontWeight: 700,
   padding: '14px 48px',
   borderRadius: 15,
-  border: `4px solid ${BTN_RED_DARK}`,
+  border: `4px solid ${BTN_PURPLE_DARK}`,
   cursor: 'pointer',
   fontFamily: 'inherit',
-  boxShadow: `0 5px 0 ${BTN_RED_DARK}, 0 8px 15px rgba(0,0,0,0.2)`,
+  boxShadow: `0 5px 0 ${BTN_PURPLE_DARK}, 0 8px 15px rgba(0,0,0,0.2)`,
   transition: 'all 0.1s ease',
   animation: `${floatIn} 0.5s ease-out 0.25s both`,
   '&:active': {
     transform: 'translateY(4px)',
-    boxShadow: `0 1px 0 ${BTN_RED_DARK}, 0 3px 8px rgba(0,0,0,0.2)`,
+    boxShadow: `0 1px 0 ${BTN_PURPLE_DARK}, 0 3px 8px rgba(0,0,0,0.2)`,
   },
 });
 
@@ -158,18 +162,48 @@ export const IntroYoozLogo = styled('div')({
 // ─── Playing / Question Screen ───
 // ═══════════════════════════════════════════
 
+/** Fills parent flex area (e.g. under mission header); do not use 100dvh — that clips the footer. */
 export const TriviaContainer = styled('div')({
   position: 'relative',
   width: '100%',
-  height: '100dvh',
+  flex: 1,
+  minHeight: 0,
+  alignSelf: 'stretch',
   background: 'transparent',
   overflow: 'hidden',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '6px 12px 10px',
+  padding: '6px 12px 0',
   boxSizing: 'border-box',
+  gap: 6,
+});
+
+/** Question body; overflow hidden — no horizontal or vertical scroll in play view. */
+export const TriviaMainScroll = styled('div')({
+  flex: 1,
+  minHeight: 0,
+  minWidth: 0,
+  width: '100%',
+  overflow: 'hidden',
+  overscrollBehavior: 'none',
+  touchAction: 'manipulation',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
   gap: 2,
+  paddingBottom: 8,
+  boxSizing: 'border-box',
+});
+
+/** Fixed footer for Check / Next / Continue — gap from bottom edge + safe area. */
+export const TriviaBottomBar = styled('div')({
+  width: '100%',
+  maxWidth: '100%',
+  flexShrink: 0,
+  boxSizing: 'border-box',
+  paddingTop: 8,
+  paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
 });
 
 export const TriviaDecorations = styled('div')({
@@ -223,7 +257,7 @@ export const TopBarItem = styled('span')({
 export const TopBarTimer = styled('span')<{ critical?: boolean }>(({ critical }) => ({
   fontSize: 13,
   fontWeight: 700,
-  color: critical ? BTN_RED : TEXT_DARK,
+  color: critical ? BTN_PURPLE_DARK : TEXT_DARK,
   transition: 'color 0.3s ease',
 }));
 
@@ -299,6 +333,59 @@ export const HintSpacer = styled('div')({
   flexShrink: 0,
 });
 
+/** Same column widths as `AnswerGrid` (1fr 1fr, same gap). */
+export const HelperLifelineRow = styled('div')({
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: 6,
+  alignItems: 'stretch',
+  width: '100%',
+  flexShrink: 0,
+  marginTop: 20,
+  marginBottom: 2,
+  boxSizing: 'border-box',
+});
+
+export const HelperLifelineSpacer = styled('div')({
+  width: '100%',
+  minHeight: 48,
+  flexShrink: 0,
+});
+
+export const HelperLifelineCaption = styled('p')({
+  margin: 0,
+  fontSize: 11,
+  fontWeight: 600,
+  color: '#5d6d7e',
+  textAlign: 'center',
+  width: '100%',
+  lineHeight: 1.25,
+});
+
+export const HelperLifelineButton = styled('button')<{ disabled?: boolean }>(({ disabled }) => ({
+  width: '100%',
+  minWidth: 0,
+  boxSizing: 'border-box',
+  padding: '8px 12px',
+  fontSize: 15,
+  fontWeight: 800,
+  fontFamily: 'inherit',
+  borderRadius: 10,
+  border: `3px solid ${disabled ? '#95a5a6' : BTN_PURPLE_DARK}`,
+  background: disabled ? '#dfe6e9' : BTN_PURPLE_LIGHT,
+  color: disabled ? TEXT_DARK : BTN_PURPLE_DARK,
+  cursor: disabled ? 'default' : 'pointer',
+  boxShadow: disabled ? 'none' : `0 3px 0 ${BTN_PURPLE_DARK}`,
+  opacity: disabled ? 0.55 : 1,
+  transition: 'all 0.1s ease',
+  '&:active': !disabled
+    ? {
+        transform: 'translateY(3px)',
+        boxShadow: `0 0 0 ${BTN_PURPLE_DARK}`,
+      }
+    : {},
+}));
+
 // ─── Answer Grid (2×2) ───
 
 export const AnswerGrid = styled('div')({
@@ -332,17 +419,23 @@ export const AnswerButton = styled('button')<{
       textColor = WHITE;
       shadow = `0 3px 0 ${BTN_GREEN_DARK}`;
     } else if (isSelected && !isCorrect) {
-      bg = BTN_RED;
-      borderColor = BTN_RED_DARK;
+      bg = BTN_WRONG_RED;
+      borderColor = BTN_WRONG_RED_DARK;
       textColor = WHITE;
-      shadow = `0 3px 0 ${BTN_RED_DARK}`;
+      shadow = `0 3px 0 ${BTN_WRONG_RED_DARK}`;
     } else {
       opacity = 0.45;
     }
   } else if (selected) {
-    borderColor = TITLE_BLUE;
-    bg = '#dbeeff';
-    textColor = TITLE_BLUE;
+    borderColor = BTN_PURPLE_DARK;
+    bg = BTN_PURPLE_LIGHT;
+    textColor = BTN_PURPLE_DARK;
+    shadow = `0 3px 0 ${BTN_PURPLE_DARK}`;
+  } else {
+    borderColor = BTN_PURPLE;
+    bg = WHITE;
+    textColor = TEXT_DARK;
+    shadow = `0 3px 0 ${BTN_PURPLE_DARK}`;
   }
 
   return {
@@ -367,7 +460,7 @@ export const AnswerButton = styled('button')<{
     justifyContent: 'center',
     '&:active': !checked ? {
       transform: 'translateY(3px)',
-      boxShadow: `0 0 0 ${BOX_SHADOW}`,
+      boxShadow: `0 0 0 ${BTN_PURPLE_DARK}`,
     } : {},
   };
 });
@@ -375,17 +468,17 @@ export const AnswerButton = styled('button')<{
 // ─── Action Buttons ───
 
 export const ActionButton = styled('button')<{ disabled?: boolean }>(({ disabled }) => ({
-  background: disabled ? '#bdc3c7' : BTN_RED,
+  background: disabled ? '#bdc3c7' : BTN_PURPLE,
   color: WHITE,
   fontSize: 16,
-  marginTop: 14,
+  marginTop: 0,
   fontWeight: 700,
   padding: '10px 20px',
   borderRadius: 10,
-  border: `3px solid ${disabled ? '#95a5a6' : BTN_RED_DARK}`,
+  border: `3px solid ${disabled ? '#95a5a6' : BTN_PURPLE_DARK}`,
   cursor: disabled ? 'default' : 'pointer',
   fontFamily: 'inherit',
-  boxShadow: disabled ? 'none' : `0 3px 0 ${BTN_RED_DARK}`,
+  boxShadow: disabled ? 'none' : `0 3px 0 ${BTN_PURPLE_DARK}`,
   transition: 'all 0.1s ease',
   width: '100%',
   flexShrink: 0,
@@ -394,21 +487,49 @@ export const ActionButton = styled('button')<{ disabled?: boolean }>(({ disabled
   opacity: disabled ? 0.6 : 1,
   '&:active': !disabled ? {
     transform: 'translateY(3px)',
-    boxShadow: `0 0 0 ${BTN_RED_DARK}`,
+    boxShadow: `0 0 0 ${BTN_PURPLE_DARK}`,
   } : {},
 }));
 
-// ─── Feedback Section (own space, never overlaps answers) ───
+// ─── Center-screen feedback toast (~1s, does not shift layout) ───
 
-export const FeedbackSection = styled('div')({
-  width: '100%',
+export const CenterToastOverlay = styled('div')({
+  position: 'fixed',
+  inset: 0,
   display: 'flex',
-  justifyContent: 'center',
   alignItems: 'center',
-  position: 'relative',
-  zIndex: 2,
-  flexShrink: 0,
+  justifyContent: 'center',
+  pointerEvents: 'none',
+  zIndex: 200,
+  padding: 16,
+  boxSizing: 'border-box',
 });
+
+export const CenterToastBubble = styled('div')<{ variant: 'correct' | 'partial' | 'incorrect' }>(({ variant }) => {
+  const border =
+    variant === 'correct'
+      ? BTN_GREEN
+      : variant === 'partial'
+        ? '#f39c12'
+        : BTN_WRONG_RED;
+  return {
+    background: 'rgba(255,255,255,0.96)',
+    border: `3px solid ${border}`,
+    borderRadius: 18,
+    padding: '14px 22px',
+    boxShadow: '0 10px 40px rgba(0,0,0,0.18)',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    maxWidth: 'min(340px, 92vw)',
+    animation: `${feedbackPop} 0.35s ease-out`,
+  };
+});
+
+// ─── Inline feedback (legacy helpers — PointsBadge still used in toast) ───
 
 export const FeedbackContainer = styled('div')({
   display: 'flex',
@@ -434,6 +555,14 @@ export const PartialText = styled('div')({
   lineHeight: 1,
 });
 
+export const IncorrectToastText = styled('div')({
+  fontSize: 22,
+  fontWeight: 900,
+  color: BTN_WRONG_RED,
+  textShadow: '1px 1px 0 #fff',
+  lineHeight: 1,
+});
+
 export const PointsBadge = styled('div')({
   background: '#d5f5e3',
   color: BTN_GREEN_DARK,
@@ -444,11 +573,26 @@ export const PointsBadge = styled('div')({
   border: `2px solid ${BTN_GREEN}`,
 });
 
+export const PointsBadgePartial = styled(PointsBadge)({
+  background: '#fef5e7',
+  color: '#d68910',
+  border: '2px solid #f39c12',
+});
+
+/** Explanations below the full answer grid (full width). */
+export const TriviaExplanationList = styled('div')({
+  width: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+  marginTop: 10,
+  flexShrink: 0,
+});
+
 export const TriviaExplanation = styled('div')({
   background: BOX_BG,
   border: `2px solid ${BOX_BORDER}`,
   borderRadius: 10,
-  marginTop: 14,
   padding: '8px 12px',
   fontSize: 13,
   fontWeight: 600,
@@ -459,7 +603,7 @@ export const TriviaExplanation = styled('div')({
   textAlign: 'center',
   position: 'relative',
   zIndex: 1,
-  flexShrink: 1,
+  flexShrink: 0,
   animation: `${slideUp} 0.3s ease-out`,
 });
 
@@ -493,8 +637,9 @@ export const FinishContainer = styled('div')({
   alignItems: 'center',
   background: 'transparent',
   position: 'relative',
-  overflow: 'hidden',
-  minHeight: '100dvh',
+  overflow: 'auto',
+  minHeight: 0,
+  width: '100%',
 });
 
 export const FinishContent = styled('div')({

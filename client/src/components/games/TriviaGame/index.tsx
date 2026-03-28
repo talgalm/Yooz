@@ -21,19 +21,28 @@ import {
   TopBarItem,
   TopBarTimer,
   TopBarMute,
+  TriviaMainScroll,
+  TriviaBottomBar,
   QuestionBox,
   QuestionBadge,
   QuestionContent,
   QuestionHintText,
   HintSpacer,
+  HelperLifelineRow,
+  HelperLifelineSpacer,
+  HelperLifelineCaption,
+  HelperLifelineButton,
   AnswerGrid,
   AnswerButton,
   ActionButton,
-  FeedbackSection,
-  FeedbackContainer,
+  CenterToastOverlay,
+  CenterToastBubble,
   CorrectBigText,
   PartialText,
+  IncorrectToastText,
   PointsBadge,
+  PointsBadgePartial,
+  TriviaExplanationList,
   TriviaExplanation,
   NatureMediaContainer,
   NatureMediaImage,
@@ -115,6 +124,7 @@ interface TriviaQuestion {
 interface TriviaScoring {
   correctAnswerPoints: number;
   wrongAnswerPenalty: number;
+  /** Per-question countdown; resets when advancing (not a whole-game timer). */
   timeLimitSeconds?: number;
 }
 
@@ -124,6 +134,38 @@ interface TriviaSettings {
   questions: TriviaQuestion[];
   scoring: TriviaScoring;
   shuffleAnswers?: boolean;
+  includeHelpers?: boolean;
+}
+
+/** Whether more wrong answers can be eliminated to reach `targetVisible` options among currently visible answers. */
+function canApplyLifeline(
+  answers: TriviaAnswer[],
+  alreadyEliminated: Set<number>,
+  targetVisible: number
+): boolean {
+  const visibleIndices = answers.map((_, i) => i).filter((i) => !alreadyEliminated.has(i));
+  const visibleCount = visibleIndices.length;
+  if (visibleCount <= targetVisible) return false;
+  const numCorrect = visibleIndices.filter((i) => answers[i].isCorrect).length;
+  const numWrong = visibleCount - numCorrect;
+  if (targetVisible < numCorrect) return false;
+  const needRemove = visibleCount - targetVisible;
+  return numWrong >= needRemove;
+}
+
+function pickWrongIndicesToEliminate(
+  answers: TriviaAnswer[],
+  alreadyEliminated: Set<number>,
+  targetVisible: number
+): number[] {
+  const visibleIndices = answers.map((_, i) => i).filter((i) => !alreadyEliminated.has(i));
+  const visibleCount = visibleIndices.length;
+  if (visibleCount <= targetVisible) return [];
+  const needRemove = visibleCount - targetVisible;
+  const wrongVisible = visibleIndices.filter((i) => !answers[i].isCorrect);
+  if (wrongVisible.length < needRemove) return [];
+  const shuffled = shuffleArray([...wrongVisible]);
+  return shuffled.slice(0, needRemove);
 }
 
 // ─── Component ───
@@ -143,7 +185,11 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
   const questionStartTime = useRef(Date.now());
 
   const allQuestions = settings.questions || [];
-  const scoring = settings.scoring || { correctAnswerPoints: 10, wrongAnswerPenalty: 5 };
+  const scoring = settings.scoring || {
+    correctAnswerPoints: 10,
+    wrongAnswerPenalty: 0,
+    timeLimitSeconds: 10,
+  };
 
   const questions = useMemo(() => {
     if (participantAge === undefined) return allQuestions;
@@ -158,7 +204,7 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
       ...q,
       answers: settings.shuffleAnswers !== false ? shuffleArray(q.answers) : q.answers,
     }));
-  }, [questions]);
+  }, [questions, settings.shuffleAnswers]);
 
   const [showInstructions, setShowInstructions] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -170,6 +216,11 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
   const [gameComplete, setGameComplete] = useState(false);
   const [noContent, setNoContent] = useState(false);
   const [questionAnswers, setQuestionAnswers] = useState<QuestionAnswerRecord[]>([]);
+  /** One use per game each: 1/2 and 3/4 are independent. */
+  const [helperHalfUsed, setHelperHalfUsed] = useState(false);
+  const [helperThreeQuartersUsed, setHelperThreeQuartersUsed] = useState(false);
+  /** Indices into current question's answers hidden after lifeline (cleared each question). */
+  const [eliminatedIndices, setEliminatedIndices] = useState<Set<number>>(() => new Set());
 
   // Timer
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -186,6 +237,7 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
     setSelectedAnswers(new Set());
     setChecked(false);
     setQuestionScore(0);
+    setEliminatedIndices(new Set());
     questionStartTime.current = Date.now();
     if (scoring.timeLimitSeconds && scoring.timeLimitSeconds > 0) {
       setTimeLeft(scoring.timeLimitSeconds);
@@ -227,8 +279,31 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
     }
   }, [timeLeft]);
 
+  const applyLifeline = (targetVisible: 2 | 3, kind: 'half' | 'threeQuarters') => {
+    if (checked) return;
+    if (kind === 'half' && helperHalfUsed) return;
+    if (kind === 'threeQuarters' && helperThreeQuartersUsed) return;
+    const q = processedQuestions[currentQuestion];
+    if (!q || !canApplyLifeline(q.answers, eliminatedIndices, targetVisible)) return;
+    const toEliminate = pickWrongIndicesToEliminate(q.answers, eliminatedIndices, targetVisible);
+    if (toEliminate.length === 0) return;
+    setEliminatedIndices((prev) => {
+      const next = new Set(prev);
+      toEliminate.forEach((i) => next.add(i));
+      return next;
+    });
+    if (kind === 'half') setHelperHalfUsed(true);
+    else setHelperThreeQuartersUsed(true);
+    setSelectedAnswers((prev) => {
+      const next = new Set(prev);
+      toEliminate.forEach((i) => next.delete(i));
+      return next;
+    });
+  };
+
   const toggleAnswer = (index: number) => {
     if (checked) return;
+    if (eliminatedIndices.has(index)) return;
     setSelectedAnswers((prev) => {
       const next = new Set(prev);
       if (next.has(index)) {
@@ -291,7 +366,7 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
     }
   };
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     const nextQ = currentQuestion + 1;
     if (nextQ >= questions.length) {
       setGameComplete(true);
@@ -299,7 +374,29 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
       setCurrentQuestion(nextQ);
       initQuestion(nextQ);
     }
-  };
+  }, [currentQuestion, questions.length, initQuestion]);
+
+  const handleNextRef = useRef(handleNext);
+  handleNextRef.current = handleNext;
+
+  /** ~1s center toast — does not move the answer grid. */
+  const [toastVisible, setToastVisible] = useState(false);
+  useEffect(() => {
+    if (!checked) {
+      setToastVisible(false);
+      return;
+    }
+    setToastVisible(true);
+    const id = window.setTimeout(() => setToastVisible(false), 1000);
+    return () => clearTimeout(id);
+  }, [checked, currentQuestion]);
+
+  /** Auto-advance after 5s (manual Next still clears this via checked → false). */
+  useEffect(() => {
+    if (!checked) return;
+    const id = window.setTimeout(() => handleNextRef.current(), 5000);
+    return () => clearTimeout(id);
+  }, [checked, currentQuestion]);
 
   // Play game over sound when game completes
   useEffect(() => {
@@ -413,6 +510,7 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
         </TopBarMute>
       </TopBar>
 
+      <TriviaMainScroll>
       {/* Question box with floating badge */}
       <QuestionBox key={currentQuestion}>
         <QuestionBadge>{t.questionLabel} {currentQuestion + 1}</QuestionBadge>
@@ -441,64 +539,122 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
         )
       )}
 
-      {/* Feedback — only shown after check */}
-      {checked && (
-        <FeedbackSection>
-          {feedbackType === 'correct' && (
-            <FeedbackContainer>
-              <CorrectBigText>{t.correct}</CorrectBigText>
-              <PointsBadge>+{questionScore} {t.pointsFull}</PointsBadge>
-            </FeedbackContainer>
-          )}
-          {feedbackType === 'incorrect' && (
-            null
-          )}
-          {feedbackType === 'partial' && (
-            <FeedbackContainer>
-              <PartialText>{t.partiallyCorrect}</PartialText>
-              <PointsBadge>+{questionScore} {t.pointsFull}</PointsBadge>
-            </FeedbackContainer>
-          )}
-        </FeedbackSection>
-      )}
-
-      {/* Answer grid (2×2) */}
+      {/* Answer grid (2×2); lifeline hides wrong options until answer is checked */}
       <AnswerGrid>
-        {question.answers.map((answer, index) => (
-          <AnswerButton
-            key={index}
-            selected={selectedAnswers.has(index)}
-            checked={checked}
-            isCorrect={answer.isCorrect}
-            isSelected={selectedAnswers.has(index)}
-            onClick={() => toggleAnswer(index)}
-            disabled={checked}
-          >
-            {answer.text}
-          </AnswerButton>
-        ))}
+        {question.answers.map((answer, index) => {
+          if (!checked && eliminatedIndices.has(index)) return null;
+          return (
+            <AnswerButton
+              key={index}
+              selected={selectedAnswers.has(index)}
+              checked={checked}
+              isCorrect={answer.isCorrect}
+              isSelected={selectedAnswers.has(index)}
+              onClick={() => toggleAnswer(index)}
+              disabled={checked}
+            >
+              {answer.text}
+            </AnswerButton>
+          );
+        })}
       </AnswerGrid>
 
-      {/* Explanations (shown after check, below grid) */}
-      {checked && question.answers.map((answer, index) =>
-        answer.explanation && (selectedAnswers.has(index) || answer.isCorrect) ? (
-          <TriviaExplanation key={`exp-${index}`}>
-            {answer.explanation}
-          </TriviaExplanation>
-        ) : null
+      {checked &&
+        question.answers.some(
+          (a, i) => !!a.explanation && (selectedAnswers.has(i) || a.isCorrect)
+        ) && (
+          <TriviaExplanationList>
+            {question.answers.map((answer, index) =>
+              answer.explanation && (selectedAnswers.has(index) || answer.isCorrect) ? (
+                <TriviaExplanation key={`exp-${index}`}>
+                  {answer.explanation}
+                </TriviaExplanation>
+              ) : null
+            )}
+          </TriviaExplanationList>
+        )}
+
+      {settings.includeHelpers !== false && (!helperHalfUsed || !helperThreeQuartersUsed) && (
+        checked ? (
+          <HelperLifelineSpacer aria-hidden />
+        ) : (
+          <>
+            <HelperLifelineRow>
+              <HelperLifelineButton
+                type="button"
+                disabled={helperHalfUsed || !canApplyLifeline(question.answers, eliminatedIndices, 2)}
+                onClick={() => applyLifeline(2, 'half')}
+              >
+                {t.helperHalf}
+              </HelperLifelineButton>
+              <HelperLifelineButton
+                type="button"
+                disabled={helperThreeQuartersUsed || !canApplyLifeline(question.answers, eliminatedIndices, 3)}
+                onClick={() => applyLifeline(3, 'threeQuarters')}
+              >
+                {t.helperThreeQuarters}
+              </HelperLifelineButton>
+            </HelperLifelineRow>
+            <HelperLifelineCaption>{t.helperCaption}</HelperLifelineCaption>
+          </>
+        )
       )}
 
-      {/* Action button */}
-      <ActionButton
-        onClick={!checked ? handleCheck : handleNext}
-        disabled={!checked && (selectedAnswers.size === 0 || timeLeft === 0)}
-      >
-        {!checked
-          ? t.checkAnswer
-          : currentQuestion < questions.length - 1
-          ? t.nextQuestion
-          : t.continue}
-      </ActionButton>
+      </TriviaMainScroll>
+
+      <TriviaBottomBar>
+        <ActionButton
+          onClick={!checked ? handleCheck : handleNext}
+          disabled={!checked && (selectedAnswers.size === 0 || timeLeft === 0)}
+        >
+          {!checked
+            ? t.checkAnswer
+            : currentQuestion < questions.length - 1
+            ? t.nextQuestion
+            : t.continue}
+        </ActionButton>
+      </TriviaBottomBar>
+
+      {toastVisible && feedbackType && (
+        <CenterToastOverlay aria-live="polite">
+          <CenterToastBubble
+            variant={
+              feedbackType === 'correct'
+                ? 'correct'
+                : feedbackType === 'partial'
+                  ? 'partial'
+                  : 'incorrect'
+            }
+          >
+            {feedbackType === 'correct' && (
+              <>
+                <CorrectBigText>{t.correct}</CorrectBigText>
+                <PointsBadge>
+                  +{questionScore} {t.pointsFull}
+                </PointsBadge>
+              </>
+            )}
+            {feedbackType === 'partial' && (
+              <>
+                <PartialText>{t.partiallyCorrect}</PartialText>
+                <PointsBadgePartial>
+                  +{questionScore} {t.pointsFull}
+                </PointsBadgePartial>
+              </>
+            )}
+            {feedbackType === 'incorrect' && (
+              <>
+                <IncorrectToastText>{t.incorrect}</IncorrectToastText>
+                {questionScore > 0 ? (
+                  <PointsBadge>
+                    +{questionScore} {t.pointsFull}
+                  </PointsBadge>
+                ) : null}
+              </>
+            )}
+          </CenterToastBubble>
+        </CenterToastOverlay>
+      )}
 
       <HintModals
         hintText={settings.hint?.text}

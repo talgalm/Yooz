@@ -546,6 +546,8 @@ export const ModalOverlay = styled('div')({
   alignItems: 'center',
   justifyContent: 'center',
   zIndex: 1000,
+  overflow: 'hidden',
+  overscrollBehavior: 'none',
 });
 
 export const ModalCard = styled('div')({

@@ -50,8 +50,10 @@ export const texts = {
     markCorrect: 'Correct',
     correctAnswerPoints: 'Points per correct answer selected',
     wrongAnswerPenalty: 'Penalty per wrong answer selected',
-    triviaTimeLimitSeconds: 'Time limit per question (seconds, 0 = no limit)',
+    triviaTimeLimitSeconds:
+      'Time per question (seconds) — each question; not the full game. 0 = no limit.',
     shuffleAnswers: 'Shuffle answer order',
+    includeHelpers: 'Include helpers (one-time 1/2 or 3/4 per game)',
     noQuestions: 'Add at least one question with at least 2 answers.',
     ageRange: 'Age Range (optional)',
     ageRangeMin: 'Min Age',
@@ -78,6 +80,8 @@ export const texts = {
     basePoints: 'Base points for completing puzzle',
     speedBonusMax: 'Maximum speed bonus points',
     puzzleTimeLimitSeconds: 'Time target for speed bonus (seconds)',
+    puzzleQuestionTimeLimitSeconds:
+      'Time per question (seconds) — default 10 if empty. 0 = no limit for this question.',
     puzzleShuffleAnswers: 'Shuffle answer order',
     noPuzzleQuestions: 'Add at least one question with at least 2 answers.',
     noPuzzleImage: 'Puzzle image is required.',
@@ -174,8 +178,10 @@ export const texts = {
     markCorrect: 'נכון',
     correctAnswerPoints: 'ניקוד לכל תשובה נכונה שנבחרה',
     wrongAnswerPenalty: 'הפחתה לכל תשובה שגויה שנבחרה',
-    triviaTimeLimitSeconds: 'מגבלת זמן לשאלה (שניות, 0 = ללא)',
+    triviaTimeLimitSeconds:
+      'זמן לכל שאלה (שניות) — לכל שאלה בנפרד, לא למשחק כולו. 0 = ללא מגבלה.',
     shuffleAnswers: 'ערבוב סדר התשובות',
+    includeHelpers: 'כלול עוזרים (חד-פעמי: 1/2 או 3/4 למשחק)',
     noQuestions: 'הוסיפו לפחות שאלה אחת עם לפחות 2 תשובות.',
     ageRange: 'טווח גילאים (אופציונלי)',
     ageRangeMin: 'גיל מינ׳',
@@ -202,6 +208,8 @@ export const texts = {
     basePoints: 'ניקוד בסיס להשלמת הפאזל',
     speedBonusMax: 'ניקוד בונוס מהירות מקסימלי',
     puzzleTimeLimitSeconds: 'זמן יעד לבונוס מהירות (שניות)',
+    puzzleQuestionTimeLimitSeconds:
+      'זמן לשאלה (שניות) — ברירת מחדל 10 אם ריק. 0 = ללא מגבלה לשאלה זו.',
     puzzleShuffleAnswers: 'ערבוב סדר התשובות',
     noPuzzleQuestions: 'הוסיפו לפחות שאלה אחת עם לפחות 2 תשובות.',
     noPuzzleImage: 'תמונת פאזל נדרשת.',

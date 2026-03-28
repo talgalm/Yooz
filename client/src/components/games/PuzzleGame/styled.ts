@@ -21,13 +21,16 @@ const BTN_RED = '#e74c3c';
 const BTN_RED_DARK = '#c0392b';
 const BTN_GREEN = '#2ecc71';
 const BTN_GREEN_DARK = '#27ae60';
+const BTN_WRONG_RED = BTN_RED;
 
 // Title
 const TITLE_BLUE = '#2980b9';
 
-// Finish screen (purple design, matches nature landscape theme)
+// Finish screen & primary actions (purple — matches other stations / trivia)
 const FINISH_PURPLE = '#6c5ce7';
 const FINISH_PURPLE_DARK = '#5b4cd4';
+const BTN_PURPLE = FINISH_PURPLE;
+const BTN_PURPLE_DARK = FINISH_PURPLE_DARK;
 
 // Finish banner (purple)
 const LEAF_BANNER_BG = FINISH_PURPLE;
@@ -176,21 +179,21 @@ export const IntroPieceCount = styled('div')({
 });
 
 export const IntroStartButton = styled('button')({
-  background: BTN_RED,
+  background: BTN_PURPLE,
   color: WHITE,
   fontSize: '1.6rem',
   fontWeight: 700,
   padding: '14px 48px',
   borderRadius: 15,
-  border: `4px solid ${BTN_RED_DARK}`,
+  border: `4px solid ${BTN_PURPLE_DARK}`,
   cursor: 'pointer',
   fontFamily: 'inherit',
-  boxShadow: `0 5px 0 ${BTN_RED_DARK}, 0 8px 15px rgba(0,0,0,0.2)`,
+  boxShadow: `0 5px 0 ${BTN_PURPLE_DARK}, 0 8px 15px rgba(0,0,0,0.2)`,
   transition: 'all 0.1s ease',
   animation: `${floatIn} 0.5s ease-out 0.25s both`,
   '&:active': {
     transform: 'translateY(4px)',
-    boxShadow: `0 1px 0 ${BTN_RED_DARK}, 0 3px 8px rgba(0,0,0,0.2)`,
+    boxShadow: `0 1px 0 ${BTN_PURPLE_DARK}, 0 3px 8px rgba(0,0,0,0.2)`,
   },
 });
 
@@ -213,14 +216,42 @@ export const PuzzleContainer = styled('div')({
   width: '100%',
   flex: 1,
   minHeight: 0,
+  alignSelf: 'stretch',
   background: 'transparent',
   overflow: 'hidden',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '6px 12px 10px',
+  padding: '6px 12px 0',
   boxSizing: 'border-box',
-  gap: 8,
+  gap: 6,
+});
+
+/** Scrollable question body; bottom bar stays fixed. */
+export const PuzzleMainScroll = styled('div')({
+  flex: 1,
+  minHeight: 0,
+  minWidth: 0,
+  width: '100%',
+  overflow: 'hidden',
+  overscrollBehavior: 'none',
+  touchAction: 'manipulation',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 2,
+  paddingBottom: 8,
+  boxSizing: 'border-box',
+});
+
+/** Fixed footer for Check / Next — safe area inset. */
+export const PuzzleBottomBar = styled('div')({
+  width: '100%',
+  maxWidth: '100%',
+  flexShrink: 0,
+  boxSizing: 'border-box',
+  paddingTop: 8,
+  paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
 });
 
 export const PuzzleDecorations = styled('div')({
@@ -270,6 +301,13 @@ export const TopBarItem = styled('span')({
   alignItems: 'center',
   gap: 4,
 });
+
+export const TopBarTimer = styled('span')<{ critical?: boolean }>(({ critical }) => ({
+  fontSize: 13,
+  fontWeight: 700,
+  color: critical ? BTN_PURPLE_DARK : TEXT_DARK,
+  transition: 'color 0.3s ease',
+}));
 
 // ─── Puzzle Grid ───
 
@@ -440,16 +478,16 @@ export const AnswerButton = styled('button')<{
 // ─── Action Button ───
 
 export const ActionButton = styled('button')<{ disabled?: boolean }>(({ disabled }) => ({
-  background: disabled ? '#bdc3c7' : BTN_RED,
+  background: disabled ? '#bdc3c7' : BTN_PURPLE,
   color: WHITE,
   fontSize: 16,
   fontWeight: 700,
   padding: '10px 20px',
   borderRadius: 10,
-  border: `3px solid ${disabled ? '#95a5a6' : BTN_RED_DARK}`,
+  border: `3px solid ${disabled ? '#95a5a6' : BTN_PURPLE_DARK}`,
   cursor: disabled ? 'default' : 'pointer',
   fontFamily: 'inherit',
-  boxShadow: disabled ? 'none' : `0 3px 0 ${BTN_RED_DARK}`,
+  boxShadow: disabled ? 'none' : `0 3px 0 ${BTN_PURPLE_DARK}`,
   transition: 'all 0.1s ease',
   width: '100%',
   flexShrink: 0,
@@ -458,58 +496,65 @@ export const ActionButton = styled('button')<{ disabled?: boolean }>(({ disabled
   opacity: disabled ? 0.6 : 1,
   '&:active': !disabled ? {
     transform: 'translateY(3px)',
-    boxShadow: `0 0 0 ${BTN_RED_DARK}`,
+    boxShadow: `0 0 0 ${BTN_PURPLE_DARK}`,
   } : {},
 }));
 
-// ─── Feedback (overlays — does NOT push layout) ───
+// ─── Center-screen feedback toast (~1s, matches trivia) ───
 
-export const FeedbackFloater = styled('div')({
-  width: '100%',
-  height: 0,
-  overflow: 'visible',
+export const CenterToastOverlay = styled('div')({
+  position: 'fixed',
+  inset: 0,
   display: 'flex',
+  alignItems: 'center',
   justifyContent: 'center',
-  position: 'relative',
-  zIndex: 10,
+  pointerEvents: 'none',
+  zIndex: 200,
+  padding: 16,
+  boxSizing: 'border-box',
 });
 
-export const FeedbackContainer = styled('div')({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: 8,
-  position: 'relative',
-  animation: `${feedbackPop} 0.3s ease-out`,
-  transform: 'translateY(-50%)',
+export const CenterToastBubble = styled('div')<{ variant: 'correct' | 'incorrect' }>(({ variant }) => {
+  const border = variant === 'correct' ? BTN_GREEN : BTN_WRONG_RED;
+  return {
+    background: 'rgba(255,255,255,0.96)',
+    border: `3px solid ${border}`,
+    borderRadius: 18,
+    padding: '14px 22px',
+    boxShadow: '0 10px 40px rgba(0,0,0,0.18)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 10,
+    maxWidth: 'min(340px, 92vw)',
+    animation: `${feedbackPop} 0.35s ease-out`,
+  };
 });
 
 export const CorrectBigText = styled('div')({
-  fontSize: 42,
+  fontSize: 22,
   fontWeight: 900,
   color: BTN_GREEN,
-  textShadow: '2px 2px 0 #fff, -1px -1px 0 #fff',
+  textShadow: '1px 1px 0 #fff, -1px -1px 0 #fff',
+  lineHeight: 1,
+});
+
+export const IncorrectToastText = styled('div')({
+  fontSize: 22,
+  fontWeight: 900,
+  color: BTN_WRONG_RED,
+  textShadow: '1px 1px 0 #fff',
   lineHeight: 1,
 });
 
 export const PieceRevealedBadge = styled('div')({
   background: '#d5f5e3',
   color: BTN_GREEN_DARK,
-  borderRadius: 20,
-  padding: '8px 22px',
-  fontSize: 17,
+  borderRadius: 16,
+  padding: '6px 14px',
+  fontSize: 15,
   fontWeight: 700,
   border: `2px solid ${BTN_GREEN}`,
-});
-
-export const WrongBigIcon = styled('div')({
-  fontSize: 56,
-  fontWeight: 900,
-  color: BTN_RED,
-  lineHeight: 1,
-  textShadow: '2px 2px 0 #fff, -1px -1px 0 #fff',
-  animation: `${feedbackPop} 0.3s ease-out`,
-  transform: 'translateY(-50%)',
 });
 
 export const RetryBadge = styled('div')({

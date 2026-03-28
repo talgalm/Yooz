@@ -133,6 +133,7 @@ export interface TriviaQuestion {
 export interface TriviaScoringConfig {
   correctAnswerPoints: number;
   wrongAnswerPenalty: number;
+  /** Seconds allowed for each question (timer resets every question; not a whole-game cap). 0 or omit = no limit. */
   timeLimitSeconds?: number;
 }
 
@@ -141,6 +142,8 @@ export interface TriviaGameSettings {
   questions: TriviaQuestion[];
   scoring: TriviaScoringConfig;
   shuffleAnswers?: boolean;
+  /** When true, players get one-time 1/2 or 3/4 wrong-answer elimination per game. */
+  includeHelpers?: boolean;
 }
 
 // ─── Ball Game Settings ───

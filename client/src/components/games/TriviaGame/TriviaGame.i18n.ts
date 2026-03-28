@@ -30,6 +30,9 @@ export const texts = {
     hintConfirm: 'Use Hint',
     hintTitle: 'Hint',
     hintClose: 'Got it',
+    helperHalf: '1/2',
+    helperThreeQuarters: '3/4',
+    helperCaption: 'Each helper once per game — removes wrong answers',
   },
   he: {
     checkAnswer: 'בדיקת תשובה',
@@ -62,5 +65,8 @@ export const texts = {
     hintConfirm: 'השתמש ברמז',
     hintTitle: 'רמז',
     hintClose: 'הבנתי',
+    helperHalf: '1/2',
+    helperThreeQuarters: '3/4',
+    helperCaption: 'כל עוזר פעם אחת למשחק — הסרת תשובות שגויות',
   },
 };

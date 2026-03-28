@@ -18,8 +18,11 @@ import {
   IntroStartButton,
   IntroYoozLogo,
   PuzzleContainer,
+  PuzzleMainScroll,
+  PuzzleBottomBar,
   TopBar,
   TopBarItem,
+  TopBarTimer,
   PuzzleFullImg,
   PuzzleGridOverlay,
   PuzzlePiece,
@@ -29,11 +32,11 @@ import {
   AnswerGrid,
   AnswerButton,
   ActionButton,
-  FeedbackFloater,
-  FeedbackContainer,
+  CenterToastOverlay,
+  CenterToastBubble,
   CorrectBigText,
+  IncorrectToastText,
   PieceRevealedBadge,
-  WrongBigIcon,
   RetryBadge,
   NatureMediaContainer,
   NatureMediaImage,
@@ -114,6 +117,8 @@ interface PuzzleQuestion {
   text: string;
   media?: string;
   answers: PuzzleAnswer[];
+  /** Per-question countdown; 0 or omitted with default handling = see client. */
+  timeLimitSeconds?: number;
   ageRange?: AgeRange;
 }
 
@@ -180,7 +185,6 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [checked, setChecked] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
 
   // Stats
   const [correctCount, setCorrectCount] = useState(0);
@@ -196,10 +200,18 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  /** Per-question countdown (same pattern as trivia). */
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const questionCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** Bumps when advancing so the timer resets even if the same question index returns later. */
+  const [questionTurnId, setQuestionTurnId] = useState(0);
+
   // Track revealed pieces in a ref to avoid stale closure in revealRandomPiece
   const revealedPiecesRef = useRef<Set<number>>(new Set());
   const elapsedSecondsRef = useRef(0);
   const pendingTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const processedQuestionsRef = useRef(processedQuestions);
+  processedQuestionsRef.current = processedQuestions;
 
   // Keep refs in sync
   useEffect(() => {
@@ -265,7 +277,7 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
     setSelectedAnswer(null);
     setChecked(false);
     setIsCorrect(false);
-    setShowFeedback(false);
+    setQuestionTurnId((n) => n + 1);
 
     const nextPos = queuePosRef.current + 1;
 
@@ -321,34 +333,73 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
     }
   }, [totalPieces, scoring, advanceToNextQuestion]);
 
-  const handleCheck = () => {
-    if (checked || selectedAnswer === null || currentQuestionIndex === null) return;
+  const handleCheck = useCallback(() => {
+    if (checked || currentQuestionIndex === null) return;
     const question = processedQuestions[currentQuestionIndex];
     if (!question) return;
 
-    const answer = question.answers[selectedAnswer];
-    const correct = answer?.isCorrect || false;
+    if (questionCountdownRef.current) {
+      clearInterval(questionCountdownRef.current);
+      questionCountdownRef.current = null;
+    }
+
+    const correct =
+      selectedAnswer !== null &&
+      !!question.answers[selectedAnswer]?.isCorrect;
 
     setIsCorrect(correct);
     setChecked(true);
-    setShowFeedback(true);
     setTotalAttempts((prev) => prev + 1);
 
     if (correct) {
       setCorrectCount((prev) => prev + 1);
-      // Show feedback 3s, then reveal piece
       pendingTimeouts.current.push(setTimeout(() => {
         revealRandomPiece();
       }, 3000));
     } else {
-      // Collect wrong answer for next round
       wrongThisRoundRef.current.push(currentQuestionIndex);
-      // Auto-advance after 3s
       pendingTimeouts.current.push(setTimeout(() => {
         advanceToNextQuestion();
       }, 3000));
     }
-  };
+  }, [checked, currentQuestionIndex, selectedAnswer, processedQuestions, revealRandomPiece, advanceToNextQuestion]);
+
+  // Reset per-question timer when the active question changes (or game starts).
+  useEffect(() => {
+    if (!gameStarted || gameComplete || currentQuestionIndex === null) return;
+    const q = processedQuestionsRef.current[currentQuestionIndex];
+    if (!q) return;
+    const limit = q.timeLimitSeconds ?? GAME_CONSTANTS.PUZZLE_DEFAULT_QUESTION_TIME_SECONDS;
+    if (limit <= 0) {
+      setTimeLeft(null);
+      return;
+    }
+    setTimeLeft(limit);
+  }, [currentQuestionIndex, questionTurnId, gameStarted, gameComplete]);
+
+  // Countdown tick
+  useEffect(() => {
+    if (timeLeft === null || timeLeft <= 0 || checked) return;
+    questionCountdownRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev === null || prev <= 1) {
+          if (questionCountdownRef.current) clearInterval(questionCountdownRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => {
+      if (questionCountdownRef.current) clearInterval(questionCountdownRef.current);
+    };
+  }, [timeLeft === null, timeLeft === 0, checked]);
+
+  // Time's up — submit as incorrect (no selection or partial is still "answered")
+  useEffect(() => {
+    if (timeLeft === 0 && !checked) {
+      handleCheck();
+    }
+  }, [timeLeft, checked, handleCheck]);
 
   const handleNext = () => {
     // Fallback manual advance (shouldn't be needed with auto-advance)
@@ -373,6 +424,18 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  /** ~1s center toast — same pattern as trivia (does not shift layout). */
+  const [toastVisible, setToastVisible] = useState(false);
+  useEffect(() => {
+    if (!checked) {
+      setToastVisible(false);
+      return;
+    }
+    setToastVisible(true);
+    const id = window.setTimeout(() => setToastVisible(false), 1000);
+    return () => clearTimeout(id);
+  }, [checked, currentQuestionIndex]);
 
   // ─── Opening / Intro screen ───
   if (!gameStarted) {
@@ -451,77 +514,90 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
       {/* Top bar: pieces | timer */}
       <TopBar>
         <TopBarItem>{t.piecesRevealed}: {revealedPieces.size}/{totalPieces}</TopBarItem>
+        {timeLeft !== null && (
+          <TopBarTimer critical={timeLeft <= GAME_CONSTANTS.TIMER_WARNING_SECONDS}>
+            {timeLeft}s
+          </TopBarTimer>
+        )}
         <TopBarItem>{t.timeElapsed}: {formatTime(elapsedSeconds)}</TopBarItem>
       </TopBar>
 
-      {/* Question box */}
-      <QuestionBox key={currentQuestionIndex}>
-        <QuestionBadge>{t.questionLabel}</QuestionBadge>
-        <QuestionContent>{question.text}</QuestionContent>
-      </QuestionBox>
+      <PuzzleMainScroll>
+        {/* Question box */}
+        <QuestionBox key={currentQuestionIndex}>
+          <QuestionBadge>{t.questionLabel}</QuestionBadge>
+          <QuestionContent>{question.text}</QuestionContent>
+        </QuestionBox>
 
-      {/* Question media */}
-      {question.media && (
-        <NatureMediaContainer>
-          <NatureMediaImage src={question.media} alt="" />
-        </NatureMediaContainer>
-      )}
+        {/* Question media */}
+        {question.media && (
+          <NatureMediaContainer>
+            <NatureMediaImage src={question.media} alt="" />
+          </NatureMediaContainer>
+        )}
 
-      {/* Hint button / spacer */}
-      {settings.hint?.enabled && settings.hint.text && (
-        checked ? (
-          <HintSpacer aria-hidden="true" />
-        ) : (
-          <HintButton
-            hintUsed={gameHint.hintUsed}
-            useHintLabel={t.useHint}
-            showHintLabel={t.showHint}
-            onClick={gameHint.handleHintClick}
-          />
-        )
-      )}
-
-      {/* Feedback — floats over content, does NOT push answers down */}
-      {showFeedback && (
-        <FeedbackFloater>
-          {isCorrect ? (
-            <FeedbackContainer>
-              <CorrectBigText>{t.correct}</CorrectBigText>
-              <PieceRevealedBadge>{t.pieceRevealed}</PieceRevealedBadge>
-            </FeedbackContainer>
+        {/* Hint button / spacer */}
+        {settings.hint?.enabled && settings.hint.text && (
+          checked ? (
+            <HintSpacer aria-hidden="true" />
           ) : (
-            <FeedbackContainer>
-              <WrongBigIcon>✕</WrongBigIcon>
-              <RetryBadge>{t.tryAgainLater}</RetryBadge>
-            </FeedbackContainer>
-          )}
-        </FeedbackFloater>
+            <HintButton
+              hintUsed={gameHint.hintUsed}
+              useHintLabel={t.useHint}
+              showHintLabel={t.showHint}
+              onClick={gameHint.handleHintClick}
+            />
+          )
+        )}
+
+        {/* Answer grid (2×2) */}
+        <AnswerGrid>
+          {question.answers.map((answer, index) => (
+            <AnswerButton
+              key={index}
+              selected={selectedAnswer === index}
+              checked={checked}
+              isCorrect={answer.isCorrect}
+              isSelected={selectedAnswer === index}
+              onClick={() => { if (!checked) setSelectedAnswer(index); }}
+              disabled={checked}
+            >
+              {answer.text}
+            </AnswerButton>
+          ))}
+        </AnswerGrid>
+      </PuzzleMainScroll>
+
+      <PuzzleBottomBar>
+        <ActionButton
+          onClick={!checked ? handleCheck : handleNext}
+          disabled={
+            !checked &&
+            selectedAnswer === null &&
+            (timeLeft === null || timeLeft > 0)
+          }
+        >
+          {!checked ? t.checkAnswer : t.nextQuestion}
+        </ActionButton>
+      </PuzzleBottomBar>
+
+      {toastVisible && checked && (
+        <CenterToastOverlay aria-live="polite">
+          <CenterToastBubble variant={isCorrect ? 'correct' : 'incorrect'}>
+            {isCorrect ? (
+              <>
+                <CorrectBigText>{t.correct}</CorrectBigText>
+                <PieceRevealedBadge>{t.pieceRevealed}</PieceRevealedBadge>
+              </>
+            ) : (
+              <>
+                <IncorrectToastText>{t.incorrect}</IncorrectToastText>
+                <RetryBadge>{t.tryAgainLater}</RetryBadge>
+              </>
+            )}
+          </CenterToastBubble>
+        </CenterToastOverlay>
       )}
-
-      {/* Answer grid (2×2) */}
-      <AnswerGrid>
-        {question.answers.map((answer, index) => (
-          <AnswerButton
-            key={index}
-            selected={selectedAnswer === index}
-            checked={checked}
-            isCorrect={answer.isCorrect}
-            isSelected={selectedAnswer === index}
-            onClick={() => { if (!checked) setSelectedAnswer(index); }}
-            disabled={checked}
-          >
-            {answer.text}
-          </AnswerButton>
-        ))}
-      </AnswerGrid>
-
-      {/* Action button */}
-      <ActionButton
-        onClick={!checked ? handleCheck : handleNext}
-        disabled={!checked && selectedAnswer === null}
-      >
-        {!checked ? t.checkAnswer : t.nextQuestion}
-      </ActionButton>
 
       {/* Puzzle reveal overlay — shown after correct answer */}
       {showPuzzleReveal && (

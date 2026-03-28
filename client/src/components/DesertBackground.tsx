@@ -7,6 +7,7 @@ const BOTTOM_ZONE = 240;
 const Wrapper = styled('div')({
   position: 'relative',
   minHeight: '100dvh',
+  height: '100dvh',
   display: 'flex',
   flexDirection: 'column',
   overflow: 'hidden',
@@ -16,9 +17,10 @@ const Wrapper = styled('div')({
 const ContentLayer = styled('div')({
   position: 'relative',
   zIndex: 1,
+  flex: 1,
+  minHeight: 0,
   display: 'flex',
   flexDirection: 'column',
-  minHeight: '100%',
 });
 
 const heatShimmer = keyframes`

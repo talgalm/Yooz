@@ -56,6 +56,8 @@ export const GAME_CONSTANTS = {
   TIMER_CRITICAL_SECONDS: 3,
   /** Default time limit for puzzles (seconds) */
   PUZZLE_DEFAULT_TIME_LIMIT: 300,
+  /** Per-question countdown when not set on the question (seconds); 0 on question = no limit */
+  PUZZLE_DEFAULT_QUESTION_TIME_SECONDS: 10,
   /** Auto-exit countdown (seconds) */
   FINISH_COUNTDOWN_SECONDS: 90,
   /** Incorrect feedback display delay (ms) */

@@ -53,6 +53,7 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
       text: '',
       media: '',
       answers: [{ text: '', isCorrect: true }, { text: '', isCorrect: false }],
+      timeLimitSeconds: 10,
     });
 
     const [puzzleImage, setPuzzleImage] = useState('');
@@ -95,13 +96,14 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
       setGridRows(rows);
       setRetryGap((s.retryGap as number) || 3);
       if (Array.isArray(s.questions)) {
-        const loaded = (s.questions as { text: string; media?: string; answers: { text: string; isCorrect: boolean }[]; ageRange?: { minAge: number; maxAge: number } }[]).map((q) => ({
+        const loaded = (s.questions as { text: string; media?: string; timeLimitSeconds?: number; answers: { text: string; isCorrect: boolean }[]; ageRange?: { minAge: number; maxAge: number } }[]).map((q) => ({
           text: q.text || '',
           media: q.media || '',
           answers: (q.answers || []).map((a) => ({
             text: a.text || '',
             isCorrect: a.isCorrect || false,
           })),
+          timeLimitSeconds: typeof q.timeLimitSeconds === 'number' ? q.timeLimitSeconds : 10,
           ageRange: q.ageRange,
         }));
         // Pad with empty questions if fewer than grid target
@@ -151,6 +153,7 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
                   text: a.text.trim(),
                   isCorrect: a.isCorrect,
                 })),
+              timeLimitSeconds: q.timeLimitSeconds ?? 10,
               ...(q.ageRange && { ageRange: q.ageRange }),
             })),
           scoring: {
@@ -181,6 +184,7 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
           qTexts.map(([text, correct, wrong]) => ({
             text,
             media: '',
+            timeLimitSeconds: 10,
             answers: [
               { text: correct, isCorrect: true },
               { text: wrong, isCorrect: false },
@@ -194,10 +198,7 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
 
     // ─── Puzzle question management ───
     const addPuzzleQuestion = () => {
-      setPuzzleQuestions((prev) => [
-        ...prev,
-        { text: '', media: '', answers: [{ text: '', isCorrect: true }, { text: '', isCorrect: false }] },
-      ]);
+      setPuzzleQuestions((prev) => [...prev, makeEmptyQuestion()]);
     };
 
     const removePuzzleQuestion = (qi: number) => {
@@ -206,6 +207,12 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
 
     const updatePuzzleQuestion = (qi: number, field: 'text' | 'media', value: string) => {
       setPuzzleQuestions((prev) => prev.map((q, i) => (i === qi ? { ...q, [field]: value } : q)));
+    };
+
+    const updatePuzzleQuestionTimeLimit = (qi: number, value: number) => {
+      setPuzzleQuestions((prev) =>
+        prev.map((q, i) => (i === qi ? { ...q, timeLimitSeconds: Number.isFinite(value) ? value : 10 } : q))
+      );
     };
 
     const addPuzzleAnswer = (qi: number) => {
@@ -351,6 +358,16 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
                   onChange={(e) => updatePuzzleQuestion(qi, 'media', e.target.value)}
                 />
               </MediaUploadRow>
+
+              <ScoringRow>
+                <ScoringLabel>{t.puzzleQuestionTimeLimitSeconds}</ScoringLabel>
+                <ScoringInput
+                  type="number"
+                  value={pq.timeLimitSeconds ?? 10}
+                  onChange={(e) => updatePuzzleQuestionTimeLimit(qi, Number(e.target.value))}
+                  min={0}
+                />
+              </ScoringRow>
 
               {/* Answers */}
               <SubLabel>

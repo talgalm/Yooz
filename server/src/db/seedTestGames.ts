@@ -82,8 +82,8 @@ async function seed() {
       ],
       scoring: {
         correctAnswerPoints: 10,
-        wrongAnswerPenalty: 5,
-        timeLimitSeconds: 30,
+        wrongAnswerPenalty: 0,
+        timeLimitSeconds: 10,
       },
       shuffleAnswers: true,
     },

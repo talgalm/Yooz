@@ -1,5 +1,5 @@
 import { styled } from '@mui/material/styles';
-import { PRIMARY, PRIMARY_LIGHT, ERROR, BORDER, TEXT_LIGHT } from '../styled';
+import { PRIMARY, PRIMARY_LIGHT, ERROR, BORDER, TEXT_LIGHT, TEXT } from '../styled';
 
 // ─── Colors (game-specific) ───
 export const GREEN = '#28a745';
@@ -545,6 +545,38 @@ export const ModalButtonRow = styled('div')({
   justifyContent: 'center',
 });
 
+/** Stacked full-width modal actions (hint dialogs) */
+export const ModalButtonColumn = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 12,
+  width: '100%',
+  alignItems: 'stretch',
+});
+
+export const HintModalBulbWrap = styled('div')({
+  display: 'flex',
+  justifyContent: 'center',
+  marginBottom: 12,
+});
+
+/** Grey label above hint content (e.g. “Hint”) */
+export const HintModalHeading = styled('p')({
+  fontWeight: 600,
+  fontSize: 15,
+  color: TEXT_LIGHT,
+  margin: '0 0 8px',
+});
+
+/** Hint copy — dark body text */
+export const HintModalHintBody = styled('p')({
+  margin: '0 0 20px',
+  whiteSpace: 'pre-wrap',
+  color: TEXT,
+  fontSize: 16,
+  lineHeight: 1.45,
+});
+
 export const ModalTitle = styled('p')({
   fontWeight: 600,
   color: '#333',
@@ -672,6 +704,7 @@ export const SummaryScoreValue = styled('span')({
 
 export const PlayingContent = styled('div')({
   flex: 1,
+  minHeight: 0,
   display: 'flex',
   flexDirection: 'column',
   padding: '0 16px 16px',

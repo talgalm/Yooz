@@ -123,7 +123,7 @@ const AnimatedStage = styled('div')({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  minHeight: '100dvh',
+  minHeight: 0,
   position: 'relative',
   animation: `${pageFadeIn} 620ms cubic-bezier(0.22, 1, 0.36, 1) both`,
 });
@@ -135,6 +135,7 @@ const AnimatedHeader = styled('div')({
 const AnimatedContent = styled('div')({
   position: 'relative',
   flex: 1,
+  minHeight: 0,
   display: 'flex',
   flexDirection: 'column',
   animation: `${pageFadeIn} 680ms cubic-bezier(0.22, 1, 0.36, 1) 90ms both`,

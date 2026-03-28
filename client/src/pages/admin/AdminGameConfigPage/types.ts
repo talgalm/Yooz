@@ -45,6 +45,8 @@ export interface PuzzleQuestion {
   text: string;
   media: string;
   answers: PuzzleAnswer[];
+  /** Seconds to answer; omit or default 10 in UI. 0 = no per-question timer. */
+  timeLimitSeconds?: number;
   ageRange?: AgeRangeOption;
 }
 

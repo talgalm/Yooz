@@ -70,8 +70,11 @@ const CloseButton = styled('button')({
 
 const Body = styled('div')({
   flex: 1,
+  minHeight: 0,
   overflow: 'auto',
   position: 'relative',
+  display: 'flex',
+  flexDirection: 'column',
 });
 
 const StationContent = styled('div')({

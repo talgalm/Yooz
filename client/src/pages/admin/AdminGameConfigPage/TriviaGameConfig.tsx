@@ -49,10 +49,11 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
     ]);
     const [triviaScoring, setTriviaScoring] = useState<TriviaScoring>({
       correctAnswerPoints: 10,
-      wrongAnswerPenalty: 5,
-      timeLimitSeconds: 0,
+      wrongAnswerPenalty: 0,
+      timeLimitSeconds: 10,
     });
     const [shuffleAnswers, setShuffleAnswers] = useState(true);
+    const [includeHelpers, setIncludeHelpers] = useState(true);
 
     // Load initial settings
     useEffect(() => {
@@ -75,15 +76,21 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
       }
       if (s.scoring && typeof s.scoring === 'object') {
         const sc = s.scoring as Record<string, unknown>;
+        const hasTimeKey = Object.prototype.hasOwnProperty.call(sc, 'timeLimitSeconds');
+        const rawTime = sc.timeLimitSeconds;
+        const timeLimitSeconds = hasTimeKey
+          ? Math.max(0, Number(rawTime) || 0)
+          : 0; // legacy games without the field had no per-question limit
         setTriviaScoring({
           correctAnswerPoints: (sc.correctAnswerPoints as number) ?? 10,
-          wrongAnswerPenalty: (sc.wrongAnswerPenalty as number) ?? 5,
-          timeLimitSeconds: (sc.timeLimitSeconds as number) || 0,
+          wrongAnswerPenalty: (sc.wrongAnswerPenalty as number) ?? 0,
+          timeLimitSeconds,
         });
       }
       if (typeof s.shuffleAnswers === 'boolean') {
         setShuffleAnswers(s.shuffleAnswers);
       }
+      setIncludeHelpers(typeof s.includeHelpers === 'boolean' ? s.includeHelpers : true);
     }, [initialSettings]);
 
     useImperativeHandle(ref, () => ({
@@ -117,6 +124,7 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
             timeLimitSeconds: triviaScoring.timeLimitSeconds || undefined,
           },
           shuffleAnswers,
+          includeHelpers,
         };
       },
       fillRandom() {
@@ -166,8 +174,9 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
             ],
           },
         ]);
-        setTriviaScoring({ correctAnswerPoints: 10, wrongAnswerPenalty: 5, timeLimitSeconds: 30 });
+        setTriviaScoring({ correctAnswerPoints: 10, wrongAnswerPenalty: 0, timeLimitSeconds: 10 });
         setShuffleAnswers(true);
+        setIncludeHelpers(true);
       },
     }));
 
@@ -398,6 +407,16 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
                 onClick={() => setShuffleAnswers((v) => !v)}
               >
                 {shuffleAnswers ? 'ON' : 'OFF'}
+              </ScoringToggleButton>
+            </ScoringRow>
+            <ScoringRow>
+              <ScoringLabel>{t.includeHelpers}</ScoringLabel>
+              <ScoringToggleButton
+                type="button"
+                selected={includeHelpers}
+                onClick={() => setIncludeHelpers((v) => !v)}
+              >
+                {includeHelpers ? 'ON' : 'OFF'}
               </ScoringToggleButton>
             </ScoringRow>
           </VerticalStackGap10>
