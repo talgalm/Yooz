@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { styled } from '@mui/material/styles';
+import { ThemedSceneOverlayContext } from '../context/themedSceneOverlayContext';
 
 // ─── Layout constants (same as roadmap) ───
 
@@ -308,6 +309,7 @@ interface NatureBackgroundProps {
 export default function NatureBackground({ children }: NatureBackgroundProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
+  const [sceneOverlay, setSceneOverlay] = useState<React.ReactNode | null>(null);
 
   useEffect(() => {
     const el = wrapperRef.current;
@@ -332,10 +334,13 @@ export default function NatureBackground({ children }: NatureBackgroundProps) {
   );
 
   return (
-    <Wrapper ref={wrapperRef}>
-      {scene}
-      {decos}
-      <ContentLayer>{children}</ContentLayer>
-    </Wrapper>
+    <ThemedSceneOverlayContext.Provider value={setSceneOverlay}>
+      <Wrapper ref={wrapperRef}>
+        {scene}
+        {decos}
+        {sceneOverlay}
+        <ContentLayer>{children}</ContentLayer>
+      </Wrapper>
+    </ThemedSceneOverlayContext.Provider>
   );
 }

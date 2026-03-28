@@ -11,6 +11,7 @@ import {
   useRegisterActivityGameHeader,
   type ActivityGameHeaderPhase,
 } from '../../../context/activityPlayingHeaderContext';
+import { useThemedSceneOverlaySetter } from '../../../context/themedSceneOverlayContext';
 import { GameIntroHeaderBar, GameHeaderMuteButton } from '../styled';
 import {
   NatureContainer,
@@ -36,12 +37,17 @@ import {
   NatureMediaContainer,
   NatureMediaImage,
   IntroContainer,
+  IntroFullScreenSceneBackdrop,
+  PlayFullScreenSceneBackdrop,
+  PlayPhaseRoot,
   IntroContent,
-  IntroTitle,
-  IntroInfoBox,
-  IntroInfoText,
+  IntroGameTitleSticker,
+  IntroGameTitleLine,
+  IntroWelcomeMidSpacer,
+  IntroInstructions,
+  IntroInstructionsLine,
+  IntroInstructionsCustom,
   IntroStartButton,
-  IntroYoozLogo,
   FinishContainer,
   FinishContent,
   FinishTitleBanner,
@@ -189,6 +195,13 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
     });
   }, [allStatements, participantAge]);
 
+  const introStickerLines = useMemo(() => {
+    const lines = game.name
+      ? game.name.split(/\n/).map((line) => line.trim()).filter(Boolean)
+      : [];
+    return lines.length > 0 ? lines : null;
+  }, [game.name]);
+
   const [showInstructions, setShowInstructions] = useState(true);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -228,6 +241,21 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
     sounds.isMuted,
     sounds.toggleMute
   );
+
+  const setThemedSceneOverlay = useThemedSceneOverlaySetter();
+
+  useEffect(() => {
+    if (!setThemedSceneOverlay) return;
+    if (showInstructions) {
+      setThemedSceneOverlay(<IntroFullScreenSceneBackdrop aria-hidden />);
+    } else {
+      setThemedSceneOverlay(<PlayFullScreenSceneBackdrop aria-hidden />);
+    }
+    return () => setThemedSceneOverlay(null);
+  }, [showInstructions, setThemedSceneOverlay]);
+
+  /** Admin preview has no themed shell — paint play background inside the game area */
+  const playPhaseInlineBackdrop = !setThemedSceneOverlay;
 
   // Auto-complete if no statements
   useEffect(() => {
@@ -388,7 +416,7 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
   // ─── Opening / Instructions screen ───
   if (showInstructions) {
     return (
-      <IntroContainer dir="rtl">
+      <IntroContainer dir="rtl" $externalBackdrop={Boolean(setThemedSceneOverlay)}>
         {!activityHeaderAudio && (
           <GameIntroHeaderBar>
             <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
@@ -397,19 +425,35 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
           </GameIntroHeaderBar>
         )}
         <IntroContent>
-          <IntroTitle>{game.name || t.gameTitle}</IntroTitle>
+          <IntroGameTitleSticker dir="auto">
+            {introStickerLines ? (
+              introStickerLines.map((line, i) => (
+                <IntroGameTitleLine key={i}>{line}</IntroGameTitleLine>
+              ))
+            ) : (
+              <>
+                <IntroGameTitleLine>{t.gameTitleLine1}</IntroGameTitleLine>
+                <IntroGameTitleLine>{t.gameTitleLine2}</IntroGameTitleLine>
+              </>
+            )}
+          </IntroGameTitleSticker>
 
-          <IntroInfoBox>
-            <IntroInfoText>
-              {settings.instructions || t.gameTitle}
-            </IntroInfoText>
-          </IntroInfoBox>
+          <IntroWelcomeMidSpacer aria-hidden />
+
+          <IntroInstructions>
+            {settings.instructions?.trim() ? (
+              <IntroInstructionsCustom>{settings.instructions.trim()}</IntroInstructionsCustom>
+            ) : (
+              t.defaultInstructionLines.map((line, i) => (
+                <IntroInstructionsLine key={i}>{line}</IntroInstructionsLine>
+              ))
+            )}
+          </IntroInstructions>
 
           <IntroStartButton onClick={beginGame}>
             {t.start}
           </IntroStartButton>
 
-          <IntroYoozLogo><img src="/images/logo-white.png" alt="Yooz" style={{ height: 36 }} /></IntroYoozLogo>
         </IntroContent>
       </IntroContainer>
     );
@@ -418,19 +462,21 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
   // ─── Countdown screen (3-2-1) ───
   if (countdown !== null) {
     return (
-      <NatureCountdown dir="rtl">
-        {!activityHeaderAudio && (
-          <GameIntroHeaderBar>
-            <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
-              {sounds.isMuted ? '🔇' : '🔊'}
-            </GameHeaderMuteButton>
-          </GameIntroHeaderBar>
-        )}
-        <NatureCountdownBody>
-          <NatureCountdownLabel>{t.getReady}</NatureCountdownLabel>
-          <NatureCountdownNumber key={countdown}>{countdown}</NatureCountdownNumber>
-        </NatureCountdownBody>
-      </NatureCountdown>
+      <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
+        <NatureCountdown dir="rtl">
+          {!activityHeaderAudio && (
+            <GameIntroHeaderBar>
+              <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
+                {sounds.isMuted ? '🔇' : '🔊'}
+              </GameHeaderMuteButton>
+            </GameIntroHeaderBar>
+          )}
+          <NatureCountdownBody>
+            <NatureCountdownLabel>{t.getReady}</NatureCountdownLabel>
+            <NatureCountdownNumber key={countdown}>{countdown}</NatureCountdownNumber>
+          </NatureCountdownBody>
+        </NatureCountdown>
+      </PlayPhaseRoot>
     );
   }
 
@@ -439,15 +485,16 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
     if (noContent) return null;
     const accuracy = statements.length > 0 ? Math.round((correctCount / statements.length) * 100) : 0;
     return (
-      <FinishContainer dir="rtl">
-        {!activityHeaderAudio && (
-          <GameIntroHeaderBar>
-            <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
-              {sounds.isMuted ? '🔇' : '🔊'}
-            </GameHeaderMuteButton>
-          </GameIntroHeaderBar>
-        )}
-        <FinishContent>
+      <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
+        <FinishContainer dir="rtl">
+          {!activityHeaderAudio && (
+            <GameIntroHeaderBar>
+              <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
+                {sounds.isMuted ? '🔇' : '🔊'}
+              </GameHeaderMuteButton>
+            </GameIntroHeaderBar>
+          )}
+          <FinishContent>
           {/* Title banner */}
           <FinishTitleBanner>
             <LeafVeinSvg />
@@ -477,7 +524,8 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
           {/* Logo */}
           <FinishYoozLogo><img src="/images/logo-purple.png" alt="Yooz" style={{ height: 36 }} /></FinishYoozLogo>
         </FinishContent>
-      </FinishContainer>
+        </FinishContainer>
+      </PlayPhaseRoot>
     );
   }
 
@@ -488,7 +536,8 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
   const timerCritical = timeLeft <= GAME_CONSTANTS.TIMER_CRITICAL_SECONDS;
 
   return (
-    <NatureContainer dir="rtl">
+    <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
+      <NatureContainer dir="rtl">
       {/* Header */}
       <TFHeader>
         <TFHeaderLeft>
@@ -585,6 +634,7 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
         onDismissText={gameHint.dismissHintText}
         t={t}
       />
-    </NatureContainer>
+      </NatureContainer>
+    </PlayPhaseRoot>
   );
 }

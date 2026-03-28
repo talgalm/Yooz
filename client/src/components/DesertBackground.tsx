@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
+import { ThemedSceneOverlayContext } from '../context/themedSceneOverlayContext';
 
 const SKY_TOP = 190;
 const BOTTOM_ZONE = 240;
@@ -257,6 +258,7 @@ interface DesertBackgroundProps {
 export default function DesertBackground({ children }: DesertBackgroundProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
+  const [sceneOverlay, setSceneOverlay] = useState<React.ReactNode | null>(null);
 
   useEffect(() => {
     const el = wrapperRef.current;
@@ -281,16 +283,19 @@ export default function DesertBackground({ children }: DesertBackgroundProps) {
   );
 
   return (
-    <Wrapper ref={wrapperRef}>
-      {scene}
-      {dims.w > 0 && (
-        <>
-          <HeatWave style={{ left: '10%', top: 0, width: '25%', height: '40%', animationDelay: '0s' }} />
-          <HeatWave style={{ left: '50%', top: 0, width: '20%', height: '35%', animationDelay: '2s' }} />
-        </>
-      )}
-      {decos}
-      <ContentLayer>{children}</ContentLayer>
-    </Wrapper>
+    <ThemedSceneOverlayContext.Provider value={setSceneOverlay}>
+      <Wrapper ref={wrapperRef}>
+        {scene}
+        {dims.w > 0 && (
+          <>
+            <HeatWave style={{ left: '10%', top: 0, width: '25%', height: '40%', animationDelay: '0s' }} />
+            <HeatWave style={{ left: '50%', top: 0, width: '20%', height: '35%', animationDelay: '2s' }} />
+          </>
+        )}
+        {decos}
+        {sceneOverlay}
+        <ContentLayer>{children}</ContentLayer>
+      </Wrapper>
+    </ThemedSceneOverlayContext.Provider>
   );
 }

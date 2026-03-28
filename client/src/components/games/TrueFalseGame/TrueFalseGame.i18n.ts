@@ -1,6 +1,8 @@
 export const texts = {
   en: {
     gameTitle: 'True or False',
+    gameTitleLine1: 'True or',
+    gameTitleLine2: 'False',
     true: 'True',
     false: 'False',
     or: 'or',
@@ -28,9 +30,17 @@ export const texts = {
     hintTitle: 'Hint',
     hintClose: 'Got it',
     unanswered: 'No answer',
+    defaultInstructionLines: [
+      'Answer each question by',
+      'choosing between true and false.',
+      'You have limited time to answer',
+      'each question.',
+    ],
   },
   he: {
-    gameTitle: 'נכון או לא',
+    gameTitle: 'נכון או לא נכון',
+    gameTitleLine1: 'נכון או',
+    gameTitleLine2: 'לא נכון',
     true: 'נכון',
     false: 'לא נכון',
     or: 'או',
@@ -58,5 +68,11 @@ export const texts = {
     hintTitle: 'רמז',
     hintClose: 'הבנתי',
     unanswered: 'לא נענתה',
+    defaultInstructionLines: [
+      'יש לענות על השאלות מתוך',
+      'בחירה בין נכון לבין לא נכון',
+      'לרשותך זמן מוגבל למענה על',
+      'כל שאלה',
+    ],
   },
 };

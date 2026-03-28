@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
+import { ThemedSceneOverlayContext } from '../context/themedSceneOverlayContext';
 
 const SKY_TOP = 190;
 const BOTTOM_ZONE = 240;
@@ -284,6 +285,7 @@ interface OceanBackgroundProps {
 export default function OceanBackground({ children }: OceanBackgroundProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
+  const [sceneOverlay, setSceneOverlay] = useState<React.ReactNode | null>(null);
 
   useEffect(() => {
     const el = wrapperRef.current;
@@ -308,11 +310,14 @@ export default function OceanBackground({ children }: OceanBackgroundProps) {
   );
 
   return (
-    <Wrapper ref={wrapperRef}>
-      {scene}
-      {dims.w > 0 && <LightRays W={dims.w} />}
-      {decos}
-      <ContentLayer>{children}</ContentLayer>
-    </Wrapper>
+    <ThemedSceneOverlayContext.Provider value={setSceneOverlay}>
+      <Wrapper ref={wrapperRef}>
+        {scene}
+        {dims.w > 0 && <LightRays W={dims.w} />}
+        {decos}
+        {sceneOverlay}
+        <ContentLayer>{children}</ContentLayer>
+      </Wrapper>
+    </ThemedSceneOverlayContext.Provider>
   );
 }

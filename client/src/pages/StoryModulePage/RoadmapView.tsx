@@ -547,6 +547,9 @@ interface RoadmapViewProps {
   completedCount: number;
   /** Running total (games) minus hint penalties — same basis as the finish screen. */
   currentPoints: number;
+  /** Optional: animate header points from → to when returning from a game. */
+  pointsRoll?: { from: number; to: number } | null;
+  onPointsRollComplete?: () => void;
   showFootsteps: boolean;
   onFootstepsComplete: () => void;
   onNodeTap: (index: number) => void;
@@ -558,8 +561,8 @@ interface RoadmapViewProps {
 }
 
 export default function RoadmapView({
-  items, currentItemIndex, completedCount, currentPoints, showFootsteps,
-  onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, popupModal, t, theme,
+  items, currentItemIndex, completedCount, currentPoints, pointsRoll, onPointsRollComplete,
+  showFootsteps, onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, popupModal, t, theme,
 }: RoadmapViewProps) {
   const kit = useMemo(() => getThemeKit(theme), [theme]);
   const scrollRef   = useRef<HTMLDivElement>(null);
@@ -976,6 +979,8 @@ export default function RoadmapView({
     <ActivitySessionHeader
       onLogout={onLogout}
       currentPoints={currentPoints}
+      pointsRoll={pointsRoll}
+      onPointsRollComplete={onPointsRollComplete}
       t={t}
       thirdSlot={onViewLeaderboard ? (
         <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { styled } from '@mui/material/styles';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { keyframes, styled } from '@mui/material/styles';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HelpChatHeaderButton } from '../../components/HelpChat';
 const ROADMAP_HEADER_BTN_BORDER = '#d4d4d4';
@@ -110,6 +110,11 @@ const RoadmapHeaderPointsValue = styled('span')({
   fontVariantNumeric: 'tabular-nums',
 });
 
+const pointsDepositPulse = keyframes`
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 210, 74, 0.35); }
+  50% { box-shadow: 0 0 14px 3px rgba(245, 210, 74, 0.28); }
+`;
+
 /** Stacked coins — score / currency (distinct from leaderboard trophy). */
 export function SessionHeaderPointsIcon() {
   return (
@@ -152,6 +157,9 @@ export interface ActivitySessionHeaderProps {
   thirdSlot: React.ReactNode;
   /** e.g. station hint — rendered above the four-cell row. */
   topRow?: React.ReactNode;
+  /** When set, counts displayed points from `from` up to `to` (roadmap after a game). */
+  pointsRoll?: { from: number; to: number } | null;
+  onPointsRollComplete?: () => void;
 }
 
 /**
@@ -164,7 +172,64 @@ export default function ActivitySessionHeader({
   t,
   thirdSlot,
   topRow,
+  pointsRoll,
+  onPointsRollComplete,
 }: ActivitySessionHeaderProps) {
+  const [displayedPoints, setDisplayedPoints] = useState(() => (
+    pointsRoll && pointsRoll.to > pointsRoll.from ? pointsRoll.from : currentPoints
+  ));
+  const [isRolling, setIsRolling] = useState(false);
+  const rollCompleteRef = useRef(onPointsRollComplete);
+  rollCompleteRef.current = onPointsRollComplete;
+
+  const finishRoll = useCallback(() => {
+    setIsRolling(false);
+    rollCompleteRef.current?.();
+  }, []);
+
+  useEffect(() => {
+    if (pointsRoll) return;
+    setDisplayedPoints(currentPoints);
+  }, [currentPoints, pointsRoll]);
+
+  useEffect(() => {
+    if (!pointsRoll) {
+      setIsRolling(false);
+      return;
+    }
+    const { from, to } = pointsRoll;
+    const reducedMotion = typeof window !== 'undefined'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (to <= from || reducedMotion) {
+      setDisplayedPoints(to);
+      setIsRolling(false);
+      finishRoll();
+      return;
+    }
+
+    setIsRolling(true);
+    setDisplayedPoints(from);
+    let raf = 0;
+    const durationMs = Math.min(2200, 480 + (to - from) * 14);
+    const t0 = performance.now();
+
+    const tick = (now: number) => {
+      const u = Math.min(1, (now - t0) / durationMs);
+      const eased = 1 - (1 - u) ** 3;
+      const v = Math.round(from + (to - from) * eased);
+      setDisplayedPoints(v);
+      if (u < 1) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        setDisplayedPoints(to);
+        setIsRolling(false);
+        finishRoll();
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [pointsRoll, finishRoll]);
+
   return (
     <GameHeader style={{
       position: 'sticky',
@@ -189,8 +254,14 @@ export default function ActivitySessionHeader({
             {thirdSlot}
           </RoadmapHeaderItem>
           <RoadmapHeaderItem>
-            <RoadmapHeaderPoints role="status" aria-label={`${currentPoints} ${t.points}`}>
-              <RoadmapHeaderPointsValue>{currentPoints}</RoadmapHeaderPointsValue>
+            <RoadmapHeaderPoints
+              role="status"
+              aria-label={`${displayedPoints} ${t.points}`}
+              style={isRolling ? {
+                animation: `${pointsDepositPulse} 0.85s ease-in-out infinite`,
+              } : undefined}
+            >
+              <RoadmapHeaderPointsValue>{displayedPoints}</RoadmapHeaderPointsValue>
               <SessionHeaderPointsIcon />
             </RoadmapHeaderPoints>
           </RoadmapHeaderItem>

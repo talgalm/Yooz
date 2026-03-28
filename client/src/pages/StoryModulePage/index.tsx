@@ -281,6 +281,13 @@ export default function StoryModulePage() {
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [ballGameMuted, setBallGameMuted] = useState(false);
 
+  /** Roadmap header: animate points from → to after a game (ATM-style tally). */
+  const [pointsRoll, setPointsRoll] = useState<{ from: number; to: number } | null>(null);
+
+  const handlePointsRollComplete = useCallback(() => {
+    setPointsRoll(null);
+  }, []);
+
   // ─── Session persistence ───
   // Must be STATE (not ref) so the save effect only runs after restored values are in state
   const [sessionRestored, setSessionRestored] = useState(false);
@@ -314,6 +321,10 @@ export default function StoryModulePage() {
       entryTransitionTimeouts.current = [];
     };
   }, []);
+
+  useEffect(() => {
+    if (phase !== 'roadmap') setPointsRoll(null);
+  }, [phase]);
 
   // Save session on state changes — only after restore is complete
   useEffect(() => {
@@ -566,6 +577,14 @@ export default function StoryModulePage() {
     if (!data) return;
     const currentItem = data.module.items[currentItemIndex];
     const now = new Date();
+    const nextIdx = currentItemIndex + 1;
+    const willReturnToRoadmap = nextIdx < data.module.items.length;
+    const hintPen = stationHintUsed.size * stationHintPenalty;
+    const prevTotal = Math.max(0, scores.reduce((sum, s) => sum + s.score, 0) - hintPen);
+    const newTotal = Math.max(0, prevTotal + result.score);
+    if (willReturnToRoadmap && newTotal > prevTotal) {
+      setPointsRoll({ from: prevTotal, to: newTotal });
+    }
 
     setScores((prev) => [
       ...prev,
@@ -884,6 +903,8 @@ export default function StoryModulePage() {
           currentItemIndex={currentItemIndex}
           completedCount={currentItemIndex}
           currentPoints={roadmapTotalPoints}
+          pointsRoll={pointsRoll}
+          onPointsRollComplete={handlePointsRollComplete}
           showFootsteps={showFootsteps}
           onFootstepsComplete={handleFootstepsComplete}
           onNodeTap={handleNodeTap}

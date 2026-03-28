@@ -416,28 +416,137 @@ export const YoozLogo = styled('div')({
 });
 
 // ═══════════════════════════════════════════
-// ─── Opening / Instructions Screen (matches Trivia / Puzzle) ───
+// ─── Opening / Instructions Screen (welcome art + readable chrome) ───
 // ═══════════════════════════════════════════
 
-const TITLE_BLUE = '#2980b9';
-const BOX_BG = '#e3ebf3';
-const BOX_BORDER = '#4a6572';
-const BOX_SHADOW = '#3a5562';
-const TEXT_DARK = '#2c3e50';
-const BTN_PURPLE = FINISH_PURPLE;
-const BTN_PURPLE_DARK = FINISH_PURPLE_DARK;
+export const TRUE_FALSE_WELCOME_BG_URL = '/images/true-false-welcome-bg.png';
+/** In-game phases (countdown, play, finish) — full-bleed behind UI, not used on welcome */
+export const TRUE_FALSE_PLAY_BG_URL = '/images/true-false-play-bg.png';
+const INTRO_GOLD_TOP = '#f5d76e';
+const INTRO_GOLD_MID = '#e8b923';
+const INTRO_GOLD_BOT = '#c9a012';
+const INTRO_GOLD_BORDER = '#8b6914';
+const INTRO_GOLD_SHADOW = '#5c3d0a';
+const INTRO_BTN_TEXT = '#2a1538';
 
-export const IntroContainer = styled('div')({
+/** Match NatureBackground sky (#b8e8f0) — embedded intro only (admin preview / no themed shell). */
+const WELCOME_SKY_TOP = '#d2f0fa';
+const WELCOME_SKY_MID = '#b8e8f0';
+const WELCOME_SKY_LOW = '#93d4ec';
+const WELCOME_SKY_BOTTOM = '#72bfe0';
+
+/** Full viewport, under session header — pointer-events none so chrome stays clickable. */
+export const IntroFullScreenSceneBackdrop = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 0,
+  pointerEvents: 'none',
+  backgroundColor: '#4a1f6e',
+  backgroundImage: `url(${TRUE_FALSE_WELCOME_BG_URL})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center center',
+  backgroundRepeat: 'no-repeat',
+});
+
+/** Same stacking as intro backdrop — covers themed scene for countdown / play / finish */
+export const PlayFullScreenSceneBackdrop = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 0,
+  pointerEvents: 'none',
+  backgroundColor: '#2d1b4e',
+  backgroundImage: `url(${TRUE_FALSE_PLAY_BG_URL})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center center',
+  backgroundRepeat: 'no-repeat',
+});
+
+/**
+ * When True False runs without ThemedSceneOverlay (e.g. admin preview), paints the play-phase
+ * background inside the preview shell instead of the viewport-fixed overlay.
+ */
+export const PlayPhaseRoot = styled('div', {
+  shouldForwardProp: (prop) => prop !== '$inlineBackdrop',
+})<{ $inlineBackdrop?: boolean }>(({ $inlineBackdrop }) => ({
+  position: 'relative',
+  flex: 1,
+  minHeight: 0,
+  width: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  alignSelf: 'stretch',
+  overflow: 'hidden',
+  ...($inlineBackdrop
+    ? {
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: 'none',
+          backgroundColor: '#2d1b4e',
+          backgroundImage: `url(${TRUE_FALSE_PLAY_BG_URL})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat',
+        },
+        '& > *': { position: 'relative', zIndex: 1 },
+      }
+    : {}),
+}));
+
+const embeddedIntroSurface = {
+  // Bleed past PlayingContent horizontal padding when there is no full-screen scene overlay.
+  width: 'calc(100% + 32px)',
+  maxWidth: 'none',
+  marginLeft: '-16px',
+  marginRight: '-16px',
+  boxSizing: 'border-box' as const,
+  alignSelf: 'stretch' as const,
+  background: `
+    radial-gradient(ellipse 130% 95% at 24% 11%, rgba(255,255,255,0.88) 0%, transparent 50%),
+    radial-gradient(ellipse 110% 80% at 78% 8%, rgba(255,255,255,0.82) 0%, transparent 46%),
+    radial-gradient(ellipse 90% 55% at 52% 20%, rgba(255,255,255,0.4) 0%, transparent 58%),
+    linear-gradient(180deg, ${WELCOME_SKY_TOP} 0%, ${WELCOME_SKY_MID} 32%, ${WELCOME_SKY_LOW} 68%, ${WELCOME_SKY_BOTTOM} 100%)
+  `,
+  backgroundColor: WELCOME_SKY_MID,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    inset: 0,
+    backgroundImage: `url(${TRUE_FALSE_WELCOME_BG_URL})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center center',
+    backgroundRepeat: 'no-repeat',
+    zIndex: 0,
+  },
+};
+
+export const IntroContainer = styled('div', {
+  shouldForwardProp: (prop) => prop !== '$externalBackdrop',
+})<{ $externalBackdrop?: boolean }>(({ $externalBackdrop }) => ({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'stretch',
-  background: 'transparent',
   position: 'relative',
   overflow: 'hidden',
   minHeight: 0,
-  width: '100%',
-});
+  ...($externalBackdrop
+    ? {
+        width: '100%',
+        maxWidth: 'none',
+        marginLeft: 0,
+        marginRight: 0,
+        background: 'transparent',
+        backgroundColor: 'transparent',
+      }
+    : embeddedIntroSurface),
+  '& > *': {
+    position: 'relative',
+    zIndex: 1,
+  },
+}));
 
 export const IntroDecorations = styled('div')({
   position: 'absolute',
@@ -451,75 +560,115 @@ export const IntroContent = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'center',
+  justifyContent: 'flex-start',
   position: 'relative',
   zIndex: 1,
-  padding: '30px 20px 20px',
+  padding: 'clamp(12px, 4vh, 36px) 20px clamp(20px, 6vh, 48px)',
   textAlign: 'center',
   width: '100%',
-  maxWidth: 400,
+  maxWidth: 420,
+  minHeight: 0,
 });
 
-export const IntroTitle = styled('h1')({
-  fontSize: '3.5rem',
-  fontWeight: 900,
-  color: TITLE_BLUE,
-  textShadow: '2px 2px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff',
-  transform: 'rotate(-4deg)',
-  margin: '0 0 24px',
-  lineHeight: 1.1,
+/** Intro title: yellow fill + olive stroke; no panel (shows welcome art behind). */
+const GAME_TITLE_YELLOW = '#ffff00';
+const GAME_TITLE_OUTLINE = '#666600';
+
+export const IntroGameTitleSticker = styled('h1')({
+  margin: '0 0 16px',
+  padding: 0,
+  background: 'none',
+  textAlign: 'center',
+  boxSizing: 'border-box',
+  width: 'min(100%, 340px)',
+  flexShrink: 0,
   animation: `${floatIn} 0.5s ease-out`,
 });
 
-export const IntroInfoBox = styled('div')({
-  background: BOX_BG,
-  border: `3px solid ${BOX_BORDER}`,
-  borderRadius: 15,
-  padding: '20px 18px',
-  textAlign: 'center',
-  boxShadow: `0 4px 0 ${BOX_SHADOW}`,
-  marginBottom: 24,
-  width: '90%',
-  boxSizing: 'border-box',
-  animation: `${floatIn} 0.5s ease-out 0.1s both`,
+export const IntroGameTitleLine = styled('span')({
+  display: 'block',
+  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontSize: '48px',
+  fontWeight: 400,
+  lineHeight: 1.12,
+  letterSpacing: '0.02em',
+  color: GAME_TITLE_YELLOW,
+  WebkitTextStroke: `4px ${GAME_TITLE_OUTLINE}`,
+  paintOrder: 'stroke fill',
+  marginTop: '16px', // move text a little bit down
 });
 
-export const IntroInfoText = styled('p')({
-  fontSize: 16,
-  fontWeight: 600,
-  color: TEXT_DARK,
-  lineHeight: 1.6,
+/** Fills space so instructions sit low (below welcome-art circles), above Start. */
+export const IntroWelcomeMidSpacer = styled('div')({
+  flex: '1 1 0',
+  minHeight: 0,
+  width: '100%',
+});
+
+/** Instructions just above Start: white type, no panel (welcome art shows through). */
+export const IntroInstructions = styled('div')({
+  textAlign: 'center',
+  marginBottom: 12,
+  marginTop: 0,
+  width: 'min(94%, 400px)',
+  flexShrink: 0,
+  boxSizing: 'border-box',
+  animation: `${floatIn} 0.5s ease-out 0.08s both`,
+});
+
+export const IntroInstructionsLine = styled('p')({
   margin: 0,
+  fontSize: 'clamp(15px, 3.9vw, 18px)',
+  fontWeight: 600,
+  lineHeight: 1.55,
+  color: WHITE,
+  fontFamily: 'inherit',
+  letterSpacing: '0.01em',
+  textShadow: '0 1px 5px rgba(0,0,0,0.5), 0 0 1px rgba(0,0,0,0.35)',
+});
+
+export const IntroInstructionsCustom = styled('div')({
+  fontSize: 'clamp(15px, 3.9vw, 18px)',
+  fontWeight: 600,
+  lineHeight: 1.55,
+  color: WHITE,
+  fontFamily: 'inherit',
+  letterSpacing: '0.01em',
   whiteSpace: 'pre-wrap',
+  textShadow: '0 1px 5px rgba(0,0,0,0.5), 0 0 1px rgba(0,0,0,0.35)',
 });
 
 export const IntroStartButton = styled('button')({
-  background: BTN_PURPLE,
-  color: WHITE,
-  fontSize: '1.6rem',
-  fontWeight: 700,
-  padding: '14px 48px',
+  marginTop: 0,
+  flexShrink: 0,
+  background: `linear-gradient(180deg, ${INTRO_GOLD_TOP} 0%, ${INTRO_GOLD_MID} 45%, ${INTRO_GOLD_BOT} 100%)`,
+  color: INTRO_BTN_TEXT,
+  fontSize: '1.55rem',
+  fontWeight: 800,
+  padding: '14px 44px',
   borderRadius: 15,
-  border: `4px solid ${BTN_PURPLE_DARK}`,
+  border: `4px solid ${INTRO_GOLD_BORDER}`,
   cursor: 'pointer',
   fontFamily: 'inherit',
-  boxShadow: `0 5px 0 ${BTN_PURPLE_DARK}, 0 8px 15px rgba(0,0,0,0.2)`,
+  boxShadow: `0 5px 0 ${INTRO_GOLD_SHADOW}, 0 10px 22px rgba(0,0,0,0.35)`,
   transition: 'all 0.1s ease',
   animation: `${floatIn} 0.5s ease-out 0.25s both`,
+  textShadow: '0 1px 0 rgba(255,255,255,0.35)',
   '&:active': {
     transform: 'translateY(4px)',
-    boxShadow: `0 1px 0 ${BTN_PURPLE_DARK}, 0 3px 8px rgba(0,0,0,0.2)`,
+    boxShadow: `0 1px 0 ${INTRO_GOLD_SHADOW}, 0 4px 10px rgba(0,0,0,0.3)`,
   },
 });
 
 export const IntroYoozLogo = styled('div')({
-  marginTop: 'auto',
-  paddingBottom: 20,
-  paddingTop: 30,
+  marginTop: 14,
+  paddingBottom: 12,
+  paddingTop: 0,
   fontSize: 36,
   fontWeight: 900,
-  color: TITLE_BLUE,
+  color: WHITE,
   letterSpacing: 2,
+  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
 });
 
 // ═══════════════════════════════════════════
