@@ -1,4 +1,4 @@
-import { IconButton } from './styled';
+import { DarkHeaderActionIconButton } from './styled';
 
 interface ActivityLogoutButtonProps {
   onClick: () => void;
@@ -7,17 +7,8 @@ interface ActivityLogoutButtonProps {
 
 export default function ActivityLogoutButton({ onClick, ariaLabel }: ActivityLogoutButtonProps) {
   return (
-    <IconButton
-      onClick={onClick}
-      aria-label={ariaLabel}
-      title={ariaLabel}
-      style={{
-        color: '#fff',
-        borderColor: 'rgba(255,255,255,0.45)',
-        background: 'rgba(255,255,255,0.08)',
-      }}
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <DarkHeaderActionIconButton type="button" onClick={onClick} aria-label={ariaLabel} title={ariaLabel}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
           d="M14 7l5 5-5 5"
           stroke="currentColor"
@@ -40,6 +31,6 @@ export default function ActivityLogoutButton({ onClick, ariaLabel }: ActivityLog
           strokeLinejoin="round"
         />
       </svg>
-    </IconButton>
+    </DarkHeaderActionIconButton>
   );
 }

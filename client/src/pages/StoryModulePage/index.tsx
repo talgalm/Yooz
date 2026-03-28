@@ -967,7 +967,7 @@ export default function StoryModulePage() {
           <HeaderActions>
             <HelpChatHeaderButton />
             <ActivityLogoutButton onClick={handleExit} ariaLabel={t.exitActivity} />
-            <LangDrawer />
+            <LangDrawer variant="darkHeader" />
           </HeaderActions>
         </HeaderBar>
         <CenteredContent>

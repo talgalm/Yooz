@@ -511,7 +511,7 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
 
   return (
     <PuzzleContainer dir="rtl">
-      {/* Top bar: pieces | timer */}
+      {/* Top bar: pieces | per-question countdown only (elapsed time kept internally for speed bonus) */}
       <TopBar>
         <TopBarItem>{t.piecesRevealed}: {revealedPieces.size}/{totalPieces}</TopBarItem>
         {timeLeft !== null && (
@@ -519,7 +519,6 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
             {timeLeft}s
           </TopBarTimer>
         )}
-        <TopBarItem>{t.timeElapsed}: {formatTime(elapsedSeconds)}</TopBarItem>
       </TopBar>
 
       <PuzzleMainScroll>

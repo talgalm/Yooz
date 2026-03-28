@@ -22,6 +22,8 @@ import {
   PrimaryButton,
   ModalOverlay,
   ModalCard,
+  DarkHeaderActionIconButton,
+  DarkHeaderTextButton,
 } from '../../components/styled';
 import {
   PlayingContent,
@@ -102,23 +104,6 @@ const PlayingHeaderProgress = styled('span')({
   fontWeight: 600,
 });
 
-const PlayingHeaderIconBtn = styled('button')({
-  background: 'rgba(255,255,255,0.1)',
-  border: '1px solid rgba(255,255,255,0.12)',
-  borderRadius: 8,
-  width: 34,
-  height: 34,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  cursor: 'pointer',
-  fontSize: 16,
-  transition: 'all 0.15s',
-  '&:hover': {
-    background: 'rgba(255,255,255,0.2)',
-  },
-});
-
 const AnimatedStage = styled('div')({
   flex: 1,
   display: 'flex',
@@ -141,27 +126,7 @@ const AnimatedContent = styled('div')({
   animation: `${pageFadeIn} 680ms cubic-bezier(0.22, 1, 0.36, 1) 90ms both`,
 });
 
-const StationHintButton = styled(OutlineButton)({
-  padding: '4px 12px',
-  fontSize: 11,
-});
-
-const HeaderIconButton = styled(OutlineButton)({
-  width: 36,
-  height: 36,
-  minWidth: 36,
-  padding: 0,
-  borderRadius: 10,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  color: '#fff',
-  borderColor: 'rgba(255,255,255,0.55)',
-  background: 'rgba(0,0,0,0.2)',
-  '&:active': {
-    background: 'rgba(0,0,0,0.34)',
-  },
-});
+const StationHintButton = DarkHeaderTextButton;
 
 const StationDescriptionText = styled(StationHeadline)({
   marginBottom: 0,
@@ -452,26 +417,26 @@ export default function PlayingPhase({
           {groupName ? ` · ${groupName}` : ''}
         </StationSubtitle>
       </PlayingHeaderLeft>
-      <HeaderActions style={{ gap: 6 }}>
+      <HeaderActions>
         {stationHintText && (
-          <StationHintButton onClick={onStationHintClick}>
+          <StationHintButton type="button" onClick={onStationHintClick}>
             {stationHintUsed ? t.showStationHint : t.stationHint}
           </StationHintButton>
         )}
         {isBallGameItem && (
-          <HeaderIconButton
+          <DarkHeaderActionIconButton
             type="button"
             onClick={onBallGameMuteToggle}
             aria-label={ballGameMuted ? 'Unmute game music' : 'Mute game music'}
             title={ballGameMuted ? 'Unmute game music' : 'Mute game music'}
           >
             {ballGameMuted ? <MutedIcon /> : <SpeakerIcon />}
-          </HeaderIconButton>
+          </DarkHeaderActionIconButton>
         )}
         {onViewLeaderboard && (
-          <PlayingHeaderIconBtn onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
+          <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
             🏆
-          </PlayingHeaderIconBtn>
+          </DarkHeaderActionIconButton>
         )}
         <HelpChatHeaderButton />
         <ActivityLogoutButton onClick={onLogout} ariaLabel={t.exitActivity} />
@@ -627,7 +592,7 @@ function VideoStationPlayer({ station, onContinue, t }: {
 
 function SpeakerIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" opacity="0.3" />
       <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
       <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
@@ -637,7 +602,7 @@ function SpeakerIcon() {
 
 function MutedIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" opacity="0.3" />
       <line x1="23" y1="9" x2="17" y2="15" />
       <line x1="17" y1="9" x2="23" y2="15" />

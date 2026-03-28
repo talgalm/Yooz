@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useMemo, useState, useCallba
 import { styled, keyframes } from '@mui/material/styles';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HelpChatHeaderButton } from '../../components/HelpChat';
-import { HeaderActions } from '../../components/styled';
+import { HeaderActions, DarkHeaderActionIconButton } from '../../components/styled';
 import type { ModuleItemData } from './types';
 import storySideWave from '../../assets/story-side-wave.svg';
 import storySideWaveBlue from '../../assets/story-side-wave-blue.svg';
@@ -55,23 +55,6 @@ const HeaderGroupName = styled('span')({
   fontSize: 11,
   color: 'rgba(255,255,255,0.7)',
   fontWeight: 500,
-});
-
-const HeaderIconBtn = styled('button')({
-  background: 'rgba(255,255,255,0.12)',
-  border: '1px solid rgba(255,255,255,0.15)',
-  borderRadius: 8,
-  width: 34,
-  height: 34,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  cursor: 'pointer',
-  fontSize: 16,
-  transition: 'all 0.15s',
-  '&:hover': {
-    background: 'rgba(255,255,255,0.22)',
-  },
 });
 
 // ─── Animations ───
@@ -1159,11 +1142,11 @@ export default function RoadmapView({
         <HeaderActivityName>{activityName}</HeaderActivityName>
         {groupName && <HeaderGroupName>{groupName}</HeaderGroupName>}
       </HeaderLeft>
-      <HeaderActions style={{ gap: 6 }}>
+      <HeaderActions>
         {onViewLeaderboard && (
-          <HeaderIconBtn onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
+          <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
             🏆
-          </HeaderIconBtn>
+          </DarkHeaderActionIconButton>
         )}
         <HelpChatHeaderButton />
         <ActivityLogoutButton onClick={onLogout} ariaLabel={t.exitActivity} />

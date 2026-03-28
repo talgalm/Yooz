@@ -68,6 +68,8 @@ export const HeaderBar = styled('div')({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
+  flexWrap: 'nowrap',
+  gap: 12,
   padding: '16px 20px',
   borderBottom: '1px solid #f0f0f0',
 });
@@ -75,6 +77,8 @@ export const HeaderBar = styled('div')({
 export const HeaderActions = styled('div')({
   display: 'flex',
   alignItems: 'center',
+  justifyContent: 'flex-end',
+  flexWrap: 'nowrap',
   gap: 8,
 });
 
@@ -160,6 +164,73 @@ export const IconButton = styled('button')({
   justifyContent: 'center',
   '&:active': {
     background: '#f5f5f5',
+  },
+});
+
+/** Uniform 36×36 touch target for sticky headers (help, exit, mute, leaderboard, …). */
+export const HeaderActionIconButton = styled('button')({
+  width: 36,
+  height: 36,
+  minWidth: 36,
+  margin: 0,
+  padding: 0,
+  boxSizing: 'border-box',
+  borderRadius: 10,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  lineHeight: 1,
+  flexShrink: 0,
+  appearance: 'none',
+  WebkitTapHighlightColor: 'transparent',
+});
+
+/** Single dark-header style: same border, fill, and hover for help / exit / mute / trophy / hint. */
+export const DarkHeaderActionIconButton = styled(HeaderActionIconButton)({
+  color: '#fff',
+  border: '1px solid rgba(255,255,255,0.45)',
+  background: 'rgba(255,255,255,0.08)',
+  fontSize: 18,
+  fontWeight: 700,
+  transition: 'background 0.15s ease',
+  '&:hover': {
+    background: 'rgba(255,255,255,0.14)',
+  },
+  '&:active': {
+    background: 'rgba(255,255,255,0.2)',
+  },
+});
+
+/** Text action on the same dark header row — matches `DarkHeaderActionIconButton` border and height. */
+export const DarkHeaderTextButton = styled('button')({
+  margin: 0,
+  minHeight: 36,
+  height: 36,
+  padding: '0 12px',
+  boxSizing: 'border-box',
+  borderRadius: 10,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  fontSize: 11,
+  fontWeight: 600,
+  lineHeight: 1.2,
+  color: '#fff',
+  border: '1px solid rgba(255,255,255,0.45)',
+  background: 'rgba(255,255,255,0.08)',
+  transition: 'background 0.15s ease',
+  appearance: 'none',
+  WebkitTapHighlightColor: 'transparent',
+  '&:hover': {
+    background: 'rgba(255,255,255,0.14)',
+  },
+  '&:active': {
+    background: 'rgba(255,255,255,0.2)',
   },
 });
 

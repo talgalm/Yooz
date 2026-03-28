@@ -1,5 +1,5 @@
 import { styled, keyframes } from '@mui/material/styles';
-import { IconButton, PRIMARY, PRIMARY_LIGHT, TEXT, TEXT_LIGHT, BORDER, BG_INPUT } from '../styled';
+import { HeaderActionIconButton, DarkHeaderActionIconButton, PRIMARY, PRIMARY_LIGHT, TEXT, TEXT_LIGHT, BORDER, BG_INPUT } from '../styled';
 
 // ─── Animations ───
 
@@ -333,27 +333,23 @@ export const BackButton = styled('button')({
   },
 });
 
-/** Matches `ActivityLogoutButton` — for header ? next to exit (dark / tinted headers) */
-export const HelpHeaderIconButton = styled(IconButton)({
-  color: '#fff',
-  borderColor: 'rgba(255,255,255,0.45)',
-  background: 'rgba(255,255,255,0.08)',
-  fontSize: 17,
-  fontWeight: 700,
-  lineHeight: 1,
-  '&:active': {
-    background: 'rgba(255,255,255,0.14)',
-  },
-});
+/** Same as logout / playing header icons — one shared dark style in `styled.ts`. */
+export const HelpHeaderIconButton = DarkHeaderActionIconButton;
 
 /** Same control on light bars (e.g. home) */
-export const HelpHeaderIconButtonLight = styled(IconButton)({
+export const HelpHeaderIconButtonLight = styled(HeaderActionIconButton)({
+  margin: 0,
   color: PRIMARY,
-  borderColor: PRIMARY_LIGHT,
+  border: `1px solid ${PRIMARY_LIGHT}`,
   background: 'rgba(108, 92, 231, 0.06)',
-  fontSize: 17,
+  fontSize: 18,
   fontWeight: 700,
-  lineHeight: 1,
+  transition: 'background 0.15s ease',
+  appearance: 'none',
+  WebkitTapHighlightColor: 'transparent',
+  '&:hover': {
+    background: 'rgba(108, 92, 231, 0.1)',
+  },
   '&:active': {
     background: 'rgba(108, 92, 231, 0.12)',
   },

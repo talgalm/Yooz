@@ -372,7 +372,7 @@ export default function FinishScreen({
         <HeaderActions>
           <HelpChatHeaderButton />
           <ActivityLogoutButton onClick={onExit} ariaLabel={t.exitActivity} />
-          <LangDrawer />
+          <LangDrawer variant="darkHeader" />
         </HeaderActions>
       </HeaderBar>
 

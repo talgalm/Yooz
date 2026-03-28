@@ -293,7 +293,7 @@ export default function LeaderboardView({
         <HeaderActions>
           <HelpChatHeaderButton />
           <ActivityLogoutButton onClick={onLogout} ariaLabel={t.exitActivity} />
-          <LangDrawer />
+          <LangDrawer variant="darkHeader" />
         </HeaderActions>
       </HeaderBar>
 

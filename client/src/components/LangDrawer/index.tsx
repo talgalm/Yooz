@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLang, Lang } from '../../context/LanguageContext';
-import { IconButton } from '../styled';
+import { IconButton, DarkHeaderActionIconButton } from '../styled';
 import {
   Backdrop,
   DrawerPanel,
@@ -17,7 +17,12 @@ const languages: { code: Lang; label: string; flag: string }[] = [
   { code: 'en', label: 'English', flag: '🇺🇸' },
 ];
 
-export default function LangDrawer() {
+interface LangDrawerProps {
+  /** Match help / exit on tinted headers (finish, leaderboard, …). */
+  variant?: 'default' | 'darkHeader';
+}
+
+export default function LangDrawer({ variant = 'default' }: LangDrawerProps) {
   const { lang, setLang } = useLang();
   const [open, setOpen] = useState(false);
 
@@ -26,11 +31,13 @@ export default function LangDrawer() {
     setOpen(false);
   };
 
+  const Trigger = variant === 'darkHeader' ? DarkHeaderActionIconButton : IconButton;
+
   return (
     <>
-      <IconButton onClick={() => setOpen(true)} aria-label="Change language">
+      <Trigger type="button" onClick={() => setOpen(true)} aria-label="Change language">
         {languages.find((l) => l.code === lang)?.flag}
-      </IconButton>
+      </Trigger>
 
       {open && (
         <Backdrop onClick={() => setOpen(false)}>
