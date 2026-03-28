@@ -31,7 +31,7 @@ export interface RoadmapThemeKit {
 // ─── Nature (default) ───
 
 export const NATURE_THEME: RoadmapThemeKit = {
-  containerBg: '#a9cb4f',
+  containerBg: '#8fb247',
   headerGradient: 'linear-gradient(135deg, rgba(45,80,22,0.92) 0%, rgba(56,100,30,0.88) 100%)',
   headerBorder: 'rgba(255,255,255,0.08)',
   sceneBgTop: '#8fb248',

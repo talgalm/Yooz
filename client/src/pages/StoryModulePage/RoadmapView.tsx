@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useMemo, useState, useCallba
 import { styled, keyframes } from '@mui/material/styles';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HelpChatHeaderButton } from '../../components/HelpChat';
-import { HeaderActions, DarkHeaderActionIconButton } from '../../components/styled';
+import { DarkHeaderActionIconButton } from '../../components/styled';
 import type { ModuleItemData } from './types';
 import storySideWave from '../../assets/story-side-wave.svg';
 import storySideWaveBlue from '../../assets/story-side-wave-blue.svg';
@@ -27,28 +27,115 @@ const ROAD_BORDER = 16;
 
 const GameHeader = styled('div')({
   display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
+  flexDirection: 'column',
+  alignItems: 'stretch',
+  gap: 8,
   padding: '10px 16px',
   backdropFilter: 'blur(8px)',
-  boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
 });
 
-const HeaderLeft = styled('div')({
+const RoadmapHeaderTop = styled('div')({
   display: 'flex',
   flexDirection: 'column',
-  gap: 1,
+  gap: 6,
+  width: '100%',
   minWidth: 0,
 });
 
-const HeaderActivityName = styled('span')({
-  fontWeight: 700,
-  fontSize: 15,
+const ROADMAP_HEADER_BTN_BORDER = '#d4d4d4';
+/** Visual size for logout / help / trophy / points icon (matches `ActivityLogoutButton` SVG). */
+const ROADMAP_HEADER_ICON_PX = 20;
+/** Every header slot (logout, help, leaderboard, points) uses the same outer width. */
+const ROADMAP_HEADER_CELL_W = 76;
+
+const RoadmapHeaderButtonRow = styled('div')({
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  width: '100%',
+  gap: 14,
+  // Keep order: exit → help → leaderboard → points (ignore document RTL mirroring).
+  direction: 'ltr',
+});
+
+/** One header control; flex row above spaces four siblings evenly across the bar. */
+const RoadmapHeaderItem = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flex: `0 0 ${ROADMAP_HEADER_CELL_W}px`,
+  width: ROADMAP_HEADER_CELL_W,
+  minWidth: ROADMAP_HEADER_CELL_W,
+  maxWidth: ROADMAP_HEADER_CELL_W,
+  minHeight: 36,
+  boxSizing: 'border-box',
+  background: 'rgba(255,255,255,0.10)',  // 10% opacity white background
+  borderRadius: 10, // rounded corners
+  '& button': {
+    width: '100%',
+    minWidth: 0,
+    height: 36,
+    boxSizing: 'border-box',
+    flexShrink: 0,
+    fontSize: ROADMAP_HEADER_ICON_PX,
+    fontWeight: 700,
+    lineHeight: 1,
+    border: `1px solid ${ROADMAP_HEADER_BTN_BORDER}`,
+    '&:hover': {
+      borderColor: '#e0e0e0',
+    },
+    '&:active': {
+      borderColor: '#c4c4c4',
+    },
+    '& svg': {
+      width: ROADMAP_HEADER_ICON_PX,
+      height: ROADMAP_HEADER_ICON_PX,
+      flexShrink: 0,
+      display: 'block',
+    },
+  },
+});
+
+/** Holds leaderboard slot width when the button is not shown so spacing stays even. */
+const RoadmapHeaderIconPlaceholder = styled('div')({
+  width: ROADMAP_HEADER_CELL_W,
+  height: 36,
+  flexShrink: 0,
+  boxSizing: 'border-box',
+  visibility: 'hidden',
+  pointerEvents: 'none',
+});
+
+const RoadmapHeaderPoints = styled('div')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 6,
+  width: ROADMAP_HEADER_CELL_W,
+  height: 36,
+  padding: '0 4px',
+  boxSizing: 'border-box',
+  borderRadius: 10,
+  border: `1px solid ${ROADMAP_HEADER_BTN_BORDER}`,
+  background: 'rgba(255,255,255,0.08)',
   color: '#fff',
-  textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
+  fontSize: 14,
+  fontWeight: 800,
+  lineHeight: 1,
+  flexShrink: 0,
+  minWidth: ROADMAP_HEADER_CELL_W,
+  maxWidth: ROADMAP_HEADER_CELL_W,
+  '& svg': {
+    width: ROADMAP_HEADER_ICON_PX,
+    height: ROADMAP_HEADER_ICON_PX,
+    flexShrink: 0,
+    display: 'block',
+  },
+});
+
+const RoadmapHeaderPointsValue = styled('span')({
+  fontVariantNumeric: 'tabular-nums',
 });
 
 const HeaderGroupName = styled('span')({
@@ -580,6 +667,8 @@ interface RoadmapViewProps {
   items: ModuleItemData[];
   currentItemIndex: number;
   completedCount: number;
+  /** Running total (games) minus hint penalties — same basis as the finish screen. */
+  currentPoints: number;
   showFootsteps: boolean;
   onFootstepsComplete: () => void;
   onNodeTap: (index: number) => void;
@@ -592,9 +681,34 @@ interface RoadmapViewProps {
   theme?: string;
 }
 
+/** Stacked coins — score / currency (distinct from leaderboard trophy). */
+function RoadmapHeaderPointsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <ellipse cx="10" cy="15" rx="6.5" ry="4.5" fill="#b8890f" transform="rotate(-12 10 15)" />
+      <ellipse cx="14" cy="13" rx="6.5" ry="4.5" fill="#d9a012" transform="rotate(8 14 13)" />
+      <ellipse cx="12" cy="11.5" rx="6" ry="4.2" fill="#f5d24a" stroke="#a67c00" strokeWidth="0.85" />
+    </svg>
+  );
+}
+
+/** Stroke trophy (Lucide-style paths) — avoids broken fills from ambiguous decimals in compact Material paths. */
+function RoadmapHeaderTrophyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.65} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+      <path d="M4 22h16" />
+      <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-2.34" />
+      <path d="M14 14.66V17c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-2.34" />
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    </svg>
+  );
+}
+
 export default function RoadmapView({
-  items, currentItemIndex, completedCount, showFootsteps,
-  onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, activityName, groupName, popupModal, t, theme,
+  items, currentItemIndex, completedCount, currentPoints, showFootsteps,
+  onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, groupName, popupModal, t, theme,
 }: RoadmapViewProps) {
   const kit = useMemo(() => getThemeKit(theme), [theme]);
   const scrollRef   = useRef<HTMLDivElement>(null);
@@ -1010,22 +1124,39 @@ export default function RoadmapView({
   const header = (
     <GameHeader style={{
       position: 'sticky', top: 0, zIndex: 30, flexShrink: 0,
-      background: kit.headerGradient,
-      borderBottom: `1px solid ${kit.headerBorder}`,
+      background: 'transparent',
+      boxShadow: 'none',
+      borderBottom: '1px solid #DCDCDC',
     }}>
-      <HeaderLeft>
-        <HeaderActivityName>{activityName}</HeaderActivityName>
+      <RoadmapHeaderTop>
         {groupName && <HeaderGroupName>{groupName}</HeaderGroupName>}
-      </HeaderLeft>
-      <HeaderActions>
-        {onViewLeaderboard && (
-          <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
-            🏆
-          </DarkHeaderActionIconButton>
-        )}
-        <HelpChatHeaderButton />
-        <ActivityLogoutButton onClick={onLogout} ariaLabel={t.exitActivity} />
-      </HeaderActions>
+        <RoadmapHeaderButtonRow>
+          <RoadmapHeaderItem>
+            <ActivityLogoutButton onClick={onLogout} ariaLabel={t.exitActivity} />
+          </RoadmapHeaderItem>
+          <RoadmapHeaderItem>
+            <HelpChatHeaderButton />
+          </RoadmapHeaderItem>
+          <RoadmapHeaderItem>
+            {onViewLeaderboard ? (
+              <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
+                <RoadmapHeaderTrophyIcon />
+              </DarkHeaderActionIconButton>
+            ) : (
+              <RoadmapHeaderIconPlaceholder aria-hidden />
+            )}
+          </RoadmapHeaderItem>
+          <RoadmapHeaderItem>
+            <RoadmapHeaderPoints
+              role="status"
+              aria-label={`${currentPoints} ${t.points}`}
+            >
+              <RoadmapHeaderPointsValue>{currentPoints}</RoadmapHeaderPointsValue>
+              <RoadmapHeaderPointsIcon />
+            </RoadmapHeaderPoints>
+          </RoadmapHeaderItem>
+        </RoadmapHeaderButtonRow>
+      </RoadmapHeaderTop>
     </GameHeader>
   );
 

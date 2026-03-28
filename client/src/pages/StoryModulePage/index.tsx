@@ -873,12 +873,17 @@ export default function StoryModulePage() {
   // ─── Phase rendering ───
 
   if (phase === 'roadmap') {
+    const roadmapTotalPoints = Math.max(
+      0,
+      scores.reduce((sum, s) => sum + s.score, 0) - stationHintUsed.size * stationHintPenalty,
+    );
     return (
       <>
         <RoadmapView
           items={data.module.items}
           currentItemIndex={currentItemIndex}
           completedCount={currentItemIndex}
+          currentPoints={roadmapTotalPoints}
           showFootsteps={showFootsteps}
           onFootstepsComplete={handleFootstepsComplete}
           onNodeTap={handleNodeTap}
