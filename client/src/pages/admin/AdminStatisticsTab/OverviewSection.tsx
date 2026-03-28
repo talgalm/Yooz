@@ -16,8 +16,6 @@ import {
   SectionHeader,
   SectionTitle,
   StatsTable,
-  AlertBanner,
-  AlertIcon,
   StatsMobileCard,
   StatsMobileRow,
   StatsMobileLabel,

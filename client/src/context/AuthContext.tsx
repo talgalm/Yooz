@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 import { apiFetch } from '../utils/api';
 
 type ConnectionType = 'single' | 'group';

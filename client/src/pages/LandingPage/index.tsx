@@ -10,19 +10,12 @@ import { styled, keyframes } from '@mui/material/styles';
 const C_DARK_GREEN = '#33691e';
 const C_GREEN = '#689f38';
 const C_YELLOW = '#ffca28';
-const C_LIGHT_GREEN = '#c5e1a5';
 
 // ─── Animations ───
 
 const fadeInUp = keyframes`
   0% { opacity: 0; transform: translateY(24px); }
   100% { opacity: 1; transform: translateY(0); }
-`;
-
-const scaleIn = keyframes`
-  0% { opacity: 0; transform: scale(0.6); }
-  60% { transform: scale(1.05); }
-  100% { opacity: 1; transform: scale(1); }
 `;
 
 const float = keyframes`
@@ -57,39 +50,6 @@ const Content = styled('div')({
   alignItems: 'center',
   padding: '40px 24px 32px',
   position: 'relative',
-});
-
-const LogoBadge = styled('div')({
-  width: 100,
-  height: 100,
-  borderRadius: '50%',
-  background: C_YELLOW,
-  border: `4px solid ${C_DARK_GREEN}`,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  boxShadow: `0 6px 24px rgba(0,0,0,0.25), inset 0 -3px 8px rgba(0,0,0,0.1)`,
-  animation: `${scaleIn} 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both`,
-  marginBottom: 16,
-});
-
-const LogoText = styled('div')({
-  fontSize: 32,
-  fontWeight: 900,
-  color: C_DARK_GREEN,
-  letterSpacing: 3,
-  lineHeight: 1,
-});
-
-const HeroTitle = styled('h1')({
-  fontSize: 36,
-  fontWeight: 900,
-  color: '#fff',
-  textShadow: `2px 2px 0 ${C_DARK_GREEN}, -1px -1px 0 ${C_DARK_GREEN}, 1px -1px 0 ${C_DARK_GREEN}, -1px 1px 0 ${C_DARK_GREEN}`,
-  letterSpacing: 6,
-  margin: 0,
-  marginBottom: 8,
-  animation: `${fadeInUp} 0.5s ease-out 0.3s both`,
 });
 
 const Tagline = styled('div')({

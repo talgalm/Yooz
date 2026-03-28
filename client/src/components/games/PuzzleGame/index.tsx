@@ -5,15 +5,20 @@ import { shuffleArray } from '../../../utils/shuffleArray';
 import { useGameHint } from '../../../hooks/useGameHint';
 import HintModals from '../HintModals';
 import HintButton from '../HintButton';
-import { GameProps, GameResult, HintConfig, AgeRange, GAME_CONSTANTS } from '../types';
+import { GameProps, HintConfig, AgeRange, GAME_CONSTANTS } from '../types';
+import { useGameSounds } from '../../../hooks/useGameSounds';
+import {
+  useActivityPlayingHeaderHostActive,
+  useRegisterActivityGameHeader,
+  type ActivityGameHeaderPhase,
+} from '../../../context/activityPlayingHeaderContext';
+import { GameIntroHeaderBar, GameHeaderMuteButton } from '../styled';
 import {
   IntroContainer,
   IntroContent,
   IntroTitle,
   IntroInfoBox,
   IntroInfoText,
-  IntroPuzzlePreview,
-  IntroPuzzlePreviewImg,
   IntroPieceCount,
   IntroStartButton,
   IntroYoozLogo,
@@ -21,6 +26,7 @@ import {
   PuzzleMainScroll,
   PuzzleBottomBar,
   TopBar,
+  TopBarLeftCluster,
   TopBarItem,
   TopBarTimer,
   PuzzleFullImg,
@@ -146,9 +152,21 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
   const settings = game.settings as unknown as PuzzleSettings;
   const t = useTranslations(texts);
   const gameHint = useGameHint(settings.hint);
+  const {
+    playCorrect,
+    playWrong,
+    playGameOver,
+    startBgMusic,
+    toggleMute,
+    isMuted,
+  } = useGameSounds({
+    correct: '/sounds/correct1.mp3',
+    wrong: '/sounds/fail.wav',
+    gameOver: '/sounds/success.wav',
+    bgMusic: '/sounds/backgtound-music.mp3',
+  });
 
   const totalPieces = settings.gridCols * settings.gridRows;
-  const retryGap = settings.retryGap || 3;
   const scoring = settings.scoring || { basePoints: 100, speedBonusMax: 50, timeLimitSeconds: 0 };
 
   // Filter questions by age
@@ -205,6 +223,14 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
   const questionCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /** Bumps when advancing so the timer resets even if the same question index returns later. */
   const [questionTurnId, setQuestionTurnId] = useState(0);
+
+  const activityHeaderAudio = useActivityPlayingHeaderHostActive();
+  const activityHeaderPhase: ActivityGameHeaderPhase = gameComplete
+    ? 'finish'
+    : !gameStarted
+      ? 'intro'
+      : 'playing';
+  useRegisterActivityGameHeader(activityHeaderAudio, activityHeaderPhase, isMuted, toggleMute);
 
   // Track revealed pieces in a ref to avoid stale closure in revealRandomPiece
   const revealedPiecesRef = useRef<Set<number>>(new Set());
@@ -268,9 +294,16 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
     };
   }, [gameStarted, gameComplete]);
 
+  useEffect(() => {
+    if (gameComplete && !noContent) {
+      playGameOver();
+    }
+  }, [gameComplete, noContent, playGameOver]);
+
   const startGame = () => {
     setGameStarted(true);
     setElapsedSeconds(0);
+    startBgMusic();
   };
 
   const advanceToNextQuestion = useCallback(() => {
@@ -351,6 +384,9 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
     setChecked(true);
     setTotalAttempts((prev) => prev + 1);
 
+    if (correct) playCorrect();
+    else playWrong();
+
     if (correct) {
       setCorrectCount((prev) => prev + 1);
       pendingTimeouts.current.push(setTimeout(() => {
@@ -362,7 +398,7 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
         advanceToNextQuestion();
       }, 3000));
     }
-  }, [checked, currentQuestionIndex, selectedAnswer, processedQuestions, revealRandomPiece, advanceToNextQuestion]);
+  }, [checked, currentQuestionIndex, selectedAnswer, processedQuestions, revealRandomPiece, advanceToNextQuestion, playCorrect, playWrong]);
 
   // Reset per-question timer when the active question changes (or game starts).
   useEffect(() => {
@@ -441,6 +477,13 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
   if (!gameStarted) {
     return (
       <IntroContainer dir="rtl">
+        {!activityHeaderAudio && (
+          <GameIntroHeaderBar>
+            <GameHeaderMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
+              {isMuted ? '🔇' : '🔊'}
+            </GameHeaderMuteButton>
+          </GameIntroHeaderBar>
+        )}
         <IntroContent>
           <IntroTitle>{game.name}</IntroTitle>
 
@@ -468,6 +511,11 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
     const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0;
     return (
       <FinishContainer dir="rtl">
+        <GameIntroHeaderBar>
+          <GameHeaderMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
+            {isMuted ? '🔇' : '🔊'}
+          </GameHeaderMuteButton>
+        </GameIntroHeaderBar>
         <FinishContent>
           <FinishTitleBanner>
             <LeafVeinSvg />
@@ -513,11 +561,18 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
     <PuzzleContainer dir="rtl">
       {/* Top bar: pieces | per-question countdown only (elapsed time kept internally for speed bonus) */}
       <TopBar>
-        <TopBarItem>{t.piecesRevealed}: {revealedPieces.size}/{totalPieces}</TopBarItem>
-        {timeLeft !== null && (
-          <TopBarTimer critical={timeLeft <= GAME_CONSTANTS.TIMER_WARNING_SECONDS}>
-            {timeLeft}s
-          </TopBarTimer>
+        <TopBarLeftCluster>
+          <TopBarItem>{t.piecesRevealed}: {revealedPieces.size}/{totalPieces}</TopBarItem>
+          {timeLeft !== null && (
+            <TopBarTimer critical={timeLeft <= GAME_CONSTANTS.TIMER_WARNING_SECONDS}>
+              {timeLeft}s
+            </TopBarTimer>
+          )}
+        </TopBarLeftCluster>
+        {!activityHeaderAudio && (
+          <GameHeaderMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
+            {isMuted ? '🔇' : '🔊'}
+          </GameHeaderMuteButton>
         )}
       </TopBar>
 

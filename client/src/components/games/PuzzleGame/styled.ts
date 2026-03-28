@@ -4,10 +4,6 @@ import { styled, keyframes } from '@mui/material/styles';
 
 const WHITE = '#fff';
 
-// Background gradient
-const BG_TOP = '#d4f0fd';
-const BG_BOTTOM = '#a8e6b1';
-
 // Box/Card styling
 const BOX_BG = '#e3ebf3';
 const BOX_BORDER = '#4a6572';
@@ -92,7 +88,7 @@ export const IntroContainer = styled('div')({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center',
+  alignItems: 'stretch',
   background: 'transparent',
   position: 'relative',
   overflow: 'hidden',
@@ -291,6 +287,14 @@ export const TopBar = styled('div')({
   zIndex: 2,
   backdropFilter: 'blur(4px)',
   gap: 6,
+});
+
+export const TopBarLeftCluster = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  flexWrap: 'wrap',
+  minWidth: 0,
 });
 
 export const TopBarItem = styled('span')({
@@ -655,7 +659,7 @@ export const FinishContainer = styled('div')({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center',
+  alignItems: 'stretch',
   background: 'transparent',
   position: 'relative',
   overflow: 'hidden',

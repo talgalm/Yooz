@@ -441,7 +441,6 @@ export default function AdminViewActivityPage() {
   const [copiedInline, setCopiedInline] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showGoLiveModal, setShowGoLiveModal] = useState(false);
-  const [togglingStatus, setTogglingStatus] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const t = useTranslations(texts);
@@ -483,30 +482,14 @@ export default function AdminViewActivityPage() {
     navigate('/admin/dashboard');
   };
 
-  const handleStatusToggle = async () => {
-    if (!activity) return;
-    const newStatus = activity.status === 'preview' ? 'live' : 'preview';
-    if (newStatus === 'live') { setShowGoLiveModal(true); return; }
-    setTogglingStatus(true);
-    try {
-      const data = await adminApiFetch<{ activity: Activity }>(`/api/admin/activities/${id}/status`, {
-        method: 'PATCH', body: JSON.stringify({ status: newStatus }),
-      });
-      setActivity(data.activity);
-    } catch { /* ignore */ }
-    setTogglingStatus(false);
-  };
-
   const confirmGoLive = async () => {
     setShowGoLiveModal(false);
-    setTogglingStatus(true);
     try {
       const data = await adminApiFetch<{ activity: Activity }>(`/api/admin/activities/${id}/status`, {
         method: 'PATCH', body: JSON.stringify({ status: 'live' }),
       });
       setActivity(data.activity);
     } catch { /* ignore */ }
-    setTogglingStatus(false);
   };
 
   if (!activity) return null;

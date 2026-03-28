@@ -14,7 +14,6 @@ import {
 const GRID = 4;
 const TOTAL = GRID * GRID;
 const MISSION_TEAL = '#39CABC';
-const MISSION_TEXT = '#F2F7FF';
 const MISSION_FONT = "'Rubik One', sans-serif";
 const PUZZLE_IMAGE = '/images/puzzle-env.png';
 
@@ -153,31 +152,6 @@ const PuzzleContent = styled('div')({
   fontFamily: MISSION_FONT,
 });
 
-const ProgressBar = styled('div')({
-  width: '80%',
-  maxWidth: 360,
-  height: 6,
-  borderRadius: 3,
-  background: `${MISSION_TEXT}20`,
-  overflow: 'hidden',
-});
-
-const ProgressFill = styled('div')<{ pct: number }>(({ pct }) => ({
-  height: '100%',
-  borderRadius: 3,
-  background: `linear-gradient(90deg, ${MISSION_TEAL}, #6dd5c8)`,
-  width: `${pct}%`,
-  transition: 'width 0.4s ease-out',
-}));
-
-const CounterText = styled('div')({
-  color: MISSION_TEXT,
-  fontSize: 14,
-  fontFamily: MISSION_FONT,
-  textAlign: 'center',
-  opacity: 0.7,
-});
-
 const GridArea = styled('div')({
   position: 'relative',
   width: '85vw',
@@ -225,14 +199,6 @@ const DragZone = styled('div')({
   gap: 10,
   marginTop: '10%',
   padding: '12px 0',
-});
-
-const DragLabel = styled('div')({
-  color: MISSION_TEXT,
-  fontSize: 16,
-  fontFamily: MISSION_FONT,
-  direction: 'rtl',
-  opacity: 0.8,
 });
 
 const DragPieceContainer = styled('div')({

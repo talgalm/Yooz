@@ -202,7 +202,6 @@ export default function AdminCreateActivityPage() {
   const [moduleTheme, setModuleTheme] = useState<string>('');
   const [backgroundImage, setBackgroundImage] = useState('');
   const [selectedItems, setSelectedItems] = useState<ModuleItem[]>([]);
-  const [missionRef, setMissionRef] = useState('');  // kept for backward compat with existing mission-type activities
 
   const [openingType, setOpeningType] = useState<OpeningType>('none');
   const [openingUrl, setOpeningUrl] = useState('');

@@ -5,9 +5,14 @@ import { shuffleArray } from '../../../utils/shuffleArray';
 import { useGameHint } from '../../../hooks/useGameHint';
 import HintModals from '../HintModals';
 import HintButton from '../HintButton';
-import { GameProps, GameResult, QuestionAnswerRecord, HintConfig, AgeRange, GAME_CONSTANTS } from '../types';
+import { GameProps, QuestionAnswerRecord, HintConfig, AgeRange, GAME_CONSTANTS } from '../types';
 import { useGameSounds } from '../../../hooks/useGameSounds';
-// MuteButton replaced by inline TopBarMute
+import {
+  useActivityPlayingHeaderHostActive,
+  useRegisterActivityGameHeader,
+  type ActivityGameHeaderPhase,
+} from '../../../context/activityPlayingHeaderContext';
+import { GameIntroHeaderBar, GameHeaderMuteButton } from '../styled';
 import {
   IntroContainer,
   IntroContent,
@@ -20,7 +25,6 @@ import {
   TopBar,
   TopBarItem,
   TopBarTimer,
-  TopBarMute,
   TriviaMainScroll,
   TriviaBottomBar,
   QuestionBox,
@@ -226,6 +230,19 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const activityHeaderAudio = useActivityPlayingHeaderHostActive();
+  const activityHeaderPhase: ActivityGameHeaderPhase = gameComplete
+    ? 'finish'
+    : showInstructions
+      ? 'intro'
+      : 'playing';
+  useRegisterActivityGameHeader(
+    activityHeaderAudio,
+    activityHeaderPhase,
+    sounds.isMuted,
+    sounds.toggleMute
+  );
+
   // Auto-complete when all content filtered by age
   useEffect(() => {
     if (noContent && gameComplete) {
@@ -420,6 +437,13 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
   if (showInstructions) {
     return (
       <IntroContainer dir="rtl">
+        {!activityHeaderAudio && (
+          <GameIntroHeaderBar>
+            <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
+              {sounds.isMuted ? '🔇' : '🔊'}
+            </GameHeaderMuteButton>
+          </GameIntroHeaderBar>
+        )}
         <IntroContent>
           <IntroTitle>{t.triviaTitle}</IntroTitle>
 
@@ -445,6 +469,13 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
     const accuracy = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
     return (
       <FinishContainer dir="rtl">
+        {!activityHeaderAudio && (
+          <GameIntroHeaderBar>
+            <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
+              {sounds.isMuted ? '🔇' : '🔊'}
+            </GameHeaderMuteButton>
+          </GameIntroHeaderBar>
+        )}
         <FinishContent>
           <FinishTitleBanner>
             <LeafVeinSvg />
@@ -505,9 +536,11 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
           </TopBarTimer>
         )}
         <TopBarItem>{currentQuestion + 1}/{questions.length} {t.questionsLabel}</TopBarItem>
-        <TopBarMute onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
-          {sounds.isMuted ? '🔇' : '🔊'}
-        </TopBarMute>
+        {!activityHeaderAudio && (
+          <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
+            {sounds.isMuted ? '🔇' : '🔊'}
+          </GameHeaderMuteButton>
+        )}
       </TopBar>
 
       <TriviaMainScroll>

@@ -160,7 +160,7 @@ export default function AdminUsersTab() {
   const isSelf = (userId: string) => {
     // Compare by email since old tokens may not have userId
     const user = users.find((u) => u._id === userId);
-    return user && admin && user.email === admin.email;
+    return !!(user && admin && user.email === admin.email);
   };
 
   return (

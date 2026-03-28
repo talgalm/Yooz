@@ -14,7 +14,6 @@ import CollageStation from '../../components/stations/CollageStation';
 import FeedbackStation, { type FeedbackResult } from '../../components/stations/FeedbackStation';
 import { styled, keyframes } from '@mui/material/styles';
 import {
-  PageContainer,
   HeaderActions,
   OutlineButton,
   CenteredContent,
@@ -41,6 +40,7 @@ import {
   StationContinueButton,
 } from '../../components/games/styled';
 import MissionInlinePlayer from './MissionInlinePlayer';
+import { useActivityPlayingHeaderSlot } from '../../context/activityPlayingHeaderContext';
 import type { GameResult } from '../../components/games/types';
 import type { ModuleItemData, GameItemData, StationItemData, MissionItemData, GameData } from './types';
 
@@ -228,7 +228,12 @@ export default function PlayingPhase({
   t,
 }: PlayingPhaseProps) {
   const progressText = `${t.step} ${currentItemIndex + 1} ${t.of} ${totalItems}`;
-  const isBallGameItem = currentItem.type === 'game' && (currentItem as GameItemData).gameType === 'ballGame';
+  const activityHeaderSlot = useActivityPlayingHeaderSlot();
+  const showGameHeaderSlot = activityHeaderSlot != null;
+  const showLeaderboardInGameSlot =
+    showGameHeaderSlot && activityHeaderSlot.phase === 'finish' && Boolean(onViewLeaderboard);
+  const showMusicInGameSlot = showGameHeaderSlot && activityHeaderSlot.phase !== 'finish';
+  const showStandaloneLeaderboard = !showGameHeaderSlot && Boolean(onViewLeaderboard);
 
   const renderContent = () => {
     if (currentItem.type === 'mission') {
@@ -378,6 +383,9 @@ export default function PlayingPhase({
           game={gameData}
           onComplete={onGameComplete}
           participantAge={participantAge}
+          embeddedInActivity
+          activityBallMuted={ballGameMuted}
+          onActivityBallMuteToggle={onBallGameMuteToggle}
         />
       );
     }
@@ -403,8 +411,6 @@ export default function PlayingPhase({
     );
   };
 
-  const isStation = currentItem.type === 'station';
-
   const headerBar = (
     <PlayingHeader style={{ position: 'sticky', top: 0, zIndex: 30, flexShrink: 0 }}>
       <PlayingHeaderLeft>
@@ -423,17 +429,27 @@ export default function PlayingPhase({
             {stationHintUsed ? t.showStationHint : t.stationHint}
           </StationHintButton>
         )}
-        {isBallGameItem && (
+        {showLeaderboardInGameSlot && onViewLeaderboard && (
           <DarkHeaderActionIconButton
             type="button"
-            onClick={onBallGameMuteToggle}
-            aria-label={ballGameMuted ? 'Unmute game music' : 'Mute game music'}
-            title={ballGameMuted ? 'Unmute game music' : 'Mute game music'}
+            onClick={onViewLeaderboard}
+            aria-label={t.leaderboardTitle || 'Leaderboard'}
+            title={t.leaderboardTitle || 'Leaderboard'}
           >
-            {ballGameMuted ? <MutedIcon /> : <SpeakerIcon />}
+            🏆
           </DarkHeaderActionIconButton>
         )}
-        {onViewLeaderboard && (
+        {showMusicInGameSlot && activityHeaderSlot && (
+          <DarkHeaderActionIconButton
+            type="button"
+            onClick={activityHeaderSlot.toggleMute}
+            aria-label={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
+            title={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
+          >
+            {activityHeaderSlot.isMuted ? <MutedIcon /> : <SpeakerIcon />}
+          </DarkHeaderActionIconButton>
+        )}
+        {showStandaloneLeaderboard && onViewLeaderboard && (
           <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
             🏆
           </DarkHeaderActionIconButton>
@@ -539,13 +555,9 @@ function VideoStationPlayer({ station, onContinue, t }: {
   t: Record<string, string>;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [hasEnded, setHasEnded] = useState(false);
   const [showReplay, setShowReplay] = useState(false);
 
-  const buttonAfterEnd = station.settings?.buttonAfterEnd !== false;
-
   const handleEnded = useCallback(() => {
-    setHasEnded(true);
     setShowReplay(true);
   }, []);
 

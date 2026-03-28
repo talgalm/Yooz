@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HelpChatHeaderButton } from '../../components/HelpChat';
 import { useAuth } from '../../context/AuthContext';
+import { ActivityPlayingHeaderProvider } from '../../context/activityPlayingHeaderContext';
 import { useTranslations } from '../../context/LanguageContext';
 import { apiFetch } from '../../utils/api';
 import { preloadActivityMedia } from '../../utils/mediaPreloader';
@@ -1003,6 +1004,7 @@ export default function StoryModulePage() {
 
   return (
     <>
+      <ActivityPlayingHeaderProvider>
       <PlayingPhase
         currentItem={currentItem}
         currentItemIndex={currentItemIndex}
@@ -1031,6 +1033,7 @@ export default function StoryModulePage() {
         popupModal={popupModal}
         t={t}
       />
+      </ActivityPlayingHeaderProvider>
       {entryTransitionStage !== 'idle' && (
         <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
       )}

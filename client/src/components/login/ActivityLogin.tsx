@@ -3,7 +3,6 @@ import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './ActivityLogin.i18n';
 import GroupSelector from './GroupSelector';
 import { Form } from '../styled';
-import { HelpLink } from '../../pages/admin/styled';
 import { styled } from '@mui/material/styles';
 import { isGoogleAuthAvailable, openGooglePopup, fetchGoogleEmail } from '../../utils/googleAuth';
 

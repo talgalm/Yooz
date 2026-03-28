@@ -13,14 +13,9 @@ const TIMER_INNER_WHITE = '#8dae63';
 const TIMER_NUMBER_STROKE = '#2c2c2c';
 
 // Game screen palette (from SCSS)
-const GAME_BG = '#b1c68e';
 const HILL_1 = '#9dbb76';
 const HILL_2 = '#8dae63';
 const QUESTION_BG = '#2b492b';
-const CIRCLE_BG = '#98ce56';
-const CIRCLE_BORDER_OUTER = '#4a7538';
-const CIRCLE_BORDER_INNER = '#649649';
-const CIRCLE_TEXT_STROKE = '#2b492b';
 const BTN_RED_BG = '#a55a4c';
 const BTN_RED_BORDER = '#622e22';
 const BTN_GREEN_BG = '#6cac5e';
@@ -95,6 +90,13 @@ export const TFHeader = styled('div')({
   position: 'relative',
   zIndex: 1,
   flexShrink: 0,
+  background: 'rgba(255,255,255,0.75)',
+  padding: '4px 10px',
+  borderRadius: 10,
+  border: '2px solid #4a6572',
+  boxSizing: 'border-box',
+  backdropFilter: 'blur(4px)',
+  gap: 6,
 });
 
 export const TFHeaderLeft = styled('div')({
@@ -110,24 +112,24 @@ export const TFHeaderRight = styled('div')({
 });
 
 export const TFScoreBadge = styled('div')({
-  background: 'rgba(0,0,0,0.15)',
+  background: 'rgba(74,101,114,0.12)',
   borderRadius: 16,
   padding: '5px 14px',
   fontSize: 14,
   fontWeight: 700,
-  color: WHITE,
+  color: '#2c3e50',
   display: 'flex',
   alignItems: 'center',
   gap: 4,
 });
 
 export const TFProgressBadge = styled('div')({
-  background: 'rgba(255,255,255,0.25)',
+  background: 'rgba(74,101,114,0.1)',
   borderRadius: 16,
   padding: '5px 12px',
   fontSize: 13,
   fontWeight: 700,
-  color: WHITE,
+  color: '#2c3e50',
 });
 
 // ─── Question Banner (Leaf-shaped) ───
@@ -149,6 +151,8 @@ export const QuestionBanner = styled('div')({
   position: 'relative',
   zIndex: 2,
   overflow: 'hidden',
+  // Space below score bar: flex gap is tight and rotate(-2deg) draws above the layout box
+  marginTop: 'clamp(14px, 4vw, 22px)',
   transform: 'rotate(-2deg)',
   animation: `${slideUp} 0.3s ease-out`,
   flexShrink: 1,
@@ -342,13 +346,22 @@ export const NatureCountdown = styled('div')({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
+  alignItems: 'stretch',
+  justifyContent: 'flex-start',
   backgroundColor: 'transparent',
   minHeight: '100%',
   height: '100%',
   position: 'relative',
   overflow: 'hidden',
+});
+
+export const NatureCountdownBody = styled('div')({
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minHeight: 0,
 });
 
 export const NatureCountdownLabel = styled('span')({
@@ -402,46 +415,28 @@ export const YoozLogo = styled('div')({
   zIndex: 1,
 });
 
-// ─── Top-bar mute button (like Trivia) ───
-
-export const TFMuteBtn = styled('button')({
-  width: 30,
-  height: 30,
-  borderRadius: '50%',
-  border: '2px solid rgba(255,255,255,0.5)',
-  background: 'rgba(0,0,0,0.2)',
-  color: '#fff',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  cursor: 'pointer',
-  flexShrink: 0,
-  fontSize: 15,
-  padding: 0,
-  '&:active': {
-    transform: 'scale(0.9)',
-  },
-});
-
 // ═══════════════════════════════════════════
-// ─── Opening / Instructions Screen ───
+// ─── Opening / Instructions Screen (matches Trivia / Puzzle) ───
 // ═══════════════════════════════════════════
 
-const INTRO_GREEN = '#326d3f';
-const INTRO_BROWN = '#613426';
-const INTRO_BROWN_BTN = '#9f5d41';
-const INTRO_BROWN_BTN_BORDER = '#814630';
+const TITLE_BLUE = '#2980b9';
+const BOX_BG = '#e3ebf3';
+const BOX_BORDER = '#4a6572';
+const BOX_SHADOW = '#3a5562';
+const TEXT_DARK = '#2c3e50';
+const BTN_PURPLE = FINISH_PURPLE;
+const BTN_PURPLE_DARK = FINISH_PURPLE_DARK;
 
 export const IntroContainer = styled('div')({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center',
+  alignItems: 'stretch',
   background: 'transparent',
   position: 'relative',
   overflow: 'hidden',
-  minHeight: '100%',
-  height: '100%',
+  minHeight: 0,
+  width: '100%',
 });
 
 export const IntroDecorations = styled('div')({
@@ -459,123 +454,72 @@ export const IntroContent = styled('div')({
   justifyContent: 'center',
   position: 'relative',
   zIndex: 1,
-  padding: '40px 20px 20px',
+  padding: '30px 20px 20px',
   textAlign: 'center',
   width: '100%',
   maxWidth: 400,
 });
 
-// ─── Header section: True / Or / False ───
-
-export const IntroHeaderSection = styled('div')({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: 10,
-  marginBottom: 50,
-});
-
-export const IntroStatusRow = styled('div')<{ variant: 'correct' | 'incorrect' }>(({ variant }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  gap: 15,
-  color: variant === 'correct' ? INTRO_GREEN : INTRO_BROWN,
-}));
-
-export const IntroIconCircle = styled('div')<{ variant: 'correct' | 'incorrect' }>(({ variant }) => ({
-  width: 80,
-  height: 80,
-  borderRadius: '50%',
-  border: `8px solid ${variant === 'correct' ? INTRO_GREEN : INTRO_BROWN}`,
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  flexShrink: 0,
-}));
-
-export const IntroStatusText = styled('h1')<{ tilt?: number }>(({ tilt }) => ({
-  fontSize: '3.8rem',
+export const IntroTitle = styled('h1')({
+  fontSize: '3.5rem',
   fontWeight: 900,
-  margin: 0,
-  lineHeight: 1,
-  transform: `rotate(${tilt ?? 4}deg)`,
-  color: 'inherit',
-}));
-
-export const IntroOrText = styled('div')({
-  fontSize: '2rem',
-  fontWeight: 700,
-  color: INTRO_GREEN,
-  margin: '5px 0',
+  color: TITLE_BLUE,
+  textShadow: '2px 2px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff',
+  transform: 'rotate(-4deg)',
+  margin: '0 0 24px',
+  lineHeight: 1.1,
+  animation: `${floatIn} 0.5s ease-out`,
 });
 
-// ─── Action section: Message board + Start button ───
-
-export const IntroActionSection = styled('div')({
-  width: '100%',
-  position: 'relative',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-});
-
-export const IntroMessageBoard = styled('div')({
-  background: '#2c4c32',
-  color: WHITE,
-  width: '100%',
+export const IntroInfoBox = styled('div')({
+  background: BOX_BG,
+  border: `3px solid ${BOX_BORDER}`,
   borderRadius: 15,
-  padding: '30px 20px 60px',
+  padding: '20px 18px',
   textAlign: 'center',
+  boxShadow: `0 4px 0 ${BOX_SHADOW}`,
+  marginBottom: 24,
+  width: '90%',
   boxSizing: 'border-box',
-  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-  animation: `${floatIn} 0.5s ease-out 0.2s both`,
+  animation: `${floatIn} 0.5s ease-out 0.1s both`,
 });
 
-export const IntroMainMsg = styled('h2')({
-  fontSize: '1.5rem',
-  margin: '0 0 10px',
-  fontWeight: 700,
-});
-
-export const IntroSubMsg = styled('p')({
-  fontSize: '1.2rem',
+export const IntroInfoText = styled('p')({
+  fontSize: 16,
+  fontWeight: 600,
+  color: TEXT_DARK,
+  lineHeight: 1.6,
   margin: 0,
-  opacity: 0.9,
+  whiteSpace: 'pre-wrap',
 });
 
 export const IntroStartButton = styled('button')({
-  position: 'relative',
-  marginTop: -25,
-  background: INTRO_BROWN_BTN,
+  background: BTN_PURPLE,
   color: WHITE,
-  fontSize: '2.2rem',
+  fontSize: '1.6rem',
   fontWeight: 700,
-  padding: '10px 60px',
+  padding: '14px 48px',
   borderRadius: 15,
-  border: `4px solid ${INTRO_BROWN_BTN_BORDER}`,
+  border: `4px solid ${BTN_PURPLE_DARK}`,
   cursor: 'pointer',
   fontFamily: 'inherit',
-  boxShadow: `inset 0 4px 0 rgba(255,255,255,0.2), 0 6px 0 ${INTRO_BROWN}, 0 10px 15px rgba(0,0,0,0.3)`,
+  boxShadow: `0 5px 0 ${BTN_PURPLE_DARK}, 0 8px 15px rgba(0,0,0,0.2)`,
   transition: 'all 0.1s ease',
-  animation: `${floatIn} 0.5s ease-out 0.4s both`,
-  zIndex: 2,
+  animation: `${floatIn} 0.5s ease-out 0.25s both`,
   '&:active': {
     transform: 'translateY(4px)',
-    boxShadow: `inset 0 4px 0 rgba(255,255,255,0.2), 0 2px 0 ${INTRO_BROWN}, 0 5px 10px rgba(0,0,0,0.3)`,
+    boxShadow: `0 1px 0 ${BTN_PURPLE_DARK}, 0 3px 8px rgba(0,0,0,0.2)`,
   },
 });
 
-// ─── Footer ───
-
-export const IntroYoozLogo = styled('h3')({
-  color: INTRO_GREEN,
-  fontSize: '2.5rem',
+export const IntroYoozLogo = styled('div')({
+  marginTop: 'auto',
+  paddingBottom: 20,
+  paddingTop: 30,
+  fontSize: 36,
   fontWeight: 900,
-  margin: 0,
+  color: TITLE_BLUE,
   letterSpacing: 2,
-  marginTop: 60,
-  marginBottom: 20,
-  zIndex: 1,
 });
 
 // ═══════════════════════════════════════════
@@ -586,7 +530,7 @@ export const FinishContainer = styled('div')({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center',
+  alignItems: 'stretch',
   background: 'transparent',
   position: 'relative',
   overflow: 'hidden',

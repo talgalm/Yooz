@@ -13,11 +13,6 @@ const fadeIn = keyframes`
   to { opacity: 1; }
 `;
 
-const pulse = keyframes`
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
-`;
-
 // ─── Floating Button ───
 
 export const HelpFab = styled('button')({

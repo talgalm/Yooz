@@ -12,7 +12,6 @@ import {
   ScoringInput,
   SmallOutlineButton,
   TinyDangerButton,
-  AddButton,
   CorrectToggleButton,
   AgeRangeToggle,
   AgeRangeRow,
@@ -28,8 +27,6 @@ interface BallGameConfigProps {
   t: Record<string, string>;
   initialSettings?: Record<string, unknown>;
 }
-
-const emptyAnswer = (): BallGameAnswer => ({ text: '', isCorrect: false });
 
 const emptyQuestion = (): BallGameQuestion => ({
   text: '',

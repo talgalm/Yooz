@@ -4,10 +4,6 @@ import { styled, keyframes } from '@mui/material/styles';
 
 const WHITE = '#fff';
 
-// Background gradient
-const BG_TOP = '#d4f0fd';
-const BG_BOTTOM = '#a8e6b1';
-
 // Box/Card styling
 const BOX_BG = '#e3ebf3';
 const BOX_BORDER = '#4a6572';
@@ -38,11 +34,6 @@ const LEAF_BANNER_DARK = FINISH_PURPLE_DARK;
 
 // ─── Animations ───
 
-const pulse = keyframes`
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-`;
-
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -67,7 +58,7 @@ export const IntroContainer = styled('div')({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center',
+  alignItems: 'stretch',
   background: 'transparent',
   position: 'relative',
   overflow: 'hidden',
@@ -260,25 +251,6 @@ export const TopBarTimer = styled('span')<{ critical?: boolean }>(({ critical })
   color: critical ? BTN_PURPLE_DARK : TEXT_DARK,
   transition: 'color 0.3s ease',
 }));
-
-export const TopBarMute = styled('button')({
-  width: 28,
-  height: 28,
-  borderRadius: '50%',
-  border: `2px solid ${BOX_BORDER}`,
-  background: 'rgba(255,255,255,0.5)',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: 14,
-  padding: 0,
-  lineHeight: 1,
-  flexShrink: 0,
-  '&:active': {
-    transform: 'scale(0.9)',
-  },
-});
 
 // ─── Question Box ───
 
@@ -634,7 +606,7 @@ export const FinishContainer = styled('div')({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center',
+  alignItems: 'stretch',
   background: 'transparent',
   position: 'relative',
   overflow: 'auto',

@@ -106,7 +106,7 @@ export function usePhysicsEngine({
     });
 
     // Level-specific walls
-    const levelWalls = config.walls.map((wc, i) =>
+    const levelWalls = config.walls.map((wc) =>
       Matter.Bodies.rectangle(
         wc.x * w,
         wc.y * h,

@@ -31,6 +31,42 @@ export const GameCenteredLayout = styled('div')({
   textAlign: 'center',
 });
 
+// ─── Shared intro / phase header (mute aligned with trivia top bar) ───
+
+const GAME_CHROME_BORDER = '#4a6572';
+
+/** Full-width row at top of intro, countdown, or finish screens — place mute on the end. */
+export const GameIntroHeaderBar = styled('div')({
+  width: '100%',
+  alignSelf: 'stretch',
+  display: 'flex',
+  justifyContent: 'flex-end',
+  alignItems: 'center',
+  padding: 'max(6px, env(safe-area-inset-top)) 12px 8px',
+  flexShrink: 0,
+  boxSizing: 'border-box',
+});
+
+/** Matches trivia/puzzle `TopBarMute` so music control stays in the header strip. */
+export const GameHeaderMuteButton = styled('button')({
+  width: 28,
+  height: 28,
+  borderRadius: '50%',
+  border: `2px solid ${GAME_CHROME_BORDER}`,
+  background: 'rgba(255,255,255,0.85)',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 14,
+  padding: 0,
+  lineHeight: 1,
+  flexShrink: 0,
+  '&:active': {
+    transform: 'scale(0.9)',
+  },
+});
+
 // ─── Game Header ───
 
 export const GameHeader = styled('div')({

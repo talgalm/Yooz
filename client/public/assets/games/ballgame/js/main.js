@@ -304,6 +304,9 @@ function toggleMute() {
   }
 }
 
+// Exposed for embedded host: index.html postMessage handler (BALLGAME_TOGGLE_MUTE).
+window.toggleMute = toggleMute;
+
 /**
  * Initializes the game by loading configurations and setting up the game environment.
  * @function init
@@ -1157,7 +1160,7 @@ function addQuestion() {
   if (textLayer) {
     var qEl = document.createElement('div');
     qEl.id = 'question-text-html';
-    qEl.style.cssText = 'position:absolute;left:' + questionBox.x + 'px;top:' + questionBox.y + 'px;width:' + questionBox.width + 'px;height:' + questionBox.height + 'px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:"Encode Sans Expanded",Arial,sans-serif;color:#222;text-align:center;padding:0 12px;box-sizing:border-box;line-height:1.3;direction:rtl;';
+    qEl.style.cssText = 'position:absolute;left:' + questionBox.x + 'px;top:' + questionBox.y + 'px;width:' + questionBox.width + 'px;height:' + questionBox.height + 'px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:"Encode Sans Expanded",Arial,sans-serif;color:#222;text-align:center;padding:0 12px;box-sizing:border-box;line-height:1.3;direction:rtl;pointer-events:none;';
     qEl.textContent = arrQuestions[currentQuestionIndex];
     textLayer.appendChild(qEl);
   }

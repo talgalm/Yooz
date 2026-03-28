@@ -3,7 +3,6 @@ import { styled, keyframes } from '@mui/material/styles';
 import type { CustomInstructionsData } from './types';
 
 const FRAME_BORDER = '#2c1537';
-const STAR_GOLD = '#FFD700';
 const COMPASS_PINK = '#E89EAD';
 const BACKPACK_BLUE = '#63B4D9';
 const BACKPACK_PINK = '#E89EAD';

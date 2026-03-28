@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLang, useTranslations } from '../../../context/LanguageContext';
 import type { GameProps, GameResult, QuestionAnswerRecord } from '../types';
+import { useRegisterActivityGameHeader } from '../../../context/activityPlayingHeaderContext';
+import { GameIntroHeaderBar, GameHeaderMuteButton } from '../styled';
 import type { BallGameQuestion, BallGameSettings } from './types';
 import { texts } from './BallGame.i18n';
 import {
@@ -98,7 +100,18 @@ function reportsToRecords(reports: LegacyDetailedReport[]): QuestionAnswerRecord
   }));
 }
 
-export default function BallGame({ game, onComplete, participantAge }: GameProps) {
+export default function BallGame({
+  game,
+  onComplete,
+  participantAge,
+  embeddedInActivity,
+  activityBallMuted,
+  onActivityBallMuteToggle,
+}: GameProps & {
+  embeddedInActivity?: boolean;
+  activityBallMuted?: boolean;
+  onActivityBallMuteToggle?: () => void;
+}) {
   const { lang, dir } = useLang();
   const t = useTranslations(texts);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -106,6 +119,7 @@ export default function BallGame({ game, onComplete, participantAge }: GameProps
   const detailedReportsRef = useRef<LegacyDetailedReport[]>([]);
   const lastScoreRef = useRef<{ gameScore?: number; gameTimeSecond?: number }>({});
   const [pendingResult, setPendingResult] = useState<GameResult | null>(null);
+  const [previewMuteIconMuted, setPreviewMuteIconMuted] = useState(false);
 
   const settings = game.settings as unknown as BallGameSettings;
 
@@ -144,6 +158,10 @@ export default function BallGame({ game, onComplete, participantAge }: GameProps
       sendInit();
       window.setTimeout(sendInit, 250);
       window.setTimeout(sendInit, 700);
+      // Keep focus in the iframe so Phaser receives the next pointer events after host UI interaction.
+      window.requestAnimationFrame(() => {
+        iframe.focus();
+      });
     };
 
     iframe.addEventListener('load', onLoad);
@@ -152,10 +170,16 @@ export default function BallGame({ game, onComplete, participantAge }: GameProps
 
   useEffect(() => {
     const handleToggleMute = () => {
-      iframeRef.current?.contentWindow?.postMessage(
+      const iframe = iframeRef.current;
+      iframe?.contentWindow?.postMessage(
         { source: 'yooz-host', type: 'BALLGAME_TOGGLE_MUTE' },
         '*'
       );
+      // After using the parent header mute, refocus the iframe — otherwise the first taps
+      // can be lost (Safari / embedded iframe) and answer clicks appear to do nothing.
+      window.requestAnimationFrame(() => {
+        iframe?.focus();
+      });
     };
     window.addEventListener('yooz:ballgame-audio-toggle', handleToggleMute as EventListener);
     return () => window.removeEventListener('yooz:ballgame-audio-toggle', handleToggleMute as EventListener);
@@ -237,6 +261,16 @@ export default function BallGame({ game, onComplete, participantAge }: GameProps
     return () => window.removeEventListener('message', onMessage);
   }, [filteredQuestions.length, onComplete]);
 
+  const activityBallHost = Boolean(embeddedInActivity && onActivityBallMuteToggle);
+  useRegisterActivityGameHeader(
+    activityBallHost,
+    pendingResult ? 'finish' : 'playing',
+    activityBallMuted ?? false,
+    () => {
+      onActivityBallMuteToggle?.();
+    }
+  );
+
   const src = `/assets/games/ballgame/index.html?v=4&embedded=1&lang=${encodeURIComponent(lang)}&dir=${encodeURIComponent(dir)}&gameId=${encodeURIComponent(game._id)}&timeLimit=${encodeURIComponent(String(settings.scoring?.timeLimitSeconds ?? 30))}`;
   if (pendingResult) {
     const answeredQuestions = pendingResult.questionAnswers?.length || filteredQuestions.length;
@@ -285,10 +319,36 @@ export default function BallGame({ game, onComplete, participantAge }: GameProps
         overflow: 'hidden',
       }}
     >
+      {!embeddedInActivity && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 25,
+            pointerEvents: 'none',
+          }}
+        >
+          <GameIntroHeaderBar style={{ pointerEvents: 'auto' }}>
+            <GameHeaderMuteButton
+              type="button"
+              onClick={() => {
+                setPreviewMuteIconMuted((m) => !m);
+                window.dispatchEvent(new CustomEvent('yooz:ballgame-audio-toggle'));
+              }}
+              aria-label={previewMuteIconMuted ? 'Unmute game sound' : 'Mute game sound'}
+            >
+              {previewMuteIconMuted ? '🔇' : '🔊'}
+            </GameHeaderMuteButton>
+          </GameIntroHeaderBar>
+        </div>
+      )}
       <iframe
         ref={iframeRef}
         src={src}
         title="Ball Game"
+        tabIndex={-1}
         style={{
           width: '100vw',
           height: '100dvh',

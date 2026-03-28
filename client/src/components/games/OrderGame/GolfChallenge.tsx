@@ -414,7 +414,6 @@ const GRASS_DARK = '#3a5a1a';
 const GRASS_LIGHT = '#5a822b';
 const LEAF_BANNER_BG = '#3d6b4f';
 const LEAF_BANNER_DARK = '#2e5a3e';
-const BORDER_PURPLE = '#5b4cd4';
 const FINISH_PURPLE = '#6c5ce7';
 
 const GolfContainer = styled('div')({

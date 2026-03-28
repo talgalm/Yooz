@@ -96,7 +96,7 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
       setGridRows(rows);
       setRetryGap((s.retryGap as number) || 3);
       if (Array.isArray(s.questions)) {
-        const loaded = (s.questions as { text: string; media?: string; timeLimitSeconds?: number; answers: { text: string; isCorrect: boolean }[]; ageRange?: { minAge: number; maxAge: number } }[]).map((q) => ({
+        const loaded: PuzzleQuestion[] = (s.questions as { text: string; media?: string; timeLimitSeconds?: number; answers: { text: string; isCorrect: boolean }[]; ageRange?: { minAge: number; maxAge: number } }[]).map((q) => ({
           text: q.text || '',
           media: q.media || '',
           answers: (q.answers || []).map((a) => ({

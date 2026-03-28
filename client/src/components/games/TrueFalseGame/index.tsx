@@ -4,9 +4,14 @@ import { texts } from './TrueFalseGame.i18n';
 import { useGameHint } from '../../../hooks/useGameHint';
 import HintModals from '../HintModals';
 import HintButton from '../HintButton';
-import { GameProps, GameResult, QuestionAnswerRecord, HintConfig, AgeRange, GAME_CONSTANTS } from '../types';
+import { GameProps, QuestionAnswerRecord, HintConfig, AgeRange, GAME_CONSTANTS } from '../types';
 import { useGameSounds } from '../../../hooks/useGameSounds';
-import MuteButton from '../MuteButton';
+import {
+  useActivityPlayingHeaderHostActive,
+  useRegisterActivityGameHeader,
+  type ActivityGameHeaderPhase,
+} from '../../../context/activityPlayingHeaderContext';
+import { GameIntroHeaderBar, GameHeaderMuteButton } from '../styled';
 import {
   NatureContainer,
   TFHeader,
@@ -14,7 +19,6 @@ import {
   TFHeaderRight,
   TFScoreBadge,
   TFProgressBadge,
-  TFMuteBtn,
   QuestionBanner,
   QuestionBannerText,
   TimerCircleWrapper,
@@ -26,22 +30,16 @@ import {
   CorrectButton,
   FeedbackOverlay,
   NatureCountdown,
+  NatureCountdownBody,
   NatureCountdownLabel,
   NatureCountdownNumber,
   NatureMediaContainer,
   NatureMediaImage,
-  YoozLogo,
   IntroContainer,
   IntroContent,
-  IntroHeaderSection,
-  IntroStatusRow,
-  IntroIconCircle,
-  IntroStatusText,
-  IntroOrText,
-  IntroActionSection,
-  IntroMessageBoard,
-  IntroMainMsg,
-  IntroSubMsg,
+  IntroTitle,
+  IntroInfoBox,
+  IntroInfoText,
   IntroStartButton,
   IntroYoozLogo,
   FinishContainer,
@@ -71,23 +69,6 @@ function CheckIcon() {
   return (
     <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function IntroCheckSvg() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 36 36">
-      <polyline points="8,18 15,26 28,10" fill="none" stroke="#326d3f" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function IntroCrossSvg() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 36 36">
-      <line x1="10" y1="10" x2="26" y2="26" stroke="#613426" strokeWidth="5" strokeLinecap="round" />
-      <line x1="26" y1="10" x2="10" y2="26" stroke="#613426" strokeWidth="5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -234,6 +215,19 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
 
   useEffect(() => { currentIndexRef.current = currentIndex; }, [currentIndex]);
   useEffect(() => { answeredRef.current = answered; }, [answered]);
+
+  const activityHeaderAudio = useActivityPlayingHeaderHostActive();
+  const activityHeaderPhase: ActivityGameHeaderPhase = gameComplete
+    ? 'finish'
+    : showInstructions
+      ? 'intro'
+      : 'playing';
+  useRegisterActivityGameHeader(
+    activityHeaderAudio,
+    activityHeaderPhase,
+    sounds.isMuted,
+    sounds.toggleMute
+  );
 
   // Auto-complete if no statements
   useEffect(() => {
@@ -395,41 +389,26 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
   if (showInstructions) {
     return (
       <IntroContainer dir="rtl">
+        {!activityHeaderAudio && (
+          <GameIntroHeaderBar>
+            <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
+              {sounds.isMuted ? '🔇' : '🔊'}
+            </GameHeaderMuteButton>
+          </GameIntroHeaderBar>
+        )}
         <IntroContent>
-          {/* Header: True / Or / False */}
-          <IntroHeaderSection>
-            <IntroStatusRow variant="correct">
-              <IntroIconCircle variant="correct">
-                <IntroCheckSvg />
-              </IntroIconCircle>
-              <IntroStatusText tilt={4}>{t.true}</IntroStatusText>
-            </IntroStatusRow>
+          <IntroTitle>{game.name || t.gameTitle}</IntroTitle>
 
-            <IntroOrText>{t.or}</IntroOrText>
+          <IntroInfoBox>
+            <IntroInfoText>
+              {settings.instructions || t.gameTitle}
+            </IntroInfoText>
+          </IntroInfoBox>
 
-            <IntroStatusRow variant="incorrect">
-              <IntroIconCircle variant="incorrect">
-                <IntroCrossSvg />
-              </IntroIconCircle>
-              <IntroStatusText tilt={-3}>{t.false}</IntroStatusText>
-            </IntroStatusRow>
-          </IntroHeaderSection>
+          <IntroStartButton onClick={beginGame}>
+            {t.start}
+          </IntroStartButton>
 
-          {/* Action: Message board + overlapping Start button */}
-          <IntroActionSection>
-            <IntroMessageBoard>
-              {settings.instructions ? (
-                <IntroMainMsg>{settings.instructions}</IntroMainMsg>
-              ) : (
-                <IntroMainMsg>{game.name}</IntroMainMsg>
-              )}
-            </IntroMessageBoard>
-            <IntroStartButton onClick={beginGame}>
-              {t.start}
-            </IntroStartButton>
-          </IntroActionSection>
-
-          {/* Footer */}
           <IntroYoozLogo><img src="/images/logo-white.png" alt="Yooz" style={{ height: 36 }} /></IntroYoozLogo>
         </IntroContent>
       </IntroContainer>
@@ -439,10 +418,18 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
   // ─── Countdown screen (3-2-1) ───
   if (countdown !== null) {
     return (
-      <NatureCountdown>
-        <NatureCountdownLabel>{t.getReady}</NatureCountdownLabel>
-        <NatureCountdownNumber key={countdown}>{countdown}</NatureCountdownNumber>
-        <MuteButton isMuted={sounds.isMuted} onToggle={sounds.toggleMute} />
+      <NatureCountdown dir="rtl">
+        {!activityHeaderAudio && (
+          <GameIntroHeaderBar>
+            <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
+              {sounds.isMuted ? '🔇' : '🔊'}
+            </GameHeaderMuteButton>
+          </GameIntroHeaderBar>
+        )}
+        <NatureCountdownBody>
+          <NatureCountdownLabel>{t.getReady}</NatureCountdownLabel>
+          <NatureCountdownNumber key={countdown}>{countdown}</NatureCountdownNumber>
+        </NatureCountdownBody>
       </NatureCountdown>
     );
   }
@@ -453,6 +440,13 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
     const accuracy = statements.length > 0 ? Math.round((correctCount / statements.length) * 100) : 0;
     return (
       <FinishContainer dir="rtl">
+        {!activityHeaderAudio && (
+          <GameIntroHeaderBar>
+            <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
+              {sounds.isMuted ? '🔇' : '🔊'}
+            </GameHeaderMuteButton>
+          </GameIntroHeaderBar>
+        )}
         <FinishContent>
           {/* Title banner */}
           <FinishTitleBanner>
@@ -483,7 +477,6 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
           {/* Logo */}
           <FinishYoozLogo><img src="/images/logo-purple.png" alt="Yooz" style={{ height: 36 }} /></FinishYoozLogo>
         </FinishContent>
-        <MuteButton isMuted={sounds.isMuted} onToggle={sounds.toggleMute} />
       </FinishContainer>
     );
   }
@@ -500,9 +493,11 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
       <TFHeader>
         <TFHeaderLeft>
           <TFScoreBadge>{totalScore} {t.points}</TFScoreBadge>
-          <TFMuteBtn onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
-            {sounds.isMuted ? '🔇' : '🔊'}
-          </TFMuteBtn>
+          {!activityHeaderAudio && (
+            <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
+              {sounds.isMuted ? '🔇' : '🔊'}
+            </GameHeaderMuteButton>
+          )}
         </TFHeaderLeft>
         <TFHeaderRight>
           <TFProgressBadge>{currentIndex + 1}/{statements.length}</TFProgressBadge>

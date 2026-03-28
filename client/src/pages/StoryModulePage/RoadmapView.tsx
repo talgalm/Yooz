@@ -63,10 +63,6 @@ const pulse = keyframes`
   0%, 100% { transform: translate(-50%,-50%) scale(1); box-shadow: 0 4px 12px rgba(0,0,0,.25); }
   50%       { transform: translate(-50%,-50%) scale(1.07); box-shadow: 0 4px 22px rgba(0,0,0,.38); }
 `;
-const pulseRing = keyframes`
-  0%   { transform: translate(-50%,-50%) scale(1); opacity: .35; }
-  100% { transform: translate(-50%,-50%) scale(1.85); opacity: 0; }
-`;
 const footstepAppear = keyframes`
   0%   { opacity: 0; transform: translate(-50%,-50%) scale(.3); }
   50%  { opacity: .7; transform: translate(-50%,-50%) scale(1.1); }
@@ -144,44 +140,11 @@ const NodeWrapper = styled('div')<{ state: 'completed' | 'active' | 'locked'; an
   }),
 );
 
-const PulseRingEl = styled('div')({
-  position: 'absolute', width: NODE_SIZE + 24, height: NODE_SIZE + 24,
-  borderRadius: '50%', border: '3px solid var(--pulse-ring-color, rgba(180,210,50,.5))',
-  top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-  animation: `${pulseRing} 2s ease-out infinite`,
-  pointerEvents: 'none', zIndex: 9,
-});
-
 const NodeNumber = styled('span')<{ state: 'completed' | 'active' | 'locked' }>(({ state }) => ({
   fontSize: 30, fontWeight: 900, color: '#fff', userSelect: 'none',
   lineHeight: 1, textShadow: '0 2px 4px rgba(0,0,0,.2)',
   opacity: state === 'locked' ? 0.6 : 1,
 }));
-
-const NodeLabel = styled('div')({
-  position: 'absolute', top: NODE_SIZE / 2 + 10, left: '50%',
-  transform: 'translateX(-50%)', whiteSpace: 'nowrap',
-  fontSize: 11, fontWeight: 700,
-  color: 'var(--node-label-color, #fff)',
-  textShadow: 'var(--node-label-shadow, 0 1px 4px rgba(0,0,0,.6))',
-  textAlign: 'center', maxWidth: 100, overflow: 'hidden',
-  textOverflow: 'ellipsis', letterSpacing: 0.3,
-});
-
-const StarBadge = styled('div')({
-  position: 'absolute', bottom: -8, right: -8,
-  width: 26, height: 26, display: 'flex',
-  alignItems: 'center', justifyContent: 'center',
-  zIndex: 12, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,.3))',
-});
-
-const LockBadge = styled('div')({
-  position: 'absolute', top: 18, right: 38,
-  width: 22, height: 22, borderRadius: '50%',
-  background: '#ccc', border: '2px solid #fff',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  zIndex: 12, boxShadow: '0 2px 4px rgba(0,0,0,.15)',
-});
 
 const FootprintEl = styled('div')<{ delay: number; isRight?: boolean }>(({ delay, isRight }) => ({
   position: 'absolute', width: 22, height: 22,
@@ -189,14 +152,6 @@ const FootprintEl = styled('div')<{ delay: number; isRight?: boolean }>(({ delay
   animation: `${footstepAppear} 0.4s ease-out ${delay}s forwards`,
   zIndex: 8, '& svg': { transform: isRight ? 'scaleX(-1)' : 'none' },
 }));
-
-const SideWaveDecoration = styled('img')({
-  position: 'absolute',
-  pointerEvents: 'none',
-  userSelect: 'none',
-  zIndex: 0,
-  opacity: 0.9,
-});
 
 const RoadsideWaveDecoration = styled('img')({
   position: 'absolute',
@@ -284,18 +239,6 @@ const TumbleweedSpinWrap = styled('img')<{ spinDuration: number }>(({ spinDurati
   animation: `${tumbleweedSpin} ${spinDuration}s linear infinite`,
 }));
 
-
-const StarIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24">
-    <path d="M12 2l2.9 6.3L22 9.5l-5 5.1L18.2 22 12 18.5 5.8 22 7 14.6 2 9.5z" fill="#FFD700" stroke="#c8a800" strokeWidth="0.5" />
-  </svg>
-);
-const SmallLockIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-    <rect x="5" y="11" width="14" height="10" rx="2" fill="#999" />
-    <path d="M8 11V7a4 4 0 018 0v4" stroke="#999" strokeWidth="2.5" strokeLinecap="round" />
-  </svg>
-);
 const FootprintSvg = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff" stroke="#d9d9d9" strokeWidth={1.8} strokeLinejoin="round">
     <ellipse cx="8" cy="6" rx="3" ry="4" />
@@ -410,12 +353,6 @@ function getContentHeight(numItems: number) {
   return PADDING_TOP + Math.max(0, getNumRows(numItems) - 1) * VERTICAL_SPACING + PADDING_BOTTOM;
 }
 
-function getDecorationCountRange(numStations: number): { min: number; max: number } {
-  if (numStations <= 8) return { min: 2, max: 3 };
-  if (numStations <= 14) return { min: 3, max: 4 };
-  return { min: 4, max: 6 };
-}
-
 function hashString(value: string): number {
   let hash = 0;
   for (let i = 0; i < value.length; i += 1) {
@@ -431,17 +368,6 @@ function createSeededRandom(seed: number) {
     state = (state * 16807) % 2147483647;
     return (state - 1) / 2147483646;
   };
-}
-
-function getStationRow(index: number): number {
-  let remainingIndex = index;
-  let row = 0;
-  while (true) {
-    const rowCount = row % 2 === 0 ? 2 : 1;
-    if (remainingIndex < rowCount) return row;
-    remainingIndex -= rowCount;
-    row += 1;
-  }
 }
 
 type Rect = { left: number; top: number; right: number; bottom: number };
@@ -768,56 +694,6 @@ export default function RoadmapView({
     return { left, right };
   }, [W, items.length]);
 
-  const lakePlacements = useMemo(() => {
-    if (W <= 0 || items.length < 3) {
-      return [] as Array<{ left: number; top: number; width: number; flipX: boolean }>;
-    }
-
-    const candidates = Array.from({ length: items.length - 1 }, (_, index) => {
-      const fromRow = getStationRow(index);
-      const toRow = getStationRow(index + 1);
-      if (fromRow === toRow) return null; // skip same-row stations
-
-      const from = getNodePosition(index, W);
-      const to = getNodePosition(index + 1, W);
-      return { from, to };
-    }).filter(Boolean) as Array<{ from: { x: number; y: number }; to: { x: number; y: number } }>;
-
-    if (!candidates.length) return [];
-
-    const range = getDecorationCountRange(items.length);
-    const minCount = Math.min(range.min, candidates.length);
-    const maxCount = Math.min(range.max, candidates.length);
-    const seed = hashString(items.map((item) => item._id).join('|')) + W + items.length * 37;
-    const rng = createSeededRandom(seed);
-    const wantedCount = minCount + Math.floor(rng() * (maxCount - minCount + 1));
-
-    const shuffled = [...candidates];
-    for (let i = shuffled.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(rng() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-
-    return shuffled.slice(0, wantedCount).map(({ from, to }) => {
-      const midX = (from.x + to.x) / 2;
-      const midY = (from.y + to.y) / 2;
-      const dx = to.x - from.x;
-      const dy = to.y - from.y;
-      const length = Math.max(1, Math.hypot(dx, dy));
-      const perpX = -dy / length;
-      const perpY = dx / length;
-      const offset = 28 + rng() * 30;
-      const sign = rng() > 0.5 ? 1 : -1;
-
-      return {
-        left: midX + perpX * offset * sign,
-        top: midY + perpY * offset * sign,
-        width: Math.max(46, W * (0.16 + rng() * 0.1)),
-        flipX: rng() > 0.5,
-      };
-    });
-  }, [W, items]);
-
   const themedDecorations = useMemo(() => {
     if (theme === 'ocean') return OCEAN_DECORATIONS;
     if (theme === 'desert') return DESERT_DECORATIONS;
@@ -1129,7 +1005,6 @@ export default function RoadmapView({
     '--node-locked-bg': kit.nodeLockedBg,
     '--node-label-color': kit.nodeLabelColor,
     '--node-label-shadow': kit.nodeLabelShadow,
-    '--pulse-ring-color': kit.pulseRingColor,
   } as React.CSSProperties & Record<string, string>;
 
   const header = (
@@ -1275,8 +1150,6 @@ export default function RoadmapView({
               <div key={item._id}
                 style={{ position: 'absolute', left: pos.x, top: pos.y, zIndex: 10 }}
                 ref={state === 'active' ? activeNodeRef : undefined}>
-                {/* {state === 'completed' && <StarBadge><StarIcon /></StarBadge>} */}
-                {/* {state === 'locked'    && <LockBadge><SmallLockIcon /></LockBadge>} */}
                 <NodeWrapper state={state}
                   animateIn={state === 'completed' && index === completedCount - 1 && showFootsteps}
                   onClick={state === 'active' ? () => onNodeTap(index) : undefined}>

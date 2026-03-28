@@ -9,7 +9,6 @@ import type { ConfettiPiece } from './types';
 
 // ─── Colors ───
 
-const C_PRIMARY_BG = '#8bc34a';
 const C_DARK_GREEN = '#689f38';
 const C_DARKER_GREEN = '#33691e';
 const C_YELLOW_STAR = '#ffca28';
