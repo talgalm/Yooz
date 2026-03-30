@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HelpChatHeaderButton } from '../../components/HelpChat';
 import LangDrawer from '../../components/LangDrawer';
@@ -33,10 +33,43 @@ const cardSlideIn = keyframes`
 
 const Content = styled('div')({
   flex: 1,
+  minHeight: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'stretch',
+});
+
+/** Fills space under the header; only this region scrolls (height follows viewport). */
+const MainScroll = styled('div')({
+  flex: 1,
+  minHeight: 0,
+  width: '100%',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '16px 16px 24px',
+  padding: '16px 16px 8px',
+  boxSizing: 'border-box',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+  overscrollBehavior: 'contain',
+  WebkitOverflowScrolling: 'touch',
+  scrollbarWidth: 'none',
+  msOverflowStyle: 'none',
+  '&::-webkit-scrollbar': {
+    display: 'none',
+    width: 0,
+    height: 0,
+  },
+});
+
+const BackFooter = styled('div')({
+  flexShrink: 0,
+  width: '100%',
+  display: 'flex',
+  justifyContent: 'center',
+  padding: '12px 16px calc(12px + env(safe-area-inset-bottom))',
+  boxSizing: 'border-box',
+  background: 'linear-gradient(to top, rgba(0,0,0,0.06) 0%, transparent 100%)',
 });
 
 const RibbonTitle = styled('div')({
@@ -80,20 +113,7 @@ const PlayerList = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   gap: 8,
-  maxHeight: 'calc(100dvh - 220px)',
-  overflowY: 'auto',
   padding: '4px 2px',
-  '&::-webkit-scrollbar': {
-    width: 6,
-  },
-  '&::-webkit-scrollbar-track': {
-    background: 'rgba(255,255,255,0.2)',
-    borderRadius: 3,
-  },
-  '&::-webkit-scrollbar-thumb': {
-    background: 'rgba(255,255,255,0.5)',
-    borderRadius: 3,
-  },
 });
 
 const PlayerCard = styled('div')<{ highlighted?: boolean; animDelay?: number }>(
@@ -113,46 +133,48 @@ const PlayerCard = styled('div')<{ highlighted?: boolean; animDelay?: number }>(
   }),
 );
 
-const RankBadge = styled('div')<{ medalColor?: string }>(({ medalColor }) => ({
-  width: 35,
-  height: 35,
-  borderRadius: '50%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontWeight: 900,
-  fontSize: medalColor ? 18 : 14,
-  flexShrink: 0,
-  ...(medalColor
-    ? {
-        background: medalColor,
-        color: '#fff',
-        boxShadow: `0 2px 6px ${medalColor}66`,
-        border: `2px solid ${medalColor === C_GOLD ? '#e6c200' : medalColor === C_SILVER ? '#a8a8a8' : '#b06a2a'}`,
-      }
-    : {
-        background: C_LIGHT_GREEN,
-        color: C_DARKER_GREEN,
-        border: `2px solid ${C_DARK_GREEN}33`,
-      }),
-}));
-
-const AvatarCircle = styled('div')<{ bgColor: string }>(({ bgColor }) => ({
-  width: 35,
-  height: 35,
-  borderRadius: '50%',
-  background: bgColor,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontWeight: 800,
-  fontSize: 14,
-  color: '#fff',
-  flexShrink: 0,
-  textTransform: 'uppercase',
-  border: '2px solid rgba(255,255,255,0.8)',
-  boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
-}));
+const RankBadge = styled('div')<{ medalColor?: string; rank?: number }>(({ medalColor, rank }) => {
+  const isMedalIcon = rank === 1 || rank === 2 || rank === 3;
+  const base = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    fontWeight: 900,
+  };
+  if (isMedalIcon) {
+    return {
+      ...base,
+      width: 42,
+      height: 50,
+      borderRadius: 0,
+      fontSize: 14,
+      background: 'transparent',
+      border: 'none',
+      boxShadow: 'none',
+      color: 'inherit',
+    };
+  }
+  return {
+    ...base,
+    width: 35,
+    height: 35,
+    borderRadius: '50%',
+    fontSize: medalColor ? 18 : 14,
+    ...(medalColor
+      ? {
+          background: medalColor,
+          color: '#fff',
+          boxShadow: `0 2px 6px ${medalColor}66`,
+          border: `2px solid ${medalColor === C_GOLD ? '#e6c200' : medalColor === C_SILVER ? '#a8a8a8' : '#b06a2a'}`,
+        }
+      : {
+          background: C_LIGHT_GREEN,
+          color: C_DARKER_GREEN,
+          border: `2px solid ${C_DARK_GREEN}33`,
+        }),
+  };
+});
 
 const PlayerInfo = styled('div')({
   flex: 1,
@@ -201,9 +223,8 @@ const ScoreLabel = styled('div')({
 });
 
 const BackButton = styled('button')({
-  marginTop: 16,
   padding: '12px 36px',
-  background: 'rgba(255,255,255,0.85)',
+  background: 'rgba(255,255,255,0.92)',
   color: C_DARKER_GREEN,
   border: `2px solid ${C_LIGHT_GREEN}`,
   borderRadius: 50,
@@ -211,6 +232,7 @@ const BackButton = styled('button')({
   fontWeight: 700,
   cursor: 'pointer',
   transition: 'background 0.15s',
+  boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
   '&:hover': {
     background: 'rgba(255,255,255,1)',
   },
@@ -229,24 +251,6 @@ const EmptyText = styled(BodyText)({
 
 // ─── Helpers ───
 
-const AVATAR_COLORS = ['#66bb6a', '#42a5f5', '#ab47bc', '#ff7043', '#26c6da', '#ec407a', '#ffa726', '#5c6bc0'];
-
-function getAvatarColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]);
-  }
-  return name.slice(0, 2);
-}
-
 function getMedalColor(rank: number): string | undefined {
   if (rank === 1) return C_GOLD;
   if (rank === 2) return C_SILVER;
@@ -254,14 +258,119 @@ function getMedalColor(rank: number): string | undefined {
   return undefined;
 }
 
-function MedalIcon({ rank }: { rank: number }) {
-  const medalColor = getMedalColor(rank);
-  if (!medalColor) return null;
+/** Truncates to at most one decimal (e.g. 315.65999999 → 315.6). Whole numbers stay integer strings. */
+function formatLeaderboardScore(score: number): string {
+  const n = typeof score === 'number' && !Number.isNaN(score) ? score : Number(score);
+  if (!Number.isFinite(n)) return '0';
+  const scaled = n * 10;
+  const eps = 1e-9;
+  const t = (scaled >= 0 ? Math.floor(scaled + eps) : Math.ceil(scaled - eps)) / 10;
+  return Number.isInteger(t) ? String(t) : t.toFixed(1);
+}
+
+const GOLD_MEDAL_SVG = `<svg width="100%" viewBox="-3.5 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M9.73779 18.8436L12.9509 20.6987L6.42609 32.0001L4.55333 27.8234L9.73779 18.8436Z" fill="#AA75CB" style="fill:rgb(170, 117, 203);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<path d="M9.73779 18.8436L6.52467 16.9885L-0.000155079 28.2899L4.55333 27.8234L9.73779 18.8436Z" fill="#73488D" style="fill:rgb(115, 72, 141);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<path d="M14.3218 18.8436L11.1087 20.6987L17.6335 32.0001L19.5062 27.8234L14.3218 18.8436Z" fill="#73488D" style="fill:rgb(115, 72, 141);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<path d="M14.3218 18.8436L17.5349 16.9885L24.0597 28.2899L19.5062 27.8234L14.3218 18.8436Z" fill="#AA75CB" style="fill:rgb(170, 117, 203);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<circle cx="12.0246" cy="11.0622" r="11.0622" fill="#DC9E42" style="fill:rgb(220, 158, 66);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<circle cx="12.0247" cy="11.0621" r="8.63501" fill="#734C12" style="fill:rgb(115, 76, 18);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<mask id="mask0_gold" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="3" y="3" width="19" height="18">
+<circle cx="12.4857" cy="11.984" r="8.65511" fill="#C28B37"/>
+</mask>
+<g mask="url(#mask0_gold)" style="fill:none;stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+<circle cx="12.0247" cy="11.0622" r="8.65511" fill="#A36D1D" style="fill:rgb(163, 109, 29);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+</g>
+<text x="12.07" y="15.2" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="900" fill="url(#numgrad_gold)" style="stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:Arial, sans-serif;font-size:9px;font-weight:900;text-anchor:middle;dominant-baseline:auto">1</text>
+<defs>
+<linearGradient id="numgrad_gold" x1="12" y1="6" x2="12" y2="16" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FCFF80"/>
+<stop offset="0.4" stop-color="#FDE870"/>
+<stop offset="1" stop-color="#FFC759"/>
+</linearGradient>
+</defs>
+</svg>`;
+
+const SILVER_MEDAL_SVG = `<svg width="100%" viewBox="-3.5 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M9.73779 18.8436L12.9509 20.6987L6.42609 32.0001L4.55333 27.8234L9.73779 18.8436Z" fill="#90A4AE" style="fill:rgb(144, 164, 174);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<path d="M9.73779 18.8436L6.52467 16.9885L-0.000155079 28.2899L4.55333 27.8234L9.73779 18.8436Z" fill="#546E7A" style="fill:rgb(84, 110, 122);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<path d="M14.3218 18.8436L11.1087 20.6987L17.6335 32.0001L19.5062 27.8234L14.3218 18.8436Z" fill="#546E7A" style="fill:rgb(84, 110, 122);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<path d="M14.3218 18.8436L17.5349 16.9885L24.0597 28.2899L19.5062 27.8234L14.3218 18.8436Z" fill="#90A4AE" style="fill:rgb(144, 164, 174);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<circle cx="12.0246" cy="11.0622" r="11.0622" fill="#B0BEC5" style="fill:rgb(176, 190, 197);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<circle cx="12.0247" cy="11.0621" r="8.63501" fill="#455A64" style="fill:rgb(69, 90, 100);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<mask id="mask0_silver" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="3" y="3" width="19" height="18">
+<circle cx="12.4857" cy="11.984" r="8.65511" fill="#78909C"/>
+</mask>
+<g mask="url(#mask0_silver)" style="fill:none;stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+<circle cx="12.0247" cy="11.0622" r="8.65511" fill="#607D8B" style="fill:rgb(96, 125, 139);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+</g>
+<text x="12.07" y="15.2" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="900" fill="url(#numgrad_silver)" style="stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:Arial, sans-serif;font-size:9px;font-weight:900;text-anchor:middle;dominant-baseline:auto">2</text>
+<defs>
+<linearGradient id="numgrad_silver" x1="12" y1="6" x2="12" y2="16" gradientUnits="userSpaceOnUse">
+<stop stop-color="#ECEFF1"/>
+<stop offset="0.4" stop-color="#CFD8DC"/>
+<stop offset="1" stop-color="#B0BEC5"/>
+</linearGradient>
+</defs>
+</svg>`;
+
+const BRONZE_MEDAL_SVG = `<svg width="100%" viewBox="-3.5 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M9.73779 18.8436L12.9509 20.6987L6.42609 32.0001L4.55333 27.8234L9.73779 18.8436Z" fill="#C17F4A" style="fill:rgb(193, 127, 74);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<path d="M9.73779 18.8436L6.52467 16.9885L-0.000155079 28.2899L4.55333 27.8234L9.73779 18.8436Z" fill="#8B5318" style="fill:rgb(139, 83, 24);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<path d="M14.3218 18.8436L11.1087 20.6987L17.6335 32.0001L19.5062 27.8234L14.3218 18.8436Z" fill="#8B5318" style="fill:rgb(139, 83, 24);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<path d="M14.3218 18.8436L17.5349 16.9885L24.0597 28.2899L19.5062 27.8234L14.3218 18.8436Z" fill="#C17F4A" style="fill:rgb(193, 127, 74);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<circle cx="12.0246" cy="11.0622" r="11.0622" fill="#CD7F32" style="fill:rgb(205, 127, 50);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<circle cx="12.0247" cy="11.0621" r="8.63501" fill="#6D3A10" style="fill:rgb(109, 58, 16);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<mask id="mask0_bronze" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="3" y="3" width="19" height="18">
+<circle cx="12.4857" cy="11.984" r="8.65511" fill="#A0622A"/>
+</mask>
+<g mask="url(#mask0_bronze)" style="fill:none;stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+<circle cx="12.0247" cy="11.0622" r="8.65511" fill="#8B5318" style="fill:rgb(139, 83, 24);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+</g>
+<text x="12.07" y="15.2" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="900" fill="url(#numgrad_bronze)" style="stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:Arial, sans-serif;font-size:9px;font-weight:900;text-anchor:middle;dominant-baseline:auto">3</text>
+<defs>
+<linearGradient id="numgrad_bronze" x1="12" y1="6" x2="12" y2="16" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFCC80"/>
+<stop offset="0.4" stop-color="#FFA040"/>
+<stop offset="1" stop-color="#E67520"/>
+</linearGradient>
+</defs>
+</svg>`;
+
+function SvgMedalIcon({ svg, idNames }: { svg: string; idNames: string[] }) {
+  const uid = useId().replace(/\W/g, '');
+  let out = svg.replace('width="100%"', 'width="100%" height="100%"');
+  for (const idName of idNames) {
+    out = out.split(idName).join(`${idName}-${uid}`);
+  }
+
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill={C_YELLOW_STAR} style={{ marginBottom: -2 }}>
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-    </svg>
+    <span
+      aria-hidden
+      style={{ display: 'block', width: '100%', height: '100%' }}
+      dangerouslySetInnerHTML={{ __html: out }}
+    />
   );
+}
+
+function FirstPlaceMedalIcon() {
+  return <SvgMedalIcon svg={GOLD_MEDAL_SVG} idNames={['mask0_gold', 'numgrad_gold']} />;
+}
+
+function SecondPlaceMedalIcon() {
+  return <SvgMedalIcon svg={SILVER_MEDAL_SVG} idNames={['mask0_silver', 'numgrad_silver']} />;
+}
+
+function ThirdPlaceMedalIcon() {
+  return <SvgMedalIcon svg={BRONZE_MEDAL_SVG} idNames={['mask0_bronze', 'numgrad_bronze']} />;
+}
+
+/** Top-three ranks use matching ribbon medals. */
+function TrophyIcon({ rank }: { rank: number }) {
+  if (rank === 1) return <FirstPlaceMedalIcon />;
+  if (rank === 2) return <SecondPlaceMedalIcon />;
+  if (rank === 3) return <ThirdPlaceMedalIcon />;
+  return null;
 }
 
 // ─── Component ───
@@ -288,7 +397,13 @@ export default function LeaderboardView({
 }: LeaderboardViewProps) {
   return (
     <NatureBackground>
-      <HeaderBar style={{ background: 'rgba(0,0,0,0.1)', borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
+      <HeaderBar
+        style={{
+          flexShrink: 0,
+          background: 'rgba(0,0,0,0.1)',
+          borderBottom: '1px solid rgba(0,0,0,0.1)',
+        }}
+      >
         <AccentText style={{ color: '#fff' }}>{activityName}</AccentText>
         <HeaderActions>
           <HelpChatHeaderButton />
@@ -298,49 +413,49 @@ export default function LeaderboardView({
       </HeaderBar>
 
       <Content>
-        <RibbonTitle>{t.leaderboardTitle}</RibbonTitle>
+        <MainScroll>
+          <RibbonTitle>{t.leaderboardTitle}</RibbonTitle>
 
-        {isLoading ? (
-          <LoadingText>{t.leaderboardLoading}</LoadingText>
-        ) : leaderboard.length === 0 ? (
-          <EmptyText>{t.leaderboardEmpty}</EmptyText>
-        ) : (
-          <PlayerList>
-            {leaderboard.map((entry, i) => {
-              const isMe = currentParticipantName === entry.name;
-              const medalColor = getMedalColor(entry.rank);
-              return (
-                <PlayerCard
-                  key={`${entry.rank}-${entry.name}`}
-                  highlighted={isMe}
-                  animDelay={i}
-                >
-                  <RankBadge medalColor={medalColor}>
-                    {medalColor ? <MedalIcon rank={entry.rank} /> : entry.rank}
-                  </RankBadge>
+          {isLoading ? (
+            <LoadingText>{t.leaderboardLoading}</LoadingText>
+          ) : leaderboard.length === 0 ? (
+            <EmptyText>{t.leaderboardEmpty}</EmptyText>
+          ) : (
+            <PlayerList>
+              {leaderboard.map((entry, i) => {
+                const isMe = currentParticipantName === entry.name;
+                const medalColor = getMedalColor(entry.rank);
+                return (
+                  <PlayerCard
+                    key={`${entry.rank}-${entry.name}`}
+                    highlighted={isMe}
+                    animDelay={i}
+                  >
+                    <RankBadge medalColor={medalColor} rank={entry.rank}>
+                      {medalColor ? <TrophyIcon rank={entry.rank} /> : entry.rank}
+                    </RankBadge>
 
-                  <AvatarCircle bgColor={getAvatarColor(entry.name)}>
-                    {getInitials(entry.name)}
-                  </AvatarCircle>
+                    <PlayerInfo>
+                      <PlayerName>{entry.name}</PlayerName>
+                      {entry.group && <PlayerGroup>{entry.group}</PlayerGroup>}
+                    </PlayerInfo>
 
-                  <PlayerInfo>
-                    <PlayerName>{entry.name}</PlayerName>
-                    {entry.group && <PlayerGroup>{entry.group}</PlayerGroup>}
-                  </PlayerInfo>
+                    <ScoreSection>
+                      <ScoreValue>{formatLeaderboardScore(entry.score)}</ScoreValue>
+                      <ScoreLabel>{t.finishStars || 'Points'}</ScoreLabel>
+                    </ScoreSection>
+                  </PlayerCard>
+                );
+              })}
+            </PlayerList>
+          )}
+        </MainScroll>
 
-                  <ScoreSection>
-                    <ScoreValue>{entry.score}</ScoreValue>
-                    <ScoreLabel>{t.finishStars || 'Points'}</ScoreLabel>
-                  </ScoreSection>
-                </PlayerCard>
-              );
-            })}
-          </PlayerList>
-        )}
-
-        <BackButton onClick={onBack}>
-          {t.leaderboardBack}
-        </BackButton>
+        <BackFooter>
+          <BackButton type="button" onClick={onBack}>
+            {t.leaderboardBack}
+          </BackButton>
+        </BackFooter>
       </Content>
     </NatureBackground>
   );

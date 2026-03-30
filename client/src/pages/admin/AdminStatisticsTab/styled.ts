@@ -114,7 +114,7 @@ export const StatsTable = styled('table')({
   width: '100%',
   borderCollapse: 'collapse',
   '& th': {
-    textAlign: 'left',
+    textAlign: 'right',
     fontSize: 13,
     fontWeight: 600,
     color: TEXT_LIGHT,

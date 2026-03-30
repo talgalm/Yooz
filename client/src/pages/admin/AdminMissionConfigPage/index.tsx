@@ -292,7 +292,7 @@ const DEFAULT_SCREENS: MissionScreen[] = [
 ];
 
 const DEFAULT_PUZZLE: PuzzleConfig = {
-  completeHeader: '!כל הכבוד',
+  completeHeader: 'כל הכבוד!',
   completeButton: 'לשלב הבא',
 };
 

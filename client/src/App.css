@@ -13,8 +13,17 @@ body {
   background: #fff;
   color: #333;
   -webkit-font-smoothing: antialiased;
+  direction: rtl;
+  text-align: right;
 }
 
 #root {
   min-height: 100dvh;
+}
+
+input,
+textarea,
+select {
+  direction: rtl;
+  text-align: right;
 }

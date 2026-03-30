@@ -15,8 +15,8 @@ const HILL_1 = '#9dbb76';
 const HILL_2 = '#8dae63';
 const QUESTION_BG = '#2b492b';
 
-const BTN_RED_BG = '#a55a4c';
-const BTN_RED_BORDER = '#622e22';
+const BTN_RED_BG = '#f0a0a0';
+const BTN_RED_BORDER = '#a84343';
 const BTN_GREEN_BG = '#6cac5e';
 const BTN_GREEN_BORDER = '#2d5626';
 

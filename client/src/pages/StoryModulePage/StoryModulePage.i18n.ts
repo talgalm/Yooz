@@ -62,7 +62,7 @@ export const texts = {
   he: {
     loading: 'טוען...',
     error: 'שגיאה בטעינת הפעילות',
-    welcome: '!ברוכים הבאים',
+    welcome: 'ברוכים הבאים!',
     startButton: 'התחילו',
     step: 'שלב',
     game: 'משחק',
@@ -83,11 +83,11 @@ export const texts = {
     popupDismiss: 'אישור',
     continueButton: 'המשך',
     // Finish page
-    finishTitle: '!השלמת את המסלול',
+    finishTitle: 'השלמת את המסלול!',
     finishScore: 'הניקוד שלך',
     finishStars: 'נקודות',
     finishItems: 'פריטים',
-    finishComplete: '!סיום',
+    finishComplete: 'סיום!',
     finishStatus: 'סטטוס',
     stayHere: 'הישארו כאן',
     viewLeaderboard: 'טבלת מובילים',
@@ -103,7 +103,7 @@ export const texts = {
     leaderboardEmpty: 'אין ניקוד עדיין',
     leaderboardLoading: 'טוען...',
     // Roadmap
-    tapToStart: '!לחצו להתחיל',
+    tapToStart: 'לחצו להתחיל!',
     completed: 'הושלם',
     locked: 'נעול',
     // Guidelines popup
@@ -111,12 +111,12 @@ export const texts = {
     guidelinesSubHeader: 'ההרפתקה מחכה לכם',
     guidelinesMissionTitle: 'משימה',
     guidelineMission1: 'השלימו את כל {count} הפעילויות לאורך המסלול',
-    guidelineMission2: '!צברו כמה שיותר נקודות',
+    guidelineMission2: 'צברו כמה שיותר נקודות!',
     guidelinesRulesTitle: 'הנחיות',
     guidelineRule1: 'עקבו אחרי המסלול הממוספר לפי הסדר',
     guidelineRule2: 'השלימו פעילויות כדי לפתוח את השלב הבא',
-    guidelineRule3: '!סבלנות ותצפית הם המפתח',
+    guidelineRule3: 'סבלנות ותצפית הם המפתח!',
     guidelinesCustomLabel: 'הנחיות נוספות',
-    startAdventure: '!התחילו עכשיו',
+    startAdventure: 'התחילו עכשיו!',
   },
 };

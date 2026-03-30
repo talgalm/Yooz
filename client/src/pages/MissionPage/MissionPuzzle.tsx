@@ -312,7 +312,7 @@ function savePuzzleSession(code: string, queue: number[], placed: number[]) {
 
 // ─── Component ───
 
-export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect, playClick, playComplete, muted, toggleMute, code, completeHeader = '!כל הכבוד', completeButton = 'לשלב הבא' }: MissionPuzzleProps) {
+export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect, playClick, playComplete, muted, toggleMute, code, completeHeader = 'כל הכבוד!', completeButton = 'לשלב הבא' }: MissionPuzzleProps) {
   const savedPuzzle = useRef(loadPuzzleSession(code));
 
   const [queue, setQueue] = useState<number[]>(() => {

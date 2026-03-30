@@ -15,7 +15,7 @@ export const texts = {
     name: 'שם משתמש',
     phoneNumber: 'מספר טלפון',
     join: 'התחברו!',
-    joining: '...מתחברים',
+    joining: 'מתחברים...',
     googleSignIn: 'המשך עם גוגל',
     or: 'או',
     age: 'הגיל שלך',
