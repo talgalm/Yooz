@@ -438,6 +438,19 @@ export default function PlayingPhase({
     return renderContent();
   }
 
+  // Ball game renders its own full-screen fixed layout with a custom 3D room background
+  if (currentItem.type === 'game' && (currentItem as GameItemData).gameType === 'ballGame') {
+    return (
+      <>
+        {renderContent()}
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 60 }}>
+          {headerBar}
+        </div>
+        {hintModals}
+      </>
+    );
+  }
+
   if (currentItem.type === 'station' && (currentItem as StationItemData).stationType === 'collage') {
     return (
       <>

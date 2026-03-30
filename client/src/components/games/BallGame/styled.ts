@@ -1,5 +1,31 @@
 import { styled, keyframes } from '@mui/material/styles';
 
+// ─── 3D Box Room Background ───
+
+const ROOM_BACK_WALL = '#bdd8d8';
+const ROOM_SIDE_WALL = '#9bbcbc';
+const ROOM_FLOOR = '#a0c0c0';
+
+/**
+ * 3D room / box background.
+ * The back wall is lighter, the side walls & floor are slightly darker to
+ * create the illusion of depth. Four SVG polygons draw the perspective
+ * trapezoids (left wall, right wall, ceiling, floor) meeting at the inner
+ * rectangle that represents the back wall.
+ */
+export const BallGameRoomBackground = styled('div')({
+  position: 'absolute',
+  inset: 0,
+  overflow: 'hidden',
+  background: ROOM_BACK_WALL,
+  pointerEvents: 'none',
+  zIndex: 0,
+});
+
+// Room color constants exported for the SVG corners component in index.tsx
+export const ROOM_SIDE_WALL_COLOR = ROOM_SIDE_WALL;
+export const ROOM_FLOOR_COLOR = ROOM_FLOOR;
+
 // ─── Animations ───
 
 const fadeIn = keyframes`

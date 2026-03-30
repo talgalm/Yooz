@@ -16,6 +16,36 @@ import {
   FinishStats,
   FinishContinueButton,
 } from '../TrueFalseGame/styled';
+import {
+  BallGameRoomBackground,
+  ROOM_SIDE_WALL_COLOR,
+  ROOM_FLOOR_COLOR,
+} from './styled';
+
+function RoomCornersSvg() {
+  // L/R = side wall width, T = ceiling height, B = floor top — all in %
+  const L = 5, R = 95, T = 4, B = 96;
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}
+    >
+      {/* Side walls */}
+      <polygon points={`0,0 ${L},${T} ${L},${B} 0,100`} fill={ROOM_SIDE_WALL_COLOR} />
+      <polygon points={`100,0 ${R},${T} ${R},${B} 100,100`} fill={ROOM_SIDE_WALL_COLOR} />
+      {/* Ceiling */}
+      <polygon points={`0,0 100,0 ${R},${T} ${L},${T}`} fill={ROOM_SIDE_WALL_COLOR} opacity="0.75" />
+      {/* Floor */}
+      <polygon points={`${L},${B} ${R},${B} 100,100 0,100`} fill={ROOM_FLOOR_COLOR} />
+      {/* Corner edge lines */}
+      <line x1={L} y1={T} x2="0" y2="0" stroke="rgba(0,0,0,0.15)" strokeWidth="0.4" />
+      <line x1={R} y1={T} x2="100" y2="0" stroke="rgba(0,0,0,0.15)" strokeWidth="0.4" />
+      <line x1={L} y1={B} x2="0" y2="100" stroke="rgba(0,0,0,0.12)" strokeWidth="0.35" />
+      <line x1={R} y1={B} x2="100" y2="100" stroke="rgba(0,0,0,0.12)" strokeWidth="0.35" />
+    </svg>
+  );
+}
 
 type LegacyDetailedReport = {
   index: number;
@@ -279,6 +309,10 @@ export default function BallGame({
 
     return (
       <FinishContainer dir={dir}>
+        <BallGameRoomBackground>
+          <RoomCorners />
+          <RoomFloorCorners />
+        </BallGameRoomBackground>
         <FinishContent>
           <FinishTitleBanner>
             <LeafVeinSvg />
@@ -311,14 +345,16 @@ export default function BallGame({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'transparent',
-        zIndex: 20,
+        zIndex: 50,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
       }}
     >
+      <BallGameRoomBackground>
+        <RoomCornersSvg />
+      </BallGameRoomBackground>
       {!embeddedInActivity && (
         <div
           style={{
@@ -350,8 +386,14 @@ export default function BallGame({
         title="Ball Game"
         tabIndex={-1}
         style={{
-          width: '100vw',
-          height: '100dvh',
+          position: 'absolute',
+          top: 100,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 2,
+          width: '100%',
+          height: 'calc(100dvh - 52px)',
           border: 'none',
           background: 'transparent',
         }}
