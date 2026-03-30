@@ -28,8 +28,6 @@ router.get('/:code', async (req: Request<{ code: string }>, res: Response<Activi
     connectionType = 'single';
   }
 
-  const questionMode = activity.questionMode || 'same';
-
   res.json({
     code: activity.code,
     name: activity.name,
@@ -41,10 +39,6 @@ router.get('/:code', async (req: Request<{ code: string }>, res: Response<Activi
     ...(activity.scheduledStart && { scheduledStart: activity.scheduledStart.toISOString() }),
     ...(activity.scheduledEnd && { scheduledEnd: activity.scheduledEnd.toISOString() }),
     ...(activity.module && { moduleType: activity.module.type }),
-    ...(questionMode === 'byAge' && {
-      questionMode,
-      ageRanges: activity.ageRanges || [],
-    }),
   });
 });
 
@@ -110,8 +104,20 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const missionMap = new Map(missions.map((m: any) => [m._id.toString(), m]));
 
+  // Filter items by participant group (if activity uses groups)
+  // The participant's group comes from query param (set by client from JWT)
+  const participantGroup = req.query.group as string | undefined;
+  const moduleItems = (activity.module.items || []).filter((item) => {
+    // If item has no group restriction, show to everyone
+    if (!item.groups || item.groups.length === 0) return true;
+    // If participant has a group, check if it's in the item's groups
+    if (participantGroup) return item.groups.includes(participantGroup);
+    // No group specified but item has restrictions — still show (single mode)
+    return true;
+  });
+
   // Build populated items array in order
-  const populatedItems = (activity.module.items || []).map((item) => {
+  const populatedItems = moduleItems.map((item) => {
     if (item.type === 'mission') {
       const data = missionMap.get(item.ref.toString());
       if (!data) return null;
@@ -183,7 +189,6 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     code: activity.code,
     name: activity.name,
     module: moduleResponse,
-    questionMode: activity.questionMode || 'same',
     guidelines: activity.guidelines || undefined,
     customInstructions: activity.customInstructions || undefined,
   });

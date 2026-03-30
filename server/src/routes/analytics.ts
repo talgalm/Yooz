@@ -145,7 +145,7 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
   const reports = await Report.find(
     { activityId: new Types.ObjectId(activityId) },
     {
-      participantName: 1, email: 1, phoneNumber: 1, group: 1, age: 1,
+      participantName: 1, email: 1, phoneNumber: 1, group: 1,
       joinedAt: 1, 'data.totalScore': 1, completionStatus: 1,
       sessionDurationMs: 1, totalItemsCompleted: 1, totalItemsInModule: 1,
     },
@@ -463,7 +463,6 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
       Email: r.email || '',
       Phone: r.phoneNumber || '',
       Group: r.group || '',
-      Age: r.age ?? '',
       'Joined At': r.joinedAt ? new Date(r.joinedAt).toISOString() : '',
       Status: r.completionStatus || 'joined',
       'Total Score': (r.data as { totalScore?: number })?.totalScore ?? 0,

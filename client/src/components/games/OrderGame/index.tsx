@@ -11,7 +11,7 @@ import { shuffleArray } from '../../../utils/shuffleArray';
 import { useGameHint } from '../../../hooks/useGameHint';
 import HintModals from '../HintModals';
 import HintButton from '../HintButton';
-import { GameProps, HintConfig, AgeRange, GAME_CONSTANTS } from '../types';
+import { GameProps, HintConfig, GAME_CONSTANTS } from '../types';
 import GolfChallenge from './GolfChallenge';
 import { golfTexts } from './GolfChallenge.i18n';
 import {
@@ -51,7 +51,6 @@ import {
 interface OrderRound {
   title?: string;
   cards: string[];
-  ageRange?: AgeRange;
 }
 
 interface OrderScoring {
@@ -130,7 +129,7 @@ const CARD_COLORS = {
 
 // ─── Component ───
 
-export default function OrderGame({ game, onComplete, participantAge }: GameProps) {
+export default function OrderGame({ game, onComplete }: GameProps) {
   const settings = game.settings as unknown as OrderSettings;
   const t = useTranslations(texts);
   const hint = useGameHint(settings.hint);
@@ -195,28 +194,12 @@ export default function OrderGame({ game, onComplete, participantAge }: GameProp
   const [tapIndex, setTapIndex] = useState<number | null>(null);
 
   const rounds = useMemo(() => {
-    const src = settings.rounds || [];
-    return participantAge !== undefined
-      ? src.filter((r) => !r.ageRange || (participantAge >= r.ageRange.minAge && participantAge <= r.ageRange.maxAge))
-      : src;
-  }, [settings.rounds, participantAge]);
+    return settings.rounds || [];
+  }, [settings.rounds]);
   const scoring = useMemo(
     () => settings.scoring || { firstAttemptPoints: 100, retryPoints: 50, speedBonus: false },
     [settings.scoring],
   );
-
-  // Auto-complete when all content filtered by age
-  useEffect(() => {
-    if (noContent && gameComplete) {
-      onComplete({
-        score: 0,
-        maxPossibleScore: 0,
-        durationMs: Date.now() - gameStartTime.current,
-        hintUsed: false,
-        attempts: 0,
-      });
-    }
-  }, [noContent, gameComplete]);
 
   // Initialize round
   const initRound = useCallback((roundIdx: number) => {

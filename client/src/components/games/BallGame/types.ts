@@ -8,7 +8,6 @@ export interface BallGameAnswer {
 export interface BallGameQuestion {
   text: string;
   answers: BallGameAnswer[];
-  ageRange?: { minAge: number; maxAge: number };
 }
 
 export interface BallGameSettings {

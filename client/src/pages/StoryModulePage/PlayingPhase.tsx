@@ -141,7 +141,6 @@ interface PlayingPhaseProps {
   currentItem: ModuleItemData;
   stationHintText: string | null;
   stationHintUsed: boolean;
-  participantAge?: number;
   bgStyle: React.CSSProperties;
   theme?: string;
   code?: string;
@@ -168,7 +167,6 @@ export default function PlayingPhase({
   currentItem,
   stationHintText,
   stationHintUsed,
-  participantAge,
   bgStyle: _bgStyle,
   theme,
   code,
@@ -303,7 +301,6 @@ export default function PlayingPhase({
         <OrderGame
           game={gameData}
           onComplete={onGameComplete}
-          participantAge={participantAge}
         />
       );
     }
@@ -313,7 +310,6 @@ export default function PlayingPhase({
         <TriviaGame
           game={gameData}
           onComplete={onGameComplete}
-          participantAge={participantAge}
         />
       );
     }
@@ -323,7 +319,6 @@ export default function PlayingPhase({
         <PuzzleGame
           game={gameData}
           onComplete={onGameComplete}
-          participantAge={participantAge}
         />
       );
     }
@@ -333,7 +328,6 @@ export default function PlayingPhase({
         <TrueFalseGame
           game={gameData}
           onComplete={onGameComplete}
-          participantAge={participantAge}
         />
       );
     }
@@ -343,7 +337,6 @@ export default function PlayingPhase({
         <BallGame
           game={gameData}
           onComplete={onGameComplete}
-          participantAge={participantAge}
           embeddedInActivity
           activityBallMuted={ballGameMuted}
           onActivityBallMuteToggle={onBallGameMuteToggle}
@@ -356,7 +349,6 @@ export default function PlayingPhase({
         <TrashSortGame
           game={gameData}
           onComplete={onGameComplete}
-          participantAge={participantAge}
         />
       );
     }

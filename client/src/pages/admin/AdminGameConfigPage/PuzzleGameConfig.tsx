@@ -20,12 +20,8 @@ import {
   TinyDangerButton,
   AddButton,
   ScoringToggleButton,
-  AgeRangeToggle,
   AnswerPanel,
   CorrectToggleButton,
-  AgeRangeRow,
-  AgeRangeInput,
-  AgeRangeSeparator,
   FlexInput,
   InputMb8,
   AnswerInput,
@@ -96,7 +92,7 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
       setGridRows(rows);
       setRetryGap((s.retryGap as number) || 3);
       if (Array.isArray(s.questions)) {
-        const loaded: PuzzleQuestion[] = (s.questions as { text: string; media?: string; timeLimitSeconds?: number; answers: { text: string; isCorrect: boolean }[]; ageRange?: { minAge: number; maxAge: number } }[]).map((q) => ({
+        const loaded: PuzzleQuestion[] = (s.questions as { text: string; media?: string; timeLimitSeconds?: number; answers: { text: string; isCorrect: boolean }[] }[]).map((q) => ({
           text: q.text || '',
           media: q.media || '',
           answers: (q.answers || []).map((a) => ({
@@ -104,7 +100,6 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
             isCorrect: a.isCorrect || false,
           })),
           timeLimitSeconds: typeof q.timeLimitSeconds === 'number' ? q.timeLimitSeconds : 10,
-          ageRange: q.ageRange,
         }));
         // Pad with empty questions if fewer than grid target
         const target = cols * rows;
@@ -154,7 +149,6 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
                   isCorrect: a.isCorrect,
                 })),
               timeLimitSeconds: q.timeLimitSeconds ?? 10,
-              ...(q.ageRange && { ageRange: q.ageRange }),
             })),
           scoring: {
             basePoints: puzzleScoring.basePoints,
@@ -238,25 +232,6 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
             ? { ...q, answers: q.answers.map((a, j) => (j === ai ? { ...a, [field]: value } : a)) }
             : q
         )
-      );
-    };
-
-    const updatePuzzleQuestionAgeRange = (qi: number, field: 'minAge' | 'maxAge', value: number) => {
-      setPuzzleQuestions((prev) =>
-        prev.map((q, i) => {
-          if (i !== qi) return q;
-          const current = q.ageRange || { minAge: 0, maxAge: 120 };
-          return { ...q, ageRange: { ...current, [field]: value } };
-        })
-      );
-    };
-
-    const togglePuzzleQuestionAgeRange = (qi: number) => {
-      setPuzzleQuestions((prev) =>
-        prev.map((q, i) => {
-          if (i !== qi) return q;
-          return { ...q, ageRange: q.ageRange ? undefined : { minAge: 0, maxAge: 120 } };
-        })
       );
     };
 
@@ -408,36 +383,6 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
               >
                 + {t.addPuzzleAnswer}
               </AddButton>
-
-              {/* Age Range */}
-              <AgeRangeRow>
-                <AgeRangeToggle
-                  type="button"
-                  selected={!!pq.ageRange}
-                  onClick={() => togglePuzzleQuestionAgeRange(qi)}
-                >
-                  {pq.ageRange ? t.ageRange : t.allAges}
-                </AgeRangeToggle>
-                {pq.ageRange && (
-                  <>
-                    <AgeRangeInput
-                      type="number"
-                      placeholder={t.ageRangeMin}
-                      value={pq.ageRange.minAge}
-                      onChange={(e) => updatePuzzleQuestionAgeRange(qi, 'minAge', Number(e.target.value))}
-                      min={0}
-                    />
-                    <AgeRangeSeparator>-</AgeRangeSeparator>
-                    <AgeRangeInput
-                      type="number"
-                      placeholder={t.ageRangeMax}
-                      value={pq.ageRange.maxAge}
-                      onChange={(e) => updatePuzzleQuestionAgeRange(qi, 'maxAge', Number(e.target.value))}
-                      min={0}
-                    />
-                  </>
-                )}
-              </AgeRangeRow>
             </ItemPanel>
           ))}
         </div>

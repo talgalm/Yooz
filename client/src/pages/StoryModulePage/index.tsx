@@ -350,7 +350,7 @@ export default function StoryModulePage() {
   useEffect(() => {
     if (!code) return;
     const controller = new AbortController();
-    fetch(`/api/activities/${code}/module`, { signal: controller.signal })
+    fetch(`/api/activities/${code}/module?group=${encodeURIComponent(participant?.group || '')}`, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error('Failed');
         return res.json();
@@ -1079,7 +1079,6 @@ export default function StoryModulePage() {
         currentItem={currentItem}
         stationHintText={currentItemHintText}
         stationHintUsed={stationHintUsed.has(currentItemIndex)}
-        participantAge={data.questionMode === 'byAge' ? participant?.age : undefined}
         bgStyle={bgStyle}
         theme={data.module.theme}
         code={code}

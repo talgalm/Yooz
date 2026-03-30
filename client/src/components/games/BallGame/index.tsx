@@ -133,7 +133,6 @@ function reportsToRecords(reports: LegacyDetailedReport[]): QuestionAnswerRecord
 export default function BallGame({
   game,
   onComplete,
-  participantAge,
   embeddedInActivity,
   activityBallMuted,
   onActivityBallMuteToggle,
@@ -154,13 +153,8 @@ export default function BallGame({
   const settings = game.settings as unknown as BallGameSettings;
 
   const filteredQuestions = useMemo(() => {
-    const source = Array.isArray(settings.questions) ? settings.questions : [];
-    if (!participantAge) return source;
-    return source.filter((q) => {
-      if (!q.ageRange) return true;
-      return participantAge >= q.ageRange.minAge && participantAge <= q.ageRange.maxAge;
-    });
-  }, [participantAge, settings.questions]);
+    return Array.isArray(settings.questions) ? settings.questions : [];
+  }, [settings.questions]);
 
   const initPayload = useMemo(
     () => ({

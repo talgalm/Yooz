@@ -19,12 +19,8 @@ import {
   TinyDangerButton,
   AddButton,
   ScoringToggleButton,
-  AgeRangeToggle,
   AnswerPanel,
   CorrectToggleButton,
-  AgeRangeRow,
-  AgeRangeInput,
-  AgeRangeSeparator,
   FlexInput,
   InputMb8,
   CardItemRow,
@@ -61,7 +57,7 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
       const s = initialSettings;
       if (Array.isArray(s.questions)) {
         setQuestions(
-          (s.questions as { text: string; hint?: string; media?: string; answers: { text: string; isCorrect: boolean; explanation?: string }[]; ageRange?: { minAge: number; maxAge: number } }[]).map((q) => ({
+          (s.questions as { text: string; hint?: string; media?: string; answers: { text: string; isCorrect: boolean; explanation?: string }[] }[]).map((q) => ({
             text: q.text || '',
             hint: q.hint || '',
             media: q.media || '',
@@ -70,7 +66,6 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
               isCorrect: a.isCorrect || false,
               explanation: a.explanation || '',
             })),
-            ageRange: q.ageRange,
           }))
         );
       }
@@ -116,7 +111,6 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
                   isCorrect: a.isCorrect,
                   explanation: a.explanation.trim() || undefined,
                 })),
-              ...(q.ageRange && { ageRange: q.ageRange }),
             })),
           scoring: {
             correctAnswerPoints: triviaScoring.correctAnswerPoints,
@@ -222,25 +216,6 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
       );
     };
 
-    const updateQuestionAgeRange = (qi: number, field: 'minAge' | 'maxAge', value: number) => {
-      setQuestions((prev) =>
-        prev.map((q, i) => {
-          if (i !== qi) return q;
-          const current = q.ageRange || { minAge: 0, maxAge: 120 };
-          return { ...q, ageRange: { ...current, [field]: value } };
-        })
-      );
-    };
-
-    const toggleQuestionAgeRange = (qi: number) => {
-      setQuestions((prev) =>
-        prev.map((q, i) => {
-          if (i !== qi) return q;
-          return { ...q, ageRange: q.ageRange ? undefined : { minAge: 0, maxAge: 120 } };
-        })
-      );
-    };
-
     return (
       <>
         {/* Questions */}
@@ -334,36 +309,6 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
               >
                 + {t.addAnswer}
               </AddButton>
-
-              {/* Age Range */}
-              <AgeRangeRow>
-                <AgeRangeToggle
-                  type="button"
-                  selected={!!question.ageRange}
-                  onClick={() => toggleQuestionAgeRange(qi)}
-                >
-                  {question.ageRange ? t.ageRange : t.allAges}
-                </AgeRangeToggle>
-                {question.ageRange && (
-                  <>
-                    <AgeRangeInput
-                      type="number"
-                      placeholder={t.ageRangeMin}
-                      value={question.ageRange.minAge}
-                      onChange={(e) => updateQuestionAgeRange(qi, 'minAge', Number(e.target.value))}
-                      min={0}
-                    />
-                    <AgeRangeSeparator>-</AgeRangeSeparator>
-                    <AgeRangeInput
-                      type="number"
-                      placeholder={t.ageRangeMax}
-                      value={question.ageRange.maxAge}
-                      onChange={(e) => updateQuestionAgeRange(qi, 'maxAge', Number(e.target.value))}
-                      min={0}
-                    />
-                  </>
-                )}
-              </AgeRangeRow>
             </ItemPanel>
           ))}
         </div>

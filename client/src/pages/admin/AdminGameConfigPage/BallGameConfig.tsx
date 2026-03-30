@@ -13,10 +13,6 @@ import {
   SmallOutlineButton,
   TinyDangerButton,
   CorrectToggleButton,
-  AgeRangeToggle,
-  AgeRangeRow,
-  AgeRangeInput,
-  AgeRangeSeparator,
   InputMb8,
   CardItemRow,
   AnswerInput,
@@ -49,13 +45,12 @@ export default forwardRef<GameConfigHandle, BallGameConfigProps>(
       const s = initialSettings;
       if (Array.isArray(s.questions)) {
         setQuestions(
-          (s.questions as { text: string; answers: { text: string; isCorrect: boolean }[]; ageRange?: { minAge: number; maxAge: number } }[]).map((q) => ({
+          (s.questions as { text: string; answers: { text: string; isCorrect: boolean }[] }[]).map((q) => ({
             text: q.text || '',
             answers: (q.answers || []).slice(0, 4).map((a) => ({
               text: a.text || '',
               isCorrect: a.isCorrect || false,
             })),
-            ageRange: q.ageRange,
           }))
         );
       }
@@ -91,7 +86,6 @@ export default forwardRef<GameConfigHandle, BallGameConfigProps>(
                   text: a.text.trim(),
                   isCorrect: a.isCorrect,
                 })),
-              ...(q.ageRange && { ageRange: q.ageRange }),
             })),
           scoring: {
             timeLimitSeconds: scoring.timeLimitSeconds || 30,
@@ -164,25 +158,6 @@ export default forwardRef<GameConfigHandle, BallGameConfigProps>(
       );
     };
 
-    const updateQuestionAgeRange = (qi: number, field: 'minAge' | 'maxAge', value: number) => {
-      setQuestions((prev) =>
-        prev.map((q, i) => {
-          if (i !== qi) return q;
-          const current = q.ageRange || { minAge: 0, maxAge: 120 };
-          return { ...q, ageRange: { ...current, [field]: value } };
-        })
-      );
-    };
-
-    const toggleQuestionAgeRange = (qi: number) => {
-      setQuestions((prev) =>
-        prev.map((q, i) => {
-          if (i !== qi) return q;
-          return { ...q, ageRange: q.ageRange ? undefined : { minAge: 0, maxAge: 120 } };
-        })
-      );
-    };
-
     return (
       <>
         {/* Questions */}
@@ -231,36 +206,6 @@ export default forwardRef<GameConfigHandle, BallGameConfigProps>(
                   </CorrectToggleButton>
                 </CardItemRow>
               ))}
-
-              {/* Age Range */}
-              <AgeRangeRow>
-                <AgeRangeToggle
-                  type="button"
-                  selected={!!question.ageRange}
-                  onClick={() => toggleQuestionAgeRange(qi)}
-                >
-                  {question.ageRange ? t.ageRange : t.allAges}
-                </AgeRangeToggle>
-                {question.ageRange && (
-                  <>
-                    <AgeRangeInput
-                      type="number"
-                      placeholder={t.ageRangeMin}
-                      value={question.ageRange.minAge}
-                      onChange={(e) => updateQuestionAgeRange(qi, 'minAge', Number(e.target.value))}
-                      min={0}
-                    />
-                    <AgeRangeSeparator>-</AgeRangeSeparator>
-                    <AgeRangeInput
-                      type="number"
-                      placeholder={t.ageRangeMax}
-                      value={question.ageRange.maxAge}
-                      onChange={(e) => updateQuestionAgeRange(qi, 'maxAge', Number(e.target.value))}
-                      min={0}
-                    />
-                  </>
-                )}
-              </AgeRangeRow>
             </ItemPanel>
           ))}
         </div>

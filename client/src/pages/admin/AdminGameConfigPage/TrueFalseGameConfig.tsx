@@ -17,11 +17,7 @@ import {
   SmallOutlineButton,
   TinyDangerButton,
   ScoringToggleButton,
-  AgeRangeToggle,
   TruthToggleButton,
-  AgeRangeRow,
-  AgeRangeInput,
-  AgeRangeSeparator,
   FlexInput,
   InputMb8,
 } from '../styled';
@@ -63,11 +59,10 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
       const s = initialSettings;
       if (Array.isArray(s.statements)) {
         setTfStatements(
-          (s.statements as { text: string; media?: string; isTrue: boolean; ageRange?: { minAge: number; maxAge: number } }[]).map((st) => ({
+          (s.statements as { text: string; media?: string; isTrue: boolean }[]).map((st) => ({
             text: st.text || '',
             media: st.media || '',
             isTrue: st.isTrue ?? true,
-            ageRange: st.ageRange,
           }))
         );
       }
@@ -101,7 +96,6 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
               text: s.text.trim(),
               isTrue: s.isTrue,
               media: s.media.trim() || undefined,
-              ...(s.ageRange && { ageRange: s.ageRange }),
             })),
           scoring: {
             correctPoints: tfScoring.correctPoints,
@@ -142,25 +136,6 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
 
     const toggleTfStatementTruth = (si: number) => {
       setTfStatements((prev) => prev.map((s, i) => (i === si ? { ...s, isTrue: !s.isTrue } : s)));
-    };
-
-    const updateTfStatementAgeRange = (si: number, field: 'minAge' | 'maxAge', value: number) => {
-      setTfStatements((prev) =>
-        prev.map((s, i) => {
-          if (i !== si) return s;
-          const current = s.ageRange || { minAge: 0, maxAge: 120 };
-          return { ...s, ageRange: { ...current, [field]: value } };
-        })
-      );
-    };
-
-    const toggleTfStatementAgeRange = (si: number) => {
-      setTfStatements((prev) =>
-        prev.map((s, i) => {
-          if (i !== si) return s;
-          return { ...s, ageRange: s.ageRange ? undefined : { minAge: 0, maxAge: 120 } };
-        })
-      );
     };
 
     return (
@@ -222,36 +197,6 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
                   {stmt.isTrue ? t.markTrue : t.markFalse}
                 </TruthToggleButton>
               </TruthRow>
-
-              {/* Age Range */}
-              <AgeRangeRow>
-                <AgeRangeToggle
-                  type="button"
-                  selected={!!stmt.ageRange}
-                  onClick={() => toggleTfStatementAgeRange(si)}
-                >
-                  {stmt.ageRange ? t.ageRange : t.allAges}
-                </AgeRangeToggle>
-                {stmt.ageRange && (
-                  <>
-                    <AgeRangeInput
-                      type="number"
-                      placeholder={t.ageRangeMin}
-                      value={stmt.ageRange.minAge}
-                      onChange={(e) => updateTfStatementAgeRange(si, 'minAge', Number(e.target.value))}
-                      min={0}
-                    />
-                    <AgeRangeSeparator>-</AgeRangeSeparator>
-                    <AgeRangeInput
-                      type="number"
-                      placeholder={t.ageRangeMax}
-                      value={stmt.ageRange.maxAge}
-                      onChange={(e) => updateTfStatementAgeRange(si, 'maxAge', Number(e.target.value))}
-                      min={0}
-                    />
-                  </>
-                )}
-              </AgeRangeRow>
             </ItemPanel>
           ))}
         </div>

@@ -35,18 +35,15 @@ import type {
   LoginField,
   ConnectionType,
   ModuleType,
-  QuestionMode,
   OpeningType,
   PopupContentType,
   PopupMessage,
   ModuleItem,
   Activity,
-  AgeRange,
   CustomInstructions,
 } from './types';
 import ModuleItemsSection from './ModuleItemsSection';
 import PopupMessagesSection from './PopupMessagesSection';
-import AgeRangesSection from './AgeRangesSection';
 
 // ─── Clean section card with icon ───
 
@@ -195,10 +192,7 @@ export default function AdminCreateActivityPage() {
   const [groupCount, setGroupCount] = useState(2);
   const [groupNames, setGroupNames] = useState<string[]>(() => [defaultGroupName(1), defaultGroupName(2)]);
 
-  const [questionMode, setQuestionMode] = useState<QuestionMode>('same');
-  const [ageRanges, setAgeRanges] = useState<AgeRange[]>([]);
-
-  const [moduleType, setModuleType] = useState<ModuleType>('none');
+  const [moduleType, setModuleType] = useState<ModuleType>('story');
   const [moduleTheme, setModuleTheme] = useState<string>('');
   const [backgroundImage, setBackgroundImage] = useState('');
   const [selectedItems, setSelectedItems] = useState<ModuleItem[]>([]);
@@ -267,12 +261,11 @@ export default function AdminCreateActivityPage() {
                 customer: item.data?.customer,
                 theme: item.data?.theme,
                 settings: item.data?.settings,
+                groups: item.groups,
               }))
             );
           }
         }
-        if (a.questionMode) setQuestionMode(a.questionMode as QuestionMode);
-        if (a.ageRanges && a.ageRanges.length > 0) setAgeRanges(a.ageRanges);
         if (a.managerEmail) setManagerEmail(a.managerEmail);
         if (a.guidelines) setGuidelines(a.guidelines);
         if (a.customInstructions) {
@@ -358,12 +351,6 @@ export default function AdminCreateActivityPage() {
     });
   };
 
-  const addAgeRange = () => setAgeRanges((prev) => [...prev, { label: '', minAge: 0, maxAge: 120 }]);
-  const removeAgeRange = (index: number) => setAgeRanges((prev) => prev.filter((_, i) => i !== index));
-  const updateAgeRange = (index: number, field: keyof AgeRange, value: string | number) => {
-    setAgeRanges((prev) => prev.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
-  };
-
   const addPopup = () => {
     setPopups((prev) => [...prev, {
       title: '', contentType: 'text' as PopupContentType, text: '', image: '', includeUsername: false,
@@ -398,7 +385,11 @@ export default function AdminCreateActivityPage() {
           type: moduleType,
           theme: moduleTheme || undefined,
           backgroundImage: backgroundImage.trim() || undefined,
-          items: selectedItems.map((i) => ({ type: i.itemType, ref: i.ref })),
+          items: selectedItems.map((i) => ({
+            type: i.itemType,
+            ref: i.ref,
+            ...(i.groups && i.groups.length > 0 && { groups: i.groups }),
+          })),
         };
         if (popups.length > 0) {
           modulePayload.popups = popups
@@ -440,10 +431,6 @@ export default function AdminCreateActivityPage() {
       if (!alwaysOpen) {
         if (scheduledStart) payload.scheduledStart = new Date(scheduledStart).toISOString();
         if (scheduledEnd) payload.scheduledEnd = new Date(scheduledEnd).toISOString();
-      }
-      payload.questionMode = questionMode;
-      if (questionMode === 'byAge' && ageRanges.length > 0) {
-        payload.ageRanges = ageRanges.filter((r) => r.label.trim());
       }
       if (managerEmail.trim()) {
         payload.managerEmail = managerEmail.trim();
@@ -674,19 +661,6 @@ export default function AdminCreateActivityPage() {
                       )}
                     </SectionCard>
 
-                    {/* Age / Question mode */}
-                    <SectionCard>
-                      <AgeRangesSection
-                        questionMode={questionMode}
-                        setQuestionMode={setQuestionMode}
-                        ageRanges={ageRanges}
-                        onAddAgeRange={addAgeRange}
-                        onRemoveAgeRange={removeAgeRange}
-                        onUpdateAgeRange={updateAgeRange}
-                        t={t}
-                      />
-                    </SectionCard>
-
                     {/* Manager */}
                     <SectionCard>
                       <SectionHeader>
@@ -742,6 +716,9 @@ export default function AdminCreateActivityPage() {
                     onAddItem={addItem}
                     onRemoveItem={removeItem}
                     onMoveItem={moveItem}
+                    onUpdateItemGroups={(index, groups) => setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, groups } : item))}
+                    connectionType={connectionType}
+                    groupNames={groupNames}
                     t={t}
                   />
                 </SectionCardWide>

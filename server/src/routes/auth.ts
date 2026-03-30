@@ -7,7 +7,7 @@ import { Activity, Report } from '../models';
 const router = Router();
 
 router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<LoginResponse | { error: string }>) => {
-  const { activityCode, participantName, email, phoneNumber, group, age } = req.body;
+  const { activityCode, participantName, email, phoneNumber, group } = req.body;
 
   if (!activityCode) {
     res.status(400).json({ error: 'Activity code is required' });
@@ -58,26 +58,11 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
     }
   }
 
-  // Validate age if activity uses byAge mode
-  const questionMode = activity.questionMode || 'same';
-  if (questionMode === 'byAge') {
-    if (age === undefined || age === null) {
-      res.status(400).json({ error: 'Age is required for this activity' });
-      return;
-    }
-    if (typeof age !== 'number' || age < 1 || age > 120) {
-      res.status(400).json({ error: 'Age must be a number between 1 and 120' });
-      return;
-    }
-  }
-
   // Determine display name: prefer name > email > phone
   const displayName = participantName?.trim()
     || email?.trim()
     || phoneNumber?.trim()
     || 'Participant';
-
-  const participantAge = questionMode === 'byAge' && age ? age : undefined;
 
   // Look for an existing Report for this participant in this activity
   // Priority: email > phoneNumber > participantName
@@ -104,7 +89,6 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
       phoneNumber: phoneNumber?.trim(),
       connectionType,
       group,
-      ...(participantAge !== undefined && { age: participantAge }),
     });
   }
 
@@ -116,7 +100,6 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
       ...(email && { email: email.trim() }),
       ...(phoneNumber && { phoneNumber: phoneNumber.trim() }),
       ...(group && { group }),
-      ...(participantAge !== undefined && { age: participantAge }),
     },
     JWT_SECRET,
     { expiresIn: '24h' }
@@ -131,7 +114,6 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
       ...(email && { email: email.trim() }),
       ...(phoneNumber && { phoneNumber: phoneNumber.trim() }),
       ...(group && { group }),
-      ...(participantAge !== undefined && { age: participantAge }),
     },
   });
 });

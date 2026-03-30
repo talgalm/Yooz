@@ -1,12 +1,6 @@
-export interface AgeRangeOption {
-  minAge: number;
-  maxAge: number;
-}
-
 export interface OrderRound {
   title: string;
   cards: string[];
-  ageRange?: AgeRangeOption;
 }
 
 export interface OrderScoring {
@@ -27,7 +21,6 @@ export interface TriviaQuestion {
   hint: string;
   media: string;
   answers: TriviaAnswer[];
-  ageRange?: AgeRangeOption;
 }
 
 export interface TriviaScoring {
@@ -47,7 +40,6 @@ export interface PuzzleQuestion {
   answers: PuzzleAnswer[];
   /** Seconds to answer; omit or default 10 in UI. 0 = no per-question timer. */
   timeLimitSeconds?: number;
-  ageRange?: AgeRangeOption;
 }
 
 export interface PuzzleScoring {
@@ -60,7 +52,6 @@ export interface TrueFalseStatement {
   text: string;
   media: string;
   isTrue: boolean;
-  ageRange?: AgeRangeOption;
 }
 
 export interface TrueFalseScoring {
@@ -78,7 +69,6 @@ export interface BallGameAnswer {
 export interface BallGameQuestion {
   text: string;
   answers: BallGameAnswer[];
-  ageRange?: AgeRangeOption;
 }
 
 export interface BallGameScoring {

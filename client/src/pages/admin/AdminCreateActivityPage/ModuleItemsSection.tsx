@@ -241,6 +241,123 @@ const RemoveBtn = styled('button')({
   '&:hover': { color: '#c0392b' },
 });
 
+const GroupButton = styled('button')<{ hasGroups?: boolean }>(({ hasGroups }) => ({
+  background: 'none',
+  border: `1px solid ${hasGroups ? '#6c5ce7' : '#d0d0d0'}`,
+  color: hasGroups ? '#6c5ce7' : '#999',
+  borderRadius: 6,
+  padding: '2px 8px',
+  fontSize: 12,
+  cursor: 'pointer',
+  fontWeight: 500,
+  flexShrink: 0,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+  fontFamily: 'inherit',
+  '&:hover': { background: '#f5f0ff', borderColor: '#6c5ce7', color: '#6c5ce7' },
+}));
+
+const GroupPopupOverlay = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0,0,0,0.3)',
+  zIndex: 1000,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
+
+const GroupPopupCard = styled('div')({
+  background: '#fff',
+  borderRadius: 16,
+  padding: '24px 28px',
+  minWidth: 320,
+  maxWidth: 420,
+  boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 16,
+});
+
+const GroupPopupTitle = styled('h3')({
+  margin: 0,
+  fontSize: 15,
+  fontWeight: 700,
+  color: '#333',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+});
+
+const GroupPopupHint = styled('p')({
+  margin: 0,
+  fontSize: 12,
+  color: '#999',
+  lineHeight: 1.4,
+});
+
+const GroupCheckList = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+  maxHeight: 280,
+  overflowY: 'auto',
+});
+
+const GroupCheckRow = styled('label')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  padding: '8px 12px',
+  borderRadius: 8,
+  cursor: 'pointer',
+  fontSize: 14,
+  fontWeight: 500,
+  transition: 'background 0.12s',
+  '&:hover': { background: '#f5f0ff' },
+});
+
+const GroupCheckbox = styled('input')({
+  width: 18,
+  height: 18,
+  accentColor: '#6c5ce7',
+  cursor: 'pointer',
+});
+
+const GroupPopupActions = styled('div')({
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: 8,
+  marginTop: 4,
+});
+
+const GroupPopupDone = styled('button')({
+  background: '#6c5ce7',
+  color: '#fff',
+  border: 'none',
+  borderRadius: 8,
+  padding: '8px 24px',
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  '&:hover': { background: '#5a4bd1' },
+});
+
+const GroupPopupClear = styled('button')({
+  background: 'none',
+  color: '#999',
+  border: '1px solid #e0e0e0',
+  borderRadius: 8,
+  padding: '8px 16px',
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  '&:hover': { color: '#6c5ce7', borderColor: '#6c5ce7' },
+});
+
 function hebrewFirstCompare(a: string, b: string): number {
   const hebrewRe = /^[\u0590-\u05FF]/;
   const aHeb = hebrewRe.test(a);
@@ -261,6 +378,9 @@ interface ModuleItemsSectionProps {
   onAddItem: (item: ModuleItem) => void;
   onRemoveItem: (index: number) => void;
   onMoveItem: (index: number, direction: -1 | 1) => void;
+  onUpdateItemGroups: (index: number, groups: string[]) => void;
+  connectionType: string;
+  groupNames: string[];
   t: Record<string, string>;
 }
 
@@ -271,6 +391,9 @@ export default function ModuleItemsSection({
   onAddItem,
   onRemoveItem,
   onMoveItem,
+  onUpdateItemGroups,
+  connectionType,
+  groupNames,
   t,
 }: ModuleItemsSectionProps) {
   const [activeTab, setActiveTab] = useState<TabType>('games');
@@ -280,6 +403,7 @@ export default function ModuleItemsSection({
   const [allMissions, setAllMissions] = useState<MissionOption[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
   const [previewItem, setPreviewItem] = useState<ModuleItem | null>(null);
+  const [groupPopupIndex, setGroupPopupIndex] = useState<number | null>(null);
 
   // Drag state
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -563,6 +687,18 @@ export default function ModuleItemsSection({
                 </ItemTypeBadge>
                 <DragItemName>{item.name}</DragItemName>
                 {item.subType && <SmallText style={{ flexShrink: 0 }}>{item.subType}</SmallText>}
+                {connectionType === 'group' && groupNames.length > 0 && (
+                  <GroupButton
+                    type="button"
+                    hasGroups={item.groups && item.groups.length > 0}
+                    onClick={(e) => { e.stopPropagation(); setGroupPopupIndex(index); }}
+                  >
+                    <span style={{ fontSize: 14, lineHeight: 1 }}>👥</span>
+                    {item.groups && item.groups.length > 0
+                      ? `${item.groups.length}/${groupNames.length}`
+                      : (t.allGroups || 'All')}
+                  </GroupButton>
+                )}
                 <PreviewButton type="button" onClick={(e) => { e.stopPropagation(); setPreviewItem(item); }}>
                   {t.preview}
                 </PreviewButton>
@@ -571,6 +707,56 @@ export default function ModuleItemsSection({
             ))}
           </DragList>
         </div>
+      )}
+
+      {/* Group assignment popup */}
+      {groupPopupIndex !== null && selectedItems[groupPopupIndex] && (
+        <GroupPopupOverlay onClick={() => setGroupPopupIndex(null)}>
+          <GroupPopupCard onClick={(e) => e.stopPropagation()}>
+            <GroupPopupTitle>
+              <span style={{ fontSize: 18 }}>👥</span>
+              {t.groupAssignTitle || 'Group Visibility'}
+            </GroupPopupTitle>
+            <GroupPopupHint>
+              {t.groupAssignHint || 'Select which groups will see this item. If none selected, all groups will see it.'}
+            </GroupPopupHint>
+            <div style={{ fontWeight: 600, fontSize: 13, color: '#6c5ce7' }}>
+              {selectedItems[groupPopupIndex].name}
+            </div>
+            <GroupCheckList>
+              {groupNames.map((gName) => {
+                const currentGroups = selectedItems[groupPopupIndex].groups || [];
+                const isChecked = currentGroups.includes(gName);
+                return (
+                  <GroupCheckRow key={gName}>
+                    <GroupCheckbox
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {
+                        const next = isChecked
+                          ? currentGroups.filter((g) => g !== gName)
+                          : [...currentGroups, gName];
+                        onUpdateItemGroups(groupPopupIndex, next);
+                      }}
+                    />
+                    {gName}
+                  </GroupCheckRow>
+                );
+              })}
+            </GroupCheckList>
+            <GroupPopupActions>
+              <GroupPopupClear
+                type="button"
+                onClick={() => onUpdateItemGroups(groupPopupIndex, [])}
+              >
+                {t.groupAssignClear || 'Clear (all groups)'}
+              </GroupPopupClear>
+              <GroupPopupDone type="button" onClick={() => setGroupPopupIndex(null)}>
+                {t.groupAssignDone || 'Done'}
+              </GroupPopupDone>
+            </GroupPopupActions>
+          </GroupPopupCard>
+        </GroupPopupOverlay>
       )}
 
       {/* Preview Modal */}

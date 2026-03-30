@@ -8,6 +8,7 @@ export interface IPopupTrigger {
 export interface IModuleItem {
   type: 'game' | 'station' | 'mission';
   ref: Types.ObjectId;
+  groups?: string[]; // when set, only these groups see this item (empty/undefined = all groups)
 }
 
 export interface IPopupCondition {
@@ -36,12 +37,6 @@ export interface IModuleConfig {
   missionRef?: Types.ObjectId; // reference to Mission document (when type='mission')
 }
 
-export interface IAgeRange {
-  label: string;   // e.g. "Kids", "Teens", "Adults"
-  minAge: number;
-  maxAge: number;
-}
-
 export type ActivityStatus = 'preview' | 'live';
 
 export interface IOpening {
@@ -68,8 +63,6 @@ export interface IActivity {
   groups: { name: string }[];
   opening?: IOpening;
   module?: IModuleConfig;
-  questionMode: 'same' | 'byAge'; // default 'same'
-  ageRanges: IAgeRange[];
   guidelines?: string;
   customInstructions?: ICustomInstructions;
   scheduledStart?: Date;
@@ -114,6 +107,7 @@ const popupMessageSchema = new Schema({
 const moduleItemSchema = new Schema<IModuleItem>({
   type: { type: String, required: true, enum: ['game', 'station', 'mission'] },
   ref: { type: Schema.Types.ObjectId, required: true },
+  groups: { type: [String], default: undefined },
 }, { _id: false });
 
 const moduleConfigSchema = new Schema<IModuleConfig>({
@@ -123,12 +117,6 @@ const moduleConfigSchema = new Schema<IModuleConfig>({
   items: { type: [moduleItemSchema], default: [] },
   popups: { type: [popupMessageSchema], default: [] },
   missionRef: { type: Schema.Types.ObjectId, ref: 'Mission' },
-}, { _id: false });
-
-const ageRangeSchema = new Schema<IAgeRange>({
-  label: { type: String, required: true },
-  minAge: { type: Number, required: true },
-  maxAge: { type: Number, required: true },
 }, { _id: false });
 
 const openingSchema = new Schema<IOpening>({
@@ -155,8 +143,6 @@ const activitySchema = new Schema<IActivity>({
   groups: { type: [{ name: { type: String, required: true } }], default: [] },
   opening: { type: openingSchema },
   module: { type: moduleConfigSchema },
-  questionMode: { type: String, enum: ['same', 'byAge'], default: 'same' },
-  ageRanges: { type: [ageRangeSchema], default: [] },
   guidelines: { type: String },
   customInstructions: { type: customInstructionsSchema },
   scheduledStart: { type: Date },

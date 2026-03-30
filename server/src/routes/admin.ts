@@ -52,7 +52,7 @@ function validateActivityPayload(body: CreateActivityRequest): string | null {
 }
 
 async function buildActivityData(body: CreateActivityRequest, existingPasswordHash?: string): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groups, opening, module: moduleConfig, questionMode, ageRanges, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd } = body;
+  const { name, loginFields, emailGoogle, connectionType, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -103,9 +103,10 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
         items: Array.isArray(mod.items)
           ? mod.items
               .filter((item: { type: string; ref: string }) => item.type && item.ref && ['game', 'station', 'mission'].includes(item.type))
-              .map((item: { type: string; ref: string }) => ({
+              .map((item: { type: string; ref: string; groups?: string[] }) => ({
                 type: item.type,
                 ref: item.ref,
+                ...(Array.isArray(item.groups) && item.groups.length > 0 && { groups: item.groups }),
               }))
           : [],
         popups: Array.isArray(mod.popups) ? mod.popups.map((p: Record<string, unknown>) => {
@@ -147,18 +148,6 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
     data.customInstructions = Object.keys(ci).length > 0 ? ci : undefined;
   } else {
     data.customInstructions = undefined;
-  }
-
-  // Handle question mode & age ranges
-  data.questionMode = questionMode || 'same';
-  if (questionMode === 'byAge' && ageRanges && Array.isArray(ageRanges) && ageRanges.length > 0) {
-    data.ageRanges = ageRanges.map((r) => ({
-      label: (r.label || '').trim(),
-      minAge: Number(r.minAge) || 0,
-      maxAge: Number(r.maxAge) || 120,
-    }));
-  } else {
-    data.ageRanges = [];
   }
 
   // Handle manager credentials

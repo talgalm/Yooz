@@ -292,12 +292,6 @@ export const SmallSelectionButton = styled(SelectionButton)({
   fontSize: 12,
 });
 
-export const AgeRangeToggle = styled(SelectionButton)({
-  flex: 'none',
-  padding: '4px 12px',
-  fontSize: 12,
-});
-
 // ─── Answer Card (correct/incorrect border) ───
 
 export const AnswerPanel = styled('div')<{ correct?: boolean }>(({ correct }) => ({
@@ -325,26 +319,6 @@ export const TruthToggleButton = styled(SelectionButton)<{ isTrue?: boolean }>((
   background: isTrue ? '#d4edda' : '#fde8e8',
   color: isTrue ? '#155724' : '#721c24',
 }));
-
-// ─── Age Range Row ───
-
-export const AgeRangeRow = styled('div')({
-  marginTop: 10,
-  display: 'flex',
-  gap: 8,
-  alignItems: 'center',
-});
-
-export const AgeRangeInput = styled(Input)({
-  width: 65,
-  padding: '4px 8px',
-  fontSize: 12,
-});
-
-export const AgeRangeSeparator = styled('span')({
-  fontSize: 12,
-  color: '#888',
-});
 
 // ─── Compact Inputs ───
 

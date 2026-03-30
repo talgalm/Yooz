@@ -14,11 +14,13 @@ import TrashSortGame from '../../../components/games/TrashSortGame';
 // Station components
 import NarrativeStation from '../../../components/stations/NarrativeStation';
 import BadgeStation from '../../../components/stations/BadgeStation';
+import CollageStation from '../../../components/stations/CollageStation';
+import FeedbackStation from '../../../components/stations/FeedbackStation';
 
 const Overlay = styled('div')({
   position: 'fixed',
   inset: 0,
-  background: 'rgba(0,0,0,0.5)',
+  background: 'rgba(0,0,0,0.35)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -27,14 +29,12 @@ const Overlay = styled('div')({
 
 const Container = styled('div')({
   background: '#fff',
-  borderRadius: 16,
-  width: '95vw',
-  maxWidth: 480,
-  height: '85vh',
-  maxHeight: 900,
+  borderRadius: 20,
+  width: 300,
+  height: 500,
   overflow: 'hidden',
   position: 'relative',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+  boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
   display: 'flex',
   flexDirection: 'column',
 });
@@ -43,29 +43,42 @@ const Header = styled('div')({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '12px 16px',
+  padding: '10px 14px',
   borderBottom: '1px solid #e8e8ec',
-  background: '#fff',
+  background: '#fafafa',
   flexShrink: 0,
 });
 
 const HeaderTitle = styled('span')({
   fontWeight: 600,
-  fontSize: 15,
+  fontSize: 13,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
+  color: '#333',
+});
+
+const HeaderBadge = styled('span')({
+  fontSize: 11,
+  fontWeight: 500,
+  padding: '2px 8px',
+  borderRadius: 10,
+  background: '#f0eefa',
+  color: '#6c5ce7',
+  flexShrink: 0,
+  marginLeft: 8,
 });
 
 const CloseButton = styled('button')({
   background: 'none',
   border: 'none',
-  fontSize: 22,
+  fontSize: 18,
   cursor: 'pointer',
-  padding: '4px 8px',
+  padding: '2px 6px',
   borderRadius: 6,
-  color: '#666',
-  '&:hover': { background: '#f0f0f0' },
+  color: '#999',
+  lineHeight: 1,
+  '&:hover': { background: '#f0f0f0', color: '#333' },
 });
 
 const Body = styled('div')({
@@ -73,25 +86,32 @@ const Body = styled('div')({
   minHeight: 0,
   overflow: 'auto',
   position: 'relative',
-  display: 'flex',
-  flexDirection: 'column',
 });
 
 const StationContent = styled('div')({
-  padding: 24,
+  padding: 20,
   textAlign: 'center',
 });
 
 const StationText = styled('p')({
-  fontSize: 15,
+  fontSize: 14,
   lineHeight: 1.6,
   whiteSpace: 'pre-wrap',
+  color: '#444',
 });
 
 const LoadingText = styled('div')({
-  padding: 40,
+  padding: 32,
   textAlign: 'center',
-  color: '#888',
+  color: '#aaa',
+  fontSize: 13,
+});
+
+const UnknownType = styled('div')({
+  padding: 32,
+  textAlign: 'center',
+  color: '#999',
+  fontSize: 13,
 });
 
 interface ItemPreviewModalProps {
@@ -123,7 +143,16 @@ export default function ItemPreviewModal({ item, onClose }: ItemPreviewModalProp
     if (e.target === e.currentTarget) onClose();
   };
 
-  const noOp = () => { /* preview complete — no-op */ };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const noOp = (() => { /* preview — no-op */ }) as (...args: any[]) => void;
+
+  const buildStationData = (stationType: string) => ({
+    _id: item.ref,
+    name: item.name,
+    type: 'station' as const,
+    stationType: stationType as 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback',
+    settings: settings!,
+  });
 
   const renderContent = () => {
     if (loading || !settings) return <LoadingText>Loading...</LoadingText>;
@@ -138,76 +167,62 @@ export default function ItemPreviewModal({ item, onClose }: ItemPreviewModalProp
         case 'trueFalse': return <TrueFalseGame game={gameData} onComplete={noOp} />;
         case 'ballGame': return <BallGame game={gameData} onComplete={noOp} />;
         case 'trashSort': return <TrashSortGame game={gameData} onComplete={noOp} />;
-        default: return <StationContent><StationText>Unknown game type: {item.subType}</StationText></StationContent>;
+        default: return <UnknownType>Unknown game type: {item.subType}</UnknownType>;
       }
     }
 
     // Station rendering
-    if (item.subType === 'narrative') {
-      const stationData = {
-        _id: item.ref,
-        name: item.name,
-        type: 'station' as const,
-        stationType: 'narrative' as const,
-        settings,
-      };
-      return <NarrativeStation station={stationData} onContinue={noOp} />;
+    switch (item.subType) {
+      case 'narrative':
+        return <NarrativeStation station={buildStationData('narrative')} onContinue={noOp} />;
+      case 'badge':
+        return <BadgeStation station={buildStationData('badge')} onContinue={noOp} />;
+      case 'collage':
+        return <CollageStation station={buildStationData('collage')} onContinue={noOp} />;
+      case 'feedback':
+        return <FeedbackStation station={buildStationData('feedback')} onContinue={noOp} />;
+      case 'text':
+        return (
+          <StationContent>
+            <StationText>{(settings.content as string) || 'No text content'}</StationText>
+          </StationContent>
+        );
+      case 'video':
+        return (
+          <StationContent>
+            <video
+              src={settings.mediaUrl as string}
+              controls
+              autoPlay
+              muted
+              playsInline
+              style={{ width: '100%', maxHeight: 300, borderRadius: 8 }}
+            />
+          </StationContent>
+        );
+      case 'image':
+        return (
+          <StationContent>
+            <img
+              src={settings.mediaUrl as string}
+              alt=""
+              style={{ width: '100%', maxHeight: 300, objectFit: 'contain', borderRadius: 8 }}
+            />
+          </StationContent>
+        );
+      default:
+        return <UnknownType>Unknown station type: {item.subType}</UnknownType>;
     }
-
-    if (item.subType === 'badge') {
-      const stationData = {
-        _id: item.ref,
-        name: item.name,
-        type: 'station' as const,
-        stationType: 'badge' as const,
-        settings,
-      };
-      return <BadgeStation station={stationData} onContinue={noOp} />;
-    }
-
-    if (item.subType === 'text') {
-      return (
-        <StationContent>
-          <StationText>{(settings.content as string) || 'No text content'}</StationText>
-        </StationContent>
-      );
-    }
-
-    if (item.subType === 'video') {
-      return (
-        <StationContent>
-          <video
-            src={settings.mediaUrl as string}
-            controls
-            autoPlay
-            muted
-            playsInline
-            style={{ width: '100%', maxHeight: 400, borderRadius: 8 }}
-          />
-        </StationContent>
-      );
-    }
-
-    if (item.subType === 'image') {
-      return (
-        <StationContent>
-          <img
-            src={settings.mediaUrl as string}
-            alt=""
-            style={{ width: '100%', maxHeight: 400, objectFit: 'contain', borderRadius: 8 }}
-          />
-        </StationContent>
-      );
-    }
-
-    return <StationContent><StationText>Unknown station type: {item.subType}</StationText></StationContent>;
   };
 
   return (
     <Overlay onClick={handleOverlayClick}>
       <Container>
         <Header>
-          <HeaderTitle>{item.name}</HeaderTitle>
+          <div style={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: 1 }}>
+            <HeaderTitle>{item.name}</HeaderTitle>
+            <HeaderBadge>{item.subType || item.itemType}</HeaderBadge>
+          </div>
           <CloseButton onClick={onClose}>&times;</CloseButton>
         </Header>
         <Body>{renderContent()}</Body>

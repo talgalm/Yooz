@@ -46,16 +46,6 @@ export interface AdminLoginResponse {
   admin: { email: string; role: AdminRole; name?: string };
 }
 
-// Age range config
-export interface AgeRangeConfig {
-  label: string;
-  minAge: number;
-  maxAge: number;
-}
-
-// Question mode: 'same' = same questions for everyone, 'byAge' = filter by age
-export type QuestionMode = 'same' | 'byAge';
-
 // Popup message config (sent from client)
 export interface PopupTriggerConfig {
   point: 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
@@ -82,6 +72,7 @@ export interface PopupMessageConfig {
 export interface ModuleItemRequest {
   type: 'game' | 'station';
   ref: string; // ObjectId string
+  groups?: string[]; // when set, only these groups see this item
 }
 
 // Module config (sent from client)
@@ -98,7 +89,6 @@ export interface ModuleConfigRequest {
 export interface OrderGameRound {
   title?: string;        // question/prompt for this round (optional)
   cards: string[];       // items in CORRECT order (shuffled at runtime for participant)
-  ageRange?: { minAge: number; maxAge: number }; // optional age filter
 }
 
 export interface OrderGameScoringConfig {
@@ -127,7 +117,6 @@ export interface TriviaQuestion {
   hint?: string;
   media?: string;
   answers: TriviaAnswer[];
-  ageRange?: { minAge: number; maxAge: number }; // optional age filter
 }
 
 export interface TriviaScoringConfig {
@@ -156,7 +145,6 @@ export interface BallGameAnswer {
 export interface BallGameQuestion {
   text: string;
   answers: BallGameAnswer[]; // exactly 4, one correct
-  ageRange?: { minAge: number; maxAge: number };
 }
 
 export interface BallGameSettings {
@@ -212,8 +200,6 @@ export interface CreateActivityRequest {
   groups?: GroupConfig[];
   opening?: OpeningConfig;
   module?: ModuleConfigRequest;
-  questionMode?: QuestionMode;
-  ageRanges?: AgeRangeConfig[];
   guidelines?: string;
   customInstructions?: CustomInstructionsConfig;
   scheduledStart?: string;
@@ -232,8 +218,6 @@ export interface ActivityConfigResponse {
   opening?: OpeningConfig;
   scheduledStart?: string;
   scheduledEnd?: string;
-  questionMode?: QuestionMode;
-  ageRanges?: AgeRangeConfig[];
 }
 
 // Participant types
@@ -244,7 +228,6 @@ export interface JwtPayload {
   email?: string;
   phoneNumber?: string;
   group?: string;
-  age?: number;
   iat?: number;
   exp?: number;
 }
@@ -255,7 +238,6 @@ export interface LoginRequest {
   email?: string;
   phoneNumber?: string;
   group?: string;
-  age?: number;
 }
 
 export interface LoginResponse {
@@ -267,7 +249,6 @@ export interface LoginResponse {
     email?: string;
     phoneNumber?: string;
     group?: string;
-    age?: number;
   };
 }
 

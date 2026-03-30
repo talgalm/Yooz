@@ -96,7 +96,6 @@ export interface ActivityModuleResponse {
   code: string;
   name: string;
   module: ModuleData;
-  questionMode?: 'same' | 'byAge';
   guidelines?: string;
   customInstructions?: CustomInstructionsData;
 }

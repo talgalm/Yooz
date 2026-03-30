@@ -13,19 +13,12 @@ interface GroupConfig {
   name: string;
 }
 
-interface AgeRangeConfig {
-  label: string;
-  minAge: number;
-  maxAge: number;
-}
-
 interface LoginData {
   activityCode: string;
   participantName?: string;
   email?: string;
   phoneNumber?: string;
   group?: string;
-  age?: number;
 }
 
 interface Props {
@@ -34,8 +27,6 @@ interface Props {
   emailGoogle?: boolean;
   connectionType: ConnectionType;
   groups: GroupConfig[];
-  questionMode?: 'same' | 'byAge';
-  ageRanges?: AgeRangeConfig[];
   onSuccess: () => void;
   onLogin: (data: LoginData) => Promise<void>;
 }
@@ -132,8 +123,6 @@ export default function ActivityLogin({
   emailGoogle,
   connectionType,
   groups,
-  questionMode,
-  ageRanges: _ageRanges,
   onSuccess,
   onLogin,
 }: Props) {
@@ -141,7 +130,6 @@ export default function ActivityLogin({
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('');
-  const [age, setAge] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const t = useTranslations(texts);
@@ -153,23 +141,19 @@ export default function ActivityLogin({
   nameRef.current = name;
   const phoneRef = useRef(phoneNumber);
   phoneRef.current = phoneNumber;
-  const ageRef = useRef(age);
-  ageRef.current = age;
 
   const hasEmail = loginFields.includes('email');
   const hasName = loginFields.includes('name');
   const hasPhone = loginFields.includes('phoneNumber');
   const isGroup = connectionType === 'group';
   const showGoogle = hasEmail && emailGoogle && isGoogleAuthAvailable();
-  const needsAge = questionMode === 'byAge';
 
   const canSubmit =
     !loading &&
     (!hasName || name.length > 0) &&
     (!hasEmail || email.length > 0) &&
     (!hasPhone || phoneNumber.length > 0) &&
-    (!isGroup || selectedGroup.length > 0) &&
-    (!needsAge || age.length > 0);
+    (!isGroup || selectedGroup.length > 0);
 
   const buildLoginData = (overrideEmail?: string): LoginData => ({
     activityCode,
@@ -177,7 +161,6 @@ export default function ActivityLogin({
     ...(hasEmail && { email: overrideEmail || email }),
     ...(hasPhone && { phoneNumber: phoneRef.current }),
     ...(isGroup && { group: selectedGroupRef.current }),
-    ...(needsAge && ageRef.current && { age: Number(ageRef.current) }),
   });
 
   const handleGoogleClick = async () => {
@@ -246,18 +229,6 @@ export default function ActivityLogin({
           groups={groups}
           value={selectedGroup}
           onChange={setSelectedGroup}
-        />
-      )}
-
-      {needsAge && (
-        <LoginInput
-          type="number"
-          placeholder={t.age}
-          value={age}
-          onChange={(e) => setAge(e.target.value)}
-          required
-          min={1}
-          max={120}
         />
       )}
 

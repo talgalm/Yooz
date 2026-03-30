@@ -5,7 +5,7 @@ import { shuffleArray } from '../../../utils/shuffleArray';
 import { useGameHint } from '../../../hooks/useGameHint';
 import HintModals from '../HintModals';
 import HintButton from '../HintButton';
-import { GameProps, HintConfig, AgeRange, GAME_CONSTANTS } from '../types';
+import { GameProps, HintConfig, GAME_CONSTANTS } from '../types';
 import { useGameSounds } from '../../../hooks/useGameSounds';
 import {
   useActivityPlayingHeaderHostActive,
@@ -125,7 +125,6 @@ interface PuzzleQuestion {
   answers: PuzzleAnswer[];
   /** Per-question countdown; 0 or omitted with default handling = see client. */
   timeLimitSeconds?: number;
-  ageRange?: AgeRange;
 }
 
 interface PuzzleScoring {
@@ -148,7 +147,7 @@ interface PuzzleSettings {
 
 // ─── Component ───
 
-export default function PuzzleGame({ game, onComplete, participantAge }: GameProps) {
+export default function PuzzleGame({ game, onComplete }: GameProps) {
   const settings = game.settings as unknown as PuzzleSettings;
   const t = useTranslations(texts);
   const gameHint = useGameHint(settings.hint);
@@ -169,22 +168,14 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
   const totalPieces = settings.gridCols * settings.gridRows;
   const scoring = settings.scoring || { basePoints: 100, speedBonusMax: 50, timeLimitSeconds: 0 };
 
-  // Filter questions by age
   const allQuestions = settings.questions || [];
-  const filteredQuestions = useMemo(() => {
-    if (participantAge === undefined) return allQuestions;
-    return allQuestions.filter((q) => {
-      if (!q.ageRange) return true;
-      return participantAge >= q.ageRange.minAge && participantAge <= q.ageRange.maxAge;
-    });
-  }, [allQuestions, participantAge]);
 
   const processedQuestions = useMemo(() => {
-    return filteredQuestions.map((q) => ({
+    return allQuestions.map((q) => ({
       ...q,
       answers: settings.shuffleAnswers !== false ? shuffleArray(q.answers) : q.answers,
     }));
-  }, [filteredQuestions]);
+  }, [allQuestions]);
 
   const [gameStarted, setGameStarted] = useState(false);
   const [noContent, setNoContent] = useState(false);
@@ -247,18 +238,6 @@ export default function PuzzleGame({ game, onComplete, participantAge }: GamePro
   useEffect(() => {
     elapsedSecondsRef.current = elapsedSeconds;
   }, [elapsedSeconds]);
-
-  // Auto-complete when all content filtered by age
-  useEffect(() => {
-    if (noContent && gameComplete) {
-      onComplete({
-        score: 0,
-        maxPossibleScore: 0,
-        durationMs: Date.now() - gameStartTime.current,
-        hintUsed: false,
-      });
-    }
-  }, [noContent, gameComplete]);
 
   // Initialize question queue
   useEffect(() => {

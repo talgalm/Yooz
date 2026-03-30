@@ -260,6 +260,7 @@ interface Activity {
   connectionType: string;
   module?: { type: string };
   createdAt: number;
+  createdByEmail?: string;
 }
 
 export interface Game {
@@ -538,7 +539,18 @@ export default function AdminDashboardPage() {
 // ─── Activities sub-section with pagination ───
 
 function ActivitiesSection({ activities, navigate, t }: { activities: Activity[]; navigate: ReturnType<typeof useNavigate>; t: Record<string, string> }) {
-  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(activities);
+  const [search, setSearch] = useState('');
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return activities;
+    const q = search.trim().toLowerCase();
+    return activities.filter((a) =>
+      a.name.toLowerCase().includes(q) ||
+      (a.createdByEmail || '').toLowerCase().includes(q)
+    );
+  }, [activities, search]);
+
+  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(filtered);
 
   return (
     <>
@@ -548,6 +560,29 @@ function ActivitiesSection({ activities, navigate, t }: { activities: Activity[]
           + {t.createNew}
         </SmallActionButton>
       </SectionHeaderRow>
+      <div style={{ position: 'relative', marginBottom: 12 }}>
+        <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#bbb', fontSize: 15, pointerEvents: 'none' }}>🔍</span>
+        <input
+          type="text"
+          placeholder={t.searchActivities || 'Search name or customer...'}
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          style={{
+            width: '100%',
+            padding: '10px 40px 10px 16px',
+            borderRadius: 10,
+            border: '1.5px solid #e8e8ec',
+            fontSize: 14,
+            fontFamily: 'inherit',
+            background: '#fff',
+            boxSizing: 'border-box',
+            transition: 'border-color 0.2s, box-shadow 0.2s',
+            outline: 'none',
+          }}
+          onFocus={(e) => { e.target.style.borderColor = '#6c5ce7'; e.target.style.boxShadow = '0 0 0 3px rgba(108,92,231,0.08)'; }}
+          onBlur={(e) => { e.target.style.borderColor = '#e8e8ec'; e.target.style.boxShadow = 'none'; }}
+        />
+      </div>
 
       {activities.length === 0 ? (
         <TableCard style={{ padding: 32 }}>
@@ -564,6 +599,7 @@ function ActivitiesSection({ activities, navigate, t }: { activities: Activity[]
                     <th>{t.code}</th>
                     <th>{t.status}</th>
                     <th>{t.typeModule}</th>
+                    <th>{t.customer}</th>
                     <th>{t.created}</th>
                   </tr>
                 </thead>
@@ -590,6 +626,9 @@ function ActivitiesSection({ activities, navigate, t }: { activities: Activity[]
                           )}
                         </BadgeGroup>
                       </td>
+                      <td style={{ color: '#888', fontSize: 13 }}>
+                        {activity.createdByEmail || '—'}
+                      </td>
                       <td>
                         <DateCell>{new Date(activity.createdAt).toLocaleDateString()}</DateCell>
                       </td>
@@ -615,6 +654,9 @@ function ActivitiesSection({ activities, navigate, t }: { activities: Activity[]
                     <IconBadge variant="blue">{activity.connectionType}</IconBadge>
                     {activity.module && (
                       <IconBadge variant="purple">{activity.module.type}</IconBadge>
+                    )}
+                    {activity.createdByEmail && (
+                      <span style={{ color: '#888', fontSize: 12 }}>{activity.createdByEmail}</span>
                     )}
                     <MobileCardDate>{new Date(activity.createdAt).toLocaleDateString()}</MobileCardDate>
                   </MobileCardDetails>

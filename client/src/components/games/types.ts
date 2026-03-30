@@ -35,13 +35,6 @@ export interface GameProps {
     settings: Record<string, unknown>;
   };
   onComplete: (result: GameResult) => void;
-  participantAge?: number;
-}
-
-/** Shared age range filter */
-export interface AgeRange {
-  minAge: number;
-  maxAge: number;
 }
 
 /** Magic numbers used across game components */

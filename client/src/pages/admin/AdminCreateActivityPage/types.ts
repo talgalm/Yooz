@@ -1,17 +1,10 @@
 export type LoginField = 'email' | 'phoneNumber' | 'name';
 export type ConnectionType = 'single' | 'group';
 export type ModuleType = 'none' | 'story';
-export type QuestionMode = 'same' | 'byAge';
 export type OpeningType = 'none' | 'video' | 'image';
 export type TriggerPoint = 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
 export type ConditionType = 'none' | 'participantCount';
 export type PopupContentType = 'text' | 'image';
-
-export interface AgeRange {
-  label: string;
-  minAge: number;
-  maxAge: number;
-}
 
 export interface PopupMessage {
   title: string;
@@ -55,6 +48,7 @@ export interface ModuleItem {
   customer?: string;
   theme?: string;
   settings?: Record<string, unknown>;
+  groups?: string[]; // when set, only these groups see this item
 }
 
 export interface CustomInstructions {
@@ -79,7 +73,7 @@ export interface Activity {
     theme?: string;
     backgroundImage?: string;
     missionRef?: string;
-    items: { type: 'game' | 'station'; ref: string; data?: { _id: string; name: string; type?: string; settings?: Record<string, unknown>; description?: string; customer?: string; theme?: string } }[];
+    items: { type: 'game' | 'station'; ref: string; groups?: string[]; data?: { _id: string; name: string; type?: string; settings?: Record<string, unknown>; description?: string; customer?: string; theme?: string } }[];
     popups?: {
       _id?: string;
       title: string;
@@ -92,8 +86,6 @@ export interface Activity {
       enabled: boolean;
     }[];
   };
-  questionMode?: string;
-  ageRanges?: AgeRange[];
   guidelines?: string;
   customInstructions?: CustomInstructions;
   scheduledStart?: string;

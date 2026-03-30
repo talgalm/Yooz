@@ -5,7 +5,7 @@ import { texts } from './TrueFalseGame.i18n';
 import { useGameHint } from '../../../hooks/useGameHint';
 import HintModals from '../HintModals';
 import HintButton from '../HintButton';
-import { GameProps, QuestionAnswerRecord, HintConfig, AgeRange, GAME_CONSTANTS } from '../types';
+import { GameProps, QuestionAnswerRecord, HintConfig, GAME_CONSTANTS } from '../types';
 import { useGameSounds } from '../../../hooks/useGameSounds';
 import {
   useActivityPlayingHeaderHostActive,
@@ -102,7 +102,6 @@ interface TrueFalseStatement {
   text: string;
   isTrue: boolean;
   media?: string;
-  ageRange?: AgeRange;
 }
 
 interface TrueFalseScoring {
@@ -124,7 +123,7 @@ const FEEDBACK_POPUP_MS = 3000;
 
 // ─── Component ───
 
-export default function TrueFalseGame({ game, onComplete, participantAge }: GameProps) {
+export default function TrueFalseGame({ game, onComplete }: GameProps) {
   const settings = game.settings as unknown as TrueFalseSettings;
   const t = useTranslations(texts);
   const gameHint = useGameHint(settings.hint);
@@ -136,15 +135,7 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
   const scoring = settings.scoring || { correctPoints: 10, wrongPenalty: 0, timeLimitSeconds: 10 };
   const feedbackDuration = settings.feedbackDurationMs || GAME_CONSTANTS.FEEDBACK_DURATION_MS;
 
-  // Filter statements by age
-  const allStatements = settings.statements || [];
-  const statements = useMemo(() => {
-    if (participantAge === undefined) return allStatements;
-    return allStatements.filter((s) => {
-      if (!s.ageRange) return true;
-      return participantAge >= s.ageRange.minAge && participantAge <= s.ageRange.maxAge;
-    });
-  }, [allStatements, participantAge]);
+  const statements = settings.statements || [];
 
   const introStickerLines = useMemo(() => {
     const lines = game.name
@@ -216,13 +207,6 @@ export default function TrueFalseGame({ game, onComplete, participantAge }: Game
       setGameComplete(true);
     }
   }, []);
-
-  // Auto-complete when all content filtered by age
-  useEffect(() => {
-    if (noContent && gameComplete) {
-      onComplete({ score: 0, maxPossibleScore: 0, durationMs: 0, hintUsed: false });
-    }
-  }, [noContent, gameComplete]);
 
   // Countdown effect (3-2-1)
   useEffect(() => {

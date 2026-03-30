@@ -7,7 +7,6 @@ export const texts = {
     joining: 'Connecting...',
     googleSignIn: 'Continue with Google',
     or: 'or',
-    age: 'Your Age',
     needHelp: 'Need help?',
   },
   he: {
@@ -18,7 +17,6 @@ export const texts = {
     joining: 'מתחברים...',
     googleSignIn: 'המשך עם גוגל',
     or: 'או',
-    age: 'הגיל שלך',
     needHelp: 'צריכים עזרה?',
   },
 };

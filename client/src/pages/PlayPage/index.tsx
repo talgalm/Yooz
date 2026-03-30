@@ -33,12 +33,6 @@ interface GroupConfig {
   name: string;
 }
 
-interface AgeRangeConfig {
-  label: string;
-  minAge: number;
-  maxAge: number;
-}
-
 interface OpeningConfig {
   type: 'video' | 'image';
   url: string;
@@ -55,8 +49,6 @@ interface ActivityConfig {
   scheduledStart?: string;
   scheduledEnd?: string;
   moduleType?: string;
-  questionMode?: 'same' | 'byAge';
-  ageRanges?: AgeRangeConfig[];
 }
 
 type OpeningPhase = 'playing' | 'fading' | 'done';
@@ -376,8 +368,6 @@ export default function PlayPage() {
             emailGoogle={activity.emailGoogle}
             connectionType={activity.connectionType}
             groups={activity.groups}
-            questionMode={activity.questionMode}
-            ageRanges={activity.ageRanges}
             onSuccess={handleSuccess}
             onLogin={login}
           />

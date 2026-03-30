@@ -18,10 +18,6 @@ import {
   TinyDangerButton,
   AddButton,
   ScoringToggleButton,
-  AgeRangeToggle,
-  AgeRangeRow,
-  AgeRangeInput,
-  AgeRangeSeparator,
   InputMb10,
   CardItemRow,
   CardInput,
@@ -51,10 +47,9 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
       const s = initialSettings;
       if (Array.isArray(s.rounds)) {
         setRounds(
-          (s.rounds as { title?: string; cards: string[]; ageRange?: { minAge: number; maxAge: number } }[]).map((r) => ({
+          (s.rounds as { title?: string; cards: string[] }[]).map((r) => ({
             title: r.title || '',
             cards: r.cards || ['', ''],
-            ageRange: r.ageRange,
           }))
         );
       }
@@ -83,7 +78,6 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
             .map((r) => ({
               title: r.title.trim() || undefined,
               cards: r.cards.filter((c) => c.trim()),
-              ...(r.ageRange && { ageRange: r.ageRange }),
             })),
           scoring: {
             firstAttemptPoints: orderScoring.firstAttemptPoints,
@@ -151,25 +145,6 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
           if (target < 0 || target >= cards.length) return r;
           [cards[cardIndex], cards[target]] = [cards[target], cards[cardIndex]];
           return { ...r, cards };
-        })
-      );
-    };
-
-    const updateRoundAgeRange = (roundIndex: number, field: 'minAge' | 'maxAge', value: number) => {
-      setRounds((prev) =>
-        prev.map((r, i) => {
-          if (i !== roundIndex) return r;
-          const current = r.ageRange || { minAge: 0, maxAge: 120 };
-          return { ...r, ageRange: { ...current, [field]: value } };
-        })
-      );
-    };
-
-    const toggleRoundAgeRange = (roundIndex: number) => {
-      setRounds((prev) =>
-        prev.map((r, i) => {
-          if (i !== roundIndex) return r;
-          return { ...r, ageRange: r.ageRange ? undefined : { minAge: 0, maxAge: 120 } };
         })
       );
     };
@@ -251,36 +226,6 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
               >
                 + {t.addCard}
               </AddButton>
-
-              {/* Age Range */}
-              <AgeRangeRow>
-                <AgeRangeToggle
-                  type="button"
-                  selected={!!round.ageRange}
-                  onClick={() => toggleRoundAgeRange(ri)}
-                >
-                  {round.ageRange ? t.ageRange : t.allAges}
-                </AgeRangeToggle>
-                {round.ageRange && (
-                  <>
-                    <AgeRangeInput
-                      type="number"
-                      placeholder={t.ageRangeMin}
-                      value={round.ageRange.minAge}
-                      onChange={(e) => updateRoundAgeRange(ri, 'minAge', Number(e.target.value))}
-                      min={0}
-                    />
-                    <AgeRangeSeparator>-</AgeRangeSeparator>
-                    <AgeRangeInput
-                      type="number"
-                      placeholder={t.ageRangeMax}
-                      value={round.ageRange.maxAge}
-                      onChange={(e) => updateRoundAgeRange(ri, 'maxAge', Number(e.target.value))}
-                      min={0}
-                    />
-                  </>
-                )}
-              </AgeRangeRow>
             </ItemPanel>
           ))}
         </div>

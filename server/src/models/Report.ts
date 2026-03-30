@@ -50,7 +50,6 @@ export interface IReport {
   phoneNumber?: string;
   connectionType: string;
   group?: string;
-  age?: number;
   joinedAt: Date;
   data: IReportData;
   completionStatus: CompletionStatus;
@@ -108,7 +107,6 @@ const reportSchema = new Schema<IReport>({
   phoneNumber: { type: String },
   connectionType: { type: String, required: true },
   group: { type: String },
-  age: { type: Number },
   joinedAt: { type: Date, default: Date.now },
   data: { type: Schema.Types.Mixed, default: {} },
   completionStatus: {

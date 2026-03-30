@@ -5,7 +5,7 @@ import { shuffleArray } from '../../../utils/shuffleArray';
 import { useGameHint } from '../../../hooks/useGameHint';
 import HintModals from '../HintModals';
 import HintButton from '../HintButton';
-import { GameProps, QuestionAnswerRecord, HintConfig, AgeRange, GAME_CONSTANTS } from '../types';
+import { GameProps, QuestionAnswerRecord, HintConfig, GAME_CONSTANTS } from '../types';
 import { useGameSounds } from '../../../hooks/useGameSounds';
 import {
   useActivityPlayingHeaderHostActive,
@@ -124,7 +124,6 @@ interface TriviaQuestion {
   hint?: string;
   media?: string;
   answers: TriviaAnswer[];
-  ageRange?: AgeRange;
 }
 
 interface TriviaScoring {
@@ -176,7 +175,7 @@ function pickWrongIndicesToEliminate(
 
 // ─── Component ───
 
-export default function TriviaGame({ game, onComplete, participantAge }: GameProps) {
+export default function TriviaGame({ game, onComplete }: GameProps) {
   const settings = game.settings as unknown as TriviaSettings;
   const t = useTranslations(texts);
   const gameHint = useGameHint(settings.hint);
@@ -197,13 +196,7 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
     timeLimitSeconds: 10,
   };
 
-  const questions = useMemo(() => {
-    if (participantAge === undefined) return allQuestions;
-    return allQuestions.filter((q) => {
-      if (!q.ageRange) return true;
-      return participantAge >= q.ageRange.minAge && participantAge <= q.ageRange.maxAge;
-    });
-  }, [allQuestions, participantAge]);
+  const questions = allQuestions;
 
   const processedQuestions = useMemo(() => {
     return questions.map((q) => ({
@@ -253,13 +246,6 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
     setThemedSceneOverlay(<TriviaIntroFullScreenSceneBackdrop aria-hidden />);
     return () => setThemedSceneOverlay(null);
   }, [setThemedSceneOverlay]);
-
-  // Auto-complete when all content filtered by age
-  useEffect(() => {
-    if (noContent && gameComplete) {
-      onComplete({ score: 0, maxPossibleScore: 0, durationMs: 0, hintUsed: false });
-    }
-  }, [noContent, gameComplete]);
 
   const initQuestion = useCallback((_qi: number) => {
     setSelectedAnswers(new Set());
