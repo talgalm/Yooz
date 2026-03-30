@@ -45,7 +45,7 @@ var audio_wrong,
 
 let fliperMargin = 50;
 let optionBoxMarginX = 25;
-let optionBoxMarginY = 40;
+let optionBoxMarginY = 28;
 let fliperAngle = 0.6;
 let fliperScale = 0.4;
 let arrOptionBox = [];
@@ -1153,7 +1153,7 @@ function addQuestion() {
   );
   questionBox.smoothed = true;
   questionBox.x = (gameWidth - questionBox.width) / 2;
-  questionBox.y = getScaleVal4HeightPosY(35);
+  questionBox.y = getScaleVal4HeightPosY(15);
   if (scoreBox) game.world.bringToTop(scoreBox);
   // HTML overlay text — not affected by canvas scaling
   var textLayer = document.getElementById('text-layer');
