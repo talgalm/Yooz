@@ -54,7 +54,7 @@ export const texts = {
     logout: 'יציאה',
     tabActivities: 'פעילויות',
     tabStations: 'תחנות',
-    tabStatistics: 'סטטיסטיקה',
+    tabStatistics: 'דוחות',
     sectionStations: 'תחנות',
     sectionGames: 'משחקים',
     subTabOrder: 'סדר',

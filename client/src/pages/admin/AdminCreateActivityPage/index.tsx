@@ -324,7 +324,7 @@ export default function AdminCreateActivityPage() {
   };
 
   const adjustGroupCount = (delta: number) => {
-    const newCount = Math.max(2, Math.min(20, groupCount + delta));
+    const newCount = Math.max(2, Math.min(50, groupCount + delta));
     setGroupCount(newCount);
     setGroupNames((prev) => {
       if (newCount > prev.length) {

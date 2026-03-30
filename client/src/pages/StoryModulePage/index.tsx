@@ -216,6 +216,11 @@ const sceneTransitionOpen = keyframes`
   }
 `;
 
+const summarySparkle = keyframes`
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50%       { opacity: 0.8; transform: scale(1.4); }
+`;
+
 const SceneTransitionOverlay = styled('div')<{ stage: 'closing' | 'opening'; transitionBg?: string }>(({ stage, transitionBg }) => ({
   position: 'fixed',
   inset: 0,
@@ -984,10 +989,47 @@ export default function StoryModulePage() {
     const rawTotal = scores.reduce((sum, s) => sum + s.score, 0);
     const totalHintPenalty = stationHintUsed.size * stationHintPenalty;
     const totalScore = Math.max(0, rawTotal - totalHintPenalty);
+    const summaryDots = [
+      { x: '12%', y: '8%', s: 3, d: 0 },
+      { x: '88%', y: '12%', s: 2, d: 0.4 },
+      { x: '6%', y: '30%', s: 4, d: 0.8 },
+      { x: '92%', y: '28%', s: 2, d: 1.2 },
+      { x: '18%', y: '55%', s: 3, d: 0.6 },
+      { x: '82%', y: '52%', s: 2, d: 1.0 },
+      { x: '50%', y: '18%', s: 2, d: 0.3 },
+      { x: '35%', y: '75%', s: 3, d: 0.9 },
+      { x: '70%', y: '80%', s: 2, d: 0.2 },
+      { x: '25%', y: '92%', s: 2, d: 1.4 },
+      { x: '78%', y: '90%', s: 3, d: 0.7 },
+    ];
 
     return (
-      <ThemedBackground theme={activityTheme}>
-        <HeaderBar style={{ background: 'rgba(0,0,0,0.1)', borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
+      <div
+        style={{
+          position: 'relative',
+          minHeight: '100dvh',
+          background: 'linear-gradient(180deg, #5c1a9e 0%, #1e0050 100%)',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+          {summaryDots.map((dot, i) => (
+            <div
+              key={i}
+              style={{
+                position: 'absolute',
+                left: dot.x,
+                top: dot.y,
+                width: dot.s,
+                height: dot.s,
+                borderRadius: '50%',
+                background: '#fff',
+                animation: `${summarySparkle} ${2 + dot.d}s ease-in-out ${dot.d}s infinite`,
+              }}
+            />
+          ))}
+        </div>
+        <HeaderBar style={{ position: 'relative', zIndex: 1, background: 'rgba(0,0,0,0.1)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <AccentText style={{ color: '#fff' }}>{data.name}</AccentText>
           <HeaderActions>
             <HelpChatHeaderButton />
@@ -995,7 +1037,7 @@ export default function StoryModulePage() {
             <LangDrawer variant="darkHeader" />
           </HeaderActions>
         </HeaderBar>
-        <CenteredContent>
+        <CenteredContent style={{ position: 'relative', zIndex: 1 }}>
           <Title style={{ color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>{t.summary}</Title>
           <SummaryScoresList style={{ background: 'rgba(0,0,0,0.15)', borderRadius: 16, padding: '12px 16px' }}>
             {scores.map((s, i) => (
@@ -1017,7 +1059,7 @@ export default function StoryModulePage() {
           </OutlineButton>
         </CenteredContent>
         {popupModal}
-      </ThemedBackground>
+      </div>
     );
   }
 

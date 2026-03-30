@@ -2,17 +2,18 @@ import React, { useState } from 'react';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HelpChatHeaderButton } from '../../components/HelpChat';
 import LangDrawer from '../../components/LangDrawer';
-import NatureBackground from '../../components/NatureBackground';
 import { styled, keyframes } from '@mui/material/styles';
 import { HeaderBar, HeaderActions, AccentText } from '../../components/styled';
 import type { ConfettiPiece } from './types';
 
 // ─── Colors ───
 
-const C_DARK_GREEN = '#689f38';
-const C_DARKER_GREEN = '#33691e';
+const C_PURPLE_MAIN = '#7c3aed';
+const C_PURPLE_DARK = '#4c1d95';
+const C_PURPLE_LIGHT = '#c4b5fd';
 const C_YELLOW_STAR = '#ffca28';
-const C_LIGHT_GREEN = '#c5e1a5';
+const C_BG_TOP = '#5c1a9e';
+const C_BG_BOT = '#1e0050';
 
 // ─── Animations ───
 
@@ -43,6 +44,11 @@ const confettiFall = keyframes`
   100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
 `;
 
+const sparkle = keyframes`
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50%       { opacity: 0.8; transform: scale(1.4); }
+`;
+
 // ─── Confetti ───
 
 const CONFETTI_COLORS = ['#ffca28', '#ff7043', '#66bb6a', '#42a5f5', '#ab47bc', '#26c6da', '#ffa726', '#ec407a'];
@@ -65,6 +71,16 @@ const ConfettiContainer = styled('div')({
   pointerEvents: 'none',
   zIndex: 100,
   overflow: 'hidden',
+});
+
+const PageRoot = styled('div')({
+  position: 'relative',
+  minHeight: '100dvh',
+  height: '100dvh',
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  background: `linear-gradient(180deg, ${C_BG_TOP} 0%, ${C_BG_BOT} 100%)`,
 });
 
 const ConfettiPieceStyled = styled('div')<{
@@ -107,9 +123,46 @@ function ConfettiOverlay() {
   );
 }
 
+function SparklesBg() {
+  const dots = [
+    { x: '12%', y: '8%', s: 3, d: 0 },
+    { x: '88%', y: '12%', s: 2, d: 0.4 },
+    { x: '6%', y: '30%', s: 4, d: 0.8 },
+    { x: '92%', y: '28%', s: 2, d: 1.2 },
+    { x: '18%', y: '55%', s: 3, d: 0.6 },
+    { x: '82%', y: '52%', s: 2, d: 1.0 },
+    { x: '50%', y: '18%', s: 2, d: 0.3 },
+    { x: '35%', y: '75%', s: 3, d: 0.9 },
+    { x: '70%', y: '80%', s: 2, d: 0.2 },
+    { x: '25%', y: '92%', s: 2, d: 1.4 },
+    { x: '78%', y: '90%', s: 3, d: 0.7 },
+  ];
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+      {dots.map((dot, i) => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            left: dot.x,
+            top: dot.y,
+            width: dot.s,
+            height: dot.s,
+            borderRadius: '50%',
+            background: '#fff',
+            animation: `${sparkle} ${2 + dot.d}s ease-in-out ${dot.d}s infinite`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ─── Styled Components ───
 
 const Content = styled('div')({
+  position: 'relative',
+  zIndex: 1,
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
@@ -121,7 +174,7 @@ const Content = styled('div')({
 
 const RibbonTitle = styled('div')({
   position: 'relative',
-  background: C_DARK_GREEN,
+  background: C_PURPLE_MAIN,
   color: '#fff',
   fontSize: 18,
   fontWeight: 900,
@@ -145,12 +198,12 @@ const RibbonTitle = styled('div')({
   '&::before': {
     left: -12,
     borderWidth: '16px 12px 16px 0',
-    borderColor: `transparent ${C_DARK_GREEN} transparent transparent`,
+    borderColor: `transparent ${C_PURPLE_MAIN} transparent transparent`,
   },
   '&::after': {
     right: -12,
     borderWidth: '16px 0 16px 12px',
-    borderColor: `transparent transparent transparent ${C_DARK_GREEN}`,
+    borderColor: `transparent transparent transparent ${C_PURPLE_MAIN}`,
   },
 });
 
@@ -159,7 +212,7 @@ const Badge = styled('div')({
   height: 120,
   borderRadius: '50%',
   background: C_YELLOW_STAR,
-  border: `4px solid ${C_DARKER_GREEN}`,
+  border: `4px solid ${C_PURPLE_DARK}`,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -177,14 +230,14 @@ const ScoreInBadge = styled('div')({
 const ScoreNumber = styled('div')({
   fontSize: 36,
   fontWeight: 900,
-  color: C_DARKER_GREEN,
+  color: C_PURPLE_DARK,
   lineHeight: 1,
 });
 
 const ScoreLabel = styled('div')({
   fontSize: 11,
   fontWeight: 700,
-  color: C_DARKER_GREEN,
+  color: C_PURPLE_DARK,
   textTransform: 'uppercase',
   letterSpacing: 1,
   marginTop: 2,
@@ -221,7 +274,7 @@ const StatIcon = styled('div')({
 const StatValue = styled('div')({
   fontSize: 20,
   fontWeight: 800,
-  color: C_DARKER_GREEN,
+  color: C_PURPLE_DARK,
   lineHeight: 1,
 });
 
@@ -245,7 +298,7 @@ const ActionsColumn = styled('div')({
 const ContinueButton = styled('button')({
   width: '100%',
   padding: '15px 28px',
-  background: C_DARK_GREEN,
+  background: C_PURPLE_MAIN,
   color: '#fff',
   border: 'none',
   borderRadius: 50,
@@ -254,12 +307,12 @@ const ContinueButton = styled('button')({
   cursor: 'pointer',
   textTransform: 'uppercase',
   letterSpacing: 1.5,
-  boxShadow: `0 5px 0 ${C_DARKER_GREEN}, 0 8px 20px rgba(0,0,0,0.2)`,
+  boxShadow: `0 5px 0 ${C_PURPLE_DARK}, 0 8px 20px rgba(0,0,0,0.2)`,
   transition: 'transform 0.1s, box-shadow 0.1s',
   animation: `${buttonPulse} 2s ease-in-out 2s infinite`,
   '&:active': {
     transform: 'translateY(5px)',
-    boxShadow: `0 0 0 ${C_DARKER_GREEN}, 0 2px 8px rgba(0,0,0,0.2)`,
+    boxShadow: `0 0 0 ${C_PURPLE_DARK}, 0 2px 8px rgba(0,0,0,0.2)`,
   },
 });
 
@@ -267,8 +320,8 @@ const SecondaryButton = styled('button')({
   width: '100%',
   padding: '12px 24px',
   background: 'rgba(255,255,255,0.85)',
-  color: C_DARKER_GREEN,
-  border: `2px solid ${C_LIGHT_GREEN}`,
+  color: C_PURPLE_DARK,
+  border: `2px solid ${C_PURPLE_LIGHT}`,
   borderRadius: 50,
   fontSize: 14,
   fontWeight: 700,
@@ -311,7 +364,7 @@ function CheckmarkIcon() {
       <path
         d="M14 24l8 8 14-16"
         fill="none"
-        stroke={C_DARKER_GREEN}
+        stroke={C_PURPLE_DARK}
         strokeWidth="5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -323,11 +376,11 @@ function CheckmarkIcon() {
 function TrophyIcon() {
   return (
     <svg width="48" height="48" viewBox="0 0 48 48">
-      <path d="M16 8h16v14c0 4.4-3.6 8-8 8s-8-3.6-8-8V8z" fill={C_YELLOW_STAR} stroke={C_DARKER_GREEN} strokeWidth="2" />
-      <path d="M16 12H8c0 6 4 10 8 10" fill="none" stroke={C_DARKER_GREEN} strokeWidth="2" />
-      <path d="M32 12h8c0 6-4 10-8 10" fill="none" stroke={C_DARKER_GREEN} strokeWidth="2" />
-      <rect x="20" y="30" width="8" height="6" rx="1" fill={C_DARKER_GREEN} />
-      <rect x="16" y="36" width="16" height="4" rx="2" fill={C_DARKER_GREEN} />
+      <path d="M16 8h16v14c0 4.4-3.6 8-8 8s-8-3.6-8-8V8z" fill={C_YELLOW_STAR} stroke={C_PURPLE_DARK} strokeWidth="2" />
+      <path d="M16 12H8c0 6 4 10 8 10" fill="none" stroke={C_PURPLE_DARK} strokeWidth="2" />
+      <path d="M32 12h8c0 6-4 10-8 10" fill="none" stroke={C_PURPLE_DARK} strokeWidth="2" />
+      <rect x="20" y="30" width="8" height="6" rx="1" fill={C_PURPLE_DARK} />
+      <rect x="16" y="36" width="16" height="4" rx="2" fill={C_PURPLE_DARK} />
     </svg>
   );
 }
@@ -364,9 +417,10 @@ export default function FinishScreen({
   t,
 }: FinishScreenProps) {
   return (
-    <NatureBackground>
+    <PageRoot>
+      <SparklesBg />
       <ConfettiOverlay />
-      <HeaderBar style={{ background: 'rgba(0,0,0,0.1)', borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
+      <HeaderBar style={{ position: 'relative', zIndex: 1, background: 'rgba(0,0,0,0.1)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <AccentText style={{ color: '#fff' }}>{activityName}</AccentText>
         <HeaderActions>
           <HelpChatHeaderButton />
@@ -394,7 +448,7 @@ export default function FinishScreen({
         <StatCardsRow>
           <StatCard delay={0}>
             <StatIcon>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill={C_DARK_GREEN}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill={C_PURPLE_MAIN}>
                 <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" />
               </svg>
             </StatIcon>
@@ -440,6 +494,6 @@ export default function FinishScreen({
         </Countdown>
       </Content>
       {popupModal}
-    </NatureBackground>
+    </PageRoot>
   );
 }

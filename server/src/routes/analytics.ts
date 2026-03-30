@@ -1,13 +1,36 @@
 import { Router, Request, Response } from 'express';
 import { Types } from 'mongoose';
 import { authenticateAdmin, requireRole } from '../middleware/adminAuth';
+import { customerMongoFilter, customerOwnsDoc, isCustomerRole } from '../middleware/customerScope';
 import { Activity, Report, AdminAuditLog } from '../models';
 import * as XLSX from 'xlsx';
 
 const router = Router();
 
 // All endpoints require admin or super_admin role
-router.use(authenticateAdmin, requireRole('admin', 'super_admin'));
+router.use(authenticateAdmin, requireRole('admin', 'super_admin', 'customer'));
+
+function withCustomerActivityScope(req: Request, baseFilter: Record<string, unknown>): Record<string, unknown> {
+  const scope = customerMongoFilter(req);
+  if (!isCustomerRole(req)) return baseFilter;
+  return Object.keys(baseFilter).length > 0 ? { $and: [baseFilter, scope] } : scope;
+}
+
+async function customerActivityIds(req: Request): Promise<Types.ObjectId[]> {
+  if (!isCustomerRole(req)) return [];
+  const activities = await Activity.find(customerMongoFilter(req), { _id: 1 }).lean();
+  return activities.map((a) => new Types.ObjectId(a._id));
+}
+
+async function reportMatchForRequest(req: Request, extraMatch: Record<string, unknown> = {}): Promise<Record<string, unknown>> {
+  if (!isCustomerRole(req)) return extraMatch;
+  const ids = await customerActivityIds(req);
+  if (ids.length === 0) return { _id: { $exists: false } };
+  return {
+    ...extraMatch,
+    activityId: { $in: ids },
+  };
+}
 
 // ─── Helper: compute median of sorted number array ───
 
@@ -22,11 +45,18 @@ function median(arr: number[]): number {
 // ─── Global Overview ───
 // ════════════════════════════════════════════
 
-router.get('/overview', async (_req: Request, res: Response) => {
+router.get('/overview', async (req: Request, res: Response) => {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(todayStart);
   weekStart.setDate(weekStart.getDate() - 7);
+
+  const reportBaseMatch = await reportMatchForRequest(req);
+  const reportTodayMatch = await reportMatchForRequest(req, { joinedAt: { $gte: todayStart } });
+  const reportWeekMatch = await reportMatchForRequest(req, { joinedAt: { $gte: weekStart } });
+  const reportWithScoreMatch = await reportMatchForRequest(req, { 'data.totalScore': { $exists: true } });
+  const activityBaseMatch = withCustomerActivityScope(req, {});
+  const activityLiveMatch = withCustomerActivityScope(req, { status: 'live' });
 
   const [
     totalParticipants,
@@ -36,13 +66,13 @@ router.get('/overview', async (_req: Request, res: Response) => {
     activeActivities,
     allReports,
   ] = await Promise.all([
-    Report.countDocuments(),
-    Report.countDocuments({ joinedAt: { $gte: todayStart } }),
-    Report.countDocuments({ joinedAt: { $gte: weekStart } }),
-    Activity.countDocuments(),
-    Activity.countDocuments({ status: 'live' }),
+    Report.countDocuments(reportBaseMatch),
+    Report.countDocuments(reportTodayMatch),
+    Report.countDocuments(reportWeekMatch),
+    Activity.countDocuments(activityBaseMatch),
+    Activity.countDocuments(activityLiveMatch),
     Report.find(
-      { 'data.totalScore': { $exists: true } },
+      reportWithScoreMatch,
       { 'data.totalScore': 1, completionStatus: 1, sessionDurationMs: 1 },
     ).lean(),
   ]);
@@ -75,9 +105,10 @@ router.get('/overview/timeline', async (req: Request, res: Response) => {
   const days = Math.min(Number(req.query.days) || 30, 90);
   const since = new Date();
   since.setDate(since.getDate() - days);
+  const match = await reportMatchForRequest(req, { joinedAt: { $gte: since } });
 
   const pipeline = await Report.aggregate([
-    { $match: { joinedAt: { $gte: since } } },
+    { $match: match },
     {
       $group: {
         _id: { $dateToString: { format: '%Y-%m-%d', date: '$joinedAt' } },
@@ -103,6 +134,10 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
 
   const activity = await Activity.findById(activityId).lean();
   if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  if (!customerOwnsDoc(req, activity)) {
     res.status(404).json({ error: 'Activity not found' });
     return;
   }
@@ -153,6 +188,12 @@ router.get('/activities/:id/funnel', async (req: Request<{ id: string }>, res: R
     return;
   }
 
+  const activity = await Activity.findById(activityId).lean();
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
   const reports = await Report.find(
     { activityId: new Types.ObjectId(activityId) },
     { completionStatus: 1, totalItemsCompleted: 1, totalItemsInModule: 1 },
@@ -182,6 +223,12 @@ router.get('/activities/:id/items', async (req: Request<{ id: string }>, res: Re
   const activityId = req.params.id;
   if (!Types.ObjectId.isValid(activityId)) {
     res.status(400).json({ error: 'Invalid activity ID' });
+    return;
+  }
+
+  const activity = await Activity.findById(activityId).lean();
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
     return;
   }
 
@@ -236,6 +283,12 @@ router.get('/activities/:id/items/:index/questions', async (req: Request<{ id: s
     return;
   }
 
+  const activity = await Activity.findById(activityId).lean();
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
   const pipeline = await Report.aggregate([
     { $match: { activityId: new Types.ObjectId(activityId), 'data.itemResults': { $exists: true } } },
     { $unwind: '$data.itemResults' },
@@ -278,6 +331,12 @@ router.get('/activities/:id/groups', async (req: Request<{ id: string }>, res: R
     return;
   }
 
+  const activity = await Activity.findById(activityId).lean();
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
   const pipeline = await Report.aggregate([
     { $match: { activityId: new Types.ObjectId(activityId), group: { $exists: true, $ne: null } } },
     {
@@ -311,6 +370,12 @@ router.get('/activities/:id/anomalies', async (req: Request<{ id: string }>, res
   const activityId = req.params.id;
   if (!Types.ObjectId.isValid(activityId)) {
     res.status(400).json({ error: 'Invalid activity ID' });
+    return;
+  }
+
+  const activity = await Activity.findById(activityId).lean();
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
     return;
   }
 
@@ -379,7 +444,7 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
   }
 
   const activity = await Activity.findById(activityId).lean();
-  if (!activity) {
+  if (!activity || !customerOwnsDoc(req, activity)) {
     res.status(404).json({ error: 'Activity not found' });
     return;
   }
@@ -454,6 +519,10 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
 // ════════════════════════════════════════════
 
 router.get('/audit-log', async (req: Request, res: Response) => {
+  if (req.admin?.role === 'customer') {
+    res.status(403).json({ error: 'Forbidden: insufficient role' });
+    return;
+  }
   const page = Math.max(1, Number(req.query.page) || 1);
   const limit = Math.min(Number(req.query.limit) || 50, 100);
   const skip = (page - 1) * limit;

@@ -80,6 +80,8 @@ export interface IActivity {
   createdAt: Date;
   /** Set when created via admin API — used to scope customer role */
   createdByEmail?: string;
+  /** When true, customer role cannot modify this activity */
+  customerEditLocked?: boolean;
   loginComponent?: string; // legacy
 }
 
@@ -164,6 +166,7 @@ const activitySchema = new Schema<IActivity>({
   stations: { type: [String], default: [] }, // legacy
   createdAt: { type: Date, default: Date.now },
   createdByEmail: { type: String, lowercase: true, trim: true },
+  customerEditLocked: { type: Boolean, default: false },
   loginComponent: { type: String }, // legacy
 });
 

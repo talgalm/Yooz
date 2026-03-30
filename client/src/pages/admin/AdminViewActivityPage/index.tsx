@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useTranslations } from '../../../context/LanguageContext';
+import { useAdminAuth } from '../../../context/AdminAuthContext';
 import { texts } from './AdminViewActivityPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
 import {
@@ -391,6 +392,24 @@ const DeleteBtn = styled('button', {
   '&:active': { background: confirm ? '#000' : '#c0392b' },
 }));
 
+const LockBtn = styled('button')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '12px 20px',
+  fontSize: 14,
+  fontWeight: 700,
+  color: '#6c5ce7',
+  background: '#fff',
+  border: '2px solid #6c5ce7',
+  borderRadius: 12,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  transition: 'all 0.15s',
+  '&:hover': { background: '#f0eefa' },
+  '&:active': { transform: 'scale(0.98)' },
+});
+
 // ─── Types ───
 
 interface Activity {
@@ -408,6 +427,7 @@ interface Activity {
     items: { type: 'game' | 'station'; ref?: string; data?: { _id: string; name: string; type?: string } }[];
   };
   createdAt: number;
+  customerEditLocked?: boolean;
 }
 
 // ─── Game/module icons ───
@@ -441,9 +461,11 @@ export default function AdminViewActivityPage() {
   const [copiedInline, setCopiedInline] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showGoLiveModal, setShowGoLiveModal] = useState(false);
+  const [lockSaving, setLockSaving] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const t = useTranslations(texts);
+  const { admin } = useAdminAuth();
 
   useEffect(() => {
     if (!id) return;
@@ -477,9 +499,26 @@ export default function AdminViewActivityPage() {
   };
 
   const handleDelete = async () => {
+    if (admin?.role === 'customer' && activity?.customerEditLocked) return;
     if (!confirmDelete) { setConfirmDelete(true); return; }
     await adminApiFetch(`/api/admin/activities/${id}`, { method: 'DELETE' });
     navigate('/admin/dashboard');
+  };
+
+  const handleToggleCustomerLock = async () => {
+    if (!activity || !id) return;
+    setLockSaving(true);
+    try {
+      const data = await adminApiFetch<{ activity: Activity }>(`/api/admin/activities/${id}/customer-lock`, {
+        method: 'PATCH',
+        body: JSON.stringify({ locked: !activity.customerEditLocked }),
+      });
+      setActivity(data.activity);
+    } catch {
+      // silently fail
+    } finally {
+      setLockSaving(false);
+    }
   };
 
   const confirmGoLive = async () => {
@@ -493,6 +532,8 @@ export default function AdminViewActivityPage() {
   };
 
   if (!activity) return null;
+  const canManageCustomerLock = admin?.role === 'admin' || admin?.role === 'super_admin';
+  const customerBlockedByLock = admin?.role === 'customer' && !!activity.customerEditLocked;
 
   const fieldLabels: Record<string, string> = { name: t.fieldName, email: t.email, phoneNumber: t.phone };
 
@@ -573,6 +614,15 @@ export default function AdminViewActivityPage() {
                   </ReviewBadges>
                 </ReviewRow>
               )}
+              <ReviewRow>
+                <ReviewIcon>🔒</ReviewIcon>
+                <ReviewLabel>{t.customerEditLockStatus}</ReviewLabel>
+                <ReviewBadges>
+                  <Badge style={activity.customerEditLocked ? { background: '#fde8e8', color: '#c0392b' } : {}}>
+                    {activity.customerEditLocked ? t.customerEditLocked : t.customerEditUnlocked}
+                  </Badge>
+                </ReviewBadges>
+              </ReviewRow>
             </CardContent>
           </CardBox>
         </TopGrid>
@@ -612,17 +662,37 @@ export default function AdminViewActivityPage() {
         {/* Action buttons */}
         <ButtonsRow>
           <ActionGroup>
-            <EditBtn onClick={() => navigate(`/admin/activities/${id}/edit`)}>
+            <EditBtn
+              onClick={() => {
+                if (customerBlockedByLock) return;
+                navigate(`/admin/activities/${id}/edit`);
+              }}
+              style={customerBlockedByLock ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}
+            >
               ✏️ {t.edit}
             </EditBtn>
             <StatsBtn onClick={() => navigate(`/admin/dashboard?tab=statistics&activityId=${id}`)}>
               📊 {t.stats}
             </StatsBtn>
+            {canManageCustomerLock && (
+              <LockBtn onClick={handleToggleCustomerLock} disabled={lockSaving}>
+                🔒 {activity.customerEditLocked ? t.unlockCustomerEdits : t.lockCustomerEdits}
+              </LockBtn>
+            )}
           </ActionGroup>
-          <DeleteBtn confirm={confirmDelete} onClick={handleDelete}>
+          <DeleteBtn
+            confirm={confirmDelete}
+            onClick={handleDelete}
+            style={customerBlockedByLock ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}
+          >
             🗑 {confirmDelete ? t.confirmDelete : t.delete}
           </DeleteBtn>
         </ButtonsRow>
+        {customerBlockedByLock && (
+          <PageDateText style={{ marginTop: 12, marginBottom: 0 }}>
+            {t.customerEditLockedNotice}
+          </PageDateText>
+        )}
       </ContentWrapper>
 
       {showGoLiveModal && (

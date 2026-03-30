@@ -2,12 +2,13 @@ import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { JWT_SECRET } from '../config';
-import { authenticateAdmin } from '../middleware/adminAuth';
+import { authenticateAdmin, requireRole } from '../middleware/adminAuth';
 import {
   assertModuleOwnedByCustomer,
   createdByEmailForNewResource,
   customerMongoFilter,
   customerOwnsDoc,
+  isCustomerRole,
 } from '../middleware/customerScope';
 import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginField } from '../types';
 import { Activity, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
@@ -334,6 +335,10 @@ router.put('/activities/:id', authenticateAdmin, async (req: Request<{ id: strin
   const existing = await Activity.findById(req.params.id);
   if (!existing) { res.status(404).json({ error: 'Activity not found' }); return; }
   if (!customerOwnsDoc(req, existing)) { res.status(404).json({ error: 'Activity not found' }); return; }
+  if (isCustomerRole(req) && existing.customerEditLocked) {
+    res.status(403).json({ error: 'Activity is locked for customer edits' });
+    return;
+  }
 
   const moduleErr = await assertModuleOwnedByCustomer(req, req.body.module);
   if (moduleErr) { res.status(403).json({ error: moduleErr }); return; }
@@ -376,6 +381,10 @@ router.patch('/activities/:id/status', authenticateAdmin, async (req: Request<{ 
     res.status(404).json({ error: 'Activity not found' });
     return;
   }
+  if (isCustomerRole(req) && activity.customerEditLocked) {
+    res.status(403).json({ error: 'Activity is locked for customer edits' });
+    return;
+  }
 
   // When going live, wipe all dynamic data (reports/participants/scores)
   if (status === 'live') {
@@ -399,12 +408,48 @@ router.delete('/activities/:id', authenticateAdmin, async (req: Request<{ id: st
     res.status(404).json({ error: 'Activity not found' });
     return;
   }
+  if (isCustomerRole(req) && existing.customerEditLocked) {
+    res.status(403).json({ error: 'Activity is locked for customer edits' });
+    return;
+  }
   await Activity.findByIdAndDelete(req.params.id);
   // Cascade-delete all reports linked to this activity
   await Report.deleteMany({ activityId: existing._id });
   logAdminAction(req, 'delete_activity', 'activity', req.params.id, existing.name);
   res.json({ success: true });
 });
+
+// Lock/unlock customer edits on an activity (admin/super_admin only)
+router.patch(
+  '/activities/:id/customer-lock',
+  authenticateAdmin,
+  requireRole('admin', 'super_admin'),
+  async (req: Request<{ id: string }>, res: Response) => {
+    const { locked } = req.body as { locked?: unknown };
+    if (typeof locked !== 'boolean') {
+      res.status(400).json({ error: 'locked must be a boolean' });
+      return;
+    }
+
+    const existing = await Activity.findById(req.params.id);
+    if (!existing) {
+      res.status(404).json({ error: 'Activity not found' });
+      return;
+    }
+
+    existing.customerEditLocked = locked;
+    await existing.save();
+    logAdminAction(
+      req,
+      locked ? 'lock_customer_activity_edits' : 'unlock_customer_activity_edits',
+      'activity',
+      existing._id.toString(),
+      existing.name,
+      { customerEditLocked: locked },
+    );
+    res.json({ activity: stripManagerPassword(existing) });
+  }
+);
 
 // Search games and stations by name (for activity creation)
 router.get('/search', authenticateAdmin, async (req: Request, res: Response) => {
