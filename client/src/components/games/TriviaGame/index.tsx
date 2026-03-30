@@ -12,6 +12,7 @@ import {
   useRegisterActivityGameHeader,
   type ActivityGameHeaderPhase,
 } from '../../../context/activityPlayingHeaderContext';
+import { useThemedSceneOverlaySetter } from '../../../context/themedSceneOverlayContext';
 import { GameIntroHeaderBar, GameHeaderMuteButton } from '../styled';
 import {
   IntroContainer,
@@ -20,7 +21,8 @@ import {
   IntroInfoBox,
   IntroInfoText,
   IntroStartButton,
-  IntroYoozLogo,
+  IntroWelcomeMidSpacer,
+  TriviaIntroFullScreenSceneBackdrop,
   TriviaContainer,
   TopBar,
   TopBarItem,
@@ -231,6 +233,7 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const activityHeaderAudio = useActivityPlayingHeaderHostActive();
+  const setThemedSceneOverlay = useThemedSceneOverlaySetter();
   const activityHeaderPhase: ActivityGameHeaderPhase = gameComplete
     ? 'finish'
     : showInstructions
@@ -242,6 +245,14 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
     sounds.isMuted,
     sounds.toggleMute
   );
+
+  // Paint the full-viewport background behind the activity chrome (header/top layer)
+  // for *all* trivia phases (intro, playing, and finish).
+  useEffect(() => {
+    if (!setThemedSceneOverlay) return;
+    setThemedSceneOverlay(<TriviaIntroFullScreenSceneBackdrop aria-hidden />);
+    return () => setThemedSceneOverlay(null);
+  }, [setThemedSceneOverlay]);
 
   // Auto-complete when all content filtered by age
   useEffect(() => {
@@ -436,30 +447,36 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
   // ─── Opening / Instructions screen ───
   if (showInstructions) {
     return (
-      <IntroContainer dir="rtl">
-        {!activityHeaderAudio && (
-          <GameIntroHeaderBar>
-            <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
-              {sounds.isMuted ? '🔇' : '🔊'}
-            </GameHeaderMuteButton>
-          </GameIntroHeaderBar>
-        )}
-        <IntroContent>
-          <IntroTitle>{t.triviaTitle}</IntroTitle>
+      <>
+        {!setThemedSceneOverlay && <TriviaIntroFullScreenSceneBackdrop aria-hidden />}
+        <IntroContainer dir="rtl">
+          {!activityHeaderAudio && (
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <GameIntroHeaderBar>
+                <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
+                  {sounds.isMuted ? '🔇' : '🔊'}
+                </GameHeaderMuteButton>
+              </GameIntroHeaderBar>
+            </div>
+          )}
+          <IntroContent>
+            <IntroTitle>{t.triviaTitle}</IntroTitle>
 
-          <IntroInfoBox>
-            <IntroInfoText>
-              {settings.instructions || game.name}
-            </IntroInfoText>
-          </IntroInfoBox>
+            <IntroWelcomeMidSpacer aria-hidden />
 
-          <IntroStartButton onClick={() => { setShowInstructions(false); sounds.startBgMusic(); }}>
-            {t.start}
-          </IntroStartButton>
+            <IntroInfoBox>
+              <IntroInfoText>
+                {settings.instructions || game.name}
+              </IntroInfoText>
+            </IntroInfoBox>
 
-          <IntroYoozLogo><img src="/images/logo-white.png" alt="Yooz" style={{ height: 36 }} /></IntroYoozLogo>
-        </IntroContent>
-      </IntroContainer>
+            <IntroStartButton onClick={() => { setShowInstructions(false); sounds.startBgMusic(); }}>
+              {t.start}
+            </IntroStartButton>
+
+          </IntroContent>
+        </IntroContainer>
+      </>
     );
   }
 
@@ -469,6 +486,7 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
     const accuracy = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
     return (
       <FinishContainer dir="rtl">
+        {!setThemedSceneOverlay && <TriviaIntroFullScreenSceneBackdrop aria-hidden />}
         {!activityHeaderAudio && (
           <GameIntroHeaderBar>
             <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
@@ -526,6 +544,7 @@ export default function TriviaGame({ game, onComplete, participantAge }: GamePro
 
   return (
     <TriviaContainer dir="rtl">
+      {!setThemedSceneOverlay && <TriviaIntroFullScreenSceneBackdrop aria-hidden />}
 
       {/* Top bar: score | timer | question count | mute */}
       <TopBar>

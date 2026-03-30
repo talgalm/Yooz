@@ -73,80 +73,120 @@ export const IntroDecorations = styled('div')({
   zIndex: 0,
 });
 
+// ─── Intro full-screen background ───
+// Kept as fixed so it covers the entire viewport (like TrueFalseGame) and stays behind UI chrome.
+const TRIVIA_WELCOME_BG_URL = '/images/trivia-welcome-bg.png';
+
+export const TriviaIntroFullScreenSceneBackdrop = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 0,
+  pointerEvents: 'none',
+  backgroundColor: '#4a1f6e',
+  backgroundImage: `url(${TRIVIA_WELCOME_BG_URL})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center center',
+  backgroundRepeat: 'no-repeat',
+});
+
 export const IntroContent = styled('div')({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'center',
+  justifyContent: 'flex-start',
   position: 'relative',
   zIndex: 1,
-  padding: '30px 20px 20px',
+  padding: 'clamp(12px, 4vh, 36px) 20px clamp(20px, 6vh, 48px)',
   textAlign: 'center',
   width: '100%',
-  maxWidth: 400,
+  maxWidth: 420,
+  minHeight: 0,
 });
 
+/** Match TrueFalse intro title sticker (yellow fill + olive outline). */
 export const IntroTitle = styled('h1')({
-  fontSize: '3.5rem',
-  fontWeight: 900,
-  color: TITLE_BLUE,
-  textShadow: '2px 2px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff',
-  transform: 'rotate(-4deg)',
-  margin: '0 0 24px',
-  lineHeight: 1.1,
+  margin: '0 0 16px',
+  padding: 0,
+  background: 'none',
+  textAlign: 'center',
+  boxSizing: 'border-box',
+  width: 'min(100%, 340px)',
+  flexShrink: 0,
+  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontSize: '48px',
+  fontWeight: 400,
+  lineHeight: 1.12,
+  letterSpacing: '0.02em',
+  color: '#ffff00',
+  WebkitTextStroke: '4px #666600',
+  paintOrder: 'stroke fill',
   animation: `${floatIn} 0.5s ease-out`,
 });
 
+/** Fills space so instructions sit below the title (like TrueFalse). */
+export const IntroWelcomeMidSpacer = styled('div')({
+  flex: '1 1 0',
+  minHeight: 0,
+  width: '100%',
+});
+
 export const IntroInfoBox = styled('div')({
-  background: BOX_BG,
-  border: `3px solid ${BOX_BORDER}`,
-  borderRadius: 15,
-  padding: '20px 18px',
   textAlign: 'center',
-  boxShadow: `0 4px 0 ${BOX_SHADOW}`,
-  marginBottom: 24,
-  width: '90%',
+  marginBottom: 12,
+  marginTop: 0,
+  width: 'min(94%, 400px)',
+  flexShrink: 0,
   boxSizing: 'border-box',
-  animation: `${floatIn} 0.5s ease-out 0.1s both`,
+  background: 'none',
+  border: 'none',
+  boxShadow: 'none',
+  padding: 0,
+  textAlign: 'center',
+  animation: `${floatIn} 0.5s ease-out 0.08s both`,
 });
 
 export const IntroInfoText = styled('p')({
-  fontSize: 16,
   fontWeight: 600,
-  color: TEXT_DARK,
-  lineHeight: 1.6,
+  fontSize: 'clamp(15px, 3.9vw, 18px)',
+  color: WHITE,
+  lineHeight: 1.55,
   margin: 0,
   whiteSpace: 'pre-wrap',
+  textShadow: '0 1px 5px rgba(0,0,0,0.5), 0 0 1px rgba(0,0,0,0.35)',
 });
 
 export const IntroStartButton = styled('button')({
-  background: BTN_PURPLE,
-  color: WHITE,
-  fontSize: '1.6rem',
-  fontWeight: 700,
-  padding: '14px 48px',
+  marginTop: 0,
+  flexShrink: 0,
+  background: 'linear-gradient(180deg, #f5d76e 0%, #e8b923 45%, #c9a012 100%)',
+  color: '#2a1538',
+  fontSize: '1.55rem',
+  fontWeight: 800,
+  padding: '14px 44px',
   borderRadius: 15,
-  border: `4px solid ${BTN_PURPLE_DARK}`,
+  border: '4px solid #8b6914',
   cursor: 'pointer',
   fontFamily: 'inherit',
-  boxShadow: `0 5px 0 ${BTN_PURPLE_DARK}, 0 8px 15px rgba(0,0,0,0.2)`,
+  boxShadow: '0 5px 0 #5c3d0a, 0 10px 22px rgba(0,0,0,0.35)',
   transition: 'all 0.1s ease',
   animation: `${floatIn} 0.5s ease-out 0.25s both`,
   '&:active': {
     transform: 'translateY(4px)',
-    boxShadow: `0 1px 0 ${BTN_PURPLE_DARK}, 0 3px 8px rgba(0,0,0,0.2)`,
+    boxShadow: '0 1px 0 #5c3d0a, 0 4px 10px rgba(0,0,0,0.3)',
   },
+  textShadow: '0 1px 0 rgba(255,255,255,0.35)',
 });
 
 export const IntroYoozLogo = styled('div')({
   marginTop: 'auto',
-  paddingBottom: 20,
-  paddingTop: 30,
+  paddingBottom: 12,
+  paddingTop: 0,
   fontSize: 36,
   fontWeight: 900,
-  color: TITLE_BLUE,
+  color: WHITE,
   letterSpacing: 2,
+  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
 });
 
 // ═══════════════════════════════════════════
