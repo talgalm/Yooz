@@ -95,6 +95,14 @@ const AnimatedContent = styled('div')({
 
 const StationHintButton = DarkHeaderTextButton;
 
+const StationTitleText = styled('h2')({
+  fontSize: 22,
+  fontWeight: 800,
+  color: '#333',
+  margin: '0 0 6px',
+  textAlign: 'center',
+});
+
 const StationDescriptionText = styled(StationHeadline)({
   marginBottom: 0,
   marginTop: -4,
@@ -212,6 +220,7 @@ export default function PlayingPhase({
       if (station.stationType === 'text') {
         return (
           <StationTopLayout>
+            <StationTitleText>{station.name}</StationTitleText>
             {station.description && (
               <StationDescriptionText>{station.description}</StationDescriptionText>
             )}
@@ -238,19 +247,22 @@ export default function PlayingPhase({
       }
 
       if (station.stationType === 'image') {
+        const descAfter = station.settings?.descPosition === 'after';
+        const descEl = station.description ? <StationDescriptionText>{station.description}</StationDescriptionText> : null;
+        const mediaEl = (
+          <StationWindow style={{ marginTop: 16 }} isDynamic>
+            <MediaStationImageWrapper style={{ marginBottom: 0 }}>
+              <MediaStationImage
+                src={station.settings?.mediaUrl as string}
+                alt=""
+              />
+            </MediaStationImageWrapper>
+          </StationWindow>
+        );
         return (
           <StationTopLayout>
-            {station.description && (
-              <StationDescriptionText>{station.description}</StationDescriptionText>
-            )}
-            <StationWindow style={{ marginTop: 16 }} isDynamic>
-              <MediaStationImageWrapper style={{ marginBottom: 0 }}>
-                <MediaStationImage
-                  src={station.settings?.mediaUrl as string}
-                  alt=""
-                />
-              </MediaStationImageWrapper>
-            </StationWindow>
+            <StationTitleText>{station.name}</StationTitleText>
+            {descAfter ? <>{mediaEl}{descEl}</> : <>{descEl}{mediaEl}</>}
             <FixedContinueButton onClick={onStationContinue}>
               {t.continueButton}
             </FixedContinueButton>
@@ -517,35 +529,39 @@ function VideoStationPlayer({ station, onContinue, t }: {
     }
   }, []);
 
+  const descAfter = station.settings?.descPosition === 'after';
+  const descEl = station.description ? <StationDescriptionText>{station.description}</StationDescriptionText> : null;
+  const mediaEl = (
+    <StationWindow isDynamic style={{ marginTop: 16 }}>
+      <MediaStationWrapper style={{ position: 'relative', marginBottom: 0 }}>
+        <MediaStationVideo
+          ref={videoRef}
+          src={station.settings?.mediaUrl as string}
+          controls
+          autoPlay
+          onEnded={handleEnded}
+        />
+        {showReplay && (
+          <ReplayOverlay onClick={handleReplay} type="button" aria-label="Replay video">
+            <ReplayIcon>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="1 4 1 10 7 10" />
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+              </svg>
+            </ReplayIcon>
+          </ReplayOverlay>
+        )}
+      </MediaStationWrapper>
+    </StationWindow>
+  );
+
   return (
     <StationTopLayout>
-      {station.description && (
-        <StationDescriptionText>{station.description}</StationDescriptionText>
-      )}
-      <StationWindow isDynamic style={{ marginTop: 50 }}>
-        <MediaStationWrapper style={{ position: 'relative', marginBottom: 0 }}>
-          <MediaStationVideo
-            ref={videoRef}
-            src={station.settings?.mediaUrl as string}
-            controls
-            autoPlay
-            onEnded={handleEnded}
-          />
-          {showReplay && (
-            <ReplayOverlay onClick={handleReplay} type="button" aria-label="Replay video">
-              <ReplayIcon>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="1 4 1 10 7 10" />
-                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                </svg>
-              </ReplayIcon>
-            </ReplayOverlay>
-          )}
-        </MediaStationWrapper>
-      </StationWindow>
+      <StationTitleText>{station.name}</StationTitleText>
+      {descAfter ? <>{mediaEl}{descEl}</> : <>{descEl}{mediaEl}</>}
       <FixedContinueButton onClick={onContinue}>
-          {t.continueButton}
-        </FixedContinueButton>
+        {t.continueButton}
+      </FixedContinueButton>
     </StationTopLayout>
   );
 }

@@ -95,6 +95,7 @@ export default function AdminStationConfigPage() {
   const [textContent, setTextContent] = useState('');
   // Video/Image station
   const [mediaUrl, setMediaUrl] = useState('');
+  const [descPosition, setDescPosition] = useState<'before' | 'after'>('before');
   // Narrative station
   const [narrativeTitle, setNarrativeTitle] = useState('');
   const [narrativeBody, setNarrativeBody] = useState('');
@@ -193,6 +194,7 @@ export default function AdminStationConfigPage() {
     }
     if (settings.content) setTextContent(settings.content as string);
     if (settings.mediaUrl) setMediaUrl(settings.mediaUrl as string);
+    if (settings.descPosition === 'after') setDescPosition('after');
     if (settings.title) setNarrativeTitle(settings.title as string);
     if (settings.bodyText) setNarrativeBody(settings.bodyText as string);
     if (settings.buttonText) setNarrativeButtonText(settings.buttonText as string);
@@ -237,6 +239,7 @@ export default function AdminStationConfigPage() {
       }
       if (stationType === 'video' || stationType === 'image') {
         settings.mediaUrl = mediaUrl.trim();
+        settings.descPosition = descPosition;
       }
       if (stationType === 'narrative') {
         settings.title = narrativeTitle.trim();
@@ -509,6 +512,11 @@ export default function AdminStationConfigPage() {
                       onChange={(e) => setMediaUrl(e.target.value)}
                     />
                   </InlineRow>
+                  <SectionLabelNoMargin>{t.descPosition}</SectionLabelNoMargin>
+                  <SelectionGroup>
+                    <SelectionButton type="button" selected={descPosition === 'before'} onClick={() => setDescPosition('before')}>{t.descBefore}</SelectionButton>
+                    <SelectionButton type="button" selected={descPosition === 'after'} onClick={() => setDescPosition('after')}>{t.descAfter}</SelectionButton>
+                  </SelectionGroup>
                 </VerticalStack>
               )}
 
@@ -528,6 +536,11 @@ export default function AdminStationConfigPage() {
                       onChange={(e) => setMediaUrl(e.target.value)}
                     />
                   </InlineRow>
+                  <SectionLabelNoMargin>{t.descPosition}</SectionLabelNoMargin>
+                  <SelectionGroup>
+                    <SelectionButton type="button" selected={descPosition === 'before'} onClick={() => setDescPosition('before')}>{t.descBefore}</SelectionButton>
+                    <SelectionButton type="button" selected={descPosition === 'after'} onClick={() => setDescPosition('after')}>{t.descAfter}</SelectionButton>
+                  </SelectionGroup>
                 </VerticalStack>
               )}
 
