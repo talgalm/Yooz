@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../config';
 import { LoginRequest, LoginResponse } from '../types';
-import { Activity, Report } from '../models';
+import { Activity, Portal, Report } from '../models';
 
 const router = Router();
 
@@ -54,6 +54,22 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
     const validGroups = (activity.groups || []).map((g) => g.name);
     if (!validGroups.includes(group)) {
       res.status(400).json({ error: 'Invalid group selection' });
+      return;
+    }
+  }
+
+  // Validate portal user for continuous activities
+  if (activity.isContinuous && activity.portalId) {
+    const portal = await Portal.findById(activity.portalId);
+    if (!portal) {
+      res.status(403).json({ error: 'portal_not_found' });
+      return;
+    }
+    const portalUser = portal.users.find(
+      u => u.username === (participantName?.trim() || email?.trim() || '') && u.status === 'approved'
+    );
+    if (!portalUser) {
+      res.status(403).json({ error: 'not_portal_user' });
       return;
     }
   }

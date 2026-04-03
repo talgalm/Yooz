@@ -164,6 +164,19 @@ export interface CreateGameRequest {
   settings?: Record<string, unknown>;
 }
 
+// Portal API types
+export interface PortalUserRequest {
+  username: string;
+  password: string;
+}
+
+export interface CreatePortalRequest {
+  name: string;
+  description?: string;
+  users?: PortalUserRequest[];
+  activities?: string[]; // Activity ObjectId strings
+}
+
 // Station API types
 export interface CreateStationRequest {
   name: string;
@@ -206,6 +219,8 @@ export interface CreateActivityRequest {
   scheduledEnd?: string;
   managerEmail?: string;
   managerPassword?: string;
+  isContinuous?: boolean;
+  portalId?: string;
 }
 
 export interface ActivityConfigResponse {
@@ -218,6 +233,7 @@ export interface ActivityConfigResponse {
   opening?: OpeningConfig;
   scheduledStart?: string;
   scheduledEnd?: string;
+  isContinuous?: boolean;
 }
 
 // Participant types

@@ -14,6 +14,8 @@ import AdminViewActivityPage from './pages/admin/AdminViewActivityPage';
 import AdminGameConfigPage from './pages/admin/AdminGameConfigPage';
 import AdminMissionConfigPage from './pages/admin/AdminMissionConfigPage';
 import AdminStationConfigPage from './pages/admin/AdminStationConfigPage';
+import AdminPortalConfigPage from './pages/admin/AdminPortalConfigPage';
+import PortalPage from './pages/portal/PortalPage';
 import ManagerLoginPage from './pages/manager/ManagerLoginPage';
 import ManagerDashboardPage from './pages/manager/ManagerDashboardPage';
 import LandingPage from './pages/LandingPage';
@@ -68,6 +70,8 @@ export default function App() {
                 <Route path="/admin/missions/:id" element={<AdminProtectedRoute><AdminMissionConfigPage /></AdminProtectedRoute>} />
                 <Route path="/admin/stations/new" element={<AdminProtectedRoute><AdminStationConfigPage /></AdminProtectedRoute>} />
                 <Route path="/admin/stations/:id" element={<AdminProtectedRoute><AdminStationConfigPage /></AdminProtectedRoute>} />
+                <Route path="/admin/portals/new" element={<AdminProtectedRoute><AdminPortalConfigPage /></AdminProtectedRoute>} />
+                <Route path="/admin/portals/:id" element={<AdminProtectedRoute><AdminPortalConfigPage /></AdminProtectedRoute>} />
 
                 {/* Manager routes — full width desktop */}
                 <Route path="/manager" element={<ManagerPublicRoute><ManagerLoginPage /></ManagerPublicRoute>} />
@@ -78,6 +82,9 @@ export default function App() {
                 <Route path="/home" element={<MobileContainer><HelpChatProvider variant="header"><ProtectedRoute><HomePage /></ProtectedRoute></HelpChatProvider></MobileContainer>} />
                 <Route path="/story/:code" element={<MobileContainer><HelpChatProvider variant="header"><ProtectedRoute><StoryModulePage /></ProtectedRoute></HelpChatProvider></MobileContainer>} />
                 <Route path="/mission/:code" element={<MobileContainer><HelpChatProvider variant="fab"><ProtectedRoute><MissionPage /></ProtectedRoute><HelpChatFab /></HelpChatProvider></MobileContainer>} />
+
+                {/* Portal route — public */}
+                <Route path="/portal/:code" element={<PortalPage />} />
 
                 {/* Default: YOOZ landing page */}
                 <Route path="/" element={<MobileContainer><LandingPage /></MobileContainer>} />

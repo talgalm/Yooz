@@ -75,6 +75,10 @@ export interface IActivity {
   createdByEmail?: string;
   /** When true, customer role cannot modify this activity */
   customerEditLocked?: boolean;
+  /** Portal this activity is attached to */
+  portalId?: Types.ObjectId;
+  /** When true, participants must login via portal username */
+  isContinuous?: boolean;
   loginComponent?: string; // legacy
 }
 
@@ -153,6 +157,8 @@ const activitySchema = new Schema<IActivity>({
   createdAt: { type: Date, default: Date.now },
   createdByEmail: { type: String, lowercase: true, trim: true },
   customerEditLocked: { type: Boolean, default: false },
+  portalId: { type: Schema.Types.ObjectId, ref: 'Portal' },
+  isContinuous: { type: Boolean, default: false },
   loginComponent: { type: String }, // legacy
 });
 

@@ -91,4 +91,6 @@ export interface Activity {
   scheduledStart?: string;
   scheduledEnd?: string;
   managerEmail?: string;
+  isContinuous?: boolean;
+  portalId?: string;
 }

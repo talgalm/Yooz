@@ -32,6 +32,10 @@ export const texts = {
     stayHere: 'Stay Here',
     viewLeaderboard: 'CONTINUE ADVENTURE',
     exitActivity: 'Exit',
+    exitConfirmTitle: 'Are you sure?',
+    exitConfirmMessage: 'All data will be lost.',
+    exitConfirmOk: 'Yes, exit',
+    exitConfirmCancel: 'Cancel',
     autoExitIn: 'Auto exit in',
     seconds: 's',
     // Leaderboard
@@ -92,6 +96,10 @@ export const texts = {
     stayHere: 'הישארו כאן',
     viewLeaderboard: 'טבלת מובילים',
     exitActivity: 'יציאה',
+    exitConfirmTitle: 'האם אתה בטוח?',
+    exitConfirmMessage: 'כל הנתונים יאבדו.',
+    exitConfirmOk: 'כן, צא',
+    exitConfirmCancel: 'ביטול',
     autoExitIn: 'יציאה אוטומטית בעוד',
     seconds: 'שנ׳',
     // Leaderboard

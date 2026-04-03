@@ -13,6 +13,8 @@ import AdminStationsTab from '../AdminStationsTab';
 import AdminStatisticsTab from '../AdminStatisticsTab';
 import AdminUsersTab from '../AdminUsersTab';
 import AdminLibraryTab from '../AdminLibraryTab';
+import AdminPortalsTab from '../AdminPortalsTab';
+import type { Portal } from '../AdminPortalsTab';
 import {
   AdminHeader,
   OutlineButton,
@@ -248,7 +250,7 @@ const MobileCard = styled('div')({
 
 // ─── Types ───
 
-type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'users';
+type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'users' | 'portals';
 type StationsSection = 'stations' | 'games' | 'missions' | 'collage' | 'feedback';
 type GameSubTab = 'order' | 'trivia' | 'puzzle' | 'trueFalse' | 'ballGame' | 'trashSort';
 
@@ -304,8 +306,9 @@ export default function AdminDashboardPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [stations, setStations] = useState<Station[]>([]);
   const [missions, setMissions] = useState<Mission[]>([]);
+  const [portals, setPortals] = useState<Portal[]>([]);
   const [activeTab, setActiveTab] = useState<MainTab>(
-    ['activities', 'statistics', 'stations', 'library', 'users'].includes(initialTab) ? initialTab : 'activities'
+    ['activities', 'statistics', 'stations', 'library', 'users', 'portals'].includes(initialTab) ? initialTab : 'activities'
   );
   const [stationsSection, setStationsSection] = useState<StationsSection>('stations');
   const [gameSubTab, setGameSubTab] = useState<GameSubTab>('order');
@@ -325,6 +328,7 @@ export default function AdminDashboardPage() {
     }
     tabs.push({ key: 'stations', label: t.tabStations });
     tabs.push({ key: 'library', label: t.tabLibrary });
+    tabs.push({ key: 'portals', label: t.tabPortals });
     if (role === 'super_admin') {
       tabs.push({ key: 'users', label: t.tabUsers });
     }
@@ -341,16 +345,18 @@ export default function AdminDashboardPage() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [activitiesRes, gamesRes, stationsRes, missionsRes] = await Promise.all([
+      const [activitiesRes, gamesRes, stationsRes, missionsRes, portalsRes] = await Promise.all([
         adminApiFetch<{ activities: Activity[] }>('/api/admin/activities'),
         adminApiFetch<{ games: Game[] }>('/api/admin/games'),
         adminApiFetch<{ stations: Station[] }>('/api/admin/stations'),
         adminApiFetch<{ missions: Mission[] }>('/api/admin/missions'),
+        adminApiFetch<{ portals: Portal[] }>('/api/admin/portals'),
       ]);
       setActivities(activitiesRes.activities);
       setGames(gamesRes.games);
       setStations(stationsRes.stations);
       setMissions(missionsRes.missions);
+      setPortals(portalsRes.portals);
     } catch {
       // silently fail — data stays empty
     } finally {
@@ -373,6 +379,13 @@ export default function AdminDashboardPage() {
     try {
       const data = await adminApiFetch<{ stations: Station[] }>('/api/admin/stations');
       setStations(data.stations);
+    } catch {}
+  }, []);
+
+  const refreshPortals = useCallback(async () => {
+    try {
+      const data = await adminApiFetch<{ portals: Portal[] }>('/api/admin/portals');
+      setPortals(data.portals);
     } catch {}
   }, []);
 
@@ -520,6 +533,11 @@ export default function AdminDashboardPage() {
               />
             )}
           </>
+        )}
+
+        {/* ── Portals Tab ── */}
+        {activeTab === 'portals' && (
+          <AdminPortalsTab portals={portals} onRefresh={refreshPortals} />
         )}
 
         {/* ── Content Library Tab ── */}

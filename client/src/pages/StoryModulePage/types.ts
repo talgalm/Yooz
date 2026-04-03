@@ -98,6 +98,7 @@ export interface ActivityModuleResponse {
   module: ModuleData;
   guidelines?: string;
   customInstructions?: CustomInstructionsData;
+  isContinuous?: boolean;
 }
 
 export interface LeaderboardEntry {

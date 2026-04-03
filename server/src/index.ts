@@ -19,6 +19,7 @@ import missionsRouter from './routes/missions';
 import collageRouter from './routes/collage';
 import libraryRouter from './routes/library';
 import alertsRouter from './routes/alerts';
+import portalsRouter from './routes/portals';
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use('/api/admin/missions', missionsRouter);
 app.use('/api/collage', collageRouter);
 app.use('/api/admin/library', libraryRouter);
 app.use('/api/alerts', alertsRouter);
+app.use('/api/admin/portals', portalsRouter);
 
 // Serve static client build in production
 app.use(express.static(CLIENT_BUILD_PATH));

@@ -188,7 +188,8 @@ export default function ActivityLogin({
       await onLogin(buildLoginData());
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      const msg = err instanceof Error ? err.message : 'Login failed';
+      setError(msg === 'not_portal_user' ? t.notPortalUser : msg);
     } finally {
       setLoading(false);
     }

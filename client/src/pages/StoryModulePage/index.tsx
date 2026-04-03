@@ -391,13 +391,41 @@ export default function StoryModulePage() {
       .catch(() => { /* fresh start */ });
   }, [sessionRestored, data, code]);
 
-  const handleExit = useCallback(() => {
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  const doExit = useCallback(() => {
     const loginPath = code ? `/play/${code}` : '/';
     if (countdownRef.current) clearInterval(countdownRef.current);
     if (code) sessionStorage.removeItem(`yooz_session_${code}`);
     navigate(loginPath, { replace: true });
     logout();
   }, [code, logout, navigate]);
+
+  const handleExit = useCallback(() => {
+    if (data?.isContinuous && phase !== 'finish') {
+      setShowExitConfirm(true);
+      return;
+    }
+    doExit();
+  }, [data?.isContinuous, phase, doExit]);
+
+  const handleConfirmExit = useCallback(async () => {
+    setShowExitConfirm(false);
+    // Delete report data for continuous activity
+    if (code) {
+      try {
+        const token = localStorage.getItem('yooz_token');
+        await fetch(`/api/activities/${code}/my-report`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+      } catch { /* best effort */ }
+    }
+    doExit();
+  }, [code, doExit]);
 
   // Auto-exit countdown for finish page
   useEffect(() => {
@@ -1102,6 +1130,42 @@ export default function StoryModulePage() {
       </ActivityPlayingHeaderProvider>
       {entryTransitionStage !== 'idle' && (
         <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
+      )}
+
+      {/* Exit confirmation for continuous activities */}
+      {showExitConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: '28px 32px', maxWidth: 340, width: '90%',
+            textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 18, color: '#333' }}>{t.exitConfirmTitle}</h3>
+            <p style={{ margin: '0 0 20px', fontSize: 14, color: '#666' }}>{t.exitConfirmMessage}</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button
+                onClick={() => setShowExitConfirm(false)}
+                style={{
+                  padding: '10px 24px', borderRadius: 10, border: '1.5px solid #ddd',
+                  background: '#fff', fontSize: 14, cursor: 'pointer', fontWeight: 600, color: '#555',
+                }}
+              >
+                {t.exitConfirmCancel}
+              </button>
+              <button
+                onClick={handleConfirmExit}
+                style={{
+                  padding: '10px 24px', borderRadius: 10, border: 'none',
+                  background: '#e74c3c', color: '#fff', fontSize: 14, cursor: 'pointer', fontWeight: 600,
+                }}
+              >
+                {t.exitConfirmOk}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

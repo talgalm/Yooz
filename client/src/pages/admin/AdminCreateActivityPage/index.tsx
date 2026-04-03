@@ -221,11 +221,24 @@ export default function AdminCreateActivityPage() {
     buttonText: '',
   });
 
+  const [isContinuous, setIsContinuous] = useState(false);
+  const [portalId, setPortalId] = useState('');
+  const [portals, setPortals] = useState<{ _id: string; name: string; code: string }[]>([]);
+
   const [step, setStep] = useState<1 | 2>(1);
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEditMode);
+
+  // Fetch portals list for continuous activity dropdown
+  useEffect(() => {
+    if (!isContinuous && portals.length === 0) return;
+    if (portals.length > 0) return;
+    adminApiFetch<{ portals: { _id: string; name: string; code: string }[] }>('/api/admin/portals')
+      .then((data) => setPortals(data.portals))
+      .catch(() => {});
+  }, [isContinuous]);
 
   useEffect(() => {
     if (!id) return;
@@ -297,6 +310,10 @@ export default function AdminCreateActivityPage() {
             threshold: p.condition?.threshold ?? 20,
             enabled: p.enabled,
           })));
+        }
+        if (a.isContinuous) {
+          setIsContinuous(true);
+          if (a.portalId) setPortalId(a.portalId);
         }
         setInitialLoading(false);
       })
@@ -431,6 +448,10 @@ export default function AdminCreateActivityPage() {
       if (!alwaysOpen) {
         if (scheduledStart) payload.scheduledStart = new Date(scheduledStart).toISOString();
         if (scheduledEnd) payload.scheduledEnd = new Date(scheduledEnd).toISOString();
+      }
+      if (isContinuous) {
+        payload.isContinuous = true;
+        if (portalId) payload.portalId = portalId;
       }
       if (managerEmail.trim()) {
         payload.managerEmail = managerEmail.trim();
@@ -627,6 +648,52 @@ export default function AdminCreateActivityPage() {
                           />
                           <FlexInput placeholder={t.openingUrl} value={openingUrl} onChange={(e) => setOpeningUrl(e.target.value)} />
                         </InlineRowMt8>
+                      )}
+                    </SectionCard>
+
+                    {/* Continuous Activity */}
+                    <SectionCard>
+                      <SectionHeader>
+                        <SectionHeaderTitle>{t.continuousActivity}</SectionHeaderTitle>
+                      </SectionHeader>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14 }}>
+                        <input
+                          type="checkbox"
+                          checked={isContinuous}
+                          onChange={(e) => {
+                            setIsContinuous(e.target.checked);
+                            if (!e.target.checked) setPortalId('');
+                          }}
+                          style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                        />
+                        {t.continuousActivityDesc}
+                      </label>
+                      {isContinuous && (
+                        <div>
+                          <SectionLabelSmall>{t.selectPortal}</SectionLabelSmall>
+                          <select
+                            value={portalId}
+                            onChange={(e) => setPortalId(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              borderRadius: 10,
+                              border: '1.5px solid #ececf4',
+                              fontSize: 14,
+                              background: '#fafafe',
+                              outline: 'none',
+                              direction: 'rtl',
+                            }}
+                          >
+                            <option value="">{t.selectPortalPlaceholder}</option>
+                            {portals.map((p) => (
+                              <option key={p._id} value={p._id}>{p.name} ({p.code})</option>
+                            ))}
+                          </select>
+                          {isContinuous && !portalId && (
+                            <span style={{ color: '#e74c3c', fontSize: 12, marginTop: 4, display: 'block' }}>{t.portalRequired}</span>
+                          )}
+                        </div>
                       )}
                     </SectionCard>
 

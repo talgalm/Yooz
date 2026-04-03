@@ -39,6 +39,7 @@ router.get('/:code', async (req: Request<{ code: string }>, res: Response<Activi
     ...(activity.scheduledStart && { scheduledStart: activity.scheduledStart.toISOString() }),
     ...(activity.scheduledEnd && { scheduledEnd: activity.scheduledEnd.toISOString() }),
     ...(activity.module && { moduleType: activity.module.type }),
+    ...(activity.isContinuous && { isContinuous: true }),
   });
 });
 
@@ -191,6 +192,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     module: moduleResponse,
     guidelines: activity.guidelines || undefined,
     customInstructions: activity.customInstructions || undefined,
+    ...(activity.isContinuous && { isContinuous: true }),
   });
 });
 
@@ -274,6 +276,24 @@ router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: s
     }
   }
 
+  res.json({ success: true });
+});
+
+// Delete participant's report (continuous activity early exit)
+router.delete('/:code/my-report', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
+  const { activityCode, participantName } = req.participant!;
+  if (req.params.code !== activityCode) {
+    res.status(403).json({ error: 'Forbidden' });
+    return;
+  }
+
+  const activity = await Activity.findOne({ code: activityCode });
+  if (!activity || !activity.isContinuous) {
+    res.status(400).json({ error: 'Not a continuous activity' });
+    return;
+  }
+
+  await Report.deleteMany({ activityCode, participantName });
   res.json({ success: true });
 });
 
