@@ -252,7 +252,7 @@ const MobileCard = styled('div')({
 
 type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'users' | 'portals';
 type StationsSection = 'stations' | 'games' | 'missions' | 'collage' | 'feedback';
-type GameSubTab = 'order' | 'trivia' | 'puzzle' | 'trueFalse' | 'ballGame' | 'trashSort';
+type GameSubTab = 'order' | 'trivia' | 'puzzle' | 'trueFalse' | 'ballGame';
 
 interface Activity {
   _id: string;
@@ -491,9 +491,6 @@ export default function AdminDashboardPage() {
                     <GameTab active={gameSubTab === 'ballGame'} onClick={() => setGameSubTab('ballGame')}>
                       {t.subTabBallGame}
                     </GameTab>
-                    <GameTab active={gameSubTab === 'trashSort'} onClick={() => setGameSubTab('trashSort')}>
-                      {t.subTabTrashSort}
-                    </GameTab>
                   </GameTabGroup>
                 </GameTabBar>
 
@@ -506,7 +503,6 @@ export default function AdminDashboardPage() {
                     puzzle: t.subTabPuzzle,
                     trueFalse: t.subTabTrueFalse,
                     ballGame: t.subTabBallGame,
-                    trashSort: t.subTabTrashSort,
                   }[gameSubTab]}
                   onRefresh={refreshGames}
                 />

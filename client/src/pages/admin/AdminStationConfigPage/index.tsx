@@ -73,10 +73,11 @@ export default function AdminStationConfigPage() {
   const location = useLocation();
   const t = useTranslations(texts);
 
-  const validTypes: StationTypeOption[] = ['text', 'video', 'image', 'narrative', 'badge', 'collage', 'feedback'];
+  const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback'];
   const stationTypesWithoutHint: StationTypeOption[] = ['text', 'video', 'image', 'feedback'];
   const typeFromUrl = searchParams.get('type') as StationTypeOption | null;
-  const defaultType: StationTypeOption = typeFromUrl && validTypes.includes(typeFromUrl) ? typeFromUrl : 'text';
+  const defaultType: StationTypeOption =
+    typeFromUrl && creatableTypes.includes(typeFromUrl) ? typeFromUrl : 'text';
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -177,7 +178,7 @@ export default function AdminStationConfigPage() {
     if (!lib) return;
 
     setName(lib.name || '');
-    if (lib.type && validTypes.includes(lib.type as StationTypeOption)) {
+    if (lib.type && creatableTypes.includes(lib.type as StationTypeOption)) {
       setStationType(lib.type as StationTypeOption);
     }
     setDescription(lib.description || '');
@@ -298,15 +299,13 @@ export default function AdminStationConfigPage() {
     text: 'תחנת טקסט - טסט',
     video: 'תחנת וידאו - טסט',
     image: 'תחנת תמונה - טסט',
-    narrative: 'תחנת נרטיב - טסט',
-    badge: 'תחנת תג - טסט',
     collage: 'תחנת קולאז׳ - טסט',
     feedback: 'תחנת משוב - טסט',
   };
 
   const handleFillRandom = () => {
     const ts = Date.now().toString().slice(-4);
-    const types: StationTypeOption[] = ['text', 'video', 'image', 'narrative', 'badge', 'collage', 'feedback'];
+    const types: StationTypeOption[] = [...creatableTypes];
     const randomType = types[Math.floor(Math.random() * types.length)];
     setStationType(randomType);
     setName(`${stationNames[randomType]} #${ts}`);
@@ -318,13 +317,6 @@ export default function AdminStationConfigPage() {
     setHintText(supportsHint ? 'זהו רמז לדוגמה' : '');
     setTextContent('');
     setMediaUrl('');
-    setNarrativeTitle('');
-    setNarrativeBody('');
-    setNarrativeButtonText('');
-    setNarrativeBgImage('');
-    setBadgeTitle('');
-    setBadgeSubtitle('');
-    setBadgeImageUrl('');
     setCollageHeader('');
     setCollageDescription('');
     setCollageMissions([{ title: '', description: '' }]);
@@ -339,15 +331,6 @@ export default function AdminStationConfigPage() {
       setMediaUrl('https://www.w3schools.com/html/mov_bbb.mp4');
     } else if (randomType === 'image') {
       setMediaUrl('https://picsum.photos/800/600');
-    } else if (randomType === 'narrative') {
-      setNarrativeTitle('אות מצוקה התגלה!');
-      setNarrativeBody('קלטנו אות מצוקה מהפארק. נדרשת עזרתכם למשימה חשובה!');
-      setNarrativeButtonText('התחל משימה');
-      setNarrativeBgImage('https://picsum.photos/800/1200');
-    } else if (randomType === 'badge') {
-      setBadgeTitle('כל הכבוד!');
-      setBadgeSubtitle('השלמת את המשימה בהצלחה');
-      setBadgeImageUrl('https://picsum.photos/400/400');
     } else if (randomType === 'collage') {
       setCollageHeader('בואו ניצור יחד קולאז׳ חי');
       setCollageDescription('קחו בין תמונה אחת לשלוש לפי ההנחיות. אנחנו מחפשים רגעים אמיתיים.');
@@ -412,14 +395,12 @@ export default function AdminStationConfigPage() {
                       <div>{t.typeImage}</div>
                       <SelectionSubtextSmall>{t.typeImageDesc}</SelectionSubtextSmall>
                     </SelectionButton>
-                    <SelectionButton type="button" selected={stationType === 'narrative'} onClick={() => setStationType('narrative')}>
-                      <div>{t.typeNarrative}</div>
-                      <SelectionSubtextSmall>{t.typeNarrativeDesc}</SelectionSubtextSmall>
-                    </SelectionButton>
-                    <SelectionButton type="button" selected={stationType === 'badge'} onClick={() => setStationType('badge')}>
-                      <div>{t.typeBadge}</div>
-                      <SelectionSubtextSmall>{t.typeBadgeDesc}</SelectionSubtextSmall>
-                    </SelectionButton>
+                    {(stationType === 'narrative' || stationType === 'badge') && (
+                      <SelectionButton type="button" selected disabled style={{ opacity: 0.85, cursor: 'default' }}>
+                        <div>{stationType === 'narrative' ? t.typeNarrative : t.typeBadge}</div>
+                        <SelectionSubtextSmall>{t.legacyStationType}</SelectionSubtextSmall>
+                      </SelectionButton>
+                    )}
                     <SelectionButton type="button" selected={stationType === 'collage'} onClick={() => setStationType('collage')}>
                       <div>{t.typeCollage}</div>
                       <SelectionSubtextSmall>{t.typeCollageDesc}</SelectionSubtextSmall>

@@ -19,6 +19,7 @@ export const texts = {
     typeNarrativeDesc: 'Full-screen story text',
     typeBadge: 'Badge',
     typeBadgeDesc: 'Achievement badge / medal',
+    legacyStationType: 'Legacy — switch type to update',
     textContent: 'Text Content',
     mediaUrl: 'Media URL',
     upload: 'Upload',
@@ -67,6 +68,7 @@ export const texts = {
     save: 'שמירה',
     saving: 'שומר...',
     stationName: 'שם התחנה',
+
     description: 'תיאור (אופציונלי)',
     customer: 'לקוח (אופציונלי)',
     theme: 'נושא (אופציונלי)',
@@ -81,6 +83,7 @@ export const texts = {
     typeNarrativeDesc: 'טקסט סיפורי במסך מלא',
     typeBadge: 'תג',
     typeBadgeDesc: 'תג הישג / מדליה',
+    legacyStationType: 'סוג ישן — שנה סוג לעדכון',
     textContent: 'תוכן טקסט',
     mediaUrl: 'כתובת מדיה',
     upload: 'העלאה',
