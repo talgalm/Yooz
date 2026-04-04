@@ -20,6 +20,10 @@ const BTN_RED_BORDER = '#a84343';
 const BTN_GREEN_BG = '#6cac5e';
 const BTN_GREEN_BORDER = '#2d5626';
 
+/** Matches app body typography */
+const TF_FONT_FAMILY =
+  "'Encode Sans Expanded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
 // ─── Animations ───
 
 const pulse = keyframes`
@@ -58,6 +62,7 @@ export const NatureContainer = styled('div')({
   padding: 'max(8px, env(safe-area-inset-top)) 16px calc(8px + env(safe-area-inset-bottom))',
   boxSizing: 'border-box',
   gap: 4,
+  fontFamily: TF_FONT_FAMILY,
 });
 
 export const NatureDecorations = styled('div')({
@@ -158,7 +163,7 @@ export const QuestionBanner = styled('div')({
 });
 
 export const QuestionBannerText = styled('p')({
-  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontFamily: TF_FONT_FAMILY,
   fontSize: 'clamp(18px, 3.6vw, 21px)',
   fontWeight: 700,
   color: FINISH_PURPLE,
@@ -203,7 +208,7 @@ export const TimerCircle = styled('div')<{ critical?: boolean }>(({ critical }) 
 }));
 
 export const TimerCircleNumber = styled('span')<{ critical?: boolean }>(({ critical }) => ({
-  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontFamily: TF_FONT_FAMILY,
   fontSize: 'clamp(64px, 12vh, 92px)',
   fontWeight: 400,
   color: WHITE,
@@ -324,21 +329,28 @@ export const FeedbackOverlayRoot = styled('div')({
   boxSizing: 'border-box',
 });
 
-export const FeedbackOverlayCard = styled('div')<{ variant: 'correct' | 'incorrect' | 'timeout' }>(({ variant }) => ({
-  background: variant === 'correct' ? 'rgba(61,139,55,0.95)'
-    : variant === 'incorrect' ? 'rgba(192,57,43,0.95)'
-    : 'rgba(0,0,0,0.78)',
-  color: WHITE,
-  padding: '16px 32px',
-  borderRadius: 22,
-  fontSize: 'clamp(17px, 4.2vw, 20px)',
-  fontWeight: 800,
-  textAlign: 'center',
-  boxShadow: '0 8px 28px rgba(0,0,0,0.35)',
-  animation: `${feedbackPop} 0.35s ease-out`,
-  whiteSpace: 'nowrap',
-  maxWidth: 'min(92vw, 360px)',
-}));
+export const FeedbackOverlayCard = styled('div')<{ variant: 'correct' | 'incorrect' | 'timeout' }>(({ variant }) => {
+  const accentColor =
+    variant === 'correct' ? '#00C853'
+    : variant === 'incorrect' ? '#e53935'
+    : '#e53935';
+
+  return {
+    background: WHITE,
+    color: accentColor,
+    padding: 'clamp(18px, 4.5vw, 28px) clamp(36px, 10vw, 64px)',
+    borderRadius: 22,
+    border: `5px solid ${accentColor}`,
+    fontFamily: TF_FONT_FAMILY,
+    fontSize: 'clamp(22px, 5.5vw, 32px)',
+    fontWeight: 800,
+    textAlign: 'center',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+    animation: `${feedbackPop} 0.35s ease-out`,
+    whiteSpace: 'nowrap',
+    maxWidth: 'min(92vw, 400px)',
+  };
+});
 
 // ─── Countdown ───
 
@@ -419,15 +431,16 @@ export const YoozLogo = styled('div')({
 // ─── Opening / Instructions Screen (welcome art + readable chrome) ───
 // ═══════════════════════════════════════════
 
-export const TRUE_FALSE_WELCOME_BG_URL = '/images/true-false-welcome-bg.png';
-/** In-game phases (countdown, play, finish) — full-bleed behind UI, not used on welcome */
+const TRUE_FALSE_SCENE_BG_URL = '/images/true-false-scene-bg.png';
+export const TRUE_FALSE_WELCOME_BG_URL = TRUE_FALSE_SCENE_BG_URL;
+/** In-game phases (countdown, play, finish) — full-bleed behind UI */
 export const TRUE_FALSE_PLAY_BG_URL = '/images/true-false-play-bg.png';
-const INTRO_GOLD_TOP = '#f5d76e';
-const INTRO_GOLD_MID = '#e8b923';
-const INTRO_GOLD_BOT = '#c9a012';
-const INTRO_GOLD_BORDER = '#8b6914';
-const INTRO_GOLD_SHADOW = '#5c3d0a';
-const INTRO_BTN_TEXT = '#2a1538';
+const INTRO_GOLD_TOP = '#f2e6a0';
+const INTRO_GOLD_MID = '#e1c14f';
+const INTRO_GOLD_BOT = '#c9a62e';
+const INTRO_GOLD_BORDER = '#5c4018';
+const INTRO_GOLD_SHADOW = '#3d2810';
+const INTRO_BTN_TEXT = '#3d1a5c';
 
 /** Match NatureBackground sky (#b8e8f0) — embedded intro only (admin preview / no themed shell). */
 const WELCOME_SKY_TOP = '#d2f0fa';
@@ -441,8 +454,12 @@ export const IntroFullScreenSceneBackdrop = styled('div')({
   inset: 0,
   zIndex: 0,
   pointerEvents: 'none',
-  backgroundColor: '#4a1f6e',
-  backgroundImage: `url(${TRUE_FALSE_WELCOME_BG_URL})`,
+  backgroundColor: '#3d1a5c',
+  backgroundImage: `
+    radial-gradient(ellipse 95% 55% at 50% -8%, rgba(255,255,255,0.16) 0%, transparent 55%),
+    radial-gradient(ellipse 120% 80% at 50% 0%, rgba(138, 43, 226, 0.22) 0%, transparent 50%),
+    url(${TRUE_FALSE_WELCOME_BG_URL})
+  `,
   backgroundSize: 'cover',
   backgroundPosition: 'center center',
   backgroundRepeat: 'no-repeat',
@@ -493,6 +510,7 @@ export const PlayPhaseRoot = styled('div', {
         '& > *': { position: 'relative', zIndex: 1 },
       }
     : {}),
+  fontFamily: TF_FONT_FAMILY,
 }));
 
 const embeddedIntroSurface = {
@@ -546,6 +564,7 @@ export const IntroContainer = styled('div', {
     position: 'relative',
     zIndex: 1,
   },
+  fontFamily: TF_FONT_FAMILY,
 }));
 
 export const IntroDecorations = styled('div')({
@@ -587,7 +606,7 @@ export const IntroGameTitleSticker = styled('h1')({
 
 export const IntroGameTitleLine = styled('span')({
   display: 'block',
-  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontFamily: TF_FONT_FAMILY,
   fontSize: '48px',
   fontWeight: 400,
   lineHeight: 1.12,
@@ -616,6 +635,57 @@ export const IntroInstructions = styled('div')({
   animation: `${floatIn} 0.5s ease-out 0.08s both`,
 });
 
+/** Intro: white card + overlapping start button (reference layout). */
+const INTRO_DESC_PURPLE = '#4a148c';
+const INTRO_DESC_PANEL_BG = '#f8f8ff';
+
+export const IntroDescStack = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  width: 'min(100%, 400px)',
+  flexShrink: 0,
+  marginTop: 'clamp(20px, 4.5vh, 52px)',
+  marginBottom: 'clamp(8px, 2vh, 20px)',
+  boxSizing: 'border-box',
+});
+
+export const IntroDescCard = styled('div')({
+  width: '100%',
+  backgroundColor: INTRO_DESC_PANEL_BG,
+  border: `2px solid ${INTRO_DESC_PURPLE}`,
+  borderRadius: 22,
+  boxShadow: `
+    0 10px 32px rgba(74, 20, 120, 0.38),
+    0 4px 12px rgba(45, 10, 80, 0.22)
+  `,
+  padding: 'clamp(14px, 3.8vw, 22px) clamp(18px, 4.5vw, 24px)',
+  paddingBottom: 'clamp(28px, 6vw, 40px)',
+  boxSizing: 'border-box',
+  textAlign: 'center',
+  animation: `${floatIn} 0.5s ease-out 0.08s both`,
+});
+
+export const IntroDescLine = styled('p')({
+  margin: 0,
+  fontSize: 'clamp(16px, 3.25vw, 16px)',
+  fontWeight: 600,
+  lineHeight: 1.25,
+  color: INTRO_DESC_PURPLE,
+  fontFamily: TF_FONT_FAMILY,
+  letterSpacing: '0.01em',
+});
+
+export const IntroDescCustom = styled('div')({
+  fontSize: 'clamp(16px, 3.25vw, 16px)',
+  fontWeight: 600,
+  lineHeight: 1.25,
+  color: INTRO_DESC_PURPLE,
+  fontFamily: TF_FONT_FAMILY,
+  letterSpacing: '0.01em',
+  whiteSpace: 'pre-wrap',
+});
+
 export const IntroInstructionsLine = styled('p')({
   margin: 0,
   fontSize: 'clamp(15px, 3.9vw, 18px)',
@@ -638,27 +708,32 @@ export const IntroInstructionsCustom = styled('div')({
   textShadow: '0 1px 5px rgba(0,0,0,0.5), 0 0 1px rgba(0,0,0,0.35)',
 });
 
-export const IntroStartButton = styled('button')({
-  marginTop: 0,
+export const IntroStartButton = styled('button', {
+  shouldForwardProp: (prop) => prop !== '$overlap',
+})<{ $overlap?: boolean }>(({ $overlap }) => ({
+  marginTop: $overlap ? 'clamp(-26px, -5.5vw, -34px)' : 0,
+  position: 'relative' as const,
+  zIndex: 2,
   flexShrink: 0,
-  background: `linear-gradient(180deg, ${INTRO_GOLD_TOP} 0%, ${INTRO_GOLD_MID} 45%, ${INTRO_GOLD_BOT} 100%)`,
+  minWidth: 'clamp(160px, 52%, 240px)',
+  background: `linear-gradient(180deg, ${INTRO_GOLD_TOP} 0%, ${INTRO_GOLD_MID} 48%, ${INTRO_GOLD_BOT} 100%)`,
   color: INTRO_BTN_TEXT,
-  fontSize: '1.55rem',
+  fontSize: 'clamp(1.35rem, 4.2vw, 1.65rem)',
   fontWeight: 800,
-  padding: '14px 44px',
-  borderRadius: 15,
-  border: `4px solid ${INTRO_GOLD_BORDER}`,
+  padding: 'clamp(12px, 3vw, 16px) clamp(36px, 10vw, 52px)',
+  borderRadius: 16,
+  border: `5px solid ${INTRO_GOLD_BORDER}`,
   cursor: 'pointer',
-  fontFamily: 'inherit',
-  boxShadow: `0 5px 0 ${INTRO_GOLD_SHADOW}, 0 10px 22px rgba(0,0,0,0.35)`,
-  transition: 'all 0.1s ease',
-  animation: `${floatIn} 0.5s ease-out 0.25s both`,
-  textShadow: '0 1px 0 rgba(255,255,255,0.35)',
+  fontFamily: TF_FONT_FAMILY,
+  boxShadow: `0 6px 0 ${INTRO_GOLD_SHADOW}, 0 12px 24px rgba(0,0,0,0.28)`,
+  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
+  animation: `${floatIn} 0.5s ease-out 0.22s both`,
+  textShadow: '0 1px 0 rgba(255,255,255,0.45)',
   '&:active': {
     transform: 'translateY(4px)',
-    boxShadow: `0 1px 0 ${INTRO_GOLD_SHADOW}, 0 4px 10px rgba(0,0,0,0.3)`,
+    boxShadow: `0 2px 0 ${INTRO_GOLD_SHADOW}, 0 6px 14px rgba(0,0,0,0.25)`,
   },
-});
+}));
 
 export const IntroYoozLogo = styled('div')({
   marginTop: 14,
@@ -767,7 +842,7 @@ export const FinishScoreCircleInner = styled('div')({
 });
 
 export const FinishScoreLabel = styled('span')({
-  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontFamily: TF_FONT_FAMILY,
   fontSize: 'clamp(15px, 3.2vw, 20px)',
   fontWeight: 700,
   color: WHITE,

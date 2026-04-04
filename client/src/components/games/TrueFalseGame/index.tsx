@@ -46,8 +46,10 @@ import {
   IntroGameTitleLine,
   IntroWelcomeMidSpacer,
   IntroInstructions,
-  IntroInstructionsLine,
-  IntroInstructionsCustom,
+  IntroDescStack,
+  IntroDescCard,
+  IntroDescLine,
+  IntroDescCustom,
   IntroStartButton,
   FinishContainer,
   FinishContent,
@@ -387,19 +389,20 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
 
           <IntroWelcomeMidSpacer aria-hidden />
 
-          <IntroInstructions>
-            {settings.instructions?.trim() ? (
-              <IntroInstructionsCustom>{settings.instructions.trim()}</IntroInstructionsCustom>
-            ) : (
-              t.defaultInstructionLines.map((line, i) => (
-                <IntroInstructionsLine key={i}>{line}</IntroInstructionsLine>
-              ))
-            )}
-          </IntroInstructions>
-
-          <IntroStartButton onClick={beginGame}>
-            {t.start}
-          </IntroStartButton>
+          <IntroDescStack>
+            <IntroDescCard>
+              {settings.instructions?.trim() ? (
+                <IntroDescCustom>{settings.instructions.trim()}</IntroDescCustom>
+              ) : (
+                t.defaultInstructionLines.map((line, i) => (
+                  <IntroDescLine key={i}>{line}</IntroDescLine>
+                ))
+              )}
+            </IntroDescCard>
+            <IntroStartButton type="button" $overlap onClick={beginGame}>
+              {t.start}
+            </IntroStartButton>
+          </IntroDescStack>
 
         </IntroContent>
       </IntroContainer>

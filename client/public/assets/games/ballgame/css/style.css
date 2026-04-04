@@ -136,8 +136,8 @@ canvas {
   min-height: 180px;
   padding: 28px 22px 20px;
   left: 50%;
-  top: 58%;
-  transform: translate(-50%, -50%);
+  top: max(16px, env(safe-area-inset-top, 0px));
+  transform: translateX(-50%);
   display: none;
   box-sizing: border-box;
   flex-direction: column;

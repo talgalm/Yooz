@@ -2,9 +2,9 @@ import { styled, keyframes } from '@mui/material/styles';
 
 // ─── 3D Box Room Background ───
 
-const ROOM_BACK_WALL = '#bdd8d8';
-const ROOM_SIDE_WALL = '#9bbcbc';
-const ROOM_FLOOR = '#a0c0c0';
+const ROOM_BACK_WALL = '#7ec7e1';
+const ROOM_SIDE_WALL = '#3fa9cf';
+const ROOM_FLOOR = '#3fa9cf';
 
 /**
  * 3D room / box background.
