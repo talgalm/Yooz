@@ -12,16 +12,21 @@ import {
   useRegisterActivityGameHeader,
   type ActivityGameHeaderPhase,
 } from '../../../context/activityPlayingHeaderContext';
+import { useThemedSceneOverlaySetter } from '../../../context/themedSceneOverlayContext';
 import { GameIntroHeaderBar, GameHeaderMuteButton } from '../styled';
 import {
+  IntroFullScreenSceneBackdrop,
+  PlayFullScreenSceneBackdrop,
+  PlayPhaseRoot,
   IntroContainer,
   IntroContent,
   IntroTitle,
+  IntroTitleLine,
+  IntroMidSpacer,
+  IntroDescStack,
   IntroInfoBox,
   IntroInfoText,
-  IntroPieceCount,
   IntroStartButton,
-  IntroYoozLogo,
   PuzzleContainer,
   PuzzleMainScroll,
   PuzzleBottomBar,
@@ -170,6 +175,13 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
 
   const allQuestions = settings.questions || [];
 
+  const introStickerLines = useMemo(() => {
+    const lines = game.name
+      ? game.name.split(/\n/).map((line) => line.trim()).filter(Boolean)
+      : [];
+    return lines.length > 0 ? lines : null;
+  }, [game.name]);
+
   const processedQuestions = useMemo(() => {
     return allQuestions.map((q) => ({
       ...q,
@@ -222,6 +234,21 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
       ? 'intro'
       : 'playing';
   useRegisterActivityGameHeader(activityHeaderAudio, activityHeaderPhase, isMuted, toggleMute);
+
+  const setThemedSceneOverlay = useThemedSceneOverlaySetter();
+
+  useEffect(() => {
+    if (!setThemedSceneOverlay) return;
+    if (!gameStarted) {
+      setThemedSceneOverlay(<IntroFullScreenSceneBackdrop aria-hidden />);
+    } else {
+      setThemedSceneOverlay(<PlayFullScreenSceneBackdrop aria-hidden />);
+    }
+    return () => setThemedSceneOverlay(null);
+  }, [gameStarted, setThemedSceneOverlay]);
+
+  /** Admin preview has no themed shell — paint play background inside the game area */
+  const playPhaseInlineBackdrop = !setThemedSceneOverlay;
 
   // Track revealed pieces in a ref to avoid stale closure in revealRandomPiece
   const revealedPiecesRef = useRef<Set<number>>(new Set());
@@ -455,7 +482,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
   // ─── Opening / Intro screen ───
   if (!gameStarted) {
     return (
-      <IntroContainer dir="rtl">
+      <IntroContainer dir="rtl" $externalBackdrop={Boolean(setThemedSceneOverlay)}>
         {!activityHeaderAudio && (
           <GameIntroHeaderBar>
             <GameHeaderMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
@@ -464,21 +491,29 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
           </GameIntroHeaderBar>
         )}
         <IntroContent>
-          <IntroTitle>{game.name}</IntroTitle>
+          <IntroTitle dir="auto">
+            {introStickerLines ? (
+              introStickerLines.map((line, i) => (
+                <IntroTitleLine key={i}>{line}</IntroTitleLine>
+              ))
+            ) : (
+              <IntroTitleLine>{game.name}</IntroTitleLine>
+            )}
+          </IntroTitle>
 
-          {settings.instructions && (
+          <IntroMidSpacer aria-hidden />
+
+          <IntroDescStack>
             <IntroInfoBox>
-              <IntroInfoText>{settings.instructions}</IntroInfoText>
+              <IntroInfoText>
+                {settings.instructions?.trim() || t.defaultInstructions}
+              </IntroInfoText>
             </IntroInfoBox>
-          )}
+            <IntroStartButton $overlap onClick={startGame}>
+              {t.startPuzzle}
+            </IntroStartButton>
+          </IntroDescStack>
 
-          <IntroPieceCount>{totalPieces} {t.pieces}</IntroPieceCount>
-
-          <IntroStartButton onClick={startGame}>
-            {t.startPuzzle}
-          </IntroStartButton>
-
-          <IntroYoozLogo><img src="/images/logo-white.png" alt="Yooz" style={{ height: 36 }} /></IntroYoozLogo>
         </IntroContent>
       </IntroContainer>
     );
@@ -489,46 +524,48 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     if (noContent) return null;
     const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0;
     return (
-      <FinishContainer dir="rtl">
-        <GameIntroHeaderBar>
-          <GameHeaderMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
-            {isMuted ? '🔇' : '🔊'}
-          </GameHeaderMuteButton>
-        </GameIntroHeaderBar>
-        <FinishContent>
-          <FinishTitleBanner>
-            <LeafVeinSvg />
-            <span style={{ position: 'relative', zIndex: 1 }}>{t.gameComplete}</span>
-          </FinishTitleBanner>
+      <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
+        <FinishContainer dir="rtl">
+          <GameIntroHeaderBar>
+            <GameHeaderMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
+              {isMuted ? '🔇' : '🔊'}
+            </GameHeaderMuteButton>
+          </GameIntroHeaderBar>
+          <FinishContent>
+            <FinishTitleBanner>
+              <LeafVeinSvg />
+              <span style={{ position: 'relative', zIndex: 1 }}>{t.gameComplete}</span>
+            </FinishTitleBanner>
 
-          {settings.puzzleImage && (
-            <FinishPuzzleImage>
-              <FinishPuzzleImg src={settings.puzzleImage} alt="Completed Puzzle" />
-            </FinishPuzzleImage>
-          )}
+            {settings.puzzleImage && (
+              <FinishPuzzleImage>
+                <FinishPuzzleImg src={settings.puzzleImage} alt="Completed Puzzle" />
+              </FinishPuzzleImage>
+            )}
 
-          <FinishStump>
-            <StumpRingsSvg />
-            <FinishScoreNumber>{totalScore}</FinishScoreNumber>
-            <FinishScoreLabel>{t.pointsFull}</FinishScoreLabel>
-          </FinishStump>
+            <FinishStump>
+              <StumpRingsSvg />
+              <FinishScoreNumber>{totalScore}</FinishScoreNumber>
+              <FinishScoreLabel>{t.pointsFull}</FinishScoreLabel>
+            </FinishStump>
 
-          <FinishFinalLabel>{t.finalScore}</FinishFinalLabel>
-          <FinishStats>
-            {t.accuracy}: {accuracy}%
-            <br />
-            {t.timeElapsed}: {formatTime(elapsedSeconds)}
-            <br />
-            {t.piecesRevealed}: {revealedPieces.size}/{totalPieces}
-          </FinishStats>
+            <FinishFinalLabel>{t.finalScore}</FinishFinalLabel>
+            <FinishStats>
+              {t.accuracy}: {accuracy}%
+              <br />
+              {t.timeElapsed}: {formatTime(elapsedSeconds)}
+              <br />
+              {t.piecesRevealed}: {revealedPieces.size}/{totalPieces}
+            </FinishStats>
 
-          <FinishContinueButton onClick={handleFinish}>
-            {t.continue}
-          </FinishContinueButton>
+            <FinishContinueButton onClick={handleFinish}>
+              {t.continue}
+            </FinishContinueButton>
 
-          <FinishYoozLogo><img src="/images/logo-purple.png" alt="Yooz" style={{ height: 36 }} /></FinishYoozLogo>
-        </FinishContent>
-      </FinishContainer>
+            <FinishYoozLogo><img src="/images/logo-purple.png" alt="Yooz" style={{ height: 36 }} /></FinishYoozLogo>
+          </FinishContent>
+        </FinishContainer>
+      </PlayPhaseRoot>
     );
   }
 
@@ -537,6 +574,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
   if (!question) return null;
 
   return (
+    <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
     <PuzzleContainer dir="rtl">
       {/* Top bar: pieces | per-question countdown only (elapsed time kept internally for speed bonus) */}
       <TopBar>
@@ -666,5 +704,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
         t={t}
       />
     </PuzzleContainer>
+    </PlayPhaseRoot>
   );
 }

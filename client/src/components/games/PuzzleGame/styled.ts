@@ -81,19 +81,98 @@ const overlayFadeIn = keyframes`
 void pulse;
 
 // ═══════════════════════════════════════════
+// ─── Background Images ───
+// ═══════════════════════════════════════════
+
+export const PUZZLE_INTRO_BG_URL = '/images/puzzle-bg.png';
+export const PUZZLE_PLAY_BG_URL = '/images/puzzle-rest-bg.png';
+
+/** Full viewport backdrop for intro/opening screen — puzzle piece sunburst */
+export const IntroFullScreenSceneBackdrop = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 0,
+  pointerEvents: 'none',
+  backgroundColor: '#d4f0f0',
+  backgroundImage: `url(${PUZZLE_INTRO_BG_URL})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center center',
+  backgroundRepeat: 'no-repeat',
+});
+
+/** Full viewport backdrop for play / countdown / finish — plain sunburst */
+export const PlayFullScreenSceneBackdrop = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 0,
+  pointerEvents: 'none',
+  backgroundColor: '#d4f0f0',
+  backgroundImage: `url(${PUZZLE_PLAY_BG_URL})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center center',
+  backgroundRepeat: 'no-repeat',
+});
+
+/**
+ * Root wrapper for play / finish phases.
+ * When no ThemedSceneOverlay exists (admin preview), paints the play-phase
+ * background inline via ::before pseudo-element.
+ */
+export const PlayPhaseRoot = styled('div', {
+  shouldForwardProp: (prop) => prop !== '$inlineBackdrop',
+})<{ $inlineBackdrop?: boolean }>(({ $inlineBackdrop }) => ({
+  position: 'relative',
+  flex: 1,
+  minHeight: 0,
+  width: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  alignSelf: 'stretch',
+  overflow: 'hidden',
+  ...($inlineBackdrop
+    ? {
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: 'none',
+          backgroundColor: '#d4f0f0',
+          backgroundImage: `url(${PUZZLE_PLAY_BG_URL})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat',
+        },
+        '& > *': { position: 'relative', zIndex: 1 },
+      }
+    : {}),
+}));
+
+// ═══════════════════════════════════════════
 // ─── Opening / Intro Screen ───
 // ═══════════════════════════════════════════
 
-export const IntroContainer = styled('div')({
+export const IntroContainer = styled('div', {
+  shouldForwardProp: (prop) => prop !== '$externalBackdrop',
+})<{ $externalBackdrop?: boolean }>(({ $externalBackdrop }) => ({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'stretch',
-  background: 'transparent',
   position: 'relative',
   overflow: 'hidden',
   minHeight: '100dvh',
-});
+  ...($externalBackdrop
+    ? { background: 'transparent' }
+    : {
+        backgroundColor: '#d4f0f0',
+        backgroundImage: `url(${PUZZLE_INTRO_BG_URL})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center center',
+        backgroundRepeat: 'no-repeat',
+      }),
+  '& > *': { position: 'relative', zIndex: 1 },
+}));
 
 export const IntroDecorations = styled('div')({
   position: 'absolute',
@@ -107,45 +186,102 @@ export const IntroContent = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'center',
+  justifyContent: 'flex-start',
   position: 'relative',
   zIndex: 1,
-  padding: '30px 20px 20px',
+  padding: 'clamp(4px, 1.5vh, 12px) 20px clamp(16px, 4vh, 36px)',
   textAlign: 'center',
   width: '100%',
-  maxWidth: 400,
+  maxWidth: 420,
+  minHeight: 0,
 });
 
+// ─── Intro Title (yellow fill + olive stroke — matches TrueFalse) ───
+
+const GAME_TITLE_YELLOW = '#ffff00';
+const GAME_TITLE_OUTLINE = '#666600';
+
+const INTRO_FONT_FAMILY =
+  "'Encode Sans Expanded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
 export const IntroTitle = styled('h1')({
-  fontSize: '3.5rem',
-  fontWeight: 900,
-  color: TITLE_BLUE,
-  textShadow: '2px 2px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff',
-  transform: 'rotate(-4deg)',
-  margin: '0 0 20px',
-  lineHeight: 1.1,
+  margin: 0,
+  padding: 0,
+  background: 'none',
+  textAlign: 'center',
+  boxSizing: 'border-box',
+  width: 'min(100%, 340px)',
+  flexShrink: 0,
   animation: `${floatIn} 0.5s ease-out`,
 });
 
-export const IntroInfoBox = styled('div')({
-  background: BOX_BG,
-  border: `3px solid ${BOX_BORDER}`,
-  borderRadius: 15,
-  padding: '20px 18px',
-  textAlign: 'center',
-  boxShadow: `0 4px 0 ${BOX_SHADOW}`,
-  marginBottom: 20,
-  width: '90%',
+export const IntroTitleLine = styled('span')({
+  display: 'block',
+  fontFamily: INTRO_FONT_FAMILY,
+  fontSize: '48px',
+  fontWeight: 400,
+  lineHeight: 1.12,
+  letterSpacing: '0.02em',
+  color: GAME_TITLE_YELLOW,
+  WebkitTextStroke: `4px ${GAME_TITLE_OUTLINE}`,
+  paintOrder: 'stroke fill',
+  marginTop: '8px',
+});
+
+/** Fills space so description sits at bottom — matches True/False. */
+export const IntroMidSpacer = styled('div')({
+  flex: '1 1 0',
+  minHeight: 0,
+  width: '100%',
+});
+
+// ─── Intro Description Card + Overlapping Start Button ───
+
+const INTRO_DESC_PURPLE = '#4a148c';
+const INTRO_DESC_PANEL_BG = '#f8f8ff';
+
+const INTRO_GOLD_TOP = '#f2e6a0';
+const INTRO_GOLD_MID = '#e1c14f';
+const INTRO_GOLD_BOT = '#c9a62e';
+const INTRO_GOLD_BORDER = '#5c4018';
+const INTRO_GOLD_SHADOW = '#3d2810';
+const INTRO_BTN_TEXT = '#3d1a5c';
+
+export const IntroDescStack = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  width: 'min(100%, 400px)',
+  flexShrink: 0,
+  marginTop: 'clamp(8px, 2vh, 20px)',
+  marginBottom: 'clamp(60px, 12vh, 120px)',
   boxSizing: 'border-box',
-  animation: `${floatIn} 0.5s ease-out 0.1s both`,
+});
+
+export const IntroInfoBox = styled('div')({
+  width: '100%',
+  backgroundColor: INTRO_DESC_PANEL_BG,
+  border: `2px solid ${INTRO_DESC_PURPLE}`,
+  borderRadius: 22,
+  boxShadow: `
+    0 10px 32px rgba(74, 20, 120, 0.38),
+    0 4px 12px rgba(45, 10, 80, 0.22)
+  `,
+  padding: 'clamp(14px, 3.8vw, 22px) clamp(18px, 4.5vw, 24px)',
+  paddingBottom: 'clamp(28px, 6vw, 40px)',
+  boxSizing: 'border-box',
+  textAlign: 'center',
+  animation: `${floatIn} 0.5s ease-out 0.08s both`,
 });
 
 export const IntroInfoText = styled('p')({
-  fontSize: 16,
-  fontWeight: 600,
-  color: TEXT_DARK,
-  lineHeight: 1.6,
   margin: 0,
+  fontSize: 'clamp(16px, 3.25vw, 16px)',
+  fontWeight: 600,
+  lineHeight: 1.25,
+  color: INTRO_DESC_PURPLE,
+  fontFamily: INTRO_FONT_FAMILY,
+  letterSpacing: '0.01em',
   whiteSpace: 'pre-wrap',
 });
 
@@ -166,41 +302,42 @@ export const IntroPuzzlePreviewImg = styled('img')({
   borderRadius: 11,
 });
 
-export const IntroPieceCount = styled('div')({
-  fontSize: 15,
-  fontWeight: 700,
-  color: BOX_BORDER,
-  marginBottom: 20,
-  animation: `${floatIn} 0.5s ease-out 0.2s both`,
-});
-
-export const IntroStartButton = styled('button')({
-  background: BTN_PURPLE,
-  color: WHITE,
-  fontSize: '1.6rem',
-  fontWeight: 700,
-  padding: '14px 48px',
-  borderRadius: 15,
-  border: `4px solid ${BTN_PURPLE_DARK}`,
+export const IntroStartButton = styled('button', {
+  shouldForwardProp: (prop) => prop !== '$overlap',
+})<{ $overlap?: boolean }>(({ $overlap }) => ({
+  marginTop: $overlap ? 'clamp(-26px, -5.5vw, -34px)' : 0,
+  position: 'relative' as const,
+  zIndex: 2,
+  flexShrink: 0,
+  minWidth: 'clamp(160px, 52%, 240px)',
+  background: `linear-gradient(180deg, ${INTRO_GOLD_TOP} 0%, ${INTRO_GOLD_MID} 48%, ${INTRO_GOLD_BOT} 100%)`,
+  color: INTRO_BTN_TEXT,
+  fontSize: 'clamp(1.35rem, 4.2vw, 1.65rem)',
+  fontWeight: 800,
+  padding: 'clamp(12px, 3vw, 16px) clamp(36px, 10vw, 52px)',
+  borderRadius: 16,
+  border: `5px solid ${INTRO_GOLD_BORDER}`,
   cursor: 'pointer',
-  fontFamily: 'inherit',
-  boxShadow: `0 5px 0 ${BTN_PURPLE_DARK}, 0 8px 15px rgba(0,0,0,0.2)`,
-  transition: 'all 0.1s ease',
-  animation: `${floatIn} 0.5s ease-out 0.25s both`,
+  fontFamily: INTRO_FONT_FAMILY,
+  boxShadow: `0 6px 0 ${INTRO_GOLD_SHADOW}, 0 12px 24px rgba(0,0,0,0.28)`,
+  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
+  animation: `${floatIn} 0.5s ease-out 0.22s both`,
+  textShadow: '0 1px 0 rgba(255,255,255,0.45)',
   '&:active': {
     transform: 'translateY(4px)',
-    boxShadow: `0 1px 0 ${BTN_PURPLE_DARK}, 0 3px 8px rgba(0,0,0,0.2)`,
+    boxShadow: `0 2px 0 ${INTRO_GOLD_SHADOW}, 0 6px 14px rgba(0,0,0,0.25)`,
   },
-});
+}));
 
 export const IntroYoozLogo = styled('div')({
-  marginTop: 'auto',
-  paddingBottom: 20,
-  paddingTop: 30,
+  marginTop: 14,
+  paddingBottom: 12,
+  paddingTop: 0,
   fontSize: 36,
   fontWeight: 900,
-  color: TITLE_BLUE,
+  color: WHITE,
   letterSpacing: 2,
+  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
 });
 
 // ═══════════════════════════════════════════
@@ -663,7 +800,8 @@ export const FinishContainer = styled('div')({
   background: 'transparent',
   position: 'relative',
   overflow: 'hidden',
-  minHeight: '100dvh',
+  minHeight: '100%',
+  height: '100%',
 });
 
 export const FinishContent = styled('div')({
