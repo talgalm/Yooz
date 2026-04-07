@@ -802,9 +802,11 @@ export default function StoryModulePage() {
   };
 
   const activeItemForUi = data?.module.items[currentItemIndex];
-  const isBallGameActive = phase === 'playing'
-    && activeItemForUi?.type === 'game'
-    && ((activeItemForUi as { gameType?: string }).gameType === 'ballGame');
+  const activeGameType = phase === 'playing' && activeItemForUi?.type === 'game'
+    ? (activeItemForUi as { gameType?: string }).gameType
+    : undefined;
+  const isBallGameActive = activeGameType === 'ballGame';
+  const isTriviaGameActive = activeGameType === 'trivia';
 
   useEffect(() => {
     document.body.classList.toggle('yooz-ballgame-active', isBallGameActive);
@@ -816,21 +818,22 @@ export default function StoryModulePage() {
   }, [isBallGameActive]);
 
   const themeShellColor = getThemeShellColor(data?.module.theme);
+  const activeThemeShellColor = isTriviaGameActive ? PRIMARY : themeShellColor;
   useEffect(() => {
     const body = document.body;
     const prevBodyBg = body.style.backgroundColor;
 
-    body.style.backgroundColor = themeShellColor;
+    body.style.backgroundColor = activeThemeShellColor;
 
     const metas = document.querySelectorAll('meta[name="theme-color"]') as NodeListOf<HTMLMetaElement>;
     const prevThemes = Array.from(metas).map((m) => m.content);
-    metas.forEach((m) => { m.content = themeShellColor; });
+    metas.forEach((m) => { m.content = activeThemeShellColor; });
 
     return () => {
       body.style.backgroundColor = prevBodyBg;
       metas.forEach((m, i) => { m.content = prevThemes[i]; });
     };
-  }, [themeShellColor]);
+  }, [activeThemeShellColor]);
 
   // ─── Loading / Error ───
 
