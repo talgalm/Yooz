@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './TriviaGame.i18n';
 import { shuffleArray } from '../../../utils/shuffleArray';
@@ -18,11 +19,13 @@ import {
   IntroContainer,
   IntroContent,
   IntroTitle,
-  IntroInfoBox,
-  IntroInfoText,
+  IntroDescStack,
+  IntroDescCard,
+  IntroDescText,
   IntroStartButton,
   IntroWelcomeMidSpacer,
   TriviaIntroFullScreenSceneBackdrop,
+  TriviaPlayFullScreenSceneBackdrop,
   TriviaContainer,
   TopBar,
   TopBarItem,
@@ -30,7 +33,6 @@ import {
   TriviaMainScroll,
   TriviaBottomBar,
   QuestionBox,
-  QuestionBadge,
   QuestionContent,
   QuestionHintText,
   HintSpacer,
@@ -41,27 +43,21 @@ import {
   AnswerGrid,
   AnswerButton,
   ActionButton,
-  CenterToastOverlay,
-  CenterToastBubble,
-  CorrectBigText,
-  PartialText,
-  IncorrectToastText,
-  PointsBadge,
-  PointsBadgePartial,
+  FeedbackOverlayRoot,
+  FeedbackOverlayCard,
   TriviaExplanationList,
   TriviaExplanation,
   NatureMediaContainer,
   NatureMediaImage,
+  NatureMediaSpacer,
   FinishContainer,
   FinishContent,
   FinishTitleBanner,
+  FinishStumpStage,
   FinishStump,
   FinishScoreNumber,
   FinishScoreLabel,
-  FinishFinalLabel,
-  FinishStats,
   FinishContinueButton,
-  FinishYoozLogo,
 } from './styled';
 
 // ─── SVG Decorations ───
@@ -81,32 +77,7 @@ function StumpRingsSvg() {
       <circle cx="100" cy="100" r="60" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.22" />
       <circle cx="100" cy="100" r="72" fill="none" stroke="#907030" strokeWidth="1.5" opacity="0.2" />
       <circle cx="100" cy="100" r="84" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.18" />
-      <path d="M100,100 L98,60 L102,35 L99,12" fill="none" stroke="#7a5828" strokeWidth="2" opacity="0.35" strokeLinecap="round" />
       <path d="M100,100 L104,70 L108,50" fill="none" stroke="#7a5828" strokeWidth="1.2" opacity="0.2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-/** Leaf vein pattern for finish title banner */
-function LeafVeinSvg() {
-  return (
-    <svg
-      width="100%" height="100%"
-      viewBox="0 0 340 90"
-      preserveAspectRatio="none"
-      style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.12 }}
-    >
-      <line x1="10" y1="45" x2="330" y2="45" stroke="#fff" strokeWidth="1.5" />
-      <line x1="60" y1="45" x2="30" y2="15" stroke="#fff" strokeWidth="1" />
-      <line x1="60" y1="45" x2="30" y2="75" stroke="#fff" strokeWidth="1" />
-      <line x1="120" y1="45" x2="85" y2="12" stroke="#fff" strokeWidth="1" />
-      <line x1="120" y1="45" x2="85" y2="78" stroke="#fff" strokeWidth="1" />
-      <line x1="180" y1="45" x2="150" y2="15" stroke="#fff" strokeWidth="1" />
-      <line x1="180" y1="45" x2="150" y2="75" stroke="#fff" strokeWidth="1" />
-      <line x1="240" y1="45" x2="210" y2="10" stroke="#fff" strokeWidth="1" />
-      <line x1="240" y1="45" x2="210" y2="80" stroke="#fff" strokeWidth="1" />
-      <line x1="300" y1="45" x2="270" y2="18" stroke="#fff" strokeWidth="1" />
-      <line x1="300" y1="45" x2="270" y2="72" stroke="#fff" strokeWidth="1" />
     </svg>
   );
 }
@@ -211,7 +182,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   const [checked, setChecked] = useState(false);
   const [questionScore, setQuestionScore] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
   const [gameComplete, setGameComplete] = useState(false);
   const [noContent, setNoContent] = useState(false);
   const [questionAnswers, setQuestionAnswers] = useState<QuestionAnswerRecord[]>([]);
@@ -239,13 +209,17 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     sounds.toggleMute
   );
 
-  // Paint the full-viewport background behind the activity chrome (header/top layer)
-  // for *all* trivia phases (intro, playing, and finish).
+  // Paint intro artwork only for the opening phase.
+  // Playing and finish should share the non-intro background.
   useEffect(() => {
     if (!setThemedSceneOverlay) return;
-    setThemedSceneOverlay(<TriviaIntroFullScreenSceneBackdrop aria-hidden />);
+    if (showInstructions) {
+      setThemedSceneOverlay(<TriviaIntroFullScreenSceneBackdrop aria-hidden />);
+      return () => setThemedSceneOverlay(null);
+    }
+    setThemedSceneOverlay(<TriviaPlayFullScreenSceneBackdrop aria-hidden />);
     return () => setThemedSceneOverlay(null);
-  }, [setThemedSceneOverlay]);
+  }, [setThemedSceneOverlay, showInstructions]);
 
   const initQuestion = useCallback((_qi: number) => {
     setSelectedAnswers(new Set());
@@ -260,14 +234,19 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     }
   }, [scoring]);
 
+  // Only init the first question after instructions are dismissed (so timer doesn't start early)
+  const didInitRef = useRef(false);
   useEffect(() => {
-    if (questions.length > 0) {
-      initQuestion(0);
-    } else {
+    if (questions.length === 0) {
       setNoContent(true);
       setGameComplete(true);
+      return;
     }
-  }, []);
+    if (showInstructions) return;
+    if (didInitRef.current) return;
+    didInitRef.current = true;
+    initQuestion(0);
+  }, [showInstructions]);
 
   // Timer countdown
   useEffect(() => {
@@ -350,9 +329,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     });
 
     const totalCorrectInQuestion = question.answers.filter((a) => a.isCorrect).length;
-    if (selectedCorrectCount === totalCorrectInQuestion && selectedWrongCount === 0) {
-      setCorrectCount((prev) => prev + 1);
-    }
 
     points = Math.max(0, points);
     setQuestionScore(points);
@@ -450,15 +426,14 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
 
             <IntroWelcomeMidSpacer aria-hidden />
 
-            <IntroInfoBox>
-              <IntroInfoText>
-                {settings.instructions || game.name}
-              </IntroInfoText>
-            </IntroInfoBox>
-
-            <IntroStartButton onClick={() => { setShowInstructions(false); sounds.startBgMusic(); }}>
-              {t.start}
-            </IntroStartButton>
+            <IntroDescStack>
+              <IntroDescCard>
+                <IntroDescText>{settings.instructions || game.name}</IntroDescText>
+              </IntroDescCard>
+              <IntroStartButton onClick={() => { setShowInstructions(false); sounds.startBgMusic(); }}>
+                {t.start}
+              </IntroStartButton>
+            </IntroDescStack>
 
           </IntroContent>
         </IntroContainer>
@@ -469,10 +444,9 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   // ─── Game complete / Finish ───
   if (gameComplete) {
     if (noContent) return null;
-    const accuracy = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
     return (
       <FinishContainer dir="rtl">
-        {!setThemedSceneOverlay && <TriviaIntroFullScreenSceneBackdrop aria-hidden />}
+        {!setThemedSceneOverlay && <TriviaPlayFullScreenSceneBackdrop aria-hidden />}
         {!activityHeaderAudio && (
           <GameIntroHeaderBar>
             <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
@@ -482,28 +456,20 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
         )}
         <FinishContent>
           <FinishTitleBanner>
-            <LeafVeinSvg />
-            <span style={{ position: 'relative', zIndex: 1 }}>{t.gameComplete}</span>
+            {t.gameComplete}
           </FinishTitleBanner>
 
-          <FinishStump>
-            <StumpRingsSvg />
-            <FinishScoreNumber>{totalScore}</FinishScoreNumber>
-            <FinishScoreLabel>{t.pointsFull}</FinishScoreLabel>
-          </FinishStump>
-
-          <FinishFinalLabel>{t.finalScore}</FinishFinalLabel>
-          <FinishStats>
-            {t.correctAnswers}: {correctCount}/{questions.length}
-            <br />
-            {t.accuracy}: {accuracy}%
-          </FinishStats>
+          <FinishStumpStage aria-hidden>
+            <FinishStump>
+              <StumpRingsSvg />
+              <FinishScoreNumber>{totalScore}</FinishScoreNumber>
+              <FinishScoreLabel>{t.pointsFull}</FinishScoreLabel>
+            </FinishStump>
+          </FinishStumpStage>
 
           <FinishContinueButton onClick={handleFinish}>
             {t.continue}
           </FinishContinueButton>
-
-          <FinishYoozLogo><img src="/images/logo-purple.png" alt="Yooz" style={{ height: 36 }} /></FinishYoozLogo>
         </FinishContent>
       </FinishContainer>
     );
@@ -530,7 +496,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
 
   return (
     <TriviaContainer dir="rtl">
-      {!setThemedSceneOverlay && <TriviaIntroFullScreenSceneBackdrop aria-hidden />}
+      {!setThemedSceneOverlay && <TriviaPlayFullScreenSceneBackdrop aria-hidden />}
 
       {/* Top bar: score | timer | question count | mute */}
       <TopBar>
@@ -540,7 +506,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
             {timeLeft}s
           </TopBarTimer>
         )}
-        <TopBarItem>{currentQuestion + 1}/{questions.length} {t.questionsLabel}</TopBarItem>
+        <TopBarItem>{t.questionLabel} {currentQuestion + 1}/{questions.length}</TopBarItem>
         {!activityHeaderAudio && (
           <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
             {sounds.isMuted ? '🔇' : '🔊'}
@@ -549,9 +515,8 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
       </TopBar>
 
       <TriviaMainScroll>
-      {/* Question box with floating badge */}
+      {/* Question box */}
       <QuestionBox key={currentQuestion}>
-        <QuestionBadge>{t.questionLabel} {currentQuestion + 1}</QuestionBadge>
         <QuestionContent>{question.text}</QuestionContent>
         {question.hint && <QuestionHintText>{question.hint}</QuestionHintText>}
       </QuestionBox>
@@ -562,6 +527,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
           <NatureMediaImage src={question.media} alt="" />
         </NatureMediaContainer>
       )}
+      {!question.media && <NatureMediaSpacer aria-hidden />}
 
       {/* Hint area keeps its space after checking so answers do not jump upward */}
       {settings.hint?.enabled && settings.hint.text && (
@@ -653,45 +619,17 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
         </ActionButton>
       </TriviaBottomBar>
 
-      {toastVisible && feedbackType && (
-        <CenterToastOverlay aria-live="polite">
-          <CenterToastBubble
-            variant={
-              feedbackType === 'correct'
-                ? 'correct'
-                : feedbackType === 'partial'
-                  ? 'partial'
-                  : 'incorrect'
-            }
-          >
-            {feedbackType === 'correct' && (
-              <>
-                <CorrectBigText>{t.correct}</CorrectBigText>
-                <PointsBadge>
-                  +{questionScore} {t.pointsFull}
-                </PointsBadge>
-              </>
-            )}
-            {feedbackType === 'partial' && (
-              <>
-                <PartialText>{t.partiallyCorrect}</PartialText>
-                <PointsBadgePartial>
-                  +{questionScore} {t.pointsFull}
-                </PointsBadgePartial>
-              </>
-            )}
-            {feedbackType === 'incorrect' && (
-              <>
-                <IncorrectToastText>{t.incorrect}</IncorrectToastText>
-                {questionScore > 0 ? (
-                  <PointsBadge>
-                    +{questionScore} {t.pointsFull}
-                  </PointsBadge>
-                ) : null}
-              </>
-            )}
-          </CenterToastBubble>
-        </CenterToastOverlay>
+      {toastVisible && feedbackType && createPortal(
+        <FeedbackOverlayRoot aria-live="polite">
+          <FeedbackOverlayCard variant={feedbackType}>
+            {feedbackType === 'correct'
+              ? `${t.correct} +${questionScore} ${t.pointsFull}`
+              : feedbackType === 'partial'
+                ? `${t.partiallyCorrect} +${questionScore} ${t.pointsFull}`
+                : t.incorrect}
+          </FeedbackOverlayCard>
+        </FeedbackOverlayRoot>,
+        document.body,
       )}
 
       <HintModals

@@ -21,6 +21,10 @@ const BTN_RED_DARK = '#c0392b';
 const BTN_GREEN = '#2ecc71';
 const BTN_GREEN_DARK = '#27ae60';
 
+// Primary action (purple — matches Trivia)
+const BTN_PURPLE = '#6c5ce7';
+const BTN_PURPLE_DARK = '#5b4cd4';
+
 // Finish screen (purple design, matches nature landscape theme)
 const FINISH_PURPLE = '#6c5ce7';
 const FINISH_PURPLE_DARK = '#5b4cd4';
@@ -52,6 +56,7 @@ const floatIn = keyframes`
 // ═══════════════════════════════════════════
 
 export const ORDER_BG_URL = '/images/order-bg.png';
+export const ORDER_INTRO_BG_URL = '/images/golf-intro-bg.jpeg';
 
 /** Full viewport backdrop — orange sunburst */
 export const OrderFullScreenSceneBackdrop = styled('div')({
@@ -66,14 +71,27 @@ export const OrderFullScreenSceneBackdrop = styled('div')({
   backgroundRepeat: 'no-repeat',
 });
 
+/** Full viewport backdrop — golf illustration for intro screen */
+export const OrderIntroFullScreenSceneBackdrop = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 0,
+  pointerEvents: 'none',
+  backgroundColor: '#e8a050',
+  backgroundImage: `url(${ORDER_INTRO_BG_URL})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center center',
+  backgroundRepeat: 'no-repeat',
+});
+
 /**
  * Root wrapper for all phases.
  * When no ThemedSceneOverlay exists (admin preview), paints the background
  * inline via ::before pseudo-element.
  */
 export const OrderPhaseRoot = styled('div', {
-  shouldForwardProp: (prop) => prop !== '$inlineBackdrop',
-})<{ $inlineBackdrop?: boolean }>(({ $inlineBackdrop }) => ({
+  shouldForwardProp: (prop) => prop !== '$inlineBackdrop' && prop !== '$introBg',
+})<{ $inlineBackdrop?: boolean; $introBg?: boolean }>(({ $inlineBackdrop, $introBg }) => ({
   position: 'relative',
   flex: 1,
   minHeight: 0,
@@ -91,7 +109,7 @@ export const OrderPhaseRoot = styled('div', {
           zIndex: 0,
           pointerEvents: 'none',
           backgroundColor: '#e8a050',
-          backgroundImage: `url(${ORDER_BG_URL})`,
+          backgroundImage: `url(${$introBg ? ORDER_INTRO_BG_URL : ORDER_BG_URL})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
@@ -277,27 +295,27 @@ export const NatureDragHandle = styled('span')({
 });
 
 export const OrderActionBar = styled('div')({
-  width: '90%',
-  position: 'relative',
-  zIndex: 2,
-  paddingTop: 2,
-  paddingBottom: 0,
+  width: '100%',
+  maxWidth: '100%',
   flexShrink: 0,
+  boxSizing: 'border-box',
+  paddingTop: 8,
+  paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
 });
 
-// ─── Check Button ───
+// ─── Check Button (purple — matches Trivia ActionButton) ───
 
 export const NatureCheckButton = styled('button')<{ disabled?: boolean }>(({ disabled }) => ({
-  background: disabled ? '#bdc3c7' : BTN_RED,
+  background: disabled ? '#bdc3c7' : BTN_PURPLE,
   color: WHITE,
-  fontSize: 17,
+  fontSize: 16,
   fontWeight: 700,
-  padding: '12px 24px',
-  borderRadius: 12,
-  border: `3px solid ${disabled ? '#95a5a6' : BTN_RED_DARK}`,
+  padding: '10px 20px',
+  borderRadius: 10,
+  border: `3px solid ${disabled ? '#95a5a6' : BTN_PURPLE_DARK}`,
   cursor: disabled ? 'default' : 'pointer',
   fontFamily: 'inherit',
-  boxShadow: disabled ? 'none' : `0 4px 0 ${BTN_RED_DARK}`,
+  boxShadow: disabled ? 'none' : `0 3px 0 ${BTN_PURPLE_DARK}`,
   transition: 'all 0.1s ease',
   width: '100%',
   position: 'relative' as const,
@@ -305,8 +323,8 @@ export const NatureCheckButton = styled('button')<{ disabled?: boolean }>(({ dis
   opacity: disabled ? 0.6 : 1,
   flexShrink: 0,
   '&:active': !disabled ? {
-    transform: 'translateY(4px)',
-    boxShadow: `0 0 0 ${BTN_RED_DARK}`,
+    transform: 'translateY(3px)',
+    boxShadow: `0 0 0 ${BTN_PURPLE_DARK}`,
   } : {},
 }));
 
@@ -373,21 +391,129 @@ export const NatureHintWrapper = styled('div')({
   },
 });
 
-// ─── Instructions Screen (inside OrderContainer) ───
+// ═══════════════════════════════════════════
+// ─── Opening / Intro Screen (matches Trivia) ───
+// ═══════════════════════════════════════════
 
-export const InstructionsWrapper = styled('div')({
+export const IntroContainer = styled('div')({
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'stretch',
+  background: 'transparent',
+  position: 'relative',
+  overflow: 'hidden',
+  minHeight: 0,
+  width: '100%',
+});
+
+export const IntroContent = styled('div')({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'center',
+  justifyContent: 'flex-start',
   position: 'relative',
-  zIndex: 2,
-  padding: '24px 16px',
+  zIndex: 1,
+  padding: 'clamp(12px, 4vh, 36px) 20px clamp(20px, 6vh, 48px)',
   textAlign: 'center',
-  gap: 24,
+  width: '100%',
+  maxWidth: 420,
+  minHeight: 0,
+});
+
+export const IntroTitle = styled('h1')({
+  margin: '0 0 16px',
+  padding: 0,
+  background: 'none',
+  textAlign: 'center',
+  boxSizing: 'border-box',
+  width: 'min(100%, 340px)',
+  flexShrink: 0,
+  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontSize: '48px',
+  fontWeight: 400,
+  lineHeight: 1.12,
+  letterSpacing: '0.02em',
+  color: '#ffff00',
+  WebkitTextStroke: '4px #666600',
+  paintOrder: 'stroke fill',
+  animation: `${floatIn} 0.5s ease-out`,
+});
+
+export const IntroWelcomeMidSpacer = styled('div')({
+  flex: '1 1 0',
+  minHeight: 0,
   width: '100%',
 });
+
+// ─── Intro Description (matches TrueFalse white card + overlapping button) ───
+
+const INTRO_DESC_PURPLE = '#4a148c';
+const INTRO_DESC_PANEL_BG = '#f8f8ff';
+
+export const IntroDescStack = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  width: 'min(100%, 400px)',
+  flexShrink: 0,
+  marginTop: 'clamp(20px, 4.5vh, 52px)',
+  marginBottom: 'clamp(8px, 2vh, 20px)',
+  boxSizing: 'border-box',
+});
+
+export const IntroDescCard = styled('div')({
+  width: '100%',
+  backgroundColor: INTRO_DESC_PANEL_BG,
+  border: `2px solid ${INTRO_DESC_PURPLE}`,
+  borderRadius: 22,
+  boxShadow: `
+    0 10px 32px rgba(74, 20, 120, 0.38),
+    0 4px 12px rgba(45, 10, 80, 0.22)
+  `,
+  padding: 'clamp(14px, 3.8vw, 22px) clamp(18px, 4.5vw, 24px)',
+  paddingBottom: 'clamp(28px, 6vw, 40px)',
+  boxSizing: 'border-box',
+  textAlign: 'center',
+  animation: `${floatIn} 0.5s ease-out 0.08s both`,
+});
+
+export const IntroDescText = styled('div')({
+  fontSize: 'clamp(16px, 3.25vw, 16px)',
+  fontWeight: 600,
+  lineHeight: 1.25,
+  color: INTRO_DESC_PURPLE,
+  letterSpacing: '0.01em',
+  whiteSpace: 'pre-wrap',
+});
+
+export const IntroStartButton = styled('button')({
+  marginTop: 'clamp(-26px, -5.5vw, -34px)',
+  position: 'relative' as const,
+  zIndex: 2,
+  flexShrink: 0,
+  minWidth: 'clamp(160px, 52%, 240px)',
+  background: 'linear-gradient(180deg, #f5d76e 0%, #e8b923 48%, #c9a012 100%)',
+  color: '#2a1538',
+  fontSize: 'clamp(1.35rem, 4.2vw, 1.65rem)',
+  fontWeight: 800,
+  padding: 'clamp(12px, 3vw, 16px) clamp(36px, 10vw, 52px)',
+  borderRadius: 16,
+  border: '5px solid #8b6914',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  boxShadow: '0 6px 0 #5c3d0a, 0 12px 24px rgba(0,0,0,0.28)',
+  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
+  animation: `${floatIn} 0.5s ease-out 0.22s both`,
+  textShadow: '0 1px 0 rgba(255,255,255,0.45)',
+  '&:active': {
+    transform: 'translateY(4px)',
+    boxShadow: '0 2px 0 #5c3d0a, 0 4px 10px rgba(0,0,0,0.3)',
+  },
+});
+
+// ─── Legacy Instructions Card (used only for Golf Intro popup) ───
 
 export const InstructionsCard = styled('div')({
   background: 'rgba(255,255,255,0.85)',
@@ -417,16 +543,22 @@ export const InstructionsText = styled('p')({
 
 // ─── Golf Intro Popup ───
 
+export const GOLF_INTRO_BG_URL = '/images/golf-intro-bg.jpeg';
+
 export const GolfIntroOverlay = styled('div')({
   position: 'absolute',
   inset: 0,
-  background: 'rgba(0,0,0,0.45)',
   zIndex: 20,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   padding: 24,
   animation: `${feedbackPop} 0.3s ease-out`,
+  backgroundImage: `url(${GOLF_INTRO_BG_URL})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center center',
+  backgroundRepeat: 'no-repeat',
+  backgroundColor: '#e8a050',
 });
 
 // ═══════════════════════════════════════════
@@ -437,10 +569,10 @@ export const FinishContainer = styled('div')({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center',
+  alignItems: 'stretch',
   background: 'transparent',
   position: 'relative',
-  overflow: 'hidden',
+  overflow: 'auto',
   minHeight: 0,
   width: '100%',
 });
@@ -516,6 +648,23 @@ export const FinishScoreLabel = styled('span')({
   zIndex: 1,
 });
 
+export const FinishFinalLabel = styled('div')({
+  fontSize: 18,
+  fontWeight: 700,
+  color: FINISH_PURPLE_DARK,
+  marginBottom: 6,
+  animation: `${floatIn} 0.4s ease-out 0.3s both`,
+});
+
+export const FinishStats = styled('div')({
+  fontSize: 16,
+  fontWeight: 600,
+  color: '#5a9a3a',
+  lineHeight: 1.7,
+  marginBottom: 24,
+  animation: `${floatIn} 0.4s ease-out 0.35s both`,
+});
+
 export const FinishContinueButton = styled('button')({
   background: '#fff',
   color: FINISH_PURPLE,
@@ -531,6 +680,15 @@ export const FinishContinueButton = styled('button')({
   '&:active': {
     transform: 'scale(0.98)',
   },
+});
+
+export const FinishYoozLogo = styled('div')({
+  marginTop: 'auto',
+  paddingBottom: 20,
+  fontSize: 36,
+  fontWeight: 900,
+  color: FINISH_PURPLE,
+  letterSpacing: 2,
 });
 
 // ─── Golf-specific nature theme ───

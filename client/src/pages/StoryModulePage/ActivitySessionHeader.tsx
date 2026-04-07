@@ -115,13 +115,17 @@ const pointsDepositPulse = keyframes`
   50% { box-shadow: 0 0 14px 3px rgba(245, 210, 74, 0.28); }
 `;
 
-/** Stacked coins — score / currency (distinct from leaderboard trophy). */
+/** Gold star — score icon (distinct from leaderboard trophy). */
 export function SessionHeaderPointsIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      <ellipse cx="10" cy="15" rx="6.5" ry="4.5" fill="#b8890f" transform="rotate(-12 10 15)" />
-      <ellipse cx="14" cy="13" rx="6.5" ry="4.5" fill="#d9a012" transform="rotate(8 14 13)" />
-      <ellipse cx="12" cy="11.5" rx="6" ry="4.2" fill="#f5d24a" stroke="#a67c00" strokeWidth="0.85" />
+    <svg viewBox="0 0 24 24" width={ROADMAP_HEADER_ICON_PX} height={ROADMAP_HEADER_ICON_PX} aria-hidden>
+      <path
+        fill="#ffffff"
+        stroke="rgba(255,255,255,0.6)"
+        strokeWidth="1"
+        strokeLinejoin="round"
+        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+      />
     </svg>
   );
 }

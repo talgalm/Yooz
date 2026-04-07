@@ -18,19 +18,14 @@ const BTN_GREEN_DARK = '#27ae60';
 const BTN_WRONG_RED = '#e74c3c';
 const BTN_WRONG_RED_DARK = '#c0392b';
 
-// Title
-const TITLE_BLUE = '#2980b9';
-
 // Finish screen & primary actions (purple — no red CTAs)
 const FINISH_PURPLE = '#6c5ce7';
 const FINISH_PURPLE_DARK = '#5b4cd4';
 const BTN_PURPLE = FINISH_PURPLE;
 const BTN_PURPLE_DARK = FINISH_PURPLE_DARK;
 const BTN_PURPLE_LIGHT = '#ede7ff';
-
-// Finish banner (purple)
-const LEAF_BANNER_BG = FINISH_PURPLE;
-const LEAF_BANNER_DARK = FINISH_PURPLE_DARK;
+const FINISH_TITLE_COLOR = '#ffff00';
+const FINISH_STUMP_TEXT_COLOR = '#fff';
 
 // ─── Animations ───
 
@@ -76,6 +71,7 @@ export const IntroDecorations = styled('div')({
 // ─── Intro full-screen background ───
 // Kept as fixed so it covers the entire viewport (like TrueFalseGame) and stays behind UI chrome.
 const TRIVIA_WELCOME_BG_URL = '/images/trivia-welcome-bg.png';
+const TRIVIA_PLAY_BG_URL = '/images/true-false-play-bg.png';
 
 export const TriviaIntroFullScreenSceneBackdrop = styled('div')({
   position: 'fixed',
@@ -84,6 +80,18 @@ export const TriviaIntroFullScreenSceneBackdrop = styled('div')({
   pointerEvents: 'none',
   backgroundColor: '#4a1f6e',
   backgroundImage: `url(${TRIVIA_WELCOME_BG_URL})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center center',
+  backgroundRepeat: 'no-repeat',
+});
+
+export const TriviaPlayFullScreenSceneBackdrop = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 0,
+  pointerEvents: 'none',
+  backgroundColor: '#a8c76a',
+  backgroundImage: `url(${TRIVIA_PLAY_BG_URL})`,
   backgroundSize: 'cover',
   backgroundPosition: 'center center',
   backgroundRepeat: 'no-repeat',
@@ -131,51 +139,70 @@ export const IntroWelcomeMidSpacer = styled('div')({
   width: '100%',
 });
 
-export const IntroInfoBox = styled('div')({
-  textAlign: 'center',
-  marginBottom: 12,
-  marginTop: 0,
-  width: 'min(94%, 400px)',
+// ─── Intro Description (matches TrueFalse white card + overlapping button) ───
+
+const INTRO_DESC_PURPLE = '#4a148c';
+const INTRO_DESC_PANEL_BG = '#f8f8ff';
+
+export const IntroDescStack = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  width: 'min(100%, 400px)',
   flexShrink: 0,
+  marginTop: 'clamp(20px, 4.5vh, 52px)',
+  marginBottom: 'clamp(8px, 2vh, 20px)',
   boxSizing: 'border-box',
-  background: 'none',
-  border: 'none',
-  boxShadow: 'none',
-  padding: 0,
+});
+
+export const IntroDescCard = styled('div')({
+  width: '100%',
+  backgroundColor: INTRO_DESC_PANEL_BG,
+  border: `2px solid ${INTRO_DESC_PURPLE}`,
+  borderRadius: 22,
+  boxShadow: `
+    0 10px 32px rgba(74, 20, 120, 0.38),
+    0 4px 12px rgba(45, 10, 80, 0.22)
+  `,
+  padding: 'clamp(14px, 3.8vw, 22px) clamp(18px, 4.5vw, 24px)',
+  paddingBottom: 'clamp(28px, 6vw, 40px)',
+  boxSizing: 'border-box',
   textAlign: 'center',
   animation: `${floatIn} 0.5s ease-out 0.08s both`,
 });
 
-export const IntroInfoText = styled('p')({
+export const IntroDescText = styled('div')({
+  fontSize: 'clamp(16px, 3.25vw, 16px)',
   fontWeight: 600,
-  fontSize: 'clamp(15px, 3.9vw, 18px)',
-  color: WHITE,
-  lineHeight: 1.55,
-  margin: 0,
+  lineHeight: 1.25,
+  color: INTRO_DESC_PURPLE,
+  letterSpacing: '0.01em',
   whiteSpace: 'pre-wrap',
-  textShadow: '0 1px 5px rgba(0,0,0,0.5), 0 0 1px rgba(0,0,0,0.35)',
 });
 
 export const IntroStartButton = styled('button')({
-  marginTop: 0,
+  marginTop: 'clamp(-16px, -5.5vw, -34px)',
+  position: 'relative' as const,
+  zIndex: 2,
   flexShrink: 0,
-  background: 'linear-gradient(180deg, #f5d76e 0%, #e8b923 45%, #c9a012 100%)',
+  minWidth: 'clamp(160px, 52%, 240px)',
+  background: 'linear-gradient(180deg, #f5d76e 0%, #e8b923 48%, #c9a012 100%)',
   color: '#2a1538',
-  fontSize: '1.55rem',
+  fontSize: 'clamp(1.35rem, 4.2vw, 1.65rem)',
   fontWeight: 800,
-  padding: '14px 44px',
-  borderRadius: 15,
-  border: '4px solid #8b6914',
+  padding: 'clamp(12px, 3vw, 16px) clamp(36px, 10vw, 52px)',
+  borderRadius: 16,
+  border: '5px solid #8b6914',
   cursor: 'pointer',
   fontFamily: 'inherit',
-  boxShadow: '0 5px 0 #5c3d0a, 0 10px 22px rgba(0,0,0,0.35)',
-  transition: 'all 0.1s ease',
-  animation: `${floatIn} 0.5s ease-out 0.25s both`,
+  boxShadow: '0 6px 0 #5c3d0a, 0 12px 24px rgba(0,0,0,0.28)',
+  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
+  animation: `${floatIn} 0.5s ease-out 0.22s both`,
+  textShadow: '0 1px 0 rgba(255,255,255,0.45)',
   '&:active': {
     transform: 'translateY(4px)',
-    boxShadow: '0 1px 0 #5c3d0a, 0 4px 10px rgba(0,0,0,0.3)',
+    boxShadow: '0 2px 0 #5c3d0a, 0 4px 10px rgba(0,0,0,0.3)',
   },
-  textShadow: '0 1px 0 rgba(255,255,255,0.35)',
 });
 
 export const IntroYoozLogo = styled('div')({
@@ -503,76 +530,41 @@ export const ActionButton = styled('button')<{ disabled?: boolean }>(({ disabled
   } : {},
 }));
 
-// ─── Center-screen feedback toast (~1s, does not shift layout) ───
+// ─── Feedback Overlay (matches TrueFalse — fixed center white card) ───
 
-export const CenterToastOverlay = styled('div')({
+export const FeedbackOverlayRoot = styled('div')({
   position: 'fixed',
   inset: 0,
+  zIndex: 200,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   pointerEvents: 'none',
-  zIndex: 200,
-  padding: 16,
+  padding: 24,
   boxSizing: 'border-box',
 });
 
-export const CenterToastBubble = styled('div')<{ variant: 'correct' | 'partial' | 'incorrect' }>(({ variant }) => {
-  const border =
-    variant === 'correct'
-      ? BTN_GREEN
-      : variant === 'partial'
-        ? '#f39c12'
-        : BTN_WRONG_RED;
+export const FeedbackOverlayCard = styled('div')<{ variant: 'correct' | 'partial' | 'incorrect' }>(({ variant }) => {
+  const accentColor =
+    variant === 'correct' ? '#00C853'
+    : variant === 'partial' ? '#f39c12'
+    : '#e53935';
+
   return {
-    background: 'rgba(255,255,255,0.96)',
-    border: `3px solid ${border}`,
-    borderRadius: 18,
-    padding: '14px 22px',
-    boxShadow: '0 10px 40px rgba(0,0,0,0.18)',
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    maxWidth: 'min(340px, 92vw)',
+    background: WHITE,
+    color: accentColor,
+    padding: 'clamp(18px, 4.5vw, 28px) clamp(36px, 10vw, 64px)',
+    borderRadius: 22,
+    border: `5px solid ${accentColor}`,
+    fontFamily: 'inherit',
+    fontSize: 'clamp(22px, 5.5vw, 32px)',
+    fontWeight: 800,
+    textAlign: 'center',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
     animation: `${feedbackPop} 0.35s ease-out`,
+    whiteSpace: 'nowrap',
+    maxWidth: 'min(92vw, 400px)',
   };
-});
-
-// ─── Inline feedback (legacy helpers — PointsBadge still used in toast) ───
-
-export const FeedbackContainer = styled('div')({
-  display: 'flex',
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 10,
-  animation: `${feedbackPop} 0.3s ease-out`,
-});
-
-export const CorrectBigText = styled('div')({
-  fontSize: 22,
-  fontWeight: 900,
-  color: BTN_GREEN,
-  textShadow: '1px 1px 0 #fff, -1px -1px 0 #fff',
-  lineHeight: 1,
-});
-
-export const PartialText = styled('div')({
-  fontSize: 20,
-  fontWeight: 900,
-  color: '#f39c12',
-  textShadow: '1px 1px 0 #fff',
-  lineHeight: 1,
-});
-
-export const IncorrectToastText = styled('div')({
-  fontSize: 22,
-  fontWeight: 900,
-  color: BTN_WRONG_RED,
-  textShadow: '1px 1px 0 #fff',
-  lineHeight: 1,
 });
 
 export const PointsBadge = styled('div')({
@@ -625,15 +617,28 @@ export const NatureMediaContainer = styled('div')({
   textAlign: 'center',
   position: 'relative',
   zIndex: 1,
+  width: '100%',
+  marginTop: 8,
+  marginBottom: 8,
+  borderRadius: 10,
   flexShrink: 1,
   minHeight: 0,
   overflow: 'hidden',
 });
 
+export const NatureMediaSpacer = styled('div')({
+  width: '100%',
+  height: 16,
+  flexShrink: 0,
+});
+
 export const NatureMediaImage = styled('img')({
-  maxWidth: '100%',
-  maxHeight: 120,
+  width: '100%',
+  height: 'auto',
+  display: 'block',
   borderRadius: 10,
+  overflow: 'hidden',
+  clipPath: 'inset(0 round 10px)',
   objectFit: 'contain',
   border: `2px solid rgba(74,101,114,0.3)`,
 });
@@ -659,50 +664,70 @@ export const FinishContent = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
+  justifyContent: 'space-between',
   position: 'relative',
   zIndex: 1,
   padding: '30px 20px 20px',
   textAlign: 'center',
   width: '100%',
   maxWidth: 400,
+  minHeight: '100%',
 });
 
 export const FinishTitleBanner = styled('div')({
-  background: `linear-gradient(135deg, ${LEAF_BANNER_BG} 0%, ${LEAF_BANNER_DARK} 100%)`,
-  color: WHITE,
-  padding: '14px 36px',
-  borderRadius: 14,
-  fontSize: 24,
-  fontWeight: 800,
+  margin: '0 0 16px',
+  padding: 0,
+  background: 'none',
+  width: 'min(100%, 340px)',
+  color: FINISH_TITLE_COLOR,
+  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontSize: '48px',
+  fontWeight: 400,
+  lineHeight: 1.12,
+  letterSpacing: '0.02em',
+  WebkitTextStroke: '4px #666600',
+  paintOrder: 'stroke fill',
   textAlign: 'center',
-  transform: 'rotate(-2deg)',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-  marginBottom: 24,
   position: 'relative',
-  overflow: 'hidden',
+  zIndex: 1,
+  flexShrink: 0,
   animation: `${floatIn} 0.4s ease-out`,
 });
 
+export const FinishStumpStage = styled('div')({
+  position: 'absolute',
+  inset: 0,
+  zIndex: 1,
+  pointerEvents: 'none',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
+
 export const FinishStump = styled('div')({
-  width: 220,
-  height: 220,
+  width: 'clamp(160px, 48vw, 220px)',
+  height: 'clamp(160px, 48vw, 220px)',
   borderRadius: '50%',
   background: `linear-gradient(135deg, ${FINISH_PURPLE} 0%, ${FINISH_PURPLE_DARK} 100%)`,
-  border: '4px solid #fff',
+  border: `4px solid ${FINISH_STUMP_TEXT_COLOR}`,
   boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
   position: 'relative',
-  marginBottom: 16,
   animation: `${floatIn} 0.5s ease-out 0.15s both`,
+  zIndex: 2,
+  '@media (orientation: landscape) and (max-height: 520px)': {
+    width: 'clamp(140px, 26vw, 190px)',
+    height: 'clamp(140px, 26vw, 190px)',
+  },
 });
 
 export const FinishScoreNumber = styled('span')({
-  fontSize: 64,
+  fontSize: 'clamp(48px, 13vw, 64px)',
   fontWeight: 900,
-  color: '#fff',
+  color: FINISH_STUMP_TEXT_COLOR,
   textShadow: '0 2px 4px rgba(0,0,0,0.2)',
   lineHeight: 1,
   position: 'relative',
@@ -710,9 +735,9 @@ export const FinishScoreNumber = styled('span')({
 });
 
 export const FinishScoreLabel = styled('span')({
-  fontSize: 20,
+  fontSize: 'clamp(16px, 4.5vw, 20px)',
   fontWeight: 700,
-  color: 'rgba(255,255,255,0.95)',
+  color: FINISH_STUMP_TEXT_COLOR,
   marginTop: 2,
   position: 'relative',
   zIndex: 1,
@@ -722,41 +747,31 @@ export const FinishFinalLabel = styled('div')({
   fontSize: 18,
   fontWeight: 700,
   color: FINISH_PURPLE_DARK,
-  marginBottom: 6,
+  marginBottom: 24,
   animation: `${floatIn} 0.4s ease-out 0.3s both`,
 });
 
-export const FinishStats = styled('div')({
-  fontSize: 16,
-  fontWeight: 600,
-  color: '#5a9a3a',
-  lineHeight: 1.7,
-  marginBottom: 24,
-  animation: `${floatIn} 0.4s ease-out 0.35s both`,
-});
-
 export const FinishContinueButton = styled('button')({
-  background: '#fff',
-  color: FINISH_PURPLE,
-  fontSize: 18,
-  fontWeight: 700,
-  padding: '14px 52px',
-  borderRadius: 12,
-  border: '1px solid rgba(108,92,231,0.3)',
+  marginTop: 'auto',
+  marginBottom: 'clamp(8px, 2vh, 20px)',
+  position: 'relative' as const,
+  zIndex: 2,
+  minWidth: 'clamp(160px, 52%, 240px)',
+  background: 'linear-gradient(180deg, #f5d76e 0%, #e8b923 48%, #c9a012 100%)',
+  color: '#2a1538',
+  fontSize: 'clamp(1.35rem, 4.2vw, 1.65rem)',
+  fontWeight: 800,
+  padding: 'clamp(12px, 3vw, 16px) clamp(36px, 10vw, 52px)',
+  borderRadius: 16,
+  border: '5px solid #8b6914',
   cursor: 'pointer',
   fontFamily: 'inherit',
-  transition: 'transform 0.1s ease',
+  boxShadow: '0 6px 0 #5c3d0a, 0 12px 24px rgba(0,0,0,0.28)',
+  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
   animation: `${floatIn} 0.5s ease-out 0.4s both`,
+  textShadow: '0 1px 0 rgba(255,255,255,0.45)',
   '&:active': {
-    transform: 'scale(0.98)',
+    transform: 'translateY(4px)',
+    boxShadow: '0 2px 0 #5c3d0a, 0 4px 10px rgba(0,0,0,0.3)',
   },
-});
-
-export const FinishYoozLogo = styled('div')({
-  marginTop: 'auto',
-  paddingBottom: 20,
-  fontSize: 36,
-  fontWeight: 900,
-  color: FINISH_PURPLE,
-  letterSpacing: 2,
 });

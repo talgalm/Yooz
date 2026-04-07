@@ -15,8 +15,10 @@ import HintButton from '../HintButton';
 import { GameProps, HintConfig, GAME_CONSTANTS } from '../types';
 import GolfChallenge from './GolfChallenge';
 import { golfTexts } from './GolfChallenge.i18n';
+import { GameIntroHeaderBar, GameHeaderMuteButton } from '../styled';
 import {
   OrderFullScreenSceneBackdrop,
+  OrderIntroFullScreenSceneBackdrop,
   OrderPhaseRoot,
   OrderContainer,
   OrderTopBar,
@@ -37,7 +39,14 @@ import {
   OrderWrongText,
   OrderPointsBadge,
   NatureHintWrapper,
-  InstructionsWrapper,
+  IntroContainer,
+  IntroContent,
+  IntroTitle,
+  IntroWelcomeMidSpacer,
+  IntroDescStack,
+  IntroDescCard,
+  IntroDescText,
+  IntroStartButton,
   InstructionsCard,
   InstructionsTitle,
   InstructionsText,
@@ -48,7 +57,10 @@ import {
   FinishStump,
   FinishScoreNumber,
   FinishScoreLabel,
+  FinishFinalLabel,
+  FinishStats,
   FinishContinueButton,
+  FinishYoozLogo,
 } from './styled';
 
 interface OrderRound {
@@ -187,9 +199,12 @@ export default function OrderGame({ game, onComplete }: GameProps) {
 
   useEffect(() => {
     if (!setThemedSceneOverlay) return;
-    setThemedSceneOverlay(<OrderFullScreenSceneBackdrop aria-hidden />);
+    const Backdrop = showInstructions && settings.instructions
+      ? OrderIntroFullScreenSceneBackdrop
+      : OrderFullScreenSceneBackdrop;
+    setThemedSceneOverlay(<Backdrop aria-hidden />);
     return () => setThemedSceneOverlay(null);
-  }, [setThemedSceneOverlay]);
+  }, [setThemedSceneOverlay, showInstructions]);
 
   const inlineBackdrop = !setThemedSceneOverlay;
 
@@ -245,14 +260,20 @@ export default function OrderGame({ game, onComplete }: GameProps) {
   roundsRef.current = rounds;
   initRoundRef.current = initRound;
 
+  // Only init the first round after instructions are dismissed (so timer doesn't start early)
+  const didInitRef = useRef(false);
   useEffect(() => {
-    if (rounds.length > 0) {
-      initRound(0);
-    } else {
+    if (rounds.length === 0) {
       setNoContent(true);
       setGameComplete(true);
+      return;
     }
-  }, []);
+    // Skip init while instructions screen is showing
+    if (showInstructions && settings.instructions) return;
+    if (didInitRef.current) return;
+    didInitRef.current = true;
+    initRound(0);
+  }, [showInstructions]);
 
   // Timer countdown — uses functional updater to avoid stale closure
   useEffect(() => {
@@ -328,25 +349,35 @@ export default function OrderGame({ game, onComplete }: GameProps) {
     });
   };
 
-  // Instructions screen — nature themed inside OrderContainer
+  // Instructions screen — matches Trivia intro design
   if (showInstructions && settings.instructions) {
     return (
-      <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
-      <OrderContainer dir="rtl">
+      <OrderPhaseRoot $inlineBackdrop={inlineBackdrop} $introBg>
+        {!activityHeaderAudio && (
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <GameIntroHeaderBar>
+              <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
+                {sounds.isMuted ? '🔇' : '🔊'}
+              </GameHeaderMuteButton>
+            </GameIntroHeaderBar>
+          </div>
+        )}
+        <IntroContainer dir="rtl">
+          <IntroContent>
+            <IntroTitle>{game.name}</IntroTitle>
 
-        <InstructionsWrapper>
-          <OrderRoundBanner style={{ width: 'auto', padding: '16px 40px', transform: 'rotate(-1.5deg)' }}>
-            <LeafVeinSvg />
-            <OrderRoundBannerText style={{ fontSize: 20 }}>{game.name}</OrderRoundBannerText>
-          </OrderRoundBanner>
-          <InstructionsCard>
-            <InstructionsText>{settings.instructions}</InstructionsText>
-          </InstructionsCard>
-          <NatureCheckButton onClick={() => { setShowInstructions(false); sounds.startBgMusic(); }} style={{ maxWidth: 340, fontSize: 20, padding: '16px 28px' }}>
-            {t.continue}
-          </NatureCheckButton>
-        </InstructionsWrapper>
-      </OrderContainer>
+            <IntroWelcomeMidSpacer aria-hidden />
+
+            <IntroDescStack>
+              <IntroDescCard>
+                <IntroDescText>{settings.instructions}</IntroDescText>
+              </IntroDescCard>
+              <IntroStartButton onClick={() => { setShowInstructions(false); sounds.startBgMusic(); }}>
+                {t.continue}
+              </IntroStartButton>
+            </IntroDescStack>
+          </IntroContent>
+        </IntroContainer>
       </OrderPhaseRoot>
     );
   }
@@ -372,6 +403,13 @@ export default function OrderGame({ game, onComplete }: GameProps) {
     return (
       <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
         <FinishContainer dir="rtl">
+          {!activityHeaderAudio && (
+            <GameIntroHeaderBar>
+              <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
+                {sounds.isMuted ? '🔇' : '🔊'}
+              </GameHeaderMuteButton>
+            </GameIntroHeaderBar>
+          )}
           <FinishContent>
             <FinishTitleBanner>
               <LeafVeinSvg />
@@ -384,13 +422,16 @@ export default function OrderGame({ game, onComplete }: GameProps) {
               <FinishScoreLabel>{t.points}</FinishScoreLabel>
             </FinishStump>
 
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#5a3e1b', marginBottom: 6 }}>
-              {t.finalScore}
-            </div>
+            <FinishFinalLabel>{t.finalScore}</FinishFinalLabel>
+            <FinishStats>
+              {t.roundOf} {rounds.length} {t.of} {rounds.length}
+            </FinishStats>
 
             <FinishContinueButton onClick={handleFinish}>
               {t.continue}
             </FinishContinueButton>
+
+            <FinishYoozLogo><img src="/images/logo-purple.png" alt="Yooz" style={{ height: 36 }} /></FinishYoozLogo>
           </FinishContent>
         </FinishContainer>
       </OrderPhaseRoot>
