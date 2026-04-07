@@ -8,9 +8,20 @@
     "build:client": "npm run build --prefix client",
     "start": "npm start --prefix server",
     "install:all": "npm install --prefix server && npm install --prefix client",
-    "build": "npm run build:client && npm start"
+    "build": "npm run build:client && npm start",
+    "walkthrough": "npx playwright test --project=walkthroughs && npm run walkthrough:voice",
+    "walkthrough:record": "npx playwright test --project=walkthroughs",
+    "walkthrough:voice": "npm run walkthrough:voice:login && npm run walkthrough:voice:create && npm run walkthrough:voice:library",
+    "walkthrough:voice:login": "npx tsx walkthroughs/add-voice.ts walkthrough-videos/01-admin-login-Admin-Login-Walkthrough-walkthroughs/video.webm walkthrough-videos/01-admin-login-narration.json walkthrough-videos/admin-login-narrated.mp4",
+    "walkthrough:voice:create": "npx tsx walkthroughs/add-voice.ts walkthrough-videos/02-create-activity-Create-Activity-Walkthrough-walkthroughs/video.webm walkthrough-videos/02-create-activity-narration.json walkthrough-videos/create-activity-narrated.mp4",
+    "walkthrough:voice:library": "npx tsx walkthroughs/add-voice.ts walkthrough-videos/03-export-from-library-Export-From-Library-Walkthrough-walkthroughs/video.webm walkthrough-videos/03-export-library-narration.json walkthrough-videos/export-library-narrated.mp4"
   },
   "dependencies": {
     "firebase-admin": "^13.7.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "say": "^0.16.0",
+    "tsx": "^4.21.0"
   }
 }

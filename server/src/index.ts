@@ -20,6 +20,7 @@ import collageRouter from './routes/collage';
 import libraryRouter from './routes/library';
 import alertsRouter from './routes/alerts';
 import portalsRouter from './routes/portals';
+import tutorialsRouter from './routes/tutorials';
 
 const app = express();
 
@@ -52,6 +53,7 @@ app.use('/api/collage', collageRouter);
 app.use('/api/admin/library', libraryRouter);
 app.use('/api/alerts', alertsRouter);
 app.use('/api/admin/portals', portalsRouter);
+app.use('/api/admin/tutorials', tutorialsRouter);
 
 // Serve static client build in production
 app.use(express.static(CLIENT_BUILD_PATH));

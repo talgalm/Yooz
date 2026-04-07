@@ -45,7 +45,7 @@ portalUserSchema.pre('validate', async function () {
 
 const portalSchema = new Schema<IPortal>({
   name: { type: String, required: true },
-  code: { type: String, required: true, unique: true, default: generatePortalCode },
+  code: { type: String, required: true, default: generatePortalCode },
   description: { type: String },
   users: { type: [portalUserSchema], default: [] },
   activities: [{ type: Schema.Types.ObjectId, ref: 'Activity' }],
@@ -53,7 +53,7 @@ const portalSchema = new Schema<IPortal>({
   createdByEmail: { type: String, lowercase: true, trim: true },
 });
 
-portalSchema.index({ code: 1 });
+portalSchema.index({ code: 1 }, { unique: true });
 portalSchema.index({ name: 'text', description: 'text' });
 
 export const Portal = model<IPortal>('Portal', portalSchema, 'portals');

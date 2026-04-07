@@ -8,3 +8,4 @@ export { User, type IUser, type UserRole } from './User';
 export { Mission, type IMission, type IMissionScreen } from './Mission';
 export { LibraryItem, type ILibraryItem } from './LibraryItem';
 export { Portal, type IPortal, type IPortalUser, type PortalUserStatus } from './Portal';
+export { Tutorial, type ITutorial } from './Tutorial';

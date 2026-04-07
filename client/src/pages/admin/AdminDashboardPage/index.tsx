@@ -14,6 +14,7 @@ import AdminStatisticsTab from '../AdminStatisticsTab';
 import AdminUsersTab from '../AdminUsersTab';
 import AdminLibraryTab from '../AdminLibraryTab';
 import AdminPortalsTab from '../AdminPortalsTab';
+import AdminTutorialsTab from '../AdminTutorialsTab';
 import type { Portal } from '../AdminPortalsTab';
 import {
   AdminHeader,
@@ -250,7 +251,7 @@ const MobileCard = styled('div')({
 
 // ─── Types ───
 
-type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'users' | 'portals';
+type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'users' | 'portals' | 'tutorials';
 type StationsSection = 'stations' | 'games' | 'missions' | 'collage' | 'feedback';
 type GameSubTab = 'order' | 'trivia' | 'puzzle' | 'trueFalse' | 'ballGame';
 
@@ -308,7 +309,7 @@ export default function AdminDashboardPage() {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [portals, setPortals] = useState<Portal[]>([]);
   const [activeTab, setActiveTab] = useState<MainTab>(
-    ['activities', 'statistics', 'stations', 'library', 'users', 'portals'].includes(initialTab) ? initialTab : 'activities'
+    ['activities', 'statistics', 'stations', 'library', 'users', 'portals', 'tutorials'].includes(initialTab) ? initialTab : 'activities'
   );
   const [stationsSection, setStationsSection] = useState<StationsSection>('stations');
   const [gameSubTab, setGameSubTab] = useState<GameSubTab>('order');
@@ -331,6 +332,7 @@ export default function AdminDashboardPage() {
     tabs.push({ key: 'portals', label: t.tabPortals });
     if (role === 'super_admin') {
       tabs.push({ key: 'users', label: t.tabUsers });
+      tabs.push({ key: 'tutorials', label: t.tabTutorials });
     }
     return tabs;
   }, [role, t]);
@@ -544,6 +546,11 @@ export default function AdminDashboardPage() {
         {/* ── Users Tab (super_admin only) ── */}
         {activeTab === 'users' && role === 'super_admin' && (
           <AdminUsersTab />
+        )}
+
+        {/* ── Tutorials Tab (super_admin only) ── */}
+        {activeTab === 'tutorials' && role === 'super_admin' && (
+          <AdminTutorialsTab />
         )}
       </DashContent>
     </PageBg>

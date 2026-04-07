@@ -48,13 +48,66 @@ const floatIn = keyframes`
 `;
 
 // ═══════════════════════════════════════════
+// ─── Background Image ───
+// ═══════════════════════════════════════════
+
+export const ORDER_BG_URL = '/images/order-bg.png';
+
+/** Full viewport backdrop — orange sunburst */
+export const OrderFullScreenSceneBackdrop = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 0,
+  pointerEvents: 'none',
+  backgroundColor: '#e8a050',
+  backgroundImage: `url(${ORDER_BG_URL})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center center',
+  backgroundRepeat: 'no-repeat',
+});
+
+/**
+ * Root wrapper for all phases.
+ * When no ThemedSceneOverlay exists (admin preview), paints the background
+ * inline via ::before pseudo-element.
+ */
+export const OrderPhaseRoot = styled('div', {
+  shouldForwardProp: (prop) => prop !== '$inlineBackdrop',
+})<{ $inlineBackdrop?: boolean }>(({ $inlineBackdrop }) => ({
+  position: 'relative',
+  flex: 1,
+  minHeight: 0,
+  width: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  alignSelf: 'stretch',
+  overflow: 'hidden',
+  ...($inlineBackdrop
+    ? {
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: 'none',
+          backgroundColor: '#e8a050',
+          backgroundImage: `url(${ORDER_BG_URL})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat',
+        },
+        '& > *': { position: 'relative', zIndex: 1 },
+      }
+    : {}),
+}));
+
+// ═══════════════════════════════════════════
 // ─── Playing Screen ───
 // ═══════════════════════════════════════════
 
 export const OrderContainer = styled('div')({
   position: 'relative',
-  width: 'calc(100% + 32px)',
-  margin: '0 -16px -16px',
+  width: '100%',
   flex: 1,
   minHeight: 0,
   background: 'transparent',
@@ -389,8 +442,7 @@ export const FinishContainer = styled('div')({
   position: 'relative',
   overflow: 'hidden',
   minHeight: 0,
-  width: 'calc(100% + 32px)',
-  margin: '0 -16px -16px',
+  width: '100%',
 });
 
 export const FinishDecorations = styled('div')({

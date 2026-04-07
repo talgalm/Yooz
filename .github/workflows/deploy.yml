@@ -62,7 +62,8 @@ jobs:
             "CLOUDINARY_API_KEY":    os.environ["SM_CLOUDINARY_API_KEY"],
             "CLOUDINARY_API_SECRET": os.environ["SM_CLOUDINARY_API_SECRET"],
             "GEMINI_API_KEY":        os.environ["SM_GEMINI_API_KEY"],
-            "CORS_ORIGIN":           "https://yooz.org.il,https://www.yooz.org.il"
+            "CORS_ORIGIN":           "https://yooz.org.il,https://www.yooz.org.il",
+            "APP_URL":               "https://yooz.org.il"
           }
 
           r = subprocess.run([

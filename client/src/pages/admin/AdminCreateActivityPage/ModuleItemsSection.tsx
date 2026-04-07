@@ -25,6 +25,9 @@ const GAME_ICONS: Record<string, string> = {
   trashSort: '♻️',
 };
 
+/** Game `type` values omitted from the activity module picker (still editable in library). */
+const EXCLUDE_TYPES_FROM_ACTIVITY_PICKER = new Set(['trashSort', 'environmentGame']);
+
 const STATION_ICONS: Record<string, string> = {
   text: '📝',
   video: '🎬',
@@ -419,7 +422,11 @@ export default function ModuleItemsSection({
       adminApiFetch<{ missions: MissionOption[] }>('/api/admin/missions'),
     ])
       .then(([gData, sData, mData]) => {
-        setAllGames([...gData.games].sort((a, b) => hebrewFirstCompare(a.name, b.name)));
+        setAllGames(
+          [...gData.games]
+            .filter((g) => !EXCLUDE_TYPES_FROM_ACTIVITY_PICKER.has(g.type))
+            .sort((a, b) => hebrewFirstCompare(a.name, b.name)),
+        );
         setAllStations([...sData.stations].sort((a, b) => hebrewFirstCompare(a.name, b.name)));
         setAllMissions([...mData.missions].sort((a, b) => hebrewFirstCompare(a.name, b.name)));
       })

@@ -5,6 +5,7 @@ import {
   useRegisterActivityGameHeader,
   type ActivityGameHeaderPhase,
 } from '../../../context/activityPlayingHeaderContext';
+import { useThemedSceneOverlaySetter } from '../../../context/themedSceneOverlayContext';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './OrderGame.i18n';
 import { shuffleArray } from '../../../utils/shuffleArray';
@@ -15,6 +16,8 @@ import { GameProps, HintConfig, GAME_CONSTANTS } from '../types';
 import GolfChallenge from './GolfChallenge';
 import { golfTexts } from './GolfChallenge.i18n';
 import {
+  OrderFullScreenSceneBackdrop,
+  OrderPhaseRoot,
   OrderContainer,
   OrderTopBar,
   OrderTopBarItem,
@@ -180,6 +183,16 @@ export default function OrderGame({ game, onComplete }: GameProps) {
     sounds.toggleMute,
   );
 
+  const setThemedSceneOverlay = useThemedSceneOverlaySetter();
+
+  useEffect(() => {
+    if (!setThemedSceneOverlay) return;
+    setThemedSceneOverlay(<OrderFullScreenSceneBackdrop aria-hidden />);
+    return () => setThemedSceneOverlay(null);
+  }, [setThemedSceneOverlay]);
+
+  const inlineBackdrop = !setThemedSceneOverlay;
+
   // Pointer-based drag reordering (works on touch + mouse)
   const [dragInfo, setDragInfo] = useState<{
     index: number;
@@ -318,6 +331,7 @@ export default function OrderGame({ game, onComplete }: GameProps) {
   // Instructions screen — nature themed inside OrderContainer
   if (showInstructions && settings.instructions) {
     return (
+      <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
       <OrderContainer dir="rtl">
 
         <InstructionsWrapper>
@@ -333,16 +347,19 @@ export default function OrderGame({ game, onComplete }: GameProps) {
           </NatureCheckButton>
         </InstructionsWrapper>
       </OrderContainer>
+      </OrderPhaseRoot>
     );
   }
 
   // Golf challenge — playing
   if (showGolf) {
     return (
-      <GolfChallenge
-        onComplete={(bonus) => { setGolfBonus(bonus); setShowGolf(false); setGolfDone(true); }}
-        onSkip={() => { setGolfBonus(0); setShowGolf(false); setGolfDone(true); }}
-      />
+      <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
+        <GolfChallenge
+          onComplete={(bonus) => { setGolfBonus(bonus); setShowGolf(false); setGolfDone(true); }}
+          onSkip={() => { setGolfBonus(0); setShowGolf(false); setGolfDone(true); }}
+        />
+      </OrderPhaseRoot>
     );
   }
 
@@ -353,34 +370,37 @@ export default function OrderGame({ game, onComplete }: GameProps) {
     }
     const finalScore = hint.applyHintPenalty(totalScore) + golfBonus;
     return (
-      <FinishContainer dir="rtl">
-        <FinishContent>
-          <FinishTitleBanner>
-            <LeafVeinSvg />
-            <span style={{ position: 'relative', zIndex: 1 }}>{t.gameComplete}</span>
-          </FinishTitleBanner>
+      <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
+        <FinishContainer dir="rtl">
+          <FinishContent>
+            <FinishTitleBanner>
+              <LeafVeinSvg />
+              <span style={{ position: 'relative', zIndex: 1 }}>{t.gameComplete}</span>
+            </FinishTitleBanner>
 
-          <FinishStump>
-            <StumpRingsSvg />
-            <FinishScoreNumber>{finalScore}</FinishScoreNumber>
-            <FinishScoreLabel>{t.points}</FinishScoreLabel>
-          </FinishStump>
+            <FinishStump>
+              <StumpRingsSvg />
+              <FinishScoreNumber>{finalScore}</FinishScoreNumber>
+              <FinishScoreLabel>{t.points}</FinishScoreLabel>
+            </FinishStump>
 
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#5a3e1b', marginBottom: 6 }}>
-            {t.finalScore}
-          </div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#5a3e1b', marginBottom: 6 }}>
+              {t.finalScore}
+            </div>
 
-          <FinishContinueButton onClick={handleFinish}>
-            {t.continue}
-          </FinishContinueButton>
-        </FinishContent>
-      </FinishContainer>
+            <FinishContinueButton onClick={handleFinish}>
+              {t.continue}
+            </FinishContinueButton>
+          </FinishContent>
+        </FinishContainer>
+      </OrderPhaseRoot>
     );
   }
 
   // Golf intro popup — shown after rounds complete, before golf starts
   if (gameComplete && golfEnabled && !golfDone) {
     return (
+      <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
       <OrderContainer dir="rtl">
 
         <GolfIntroOverlay>
@@ -394,6 +414,7 @@ export default function OrderGame({ game, onComplete }: GameProps) {
           </InstructionsCard>
         </GolfIntroOverlay>
       </OrderContainer>
+      </OrderPhaseRoot>
     );
   }
 
@@ -486,6 +507,7 @@ export default function OrderGame({ game, onComplete }: GameProps) {
   };
 
   return (
+    <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
     <OrderContainer dir="rtl">
 
       {/* Top bar (glass effect) */}
@@ -610,5 +632,6 @@ export default function OrderGame({ game, onComplete }: GameProps) {
         t={t}
       />
     </OrderContainer>
+    </OrderPhaseRoot>
   );
 }
