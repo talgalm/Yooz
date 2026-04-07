@@ -17,6 +17,8 @@ interface UseGameHintReturn {
   dismissHintWarning: () => void;
   dismissHintText: () => void;
   applyHintPenalty: (score: number) => number;
+  /** Force hint as already used (for restoring saved game progress) */
+  forceHintUsed: () => void;
 }
 
 /**
@@ -50,6 +52,10 @@ export function useGameHint(_hint?: HintConfig): UseGameHintReturn {
     setShowHintText(false);
   }, []);
 
+  const forceHintUsed = useCallback(() => {
+    setHintUsed(true);
+  }, []);
+
   const applyHintPenalty = useCallback(
     (score: number) => (hintUsed ? Math.max(0, score - HINT_PENALTY) : score),
     [hintUsed],
@@ -65,5 +71,6 @@ export function useGameHint(_hint?: HintConfig): UseGameHintReturn {
     dismissHintWarning,
     dismissHintText,
     applyHintPenalty,
+    forceHintUsed,
   };
 }

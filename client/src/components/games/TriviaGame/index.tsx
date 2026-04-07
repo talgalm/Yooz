@@ -91,6 +91,35 @@ interface TriviaSettings {
   includeHelpers?: boolean;
 }
 
+// ─── Session progress helpers ───
+
+const PROGRESS_KEY_PREFIX = 'yooz_game_progress_';
+
+interface SavedTriviaProgress {
+  nextIndex: number;
+  totalScore: number;
+  questionAnswers: QuestionAnswerRecord[];
+  hintUsed: boolean;
+  helperHalfUsed: boolean;
+  helperThreeQuartersUsed: boolean;
+  gameStartTime: number;
+}
+
+function loadTriviaProgress(gameId: string): SavedTriviaProgress | null {
+  try {
+    const raw = sessionStorage.getItem(PROGRESS_KEY_PREFIX + gameId);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveTriviaProgress(gameId: string, data: SavedTriviaProgress) {
+  try { sessionStorage.setItem(PROGRESS_KEY_PREFIX + gameId, JSON.stringify(data)); } catch {}
+}
+
+function clearTriviaProgress(gameId: string) {
+  try { sessionStorage.removeItem(PROGRESS_KEY_PREFIX + gameId); } catch {}
+}
+
 /** Whether more wrong answers can be eliminated to reach `targetVisible` options among currently visible answers. */
 function canApplyLifeline(
   answers: TriviaAnswer[],
@@ -146,6 +175,10 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   };
 
   const questions = allQuestions;
+
+  // Check for saved progress on mount
+  const savedProgress = useRef(loadTriviaProgress(game._id));
+  const isResuming = savedProgress.current !== null && savedProgress.current.nextIndex < questions.length;
 
   const processedQuestions = useMemo(() => {
     return questions.map((q) => ({
@@ -373,6 +406,25 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     }
   }, [gameComplete, noContent]);
 
+  // Save progress to sessionStorage after each answered question
+  useEffect(() => {
+    if (questionAnswers.length === 0 || gameComplete) return;
+    saveTriviaProgress(game._id, {
+      nextIndex: questionAnswers.length, // next unanswered question
+      totalScore,
+      questionAnswers,
+      hintUsed: gameHint.hintUsed,
+      helperHalfUsed,
+      helperThreeQuartersUsed,
+      gameStartTime: gameStartTime.current,
+    });
+  }, [questionAnswers, totalScore, gameComplete]);
+
+  // Clear progress when game is complete
+  useEffect(() => {
+    if (gameComplete) clearTriviaProgress(game._id);
+  }, [gameComplete]);
+
   const handleFinish = () => {
     const maxPossible = questions.reduce((sum, q) => sum + q.answers.filter(a => a.isCorrect).length * scoring.correctAnswerPoints, 0);
     onComplete({
@@ -408,8 +460,23 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
               <IntroDescCard>
                 <IntroDescText>{settings.instructions || game.name}</IntroDescText>
               </IntroDescCard>
-              <IntroStartButton onClick={() => { setShowInstructions(false); sounds.startBgMusic(); }}>
-                {t.start}
+              <IntroStartButton onClick={() => {
+                setShowInstructions(false);
+                sounds.startBgMusic();
+                // Restore saved progress if resuming
+                const saved = savedProgress.current;
+                if (saved && saved.nextIndex < questions.length) {
+                  setCurrentQuestion(saved.nextIndex);
+                  setTotalScore(saved.totalScore);
+                  setQuestionAnswers(saved.questionAnswers);
+                  setHelperHalfUsed(saved.helperHalfUsed);
+                  setHelperThreeQuartersUsed(saved.helperThreeQuartersUsed);
+                  gameStartTime.current = saved.gameStartTime;
+                  if (saved.hintUsed) gameHint.forceHintUsed();
+                  savedProgress.current = null;
+                }
+              }}>
+                {isResuming ? t.continue : t.start}
               </IntroStartButton>
             </IntroDescStack>
 

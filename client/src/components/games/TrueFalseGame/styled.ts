@@ -136,41 +136,53 @@ export const TFProgressBadge = styled('div')({
   color: '#2c3e50',
 });
 
-// ─── Question banner — white card, purple frame (matches play-phase purple theme) ───
+// ─── Question banner — same panel as intro description (IntroDescCard / IntroDescLine) ───
 
 const FINISH_PURPLE = '#6c5ce7';
 const FINISH_PURPLE_DARK = '#5b4cd4';
+/** Trivia-matched finish stump score typography */
+const FINISH_STUMP_TEXT_COLOR = '#fff';
 const LEAF_BANNER_BG = FINISH_PURPLE;
 const LEAF_BANNER_DARK = FINISH_PURPLE_DARK;
 
+/** Shared with intro instructions card (`IntroDescCard`) */
+const INTRO_DESC_PURPLE = '#4a148c';
+const INTRO_DESC_PANEL_BG = '#f8f8ff';
+
 export const QuestionBanner = styled('div')({
-  background: '#ffffff',
-  color: FINISH_PURPLE,
-  textAlign: 'center',
-  padding: '14px 18px',
-  borderRadius: 22,
   width: '100%',
-  lineHeight: 1.35,
-  border: `4px solid ${FINISH_PURPLE}`,
-  boxShadow: '0 4px 0 rgba(108, 92, 231, 0.22), 0 8px 18px rgba(0,0,0,0.08)',
+  backgroundColor: INTRO_DESC_PANEL_BG,
+  color: INTRO_DESC_PURPLE,
+  textAlign: 'center',
+  padding: 'clamp(14px, 3.8vw, 22px) clamp(18px, 4.5vw, 24px)',
+  borderRadius: 22,
+  lineHeight: 1.25,
+  border: `2px solid ${INTRO_DESC_PURPLE}`,
+  boxShadow: `
+    0 10px 32px rgba(74, 20, 120, 0.38),
+    0 4px 12px rgba(45, 10, 80, 0.22)
+  `,
   position: 'relative',
   zIndex: 2,
   overflow: 'hidden',
   marginTop: 'clamp(14px, 4vw, 22px)',
+  boxSizing: 'border-box',
   animation: `${slideUp} 0.3s ease-out`,
   flexShrink: 1,
   minHeight: 0,
 });
 
 export const QuestionBannerText = styled('p')({
-  fontFamily: TF_FONT_FAMILY,
-  fontSize: 'clamp(18px, 3.6vw, 21px)',
-  fontWeight: 700,
-  color: FINISH_PURPLE,
-  lineHeight: 1.35,
   margin: 0,
+  fontFamily: TF_FONT_FAMILY,
+  fontSize: 'clamp(16px, 3.25vw, 16px)',
+  fontWeight: 600,
+  lineHeight: 1.25,
+  color: INTRO_DESC_PURPLE,
+  letterSpacing: '0.01em',
   position: 'relative',
   zIndex: 1,
+  whiteSpace: 'pre-wrap',
 });
 
 // ─── Timer Circle (double-ring design) ───
@@ -636,8 +648,6 @@ export const IntroInstructions = styled('div')({
 });
 
 /** Intro: white card + overlapping start button (reference layout). */
-const INTRO_DESC_PURPLE = '#4a148c';
-const INTRO_DESC_PANEL_BG = '#f8f8ff';
 
 export const IntroDescStack = styled('div')({
   display: 'flex',
@@ -709,9 +719,10 @@ export const IntroInstructionsCustom = styled('div')({
 });
 
 export const IntroStartButton = styled('button', {
-  shouldForwardProp: (prop) => prop !== '$overlap',
-})<{ $overlap?: boolean }>(({ $overlap }) => ({
-  marginTop: $overlap ? 'clamp(-26px, -5.5vw, -34px)' : 0,
+  shouldForwardProp: (prop) => prop !== '$overlap' && prop !== '$pinBottom',
+})<{ $overlap?: boolean; $pinBottom?: boolean }>(({ $overlap, $pinBottom }) => ({
+  marginTop: $pinBottom ? 'auto' : $overlap ? 'clamp(-16px, -5.5vw, -34px)' : 0,
+  marginBottom: $pinBottom ? 'clamp(8px, 2vh, 20px)' : 0,
   position: 'relative' as const,
   zIndex: 2,
   flexShrink: 0,
@@ -762,19 +773,41 @@ export const FinishContainer = styled('div')({
   height: '100%',
 });
 
-export const FinishContent = styled('div')({
+export const FinishContent = styled('div', {
+  shouldForwardProp: (prop) => prop !== '$stumpCentered',
+})<{ $stumpCentered?: boolean }>(({ $stumpCentered }) => ({
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  justifyContent: 'flex-start',
   position: 'relative',
   zIndex: 1,
-  padding: 'clamp(12px, 4vh, 36px) 20px clamp(20px, 6vh, 48px)',
   textAlign: 'center',
   width: '100%',
-  maxWidth: 420,
-  minHeight: 0,
+  ...($stumpCentered
+    ? {
+        justifyContent: 'space-between',
+        padding: '30px 20px 20px',
+        maxWidth: 400,
+        minHeight: '100%',
+      }
+    : {
+        justifyContent: 'flex-start',
+        padding: 'clamp(12px, 4vh, 36px) 20px clamp(20px, 6vh, 48px)',
+        maxWidth: 420,
+        minHeight: 0,
+      }),
+}));
+
+/** Centers gold score disc vertically in finish area (matches TriviaGame). */
+export const FinishStumpStage = styled('div')({
+  position: 'absolute',
+  inset: 0,
+  zIndex: 1,
+  pointerEvents: 'none',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 });
 
 // Title banner (leaf-shaped, like question banner)
@@ -794,89 +827,125 @@ export const FinishTitleBanner = styled('div')({
   animation: `${floatIn} 0.4s ease-out`,
 });
 
-/** Gradient score disc + rings (e.g. BallGame finish); True/False summary uses `TimerCircle` + `FinishScoreCircleWrap` */
+/** Gold score disc — matches TriviaGame finish stump */
 export const FinishStump = styled('div')({
-  width: 210,
-  height: 210,
+  width: 'clamp(160px, 48vw, 220px)',
+  height: 'clamp(160px, 48vw, 220px)',
   borderRadius: '50%',
-  background: `linear-gradient(135deg, ${FINISH_PURPLE} 0%, ${FINISH_PURPLE_DARK} 100%)`,
-  border: '4px solid #fff',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+  position: 'relative',
+  top: 'clamp(-36px, -6vh, -16px)',
+  animation: `${floatIn} 0.5s ease-out 0.15s both`,
+  zIndex: 2,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  position: 'relative',
-  marginBottom: 16,
-  animation: `${floatIn} 0.5s ease-out 0.15s both`,
+  isolation: 'isolate',
+  boxSizing: 'border-box',
+  border: '3px solid #ffec9a',
+  background: `
+    linear-gradient(
+      148deg,
+      #6b4f0a 0%,
+      #8b6914 8%,
+      #d4a84b 22%,
+      #fcf3b0 34%,
+      #b8860b 48%,
+      #6b4f0a 58%,
+      #daa520 72%,
+      #8b6914 88%,
+      #5c4010 100%
+    )
+  `,
+  boxShadow: `
+    0 4px 0 #3d2a06,
+    0 14px 32px rgba(0,0,0,0.42),
+    inset 0 2px 5px rgba(255,255,255,0.5),
+    inset 0 -4px 10px rgba(0,0,0,0.38)
+  `,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    inset: '11%',
+    borderRadius: '50%',
+    zIndex: 0,
+    background: `
+      radial-gradient(
+        ellipse 100% 100% at 38% 32%,
+        #fffef6 0%,
+        #f5e6a8 14%,
+        #e6c547 38%,
+        #b8860b 65%,
+        #704214 92%
+      )
+    `,
+    boxShadow: `
+      inset 0 4px 12px rgba(255,255,255,0.42),
+      inset 0 -8px 16px rgba(0,0,0,0.45)
+    `,
+  },
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    inset: '8.5%',
+    borderRadius: '50%',
+    zIndex: 0,
+    pointerEvents: 'none',
+    border: '2px solid rgba(139, 105, 20, 0.65)',
+    boxShadow: 'inset 0 0 5px rgba(255, 235, 160, 0.35)',
+  },
+  '@media (orientation: landscape) and (max-height: 520px)': {
+    width: 'clamp(140px, 26vw, 190px)',
+    height: 'clamp(140px, 26vw, 190px)',
+  },
 });
 
 export const FinishScoreNumber = styled('span')({
-  fontSize: 72,
+  fontSize: 'clamp(48px, 13vw, 64px)',
   fontWeight: 900,
-  color: '#fff',
-  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+  color: FINISH_STUMP_TEXT_COLOR,
+  textShadow: `
+    0 1px 0 rgba(0,0,0,0.55),
+    0 3px 8px rgba(0,0,0,0.5),
+    0 6px 16px rgba(0,0,0,0.25)
+  `,
   lineHeight: 1,
   position: 'relative',
   zIndex: 1,
-});
-
-/** Score timer disc — sits in the same vertical band as intro instructions (below mid spacer) */
-export const FinishScoreCircleWrap = styled('div')({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  width: '100%',
-  flexShrink: 0,
-  marginBottom: 4,
-  animation: `${floatIn} 0.5s ease-out 0.15s both`,
-});
-
-export const FinishScoreCircleInner = styled('div')({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 2,
-  lineHeight: 1,
 });
 
 export const FinishScoreLabel = styled('span')({
-  fontFamily: TF_FONT_FAMILY,
-  fontSize: 'clamp(15px, 3.2vw, 20px)',
+  fontSize: 'clamp(16px, 4.5vw, 20px)',
   fontWeight: 700,
-  color: WHITE,
-  WebkitTextStroke: 'clamp(1px, 0.2vw, 2px) rgba(0,0,0,0.45)',
-  paintOrder: 'stroke fill',
+  color: FINISH_STUMP_TEXT_COLOR,
   marginTop: 2,
   position: 'relative',
   zIndex: 1,
+  textShadow: '0 1px 2px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.35)',
 });
 
-/** Summary copy: same rhythm as intro instructions, green on play-phase backdrop */
-const FINISH_SUMMARY_GREEN = '#8fefb0';
-const FINISH_SUMMARY_GREEN_DEEP = '#5dce7a';
-
+/** Shared finish copy — used by BallGame and others importing from this file */
 export const FinishFinalLabel = styled('div')({
   fontSize: 'clamp(15px, 3.9vw, 18px)',
   fontWeight: 700,
-  color: FINISH_SUMMARY_GREEN,
+  color: FINISH_PURPLE_DARK,
   lineHeight: 1.55,
   margin: '0 0 6px',
   fontFamily: 'inherit',
   letterSpacing: '0.01em',
-  textShadow: '0 1px 5px rgba(0,0,0,0.55), 0 0 1px rgba(0,0,0,0.4)',
+  textShadow: '0 1px 2px rgba(255,255,255,0.35)',
+  animation: `${floatIn} 0.4s ease-out 0.3s both`,
 });
 
 export const FinishStats = styled('div')({
   fontSize: 'clamp(15px, 3.9vw, 18px)',
   fontWeight: 600,
-  color: FINISH_SUMMARY_GREEN_DEEP,
+  color: FINISH_PURPLE_DARK,
   lineHeight: 1.65,
   margin: 0,
   fontFamily: 'inherit',
   letterSpacing: '0.01em',
-  textShadow: '0 1px 5px rgba(0,0,0,0.55), 0 0 1px rgba(0,0,0,0.4)',
+  textShadow: '0 1px 2px rgba(255,255,255,0.35)',
 });
 
 export const FinishContinueButton = styled('button')({

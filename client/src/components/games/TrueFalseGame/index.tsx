@@ -45,7 +45,6 @@ import {
   IntroGameTitleSticker,
   IntroGameTitleLine,
   IntroWelcomeMidSpacer,
-  IntroInstructions,
   IntroDescStack,
   IntroDescCard,
   IntroDescLine,
@@ -53,11 +52,10 @@ import {
   IntroStartButton,
   FinishContainer,
   FinishContent,
-  FinishScoreCircleWrap,
-  FinishScoreCircleInner,
+  FinishStumpStage,
+  FinishStump,
+  FinishScoreNumber,
   FinishScoreLabel,
-  FinishFinalLabel,
-  FinishStats,
 } from './styled';
 
 // ─── SVG Icons ───
@@ -123,6 +121,33 @@ interface TrueFalseSettings {
 
 const FEEDBACK_POPUP_MS = 3000;
 
+// ─── Session progress helpers ───
+
+const PROGRESS_KEY_PREFIX = 'yooz_game_progress_';
+
+interface SavedGameProgress {
+  nextIndex: number;
+  totalScore: number;
+  questionAnswers: QuestionAnswerRecord[];
+  hintUsed: boolean;
+  gameStartTime: number;
+}
+
+function loadGameProgress(gameId: string): SavedGameProgress | null {
+  try {
+    const raw = sessionStorage.getItem(PROGRESS_KEY_PREFIX + gameId);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveGameProgress(gameId: string, data: SavedGameProgress) {
+  try { sessionStorage.setItem(PROGRESS_KEY_PREFIX + gameId, JSON.stringify(data)); } catch {}
+}
+
+function clearGameProgress(gameId: string) {
+  try { sessionStorage.removeItem(PROGRESS_KEY_PREFIX + gameId); } catch {}
+}
+
 // ─── Component ───
 
 export default function TrueFalseGame({ game, onComplete }: GameProps) {
@@ -139,6 +164,10 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
 
   const statements = settings.statements || [];
 
+  // Check for saved progress on mount
+  const savedProgress = useRef(loadGameProgress(game._id));
+  const isResuming = savedProgress.current !== null && savedProgress.current.nextIndex < statements.length;
+
   const introStickerLines = useMemo(() => {
     const lines = game.name
       ? game.name.split(/\n/).map((line) => line.trim()).filter(Boolean)
@@ -150,7 +179,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
   const [gameComplete, setGameComplete] = useState(false);
   const [noContent, setNoContent] = useState(false);
   const [questionAnswers, setQuestionAnswers] = useState<QuestionAnswerRecord[]>([]);
@@ -278,7 +306,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
       correct = answer === statement.isTrue;
       if (correct) {
         points = scoring.correctPoints;
-        setCorrectCount((prev) => prev + 1);
       } else {
         points = -(scoring.wrongPenalty || 0);
       }
@@ -341,6 +368,23 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     };
   }, []);
 
+  // Save progress to sessionStorage after each answered question
+  useEffect(() => {
+    if (questionAnswers.length === 0 || gameComplete) return;
+    saveGameProgress(game._id, {
+      nextIndex: questionAnswers.length, // next unanswered question
+      totalScore,
+      questionAnswers,
+      hintUsed: gameHint.hintUsed,
+      gameStartTime: gameStartTime.current,
+    });
+  }, [questionAnswers, totalScore, gameComplete]);
+
+  // Clear progress when game is complete
+  useEffect(() => {
+    if (gameComplete) clearGameProgress(game._id);
+  }, [gameComplete]);
+
   const handleFinish = () => {
     const maxPossible = statements.length * scoring.correctPoints;
     onComplete({
@@ -355,6 +399,20 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
   const beginGame = () => {
     setShowInstructions(false);
     sounds.startBgMusic();
+
+    // Restore saved progress if resuming
+    const saved = savedProgress.current;
+    if (saved && saved.nextIndex < statements.length) {
+      setCurrentIndex(saved.nextIndex);
+      setTotalScore(saved.totalScore);
+      setQuestionAnswers(saved.questionAnswers);
+      gameStartTime.current = saved.gameStartTime;
+      if (saved.hintUsed) gameHint.forceHintUsed();
+      savedProgress.current = null; // consumed
+      startQuestion();
+      return;
+    }
+
     if (settings.showCountdown !== false) {
       setCountdown(3);
     } else {
@@ -400,7 +458,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
               )}
             </IntroDescCard>
             <IntroStartButton type="button" $overlap onClick={beginGame}>
-              {t.start}
+              {isResuming ? t.continue : t.start}
             </IntroStartButton>
           </IntroDescStack>
 
@@ -433,7 +491,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
   // ─── Game complete ───
   if (gameComplete) {
     if (noContent) return null;
-    const accuracy = statements.length > 0 ? Math.round((correctCount / statements.length) * 100) : 0;
     return (
       <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
         <FinishContainer dir="rtl">
@@ -444,32 +501,19 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
               </GameHeaderMuteButton>
             </GameIntroHeaderBar>
           )}
-          <FinishContent>
+          <FinishContent $stumpCentered>
           <IntroGameTitleSticker dir="auto">
             <IntroGameTitleLine>{t.gameComplete}</IntroGameTitleLine>
           </IntroGameTitleSticker>
 
-          <IntroWelcomeMidSpacer aria-hidden />
+          <FinishStumpStage aria-hidden>
+            <FinishStump>
+              <FinishScoreNumber>{totalScore}</FinishScoreNumber>
+              <FinishScoreLabel>{t.pointsFull}</FinishScoreLabel>
+            </FinishStump>
+          </FinishStumpStage>
 
-          <FinishScoreCircleWrap>
-            <TimerCircle>
-              <FinishScoreCircleInner>
-                <TimerCircleNumber>{totalScore}</TimerCircleNumber>
-                <FinishScoreLabel>{t.pointsFull}</FinishScoreLabel>
-              </FinishScoreCircleInner>
-            </TimerCircle>
-          </FinishScoreCircleWrap>
-
-          <IntroInstructions>
-            <FinishFinalLabel>{t.finalScore}</FinishFinalLabel>
-            <FinishStats>
-              {t.correctAnswers}: {correctCount}/{statements.length}
-              <br />
-              {t.accuracy}: {accuracy}%
-            </FinishStats>
-          </IntroInstructions>
-
-          <IntroStartButton onClick={handleFinish}>
+          <IntroStartButton type="button" $pinBottom onClick={handleFinish}>
             {t.continue}
           </IntroStartButton>
         </FinishContent>
@@ -502,7 +546,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
         </TFHeaderRight>
       </TFHeader>
 
-      {/* Question — white card, purple border & text */}
+      {/* Question — same panel style as intro description (IntroDescCard) */}
       <QuestionBanner key={currentIndex}>
         <QuestionBannerText>{statement.text}</QuestionBannerText>
       </QuestionBanner>
