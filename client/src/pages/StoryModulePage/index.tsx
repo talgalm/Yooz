@@ -68,6 +68,8 @@ const SummaryTotal = styled(Title)({
   color: PRIMARY,
 });
 
+const TRIVIA_BROWSER_PURPLE = '#440e76';
+
 /** Rounded square — reference purple, dark ring, glossy top (no drop shadow) */
 const PopupDismissButton = styled('button')({
   position: 'relative',
@@ -818,7 +820,7 @@ export default function StoryModulePage() {
   }, [isBallGameActive]);
 
   const themeShellColor = getThemeShellColor(data?.module.theme);
-  const activeThemeShellColor = isTriviaGameActive ? PRIMARY : themeShellColor;
+  const activeThemeShellColor = isTriviaGameActive ? TRIVIA_BROWSER_PURPLE : themeShellColor;
   useEffect(() => {
     const body = document.body;
     const prevBodyBg = body.style.backgroundColor;
