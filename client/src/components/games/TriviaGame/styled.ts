@@ -719,16 +719,68 @@ export const FinishStump = styled('div')({
   width: 'clamp(160px, 48vw, 220px)',
   height: 'clamp(160px, 48vw, 220px)',
   borderRadius: '50%',
-  background: `linear-gradient(135deg, ${FINISH_PURPLE} 0%, ${FINISH_PURPLE_DARK} 100%)`,
-  border: `4px solid ${FINISH_STUMP_TEXT_COLOR}`,
-  boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+  position: 'relative',
+  top: 'clamp(-36px, -6vh, -16px)',
+  animation: `${floatIn} 0.5s ease-out 0.15s both`,
+  zIndex: 2,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  position: 'relative',
-  animation: `${floatIn} 0.5s ease-out 0.15s both`,
-  zIndex: 2,
+  isolation: 'isolate',
+  boxSizing: 'border-box',
+  border: '3px solid #ffec9a',
+  background: `
+    linear-gradient(
+      148deg,
+      #6b4f0a 0%,
+      #8b6914 8%,
+      #d4a84b 22%,
+      #fcf3b0 34%,
+      #b8860b 48%,
+      #6b4f0a 58%,
+      #daa520 72%,
+      #8b6914 88%,
+      #5c4010 100%
+    )
+  `,
+  boxShadow: `
+    0 4px 0 #3d2a06,
+    0 14px 32px rgba(0,0,0,0.42),
+    inset 0 2px 5px rgba(255,255,255,0.5),
+    inset 0 -4px 10px rgba(0,0,0,0.38)
+  `,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    inset: '11%',
+    borderRadius: '50%',
+    zIndex: 0,
+    background: `
+      radial-gradient(
+        ellipse 100% 100% at 38% 32%,
+        #fffef6 0%,
+        #f5e6a8 14%,
+        #e6c547 38%,
+        #b8860b 65%,
+        #704214 92%
+      )
+    `,
+    boxShadow: `
+      inset 0 4px 12px rgba(255,255,255,0.42),
+      inset 0 -8px 16px rgba(0,0,0,0.45)
+    `,
+  },
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    inset: '8.5%',
+    borderRadius: '50%',
+    zIndex: 0,
+    pointerEvents: 'none',
+    border: '2px solid rgba(139, 105, 20, 0.65)',
+    boxShadow: 'inset 0 0 5px rgba(255, 235, 160, 0.35)',
+  },
   '@media (orientation: landscape) and (max-height: 520px)': {
     width: 'clamp(140px, 26vw, 190px)',
     height: 'clamp(140px, 26vw, 190px)',
@@ -739,7 +791,11 @@ export const FinishScoreNumber = styled('span')({
   fontSize: 'clamp(48px, 13vw, 64px)',
   fontWeight: 900,
   color: FINISH_STUMP_TEXT_COLOR,
-  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+  textShadow: `
+    0 1px 0 rgba(0,0,0,0.55),
+    0 3px 8px rgba(0,0,0,0.5),
+    0 6px 16px rgba(0,0,0,0.25)
+  `,
   lineHeight: 1,
   position: 'relative',
   zIndex: 1,
@@ -752,6 +808,7 @@ export const FinishScoreLabel = styled('span')({
   marginTop: 2,
   position: 'relative',
   zIndex: 1,
+  textShadow: '0 1px 2px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.35)',
 });
 
 export const FinishFinalLabel = styled('div')({

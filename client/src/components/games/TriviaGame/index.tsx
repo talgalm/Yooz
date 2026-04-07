@@ -60,28 +60,6 @@ import {
   FinishContinueButton,
 } from './styled';
 
-// ─── SVG Decorations ───
-
-/** Tree ring lines inside the stump score circle */
-function StumpRingsSvg() {
-  return (
-    <svg
-      width="100%" height="100%"
-      viewBox="0 0 200 200"
-      style={{ position: 'absolute', inset: 0, zIndex: 0 }}
-    >
-      <circle cx="100" cy="100" r="12" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.4" />
-      <circle cx="100" cy="100" r="24" fill="none" stroke="#a88440" strokeWidth="1.2" opacity="0.35" />
-      <circle cx="100" cy="100" r="36" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.3" />
-      <circle cx="100" cy="100" r="48" fill="none" stroke="#a07838" strokeWidth="1.5" opacity="0.25" />
-      <circle cx="100" cy="100" r="60" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.22" />
-      <circle cx="100" cy="100" r="72" fill="none" stroke="#907030" strokeWidth="1.5" opacity="0.2" />
-      <circle cx="100" cy="100" r="84" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.18" />
-      <path d="M100,100 L104,70 L108,50" fill="none" stroke="#7a5828" strokeWidth="1.2" opacity="0.2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 // ─── Types ───
 
 interface TriviaAnswer {
@@ -461,7 +439,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
 
           <FinishStumpStage aria-hidden>
             <FinishStump>
-              <StumpRingsSvg />
               <FinishScoreNumber>{totalScore}</FinishScoreNumber>
               <FinishScoreLabel>{t.pointsFull}</FinishScoreLabel>
             </FinishStump>
