@@ -336,6 +336,11 @@ export const QuestionBox = styled('div')({
   minHeight: 0,
   overflow: 'hidden',
   animation: `${slideUp} 0.3s ease-out`,
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  gap: 4,
 });
 
 export const QuestionBadge = styled('div')({
@@ -357,6 +362,12 @@ export const QuestionContent = styled('p')({
   color: TEXT_DARK,
   lineHeight: 1.3,
   margin: 0,
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textAlign: 'center',
+  wordBreak: 'break-word',
 });
 
 export const QuestionHintText = styled('p')({
