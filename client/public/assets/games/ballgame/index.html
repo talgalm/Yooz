@@ -40,6 +40,21 @@
     </div>
 
     <!-- JS attachment -->
+    <script>
+      // Patch for Phaser 2.x: AudioBufferSourceNode.noteOn was removed in modern browsers
+      (function() {
+        if (window.AudioBufferSourceNode && !window.AudioBufferSourceNode.prototype.noteOn) {
+          window.AudioBufferSourceNode.prototype.noteOn = function(when) {
+            return this.start(when || 0);
+          };
+        }
+        // Ensure AudioContext.resume exists (Phaser 2 audio unlock)
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC && !AC.prototype.resume) {
+          AC.prototype.resume = function() { return Promise.resolve(); };
+        }
+      })();
+    </script>
     <script src="js/phaser.2.2.2.box2d.min.js"></script>
     <script>
       (function setupBridge() {

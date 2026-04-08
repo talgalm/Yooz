@@ -8,13 +8,13 @@ import { texts } from './BallGame.i18n';
 import {
   FinishContainer,
   FinishContent,
-  FinishTitleBanner,
+  FinishStumpStage,
   FinishStump,
   FinishScoreNumber,
   FinishScoreLabel,
-  FinishFinalLabel,
-  FinishStats,
-  FinishContinueButton,
+  IntroGameTitleSticker,
+  IntroGameTitleLine,
+  IntroStartButton,
 } from '../TrueFalseGame/styled';
 import {
   BallGameRoomBackground,
@@ -61,50 +61,6 @@ type LegacyCompletePayload = {
   detailedReports?: LegacyDetailedReport[];
 };
 
-function LeafVeinSvg() {
-  return (
-    <svg
-      width="100%"
-      height="100%"
-      viewBox="0 0 340 90"
-      preserveAspectRatio="none"
-      style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.12 }}
-    >
-      <line x1="10" y1="45" x2="330" y2="45" stroke="#fff" strokeWidth="1.5" />
-      <line x1="60" y1="45" x2="30" y2="15" stroke="#fff" strokeWidth="1" />
-      <line x1="60" y1="45" x2="30" y2="75" stroke="#fff" strokeWidth="1" />
-      <line x1="120" y1="45" x2="85" y2="12" stroke="#fff" strokeWidth="1" />
-      <line x1="120" y1="45" x2="85" y2="78" stroke="#fff" strokeWidth="1" />
-      <line x1="180" y1="45" x2="150" y2="15" stroke="#fff" strokeWidth="1" />
-      <line x1="180" y1="45" x2="150" y2="75" stroke="#fff" strokeWidth="1" />
-      <line x1="240" y1="45" x2="210" y2="10" stroke="#fff" strokeWidth="1" />
-      <line x1="240" y1="45" x2="210" y2="80" stroke="#fff" strokeWidth="1" />
-      <line x1="300" y1="45" x2="270" y2="18" stroke="#fff" strokeWidth="1" />
-      <line x1="300" y1="45" x2="270" y2="72" stroke="#fff" strokeWidth="1" />
-    </svg>
-  );
-}
-
-function StumpRingsSvg() {
-  return (
-    <svg
-      width="100%"
-      height="100%"
-      viewBox="0 0 200 200"
-      style={{ position: 'absolute', inset: 0, zIndex: 0 }}
-    >
-      <circle cx="100" cy="100" r="12" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.4" />
-      <circle cx="100" cy="100" r="24" fill="none" stroke="#a88440" strokeWidth="1.2" opacity="0.35" />
-      <circle cx="100" cy="100" r="36" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.3" />
-      <circle cx="100" cy="100" r="48" fill="none" stroke="#a07838" strokeWidth="1.5" opacity="0.25" />
-      <circle cx="100" cy="100" r="60" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.22" />
-      <circle cx="100" cy="100" r="72" fill="none" stroke="#907030" strokeWidth="1.5" opacity="0.2" />
-      <circle cx="100" cy="100" r="84" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.18" />
-      <path d="M100,100 L98,60 L102,35 L99,12" fill="none" stroke="#7a5828" strokeWidth="2" opacity="0.35" strokeLinecap="round" />
-      <path d="M100,100 L104,70 L108,50" fill="none" stroke="#7a5828" strokeWidth="1.2" opacity="0.2" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function mapQuestionToLegacyConfig(question: BallGameQuestion) {
   const correct = question.answers.find((a) => a.isCorrect) ?? question.answers[0];
@@ -303,35 +259,29 @@ export default function BallGame({
     const accuracy = answeredQuestions > 0 ? Math.round((correctCount / answeredQuestions) * 100) : 0;
 
     return (
-      <FinishContainer dir={dir}>
+      <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}>
         <BallGameRoomBackground>
-          <RoomCorners />
-          <RoomFloorCorners />
+          <RoomCornersSvg />
         </BallGameRoomBackground>
-        <FinishContent>
-          <FinishTitleBanner>
-            <LeafVeinSvg />
-            <span style={{ position: 'relative', zIndex: 1 }}>{t.gameComplete}</span>
-          </FinishTitleBanner>
+        <FinishContainer dir={dir}>
+          <FinishContent $stumpCentered>
+            <IntroGameTitleSticker dir="auto" style={{ marginTop: 'clamp(24px, 6vh, 52px)' }}>
+              <IntroGameTitleLine>{t.gameComplete}</IntroGameTitleLine>
+            </IntroGameTitleSticker>
 
-          <FinishStump>
-            <StumpRingsSvg />
-            <FinishScoreNumber>{pendingResult.score}</FinishScoreNumber>
-            <FinishScoreLabel>{t.pointsFull ?? t.points}</FinishScoreLabel>
-          </FinishStump>
+            <FinishStumpStage aria-hidden>
+              <FinishStump>
+                <FinishScoreNumber>{pendingResult.score}</FinishScoreNumber>
+                <FinishScoreLabel>{t.pointsFull ?? t.points}</FinishScoreLabel>
+              </FinishStump>
+            </FinishStumpStage>
 
-          <FinishFinalLabel>{t.finalScore}</FinishFinalLabel>
-          <FinishStats>
-            {t.correctAnswers}: {correctCount}/{answeredQuestions}
-            <br />
-            {t.accuracy}: {accuracy}%
-          </FinishStats>
-
-          <FinishContinueButton onClick={() => onComplete(pendingResult)}>
-            {t.continueBtn ?? t.backToRoadmap}
-          </FinishContinueButton>
-        </FinishContent>
-      </FinishContainer>
+            <IntroStartButton type="button" $pinBottom onClick={() => onComplete(pendingResult)} style={{ marginBottom: 'clamp(40px, 10vh, 80px)' }}>
+              {t.continueBtn ?? t.backToRoadmap}
+            </IntroStartButton>
+          </FinishContent>
+        </FinishContainer>
+      </div>
     );
   }
 
