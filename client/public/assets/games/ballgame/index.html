@@ -28,11 +28,13 @@
     <div class="cHome" id="iHome">
       <div class="cInstructionBg">
         <h4 id="bonusTitle">Get Ready</h4>
-        <p id="bonusContent">
-          Answer all questions successfully!
-        </p>
-        <div id="iStart" class="cBallStartBtn">
-          Continue
+        <div class="cDescStack">
+          <p id="bonusContent">
+            Answer all questions successfully!
+          </p>
+          <div id="iStart" class="cBallStartBtn">
+            Continue
+          </div>
         </div>
       </div>
     </div>
@@ -78,7 +80,12 @@
           if (!data || data.source !== 'yooz-host') return;
 
           if (data.type === 'BALLGAME_INIT') {
-            resolveInit(data.payload || {});
+            const payload = data.payload || {};
+            resolveInit(payload);
+            if (payload.gameName) {
+              const titleEl = document.getElementById('bonusTitle');
+              if (titleEl) titleEl.textContent = payload.gameName;
+            }
             return;
           }
 

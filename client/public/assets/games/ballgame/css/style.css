@@ -125,47 +125,65 @@ canvas {
 
 .cInstructionBg {
   position: absolute;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  border: 3px solid #4a6572;
-  border-radius: 24px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-  width: 84%;
-  max-width: 360px;
-  min-height: 180px;
-  padding: 28px 22px 20px;
-  left: 50%;
-  top: max(16px, env(safe-area-inset-top, 0px));
-  transform: translateX(-50%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   display: none;
-  box-sizing: border-box;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  gap: 18px;
+  justify-content: flex-start;
+  padding: clamp(12px, 4vh, 36px) 10px clamp(20px, 6vh, 48px);
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .cInstructionBg h4 {
-  color: #2c3e50;
-  width: 100%;
-  margin: 0;
-  font-size: clamp(24px, 4vh, 34px);
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: 0.02em;
+  color: #ffff00;
+  -webkit-text-stroke: 4px #666600;
+  paint-order: stroke fill;
   text-align: center;
+  margin: 0 0 16px;
+  width: min(100%, 340px);
+  flex-shrink: 0;
   text-shadow: none;
   display: block;
-  line-height: 1.1;
+}
+
+.cDescStack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(78%, 360px);
+  flex-shrink: 0;
+  margin-top: auto;
+  margin-bottom: clamp(80px, 18vh, 140px);
+  box-sizing: border-box;
 }
 
 .cInstructionBg p {
-  color: #5f6368;
   width: 100%;
-  margin: 0;
-  font-size: 2.4vh;
+  background-color: #f8f8ff;
+  border: 2px solid #4a148c;
+  border-radius: 22px;
+  box-shadow: 0 10px 32px rgba(74, 20, 120, 0.38), 0 4px 12px rgba(45, 10, 80, 0.22);
+  padding: clamp(14px, 3.8vw, 22px) clamp(18px, 4.5vw, 24px);
+  padding-bottom: clamp(28px, 6vw, 40px);
+  box-sizing: border-box;
   text-align: center;
+  font-size: clamp(15px, 3.25vw, 17px);
+  font-weight: 600;
+  line-height: 1.25;
+  color: #4a148c;
+  margin: 0;
   text-shadow: none;
   display: block;
-  line-height: 1.4;
 }
 
 #iMute {
@@ -218,26 +236,30 @@ canvas {
 
 .cBallStartBtn {
   display: block;
-  width: 100%;
-  margin: 4px auto 0;
-  padding: 12px 0;
-  background: #8e44ad;
-  border: 3px solid #6c3483;
-  border-radius: 12px;
-  box-shadow: 0 4px 0 #6c3483, 0 6px 12px rgba(0, 0, 0, 0.2);
-  color: #ffffff;
-  font-size: 3.4vh;
-  font-family: inherit;
-  font-weight: 700;
-  text-align: center;
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  min-width: clamp(100px, 28%, 140px);
+  background: linear-gradient(180deg, #f5d76e 0%, #e8b923 48%, #c9a012 100%);
+  color: #2a1538;
+  font-size: clamp(1.35rem, 4.2vw, 1.65rem);
+  font-weight: 800;
+  padding: clamp(12px, 3vw, 16px) clamp(36px, 10vw, 52px);
+  border-radius: 16px;
+  border: 5px solid #8b6914;
   cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 6px 0 #5c3d0a, 0 12px 24px rgba(0, 0, 0, 0.28);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  margin-top: clamp(-16px, -5.5vw, -20px);
+  text-align: center;
   letter-spacing: 0;
-  transition: all 0.1s ease;
 }
 
 .cBallStartBtn:active {
   transform: translateY(4px);
-  box-shadow: 0 0 0 #6c3483, 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 0 #5c3d0a, 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 

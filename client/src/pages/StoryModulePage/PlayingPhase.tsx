@@ -199,8 +199,9 @@ export default function PlayingPhase({
   const isGameStep = currentItem.type === 'game';
   const isPuzzleGame = isGameStep && (currentItem as GameItemData).gameType === 'puzzle';
   const isOrderGame = isGameStep && (currentItem as GameItemData).gameType === 'order';
-  const puzzleSessionChrome = (isPuzzleGame || isOrderGame) ? 'puzzle' : 'default';
-  const useDarkChrome = isPuzzleGame || isOrderGame;
+  const isBallGame = isGameStep && (currentItem as GameItemData).gameType === 'ballGame';
+  const puzzleSessionChrome = (isPuzzleGame || isOrderGame || isBallGame) ? 'puzzle' : 'default';
+  const useDarkChrome = isPuzzleGame || isOrderGame || isBallGame;
   const SessionHeaderIconButton = useDarkChrome ? PuzzleDarkHeaderActionIconButton : DarkHeaderActionIconButton;
   const SessionHintButton = useDarkChrome ? PuzzleDarkHeaderTextButton : DarkHeaderTextButton;
   useActivityGameHeaderFallbackWhenNeeded(isGameStep, currentItem._id);

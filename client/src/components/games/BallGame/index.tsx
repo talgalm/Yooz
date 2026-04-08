@@ -161,6 +161,7 @@ export default function BallGame({
       configurations: filteredQuestions.map(mapQuestionToLegacyConfig),
       timeLimitSeconds: settings.scoring?.timeLimitSeconds ?? 30,
       gameId: game._id,
+      gameName: game.name,
       lang,
       dir,
     }),

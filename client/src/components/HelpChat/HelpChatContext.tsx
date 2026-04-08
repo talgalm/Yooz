@@ -294,11 +294,8 @@ export function HelpChatFab() {
 
 export function HelpChatHeaderButton({ tone = 'dark' }: { tone?: 'dark' | 'light' | 'puzzle' }) {
   const t = useTranslations(texts);
-  const { hiddenForBallGame, toggle } = useHelpChat();
+  const { toggle } = useHelpChat();
   const Btn = tone === 'light' ? HelpHeaderIconButtonLight : tone === 'puzzle' ? HelpHeaderIconButtonPuzzle : HelpHeaderIconButton;
-  if (hiddenForBallGame) {
-    return null;
-  }
   return (
     <Btn type="button" onClick={toggle} aria-label={t.helpAria} title={t.helpAria}>
       ?
