@@ -13,7 +13,6 @@ import {
   type ActivityGameHeaderPhase,
 } from '../../../context/activityPlayingHeaderContext';
 import { useThemedSceneOverlaySetter } from '../../../context/themedSceneOverlayContext';
-import { GameIntroHeaderBar, GameHeaderMuteButton } from '../styled';
 import {
   IntroFullScreenSceneBackdrop,
   PlayFullScreenSceneBackdrop,
@@ -30,10 +29,12 @@ import {
   PuzzleContainer,
   PuzzleMainScroll,
   PuzzleBottomBar,
-  TopBar,
+  PuzzleGameTopBar,
+  PuzzleGameMuteButton,
+  PuzzleGameIntroHeaderBar,
   TopBarLeftCluster,
-  TopBarItem,
-  TopBarTimer,
+  PuzzleGameTopBarItem,
+  PuzzleGameTopBarTimer,
   PuzzleFullImg,
   PuzzleGridOverlay,
   PuzzlePiece,
@@ -484,11 +485,11 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     return (
       <IntroContainer dir="rtl" $externalBackdrop={Boolean(setThemedSceneOverlay)}>
         {!activityHeaderAudio && (
-          <GameIntroHeaderBar>
-            <GameHeaderMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
+          <PuzzleGameIntroHeaderBar>
+            <PuzzleGameMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
               {isMuted ? '🔇' : '🔊'}
-            </GameHeaderMuteButton>
-          </GameIntroHeaderBar>
+            </PuzzleGameMuteButton>
+          </PuzzleGameIntroHeaderBar>
         )}
         <IntroContent>
           <IntroTitle dir="auto">
@@ -526,11 +527,11 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     return (
       <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
         <FinishContainer dir="rtl">
-          <GameIntroHeaderBar>
-            <GameHeaderMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
+          <PuzzleGameIntroHeaderBar>
+            <PuzzleGameMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
               {isMuted ? '🔇' : '🔊'}
-            </GameHeaderMuteButton>
-          </GameIntroHeaderBar>
+            </PuzzleGameMuteButton>
+          </PuzzleGameIntroHeaderBar>
           <FinishContent>
             <FinishTitleBanner>
               <LeafVeinSvg />
@@ -577,21 +578,21 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
     <PuzzleContainer dir="rtl">
       {/* Top bar: pieces | per-question countdown only (elapsed time kept internally for speed bonus) */}
-      <TopBar>
+      <PuzzleGameTopBar>
         <TopBarLeftCluster>
-          <TopBarItem>{t.piecesRevealed}: {revealedPieces.size}/{totalPieces}</TopBarItem>
+          <PuzzleGameTopBarItem>{t.piecesRevealed}: {revealedPieces.size}/{totalPieces}</PuzzleGameTopBarItem>
           {timeLeft !== null && (
-            <TopBarTimer critical={timeLeft <= GAME_CONSTANTS.TIMER_WARNING_SECONDS}>
+            <PuzzleGameTopBarTimer critical={timeLeft <= GAME_CONSTANTS.TIMER_WARNING_SECONDS}>
               {timeLeft}s
-            </TopBarTimer>
+            </PuzzleGameTopBarTimer>
           )}
         </TopBarLeftCluster>
         {!activityHeaderAudio && (
-          <GameHeaderMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
+          <PuzzleGameMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
             {isMuted ? '🔇' : '🔊'}
-          </GameHeaderMuteButton>
+          </PuzzleGameMuteButton>
         )}
-      </TopBar>
+      </PuzzleGameTopBar>
 
       <PuzzleMainScroll>
         {/* Question box */}

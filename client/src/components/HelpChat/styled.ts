@@ -1,5 +1,15 @@
 import { styled, keyframes } from '@mui/material/styles';
-import { HeaderActionIconButton, DarkHeaderActionIconButton, PRIMARY, PRIMARY_LIGHT, TEXT, TEXT_LIGHT, BORDER, BG_INPUT } from '../styled';
+import {
+  HeaderActionIconButton,
+  DarkHeaderActionIconButton,
+  PuzzleDarkHeaderActionIconButton,
+  PRIMARY,
+  PRIMARY_LIGHT,
+  TEXT,
+  TEXT_LIGHT,
+  BORDER,
+  BG_INPUT,
+} from '../styled';
 
 // ─── Animations ───
 
@@ -330,6 +340,9 @@ export const BackButton = styled('button')({
 
 /** Same as logout / playing header icons — one shared dark style in `styled.ts`. */
 export const HelpHeaderIconButton = DarkHeaderActionIconButton;
+
+/** Puzzle activity play — dark icon fill, black outline. */
+export const HelpHeaderIconButtonPuzzle = PuzzleDarkHeaderActionIconButton;
 
 /** Same control on light bars (e.g. home) */
 export const HelpHeaderIconButtonLight = styled(HeaderActionIconButton)({

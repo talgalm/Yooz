@@ -33,6 +33,7 @@ import {
   BackButton,
   HelpHeaderIconButton,
   HelpHeaderIconButtonLight,
+  HelpHeaderIconButtonPuzzle,
 } from './styled';
 
 const SUPPORT_PHONE = '050-0000000';
@@ -296,10 +297,10 @@ export function HelpChatFab() {
   );
 }
 
-export function HelpChatHeaderButton({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
+export function HelpChatHeaderButton({ tone = 'dark' }: { tone?: 'dark' | 'light' | 'puzzle' }) {
   const t = useTranslations(texts);
   const { hiddenForBallGame, toggle } = useHelpChat();
-  const Btn = tone === 'light' ? HelpHeaderIconButtonLight : HelpHeaderIconButton;
+  const Btn = tone === 'light' ? HelpHeaderIconButtonLight : tone === 'puzzle' ? HelpHeaderIconButtonPuzzle : HelpHeaderIconButton;
   if (hiddenForBallGame) {
     return null;
   }

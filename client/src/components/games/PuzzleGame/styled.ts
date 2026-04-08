@@ -1,4 +1,5 @@
 import { styled, keyframes } from '@mui/material/styles';
+import { GameHeaderMuteButton } from '../styled';
 
 // ─── Colors ───
 
@@ -152,6 +153,9 @@ export const PlayPhaseRoot = styled('div', {
 // ─── Opening / Intro Screen ───
 // ═══════════════════════════════════════════
 
+const INTRO_FONT_FAMILY =
+  "'Encode Sans Expanded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
 export const IntroContainer = styled('div', {
   shouldForwardProp: (prop) => prop !== '$externalBackdrop',
 })<{ $externalBackdrop?: boolean }>(({ $externalBackdrop }) => ({
@@ -161,9 +165,16 @@ export const IntroContainer = styled('div', {
   alignItems: 'stretch',
   position: 'relative',
   overflow: 'hidden',
-  minHeight: '100dvh',
+  minHeight: 0,
   ...($externalBackdrop
-    ? { background: 'transparent' }
+    ? {
+        width: '100%',
+        maxWidth: 'none',
+        marginLeft: 0,
+        marginRight: 0,
+        background: 'transparent',
+        backgroundColor: 'transparent',
+      }
     : {
         backgroundColor: '#d4f0f0',
         backgroundImage: `url(${PUZZLE_INTRO_BG_URL})`,
@@ -172,6 +183,7 @@ export const IntroContainer = styled('div', {
         backgroundRepeat: 'no-repeat',
       }),
   '& > *': { position: 'relative', zIndex: 1 },
+  fontFamily: INTRO_FONT_FAMILY,
 }));
 
 export const IntroDecorations = styled('div')({
@@ -189,7 +201,7 @@ export const IntroContent = styled('div')({
   justifyContent: 'flex-start',
   position: 'relative',
   zIndex: 1,
-  padding: 'clamp(4px, 1.5vh, 12px) 20px clamp(16px, 4vh, 36px)',
+  padding: 'clamp(12px, 4vh, 36px) 20px clamp(20px, 6vh, 48px)',
   textAlign: 'center',
   width: '100%',
   maxWidth: 420,
@@ -201,11 +213,8 @@ export const IntroContent = styled('div')({
 const GAME_TITLE_YELLOW = '#ffff00';
 const GAME_TITLE_OUTLINE = '#666600';
 
-const INTRO_FONT_FAMILY =
-  "'Encode Sans Expanded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-
 export const IntroTitle = styled('h1')({
-  margin: 0,
+  margin: '0 0 16px',
   padding: 0,
   background: 'none',
   textAlign: 'center',
@@ -225,7 +234,7 @@ export const IntroTitleLine = styled('span')({
   color: GAME_TITLE_YELLOW,
   WebkitTextStroke: `4px ${GAME_TITLE_OUTLINE}`,
   paintOrder: 'stroke fill',
-  marginTop: '8px',
+  marginTop: '16px',
 });
 
 /** Fills space so description sits at bottom — matches True/False. */
@@ -253,8 +262,8 @@ export const IntroDescStack = styled('div')({
   alignItems: 'center',
   width: 'min(100%, 400px)',
   flexShrink: 0,
-  marginTop: 'clamp(8px, 2vh, 20px)',
-  marginBottom: 'clamp(60px, 12vh, 120px)',
+  marginTop: 'clamp(20px, 4.5vh, 52px)',
+  marginBottom: 'clamp(8px, 2vh, 20px)',
   boxSizing: 'border-box',
 });
 
@@ -305,7 +314,7 @@ export const IntroPuzzlePreviewImg = styled('img')({
 export const IntroStartButton = styled('button', {
   shouldForwardProp: (prop) => prop !== '$overlap',
 })<{ $overlap?: boolean }>(({ $overlap }) => ({
-  marginTop: $overlap ? 'clamp(-26px, -5.5vw, -34px)' : 0,
+  marginTop: $overlap ? 'clamp(-16px, -5.5vw, -34px)' : 0,
   position: 'relative' as const,
   zIndex: 2,
   flexShrink: 0,
@@ -449,6 +458,39 @@ export const TopBarTimer = styled('span')<{ critical?: boolean }>(({ critical })
   color: critical ? BTN_PURPLE_DARK : TEXT_DARK,
   transition: 'color 0.3s ease',
 }));
+
+/** Black outline on the in-game stats bar (replaces default slate border). */
+const PUZZLE_GAME_BAR_BORDER = '#000000';
+
+export const PuzzleGameTopBar = styled(TopBar)({
+  border: `2px solid ${PUZZLE_GAME_BAR_BORDER}`,
+});
+
+export const PuzzleGameTopBarItem = styled(TopBarItem)({
+  color: '#1a1a1a',
+});
+
+export const PuzzleGameTopBarTimer = styled(TopBarTimer)(({ critical }) => ({
+  color: critical ? BTN_PURPLE_DARK : '#1a1a1a',
+}));
+
+export const PuzzleGameMuteButton = styled(GameHeaderMuteButton)({
+  border: `2px solid ${PUZZLE_GAME_BAR_BORDER}`,
+  color: '#1a1a1a',
+});
+
+/** Mute row with dark rule under (preview / no activity host — aligns with session header line). */
+export const PuzzleGameIntroHeaderBar = styled('div')({
+  width: '100%',
+  alignSelf: 'stretch',
+  display: 'flex',
+  justifyContent: 'flex-end',
+  alignItems: 'center',
+  padding: 'max(6px, env(safe-area-inset-top)) 12px 8px',
+  flexShrink: 0,
+  boxSizing: 'border-box',
+  borderBottom: '1px solid rgba(0,0,0,0.42)',
+});
 
 // ─── Puzzle Grid ───
 

@@ -20,6 +20,8 @@ import {
   ModalCard,
   DarkHeaderActionIconButton,
   DarkHeaderTextButton,
+  PuzzleDarkHeaderActionIconButton,
+  PuzzleDarkHeaderTextButton,
 } from '../../components/styled';
 import {
   PlayingContent,
@@ -92,8 +94,6 @@ const AnimatedContent = styled('div')({
   flexDirection: 'column',
   animation: `${pageFadeIn} 680ms cubic-bezier(0.22, 1, 0.36, 1) 90ms both`,
 });
-
-const StationHintButton = DarkHeaderTextButton;
 
 const StationTitleText = styled('h2')({
   fontSize: 22,
@@ -197,6 +197,10 @@ export default function PlayingPhase({
 }: PlayingPhaseProps) {
   const activityHeaderSlot = useActivityPlayingHeaderSlot();
   const isGameStep = currentItem.type === 'game';
+  const isPuzzleGame = isGameStep && (currentItem as GameItemData).gameType === 'puzzle';
+  const puzzleSessionChrome = isPuzzleGame ? 'puzzle' : 'default';
+  const SessionHeaderIconButton = isPuzzleGame ? PuzzleDarkHeaderActionIconButton : DarkHeaderActionIconButton;
+  const SessionHintButton = isPuzzleGame ? PuzzleDarkHeaderTextButton : DarkHeaderTextButton;
   useActivityGameHeaderFallbackWhenNeeded(isGameStep, currentItem._id);
   const showMusicInGameSlot = isGameStep && activityHeaderSlot != null;
   const showStandaloneLeaderboard =
@@ -377,18 +381,18 @@ export default function PlayingPhase({
   };
 
   const headerThirdSlot = showMusicInGameSlot && activityHeaderSlot ? (
-    <DarkHeaderActionIconButton
+    <SessionHeaderIconButton
       type="button"
       onClick={activityHeaderSlot.toggleMute}
       aria-label={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
       title={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
     >
       {activityHeaderSlot.isMuted ? <MutedIcon /> : <SpeakerIcon />}
-    </DarkHeaderActionIconButton>
+    </SessionHeaderIconButton>
   ) : showStandaloneLeaderboard && onViewLeaderboard ? (
-    <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
+    <SessionHeaderIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
       <SessionHeaderTrophyIcon />
-    </DarkHeaderActionIconButton>
+    </SessionHeaderIconButton>
   ) : (
     <SessionHeaderIconPlaceholder aria-hidden />
   );
@@ -399,10 +403,11 @@ export default function PlayingPhase({
       currentPoints={currentPoints}
       t={t}
       thirdSlot={headerThirdSlot}
+      chromeVariant={puzzleSessionChrome}
       topRow={stationHintText ? (
-        <StationHintButton type="button" onClick={onStationHintClick}>
+        <SessionHintButton type="button" onClick={onStationHintClick}>
           {stationHintUsed ? t.showStationHint : t.stationHint}
-        </StationHintButton>
+        </SessionHintButton>
       ) : undefined}
     />
   );
@@ -568,20 +573,56 @@ function VideoStationPlayer({ station, onContinue, t }: {
 
 function SpeakerIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" opacity="0.3" />
-      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M11 5L6 9H2v6h4l5 4V5z"
+        fill="currentColor"
+      />
+      <path
+        d="M15.54 8.46a5 5 0 010 7.07"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M19.07 4.93a10 10 0 010 14.14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
 function MutedIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" opacity="0.3" />
-      <line x1="23" y1="9" x2="17" y2="15" />
-      <line x1="17" y1="9" x2="23" y2="15" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M11 5L6 9H2v6h4l5 4V5z"
+        fill="currentColor"
+      />
+      <line
+        x1="23"
+        y1="9"
+        x2="17"
+        y2="15"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="17"
+        y1="9"
+        x2="23"
+        y2="15"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

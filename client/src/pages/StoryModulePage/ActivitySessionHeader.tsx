@@ -3,6 +3,7 @@ import { keyframes, styled } from '@mui/material/styles';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HelpChatHeaderButton } from '../../components/HelpChat';
 const ROADMAP_HEADER_BTN_BORDER = '#d4d4d4';
+const ROADMAP_HEADER_BTN_BORDER_PUZZLE = 'rgba(0,0,0,0.45)';
 const ROADMAP_HEADER_ICON_PX = 20;
 const ROADMAP_HEADER_CELL_W = 76;
 
@@ -70,6 +71,19 @@ const RoadmapHeaderItem = styled('div')({
   },
 });
 
+const RoadmapHeaderItemPuzzle = styled(RoadmapHeaderItem)({
+  background: 'transparent',
+  '& button': {
+    border: `1px solid ${ROADMAP_HEADER_BTN_BORDER_PUZZLE}`,
+    '&:hover': {
+      borderColor: 'rgba(0,0,0,0.55)',
+    },
+    '&:active': {
+      borderColor: 'rgba(0,0,0,0.65)',
+    },
+  },
+});
+
 export const SessionHeaderIconPlaceholder = styled('div')({
   width: ROADMAP_HEADER_CELL_W,
   height: 36,
@@ -106,6 +120,12 @@ const RoadmapHeaderPoints = styled('div')({
   },
 });
 
+const RoadmapHeaderPointsPuzzle = styled(RoadmapHeaderPoints)({
+  border: `1px solid ${ROADMAP_HEADER_BTN_BORDER_PUZZLE}`,
+  background: 'rgba(255,255,255,0.92)',
+  color: '#1a1a1a',
+});
+
 const RoadmapHeaderPointsValue = styled('span')({
   fontVariantNumeric: 'tabular-nums',
 });
@@ -116,12 +136,15 @@ const pointsDepositPulse = keyframes`
 `;
 
 /** Gold star — score icon (distinct from leaderboard trophy). */
-export function SessionHeaderPointsIcon() {
+export function SessionHeaderPointsIcon({ variant = 'default' }: { variant?: 'default' | 'puzzle' } = {}) {
+  const puzzle = variant === 'puzzle';
+  const fill = puzzle ? '#1a1a1a' : '#ffffff';
+  const stroke = puzzle ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.6)';
   return (
     <svg viewBox="0 0 24 24" width={ROADMAP_HEADER_ICON_PX} height={ROADMAP_HEADER_ICON_PX} aria-hidden>
       <path
-        fill="#ffffff"
-        stroke="rgba(255,255,255,0.6)"
+        fill={fill}
+        stroke={stroke}
         strokeWidth="1"
         strokeLinejoin="round"
         d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
@@ -164,6 +187,8 @@ export interface ActivitySessionHeaderProps {
   /** When set, counts displayed points from `from` up to `to` (roadmap after a game). */
   pointsRoll?: { from: number; to: number } | null;
   onPointsRollComplete?: () => void;
+  /** Black control outlines instead of light gray (puzzle game). */
+  chromeVariant?: 'default' | 'puzzle';
 }
 
 /**
@@ -178,7 +203,11 @@ export default function ActivitySessionHeader({
   topRow,
   pointsRoll,
   onPointsRollComplete,
+  chromeVariant = 'default',
 }: ActivitySessionHeaderProps) {
+  const puzzleChrome = chromeVariant === 'puzzle';
+  const RoadmapItem = puzzleChrome ? RoadmapHeaderItemPuzzle : RoadmapHeaderItem;
+  const RoadmapPoints = puzzleChrome ? RoadmapHeaderPointsPuzzle : RoadmapHeaderPoints;
   const [displayedPoints, setDisplayedPoints] = useState(() => (
     pointsRoll && pointsRoll.to > pointsRoll.from ? pointsRoll.from : currentPoints
   ));
@@ -242,23 +271,23 @@ export default function ActivitySessionHeader({
       flexShrink: 0,
       background: 'transparent',
       boxShadow: 'none',
-      borderBottom: '1px solid #DCDCDC',
+      borderBottom: puzzleChrome ? '1px solid rgba(0,0,0,0.42)' : '1px solid #DCDCDC',
     }}
     >
       <RoadmapHeaderTop>
         {topRow ? <SessionHeaderTopRow>{topRow}</SessionHeaderTopRow> : null}
         <RoadmapHeaderButtonRow>
-          <RoadmapHeaderItem>
-            <ActivityLogoutButton onClick={onLogout} ariaLabel={t.exitActivity} />
-          </RoadmapHeaderItem>
-          <RoadmapHeaderItem>
-            <HelpChatHeaderButton />
-          </RoadmapHeaderItem>
-          <RoadmapHeaderItem>
+          <RoadmapItem>
+            <ActivityLogoutButton onClick={onLogout} ariaLabel={t.exitActivity} variant={puzzleChrome ? 'puzzle' : 'default'} />
+          </RoadmapItem>
+          <RoadmapItem>
+            <HelpChatHeaderButton tone={puzzleChrome ? 'puzzle' : 'dark'} />
+          </RoadmapItem>
+          <RoadmapItem>
             {thirdSlot}
-          </RoadmapHeaderItem>
-          <RoadmapHeaderItem>
-            <RoadmapHeaderPoints
+          </RoadmapItem>
+          <RoadmapItem>
+            <RoadmapPoints
               role="status"
               aria-label={`${displayedPoints} ${t.points}`}
               style={isRolling ? {
@@ -266,9 +295,9 @@ export default function ActivitySessionHeader({
               } : undefined}
             >
               <RoadmapHeaderPointsValue>{displayedPoints}</RoadmapHeaderPointsValue>
-              <SessionHeaderPointsIcon />
-            </RoadmapHeaderPoints>
-          </RoadmapHeaderItem>
+              <SessionHeaderPointsIcon variant={puzzleChrome ? 'puzzle' : 'default'} />
+            </RoadmapPoints>
+          </RoadmapItem>
         </RoadmapHeaderButtonRow>
       </RoadmapHeaderTop>
     </GameHeader>

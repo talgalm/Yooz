@@ -203,6 +203,57 @@ export const DarkHeaderActionIconButton = styled(HeaderActionIconButton)({
   },
 });
 
+/** Puzzle session header: **dark icons** on light pill, black outline (mint/light bg). */
+export const PuzzleDarkHeaderActionIconButton = styled(HeaderActionIconButton)({
+  color: '#1a1a1a',
+  border: '1px solid rgba(0,0,0,0.45)',
+  background: 'rgba(255,255,255,0.92)',
+  fontSize: 18,
+  fontWeight: 700,
+  transition: 'background 0.15s ease, border-color 0.15s ease',
+  '&:hover': {
+    background: '#ffffff',
+    borderColor: 'rgba(0,0,0,0.55)',
+  },
+  '&:active': {
+    background: 'rgba(255,255,255,0.88)',
+    borderColor: 'rgba(0,0,0,0.65)',
+  },
+});
+
+/** Text control — matches puzzle icon pills. */
+export const PuzzleDarkHeaderTextButton = styled('button')({
+  margin: 0,
+  minHeight: 36,
+  height: 36,
+  padding: '0 12px',
+  boxSizing: 'border-box',
+  borderRadius: 10,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  fontSize: 11,
+  fontWeight: 600,
+  lineHeight: 1.2,
+  color: '#1a1a1a',
+  border: '1px solid rgba(0,0,0,0.45)',
+  background: 'rgba(255,255,255,0.92)',
+  transition: 'background 0.15s ease, border-color 0.15s ease',
+  appearance: 'none',
+  WebkitTapHighlightColor: 'transparent',
+  '&:hover': {
+    background: '#ffffff',
+    borderColor: 'rgba(0,0,0,0.55)',
+  },
+  '&:active': {
+    background: 'rgba(255,255,255,0.88)',
+    borderColor: 'rgba(0,0,0,0.65)',
+  },
+});
+
 /** Text action on the same dark header row — matches `DarkHeaderActionIconButton` border and height. */
 export const DarkHeaderTextButton = styled('button')({
   margin: 0,

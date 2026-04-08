@@ -151,6 +151,14 @@ const MissionItem = styled('li')<{ delay?: number }>(({ delay = 0 }) => ({
   animation: `${bounceIn} 0.4s ease-out ${0.4 + delay * 0.1}s both`,
 }));
 
+const MissionText = styled('span')({
+  display: 'block',
+  flex: 1,
+  minWidth: 0,
+  textAlign: 'start',
+  paddingTop: 2,
+});
+
 const StarBullet = styled('span')({
   color: '#632e7d',
   fontSize: 'clamp(15px, 2.2vh, 18px)',
@@ -277,7 +285,7 @@ export default function GuidelinesPopup({ itemCount, guidelines, customInstructi
   const ruleSectionTitle = ci?.guidelinesTitle || t.guidelinesRulesTitle;
   const ruleItems = ci?.guidelineItems?.length
     ? ci.guidelineItems
-    : [t.guidelineRule1, t.guidelineRule2, t.guidelineRule3];
+    : [t.guidelineRule1, t.guidelineRule2];
   const buttonText = ci?.buttonText || t.startAdventure;
 
   return (
@@ -298,7 +306,7 @@ export default function GuidelinesPopup({ itemCount, guidelines, customInstructi
             {missionItems.map((text, i) => (
               <MissionItem key={i} delay={i}>
                 <StarBullet>&#9733;</StarBullet>
-                <span>{text}</span>
+                <MissionText>{text}</MissionText>
               </MissionItem>
             ))}
           </MissionList>
@@ -308,7 +316,7 @@ export default function GuidelinesPopup({ itemCount, guidelines, customInstructi
             {ruleItems.map((text, i) => (
               <MissionItem key={i} delay={missionItems.length + i}>
                 <StarBullet>&#9733;</StarBullet>
-                <span>{text}</span>
+                <MissionText>{text}</MissionText>
               </MissionItem>
             ))}
           </MissionList>
