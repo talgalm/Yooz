@@ -438,6 +438,12 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
   const activityId = req.params.id;
   const exportType = (req.query.type as string) || 'participants';
 
+  const validExportTypes = ['participants', 'scores', 'progress'];
+  if (!validExportTypes.includes(exportType)) {
+    res.status(400).json({ error: 'Invalid export type. Must be one of: participants, scores, progress' });
+    return;
+  }
+
   if (!Types.ObjectId.isValid(activityId)) {
     res.status(400).json({ error: 'Invalid activity ID' });
     return;
@@ -449,7 +455,8 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
     return;
   }
 
-  const reports = await Report.find({ activityId: new Types.ObjectId(activityId) }).lean();
+  const reportFilter = await reportMatchForRequest(req, { activityId: new Types.ObjectId(activityId) });
+  const reports = await Report.find(reportFilter).lean();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let rows: Record<string, any>[] = [];
@@ -507,9 +514,12 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
-  const fileName = `${activity.name.replace(/[^a-zA-Z0-9\u0590-\u05FF]/g, '_')}_${exportType}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  const safeName = activity.name.replace(/[^a-zA-Z0-9\u0590-\u05FF]/g, '_');
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const fileName = `${safeName}_${exportType}_${dateStr}.xlsx`;
+  const asciiName = `${safeName.replace(/[^\x20-\x7E]/g, '_')}_${exportType}_${dateStr}.xlsx`;
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+  res.setHeader('Content-Disposition', `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
   res.send(buffer);
 });
 

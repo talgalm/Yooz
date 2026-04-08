@@ -185,6 +185,11 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
   const savedProgress = useRef(loadPuzzleProgress(game._id));
   const isResuming = savedProgress.current !== null;
 
+  // Guard: skip the first save-effect cycle after restoring progress,
+  // because the state changes from restore would trigger a spurious save
+  // that incorrectly advances queuePos by +1 again.
+  const justRestoredRef = useRef(false);
+
   const [gameStarted, setGameStarted] = useState(false);
   const [noContent, setNoContent] = useState(false);
   const gameStartTime = useRef(Date.now());
@@ -314,6 +319,11 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
   // Save progress after each piece placement
   useEffect(() => {
     if (!gameStarted || gameComplete || revealedPieces.size === 0) return;
+    // Skip the spurious save that fires right after restoring progress
+    if (justRestoredRef.current) {
+      justRestoredRef.current = false;
+      return;
+    }
     // Save next queue position so on resume we skip the already-answered question
     const nextQueuePos = queuePosRef.current + 1;
     // If we've exhausted the current round, save the wrong answers as the new queue
@@ -371,6 +381,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
         setCurrentQuestionIndex(saved.queue[saved.queuePos]);
       }
       savedProgress.current = null;
+      justRestoredRef.current = true;
     } else {
       setElapsedSeconds(0);
     }

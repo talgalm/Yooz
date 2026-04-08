@@ -58,6 +58,7 @@ export const texts = {
     exportScores: 'Export Scores',
     exportProgress: 'Export Progress',
     downloading: 'Downloading...',
+    exportFailed: 'Export failed. Please try again.',
 
     // Alerts
     alerts: 'Alerts',
@@ -140,6 +141,7 @@ export const texts = {
     exportScores: 'ייצוא ציונים',
     exportProgress: 'ייצוא התקדמות',
     downloading: 'מוריד...',
+    exportFailed: 'הייצוא נכשל. נסה שוב.',
 
     // Alerts
     alerts: 'התראות',

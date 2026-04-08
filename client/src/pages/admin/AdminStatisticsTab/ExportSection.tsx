@@ -13,13 +13,15 @@ type ExportType = 'participants' | 'scores' | 'progress';
 export default function ExportSection({ activityId }: Props) {
   const t = useTranslations(texts);
   const [downloading, setDownloading] = useState<ExportType | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleExport = async (type: ExportType) => {
     setDownloading(type);
+    setError(null);
     try {
       await downloadExport(activityId, type);
     } catch {
-      // silently fail — user sees download didn't happen
+      setError(t.exportFailed);
     } finally {
       setDownloading(null);
     }
@@ -47,21 +49,28 @@ export default function ExportSection({ activityId }: Props) {
   ];
 
   return (
-    <ExportGrid>
-      {exports.map((exp) => (
-        <ExportCard
-          key={exp.type}
-          onClick={() => handleExport(exp.type)}
-          disabled={downloading !== null}
-          style={{ opacity: downloading && downloading !== exp.type ? 0.5 : 1 }}
-        >
-          <ExportIcon>{exp.icon}</ExportIcon>
-          <ExportLabel>
-            {downloading === exp.type ? t.downloading : exp.label}
-          </ExportLabel>
-          <ExportDescription>{exp.description}</ExportDescription>
-        </ExportCard>
-      ))}
-    </ExportGrid>
+    <>
+      {error && (
+        <div style={{ color: '#e74c3c', marginBottom: 12, fontSize: 14, textAlign: 'center' }}>
+          {error}
+        </div>
+      )}
+      <ExportGrid>
+        {exports.map((exp) => (
+          <ExportCard
+            key={exp.type}
+            onClick={() => handleExport(exp.type)}
+            disabled={downloading !== null}
+            style={{ opacity: downloading && downloading !== exp.type ? 0.5 : 1 }}
+          >
+            <ExportIcon>{exp.icon}</ExportIcon>
+            <ExportLabel>
+              {downloading === exp.type ? t.downloading : exp.label}
+            </ExportLabel>
+            <ExportDescription>{exp.description}</ExportDescription>
+          </ExportCard>
+        ))}
+      </ExportGrid>
+    </>
   );
 }

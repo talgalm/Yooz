@@ -274,11 +274,6 @@ export function HelpChatProvider({ variant, children }: HelpChatProviderProps) {
               </SendButton>
             </InputArea>
           )}
-
-          <PhoneBar>
-            <span>{t.phoneLine}</span>
-            <PhoneLink href={`tel:${SUPPORT_PHONE}`}>{SUPPORT_PHONE}</PhoneLink>
-          </PhoneBar>
         </ChatPanel>
       )}
     </HelpChatContext.Provider>

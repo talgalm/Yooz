@@ -58,12 +58,7 @@ const Tagline = styled('div')({
   color: '#fff',
   textShadow: '0 1px 4px rgba(0,0,0,0.3)',
   marginBottom: 8,
-  background: `linear-gradient(90deg, #fff, ${C_YELLOW}, #fff)`,
-  backgroundSize: '200% auto',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
-  backgroundClip: 'text',
-  animation: `${fadeInUp} 0.5s ease-out 0.45s both, ${shimmer} 4s linear 1.5s infinite`,
+  animation: `${fadeInUp} 0.5s ease-out 0.45s both`,
 });
 
 const Subtitle = styled('p')({
@@ -117,13 +112,14 @@ const FeatureInfo = styled('div')({
 const FeatureTitle = styled('div')({
   fontSize: 15,
   fontWeight: 800,
-  color: C_DARK_GREEN,
+  color: '#390363',
   marginBottom: 2,
 });
 
 const FeatureDesc = styled('div')({
   fontSize: 12,
-  color: '#666',
+  color: '#390363',
+
   lineHeight: 1.4,
 });
 
@@ -201,14 +197,11 @@ function LeaderboardIcon() {
 
 export default function LandingPage() {
   const t = useTranslations(texts);
-  const navigate = useNavigate();
 
   return (
     <NatureBackground>
       <Page>
-        <LangCorner>
-          <LangDrawer />
-        </LangCorner>
+
 
         <Content>
           <img src="/images/logo-purple.png" alt="Yooz" style={{ width: 120, marginBottom: 16 }} />
@@ -251,15 +244,6 @@ export default function LandingPage() {
             <CTATitle>{t.ctaTitle}</CTATitle>
             <CTADesc>{t.ctaDesc}</CTADesc>
           </CTASection>
-
-          <FooterLinks>
-            <FooterLink onClick={() => navigate('/admin/login')}>
-              {t.adminLink}
-            </FooterLink>
-            <FooterLink onClick={() => navigate('/manager')}>
-              {t.managerLink}
-            </FooterLink>
-          </FooterLinks>
         </Content>
       </Page>
     </NatureBackground>

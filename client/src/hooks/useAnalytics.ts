@@ -133,8 +133,10 @@ export async function downloadExport(activityId: string, type: 'participants' | 
 
   const blob = await res.blob();
   const disposition = res.headers.get('content-disposition') || '';
-  const match = disposition.match(/filename="?([^"]+)"?/);
-  const filename = match ? match[1] : `${type}-export.xlsx`;
+  // Try RFC 5987 filename* first (supports unicode), then fall back to plain filename
+  const utf8Match = disposition.match(/filename\*=UTF-8''(.+?)(?:;|$)/);
+  const plainMatch = disposition.match(/filename="?([^";]+)"?/);
+  const filename = utf8Match ? decodeURIComponent(utf8Match[1]) : plainMatch ? plainMatch[1] : `${type}-export.xlsx`;
 
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
