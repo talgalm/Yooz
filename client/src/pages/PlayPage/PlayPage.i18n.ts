@@ -24,7 +24,7 @@ export const texts = {
     joinActivity: 'הצטרפו לפעילות',
     tapToSkip: 'לחצו לדילוג',
     readyForAdventure: 'מוכנים להרפתקה?',
-    connectAndPlay: 'התחברו והתחילו לשחק!',
+    connectAndPlay: 'התחברות והתחלת המשחק',
     needHelp: 'צריכים עזרה?',
     activityNotOpenYet: 'הפעילות עדיין לא נפתחה',
     opensIn: 'נפתחת בעוד',

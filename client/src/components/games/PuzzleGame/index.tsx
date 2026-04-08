@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useTranslations } from '../../../context/LanguageContext';
+import { useLang, useTranslations } from '../../../context/LanguageContext';
 import { texts } from './PuzzleGame.i18n';
 import { shuffleArray } from '../../../utils/shuffleArray';
 import { useGameHint } from '../../../hooks/useGameHint';
@@ -26,6 +26,7 @@ import {
   IntroInfoBox,
   IntroInfoText,
   IntroStartButton,
+  FinishSummaryMiddle,
   PuzzleContainer,
   PuzzleMainScroll,
   PuzzleBottomBar,
@@ -33,11 +34,11 @@ import {
   PuzzleGameMuteButton,
   PuzzleGameIntroHeaderBar,
   TopBarLeftCluster,
+  TopBarRightCluster,
   PuzzleGameTopBarItem,
   PuzzleGameTopBarTimer,
   PuzzleFullImg,
   PuzzleGridOverlay,
-  PuzzlePiece,
   QuestionBox,
   QuestionBadge,
   QuestionContent,
@@ -53,70 +54,16 @@ import {
   NatureMediaContainer,
   NatureMediaImage,
   HintSpacer,
-  PuzzleRevealOverlay,
-  PuzzleRevealTitle,
-  PuzzleRevealGrid,
-  PuzzleRevealCounter,
+  DragPhaseContainer,
+  DragInstruction,
+  DragGridWrapper,
+  DragGridCell,
+  DraggablePiece,
   FinishContainer,
   FinishContent,
-  FinishTitleBanner,
   FinishPuzzleImage,
   FinishPuzzleImg,
-  FinishStump,
-  FinishScoreNumber,
-  FinishScoreLabel,
-  FinishFinalLabel,
-  FinishStats,
-  FinishContinueButton,
-  FinishYoozLogo,
 } from './styled';
-
-// ─── SVG Decorations ───
-
-/** Tree ring lines inside the stump score circle */
-function StumpRingsSvg() {
-  return (
-    <svg
-      width="100%" height="100%"
-      viewBox="0 0 200 200"
-      style={{ position: 'absolute', inset: 0, zIndex: 0 }}
-    >
-      <circle cx="100" cy="100" r="12" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.4" />
-      <circle cx="100" cy="100" r="24" fill="none" stroke="#a88440" strokeWidth="1.2" opacity="0.35" />
-      <circle cx="100" cy="100" r="36" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.3" />
-      <circle cx="100" cy="100" r="48" fill="none" stroke="#a07838" strokeWidth="1.5" opacity="0.25" />
-      <circle cx="100" cy="100" r="60" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.22" />
-      <circle cx="100" cy="100" r="72" fill="none" stroke="#907030" strokeWidth="1.5" opacity="0.2" />
-      <circle cx="100" cy="100" r="84" fill="none" stroke="#b8944a" strokeWidth="1" opacity="0.18" />
-      <path d="M100,100 L98,60 L102,35 L99,12" fill="none" stroke="#7a5828" strokeWidth="2" opacity="0.35" strokeLinecap="round" />
-      <path d="M100,100 L104,70 L108,50" fill="none" stroke="#7a5828" strokeWidth="1.2" opacity="0.2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-/** Leaf vein pattern for finish title banner */
-function LeafVeinSvg() {
-  return (
-    <svg
-      width="100%" height="100%"
-      viewBox="0 0 340 90"
-      preserveAspectRatio="none"
-      style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.12 }}
-    >
-      <line x1="10" y1="45" x2="330" y2="45" stroke="#fff" strokeWidth="1.5" />
-      <line x1="60" y1="45" x2="30" y2="15" stroke="#fff" strokeWidth="1" />
-      <line x1="60" y1="45" x2="30" y2="75" stroke="#fff" strokeWidth="1" />
-      <line x1="120" y1="45" x2="85" y2="12" stroke="#fff" strokeWidth="1" />
-      <line x1="120" y1="45" x2="85" y2="78" stroke="#fff" strokeWidth="1" />
-      <line x1="180" y1="45" x2="150" y2="15" stroke="#fff" strokeWidth="1" />
-      <line x1="180" y1="45" x2="150" y2="75" stroke="#fff" strokeWidth="1" />
-      <line x1="240" y1="45" x2="210" y2="10" stroke="#fff" strokeWidth="1" />
-      <line x1="240" y1="45" x2="210" y2="80" stroke="#fff" strokeWidth="1" />
-      <line x1="300" y1="45" x2="270" y2="18" stroke="#fff" strokeWidth="1" />
-      <line x1="300" y1="45" x2="270" y2="72" stroke="#fff" strokeWidth="1" />
-    </svg>
-  );
-}
 
 // ─── Types ───
 
@@ -129,7 +76,6 @@ interface PuzzleQuestion {
   text: string;
   media?: string;
   answers: PuzzleAnswer[];
-  /** Per-question countdown; 0 or omitted with default handling = see client. */
   timeLimitSeconds?: number;
 }
 
@@ -151,11 +97,56 @@ interface PuzzleSettings {
   shuffleAnswers?: boolean;
 }
 
+// ─── Session Storage Progress ───
+
+const PROGRESS_KEY_PREFIX = 'puzzle_progress_';
+
+/** Derive a user-scoped storage key so different participants on the same device don't share progress. */
+function getProgressKey(gameId: string): string {
+  try {
+    const token = localStorage.getItem('yooz_token');
+    if (token) {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userId = `${payload.participantName || ''}_${payload.activityCode || ''}`;
+      return PROGRESS_KEY_PREFIX + userId + '_' + gameId;
+    }
+  } catch {}
+  return PROGRESS_KEY_PREFIX + gameId;
+}
+
+interface SavedPuzzleProgress {
+  revealedPieces: number[];
+  queue: number[];
+  queuePos: number;
+  wrongThisRound: number[];
+  correctCount: number;
+  totalAttempts: number;
+  elapsedSeconds: number;
+  hintUsed: boolean;
+  gameStartTime: number;
+}
+
+function loadPuzzleProgress(gameId: string): SavedPuzzleProgress | null {
+  try {
+    const raw = sessionStorage.getItem(getProgressKey(gameId));
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function savePuzzleProgress(gameId: string, data: SavedPuzzleProgress) {
+  try { sessionStorage.setItem(getProgressKey(gameId), JSON.stringify(data)); } catch {}
+}
+
+function clearPuzzleProgress(gameId: string) {
+  try { sessionStorage.removeItem(getProgressKey(gameId)); } catch {}
+}
+
 // ─── Component ───
 
 export default function PuzzleGame({ game, onComplete }: GameProps) {
   const settings = game.settings as unknown as PuzzleSettings;
   const t = useTranslations(texts);
+  const { dir } = useLang();
   const gameHint = useGameHint(settings.hint);
   const {
     playCorrect,
@@ -190,6 +181,10 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     }));
   }, [allQuestions]);
 
+  // Check for saved progress on mount
+  const savedProgress = useRef(loadPuzzleProgress(game._id));
+  const isResuming = savedProgress.current !== null;
+
   const [gameStarted, setGameStarted] = useState(false);
   const [noContent, setNoContent] = useState(false);
   const gameStartTime = useRef(Date.now());
@@ -214,18 +209,27 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
   const [gameComplete, setGameComplete] = useState(false);
   const [totalScore, setTotalScore] = useState(0);
 
-  // Puzzle reveal overlay
-  const [showPuzzleReveal, setShowPuzzleReveal] = useState(false);
-  const [lastRevealedPiece, setLastRevealedPiece] = useState<number | null>(null);
+  // Drag-and-drop phase state
+  const [dragPhase, setDragPhase] = useState(false);
+  const [dragPieceIndex, setDragPieceIndex] = useState<number | null>(null);
+  const [wrongCellIndex, setWrongCellIndex] = useState<number | null>(null);
+  const [dragFeedback, setDragFeedback] = useState<'correct' | 'wrong' | null>(null);
+
+  // Drag position tracking
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+  const dragStartOffset = useRef({ x: 0, y: 0 });
+  const pieceRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const cellRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // Timer — overall game timer for speed bonus
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  /** Per-question countdown (same pattern as trivia). */
+  /** Per-question countdown */
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const questionCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  /** Bumps when advancing so the timer resets even if the same question index returns later. */
   const [questionTurnId, setQuestionTurnId] = useState(0);
 
   const activityHeaderAudio = useActivityPlayingHeaderHostActive();
@@ -248,17 +252,15 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     return () => setThemedSceneOverlay(null);
   }, [gameStarted, setThemedSceneOverlay]);
 
-  /** Admin preview has no themed shell — paint play background inside the game area */
   const playPhaseInlineBackdrop = !setThemedSceneOverlay;
 
-  // Track revealed pieces in a ref to avoid stale closure in revealRandomPiece
+  // Track revealed pieces in a ref to avoid stale closures
   const revealedPiecesRef = useRef<Set<number>>(new Set());
   const elapsedSecondsRef = useRef(0);
   const pendingTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
   const processedQuestionsRef = useRef(processedQuestions);
   processedQuestionsRef.current = processedQuestions;
 
-  // Keep refs in sync
   useEffect(() => {
     revealedPiecesRef.current = revealedPieces;
   }, [revealedPieces]);
@@ -274,6 +276,8 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
       setGameComplete(true);
       return;
     }
+    // If resuming, the queue will be restored in startGame
+    if (savedProgress.current) return;
     const indices = Array.from({ length: processedQuestions.length }, (_, i) => i);
     const shuffled = shuffleArray(indices);
     queueRef.current = shuffled;
@@ -307,36 +311,97 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     }
   }, [gameComplete, noContent, playGameOver]);
 
+  // Save progress after each piece placement
+  useEffect(() => {
+    if (!gameStarted || gameComplete || revealedPieces.size === 0) return;
+    // Save next queue position so on resume we skip the already-answered question
+    const nextQueuePos = queuePosRef.current + 1;
+    // If we've exhausted the current round, save the wrong answers as the new queue
+    const isRoundDone = nextQueuePos >= queueRef.current.length;
+    const savedQueue = isRoundDone && wrongThisRoundRef.current.length > 0
+      ? shuffleArray([...wrongThisRoundRef.current])
+      : queueRef.current;
+    const savedQueuePos = isRoundDone && wrongThisRoundRef.current.length > 0
+      ? 0
+      : nextQueuePos;
+    const savedWrongThisRound = isRoundDone && wrongThisRoundRef.current.length > 0
+      ? []
+      : wrongThisRoundRef.current;
+
+    savePuzzleProgress(game._id, {
+      revealedPieces: Array.from(revealedPieces),
+      queue: savedQueue,
+      queuePos: savedQueuePos,
+      wrongThisRound: savedWrongThisRound,
+      correctCount,
+      totalAttempts,
+      elapsedSeconds: elapsedSecondsRef.current,
+      hintUsed: gameHint.hintUsed,
+      gameStartTime: gameStartTime.current,
+    });
+  }, [revealedPieces, correctCount, totalAttempts, gameStarted, gameComplete]);
+
+  // Clear progress when game is complete
+  useEffect(() => {
+    if (gameComplete) clearPuzzleProgress(game._id);
+  }, [gameComplete]);
+
   const startGame = () => {
     setGameStarted(true);
-    setElapsedSeconds(0);
     startBgMusic();
+
+    // Restore saved progress if resuming
+    const saved = savedProgress.current;
+    if (saved) {
+      const restoredPieces = new Set(saved.revealedPieces);
+      setRevealedPieces(restoredPieces);
+      revealedPiecesRef.current = restoredPieces;
+      queueRef.current = saved.queue;
+      queuePosRef.current = saved.queuePos;
+      wrongThisRoundRef.current = saved.wrongThisRound;
+      setCorrectCount(saved.correctCount);
+      setTotalAttempts(saved.totalAttempts);
+      setElapsedSeconds(saved.elapsedSeconds);
+      elapsedSecondsRef.current = saved.elapsedSeconds;
+      gameStartTime.current = saved.gameStartTime;
+      if (saved.hintUsed) gameHint.forceHintUsed();
+
+      // Set current question from queue position
+      if (saved.queuePos < saved.queue.length) {
+        setCurrentQuestionIndex(saved.queue[saved.queuePos]);
+      }
+      savedProgress.current = null;
+    } else {
+      setElapsedSeconds(0);
+    }
   };
 
   const advanceToNextQuestion = useCallback(() => {
     setSelectedAnswer(null);
     setChecked(false);
     setIsCorrect(false);
+    setDragPhase(false);
+    setDragPieceIndex(null);
+    setDragFeedback(null);
+    setWrongCellIndex(null);
     setQuestionTurnId((n) => n + 1);
 
     const nextPos = queuePosRef.current + 1;
 
     if (nextPos < queueRef.current.length) {
-      // More questions in this round
       queuePosRef.current = nextPos;
       setCurrentQuestionIndex(queueRef.current[nextPos]);
     } else if (wrongThisRoundRef.current.length > 0) {
-      // Start new round with the wrong answers
       const newRound = shuffleArray([...wrongThisRoundRef.current]);
       queueRef.current = newRound;
       queuePosRef.current = 0;
       wrongThisRoundRef.current = [];
       setCurrentQuestionIndex(newRound[0]);
     }
-    // else: all pieces should be revealed — game completion handles this
   }, []);
 
-  const revealRandomPiece = useCallback(() => {
+  /** After correct answer, pick a random unrevealed piece and enter drag phase. */
+  const enterDragPhase = useCallback(() => {
     const currentRevealed = revealedPiecesRef.current;
     const unrevealed: number[] = [];
     for (let i = 0; i < totalPieces; i++) {
@@ -344,11 +409,19 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     }
     if (unrevealed.length === 0) return;
     const randomIndex = unrevealed[Math.floor(Math.random() * unrevealed.length)];
-    const newRevealed = new Set(currentRevealed);
-    newRevealed.add(randomIndex);
+    setDragPieceIndex(randomIndex);
+    setDragPhase(true);
+    setDragFeedback(null);
+    setWrongCellIndex(null);
+  }, [totalPieces]);
+
+  /** Handle successful piece placement. */
+  const handleCorrectPlacement = useCallback((pieceIdx: number) => {
+    playCorrect();
+    setDragFeedback('correct');
+    const newRevealed = new Set(revealedPiecesRef.current);
+    newRevealed.add(pieceIdx);
     setRevealedPieces(newRevealed);
-    setLastRevealedPiece(randomIndex);
-    setShowPuzzleReveal(true);
 
     // Check completion
     if (newRevealed.size >= totalPieces) {
@@ -362,16 +435,112 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
       pendingTimeouts.current.push(setTimeout(() => {
         setGameComplete(true);
         if (timerRef.current) clearInterval(timerRef.current);
-      }, 3000));
+      }, 1500));
     } else {
-      // Auto-advance to next question after 3s
       pendingTimeouts.current.push(setTimeout(() => {
-        setShowPuzzleReveal(false);
-        setLastRevealedPiece(null);
         advanceToNextQuestion();
-      }, 3000));
+      }, 1200));
     }
-  }, [totalPieces, scoring, advanceToNextQuestion]);
+  }, [totalPieces, scoring, advanceToNextQuestion, playCorrect]);
+
+  /** Handle wrong piece placement. */
+  const handleWrongPlacement = useCallback((cellIdx: number) => {
+    playWrong();
+    setDragFeedback('wrong');
+    setWrongCellIndex(cellIdx);
+    pendingTimeouts.current.push(setTimeout(() => {
+      setDragFeedback(null);
+      setWrongCellIndex(null);
+    }, 800));
+  }, [playWrong]);
+
+  // ─── Drag & Drop Handlers ───
+
+  const getCellFromPoint = useCallback((clientX: number, clientY: number): number | null => {
+    for (const [idx, el] of cellRefs.current.entries()) {
+      const rect = el.getBoundingClientRect();
+      if (
+        clientX >= rect.left && clientX <= rect.right &&
+        clientY >= rect.top && clientY <= rect.bottom
+      ) {
+        return idx;
+      }
+    }
+    return null;
+  }, []);
+
+  const handleDragStart = useCallback((clientX: number, clientY: number) => {
+    if (!pieceRef.current) return;
+    const rect = pieceRef.current.getBoundingClientRect();
+    dragStartOffset.current = {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
+    setIsDragging(true);
+    setDragPos({ x: clientX, y: clientY });
+  }, []);
+
+  const handleDragMove = useCallback((clientX: number, clientY: number) => {
+    if (!isDragging) return;
+    setDragPos({ x: clientX, y: clientY });
+  }, [isDragging]);
+
+  const handleDragEnd = useCallback((clientX: number, clientY: number) => {
+    if (!isDragging || dragPieceIndex === null) {
+      setIsDragging(false);
+      return;
+    }
+    setIsDragging(false);
+    const cellIdx = getCellFromPoint(clientX, clientY);
+    if (cellIdx === null) return; // dropped outside grid
+    if (cellIdx === dragPieceIndex) {
+      handleCorrectPlacement(dragPieceIndex);
+    } else {
+      handleWrongPlacement(cellIdx);
+    }
+  }, [isDragging, dragPieceIndex, getCellFromPoint, handleCorrectPlacement, handleWrongPlacement]);
+
+  // Mouse events
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    handleDragStart(e.clientX, e.clientY);
+  }, [handleDragStart]);
+
+  const onMouseMove = useCallback((e: MouseEvent) => {
+    handleDragMove(e.clientX, e.clientY);
+  }, [handleDragMove]);
+
+  const onMouseUp = useCallback((e: MouseEvent) => {
+    handleDragEnd(e.clientX, e.clientY);
+  }, [handleDragEnd]);
+
+  // Touch events
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    handleDragStart(touch.clientX, touch.clientY);
+  }, [handleDragStart]);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    handleDragMove(touch.clientX, touch.clientY);
+  }, [handleDragMove]);
+
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    const touch = e.changedTouches[0];
+    handleDragEnd(touch.clientX, touch.clientY);
+  }, [handleDragEnd]);
+
+  // Attach mouse listeners to window while dragging
+  useEffect(() => {
+    if (!isDragging) return;
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [isDragging, onMouseMove, onMouseUp]);
 
   const handleCheck = useCallback(() => {
     if (checked || currentQuestionIndex === null) return;
@@ -396,18 +565,19 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
 
     if (correct) {
       setCorrectCount((prev) => prev + 1);
+      // After a short delay, enter drag phase instead of auto-reveal
       pendingTimeouts.current.push(setTimeout(() => {
-        revealRandomPiece();
-      }, 3000));
+        enterDragPhase();
+      }, 2000));
     } else {
       wrongThisRoundRef.current.push(currentQuestionIndex);
       pendingTimeouts.current.push(setTimeout(() => {
         advanceToNextQuestion();
       }, 3000));
     }
-  }, [checked, currentQuestionIndex, selectedAnswer, processedQuestions, revealRandomPiece, advanceToNextQuestion, playCorrect, playWrong]);
+  }, [checked, currentQuestionIndex, selectedAnswer, processedQuestions, enterDragPhase, advanceToNextQuestion, playCorrect, playWrong]);
 
-  // Reset per-question timer when the active question changes (or game starts).
+  // Reset per-question timer when the active question changes
   useEffect(() => {
     if (!gameStarted || gameComplete || currentQuestionIndex === null) return;
     const q = processedQuestionsRef.current[currentQuestionIndex];
@@ -437,20 +607,12 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     };
   }, [timeLeft === null, timeLeft === 0, checked]);
 
-  // Time's up — submit as incorrect (no selection or partial is still "answered")
+  // Time's up — submit as incorrect
   useEffect(() => {
     if (timeLeft === 0 && !checked) {
       handleCheck();
     }
   }, [timeLeft, checked, handleCheck]);
-
-  const handleNext = () => {
-    // Fallback manual advance (shouldn't be needed with auto-advance)
-    setShowPuzzleReveal(false);
-    setLastRevealedPiece(null);
-    if (revealedPiecesRef.current.size >= totalPieces) return;
-    advanceToNextQuestion();
-  };
 
   const handleFinish = () => {
     const maxPossibleScore = (scoring.basePoints || 100) + (scoring.speedBonusMax || 50);
@@ -462,13 +624,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     });
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  /** ~1s center toast — same pattern as trivia (does not shift layout). */
+  /** ~1s center toast */
   const [toastVisible, setToastVisible] = useState(false);
   useEffect(() => {
     if (!checked) {
@@ -511,7 +667,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
               </IntroInfoText>
             </IntroInfoBox>
             <IntroStartButton $overlap onClick={startGame}>
-              {t.startPuzzle}
+              {isResuming ? t.continue : t.startPuzzle}
             </IntroStartButton>
           </IntroDescStack>
 
@@ -523,75 +679,163 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
   // ─── Game complete / Finish ───
   if (gameComplete) {
     if (noContent) return null;
-    const accuracy = totalAttempts > 0 ? Math.round((correctCount / totalAttempts) * 100) : 0;
     return (
       <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
         <FinishContainer dir="rtl">
-          <PuzzleGameIntroHeaderBar>
-            <PuzzleGameMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
-              {isMuted ? '🔇' : '🔊'}
-            </PuzzleGameMuteButton>
-          </PuzzleGameIntroHeaderBar>
           <FinishContent>
-            <FinishTitleBanner>
-              <LeafVeinSvg />
-              <span style={{ position: 'relative', zIndex: 1 }}>{t.gameComplete}</span>
-            </FinishTitleBanner>
+            <IntroTitle dir="auto">
+              <IntroTitleLine>{t.gameComplete}</IntroTitleLine>
+            </IntroTitle>
 
-            {settings.puzzleImage && (
-              <FinishPuzzleImage>
-                <FinishPuzzleImg src={settings.puzzleImage} alt="Completed Puzzle" />
-              </FinishPuzzleImage>
-            )}
+            <FinishSummaryMiddle>
+              {settings.puzzleImage && (
+                <FinishPuzzleImage>
+                  <FinishPuzzleImg src={settings.puzzleImage} alt="" />
+                </FinishPuzzleImage>
+              )}
+            </FinishSummaryMiddle>
 
-            <FinishStump>
-              <StumpRingsSvg />
-              <FinishScoreNumber>{totalScore}</FinishScoreNumber>
-              <FinishScoreLabel>{t.pointsFull}</FinishScoreLabel>
-            </FinishStump>
-
-            <FinishFinalLabel>{t.finalScore}</FinishFinalLabel>
-            <FinishStats>
-              {t.accuracy}: {accuracy}%
-              <br />
-              {t.timeElapsed}: {formatTime(elapsedSeconds)}
-              <br />
-              {t.piecesRevealed}: {revealedPieces.size}/{totalPieces}
-            </FinishStats>
-
-            <FinishContinueButton onClick={handleFinish}>
+            <IntroStartButton type="button" $pinBottom onClick={handleFinish}>
               {t.continue}
-            </FinishContinueButton>
-
-            <FinishYoozLogo><img src="/images/logo-purple.png" alt="Yooz" style={{ height: 36 }} /></FinishYoozLogo>
+            </IntroStartButton>
           </FinishContent>
         </FinishContainer>
       </PlayPhaseRoot>
     );
   }
 
-  // ─── Playing ───
+  // ─── Drag Phase (after correct answer) ───
+  if (dragPhase && dragPieceIndex !== null) {
+    const cols = settings.gridCols;
+    const rows = settings.gridRows;
+
+    return (
+      <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
+        <PuzzleContainer dir="rtl">
+          <PuzzleGameTopBar>
+            <TopBarLeftCluster>
+              <PuzzleGameTopBarItem>{t.piecesRevealed}: {revealedPieces.size}/{totalPieces}</PuzzleGameTopBarItem>
+            </TopBarLeftCluster>
+            <TopBarRightCluster>
+              {!activityHeaderAudio && (
+                <PuzzleGameMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
+                  {isMuted ? '🔇' : '🔊'}
+                </PuzzleGameMuteButton>
+              )}
+            </TopBarRightCluster>
+          </PuzzleGameTopBar>
+
+          <DragPhaseContainer>
+            <DragInstruction>{t.dragInstruction}</DragInstruction>
+
+            {/* The puzzle grid showing revealed pieces and empty slots */}
+            <DragGridWrapper
+              ref={gridRef}
+              style={{ aspectRatio: `${cols}/${rows}` }}
+            >
+              <PuzzleFullImg src={settings.puzzleImage} alt="Puzzle" />
+              <PuzzleGridOverlay cols={cols} rows={rows}>
+                {Array.from({ length: totalPieces }, (_, i) => (
+                  <DragGridCell
+                    key={i}
+                    ref={(el) => { if (el) cellRefs.current.set(i, el); }}
+                    revealed={revealedPieces.has(i)}
+                    isTarget={!revealedPieces.has(i)}
+                    wrongAttempt={wrongCellIndex === i}
+                  >
+                    {!revealedPieces.has(i) && '?'}
+                  </DragGridCell>
+                ))}
+              </PuzzleGridOverlay>
+            </DragGridWrapper>
+
+            {/* The draggable piece — wrapper always present to hold layout */}
+            <div style={{ position: 'relative' }}>
+              {/* Spacer always occupies the piece's space */}
+              <DraggablePiece
+                cols={cols}
+                rows={rows}
+                pieceIndex={dragPieceIndex}
+                style={{
+                  visibility: isDragging || dragFeedback === 'correct' ? 'hidden' : 'visible',
+                  backgroundImage: `url(${settings.puzzleImage})`,
+                }}
+                ref={pieceRef}
+                onMouseDown={dragFeedback !== 'correct' ? onMouseDown : undefined}
+                onTouchStart={dragFeedback !== 'correct' ? onTouchStart : undefined}
+                onTouchMove={dragFeedback !== 'correct' ? onTouchMove : undefined}
+                onTouchEnd={dragFeedback !== 'correct' ? onTouchEnd : undefined}
+              />
+              {/* Fixed-position clone that follows the pointer */}
+              {isDragging && (
+                <DraggablePiece
+                  cols={cols}
+                  rows={rows}
+                  pieceIndex={dragPieceIndex}
+                  isDragging
+                  style={{
+                    backgroundImage: `url(${settings.puzzleImage})`,
+                    position: 'fixed',
+                    left: dragPos.x - dragStartOffset.current.x,
+                    top: dragPos.y - dragStartOffset.current.y,
+                    zIndex: 1000,
+                    pointerEvents: 'none',
+                  }}
+                />
+              )}
+            </div>
+          </DragPhaseContainer>
+
+          {dragFeedback && (
+            <CenterToastOverlay dir={dir} aria-live="polite">
+              <CenterToastBubble variant={dragFeedback === 'correct' ? 'correct' : 'incorrect'}>
+                {dragFeedback === 'correct' ? (
+                  <CorrectBigText>{t.correctPlacement}</CorrectBigText>
+                ) : (
+                  <IncorrectToastText>{t.wrongPlacement}</IncorrectToastText>
+                )}
+              </CenterToastBubble>
+            </CenterToastOverlay>
+          )}
+
+          <HintModals
+            hintText={settings.hint?.text}
+            showHintWarning={gameHint.showHintWarning}
+            showHintText={gameHint.showHintText}
+            onConfirm={gameHint.confirmHint}
+            onDismissWarning={gameHint.dismissHintWarning}
+            onDismissText={gameHint.dismissHintText}
+            t={t}
+          />
+        </PuzzleContainer>
+      </PlayPhaseRoot>
+    );
+  }
+
+  // ─── Playing (Question Phase) ───
   const question = currentQuestionIndex !== null ? processedQuestions[currentQuestionIndex] : null;
   if (!question) return null;
 
   return (
     <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
     <PuzzleContainer dir="rtl">
-      {/* Top bar: pieces | per-question countdown only (elapsed time kept internally for speed bonus) */}
+      {/* Top bar */}
       <PuzzleGameTopBar>
         <TopBarLeftCluster>
           <PuzzleGameTopBarItem>{t.piecesRevealed}: {revealedPieces.size}/{totalPieces}</PuzzleGameTopBarItem>
+        </TopBarLeftCluster>
+        <TopBarRightCluster>
           {timeLeft !== null && (
             <PuzzleGameTopBarTimer critical={timeLeft <= GAME_CONSTANTS.TIMER_WARNING_SECONDS}>
               {timeLeft}s
             </PuzzleGameTopBarTimer>
           )}
-        </TopBarLeftCluster>
-        {!activityHeaderAudio && (
-          <PuzzleGameMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
-            {isMuted ? '🔇' : '🔊'}
-          </PuzzleGameMuteButton>
-        )}
+          {!activityHeaderAudio && (
+            <PuzzleGameMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
+              {isMuted ? '🔇' : '🔊'}
+            </PuzzleGameMuteButton>
+          )}
+        </TopBarRightCluster>
       </PuzzleGameTopBar>
 
       <PuzzleMainScroll>
@@ -622,7 +866,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
           )
         )}
 
-        {/* Answer grid (2×2) */}
+        {/* Answer grid (2x2) */}
         <AnswerGrid>
           {question.answers.map((answer, index) => (
             <AnswerButton
@@ -642,19 +886,19 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
 
       <PuzzleBottomBar>
         <ActionButton
-          onClick={!checked ? handleCheck : handleNext}
+          onClick={!checked ? handleCheck : undefined}
           disabled={
-            !checked &&
-            selectedAnswer === null &&
-            (timeLeft === null || timeLeft > 0)
+            checked ||
+            (selectedAnswer === null &&
+            (timeLeft === null || timeLeft > 0))
           }
         >
-          {!checked ? t.checkAnswer : t.nextQuestion}
+          {t.checkAnswer}
         </ActionButton>
       </PuzzleBottomBar>
 
       {toastVisible && checked && (
-        <CenterToastOverlay aria-live="polite">
+        <CenterToastOverlay dir={dir} aria-live="polite">
           <CenterToastBubble variant={isCorrect ? 'correct' : 'incorrect'}>
             {isCorrect ? (
               <>
@@ -669,30 +913,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
             )}
           </CenterToastBubble>
         </CenterToastOverlay>
-      )}
-
-      {/* Puzzle reveal overlay — shown after correct answer */}
-      {showPuzzleReveal && (
-        <PuzzleRevealOverlay>
-          <PuzzleRevealTitle>🧩 {t.pieceRevealed}</PuzzleRevealTitle>
-          <PuzzleRevealGrid sx={{ aspectRatio: `${settings.gridCols}/${settings.gridRows}` }}>
-            <PuzzleFullImg src={settings.puzzleImage} alt="Puzzle" />
-            <PuzzleGridOverlay cols={settings.gridCols} rows={settings.gridRows}>
-              {Array.from({ length: totalPieces }, (_, i) => (
-                <PuzzlePiece
-                  key={i}
-                  revealed={revealedPieces.has(i) && i !== lastRevealedPiece}
-                  justRevealed={i === lastRevealedPiece}
-                >
-                  {!revealedPieces.has(i) && '?'}
-                </PuzzlePiece>
-              ))}
-            </PuzzleGridOverlay>
-          </PuzzleRevealGrid>
-          <PuzzleRevealCounter>
-            {revealedPieces.size}/{totalPieces} {t.pieces}
-          </PuzzleRevealCounter>
-        </PuzzleRevealOverlay>
       )}
 
       <HintModals

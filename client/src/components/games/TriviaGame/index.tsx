@@ -95,6 +95,19 @@ interface TriviaSettings {
 
 const PROGRESS_KEY_PREFIX = 'yooz_game_progress_';
 
+/** Derive a user-scoped storage key so different participants on the same device don't share progress. */
+function getProgressKey(gameId: string): string {
+  try {
+    const token = localStorage.getItem('yooz_token');
+    if (token) {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userId = `${payload.participantName || ''}_${payload.activityCode || ''}`;
+      return PROGRESS_KEY_PREFIX + userId + '_' + gameId;
+    }
+  } catch {}
+  return PROGRESS_KEY_PREFIX + gameId;
+}
+
 interface SavedTriviaProgress {
   nextIndex: number;
   totalScore: number;
@@ -107,17 +120,17 @@ interface SavedTriviaProgress {
 
 function loadTriviaProgress(gameId: string): SavedTriviaProgress | null {
   try {
-    const raw = sessionStorage.getItem(PROGRESS_KEY_PREFIX + gameId);
+    const raw = sessionStorage.getItem(getProgressKey(gameId));
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
 
 function saveTriviaProgress(gameId: string, data: SavedTriviaProgress) {
-  try { sessionStorage.setItem(PROGRESS_KEY_PREFIX + gameId, JSON.stringify(data)); } catch {}
+  try { sessionStorage.setItem(getProgressKey(gameId), JSON.stringify(data)); } catch {}
 }
 
 function clearTriviaProgress(gameId: string) {
-  try { sessionStorage.removeItem(PROGRESS_KEY_PREFIX + gameId); } catch {}
+  try { sessionStorage.removeItem(getProgressKey(gameId)); } catch {}
 }
 
 /** Whether more wrong answers can be eliminated to reach `targetVisible` options among currently visible answers. */

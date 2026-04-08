@@ -31,6 +31,9 @@ export const texts = {
     tryAgainLater: 'This question will come back later',
     timeElapsed: 'Time',
     questionLabel: 'Question',
+    dragInstruction: 'Drag the piece to the correct spot!',
+    wrongPlacement: 'Wrong spot! Try again',
+    correctPlacement: 'Perfect!',
   },
   he: {
     puzzleComplete: 'הפאזל הושלם!',
@@ -64,5 +67,8 @@ export const texts = {
     tryAgainLater: 'השאלה תחזור מאוחר יותר',
     timeElapsed: 'זמן',
     questionLabel: 'שאלה',
+    dragInstruction: 'גררו את החלק למקום הנכון!',
+    wrongPlacement: 'מקום שגוי! נסו שוב',
+    correctPlacement: 'מושלם!',
   },
 };

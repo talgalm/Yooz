@@ -125,6 +125,19 @@ const FEEDBACK_POPUP_MS = 3000;
 
 const PROGRESS_KEY_PREFIX = 'yooz_game_progress_';
 
+/** Derive a user-scoped storage key so different participants on the same device don't share progress. */
+function getProgressKey(gameId: string): string {
+  try {
+    const token = localStorage.getItem('yooz_token');
+    if (token) {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userId = `${payload.participantName || ''}_${payload.activityCode || ''}`;
+      return PROGRESS_KEY_PREFIX + userId + '_' + gameId;
+    }
+  } catch {}
+  return PROGRESS_KEY_PREFIX + gameId;
+}
+
 interface SavedGameProgress {
   nextIndex: number;
   totalScore: number;
@@ -135,17 +148,17 @@ interface SavedGameProgress {
 
 function loadGameProgress(gameId: string): SavedGameProgress | null {
   try {
-    const raw = sessionStorage.getItem(PROGRESS_KEY_PREFIX + gameId);
+    const raw = sessionStorage.getItem(getProgressKey(gameId));
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
 
 function saveGameProgress(gameId: string, data: SavedGameProgress) {
-  try { sessionStorage.setItem(PROGRESS_KEY_PREFIX + gameId, JSON.stringify(data)); } catch {}
+  try { sessionStorage.setItem(getProgressKey(gameId), JSON.stringify(data)); } catch {}
 }
 
 function clearGameProgress(gameId: string) {
-  try { sessionStorage.removeItem(PROGRESS_KEY_PREFIX + gameId); } catch {}
+  try { sessionStorage.removeItem(getProgressKey(gameId)); } catch {}
 }
 
 // ─── Component ───

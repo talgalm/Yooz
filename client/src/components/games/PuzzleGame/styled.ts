@@ -312,9 +312,10 @@ export const IntroPuzzlePreviewImg = styled('img')({
 });
 
 export const IntroStartButton = styled('button', {
-  shouldForwardProp: (prop) => prop !== '$overlap',
-})<{ $overlap?: boolean }>(({ $overlap }) => ({
-  marginTop: $overlap ? 'clamp(-16px, -5.5vw, -34px)' : 0,
+  shouldForwardProp: (prop) => prop !== '$overlap' && prop !== '$pinBottom',
+})<{ $overlap?: boolean; $pinBottom?: boolean }>(({ $overlap, $pinBottom }) => ({
+  marginTop: $pinBottom ? 'auto' : $overlap ? 'clamp(-16px, -5.5vw, -34px)' : 0,
+  marginBottom: $pinBottom ? 'clamp(8px, 2vh, 20px)' : 0,
   position: 'relative' as const,
   zIndex: 2,
   flexShrink: 0,
@@ -443,6 +444,15 @@ export const TopBarLeftCluster = styled('div')({
   minWidth: 0,
 });
 
+export const TopBarRightCluster = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  flexWrap: 'wrap',
+  minWidth: 0,
+  justifyContent: 'flex-end',
+});
+
 export const TopBarItem = styled('span')({
   fontSize: 13,
   fontWeight: 700,
@@ -546,44 +556,51 @@ export const PuzzlePiece = styled('div')<{ revealed?: boolean; justRevealed?: bo
     : 'none',
 }));
 
-// ─── Question Box ───
+// ─── Question area (same yellow + olive stroke as summary / intro title) ───
 
 export const QuestionBox = styled('div')({
-  background: BOX_BG,
-  border: `3px solid ${BOX_BORDER}`,
-  borderRadius: 12,
-  padding: '8px 14px',
+  background: 'transparent',
+  border: 'none',
+  borderRadius: 0,
+  padding: '8px 10px',
   textAlign: 'center',
-  boxShadow: `0 3px 0 ${BOX_SHADOW}`,
+  boxShadow: 'none',
   width: '100%',
   boxSizing: 'border-box',
   position: 'relative',
   zIndex: 1,
   flexShrink: 1,
   minHeight: 0,
-  overflow: 'hidden',
+  overflow: 'visible',
   animation: `${slideUp} 0.3s ease-out`,
 });
 
 export const QuestionBadge = styled('div')({
-  display: 'inline-block',
-  background: '#bdc3c7',
-  border: `2px solid ${BOX_BORDER}`,
-  padding: '2px 12px',
-  borderRadius: 10,
-  fontSize: 12,
+  display: 'block',
+  fontFamily: INTRO_FONT_FAMILY,
+  fontSize: 'clamp(14px, 3.6vw, 18px)',
   fontWeight: 700,
-  color: TEXT_DARK,
+  lineHeight: 1.12,
+  letterSpacing: '0.02em',
+  color: GAME_TITLE_YELLOW,
+  WebkitTextStroke: `2px ${GAME_TITLE_OUTLINE}`,
+  paintOrder: 'stroke fill',
   whiteSpace: 'nowrap',
-  marginBottom: 4,
+  marginBottom: 8,
 });
 
 export const QuestionContent = styled('p')({
-  fontSize: 17,
-  fontWeight: 700,
-  color: TEXT_DARK,
-  lineHeight: 1.3,
   margin: 0,
+  fontFamily: INTRO_FONT_FAMILY,
+  fontSize: 'clamp(22px, 5.2vw, 40px)',
+  fontWeight: 400,
+  lineHeight: 1.15,
+  letterSpacing: '0.02em',
+  color: GAME_TITLE_YELLOW,
+  WebkitTextStroke: `3px ${GAME_TITLE_OUTLINE}`,
+  paintOrder: 'stroke fill',
+  textAlign: 'center',
+  whiteSpace: 'pre-wrap',
 });
 
 // ─── Answer Grid (2×2) ───
@@ -831,6 +848,144 @@ export const HintSpacer = styled('div')({
 });
 
 // ═══════════════════════════════════════════
+// ─── Drag & Drop Puzzle Grid ───
+// ═══════════════════════════════════════════
+
+const dragPieceAppear = keyframes`
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+`;
+
+const wrongShake = keyframes`
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+`;
+
+/** Full-screen container for the drag phase (replaces question area). */
+export const DragPhaseContainer = styled('div')({
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '100%',
+  gap: 12,
+  padding: '8px 12px',
+  boxSizing: 'border-box',
+  minHeight: 0,
+  position: 'relative',
+  zIndex: 1,
+});
+
+export const DragInstruction = styled('div')({
+  fontFamily: INTRO_FONT_FAMILY,
+  fontSize: 'clamp(18px, 4.2vw, 30px)',
+  fontWeight: 400,
+  lineHeight: 1.15,
+  letterSpacing: '0.02em',
+  color: GAME_TITLE_YELLOW,
+  WebkitTextStroke: `3px ${GAME_TITLE_OUTLINE}`,
+  paintOrder: 'stroke fill',
+  textAlign: 'center',
+  padding: '8px 12px',
+  background: 'transparent',
+  maxWidth: 'min(100%, 360px)',
+  animation: `${slideUp} 0.3s ease-out`,
+});
+
+/** The puzzle grid wrapper for drag phase. */
+export const DragGridWrapper = styled('div')({
+  position: 'relative',
+  width: '85%',
+  maxWidth: 320,
+  borderRadius: 14,
+  overflow: 'visible',
+  border: `3px solid rgba(74,101,114,0.4)`,
+  boxShadow: '0 6px 24px rgba(0,0,0,0.2)',
+  background: '#f0f0f0',
+});
+
+/** Each cell in the drag grid */
+export const DragGridCell = styled('div', {
+  shouldForwardProp: (prop) => !['revealed', 'isTarget', 'wrongAttempt'].includes(prop as string),
+})<{ revealed?: boolean; isTarget?: boolean; wrongAttempt?: boolean }>(({ revealed, isTarget, wrongAttempt }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 14,
+  fontWeight: 700,
+  color: revealed ? 'transparent' : 'rgba(255,255,255,0.5)',
+  backgroundColor: revealed ? 'transparent' : PIECE_UNREVEALED,
+  border: isTarget
+    ? `2px dashed rgba(108,92,231,0.7)`
+    : `1px solid ${revealed ? 'rgba(0,0,0,0.08)' : PIECE_BORDER}`,
+  transition: 'all 0.3s ease',
+  position: 'relative',
+  animation: wrongAttempt ? `${wrongShake} 0.4s ease-out` : 'none',
+}));
+
+/** The draggable puzzle piece that floats. */
+export const DraggablePiece = styled('div', {
+  shouldForwardProp: (prop) => !['cols', 'rows', 'pieceIndex', 'isDragging', 'gridWidth'].includes(prop as string),
+})<{ cols: number; rows: number; pieceIndex: number; isDragging?: boolean; gridWidth?: number }>(
+  ({ cols, rows, pieceIndex, isDragging }) => {
+    const col = pieceIndex % cols;
+    const row = Math.floor(pieceIndex / cols);
+    const pctX = (col / cols) * 100;
+    const pctY = (row / rows) * 100;
+    const pctW = (1 / cols) * 100;
+    const pctH = (1 / rows) * 100;
+
+    return {
+      width: `calc(85vw / ${cols})`,
+      maxWidth: `calc(320px / ${cols})`,
+      aspectRatio: '1',
+      borderRadius: 8,
+      overflow: 'hidden',
+      border: `2px solid rgba(108,92,231,0.6)`,
+      boxShadow: isDragging
+        ? '0 12px 32px rgba(0,0,0,0.35)'
+        : '0 4px 16px rgba(0,0,0,0.25)',
+      cursor: isDragging ? 'grabbing' : 'grab',
+      transform: isDragging ? 'scale(1.08)' : 'scale(1)',
+      transition: isDragging ? 'none' : 'transform 0.2s ease, box-shadow 0.2s ease',
+      animation: `${dragPieceAppear} 0.4s ease-out`,
+      position: 'relative',
+      touchAction: 'none',
+      userSelect: 'none' as const,
+      WebkitUserSelect: 'none' as const,
+      zIndex: isDragging ? 100 : 10,
+      // Show correct portion of image via background
+      backgroundSize: `${cols * 100}% ${rows * 100}%`,
+      backgroundPosition: `${pctX}% ${pctY}%`,
+      backgroundRepeat: 'no-repeat',
+      // clip to just this piece
+      '& img': {
+        display: 'none',
+      },
+    };
+  }
+);
+
+/** Feedback badge shown after wrong/correct drag */
+export const DragFeedbackBadge = styled('div', {
+  shouldForwardProp: (prop) => prop !== 'variant',
+})<{ variant: 'correct' | 'wrong' }>(({ variant }) => ({
+  fontSize: 16,
+  fontWeight: 700,
+  color: variant === 'correct' ? BTN_GREEN_DARK : '#856404',
+  background: variant === 'correct' ? '#d5f5e3' : '#fef3cd',
+  border: `2px solid ${variant === 'correct' ? BTN_GREEN : '#f0c36d'}`,
+  borderRadius: 16,
+  padding: '6px 18px',
+  animation: `${feedbackPop} 0.3s ease-out`,
+  textAlign: 'center',
+}));
+
+// ═══════════════════════════════════════════
 // ─── Finish / Game Complete Screen ───
 // ═══════════════════════════════════════════
 
@@ -857,6 +1012,19 @@ export const FinishContent = styled('div')({
   textAlign: 'center',
   width: '100%',
   maxWidth: 400,
+  minHeight: '100%',
+  boxSizing: 'border-box',
+});
+
+/** Finish summary: centers puzzle image between title and pinned Continue (matches True/False layout rhythm). */
+export const FinishSummaryMiddle = styled('div')({
+  flex: '1 1 0',
+  minHeight: 0,
+  width: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
 });
 
 export const FinishTitleBanner = styled('div')({
