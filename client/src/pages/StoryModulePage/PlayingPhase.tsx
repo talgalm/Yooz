@@ -198,9 +198,11 @@ export default function PlayingPhase({
   const activityHeaderSlot = useActivityPlayingHeaderSlot();
   const isGameStep = currentItem.type === 'game';
   const isPuzzleGame = isGameStep && (currentItem as GameItemData).gameType === 'puzzle';
-  const puzzleSessionChrome = isPuzzleGame ? 'puzzle' : 'default';
-  const SessionHeaderIconButton = isPuzzleGame ? PuzzleDarkHeaderActionIconButton : DarkHeaderActionIconButton;
-  const SessionHintButton = isPuzzleGame ? PuzzleDarkHeaderTextButton : DarkHeaderTextButton;
+  const isOrderGame = isGameStep && (currentItem as GameItemData).gameType === 'order';
+  const puzzleSessionChrome = (isPuzzleGame || isOrderGame) ? 'puzzle' : 'default';
+  const useDarkChrome = isPuzzleGame || isOrderGame;
+  const SessionHeaderIconButton = useDarkChrome ? PuzzleDarkHeaderActionIconButton : DarkHeaderActionIconButton;
+  const SessionHintButton = useDarkChrome ? PuzzleDarkHeaderTextButton : DarkHeaderTextButton;
   useActivityGameHeaderFallbackWhenNeeded(isGameStep, currentItem._id);
   const showMusicInGameSlot = isGameStep && activityHeaderSlot != null;
   const showStandaloneLeaderboard =

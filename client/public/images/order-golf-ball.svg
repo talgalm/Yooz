@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="700" viewBox="0 0 700 700">
+  <defs>
+    <radialGradient id="ballGrad" cx="38%" cy="32%" r="62%" fx="30%" fy="25%">
+      <stop offset="0%"   stop-color="#FFFFFF"/>
+      <stop offset="25%"  stop-color="#F5F5F5"/>
+      <stop offset="55%"  stop-color="#DCDCDC"/>
+      <stop offset="80%"  stop-color="#C0C0C0"/>
+      <stop offset="100%" stop-color="#A0A0A0"/>
+    </radialGradient>
+    <radialGradient id="dimpleG" cx="40%" cy="35%" r="60%">
+      <stop offset="0%"   stop-color="#B0B0B0"/>
+      <stop offset="50%"  stop-color="#989898"/>
+      <stop offset="100%" stop-color="#C8C8C8"/>
+    </radialGradient>
+    <radialGradient id="dimpleEdge" cx="35%" cy="30%" r="65%">
+      <stop offset="0%"   stop-color="#E8E8E8" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#E8E8E8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="highlight" cx="35%" cy="28%" r="35%">
+      <stop offset="0%"   stop-color="#FFFFFF" stop-opacity="0.9"/>
+      <stop offset="60%"  stop-color="#FFFFFF" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="shadowGrad" cx="50%" cy="85%" r="40%">
+      <stop offset="0%"   stop-color="#000000" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="ballClip">
+      <circle cx="350" cy="350" r="295"/>
+    </clipPath>
+  </defs>
+
+  <circle cx="350" cy="350" r="295" fill="url(#ballGrad)"/>
+
+  <g clip-path="url(#ballClip)">
+    <circle cx="350" cy="95"  r="18" fill="url(#dimpleG)"/><circle cx="350" cy="95"  r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="305" cy="108" r="18" fill="url(#dimpleG)"/><circle cx="305" cy="108" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="395" cy="108" r="18" fill="url(#dimpleG)"/><circle cx="395" cy="108" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="265" cy="130" r="18" fill="url(#dimpleG)"/><circle cx="265" cy="130" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="435" cy="130" r="18" fill="url(#dimpleG)"/><circle cx="435" cy="130" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="230" cy="162" r="18" fill="url(#dimpleG)"/><circle cx="230" cy="162" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="280" cy="155" r="18" fill="url(#dimpleG)"/><circle cx="280" cy="155" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="330" cy="148" r="18" fill="url(#dimpleG)"/><circle cx="330" cy="148" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="370" cy="148" r="18" fill="url(#dimpleG)"/><circle cx="370" cy="148" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="420" cy="155" r="18" fill="url(#dimpleG)"/><circle cx="420" cy="155" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="470" cy="162" r="18" fill="url(#dimpleG)"/><circle cx="470" cy="162" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="198" cy="205" r="18" fill="url(#dimpleG)"/><circle cx="198" cy="205" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="248" cy="193" r="18" fill="url(#dimpleG)"/><circle cx="248" cy="193" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="298" cy="185" r="18" fill="url(#dimpleG)"/><circle cx="298" cy="185" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="350" cy="182" r="18" fill="url(#dimpleG)"/><circle cx="350" cy="182" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="402" cy="185" r="18" fill="url(#dimpleG)"/><circle cx="402" cy="185" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="452" cy="193" r="18" fill="url(#dimpleG)"/><circle cx="452" cy="193" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="502" cy="205" r="18" fill="url(#dimpleG)"/><circle cx="502" cy="205" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="170" cy="252" r="18" fill="url(#dimpleG)"/><circle cx="170" cy="252" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="220" cy="237" r="18" fill="url(#dimpleG)"/><circle cx="220" cy="237" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="270" cy="228" r="18" fill="url(#dimpleG)"/><circle cx="270" cy="228" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="320" cy="222" r="18" fill="url(#dimpleG)"/><circle cx="320" cy="222" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="370" cy="220" r="18" fill="url(#dimpleG)"/><circle cx="370" cy="220" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="420" cy="225" r="18" fill="url(#dimpleG)"/><circle cx="420" cy="225" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="470" cy="235" r="18" fill="url(#dimpleG)"/><circle cx="470" cy="235" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="520" cy="250" r="18" fill="url(#dimpleG)"/><circle cx="520" cy="250" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="98"  cy="330" r="18" fill="url(#dimpleG)"/><circle cx="98"  cy="330" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="145" cy="302" r="18" fill="url(#dimpleG)"/><circle cx="145" cy="302" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="194" cy="283" r="18" fill="url(#dimpleG)"/><circle cx="194" cy="283" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="244" cy="270" r="18" fill="url(#dimpleG)"/><circle cx="244" cy="270" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="295" cy="260" r="18" fill="url(#dimpleG)"/><circle cx="295" cy="260" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="346" cy="257" r="18" fill="url(#dimpleG)"/><circle cx="346" cy="257" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="396" cy="260" r="18" fill="url(#dimpleG)"/><circle cx="396" cy="260" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="446" cy="270" r="18" fill="url(#dimpleG)"/><circle cx="446" cy="270" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="496" cy="283" r="18" fill="url(#dimpleG)"/><circle cx="496" cy="283" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="546" cy="302" r="18" fill="url(#dimpleG)"/><circle cx="546" cy="302" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="592" cy="330" r="18" fill="url(#dimpleG)"/><circle cx="592" cy="330" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="56"  cy="375" r="18" fill="url(#dimpleG)"/><circle cx="56"  cy="375" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="105" cy="353" r="18" fill="url(#dimpleG)"/><circle cx="105" cy="353" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="155" cy="337" r="18" fill="url(#dimpleG)"/><circle cx="155" cy="337" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="207" cy="326" r="18" fill="url(#dimpleG)"/><circle cx="207" cy="326" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="258" cy="318" r="18" fill="url(#dimpleG)"/><circle cx="258" cy="318" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="310" cy="314" r="18" fill="url(#dimpleG)"/><circle cx="310" cy="314" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="350" cy="313" r="18" fill="url(#dimpleG)"/><circle cx="350" cy="313" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="390" cy="314" r="18" fill="url(#dimpleG)"/><circle cx="390" cy="314" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="440" cy="318" r="18" fill="url(#dimpleG)"/><circle cx="440" cy="318" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="492" cy="326" r="18" fill="url(#dimpleG)"/><circle cx="492" cy="326" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="543" cy="338" r="18" fill="url(#dimpleG)"/><circle cx="543" cy="338" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="593" cy="355" r="18" fill="url(#dimpleG)"/><circle cx="593" cy="355" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="634" cy="380" r="18" fill="url(#dimpleG)"/><circle cx="634" cy="380" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="98"  cy="400" r="18" fill="url(#dimpleG)"/><circle cx="98"  cy="400" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="148" cy="385" r="18" fill="url(#dimpleG)"/><circle cx="148" cy="385" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="200" cy="374" r="18" fill="url(#dimpleG)"/><circle cx="200" cy="374" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="252" cy="367" r="18" fill="url(#dimpleG)"/><circle cx="252" cy="367" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="304" cy="363" r="18" fill="url(#dimpleG)"/><circle cx="304" cy="363" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="350" cy="362" r="18" fill="url(#dimpleG)"/><circle cx="350" cy="362" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="396" cy="363" r="18" fill="url(#dimpleG)"/><circle cx="396" cy="363" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="448" cy="368" r="18" fill="url(#dimpleG)"/><circle cx="448" cy="368" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="500" cy="375" r="18" fill="url(#dimpleG)"/><circle cx="500" cy="375" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="552" cy="386" r="18" fill="url(#dimpleG)"/><circle cx="552" cy="386" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="600" cy="400" r="18" fill="url(#dimpleG)"/><circle cx="600" cy="400" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="145" cy="432" r="18" fill="url(#dimpleG)"/><circle cx="145" cy="432" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="196" cy="420" r="18" fill="url(#dimpleG)"/><circle cx="196" cy="420" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="248" cy="412" r="18" fill="url(#dimpleG)"/><circle cx="248" cy="412" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="300" cy="408" r="18" fill="url(#dimpleG)"/><circle cx="300" cy="408" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="350" cy="407" r="18" fill="url(#dimpleG)"/><circle cx="350" cy="407" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="400" cy="408" r="18" fill="url(#dimpleG)"/><circle cx="400" cy="408" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="452" cy="412" r="18" fill="url(#dimpleG)"/><circle cx="452" cy="412" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="504" cy="420" r="18" fill="url(#dimpleG)"/><circle cx="504" cy="420" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="555" cy="432" r="18" fill="url(#dimpleG)"/><circle cx="555" cy="432" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="170" cy="473" r="18" fill="url(#dimpleG)"/><circle cx="170" cy="473" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="220" cy="458" r="18" fill="url(#dimpleG)"/><circle cx="220" cy="458" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="270" cy="448" r="18" fill="url(#dimpleG)"/><circle cx="270" cy="448" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="322" cy="444" r="18" fill="url(#dimpleG)"/><circle cx="322" cy="444" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="374" cy="444" r="18" fill="url(#dimpleG)"/><circle cx="374" cy="444" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="424" cy="448" r="18" fill="url(#dimpleG)"/><circle cx="424" cy="448" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="476" cy="458" r="18" fill="url(#dimpleG)"/><circle cx="476" cy="458" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="526" cy="472" r="18" fill="url(#dimpleG)"/><circle cx="526" cy="472" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="198" cy="512" r="18" fill="url(#dimpleG)"/><circle cx="198" cy="512" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="248" cy="498" r="18" fill="url(#dimpleG)"/><circle cx="248" cy="498" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="298" cy="488" r="18" fill="url(#dimpleG)"/><circle cx="298" cy="488" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="350" cy="485" r="18" fill="url(#dimpleG)"/><circle cx="350" cy="485" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="402" cy="488" r="18" fill="url(#dimpleG)"/><circle cx="402" cy="488" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="452" cy="498" r="18" fill="url(#dimpleG)"/><circle cx="452" cy="498" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="502" cy="512" r="18" fill="url(#dimpleG)"/><circle cx="502" cy="512" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="230" cy="548" r="18" fill="url(#dimpleG)"/><circle cx="230" cy="548" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="280" cy="535" r="18" fill="url(#dimpleG)"/><circle cx="280" cy="535" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="330" cy="528" r="18" fill="url(#dimpleG)"/><circle cx="330" cy="528" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="380" cy="528" r="18" fill="url(#dimpleG)"/><circle cx="380" cy="528" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="430" cy="535" r="18" fill="url(#dimpleG)"/><circle cx="430" cy="535" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="472" cy="548" r="18" fill="url(#dimpleG)"/><circle cx="472" cy="548" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="265" cy="582" r="18" fill="url(#dimpleG)"/><circle cx="265" cy="582" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="310" cy="568" r="18" fill="url(#dimpleG)"/><circle cx="310" cy="568" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="355" cy="562" r="18" fill="url(#dimpleG)"/><circle cx="355" cy="562" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="398" cy="568" r="18" fill="url(#dimpleG)"/><circle cx="398" cy="568" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="440" cy="582" r="18" fill="url(#dimpleG)"/><circle cx="440" cy="582" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="305" cy="610" r="18" fill="url(#dimpleG)"/><circle cx="305" cy="610" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="350" cy="600" r="18" fill="url(#dimpleG)"/><circle cx="350" cy="600" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="395" cy="610" r="18" fill="url(#dimpleG)"/><circle cx="395" cy="610" r="18" fill="url(#dimpleEdge)"/>
+    <circle cx="350" cy="350" r="295" fill="url(#shadowGrad)"/>
+  </g>
+
+  <circle cx="350" cy="350" r="295" fill="none" stroke="#888" stroke-width="2" opacity="0.3"/>
+  <circle cx="350" cy="350" r="295" fill="url(#highlight)"/>
+</svg>

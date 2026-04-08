@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { styled, keyframes } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { golfTexts } from './GolfChallenge.i18n';
@@ -8,7 +7,8 @@ import { golfTexts } from './GolfChallenge.i18n';
 
 const MAX_HITS = 7;
 const FRICTION = 0.982;
-const SAND_FRICTION = 0.93;
+const HILL_FRICTION = 0.94;       // slows ball when climbing toward hill center
+const DOWNHILL_BOOST = 1.025;     // speeds ball up when going downhill
 const WALL_DAMPEN = 0.65;
 const MIN_VELOCITY = 0.25;
 const HOLE_RADIUS = 22;
@@ -22,13 +22,28 @@ const MAX_DRAG_DIST = MAX_SPEED / SPEED_FACTOR; // ~50px
 const COURSE_W = 340;
 const COURSE_H = 520;
 
-const BALL_START = { x: 170, y: 450 };
-const HOLE_POS = { x: 240, y: 75 };
+const BALL_START = { x: 170, y: 460 };
 
-const SAND_TRAPS = [
-  { cx: 85, cy: 240, r: 55 },
-  { cx: 230, cy: 370, r: 45 },
-];
+// ─── Hills layout (2x size) ───
+// Flag hill: top-right area — hole lives on this hill
+const FLAG_HILL = { cx: 210, cy: 110, r: 130 };
+// Regular hill: left-center
+const REGULAR_HILL = { cx: 90, cy: 280, r: 120 };
+// Small hill (uses regular hill SVG): right-center-lower
+const SMALL_HILL = { cx: 230, cy: 380, r: 80 };
+
+const HILLS = [FLAG_HILL, REGULAR_HILL, SMALL_HILL];
+
+// Hole is on the flag hill — offset slightly up-right to match the dark spot in the SVG
+const HOLE_POS = { x: FLAG_HILL.cx + 15, y: FLAG_HILL.cy - 20 };
+
+// Hill image dimensions for positioning (2x previous sizes)
+const FLAG_HILL_W = 340;
+const FLAG_HILL_H = 340;
+const REGULAR_HILL_W = 320;
+const REGULAR_HILL_H = 320;
+const SMALL_HILL_W = 220;
+const SMALL_HILL_H = 220;
 
 // ─── Types ───
 
@@ -94,13 +109,23 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
     }
   }, []);
 
-  // ─── Collision helpers ───
-  const inSand = useCallback((x: number, y: number) => {
-    return SAND_TRAPS.some((s) => {
-      const dx = x - s.cx;
-      const dy = y - s.cy;
-      return dx * dx + dy * dy < (s.r + BALL_R) * (s.r + BALL_R);
-    });
+  // ─── Hill physics helper ───
+  // Returns: which hill the ball is on (if any), distance from center, and
+  // whether ball is moving toward center (uphill) or away (downhill)
+  const getHillEffect = useCallback((x: number, y: number, vx: number, vy: number) => {
+    for (const hill of HILLS) {
+      const dx = x - hill.cx;
+      const dy = y - hill.cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < hill.r + BALL_R) {
+        // Dot product of velocity and direction-from-center
+        // Positive = moving away from center (downhill)
+        // Negative = moving toward center (uphill)
+        const dot = dist > 0 ? (vx * dx / dist + vy * dy / dist) : 0;
+        return { onHill: true, dist, hill, goingDownhill: dot > 0 };
+      }
+    }
+    return { onHill: false, dist: 0, hill: null, goingDownhill: false };
   }, []);
 
   const inHole = useCallback((x: number, y: number, speed: number) => {
@@ -126,7 +151,7 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
 
     const speed = Math.sqrt(vel.vx * vel.vx + vel.vy * vel.vy);
 
-    // Hole check
+    // Hole check — animate ball sinking into hole
     if (inHole(pos.x, pos.y, speed)) {
       vel.vx = 0;
       vel.vy = 0;
@@ -134,14 +159,34 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
       pos.y = HOLE_POS.y;
       isMoving.current = false;
       updateBallDOM();
-      setGameState('success');
+      // Animate: shrink + drop into hole
+      if (ballRef.current) {
+        const el = ballRef.current;
+        el.style.transition = 'transform 0.35s ease-in, opacity 0.35s ease-in';
+        el.style.transform = `translate(${pos.x - BALL_R}px, ${pos.y - BALL_R + 6}px) scale(0.3)`;
+        el.style.opacity = '0';
+      }
+      setTimeout(() => setGameState('success'), 400);
       return;
     }
 
-    // Friction
-    const fric = inSand(pos.x, pos.y) ? SAND_FRICTION : FRICTION;
-    vel.vx *= fric;
-    vel.vy *= fric;
+    // Hill physics + friction
+    const hillFx = getHillEffect(pos.x, pos.y, vel.vx, vel.vy);
+    if (hillFx.onHill) {
+      if (hillFx.goingDownhill) {
+        // Going away from hill center — boost speed
+        vel.vx *= DOWNHILL_BOOST;
+        vel.vy *= DOWNHILL_BOOST;
+      } else {
+        // Going toward hill center — extra friction (slow down)
+        vel.vx *= HILL_FRICTION;
+        vel.vy *= HILL_FRICTION;
+      }
+    } else {
+      // Normal grass friction
+      vel.vx *= FRICTION;
+      vel.vy *= FRICTION;
+    }
 
     // Stop check
     if (speed < MIN_VELOCITY) {
@@ -149,7 +194,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
       vel.vy = 0;
       isMoving.current = false;
       updateBallDOM();
-      // Check if out of hits
       if (hitsRef.current >= MAX_HITS) {
         setGameState('failed');
       }
@@ -158,7 +202,7 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
 
     updateBallDOM();
     animRef.current = requestAnimationFrame(physicsLoop);
-  }, [inSand, inHole, updateBallDOM]);
+  }, [inHole, getHillEffect, updateBallDOM]);
 
   // Initial ball position
   useEffect(() => {
@@ -206,7 +250,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
   const toCoursePx = useCallback((clientX: number, clientY: number) => {
     if (!courseRef.current) return { x: 0, y: 0 };
     const rect = courseRef.current.getBoundingClientRect();
-    // rect is the *visual* (scaled) box; map back to the 340×520 internal coords
     return {
       x: (clientX - rect.left) * COURSE_W / rect.width,
       y: (clientY - rect.top) * COURSE_H / rect.height,
@@ -294,11 +337,9 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
   // ─── Render ───
   const bonus = gameState === 'success' ? (MAX_HITS - hitsRef.current) * BONUS_PER_SAVED : 0;
 
-  // Trail uses white dots for visibility on green grass
-
-  return createPortal(
+  return (
     <GolfContainer dir="rtl">
-      {/* Header (glass effect) */}
+      {/* Header (glass effect, black border — matches order game) */}
       <GolfHeader>
         <TitleBadge>
           <span style={{ fontSize: 20 }}>⛳</span>
@@ -310,7 +351,7 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
       {/* Instruction text */}
       <TapToHit>{t.tapToHit}</TapToHit>
 
-      {/* Scalable course area — fills remaining screen */}
+      {/* Scalable course area — fills remaining space */}
       <CourseScaler ref={scalerRef}>
         <CourseWrapper
           ref={courseRef}
@@ -323,26 +364,45 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
           onMouseUp={handleMouseUp}
           onMouseLeave={() => { mouseDown.current = false; touchStart.current = null; setAimLine(null); }}
         >
-          {/* Geometric grass pattern */}
-          <CourseGrass />
-          <GrassShadeTop />
-          <GrassShadeBottom />
+          {/* Hill with flag (top-right) — hole is here */}
+          <HillImage
+            src="/images/golf-hill-flag.svg"
+            style={{
+              left: FLAG_HILL.cx - FLAG_HILL_W / 2,
+              top: FLAG_HILL.cy - FLAG_HILL_H / 2,
+              width: FLAG_HILL_W,
+              height: FLAG_HILL_H,
+            }}
+            draggable={false}
+          />
 
-          {/* Sand traps */}
-          {SAND_TRAPS.map((s, i) => (
-            <SandTrapEl key={i} style={{ left: s.cx - s.r, top: s.cy - s.r, width: s.r * 2, height: s.r * 2 }} />
-          ))}
+          {/* Regular hill (left-center) */}
+          <HillImage
+            src="/images/golf-hill-regular.svg"
+            style={{
+              left: REGULAR_HILL.cx - REGULAR_HILL_W / 2,
+              top: REGULAR_HILL.cy - REGULAR_HILL_H / 2,
+              width: REGULAR_HILL_W,
+              height: REGULAR_HILL_H,
+            }}
+            draggable={false}
+          />
 
-          {/* Hole + flag */}
-          <HoleEl style={{ left: HOLE_POS.x - 30, top: HOLE_POS.y - 30 }}>
-            <HoleInner />
-            <FlagEmoji>🚩</FlagEmoji>
-          </HoleEl>
+          {/* Small hill (right-lower) — uses regular hill SVG */}
+          <HillImage
+            src="/images/golf-hill-regular.svg"
+            style={{
+              left: SMALL_HILL.cx - SMALL_HILL_W / 2,
+              top: SMALL_HILL.cy - SMALL_HILL_H / 2,
+              width: SMALL_HILL_W,
+              height: SMALL_HILL_H,
+            }}
+            draggable={false}
+          />
 
           {/* Trail dots — white golf-style power indicator */}
           {aimLine && (
             <svg style={{ position: 'absolute', inset: 0, width: COURSE_W, height: COURSE_H, zIndex: 5, pointerEvents: 'none' }}>
-              {/* White trail of dots from ball toward aim direction */}
               {Array.from({ length: 12 }).map((_, i) => {
                 const dotCount = Math.max(3, Math.round(aimLine.strength * 12));
                 if (i >= dotCount) return null;
@@ -357,7 +417,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
                   />
                 );
               })}
-              {/* Arrow tip at end */}
               {(() => {
                 const dx = aimLine.x - ballPos.current.x;
                 const dy = aimLine.y - ballPos.current.y;
@@ -379,19 +438,18 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
           )}
 
           {/* Ball */}
-          <BallEl ref={ballRef} sunk={gameState === 'success'} />
+          <BallEl ref={ballRef} />
 
           {/* Success / Failed overlay */}
           {gameState !== 'playing' && (
             <ResultOverlay>
-              <ResultEmoji>{gameState === 'success' ? '🏌️' : '😔'}</ResultEmoji>
-              <ResultText success={gameState === 'success'}>
-                {gameState === 'success' ? t.success : t.failed}
-              </ResultText>
+              <ResultTitle>{gameState === 'success' ? t.success : t.failed}</ResultTitle>
               {gameState === 'success' && bonus > 0 && (
-                <BonusBadge>+{bonus} {t.bonus}</BonusBadge>
+                <BonusBubble>
+                  <BonusText>+{bonus} {t.bonus}</BonusText>
+                </BonusBubble>
               )}
-              <ContinueBtn onClick={handleContinue}>{t.continueBtn}</ContinueBtn>
+              <GoldContinueBtn onClick={handleContinue}>{t.continueBtn}</GoldContinueBtn>
             </ResultOverlay>
           )}
         </CourseWrapper>
@@ -401,30 +459,27 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
       {gameState === 'playing' && (
         <SkipBtn onClick={onSkip}>{t.skip}</SkipBtn>
       )}
-    </GolfContainer>,
-    document.body,
+    </GolfContainer>
   );
 }
 
 // ─── Styled Components ───
 
-// Nature theme colors
-const BOX_BORDER = '#4a6572';
-const GRASS_DARK = '#3a5a1a';
-const GRASS_LIGHT = '#5a822b';
 const LEAF_BANNER_BG = '#3d6b4f';
 const LEAF_BANNER_DARK = '#2e5a3e';
 const FINISH_PURPLE = '#6c5ce7';
 
 const GolfContainer = styled('div')({
-  position: 'fixed',
-  inset: 0,
-  zIndex: 100,
+  flex: 1,
+  minHeight: 0,
+  width: '100%',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  background: GRASS_DARK,
+  background: 'transparent',
   overflow: 'hidden',
+  padding: '8px 12px 10px',
+  boxSizing: 'border-box',
 });
 
 const GolfHeader = styled('div')({
@@ -432,15 +487,15 @@ const GolfHeader = styled('div')({
   alignItems: 'center',
   justifyContent: 'space-between',
   width: '100%',
-  padding: '6px 12px',
+  padding: '5px 10px',
   zIndex: 2,
   background: 'rgba(255,255,255,0.75)',
-  margin: '4px 10px 0',
   borderRadius: 10,
-  border: `2px solid ${BOX_BORDER}`,
+  border: '2px solid #000000',
   boxSizing: 'border-box',
   backdropFilter: 'blur(4px)',
   flexShrink: 0,
+  marginBottom: 6,
 });
 
 const TitleBadge = styled('div')({
@@ -503,75 +558,27 @@ const CourseWrapper = styled('div')({
   cursor: 'crosshair',
 });
 
-const CourseGrass = styled('div')({
+const HillImage = styled('img')({
   position: 'absolute',
-  inset: 0,
-  background: GRASS_DARK,
-});
-
-const GrassShadeTop = styled('div')({
-  position: 'absolute',
-  width: '100%',
-  height: '50%',
-  background: GRASS_LIGHT,
-  clipPath: 'polygon(0 0, 100% 0, 50% 100%)',
-  zIndex: 1,
-});
-
-const GrassShadeBottom = styled('div')({
-  position: 'absolute',
-  bottom: 0,
-  width: '100%',
-  height: '50%',
-  background: GRASS_LIGHT,
-  clipPath: 'polygon(50% 0, 0 100%, 100% 100%)',
-  zIndex: 1,
-});
-
-const SandTrapEl = styled('div')({
-  position: 'absolute',
-  borderRadius: '50%',
-  background: 'radial-gradient(circle, #e6a430 30%, #c98520 80%)',
-  boxShadow: 'inset 0 3px 10px rgba(0,0,0,0.25)',
   zIndex: 2,
-});
-
-const HoleEl = styled('div')({
-  position: 'absolute',
-  width: 60,
-  height: 60,
-  zIndex: 3,
-});
-
-const HoleInner = styled('div')({
-  width: 60,
-  height: 60,
-  borderRadius: '50%',
-  background: 'radial-gradient(circle, #1a1a1a 40%, #2c3e50 100%)',
-  boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.6)',
-});
-
-const FlagEmoji = styled('div')({
-  position: 'absolute',
-  top: -30,
-  right: 0,
-  fontSize: 32,
   pointerEvents: 'none',
+  objectFit: 'contain',
 });
 
-const BallEl = styled('div')<{ sunk: boolean }>(({ sunk }) => ({
+const BallEl = styled('div')({
   position: 'absolute',
   width: BALL_R * 2,
   height: BALL_R * 2,
   borderRadius: '50%',
-  background: 'radial-gradient(circle at 30% 30%, #fff 0%, #e8e8e8 40%, #ccc 80%)',
+  backgroundImage: 'url(/images/order-golf-ball.svg)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat',
   boxShadow: '2px 4px 6px rgba(0,0,0,0.35)',
   zIndex: 10,
   top: 0,
   left: 0,
-  transition: sunk ? 'opacity 0.4s, width 0.4s, height 0.4s' : 'none',
-  opacity: sunk ? 0 : 1,
-}));
+});
 
 // ─── Overlays ───
 
@@ -587,68 +594,93 @@ const ResultOverlay = styled('div')({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(0,0,0,0.55)',
-  backdropFilter: 'blur(3px)',
+  background: 'rgba(0,0,0,0.45)',
+  backdropFilter: 'blur(2px)',
   zIndex: 30,
   animation: `${fadeIn} 0.4s ease`,
-  gap: 10,
+  padding: 16,
+  boxSizing: 'border-box',
+  gap: 16,
 });
 
-const ResultEmoji = styled('div')({
-  fontSize: 56,
+const floatIn = keyframes`
+  from { opacity: 0; transform: translateY(30px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+`;
+
+const ResultTitle = styled('div')({
+  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontSize: 48,
+  fontWeight: 400,
+  lineHeight: 1.12,
+  letterSpacing: '0.02em',
+  color: '#ffff00',
+  WebkitTextStroke: '4px #666600',
+  paintOrder: 'stroke fill',
+  textAlign: 'center',
+  animation: `${floatIn} 0.5s ease-out`,
 });
 
-const ResultText = styled('div')<{ success: boolean }>(({ success }) => ({
-  fontSize: 26,
-  fontWeight: 900,
-  color: success ? '#66bb6a' : '#ef5350',
-  textShadow: '0 2px 6px rgba(0,0,0,0.5)',
-}));
+const feedbackPop = keyframes`
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+`;
 
-const BonusBadge = styled('div')({
+const BonusBubble = styled('div')({
+  background: 'rgba(255,255,255,0.96)',
+  border: '3px solid #2ecc71',
+  borderRadius: 18,
+  padding: '14px 30px',
+  boxShadow: '0 6px 24px rgba(0,0,0,0.25)',
+  animation: `${feedbackPop} 0.35s ease-out`,
+});
+
+const BonusText = styled('div')({
   fontSize: 20,
   fontWeight: 700,
-  color: '#ffd54f',
-  background: 'rgba(0,0,0,0.3)',
-  padding: '4px 18px',
-  borderRadius: 20,
+  color: '#27ae60',
 });
 
-const ContinueBtn = styled('button')({
-  marginTop: 10,
-  padding: '12px 40px',
-  fontSize: 18,
-  fontWeight: 700,
-  color: FINISH_PURPLE,
-  background: '#fff',
-  border: '1px solid rgba(108,92,231,0.3)',
-  borderRadius: 12,
+const GoldContinueBtn = styled('button')({
+  minWidth: 'clamp(160px, 52%, 240px)',
+  background: 'linear-gradient(180deg, #f5d76e 0%, #e8b923 48%, #c9a012 100%)',
+  color: '#2a1538',
+  fontSize: 'clamp(1.35rem, 4.2vw, 1.65rem)',
+  fontWeight: 800,
+  padding: 'clamp(12px, 3vw, 16px) clamp(36px, 10vw, 52px)',
+  borderRadius: 16,
+  border: '5px solid #8b6914',
   cursor: 'pointer',
   fontFamily: 'inherit',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+  boxShadow: '0 6px 0 #5c3d0a, 0 12px 24px rgba(0,0,0,0.28)',
+  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
+  textShadow: '0 1px 0 rgba(255,255,255,0.45)',
+  animation: `${floatIn} 0.5s ease-out 0.22s both`,
   '&:active': {
-    transform: 'scale(0.98)',
+    transform: 'translateY(4px)',
+    boxShadow: '0 2px 0 #5c3d0a, 0 4px 10px rgba(0,0,0,0.3)',
   },
 });
 
 const SkipBtn = styled('button')({
-  position: 'fixed',
-  bottom: 20,
-  left: 20,
+  marginTop: 'auto',
   padding: '8px 20px',
   fontSize: 15,
   fontWeight: 700,
   color: '#2c3e50',
   background: 'rgba(255,255,255,0.75)',
-  border: `2px solid ${BOX_BORDER}`,
+  border: '2px solid #000000',
   borderRadius: 12,
   cursor: 'pointer',
-  zIndex: 50,
+  zIndex: 2,
   backdropFilter: 'blur(4px)',
-  boxShadow: '0 2px 0 #3a5562',
+  boxShadow: '0 2px 0 #333',
   fontFamily: 'inherit',
+  flexShrink: 0,
+  marginBottom: 8,
   '&:active': {
     transform: 'translateY(2px)',
-    boxShadow: '0 0 0 #3a5562',
+    boxShadow: '0 0 0 #333',
   },
 });

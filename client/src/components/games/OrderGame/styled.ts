@@ -84,6 +84,19 @@ export const OrderIntroFullScreenSceneBackdrop = styled('div')({
   backgroundRepeat: 'no-repeat',
 });
 
+/** Full viewport backdrop — green grass for golf challenge */
+export const GolfFullScreenSceneBackdrop = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 0,
+  pointerEvents: 'none',
+  backgroundColor: '#3a5a1a',
+  backgroundImage: 'url(/images/golf-course-bg.png)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center center',
+  backgroundRepeat: 'no-repeat',
+});
+
 /**
  * Root wrapper for all phases.
  * When no ThemedSceneOverlay exists (admin preview), paints the background
@@ -157,6 +170,8 @@ export const OrderHill = styled('div')<{ variant: 1 | 2 }>(({ variant }) => ({
 
 // ─── Top Bar (glass effect) ───
 
+const ORDER_GAME_BAR_BORDER = '#000000';
+
 export const OrderTopBar = styled('div')({
   display: 'flex',
   justifyContent: 'space-between',
@@ -165,7 +180,7 @@ export const OrderTopBar = styled('div')({
   background: 'rgba(255,255,255,0.75)',
   padding: '5px 10px',
   borderRadius: 10,
-  border: `2px solid ${BOX_BORDER}`,
+  border: `2px solid ${ORDER_GAME_BAR_BORDER}`,
   fontWeight: 700,
   fontSize: 13,
   boxSizing: 'border-box',
@@ -192,35 +207,28 @@ export const OrderTopBarTimer = styled('span')<{ critical?: boolean }>(({ critic
   transition: 'color 0.3s ease',
 }));
 
-// ─── Round Title (leaf banner) ───
+// ─── Round Title (purple outlined text — matches intro style, smaller) ───
 
-export const OrderRoundBanner = styled('div')<{ compact?: boolean }>(({ compact }) => ({
-  background: `linear-gradient(135deg, ${LEAF_BANNER_BG} 0%, ${LEAF_BANNER_DARK} 100%)`,
-  color: WHITE,
+export const OrderRoundBanner = styled('div')<{ compact?: boolean }>({
   textAlign: 'center',
-  padding: compact ? '6px 14px' : '14px 24px',
-  borderRadius: compact ? 10 : 14,
-  width: '92%',
-  lineHeight: 1.3,
-  marginBottom: compact ? 4 : 16,
-  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+  width: '100%',
   position: 'relative',
   zIndex: 2,
-  overflow: 'hidden',
-  transform: 'rotate(-1deg)',
-  animation: `${slideUp} 0.3s ease-out`,
   flexShrink: 0,
-}));
+  marginBottom: 2,
+  animation: `${slideUp} 0.3s ease-out`,
+});
 
 export const OrderRoundBannerText = styled('p')({
-  fontSize: 16,
-  fontWeight: 700,
-  color: WHITE,
-  lineHeight: 1.3,
+  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontSize: 26,
+  fontWeight: 400,
+  lineHeight: 1.15,
+  letterSpacing: '0.02em',
+  color: '#6c5ce7',
+  WebkitTextStroke: '1.5px #1a1a1a',
+  paintOrder: 'stroke fill',
   margin: 0,
-  position: 'relative',
-  zIndex: 1,
-  textShadow: '0 1px 2px rgba(0,0,0,0.15)',
 });
 
 // ─── Order Cards ───
@@ -228,13 +236,14 @@ export const OrderRoundBannerText = styled('p')({
 export const NatureCardsList = styled('div')<{ cardCount: number }>(({ cardCount }) => ({
   flex: 1,
   minHeight: 0,
-  display: 'grid',
-  gridTemplateRows: `repeat(${Math.max(cardCount, 1)}, minmax(0, 1fr))`,
-  gap: cardCount > 6 ? 3 : 5,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: cardCount > 6 ? 6 : 8,
   marginBottom: 4,
-  width: '90%',
+  width: '100%',
   position: 'relative',
   zIndex: 1,
+  justifyContent: 'center',
 }));
 
 export const NatureCard = styled('div')<{
@@ -246,9 +255,7 @@ export const NatureCard = styled('div')<{
   display: 'flex',
   alignItems: 'center',
   gap: 8,
-  minHeight: 0,
-  height: '90%',
-  padding: '4px 10px',
+  padding: '10px 12px',
   border: `2px solid ${borderColor}`,
   borderRadius: 10,
   background: bgColor,
@@ -260,6 +267,7 @@ export const NatureCard = styled('div')<{
   boxShadow: `0 2px 0 ${borderColor}22`,
   animation: `${slideUp} 0.2s ease-out`,
   overflow: 'hidden',
+  flexShrink: 0,
 }));
 
 export const NatureCardNumber = styled('span')<{ status: 'neutral' | 'correct' | 'incorrect' }>(({ status }) => ({
@@ -328,49 +336,59 @@ export const NatureCheckButton = styled('button')<{ disabled?: boolean }>(({ dis
   } : {},
 }));
 
-// ─── Feedback (floating pop overlay) ───
+// ─── Feedback (fixed center toast — matches Puzzle) ───
 
 export const OrderFeedbackFloater = styled('div')({
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  zIndex: 10,
+  position: 'fixed',
+  inset: 0,
   display: 'flex',
+  alignItems: 'center',
   justifyContent: 'center',
   pointerEvents: 'none',
+  zIndex: 200,
+  padding: 16,
+  boxSizing: 'border-box',
 });
 
-export const OrderFeedbackContainer = styled('div')({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: 6,
-  animation: `${feedbackPop} 0.3s ease-out`,
+export const OrderFeedbackContainer = styled('div')<{ variant: 'correct' | 'incorrect' }>(({ variant }) => {
+  const border = variant === 'correct' ? BTN_GREEN : BTN_RED;
+  return {
+    background: 'rgba(255,255,255,0.96)',
+    border: `3px solid ${border}`,
+    borderRadius: 18,
+    padding: '14px 22px',
+    boxShadow: '0 10px 40px rgba(0,0,0,0.18)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 10,
+    maxWidth: 'min(340px, 92vw)',
+    animation: `${feedbackPop} 0.35s ease-out`,
+  };
 });
 
 export const OrderCorrectText = styled('div')({
-  fontSize: 36,
+  fontSize: 22,
   fontWeight: 900,
   color: BTN_GREEN,
-  textShadow: '2px 2px 0 #fff, -1px -1px 0 #fff',
+  textShadow: '1px 1px 0 #fff, -1px -1px 0 #fff',
   lineHeight: 1,
 });
 
 export const OrderWrongText = styled('div')({
-  fontSize: 36,
+  fontSize: 22,
   fontWeight: 900,
   color: BTN_RED,
-  textShadow: '2px 2px 0 #fff, -1px -1px 0 #fff',
+  textShadow: '1px 1px 0 #fff',
   lineHeight: 1,
 });
 
 export const OrderPointsBadge = styled('div')({
   background: '#d5f5e3',
   color: BTN_GREEN_DARK,
-  borderRadius: 20,
-  padding: '6px 18px',
-  fontSize: 16,
+  borderRadius: 16,
+  padding: '6px 14px',
+  fontSize: 15,
   fontWeight: 700,
   border: `2px solid ${BTN_GREEN}`,
 });
@@ -489,7 +507,7 @@ export const IntroDescText = styled('div')({
 });
 
 export const IntroStartButton = styled('button')({
-  marginTop: 'clamp(-26px, -5.5vw, -34px)',
+  marginTop: 'clamp(-16px, -5.5vw, -34px)',
   position: 'relative' as const,
   zIndex: 2,
   flexShrink: 0,
@@ -546,7 +564,7 @@ export const InstructionsText = styled('p')({
 export const GOLF_INTRO_BG_URL = '/images/golf-intro-bg.jpeg';
 
 export const GolfIntroOverlay = styled('div')({
-  position: 'absolute',
+  position: 'fixed',
   inset: 0,
   zIndex: 20,
   display: 'flex',
@@ -613,39 +631,105 @@ export const FinishTitleBanner = styled('div')({
   animation: `${floatIn} 0.4s ease-out`,
 });
 
+export const FinishStumpStage = styled('div')({
+  position: 'absolute',
+  inset: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  pointerEvents: 'none',
+  zIndex: 1,
+});
+
 export const FinishStump = styled('div')({
-  width: 220,
-  height: 220,
+  width: 'clamp(160px, 48vw, 220px)',
+  height: 'clamp(160px, 48vw, 220px)',
   borderRadius: '50%',
-  background: `linear-gradient(135deg, ${FINISH_PURPLE} 0%, ${FINISH_PURPLE_DARK} 100%)`,
-  border: '4px solid #fff',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+  position: 'relative',
+  animation: `${floatIn} 0.5s ease-out 0.15s both`,
+  zIndex: 2,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  position: 'relative',
-  marginBottom: 16,
-  animation: `${floatIn} 0.5s ease-out 0.15s both`,
+  isolation: 'isolate',
+  boxSizing: 'border-box',
+  border: '3px solid #ffec9a',
+  background: `
+    linear-gradient(
+      148deg,
+      #6b4f0a 0%,
+      #8b6914 8%,
+      #d4a84b 22%,
+      #fcf3b0 34%,
+      #b8860b 48%,
+      #6b4f0a 58%,
+      #daa520 72%,
+      #8b6914 88%,
+      #5c4010 100%
+    )
+  `,
+  boxShadow: `
+    0 4px 0 #3d2a06,
+    0 14px 32px rgba(0,0,0,0.42),
+    inset 0 2px 5px rgba(255,255,255,0.5),
+    inset 0 -4px 10px rgba(0,0,0,0.38)
+  `,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    inset: '11%',
+    borderRadius: '50%',
+    zIndex: 0,
+    background: `
+      radial-gradient(
+        ellipse 100% 100% at 38% 32%,
+        #fffef6 0%,
+        #f5e6a8 14%,
+        #e6c547 38%,
+        #b8860b 65%,
+        #704214 92%
+      )
+    `,
+    boxShadow: `
+      inset 0 4px 12px rgba(255,255,255,0.42),
+      inset 0 -8px 16px rgba(0,0,0,0.45)
+    `,
+  },
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    inset: '8.5%',
+    borderRadius: '50%',
+    zIndex: 0,
+    pointerEvents: 'none',
+    border: '2px solid rgba(139, 105, 20, 0.65)',
+    boxShadow: 'inset 0 0 5px rgba(255, 235, 160, 0.35)',
+  },
 });
 
 export const FinishScoreNumber = styled('span')({
-  fontSize: 64,
+  fontSize: 'clamp(48px, 13vw, 64px)',
   fontWeight: 900,
   color: '#fff',
-  textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+  textShadow: `
+    0 1px 0 rgba(0,0,0,0.55),
+    0 3px 8px rgba(0,0,0,0.5),
+    0 6px 16px rgba(0,0,0,0.25)
+  `,
   lineHeight: 1,
   position: 'relative',
   zIndex: 1,
 });
 
 export const FinishScoreLabel = styled('span')({
-  fontSize: 20,
+  fontSize: 'clamp(16px, 4.5vw, 20px)',
   fontWeight: 700,
-  color: 'rgba(255,255,255,0.95)',
+  color: '#fff',
   marginTop: 2,
   position: 'relative',
   zIndex: 1,
+  textShadow: '0 1px 2px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.35)',
 });
 
 export const FinishFinalLabel = styled('div')({

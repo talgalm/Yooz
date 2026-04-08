@@ -19,6 +19,7 @@ import { GameIntroHeaderBar, GameHeaderMuteButton } from '../styled';
 import {
   OrderFullScreenSceneBackdrop,
   OrderIntroFullScreenSceneBackdrop,
+  GolfFullScreenSceneBackdrop,
   OrderPhaseRoot,
   OrderContainer,
   OrderTopBar,
@@ -53,14 +54,10 @@ import {
   GolfIntroOverlay,
   FinishContainer,
   FinishContent,
-  FinishTitleBanner,
+  FinishStumpStage,
   FinishStump,
   FinishScoreNumber,
   FinishScoreLabel,
-  FinishFinalLabel,
-  FinishStats,
-  FinishContinueButton,
-  FinishYoozLogo,
 } from './styled';
 
 interface OrderRound {
@@ -199,12 +196,17 @@ export default function OrderGame({ game, onComplete }: GameProps) {
 
   useEffect(() => {
     if (!setThemedSceneOverlay) return;
+    // Golf playing — show grass background behind header too
+    if (showGolf) {
+      setThemedSceneOverlay(<GolfFullScreenSceneBackdrop aria-hidden />);
+      return () => setThemedSceneOverlay(null);
+    }
     const Backdrop = showInstructions && settings.instructions
       ? OrderIntroFullScreenSceneBackdrop
       : OrderFullScreenSceneBackdrop;
     setThemedSceneOverlay(<Backdrop aria-hidden />);
     return () => setThemedSceneOverlay(null);
-  }, [setThemedSceneOverlay, showInstructions]);
+  }, [setThemedSceneOverlay, showInstructions, showGolf]);
 
   const inlineBackdrop = !setThemedSceneOverlay;
 
@@ -385,7 +387,7 @@ export default function OrderGame({ game, onComplete }: GameProps) {
   // Golf challenge — playing
   if (showGolf) {
     return (
-      <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
+      <OrderPhaseRoot>
         <GolfChallenge
           onComplete={(bonus) => { setGolfBonus(bonus); setShowGolf(false); setGolfDone(true); }}
           onSkip={() => { setGolfBonus(0); setShowGolf(false); setGolfDone(true); }}
@@ -410,28 +412,19 @@ export default function OrderGame({ game, onComplete }: GameProps) {
               </GameHeaderMuteButton>
             </GameIntroHeaderBar>
           )}
-          <FinishContent>
-            <FinishTitleBanner>
-              <LeafVeinSvg />
-              <span style={{ position: 'relative', zIndex: 1 }}>{t.gameComplete}</span>
-            </FinishTitleBanner>
+          <FinishContent style={{ justifyContent: 'space-between' }}>
+            <IntroTitle style={{ marginBottom: 0 }}>{t.gameComplete}</IntroTitle>
 
-            <FinishStump>
-              <StumpRingsSvg />
-              <FinishScoreNumber>{finalScore}</FinishScoreNumber>
-              <FinishScoreLabel>{t.points}</FinishScoreLabel>
-            </FinishStump>
+            <FinishStumpStage aria-hidden>
+              <FinishStump>
+                <FinishScoreNumber>{finalScore}</FinishScoreNumber>
+                <FinishScoreLabel>{t.points}</FinishScoreLabel>
+              </FinishStump>
+            </FinishStumpStage>
 
-            <FinishFinalLabel>{t.finalScore}</FinishFinalLabel>
-            <FinishStats>
-              {t.roundOf} {rounds.length} {t.of} {rounds.length}
-            </FinishStats>
-
-            <FinishContinueButton onClick={handleFinish}>
+            <IntroStartButton style={{ marginTop: 'auto', marginBottom: 'clamp(8px, 2vh, 20px)' }} onClick={handleFinish}>
               {t.continue}
-            </FinishContinueButton>
-
-            <FinishYoozLogo><img src="/images/logo-purple.png" alt="Yooz" style={{ height: 36 }} /></FinishYoozLogo>
+            </IntroStartButton>
           </FinishContent>
         </FinishContainer>
       </OrderPhaseRoot>
@@ -439,21 +432,19 @@ export default function OrderGame({ game, onComplete }: GameProps) {
   }
 
   // Golf intro popup — shown after rounds complete, before golf starts
+  // Uses the same order game background with a centered instructions card
   if (gameComplete && golfEnabled && !golfDone) {
     return (
       <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
-      <OrderContainer dir="rtl">
-
-        <GolfIntroOverlay>
-          <InstructionsCard style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>⛳</div>
-            <InstructionsTitle>{golfT.title}</InstructionsTitle>
-            <InstructionsText>{golfT.disclaimer}</InstructionsText>
-            <NatureCheckButton onClick={() => setShowGolf(true)} style={{ marginTop: 20 }}>
-              {golfT.continueBtn}
-            </NatureCheckButton>
-          </InstructionsCard>
-        </GolfIntroOverlay>
+      <OrderContainer dir="rtl" style={{ justifyContent: 'center' }}>
+        <InstructionsCard style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>⛳</div>
+          <InstructionsTitle>{golfT.title}</InstructionsTitle>
+          <InstructionsText>{golfT.disclaimer}</InstructionsText>
+          <NatureCheckButton onClick={() => setShowGolf(true)} style={{ marginTop: 20 }}>
+            {golfT.continueBtn}
+          </NatureCheckButton>
+        </InstructionsCard>
       </OrderContainer>
       </OrderPhaseRoot>
     );
@@ -566,10 +557,9 @@ export default function OrderGame({ game, onComplete }: GameProps) {
         </OrderTopBarItem>
       </OrderTopBar>
 
-      {/* Round title (leaf banner) */}
+      {/* Round title (yellow outlined text) */}
       {round.title && (
-        <OrderRoundBanner compact>
-          <LeafVeinSvg />
+        <OrderRoundBanner>
           <OrderRoundBannerText>{round.title}</OrderRoundBannerText>
         </OrderRoundBanner>
       )}
@@ -636,19 +626,17 @@ export default function OrderGame({ game, onComplete }: GameProps) {
         })}
       </NatureCardsList>
 
-      {/* Check button */}
-      {!checked && (
-        <OrderActionBar>
-          <NatureCheckButton onClick={handleCheck} disabled={timeLeft === 0}>
-            {t.checkAnswer}
-          </NatureCheckButton>
-        </OrderActionBar>
-      )}
+      {/* Check button — stays visible (disabled) after check to prevent layout shift */}
+      <OrderActionBar>
+        <NatureCheckButton onClick={!checked ? handleCheck : undefined} disabled={checked || timeLeft === 0}>
+          {t.checkAnswer}
+        </NatureCheckButton>
+      </OrderActionBar>
 
-      {/* Feedback (absolute overlay centered on game area) */}
+      {/* Feedback (fixed center toast — matches Puzzle) */}
       {showFeedback && (
         <OrderFeedbackFloater>
-          <OrderFeedbackContainer>
+          <OrderFeedbackContainer variant={showFeedback === 'correct' ? 'correct' : 'incorrect'}>
             {showFeedback === 'correct' ? (
               <>
                 <OrderCorrectText>{t.correct}</OrderCorrectText>

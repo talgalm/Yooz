@@ -16,7 +16,7 @@ export const golfTexts = {
     hits: 'חבטות',
     skip: 'דלג >>',
     disclaimer: 'לרשותך מקסימום 7 חבטות ובמינימום זמן כדי לקלוע לחור',
-    success: 'בחור!',
+    success: 'כל הכבוד!',
     failed: 'נגמרו החבטות!',
     bonus: 'בונוס',
     points: 'נק׳',
