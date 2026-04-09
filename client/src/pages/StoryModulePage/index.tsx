@@ -11,7 +11,7 @@ import { texts } from './StoryModulePage.i18n';
 import { GAME_CONSTANTS, type GameResult } from '../../components/games/types';
 import LangDrawer from '../../components/LangDrawer';
 import NatureBackground from '../../components/NatureBackground';
-import ThemedBackground, { getThemeShellColor, getThemeTransitionBackground } from '../../components/ThemedBackground';
+import ThemedBackground, { getThemeShellColor, getThemeTransitionBackground, getThemeSkyColor, getThemeGroundColor } from '../../components/ThemedBackground';
 import { styled, keyframes } from '@mui/material/styles';
 import {
   PageContainer,
@@ -284,7 +284,7 @@ export default function StoryModulePage() {
   const pendingAfterItemPopupRef = useRef<number | null>(null);
 
   // Finish page state
-  const [countdown, setCountdown] = useState(90);
+  const [countdown, setCountdown] = useState<number | null>(90);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Leaderboard state
@@ -837,30 +837,37 @@ export default function StoryModulePage() {
   }, [isBallGameActive]);
 
   const themeShellColor = getThemeShellColor(data?.module.theme);
-  const activeThemeShellColor = (() => {
+  const isTextVideoImageStation = phase === 'playing' &&
+    activeItemForUi?.type === 'station' &&
+    ['text', 'video', 'image'].includes((activeItemForUi as StationItemData).stationType);
+  const activeThemeTopColor = (() => {
     if (isTriviaGameActive) return TRIVIA_BROWSER_PURPLE;
     if (activeGameType === 'puzzle') return PUZZLE_BROWSER_GREEN;
     if (activeGameType === 'ballGame') return BALL_BROWSER_BLUE;
     if (activeGameType === 'order') {
       return isGolfChallengeActive ? GOLF_BROWSER_GREEN : ORDER_BROWSER_ORANGE;
     }
+    if (isTextVideoImageStation) return getThemeSkyColor(data?.module.theme);
     return themeShellColor;
   })();
+  const activeThemeBottomColor = isTextVideoImageStation
+    ? getThemeGroundColor(data?.module.theme)
+    : activeThemeTopColor;
   useEffect(() => {
     const body = document.body;
     const prevBodyBg = body.style.backgroundColor;
 
-    body.style.backgroundColor = activeThemeShellColor;
+    body.style.backgroundColor = activeThemeBottomColor;
 
     const metas = document.querySelectorAll('meta[name="theme-color"]') as NodeListOf<HTMLMetaElement>;
     const prevThemes = Array.from(metas).map((m) => m.content);
-    metas.forEach((m) => { m.content = activeThemeShellColor; });
+    metas.forEach((m) => { m.content = activeThemeTopColor; });
 
     return () => {
       body.style.backgroundColor = prevBodyBg;
       metas.forEach((m, i) => { m.content = prevThemes[i]; });
     };
-  }, [activeThemeShellColor]);
+  }, [activeThemeTopColor, activeThemeBottomColor]);
 
   // ─── Loading / Error ───
 
@@ -1009,7 +1016,13 @@ export default function StoryModulePage() {
           countdown={countdown}
           countdownSeconds={GAME_CONSTANTS.FINISH_COUNTDOWN_SECONDS}
           bgStyle={bgStyle}
-          onStay={() => setCountdown(GAME_CONSTANTS.FINISH_COUNTDOWN_SECONDS)}
+          onStay={() => {
+            if (countdownRef.current) {
+              clearInterval(countdownRef.current);
+              countdownRef.current = null;
+            }
+            setCountdown(null);
+          }}
           onViewLeaderboard={handleViewLeaderboard}
           onExit={handleExit}
           popupModal={popupModal}

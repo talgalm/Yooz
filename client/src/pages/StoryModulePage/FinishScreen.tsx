@@ -304,6 +304,7 @@ const ContinueButton = styled('button')({
   borderRadius: 50,
   fontSize: 16,
   fontWeight: 800,
+  fontFamily: 'inherit',
   cursor: 'pointer',
   textTransform: 'uppercase',
   letterSpacing: 1.5,
@@ -325,6 +326,7 @@ const SecondaryButton = styled('button')({
   borderRadius: 50,
   fontSize: 14,
   fontWeight: 700,
+  fontFamily: 'inherit',
   cursor: 'pointer',
   transition: 'background 0.15s',
   '&:hover': {
@@ -341,6 +343,7 @@ const ExitButton = styled('button')({
   borderRadius: 50,
   fontSize: 14,
   fontWeight: 600,
+  fontFamily: 'inherit',
   cursor: 'pointer',
   transition: 'color 0.15s, border-color 0.15s',
   '&:hover': {
@@ -393,7 +396,7 @@ interface FinishScreenProps {
   hasScores: boolean;
   itemCount: number;
   completedItems: number;
-  countdown: number;
+  countdown: number | null;
   countdownSeconds: number;
   bgStyle: React.CSSProperties;
   onStay: () => void;
@@ -489,9 +492,11 @@ export default function FinishScreen({
           </ExitButton>
         </ActionsColumn>
 
-        <Countdown>
-          {t.autoExitIn} {countdown}{t.seconds}
-        </Countdown>
+        {countdown !== null && (
+          <Countdown>
+            {t.autoExitIn} {countdown}{t.seconds}
+          </Countdown>
+        )}
       </Content>
       {popupModal}
     </PageRoot>

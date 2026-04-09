@@ -98,12 +98,13 @@ const AnimatedContent = styled('div')({
 const StationTitleText = styled('h2')({
   fontSize: 22,
   fontWeight: 800,
-  color: '#333',
+  color: '#111',
   margin: '0 0 6px',
   textAlign: 'center',
 });
 
 const StationDescriptionText = styled(StationHeadline)({
+  color: '#111',
   marginBottom: 0,
   marginTop: -4,
 });
@@ -117,13 +118,25 @@ const StationTopLayout = styled('div')({
   textAlign: 'center',
 });
 
+/** Same as StationTopLayout but vertically + horizontally centered — for video/image stations */
+const MediaStationLayout = styled(StationTopLayout)({
+  justifyContent: 'center',
+});
+
 const FixedContinueButton = styled(StationContinueButton)({
   position: 'fixed',
   bottom: 24,
   left: '50%',
   transform: 'translateX(-50%)',
   zIndex: 40,
-  boxShadow: '0 4px 20px rgba(108,92,231,0.35)',
+  background: '#6c5ce7',
+  color: '#111',
+  border: '3px solid #000',
+  boxShadow: '0 3px 0 #000, 0 4px 20px rgba(108,92,231,0.35)',
+  '&:active': {
+    transform: 'translateX(-50%) translateY(3px)',
+    boxShadow: '0 0 0 #000',
+  },
 });
 
 const SkipButton = styled(PrimaryButton)({
@@ -200,8 +213,9 @@ export default function PlayingPhase({
   const isPuzzleGame = isGameStep && (currentItem as GameItemData).gameType === 'puzzle';
   const isOrderGame = isGameStep && (currentItem as GameItemData).gameType === 'order';
   const isBallGame = isGameStep && (currentItem as GameItemData).gameType === 'ballGame';
-  const puzzleSessionChrome = (isPuzzleGame || isOrderGame || isBallGame) ? 'puzzle' : 'default';
-  const useDarkChrome = isPuzzleGame || isOrderGame || isBallGame;
+  const isTextVideoImageStation = currentItem.type === 'station' && ['text', 'video', 'image'].includes((currentItem as StationItemData).stationType);
+  const puzzleSessionChrome = (isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation) ? 'puzzle' : 'default';
+  const useDarkChrome = isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation;
   const SessionHeaderIconButton = useDarkChrome ? PuzzleDarkHeaderActionIconButton : DarkHeaderActionIconButton;
   const SessionHintButton = useDarkChrome ? PuzzleDarkHeaderTextButton : DarkHeaderTextButton;
   useActivityGameHeaderFallbackWhenNeeded(isGameStep, currentItem._id);
@@ -267,13 +281,13 @@ export default function PlayingPhase({
           </StationWindow>
         );
         return (
-          <StationTopLayout>
+          <MediaStationLayout>
             <StationTitleText>{station.name}</StationTitleText>
             {descAfter ? <>{mediaEl}{descEl}</> : <>{descEl}{mediaEl}</>}
             <FixedContinueButton onClick={onStationContinue}>
               {t.continueButton}
             </FixedContinueButton>
-          </StationTopLayout>
+          </MediaStationLayout>
         );
       }
 
@@ -564,13 +578,13 @@ function VideoStationPlayer({ station, onContinue, t }: {
   );
 
   return (
-    <StationTopLayout>
+    <MediaStationLayout>
       <StationTitleText>{station.name}</StationTitleText>
       {descAfter ? <>{mediaEl}{descEl}</> : <>{descEl}{mediaEl}</>}
       <FixedContinueButton onClick={onContinue}>
         {t.continueButton}
       </FixedContinueButton>
-    </StationTopLayout>
+    </MediaStationLayout>
   );
 }
 

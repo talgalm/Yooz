@@ -304,7 +304,7 @@ function SliderQuestion({
             <span>{level.emoji}</span>
           </>
         ) : (
-          <span style={{ color: '#bbb', fontWeight: 400 }}>גררו או לחצו לבחירה</span>
+          <span style={{ color: '#bbb', fontWeight: 400 }}>לחצו לבחירה</span>
         )}
       </AnswerLabel>
     </QuestionCard>

@@ -27,6 +27,24 @@ export function getThemeShellColor(theme?: string): string {
   }
 }
 
+/** Top-of-sky color — used as browser theme-color on text/video/image stations so the address bar blends in. */
+export function getThemeSkyColor(theme?: string): string {
+  switch (theme) {
+    case 'ocean':  return '#5ABED6';
+    case 'desert': return '#F0C860';
+    default:       return '#b8e8f0';
+  }
+}
+
+/** Bottom ground color — used as body background on text/video/image stations so the bottom nav bar blends in. */
+export function getThemeGroundColor(theme?: string): string {
+  switch (theme) {
+    case 'ocean':  return '#0e3a58';
+    case 'desert': return '#C89838';
+    default:       return '#4b8838';
+  }
+}
+
 export function getThemeTransitionBackground(theme?: string): string {
   switch (theme) {
     case 'ocean':

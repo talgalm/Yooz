@@ -189,6 +189,8 @@ export interface ActivitySessionHeaderProps {
   onPointsRollComplete?: () => void;
   /** Black control outlines instead of light gray (puzzle game). */
   chromeVariant?: 'default' | 'puzzle';
+  /** Remove backdrop blur and border — floats over content (text/video/image stations). */
+  transparentChrome?: boolean;
 }
 
 /**
@@ -204,6 +206,7 @@ export default function ActivitySessionHeader({
   pointsRoll,
   onPointsRollComplete,
   chromeVariant = 'default',
+  transparentChrome = false,
 }: ActivitySessionHeaderProps) {
   const puzzleChrome = chromeVariant === 'puzzle';
   const RoadmapItem = puzzleChrome ? RoadmapHeaderItemPuzzle : RoadmapHeaderItem;
