@@ -643,17 +643,19 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
             <HelperLifelineRow>
               <HelperLifelineButton
                 type="button"
-                disabled={helperHalfUsed || !canApplyLifeline(question.answers, eliminatedIndices, 2)}
-                onClick={() => applyLifeline(2, 'half')}
-              >
-                {t.helperHalf}
-              </HelperLifelineButton>
-              <HelperLifelineButton
-                type="button"
+                kind="threeQuarters"
                 disabled={helperThreeQuartersUsed || !canApplyLifeline(question.answers, eliminatedIndices, 3)}
                 onClick={() => applyLifeline(3, 'threeQuarters')}
               >
                 {t.helperThreeQuarters}
+              </HelperLifelineButton>
+              <HelperLifelineButton
+                type="button"
+                kind="half"
+                disabled={helperHalfUsed || !canApplyLifeline(question.answers, eliminatedIndices, 2)}
+                onClick={() => applyLifeline(2, 'half')}
+              >
+                {t.helperHalf}
               </HelperLifelineButton>
             </HelperLifelineRow>
             <HelperLifelineCaption>{t.helperCaption}</HelperLifelineCaption>

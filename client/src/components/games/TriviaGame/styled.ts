@@ -412,29 +412,75 @@ export const HelperLifelineCaption = styled('p')({
   lineHeight: 1.25,
 });
 
-export const HelperLifelineButton = styled('button')<{ disabled?: boolean }>(({ disabled }) => ({
-  width: '100%',
-  minWidth: 0,
-  boxSizing: 'border-box',
-  padding: '8px 12px',
-  fontSize: 15,
-  fontWeight: 800,
-  fontFamily: 'inherit',
-  borderRadius: 10,
-  border: `3px solid ${disabled ? '#95a5a6' : BTN_PURPLE_DARK}`,
-  background: disabled ? '#dfe6e9' : BTN_PURPLE_LIGHT,
-  color: disabled ? TEXT_DARK : BTN_PURPLE_DARK,
-  cursor: disabled ? 'default' : 'pointer',
-  boxShadow: disabled ? 'none' : `0 3px 0 ${BTN_PURPLE_DARK}`,
-  opacity: disabled ? 0.55 : 1,
-  transition: 'all 0.1s ease',
-  '&:active': !disabled
-    ? {
-        transform: 'translateY(3px)',
-        boxShadow: `0 0 0 ${BTN_PURPLE_DARK}`,
-      }
-    : {},
-}));
+export const HelperLifelineButton = styled('button')<{ disabled?: boolean; kind?: 'half' | 'threeQuarters' }>(({ disabled, kind }) => {
+  // Silver style for 1/2
+  if (kind === 'half') {
+    return {
+      width: '100%',
+      minWidth: 0,
+      boxSizing: 'border-box' as const,
+      padding: '8px 12px',
+      fontSize: 15,
+      fontWeight: 800,
+      fontFamily: 'inherit',
+      borderRadius: 10,
+      border: `3px solid ${disabled ? '#bbb' : '#888'}`,
+      background: disabled
+        ? '#dfe6e9'
+        : 'linear-gradient(180deg, #f0f0f0 0%, #d4d4d4 35%, #b0b0b0 65%, #c8c8c8 100%)',
+      color: disabled ? '#aaa' : '#3a3a3a',
+      cursor: disabled ? 'default' : 'pointer',
+      boxShadow: disabled ? 'none' : '0 3px 0 #777, inset 0 1px 0 rgba(255,255,255,0.6)',
+      opacity: disabled ? 0.55 : 1,
+      textShadow: disabled ? 'none' : '0 1px 0 rgba(255,255,255,0.5)',
+      transition: 'all 0.1s ease',
+      '&:active': !disabled ? { transform: 'translateY(3px)', boxShadow: '0 0 0 #777' } : {},
+    };
+  }
+  // Bronze style for 3/4
+  if (kind === 'threeQuarters') {
+    return {
+      width: '100%',
+      minWidth: 0,
+      boxSizing: 'border-box' as const,
+      padding: '8px 12px',
+      fontSize: 15,
+      fontWeight: 800,
+      fontFamily: 'inherit',
+      borderRadius: 10,
+      border: `3px solid ${disabled ? '#bbb' : '#7a4010'}`,
+      background: disabled
+        ? '#dfe6e9'
+        : 'linear-gradient(180deg, #e8a870 0%, #c87840 35%, #9e5520 65%, #b86830 100%)',
+      color: disabled ? '#aaa' : '#fff',
+      cursor: disabled ? 'default' : 'pointer',
+      boxShadow: disabled ? 'none' : '0 3px 0 #6a3208, inset 0 1px 0 rgba(255,220,160,0.5)',
+      opacity: disabled ? 0.55 : 1,
+      textShadow: disabled ? 'none' : '0 1px 2px rgba(0,0,0,0.4)',
+      transition: 'all 0.1s ease',
+      '&:active': !disabled ? { transform: 'translateY(3px)', boxShadow: '0 0 0 #6a3208' } : {},
+    };
+  }
+  // Fallback (original purple)
+  return {
+    width: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box' as const,
+    padding: '8px 12px',
+    fontSize: 15,
+    fontWeight: 800,
+    fontFamily: 'inherit',
+    borderRadius: 10,
+    border: `3px solid ${disabled ? '#95a5a6' : BTN_PURPLE_DARK}`,
+    background: disabled ? '#dfe6e9' : BTN_PURPLE_LIGHT,
+    color: disabled ? TEXT_DARK : BTN_PURPLE_DARK,
+    cursor: disabled ? 'default' : 'pointer',
+    boxShadow: disabled ? 'none' : `0 3px 0 ${BTN_PURPLE_DARK}`,
+    opacity: disabled ? 0.55 : 1,
+    transition: 'all 0.1s ease',
+    '&:active': !disabled ? { transform: 'translateY(3px)', boxShadow: `0 0 0 ${BTN_PURPLE_DARK}` } : {},
+  };
+});
 
 // ─── Answer Grid (2×2) ───
 

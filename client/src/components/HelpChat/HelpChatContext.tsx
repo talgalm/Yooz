@@ -66,10 +66,11 @@ export function useHelpChat(): HelpChatContextValue {
 
 interface HelpChatProviderProps {
   variant: HelpChatVariant;
+  hideLogin?: boolean;
   children: ReactNode;
 }
 
-export function HelpChatProvider({ variant, children }: HelpChatProviderProps) {
+export function HelpChatProvider({ variant, hideLogin = false, children }: HelpChatProviderProps) {
   const t = useTranslations(texts);
   const { lang } = useLang();
 
@@ -92,7 +93,7 @@ export function HelpChatProvider({ variant, children }: HelpChatProviderProps) {
   }, [messages, typing]);
 
   useEffect(() => {
-    if (view === 'other' && inputRef.current) {
+    if ((view === 'other' || view === 'faq') && inputRef.current) {
       inputRef.current.focus();
     }
   }, [view]);
@@ -133,7 +134,7 @@ export function HelpChatProvider({ variant, children }: HelpChatProviderProps) {
     });
   }, [resetChat]);
 
-  const handleFaqClick = (faqKey: 'responseFaq1' | 'responseFaq2' | 'responseFaq3', label: string) => {
+  const handleFaqClick = (faqKey: 'responseFaq1' | 'responseFaq2' | 'responseFaq3' | 'responseFaq4', label: string) => {
     setView('faq');
     setMessages([{ from: 'user', text: label }]);
     setTyping(true);
@@ -152,6 +153,11 @@ export function HelpChatProvider({ variant, children }: HelpChatProviderProps) {
     const text = inputValue.trim();
     if (!text) return;
 
+    // Capture current messages as history before appending the new user message
+    // Filter out the continuePrompt bot message so it doesn't confuse Gemini
+    const continuePromptText = t.continuePrompt;
+    const history = messages.filter((m) => m.text !== continuePromptText);
+
     setMessages((prev) => [...prev, { from: 'user', text }]);
     setInputValue('');
     setTyping(true);
@@ -160,7 +166,7 @@ export function HelpChatProvider({ variant, children }: HelpChatProviderProps) {
       const res = await fetch('/api/help', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, lang }),
+        body: JSON.stringify({ message: text, lang, history }),
       });
 
       if (!res.ok) throw new Error('Server error');
@@ -216,20 +222,26 @@ export function HelpChatProvider({ variant, children }: HelpChatProviderProps) {
               <>
                 <BotMessage>{t.greeting}</BotMessage>
                 <OptionsGrid>
-                  <OptionButton onClick={() => handleFaqClick('responseFaq1', t.faq1Label)}>
-                    <OptionIcon>🔑</OptionIcon>
-                    {t.faq1Label}
-                  </OptionButton>
                   <OptionButton onClick={() => handleFaqClick('responseFaq2', t.faq2Label)}>
-                    <OptionIcon>📊</OptionIcon>
+                    <OptionIcon>🎮</OptionIcon>
                     {t.faq2Label}
                   </OptionButton>
+                  {!hideLogin && (
+                    <OptionButton onClick={() => handleFaqClick('responseFaq1', t.faq1Label)}>
+                      <OptionIcon>🔑</OptionIcon>
+                      {t.faq1Label}
+                    </OptionButton>
+                  )}
                   <OptionButton onClick={() => handleFaqClick('responseFaq3', t.faq3Label)}>
-                    <OptionIcon>🔄</OptionIcon>
+                    <OptionIcon>📊</OptionIcon>
                     {t.faq3Label}
                   </OptionButton>
+                  <OptionButton onClick={() => handleFaqClick('responseFaq4', t.faq4Label)}>
+                    <OptionIcon>🔄</OptionIcon>
+                    {t.faq4Label}
+                  </OptionButton>
                   <OptionButton onClick={handleOtherClick}>
-                    <OptionIcon>💬</OptionIcon>
+                    <OptionIcon>✏️</OptionIcon>
                     {t.otherLabel}
                   </OptionButton>
                 </OptionsGrid>
@@ -252,6 +264,9 @@ export function HelpChatProvider({ variant, children }: HelpChatProviderProps) {
                     <span />
                   </TypingDots>
                 )}
+                {view === 'faq' && !typing && messages.some((m) => m.from === 'bot') && (
+                  <BotMessage>{t.continuePrompt}</BotMessage>
+                )}
                 <BackButton onClick={resetChat}>
                   ← {t.backToMenu}
                 </BackButton>
@@ -259,7 +274,7 @@ export function HelpChatProvider({ variant, children }: HelpChatProviderProps) {
             )}
           </ChatBody>
 
-          {view === 'other' && (
+          {(view === 'other' || view === 'faq') && (
             <InputArea>
               <ChatInput
                 ref={inputRef}

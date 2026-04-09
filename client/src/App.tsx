@@ -82,8 +82,8 @@ export default function App() {
                 {/* Participant routes — mobile layout */}
                 <Route path="/play/:code" element={<MobileContainer><HelpChatProvider variant="fab"><PlayPage /><HelpChatFab /></HelpChatProvider></MobileContainer>} />
                 <Route path="/home" element={<MobileContainer><HelpChatProvider variant="header"><ProtectedRoute><HomePage /></ProtectedRoute></HelpChatProvider></MobileContainer>} />
-                <Route path="/story/:code" element={<MobileContainer><HelpChatProvider variant="header"><ProtectedRoute><StoryModulePage /></ProtectedRoute></HelpChatProvider></MobileContainer>} />
-                <Route path="/mission/:code" element={<MobileContainer><HelpChatProvider variant="fab"><ProtectedRoute><MissionPage /></ProtectedRoute><HelpChatFab /></HelpChatProvider></MobileContainer>} />
+                <Route path="/story/:code" element={<MobileContainer><HelpChatProvider variant="header" hideLogin><ProtectedRoute><StoryModulePage /></ProtectedRoute></HelpChatProvider></MobileContainer>} />
+                <Route path="/mission/:code" element={<MobileContainer><HelpChatProvider variant="fab" hideLogin><ProtectedRoute><MissionPage /></ProtectedRoute><HelpChatFab /></HelpChatProvider></MobileContainer>} />
 
                 {/* Portal route — public */}
                 <Route path="/portal/:code" element={<PortalPage />} />

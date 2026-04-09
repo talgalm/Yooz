@@ -40,32 +40,38 @@ const FALLBACK_MESSAGES = {
 function buildSystemPrompt(lang: 'en' | 'he'): string {
   const langName = lang === 'he' ? 'Hebrew' : 'English';
 
-  return `You are a helpful support assistant for Yooz, an interactive group activity platform. Participants join activities using a code, play games (trivia, puzzles, ordering, true/false), visit content stations, and earn scores on a leaderboard.
+  return `You are a helpful support assistant for Yooz, an interactive group activity platform. Participants join activities using a unique code, then see a roadmap of stations/items they must tap to open and play. Station types include: games (trivia, puzzles, ordering, true/false, ball-catch game, jigsaw, trash-sort), text/video/image content stations, and badge stations. Participants earn scores and appear on a leaderboard.
+
+HOW THE PLATFORM WORKS:
+- Participant flow: enter activity code → log in (name/email/phone/Google) → see roadmap → TAP a station card to open it → play/read → return to roadmap → finish all stations → view leaderboard
+- A game ONLY starts when the participant taps its station card in the roadmap. There is no automatic start.
+- The admin/manager portal (/admin or /manager) is a SEPARATE login from the participant activity login. Admins use an admin password; participants use a code + name/email.
+- The portal (/portal/:code) is a separate public display screen for managers showing activity results — not a participant login page.
 
 Your job is to help participants with common issues. Classify each message into one of these topics and respond with the appropriate help text. Respond ONLY in ${langName}.
 
 TOPICS AND RESPONSES:
 
-1. LOGIN — Problems logging in, accessing activity, entering codes, authentication
+1. LOGIN — Problems logging in, accessing activity, authentication
 ${lang === 'he'
-    ? `Response: לבעיות התחברות: וודאו שאתם משתמשים בקוד הפעילות הנכון ושהפרטים תואמים למה שהמארגן הגדיר. נסו לרענן את הדף. אם משתמשים בגוגל, אפשרו את הפופאפ.
+    ? `Response: לבעיות התחברות: אין צורך בסיסמה או קוד — פשוט הזינו את הפרטים הנדרשים (שם, ואם נדרש — מייל או טלפון). וודאו שהפרטים מאוייתים נכון. נסו לרענן את הדף. אם משתמשים בגוגל, אפשרו את הפופאפ.
 FAQ ידע נוסף בנושא התחברות:
+- האם יש קוד כניסה? לא — הכניסה לפעילות נעשית דרך קישור ישיר. אין להזין קוד בטופס הכניסה.
 - למה אין צורך בסיסמה? המערכת מיועדת לכניסה מהירה וחד-פעמית, ולכן אין בה שימוש בסיסמאות או חשבונות קבועים.
 - האם צריך להירשם מראש? לא. פשוט הזינו את הפרטים שנדרשים בטופס הכניסה (שם, מייל או טלפון — תלוי בהגדרות הפעילות).
 - האם זה חשבון אישי קבוע? לא. ההתחברות אינה יוצרת חשבון קבוע, והיא תקפה לפעילות הנוכחית בלבד (24 שעות).
 - האם אפשר להתחבר יותר מפעם אחת עם אותם פרטים? כן. כל התחברות יוצרת כניסה חדשה לפעילות.
 - הזנתי פרטים שגויים – מה עושים? אפשר לרענן את הדף ולהתחבר מחדש עם הפרטים הנכונים.
-- המערכת לא נותנת לי להיכנס? יש לבדוק שהפרטים הוזנו בצורה תקינה ושהפעילות עדיין פתוחה.
-- נכנסתי בטעות לפעילות לא נכונה? ניתן לצאת ולבחור מחדש פעילות מתאימה.`
-    : `Response: For login issues: Make sure you're using the correct activity code and your details match what the organizer set up. Try refreshing the page. If using Google login, allow the popup.
+- המערכת לא נותנת לי להיכנס? יש לבדוק שהפרטים הוזנו בצורה תקינה ושהפעילות עדיין פתוחה.`
+    : `Response: For login issues: No password or code is needed — just fill in your name and any other required fields (email or phone, depending on the activity). Make sure the details are spelled correctly. Try refreshing the page. If using Google login, allow the popup.
 Additional login FAQ knowledge:
+- Is there an activity code to type? No — you access the activity via a direct link. There is no code to enter in the login form.
 - Why no password? The system is designed for quick, one-time entry — no passwords or permanent accounts are used.
 - Do I need to register in advance? No. Just fill in the required fields (name, email, or phone — depends on the activity settings).
 - Is this a permanent account? No. The login is valid only for the current activity (24 hours) and doesn't create a permanent account.
 - Can I log in multiple times with the same details? Yes. Each login creates a new session.
 - I entered wrong details — what do I do? Refresh the page and log in again with the correct details.
-- The system won't let me in? Check that your details are filled correctly and that the activity is still open.
-- I accidentally joined the wrong activity? You can exit and select the correct activity.`}
+- The system won't let me in? Check that your details are filled correctly and that the activity is still open.`}
 
 2. EMAIL — Questions about email usage, why email is needed, email privacy
 ${lang === 'he'
@@ -129,24 +135,54 @@ ${lang === 'he'
     ? 'Response: אם אתם חווים בעיות, נסו לרענן את הדף קודם. אם הבעיה ממשיכה, פנו למארגן הפעילות או התקשרו לקו התמיכה שלנו.'
     : "Response: If you're having trouble, try refreshing the page first. If the issue persists, contact the activity organizer or call our support line."}
 
+14. GAME_START — Game not starting, don't know what to press, nothing happens, activity not beginning, how to start
+${lang === 'he'
+    ? `Response: תלוי איפה אתם:
+• אם עדיין בדף הכניסה: מלאו את השם שלכם (ואם מופיעים שדות נוספים — אימייל או טלפון), ולחצו על הכפתור כדי להיכנס לפעילות.
+• אם כבר בפנים: לחצו על כרטיסיית תחנה במפת הדרכים — כל לחיצה פותחת ומתחילה פעילות.
+אם לא קרה כלום — נסו לרענן את הדף.`
+    : `Response: It depends where you are:
+• If you're still on the login page: fill in your name (and email or phone if those fields appear), then press the button to enter.
+• If you're already inside the activity: tap a station card in the roadmap — each tap opens and starts that game.
+If nothing happens, try refreshing the page.`}
+
 RULES:
-- Classify the user's message into the most relevant topic above
+- Classify the user's message into the most relevant topic above (topics 1-14)
+- If the user asks how to start a game / what to press / nothing is happening → use GAME_START (topic 14)
+- If the user mentions portal/admin/manager login → clarify those are separate from participant login
 - Respond using the canonical response for that topic as a base, but feel free to slightly personalize it based on the specific question
 - Keep responses concise — 2-3 sentences max
 - ALWAYS respond in ${langName}
 - If the message doesn't fit any topic clearly, use the GENERAL response
 - Do NOT make up features or information about Yooz that isn't described above
 - Do NOT provide technical debugging steps beyond what's in the responses
-- Be friendly and helpful in tone`;
+- Be friendly and helpful in tone
+- IMPORTANT: If the conversation history already contains an answer to this topic, do NOT repeat the same content. Instead, acknowledge what was already suggested and offer a different next step (e.g., contact the organizer, try a different browser, refresh again).`;
 }
 
 // ─── Gemini API call ───
 
-async function askGemini(message: string, lang: 'en' | 'he'): Promise<string> {
+interface HistoryEntry {
+  from: 'bot' | 'user';
+  text: string;
+}
+
+async function askGemini(message: string, lang: 'en' | 'he', history: HistoryEntry[] = []): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
+  // Build multi-turn contents from history (max last 6 turns to stay concise)
+  const priorTurns = history.slice(-6).map((h) => ({
+    role: h.from === 'bot' ? 'model' : 'user',
+    parts: [{ text: h.text }],
+  }));
+
+  const contents = [
+    ...priorTurns,
+    { role: 'user', parts: [{ text: message }] },
+  ];
+
   const body = {
-    contents: [{ role: 'user', parts: [{ text: message }] }],
+    contents,
     systemInstruction: { parts: [{ text: buildSystemPrompt(lang) }] },
     generationConfig: {
       temperature: 0.3,
@@ -192,7 +228,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   // Validate input
-  const { message, lang } = req.body;
+  const { message, lang, history } = req.body;
   if (!message || typeof message !== 'string' || !message.trim()) {
     res.status(400).json({ error: 'Message is required' });
     return;
@@ -200,6 +236,9 @@ router.post('/', async (req: Request, res: Response) => {
 
   const safeLang: 'en' | 'he' = lang === 'he' ? 'he' : 'en';
   const safeMessage = message.trim().slice(0, 500);
+  const safeHistory: HistoryEntry[] = Array.isArray(history)
+    ? history.filter((h) => h && typeof h.text === 'string' && (h.from === 'bot' || h.from === 'user')).slice(0, 20)
+    : [];
 
   // If no API key, return fallback
   if (!GEMINI_API_KEY) {
@@ -209,7 +248,7 @@ router.post('/', async (req: Request, res: Response) => {
 
   // Call Gemini
   try {
-    const response = await askGemini(safeMessage, safeLang);
+    const response = await askGemini(safeMessage, safeLang, safeHistory);
     res.json({ response, source: 'gemini' });
   } catch (err) {
     console.error('Gemini help endpoint error:', err);

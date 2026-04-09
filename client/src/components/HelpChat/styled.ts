@@ -151,6 +151,7 @@ export const BotMessage = styled('div')({
   lineHeight: 1.5,
   maxWidth: '90%',
   alignSelf: 'flex-start',
+  whiteSpace: 'pre-line',
   animation: `${fadeIn} 0.3s ease`,
   '[dir="rtl"] &': {
     borderRadius: '16px 16px 4px 16px',

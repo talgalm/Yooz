@@ -44,7 +44,7 @@ export const NATURE_THEME: RoadmapThemeKit = {
   nodeActiveBg: '#d4e84e',
   nodeCompletedBorder: '#1e4d24',
   nodeCompletedBg: '#d4e84e',
-  nodeLockedBorder: '#a0a080',
+  nodeLockedBorder: '#444444',
   nodeLockedBg: '#c8cc88',
   nodeNumberColor: '#fff',
   nodeLabelColor: '#fff',

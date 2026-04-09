@@ -2,30 +2,34 @@ export const texts = {
   en: {
     helpAria: 'Help and support',
     headerTitle: 'Help & Support',
-    greeting: 'Hi! How can we help you?',
+    greeting: 'Hi! Choose a topic below or type your question:',
     faq1Label: "I can't log in",
-    faq2Label: 'My score is wrong',
-    faq3Label: "The game won't load",
+    faq2Label: "The game isn't starting",
+    faq3Label: 'My score is wrong',
+    faq4Label: 'Page not loading / error',
     otherLabel: 'Something else',
     phoneLine: 'Or call us:',
     inputPlaceholder: 'Describe your issue...',
     send: 'Send',
     backToMenu: 'Back to menu',
+    continuePrompt: 'Have another question? Type it below:',
     noMatch:
       "I'm not sure I understood. Please try rephrasing, or call our support line for personal help.",
     thinkingDots: 'Thinking...',
 
     // FAQ responses
     responseFaq1:
-      "Make sure you're using the correct activity code. Check that your name is spelled correctly. If your activity requires email, make sure it matches. Try refreshing the page and entering again.",
+      "Fill in your name, and email or phone if required — no password or code needed. Make sure the details are spelled correctly. If using Google login, allow the popup. Try refreshing the page and entering again.",
     responseFaq2:
-      'Scores are saved automatically after each game. If your score seems wrong, it may include hint penalties (-5 points each). The leaderboard shows the latest scores — check there after finishing.',
+      "If you haven't logged in yet: fill in your name (and email or phone if the fields appear), then press the button to enter the activity — that's how it starts.\n\nIf you're already inside the activity: tap a station card in the roadmap to open and begin a game.",
     responseFaq3:
+      'Scores are saved automatically after each game. If your score seems wrong, it may include hint penalties (-5 points each). The leaderboard shows the latest scores — check there after finishing.',
+    responseFaq4:
       'Try refreshing the page. Make sure you have a stable internet connection. If the problem continues, try a different browser or clear your cache.',
 
     // Auto-response topics
     responseLogin:
-      "For login issues: Make sure you're using the correct activity code and your details match what the organizer set up. No password is needed — just fill in the required fields (name, email, or phone depending on the activity). The login is valid for 24 hours. Try refreshing the page. If using Google login, allow the popup.",
+      "For login issues: No password or activity code is needed — just fill in your name and any other required fields (email or phone, depending on the activity). Make sure the details are spelled correctly. The login is valid for 24 hours. Try refreshing the page. If using Google login, allow the popup.",
     responseEmail:
       'An email address is only required if the activity organizer configured it. The email is used for identification only. The system does not send any emails to participants. If Google login is available, you can use your Google account instead of typing an email.',
     responsePrivacy:
@@ -54,27 +58,31 @@ export const texts = {
   he: {
     helpAria: 'עזרה ותמיכה',
     headerTitle: 'עזרה ותמיכה',
-    greeting: 'היי! איך אפשר לעזור?',
+    greeting: 'היי! בחרו נושא מהרשימה או כתבו שאלה חופשית:',
     faq1Label: 'לא מצליח/ה להתחבר',
-    faq2Label: 'הניקוד שלי לא נכון',
-    faq3Label: 'המשחק לא נטען',
+    faq2Label: 'המשחק לא מתחיל',
+    faq3Label: 'הניקוד שלי לא נכון',
+    faq4Label: 'הדף תקוע / שגיאה',
     otherLabel: 'משהו אחר',
     phoneLine: 'או התקשרו:',
     inputPlaceholder: 'תארו את הבעיה...',
     send: 'שלח',
     backToMenu: 'חזרה לתפריט',
+    continuePrompt: 'יש לכם עוד שאלה? כתבו למטה:',
     noMatch: 'לא בטוח/ה שהבנתי. נסו לנסח מחדש, או התקשרו לקו התמיכה שלנו לעזרה אישית.',
     thinkingDots: 'חושב...',
 
     responseFaq1:
-      'וודאו שאתם משתמשים בקוד הפעילות הנכון. בדקו שהשם מאוית נכון. אם הפעילות דורשת אימייל, וודאו שהוא תואם. נסו לרענן את הדף ולהיכנס שוב.',
+      'הזינו שם, ואם נדרש — אימייל או טלפון. אין צורך בסיסמה או קוד. וודאו שהפרטים מאוייתים נכון. אם משתמשים בגוגל, אפשרו את הפופאפ. נסו לרענן את הדף ולהיכנס שוב.',
     responseFaq2:
-      'ניקוד נשמר אוטומטית אחרי כל משחק. אם הניקוד נראה לא נכון, ייתכן שהוא כולל קנסות רמז (-5 נקודות כל אחד). טבלת המובילים מציגה את הניקוד העדכני — בדקו שם לאחר סיום.',
+      'אם עדיין לא נכנסתם: מלאו את השם שלכם (ואם מופיעים שדות נוספים — אימייל או טלפון), ולחצו על הכפתור — כך נכנסים לפעילות.\n\nאם כבר בפנים: לחצו על כרטיסיית תחנה במפת הדרכים כדי לפתוח ולהתחיל משחק.',
     responseFaq3:
+      'ניקוד נשמר אוטומטית אחרי כל משחק. אם הניקוד נראה לא נכון, ייתכן שהוא כולל קנסות רמז (-5 נקודות כל אחד). טבלת המובילים מציגה את הניקוד העדכני — בדקו שם לאחר סיום.',
+    responseFaq4:
       'נסו לרענן את הדף. וודאו שיש לכם חיבור אינטרנט יציב. אם הבעיה ממשיכה, נסו דפדפן אחר או נקו את המטמון.',
 
     responseLogin:
-      'לבעיות התחברות: וודאו שאתם משתמשים בקוד הפעילות הנכון ושהפרטים תואמים למה שהמארגן הגדיר. אין צורך בסיסמה — פשוט הזינו את הפרטים הנדרשים (שם, מייל או טלפון, בהתאם לפעילות). ההתחברות תקפה ל-24 שעות. נסו לרענן את הדף. אם משתמשים בגוגל, אפשרו את הפופאפ.',
+      'לבעיות התחברות: אין צורך בסיסמה או קוד — פשוט הזינו את הפרטים הנדרשים (שם, ואם נדרש — מייל או טלפון). וודאו שהפרטים מאוייתים נכון. ההתחברות תקפה ל-24 שעות. נסו לרענן את הדף. אם משתמשים בגוגל, אפשרו את הפופאפ.',
     responseEmail:
       'כתובת מייל נדרשת רק אם מארגן הפעילות הגדיר זאת. המייל משמש לצורכי זיהוי בלבד. המערכת אינה שולחת הודעות מייל למשתתפים. אם כניסה עם גוגל זמינה, אפשר להשתמש בחשבון הגוגל במקום להקליד מייל ידנית.',
     responsePrivacy:

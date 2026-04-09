@@ -357,7 +357,7 @@ export default function PlayPage() {
 
       {/* Login page — full screen purple */}
       <PurpleLoginPage visible={openingPhase !== 'playing'}>
-        <TopEndCorner><LangDrawer /></TopEndCorner>
+        <TopEndCorner><LangDrawer variant="darkHeader" /></TopEndCorner>
         <LoginLogo src="/images/logo-white.png" alt="Yooz" />
         <LoginHeading>{t.readyForAdventure}</LoginHeading>
         <LoginSubheading>{t.connectAndPlay}</LoginSubheading>
