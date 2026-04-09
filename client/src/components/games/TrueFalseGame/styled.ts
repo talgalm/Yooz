@@ -447,12 +447,12 @@ const TRUE_FALSE_SCENE_BG_URL = '/images/true-false-scene-bg.png';
 export const TRUE_FALSE_WELCOME_BG_URL = TRUE_FALSE_SCENE_BG_URL;
 /** In-game phases (countdown, play, finish) — full-bleed behind UI */
 export const TRUE_FALSE_PLAY_BG_URL = '/images/true-false-play-bg.png';
-const INTRO_GOLD_TOP = '#f2e6a0';
-const INTRO_GOLD_MID = '#e1c14f';
-const INTRO_GOLD_BOT = '#c9a62e';
-const INTRO_GOLD_BORDER = '#5c4018';
-const INTRO_GOLD_SHADOW = '#3d2810';
-const INTRO_BTN_TEXT = '#3d1a5c';
+const INTRO_GOLD_TOP = '#5cb85c';
+const INTRO_GOLD_MID = '#28a745';
+const INTRO_GOLD_BOT = '#1e7e34';
+const INTRO_GOLD_BORDER = '#155724';
+const INTRO_GOLD_SHADOW = '#0f3d18';
+const INTRO_BTN_TEXT = '#fff';
 
 /** Match NatureBackground sky (#b8e8f0) — embedded intro only (admin preview / no themed shell). */
 const WELCOME_SKY_TOP = '#d2f0fa';
@@ -949,18 +949,21 @@ export const FinishStats = styled('div')({
 });
 
 export const FinishContinueButton = styled('button')({
-  background: '#fff',
-  color: FINISH_PURPLE,
+  background: 'linear-gradient(180deg, #5cb85c 0%, #28a745 48%, #1e7e34 100%)',
+  color: '#fff',
   fontSize: 18,
   fontWeight: 700,
   padding: '14px 52px',
   borderRadius: 12,
-  border: '1px solid rgba(108,92,231,0.3)',
+  border: '5px solid #155724',
   cursor: 'pointer',
   fontFamily: 'inherit',
-  transition: 'transform 0.1s ease',
+  boxShadow: '0 6px 0 #0f3d18, 0 12px 24px rgba(0,0,0,0.28)',
+  textShadow: '0 1px 0 rgba(0,0,0,0.2)',
+  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
   animation: `${floatIn} 0.5s ease-out 0.4s both`,
   '&:active': {
-    transform: 'scale(0.98)',
+    transform: 'translateY(4px)',
+    boxShadow: '0 2px 0 #0f3d18, 0 4px 10px rgba(0,0,0,0.3)',
   },
 });

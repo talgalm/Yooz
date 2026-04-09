@@ -133,6 +133,43 @@ function clearTriviaProgress(gameId: string) {
   try { sessionStorage.removeItem(getProgressKey(gameId)); } catch {}
 }
 
+// ─── Completed-result persistence (refresh recovery) ───
+
+interface CompletedTriviaResult {
+  score: number;
+  maxPossibleScore: number;
+  durationMs: number;
+  hintUsed: boolean;
+  questionAnswers: QuestionAnswerRecord[];
+}
+
+function getCompletedKey(gameId: string): string {
+  try {
+    const token = localStorage.getItem('yooz_token');
+    if (token) {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userId = `${payload.participantName || ''}_${payload.activityCode || ''}`;
+      return PROGRESS_KEY_PREFIX + 'done_' + userId + '_' + gameId;
+    }
+  } catch {}
+  return PROGRESS_KEY_PREFIX + 'done_' + gameId;
+}
+
+function saveCompletedResult(gameId: string, result: CompletedTriviaResult) {
+  try { sessionStorage.setItem(getCompletedKey(gameId), JSON.stringify(result)); } catch {}
+}
+
+function loadCompletedResult(gameId: string): CompletedTriviaResult | null {
+  try {
+    const raw = sessionStorage.getItem(getCompletedKey(gameId));
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function clearCompletedResult(gameId: string) {
+  try { sessionStorage.removeItem(getCompletedKey(gameId)); } catch {}
+}
+
 /** Whether more wrong answers can be eliminated to reach `targetVisible` options among currently visible answers. */
 function canApplyLifeline(
   answers: TriviaAnswer[],
@@ -167,6 +204,19 @@ function pickWrongIndicesToEliminate(
 // ─── Component ───
 
 export default function TriviaGame({ game, onComplete }: GameProps) {
+  // If game was completed before a refresh, auto-complete immediately
+  const [completedOnMount] = useState<CompletedTriviaResult | null>(() => {
+    const r = loadCompletedResult(game._id);
+    if (r) clearCompletedResult(game._id);
+    return r;
+  });
+
+  useEffect(() => {
+    if (completedOnMount) {
+      onComplete(completedOnMount);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const settings = game.settings as unknown as TriviaSettings;
   const t = useTranslations(texts);
   const gameHint = useGameHint(settings.hint);
@@ -433,12 +483,23 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     });
   }, [questionAnswers, totalScore, gameComplete]);
 
-  // Clear progress when game is complete
+  // Clear progress and save completed result when game is complete
   useEffect(() => {
-    if (gameComplete) clearTriviaProgress(game._id);
-  }, [gameComplete]);
+    if (!gameComplete) return;
+    clearTriviaProgress(game._id);
+    if (noContent) return;
+    const maxPossible = questions.reduce((sum, q) => sum + q.answers.filter(a => a.isCorrect).length * scoring.correctAnswerPoints, 0);
+    saveCompletedResult(game._id, {
+      score: gameHint.applyHintPenalty(totalScore),
+      maxPossibleScore: maxPossible,
+      durationMs: Date.now() - gameStartTime.current,
+      hintUsed: gameHint.hintUsed,
+      questionAnswers,
+    });
+  }, [gameComplete]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFinish = () => {
+    clearCompletedResult(game._id);
     const maxPossible = questions.reduce((sum, q) => sum + q.answers.filter(a => a.isCorrect).length * scoring.correctAnswerPoints, 0);
     onComplete({
       score: gameHint.applyHintPenalty(totalScore),

@@ -383,7 +383,16 @@ export default function OrderGame({ game, onComplete }: GameProps) {
               <IntroDescCard>
                 <IntroDescText>{settings.instructions}</IntroDescText>
               </IntroDescCard>
-              <IntroStartButton onClick={() => { setShowInstructions(false); sounds.startBgMusic(); }}>
+              <IntroStartButton
+                onClick={() => { setShowInstructions(false); sounds.startBgMusic(); }}
+                style={{
+                  background: 'linear-gradient(180deg, #5cb85c 0%, #28a745 48%, #1e7e34 100%)',
+                  border: '5px solid #155724',
+                  boxShadow: '0 6px 0 #0f3d18, 0 12px 24px rgba(0,0,0,0.28)',
+                  color: '#fff',
+                  textShadow: '0 1px 0 rgba(0,0,0,0.2)',
+                }}
+              >
                 {t.continue}
               </IntroStartButton>
             </IntroDescStack>

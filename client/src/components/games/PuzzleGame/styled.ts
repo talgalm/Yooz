@@ -1112,19 +1112,22 @@ export const FinishStats = styled('div')({
 });
 
 export const FinishContinueButton = styled('button')({
-  background: '#fff',
-  color: FINISH_PURPLE,
+  background: 'linear-gradient(180deg, #5cb85c 0%, #28a745 48%, #1e7e34 100%)',
+  color: '#fff',
   fontSize: 18,
   fontWeight: 700,
   padding: '14px 52px',
   borderRadius: 12,
-  border: '1px solid rgba(108,92,231,0.3)',
+  border: '5px solid #155724',
   cursor: 'pointer',
   fontFamily: 'inherit',
-  transition: 'transform 0.1s ease',
+  boxShadow: '0 6px 0 #0f3d18, 0 12px 24px rgba(0,0,0,0.28)',
+  textShadow: '0 1px 0 rgba(0,0,0,0.2)',
+  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
   animation: `${floatIn} 0.5s ease-out 0.4s both`,
   '&:active': {
-    transform: 'scale(0.98)',
+    transform: 'translateY(4px)',
+    boxShadow: '0 2px 0 #0f3d18, 0 4px 10px rgba(0,0,0,0.3)',
   },
 });
 
