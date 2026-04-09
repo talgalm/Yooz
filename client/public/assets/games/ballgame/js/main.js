@@ -1584,38 +1584,13 @@ function showInstructionalVideo() {
     objCustomizedTimer.pauseTimer();
   }
 
-  // Create an overlay element
-  const overlay = document.createElement('div');
-  overlay.id = 'videoOverlay';
-  overlay.style.position = 'fixed';
-  overlay.style.top = '0';
-  overlay.style.left = '0';
-  overlay.style.width = '100vw'; // Viewport width
-  overlay.style.height = '100vh'; // Viewport height
-  overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.85)';
-  overlay.style.zIndex = '1000';
-  overlay.style.display = 'flex';
-  overlay.style.justifyContent = 'center';
-  overlay.style.alignItems = 'center';
+  // Ask parent host to show the video overlay so it renders flush with the header
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ source: 'yooz-ballgame', type: 'BALLGAME_SHOW_VIDEO', payload: {} }, '*');
+  }
 
-  // Create a video element for the video
-  const video = document.createElement('video');
-  video.src = "assets/videos/instructions.mp4";
-  video.style.border = 'none'; // No border
-  video.style.width = '100%'; // Full width
-  video.style.height = '100%'; // Full height
-  video.setAttribute('autoplay', ''); // Autoplay the video
-  video.setAttribute('loop', ''); // Loop the video
-  video.setAttribute('playsinline', ''); // Ensures inline playback on iOS
-  video.muted = true; // Mute the video to autoplay in some browsers
-
-  // Append the video to the overlay, and the overlay to the body
-  overlay.appendChild(video);
-  document.body.appendChild(overlay);
-
-  // Event listener to close the video and resume the game when the video ends or overlay is clicked
   function closeVideoAndResetTimer() {
-    overlay.remove();
+    cleanup();
     game.paused = false;
     // Reset the timer
     if (objCustomizedTimer) {
@@ -1623,12 +1598,27 @@ function showInstructionalVideo() {
     }
   }
 
-  video.addEventListener('ended', closeVideoAndResetTimer);
-  overlay.addEventListener('click', closeVideoAndResetTimer);
+  function onParentMessage(event) {
+    var data = event.data;
+    if (!data || data.source !== 'yooz-host') return;
+    if (data.type === 'BALLGAME_CLOSE_VIDEO') {
+      closeVideoAndResetTimer();
+    }
+  }
 
-  // Automatically remove the overlay and video after 12 seconds, and resume the game
-  setTimeout(() => {
-    overlay.remove();
+  function cleanup() {
+    window.removeEventListener('message', onParentMessage);
+    clearTimeout(autoCloseTimer);
+  }
+
+  window.addEventListener('message', onParentMessage);
+
+  // Automatically resume the game after 12 seconds
+  var autoCloseTimer = setTimeout(function() {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ source: 'yooz-ballgame', type: 'BALLGAME_HIDE_VIDEO', payload: {} }, '*');
+    }
+    cleanup();
     game.paused = false;
   }, 12000);
 }

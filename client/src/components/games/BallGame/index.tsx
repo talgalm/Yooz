@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLang, useTranslations } from '../../../context/LanguageContext';
 import type { GameProps, GameResult, QuestionAnswerRecord } from '../types';
 import { useRegisterActivityGameHeader } from '../../../context/activityPlayingHeaderContext';
@@ -100,11 +100,14 @@ export default function BallGame({
   const { lang, dir } = useLang();
   const t = useTranslations(texts);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const [headerHeight, setHeaderHeight] = useState(52);
   const completedRef = useRef(false);
   const detailedReportsRef = useRef<LegacyDetailedReport[]>([]);
   const lastScoreRef = useRef<{ gameScore?: number; gameTimeSecond?: number }>({});
   const [pendingResult, setPendingResult] = useState<GameResult | null>(null);
   const [previewMuteIconMuted, setPreviewMuteIconMuted] = useState(false);
+  const [showInstructionVideo, setShowInstructionVideo] = useState(false);
 
   const settings = game.settings as unknown as BallGameSettings;
 
@@ -187,6 +190,16 @@ export default function BallGame({
         | undefined;
       if (!data || data.source !== 'yooz-ballgame') return;
 
+      if (data.type === 'BALLGAME_SHOW_VIDEO') {
+        setShowInstructionVideo(true);
+        return;
+      }
+
+      if (data.type === 'BALLGAME_HIDE_VIDEO') {
+        setShowInstructionVideo(false);
+        return;
+      }
+
       if (data.type === 'BALLGAME_PROGRESS') {
         lastScoreRef.current = (data.payload as { gameScore?: number; gameTimeSecond?: number }) || {};
         return;
@@ -241,6 +254,14 @@ export default function BallGame({
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
   }, [filteredQuestions.length, onComplete]);
+
+  const handleCloseInstructionVideo = useCallback(() => {
+    setShowInstructionVideo(false);
+    iframeRef.current?.contentWindow?.postMessage(
+      { source: 'yooz-host', type: 'BALLGAME_CLOSE_VIDEO' },
+      '*'
+    );
+  }, []);
 
   const activityBallHost = Boolean(embeddedInActivity && onActivityBallMuteToggle);
   useRegisterActivityGameHeader(
@@ -302,6 +323,10 @@ export default function BallGame({
       </BallGameRoomBackground>
       {!embeddedInActivity && (
         <div
+          ref={(el) => {
+            headerRef.current = el;
+            if (el) setHeaderHeight(el.offsetHeight);
+          }}
           style={{
             position: 'absolute',
             top: 0,
@@ -323,6 +348,32 @@ export default function BallGame({
               {previewMuteIconMuted ? '🔇' : '🔊'}
             </GameHeaderMuteButton>
           </GameIntroHeaderBar>
+        </div>
+      )}
+      {showInstructionVideo && (
+        <div
+          onClick={handleCloseInstructionVideo}
+          style={{
+            position: 'absolute',
+            top: headerHeight,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 20,
+            backgroundColor: 'rgba(0,0,0,0.85)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <video
+            src="/assets/games/ballgame/assets/videos/instructions.mp4"
+            autoPlay
+            playsInline
+            muted
+            onEnded={handleCloseInstructionVideo}
+            style={{ width: '100%', height: '100%', border: 'none', objectFit: 'contain' }}
+          />
         </div>
       )}
       <iframe
