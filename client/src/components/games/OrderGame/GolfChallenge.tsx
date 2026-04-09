@@ -612,7 +612,7 @@ const ResultTitle = styled('div')({
   fontWeight: 400,
   lineHeight: 1.12,
   letterSpacing: '0.02em',
-  color: '#ffff00',
+  color: '#ffffffדד',
   WebkitTextStroke: '4px #666600',
   paintOrder: 'stroke fill',
   textAlign: 'center',
