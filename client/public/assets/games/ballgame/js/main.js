@@ -926,8 +926,8 @@ function addSkipButton() {
   skip.scale.setTo(0.4);
   skip.smoothed = true;
 
-  skip.x = getScaleVal4WidthPosX(2);
-  skip.y = gameHeight - skip.height - getScaleVal4HeightPosY(2);
+  skip.x = getScaleVal4WidthPosX(20);
+  skip.y = getScaleVal4HeightPosY(2);
   skip.visible = false;
   skip.events.onInputDown.add(onSkipButtonClick, this);
   //optionBox.inputEnabled = true;
