@@ -11,6 +11,9 @@ export async function adminApiFetch<T>(url: string, options: RequestInit = {}): 
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      window.dispatchEvent(new Event('yooz_admin_unauthorized'));
+    }
     const error = await res.json().catch(() => ({ error: 'Request failed' }));
     throw new Error(error.error || 'Request failed');
   }

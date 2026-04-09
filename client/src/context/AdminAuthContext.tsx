@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { adminApiFetch } from '../utils/adminApi';
 
 export type AdminRole = 'viewer' | 'admin' | 'super_admin' | 'customer';
@@ -26,6 +26,8 @@ function decodeToken(token: string): Admin | null {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     if (!VALID_ROLES.includes(payload.role)) return null;
+    // Reject expired tokens
+    if (payload.exp && payload.exp * 1000 < Date.now()) return null;
     return { email: payload.email, role: payload.role, name: payload.name };
   } catch {
     return null;
@@ -76,6 +78,17 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setAdmin(null);
   };
+
+  // Auto-logout when any API call returns 401 (expired token)
+  useEffect(() => {
+    const handler = () => {
+      localStorage.removeItem('yooz_admin_token');
+      setToken(null);
+      setAdmin(null);
+    };
+    window.addEventListener('yooz_admin_unauthorized', handler);
+    return () => window.removeEventListener('yooz_admin_unauthorized', handler);
+  }, []);
 
   return (
     <AdminAuthContext.Provider value={{ token, admin, isAdminAuthenticated: !!token, login, loginWithGoogle, logout }}>

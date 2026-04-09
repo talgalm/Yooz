@@ -69,6 +69,10 @@ const SummaryTotal = styled(Title)({
 });
 
 const TRIVIA_BROWSER_PURPLE = '#440e76';
+const PUZZLE_BROWSER_GREEN = '#134a27';
+const ORDER_BROWSER_ORANGE = '#ce6b42';
+const GOLF_BROWSER_GREEN = '#355a24';
+const BALL_BROWSER_BLUE = '#7ec7e1';
 
 /** Rounded square — reference purple, dark ring, glossy top (no drop shadow) */
 const PopupDismissButton = styled('button')({
@@ -803,6 +807,19 @@ export default function StoryModulePage() {
     setPhase('leaderboard');
   };
 
+  const [isGolfChallengeActive, setIsGolfChallengeActive] = useState(false);
+
+  useEffect(() => {
+    const onGolfVisibility = (event: Event) => {
+      const detail = (event as CustomEvent<{ active?: boolean }>).detail;
+      setIsGolfChallengeActive(Boolean(detail?.active));
+    };
+    window.addEventListener('yooz:order-golf-visibility', onGolfVisibility as EventListener);
+    return () => {
+      window.removeEventListener('yooz:order-golf-visibility', onGolfVisibility as EventListener);
+    };
+  }, []);
+
   const activeItemForUi = data?.module.items[currentItemIndex];
   const activeGameType = phase === 'playing' && activeItemForUi?.type === 'game'
     ? (activeItemForUi as { gameType?: string }).gameType
@@ -820,7 +837,15 @@ export default function StoryModulePage() {
   }, [isBallGameActive]);
 
   const themeShellColor = getThemeShellColor(data?.module.theme);
-  const activeThemeShellColor = isTriviaGameActive ? TRIVIA_BROWSER_PURPLE : themeShellColor;
+  const activeThemeShellColor = (() => {
+    if (isTriviaGameActive) return TRIVIA_BROWSER_PURPLE;
+    if (activeGameType === 'puzzle') return PUZZLE_BROWSER_GREEN;
+    if (activeGameType === 'ballGame') return BALL_BROWSER_BLUE;
+    if (activeGameType === 'order') {
+      return isGolfChallengeActive ? GOLF_BROWSER_GREEN : ORDER_BROWSER_ORANGE;
+    }
+    return themeShellColor;
+  })();
   useEffect(() => {
     const body = document.body;
     const prevBodyBg = body.style.backgroundColor;

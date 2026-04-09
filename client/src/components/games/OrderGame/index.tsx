@@ -208,6 +208,15 @@ export default function OrderGame({ game, onComplete }: GameProps) {
     return () => setThemedSceneOverlay(null);
   }, [setThemedSceneOverlay, showInstructions, showGolf]);
 
+  const isGolfPhaseActive = showGolf || (gameComplete && golfEnabled && !golfDone);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('yooz:order-golf-visibility', { detail: { active: isGolfPhaseActive } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('yooz:order-golf-visibility', { detail: { active: false } }));
+    };
+  }, [isGolfPhaseActive]);
+
   const inlineBackdrop = !setThemedSceneOverlay;
 
   // Pointer-based drag reordering (works on touch + mouse)

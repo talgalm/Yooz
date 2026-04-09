@@ -246,7 +246,7 @@ router.post('/login', async (req: Request<{}, {}, AdminLoginRequest>, res: Respo
   const token = jwt.sign(
     { email: user.email, role: user.role, userId: user._id.toString() },
     JWT_SECRET,
-    { expiresIn: '8h' },
+    { expiresIn: '7d' },
   );
 
   logAdminAction(req, 'login');
@@ -289,7 +289,7 @@ router.post('/login/google', async (req: Request, res: Response) => {
   const token = jwt.sign(
     { email: user.email, role: user.role, userId: user._id.toString() },
     JWT_SECRET,
-    { expiresIn: '8h' },
+    { expiresIn: '7d' },
   );
 
   logAdminAction(req, 'login_google');
