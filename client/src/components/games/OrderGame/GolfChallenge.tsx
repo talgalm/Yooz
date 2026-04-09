@@ -328,14 +328,11 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
   // ─── Result handling ───
   const handleContinue = () => {
     if (gameState === 'success') {
-      onComplete((MAX_HITS - hitsRef.current) * BONUS_PER_SAVED);
+      onComplete(25);
     } else {
       onComplete(0);
     }
   };
-
-  // ─── Render ───
-  const bonus = gameState === 'success' ? (MAX_HITS - hitsRef.current) * BONUS_PER_SAVED : 0;
 
   return (
     <GolfContainer dir="rtl">
@@ -439,25 +436,24 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
 
           {/* Ball */}
           <BallEl ref={ballRef} />
-
-          {/* Success / Failed overlay */}
-          {gameState !== 'playing' && (
-            <ResultOverlay>
-              <ResultTitle>{gameState === 'success' ? t.success : t.failed}</ResultTitle>
-              {gameState === 'success' && bonus > 0 && (
-                <BonusBubble>
-                  <BonusText>+{bonus} {t.bonus}</BonusText>
-                </BonusBubble>
-              )}
-              <GoldContinueBtn onClick={handleContinue}>{t.continueBtn}</GoldContinueBtn>
-            </ResultOverlay>
-          )}
         </CourseWrapper>
       </CourseScaler>
 
       {/* Skip button */}
       {gameState === 'playing' && (
         <SkipBtn onClick={onSkip}>{t.skip}</SkipBtn>
+      )}
+
+      {/* Full-screen result — replaces entire background */}
+      {gameState !== 'playing' && (
+        <ResultScreen>
+          {gameState === 'success' ? (
+            <img src="/images/golf-success-badge.png" alt="כל הכבוד" style={{ width: 'clamp(260px, 80%, 380px)', objectFit: 'contain' }} />
+          ) : (
+            <ResultTitle>{t.failed}</ResultTitle>
+          )}
+          <GoldContinueBtn onClick={handleContinue}>{t.continueBtn}</GoldContinueBtn>
+        </ResultScreen>
       )}
     </GolfContainer>
   );
@@ -480,6 +476,7 @@ const GolfContainer = styled('div')({
   overflow: 'hidden',
   padding: '8px 12px 10px',
   boxSizing: 'border-box',
+  position: 'relative',
 });
 
 const GolfHeader = styled('div')({
@@ -587,15 +584,16 @@ const fadeIn = keyframes`
   to { opacity: 1; transform: scale(1); }
 `;
 
-const ResultOverlay = styled('div')({
-  position: 'absolute',
+const ResultScreen = styled('div')({
+  position: 'fixed',
   inset: 0,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(0,0,0,0.45)',
-  backdropFilter: 'blur(2px)',
+  backgroundImage: 'url(/images/golf-success-bg.jpg)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
   zIndex: 30,
   animation: `${fadeIn} 0.4s ease`,
   padding: 16,
@@ -627,20 +625,6 @@ const feedbackPop = keyframes`
   100% { transform: scale(1); opacity: 1; }
 `;
 
-const BonusBubble = styled('div')({
-  background: 'rgba(255,255,255,0.96)',
-  border: '3px solid #2ecc71',
-  borderRadius: 18,
-  padding: '14px 30px',
-  boxShadow: '0 6px 24px rgba(0,0,0,0.25)',
-  animation: `${feedbackPop} 0.35s ease-out`,
-});
-
-const BonusText = styled('div')({
-  fontSize: 20,
-  fontWeight: 700,
-  color: '#27ae60',
-});
 
 const GoldContinueBtn = styled('button')({
   minWidth: 'clamp(160px, 52%, 240px)',
