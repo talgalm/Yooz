@@ -72,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify(data),
     });
     localStorage.setItem('yooz_token', res.token);
+    if (data.activityCode) sessionStorage.setItem('yooz_play_code', data.activityCode);
     setToken(res.token);
     setParticipant(res.participant);
   };

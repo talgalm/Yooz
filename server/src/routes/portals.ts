@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import * as XLSX from 'xlsx';
 import { authenticateAdmin } from '../middleware/adminAuth';
 import { createdByEmailForNewResource, customerMongoFilter, customerOwnsDoc } from '../middleware/customerScope';
 import { CreatePortalRequest, PortalUserRequest } from '../types';
@@ -9,7 +11,56 @@ import { Portal, Activity, Report } from '../models';
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 
+const excelUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+function generatePassword(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
 // ─── Admin CRUD ───
+
+// Parse Excel file and return users list (does not save to DB)
+router.post('/parse-excel', authenticateAdmin, excelUpload.single('file'), async (req: Request, res: Response) => {
+  if (!req.file) {
+    res.status(400).json({ error: 'No file provided' });
+    return;
+  }
+
+  try {
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as string[][];
+
+    if (rows.length === 0) {
+      res.status(400).json({ error: 'Excel file is empty' });
+      return;
+    }
+
+    // Detect if first row is a header (contains "user", "שם", "name", "password", "סיסמה")
+    const headerKeywords = ['user', 'שם', 'name', 'password', 'סיסמה', 'email', 'אימייל'];
+    const firstRow = rows[0].map(c => String(c).toLowerCase().trim());
+    const isHeader = firstRow.some(cell => headerKeywords.some(kw => cell.includes(kw)));
+    const dataRows = isHeader ? rows.slice(1) : rows;
+
+    const users: { username: string; password: string }[] = [];
+    for (const row of dataRows) {
+      const username = String(row[0] || '').trim();
+      if (!username) continue;
+      const password = String(row[1] || '').trim() || generatePassword();
+      users.push({ username, password });
+    }
+
+    if (users.length === 0) {
+      res.status(400).json({ error: 'No users found in Excel file' });
+      return;
+    }
+
+    res.json({ users });
+  } catch {
+    res.status(400).json({ error: 'Failed to parse Excel file' });
+  }
+});
 
 // List all portals
 router.get('/', authenticateAdmin, async (req: Request, res: Response) => {

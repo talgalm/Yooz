@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
@@ -281,6 +281,8 @@ export default function AdminPortalConfigPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [copied, setCopied] = useState(false);
+  const [importingExcel, setImportingExcel] = useState(false);
+  const excelInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch available activities
   useEffect(() => {
@@ -332,6 +334,29 @@ export default function AdminPortalConfigPage() {
 
   const generatePassword = (index: number) => {
     updateUser(index, 'password', generateRandomPassword());
+  };
+
+  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    setImportingExcel(true);
+    setErrorMsg('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await adminApiFetch<{ users: { username: string; password: string }[] }>(
+        '/api/admin/portals/parse-excel',
+        { method: 'POST', body: formData }
+      );
+      const newUsers = res.users.filter(u => !users.some(existing => existing.username === u.username));
+      setUsers(prev => [...prev, ...newUsers]);
+      setSuccessMsg(t.excelImported(newUsers.length));
+    } catch {
+      setErrorMsg(t.error);
+    } finally {
+      setImportingExcel(false);
+    }
   };
 
   const attachActivity = () => {
@@ -539,7 +564,22 @@ export default function AdminPortalConfigPage() {
                 </UserRow>
               ))}
 
-              <SmallOutlineButton onClick={addUser}>{t.addUser}</SmallOutlineButton>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <SmallOutlineButton onClick={addUser}>{t.addUser}</SmallOutlineButton>
+                <SmallOutlineButton
+                  onClick={() => excelInputRef.current?.click()}
+                  disabled={importingExcel}
+                >
+                  {importingExcel ? '...' : t.uploadExcel}
+                </SmallOutlineButton>
+                <input
+                  ref={excelInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  style={{ display: 'none' }}
+                  onChange={handleExcelUpload}
+                />
+              </div>
             </FormSectionCard>
 
             {/* Activities Section */}

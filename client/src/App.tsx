@@ -26,7 +26,9 @@ import './App.css';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
+  if (isAuthenticated) return <>{children}</>;
+  const lastCode = sessionStorage.getItem('yooz_play_code');
+  return <Navigate to={lastCode ? `/play/${lastCode}` : '/'} replace />;
 }
 
 function AdminProtectedRoute({ children }: { children: React.ReactNode }) {

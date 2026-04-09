@@ -199,6 +199,25 @@ let isStartClicked = false;
 let hasGameStarted = false;
 let bIsMuted = false;
 let audioBg;
+
+// Start background music on the intro screen
+audioBg = new Audio("assets/audios/bgmusic.mp3");
+audioBg.loop = true;
+audioBg.volume = 0.1;
+var _introBgPlay = audioBg.play();
+if (_introBgPlay !== undefined) {
+  _introBgPlay.catch(function() {
+    // Autoplay blocked — retry on first user interaction
+    var _unlockBg = function() {
+      if (!bIsMuted) audioBg.play();
+      document.removeEventListener('touchstart', _unlockBg);
+      document.removeEventListener('click', _unlockBg);
+    };
+    document.addEventListener('touchstart', _unlockBg, { once: true });
+    document.addEventListener('click', _unlockBg, { once: true });
+  });
+}
+
 let ballBounceCurTime = 0;
 let isNextQnRender = false;
 let bg4Level1 = "assets/images/wall_purple.png";
@@ -259,10 +278,12 @@ function onStartClicked() {
   muteBtn.style.visibility = isEmbeddedHost ? "hidden" : "visible";
   muteBtn.style.opacity = isEmbeddedHost ? "0" : "1";
   muteBtn.classList.toggle("cMuted", bIsMuted);
-  audioBg = new Audio("assets/audios/bgmusic.mp3");
-  audioBg.play();
-  audioBg.loop = true;
-  audioBg.volume = 0.1;
+  if (!audioBg) {
+    audioBg = new Audio("assets/audios/bgmusic.mp3");
+    audioBg.loop = true;
+    audioBg.volume = 0.1;
+  }
+  if (!bIsMuted) audioBg.play();
   isStartClicked = true;
   if (isGameLoaded && !hasGameStarted) {
     renderGame();
@@ -1693,7 +1714,7 @@ function onOptionClick(target) {
       isCorrectAnswer: true,
     });
     // updateScore(8);
-    updateScore(Math.round(100 / arrQuestions.length * 100) / 100);
+    updateScore(Math.floor(100 / arrQuestions.length));
     newTarget.green.visible = true;
     correct = game.add.sprite(0, 0, "correct_anim");
     correct.scale.setTo(

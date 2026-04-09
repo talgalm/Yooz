@@ -17,6 +17,8 @@ export const texts = {
     password: 'Password',
     generatePassword: 'Generate',
     addUser: '+ Add User',
+    uploadExcel: 'Upload Excel',
+    excelImported: (n: number) => `${n} users imported from Excel`,
     removeUser: 'Remove',
 
     pendingUsersSection: 'Pending Registrations',
@@ -61,6 +63,8 @@ export const texts = {
     password: 'סיסמה',
     generatePassword: 'ייצור',
     addUser: '+ הוסף משתמש',
+    uploadExcel: 'העלאת Excel',
+    excelImported: (n: number) => `${n} משתמשים יובאו מ-Excel`,
     removeUser: 'הסר',
 
     pendingUsersSection: 'הרשמות ממתינות',

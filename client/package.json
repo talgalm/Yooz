@@ -11,6 +11,10 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@fontsource/encode-sans-expanded": "^5.2.7",
+    "@fontsource/rubik": "^5.2.8",
+    "@fontsource/rubik-one": "^5.2.5",
+    "@fontsource/secular-one": "^5.2.8",
     "@mui/material": "^7.3.8",
     "date-fns": "^4.1.0",
     "matter-js": "^0.20.0",
