@@ -89,6 +89,8 @@ interface TriviaSettings {
   scoring: TriviaScoring;
   shuffleAnswers?: boolean;
   includeHelpers?: boolean;
+  multiChoice?: boolean;
+  multiChoiceMax?: number;
 }
 
 // ─── Session progress helpers ───
@@ -368,9 +370,20 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     });
   };
 
+  const isMultiChoice = settings.multiChoice === true;
+
   const toggleAnswer = (index: number) => {
     if (checked) return;
     if (eliminatedIndices.has(index)) return;
+    if (!isMultiChoice) {
+      // Single-choice: selecting a new answer replaces the previous one
+      setSelectedAnswers((prev) => {
+        if (prev.has(index)) return new Set<number>();
+        return new Set<number>([index]);
+      });
+      return;
+    }
+    // Multi-choice: unlimited toggle
     setSelectedAnswers((prev) => {
       const next = new Set(prev);
       if (next.has(index)) {
@@ -659,6 +672,13 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
             onClick={gameHint.handleHintClick}
           />
         )
+      )}
+
+      {/* Multi-choice caption */}
+      {isMultiChoice && !checked && (
+        <QuestionHintText style={{ textAlign: 'center', marginBottom: 4 }}>
+          {t.selectAnswers}
+        </QuestionHintText>
       )}
 
       {/* Answer grid (2×2); lifeline hides wrong options until answer is checked */}

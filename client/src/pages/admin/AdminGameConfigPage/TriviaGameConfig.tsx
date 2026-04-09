@@ -50,6 +50,7 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
     });
     const [shuffleAnswers, setShuffleAnswers] = useState(true);
     const [includeHelpers, setIncludeHelpers] = useState(true);
+    const [multiChoice, setMultiChoice] = useState(false);
 
     // Load initial settings
     useEffect(() => {
@@ -86,6 +87,7 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
         setShuffleAnswers(s.shuffleAnswers);
       }
       setIncludeHelpers(typeof s.includeHelpers === 'boolean' ? s.includeHelpers : true);
+      if (typeof s.multiChoice === 'boolean') setMultiChoice(s.multiChoice);
     }, [initialSettings]);
 
     useImperativeHandle(ref, () => ({
@@ -119,6 +121,7 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
           },
           shuffleAnswers,
           includeHelpers,
+          multiChoice,
         };
       },
       fillRandom() {
@@ -171,6 +174,7 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
         setTriviaScoring({ correctAnswerPoints: 10, wrongAnswerPenalty: 0, timeLimitSeconds: 10 });
         setShuffleAnswers(true);
         setIncludeHelpers(true);
+        setMultiChoice(false);
       },
     }));
 
@@ -362,6 +366,16 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
                 onClick={() => setIncludeHelpers((v) => !v)}
               >
                 {includeHelpers ? 'ON' : 'OFF'}
+              </ScoringToggleButton>
+            </ScoringRow>
+            <ScoringRow>
+              <ScoringLabel>{t.multiChoice}</ScoringLabel>
+              <ScoringToggleButton
+                type="button"
+                selected={multiChoice}
+                onClick={() => setMultiChoice((v) => !v)}
+              >
+                {multiChoice ? 'ON' : 'OFF'}
               </ScoringToggleButton>
             </ScoringRow>
           </VerticalStackGap10>

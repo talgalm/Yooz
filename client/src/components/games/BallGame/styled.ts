@@ -88,18 +88,22 @@ export const IntroText = styled('p')({
 });
 
 export const StartButton = styled('button')({
-  background: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+  background: 'linear-gradient(180deg, #5cb85c 0%, #28a745 48%, #1e7e34 100%)',
   color: '#fff',
   fontSize: 20,
   fontWeight: 800,
   padding: '14px 48px',
   borderRadius: 40,
-  border: 'none',
+  border: '5px solid #155724',
   cursor: 'pointer',
   fontFamily: 'inherit',
-  boxShadow: '0 4px 20px rgba(231, 76, 60, 0.5)',
-  transition: 'transform 0.15s ease',
-  '&:active': { transform: 'scale(0.95)' },
+  boxShadow: '0 6px 0 #0f3d18, 0 12px 24px rgba(0,0,0,0.28)',
+  textShadow: '0 1px 0 rgba(0,0,0,0.2)',
+  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
+  '&:active': {
+    transform: 'translateY(4px)',
+    boxShadow: '0 2px 0 #0f3d18, 0 4px 10px rgba(0,0,0,0.3)',
+  },
 });
 
 // ─── Top Bar ───
