@@ -295,11 +295,11 @@ export const SmallSelectionButton = styled(SelectionButton)({
 // ─── Answer Card (correct/incorrect border) ───
 
 export const AnswerPanel = styled('div')<{ correct?: boolean }>(({ correct }) => ({
-  border: `1.5px solid ${correct ? '#28a745' : BORDER}`,
+  border: `1.5px solid ${correct ? '#28a745' : '#e74c3c'}`,
   borderRadius: 8,
   padding: 10,
   marginBottom: 8,
-  background: correct ? '#f0fff4' : '#fff',
+  background: correct ? '#f0fff4' : '#fff8f8',
 }));
 
 export const CorrectToggleButton = styled(SelectionButton)<{ correct?: boolean }>(({ correct }) => ({
@@ -310,6 +310,22 @@ export const CorrectToggleButton = styled(SelectionButton)<{ correct?: boolean }
   background: correct ? '#d4edda' : '#fff',
   color: correct ? '#155724' : '#888',
 }));
+
+export const AnswerPill = styled('button')<{ active?: boolean; variant: 'correct' | 'incorrect' }>(({ active, variant }) => {
+  const isCorrect = variant === 'correct';
+  return {
+    flex: 'none',
+    padding: '5px 12px',
+    fontSize: 12,
+    fontWeight: 600,
+    borderRadius: 20,
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+    border: `2px solid ${active ? (isCorrect ? '#28a745' : '#e74c3c') : '#ccc'}`,
+    background: active ? (isCorrect ? '#d4edda' : '#fde8e8') : '#f5f5f5',
+    color: active ? (isCorrect ? '#155724' : '#721c24') : '#999',
+  };
+});
 
 export const TruthToggleButton = styled(SelectionButton)<{ isTrue?: boolean }>(({ isTrue }) => ({
   flex: 'none',

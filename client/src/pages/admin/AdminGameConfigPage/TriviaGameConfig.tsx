@@ -20,7 +20,7 @@ import {
   AddButton,
   ScoringToggleButton,
   AnswerPanel,
-  CorrectToggleButton,
+  AnswerPill,
   FlexInput,
   InputMb8,
   CardItemRow,
@@ -220,6 +220,23 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
       );
     };
 
+    const setAnswerCorrect = (qi: number, ai: number, isCorrect: boolean) => {
+      setQuestions((prev) =>
+        prev.map((q, i) => {
+          if (i !== qi) return q;
+          return {
+            ...q,
+            answers: q.answers.map((a, j) => {
+              if (j === ai) return { ...a, isCorrect };
+              // In single-choice mode, uncheck all others when marking one correct
+              if (isCorrect && !multiChoice) return { ...a, isCorrect: false };
+              return a;
+            }),
+          };
+        })
+      );
+    };
+
     return (
       <>
         {/* Questions */}
@@ -282,14 +299,22 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
                       value={answer.text}
                       onChange={(e) => updateAnswer(qi, ai, 'text', e.target.value)}
                     />
-                    <CorrectToggleButton
+                    <AnswerPill
                       type="button"
-                      selected={answer.isCorrect}
-                      correct={answer.isCorrect}
-                      onClick={() => updateAnswer(qi, ai, 'isCorrect', !answer.isCorrect)}
+                      active={answer.isCorrect}
+                      variant="correct"
+                      onClick={() => setAnswerCorrect(qi, ai, true)}
                     >
-                      {t.markCorrect}
-                    </CorrectToggleButton>
+                      נכון
+                    </AnswerPill>
+                    <AnswerPill
+                      type="button"
+                      active={!answer.isCorrect}
+                      variant="incorrect"
+                      onClick={() => setAnswerCorrect(qi, ai, false)}
+                    >
+                      לא נכון
+                    </AnswerPill>
                     {question.answers.length > 2 && (
                       <RemoveOutlineButton
                         type="button"
