@@ -1,4 +1,4 @@
-import { styled } from '@mui/material/styles';
+import { styled, keyframes } from '@mui/material/styles';
 import { PRIMARY, PRIMARY_LIGHT, ERROR, BORDER, TEXT_LIGHT, TEXT } from '../styled';
 
 // ─── Colors (game-specific) ───
@@ -843,4 +843,25 @@ export const PopupImage = styled('img')({
 export const PopupImageWrapper = styled('div')({
   marginBottom: 20,
   textAlign: 'center',
+});
+
+// ─── Media loading spinner (shown while images/videos preload) ───
+
+const _spinAnim = keyframes`to { transform: rotate(360deg); }`;
+
+export const GameLoadingSpinner = styled('div')({
+  flex: 1,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minHeight: 120,
+  '&::after': {
+    content: '""',
+    width: 40,
+    height: 40,
+    borderRadius: '50%',
+    border: '4px solid rgba(108,92,231,0.18)',
+    borderTopColor: '#6c5ce7',
+    animation: `${_spinAnim} 0.75s linear infinite`,
+  },
 });

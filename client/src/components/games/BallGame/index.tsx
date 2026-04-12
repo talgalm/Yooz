@@ -287,7 +287,7 @@ export default function BallGame({
         <FinishContainer dir={dir}>
           <FinishContent $stumpCentered>
             <IntroGameTitleSticker dir="auto" style={{ marginTop: 'clamp(24px, 6vh, 52px)' }}>
-              <IntroGameTitleLine>{t.gameComplete}</IntroGameTitleLine>
+              <IntroGameTitleLine style={{ color: '#ffffff', WebkitTextStroke: '4px #155724' }}>{t.gameComplete}</IntroGameTitleLine>
             </IntroGameTitleSticker>
 
             <FinishStumpStage aria-hidden>

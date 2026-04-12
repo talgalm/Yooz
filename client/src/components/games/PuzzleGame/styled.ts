@@ -231,8 +231,8 @@ export const IntroTitleLine = styled('span')({
   fontWeight: 400,
   lineHeight: 1.12,
   letterSpacing: '0.02em',
-  color: GAME_TITLE_YELLOW,
-  WebkitTextStroke: `4px ${GAME_TITLE_OUTLINE}`,
+  color: '#ffffff',
+  WebkitTextStroke: '4px #155724',
   paintOrder: 'stroke fill',
   marginTop: '16px',
 });

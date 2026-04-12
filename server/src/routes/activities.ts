@@ -186,6 +186,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     })),
   };
 
+  res.setHeader('Cache-Control', 'no-store');
   res.json({
     code: activity.code,
     name: activity.name,

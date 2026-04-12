@@ -34,6 +34,7 @@ const STATION_ICONS: Record<string, string> = {
   image: '🖼️',
   narrative: '📖',
   badge: '🏅',
+  riddle: '🔤',
 };
 
 interface MissionOption {

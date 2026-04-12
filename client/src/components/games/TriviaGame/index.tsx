@@ -681,8 +681,8 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
         </QuestionHintText>
       )}
 
-      {/* Answer grid (2×2); lifeline hides wrong options until answer is checked */}
-      <AnswerGrid>
+      {/* Answer grid (2×2 for 4 answers, single column for 3) */}
+      <AnswerGrid answerCount={question.answers.length}>
         {question.answers.map((answer, index) => {
           if (!checked && eliminatedIndices.has(index)) return null;
           return (
@@ -716,7 +716,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
           </TriviaExplanationList>
         )}
 
-      {settings.includeHelpers !== false && (!helperHalfUsed || !helperThreeQuartersUsed) && (
+      {settings.includeHelpers !== false && question.answers.length >= 4 && (!helperHalfUsed || !helperThreeQuartersUsed) && (
         checked ? (
           <HelperLifelineSpacer aria-hidden />
         ) : (

@@ -18,7 +18,7 @@ export interface StationItemData {
   type: 'station';
   _id: string;
   name: string;
-  stationType: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback';
+  stationType: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle';
   description?: string;
   settings?: Record<string, unknown>;
 }

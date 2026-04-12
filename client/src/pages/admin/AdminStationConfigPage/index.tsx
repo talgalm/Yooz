@@ -34,7 +34,7 @@ import {
   SelectionSubtextSmall,
 } from '../styled';
 
-type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback';
+type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle';
 
 interface StationData {
   _id: string;
@@ -73,7 +73,7 @@ export default function AdminStationConfigPage() {
   const location = useLocation();
   const t = useTranslations(texts);
 
-  const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback'];
+  const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle'];
   const stationTypesWithoutHint: StationTypeOption[] = ['text', 'video', 'image', 'feedback'];
   const typeFromUrl = searchParams.get('type') as StationTypeOption | null;
   const defaultType: StationTypeOption =
@@ -117,6 +117,14 @@ export default function AdminStationConfigPage() {
   const [feedbackQuestions, setFeedbackQuestions] = useState<{ text: string }[]>([{ text: '' }]);
   const [feedbackNotesEnabled, setFeedbackNotesEnabled] = useState(true);
   const [feedbackNotesPlaceholder, setFeedbackNotesPlaceholder] = useState('');
+  // Riddle station
+  const [riddleClue, setRiddleClue] = useState('');
+  const [riddleAnswer, setRiddleAnswer] = useState('');
+  const [riddleMediaUrl, setRiddleMediaUrl] = useState('');
+  const [riddleMediaType, setRiddleMediaType] = useState<'image' | 'video'>('image');
+  const [riddleMaxScore, setRiddleMaxScore] = useState('100');
+  const [riddleSuccessMsg, setRiddleSuccessMsg] = useState('');
+  const [riddleFailureMsg, setRiddleFailureMsg] = useState('');
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -166,6 +174,15 @@ export default function AdminStationConfigPage() {
           }
           setFeedbackNotesEnabled(settings.notesEnabled !== false);
           if (settings.notesPlaceholder) setFeedbackNotesPlaceholder(settings.notesPlaceholder as string);
+        }
+        if (s.type === 'riddle') {
+          if (settings.clue) setRiddleClue(settings.clue as string);
+          if (settings.answer) setRiddleAnswer(settings.answer as string);
+          if (settings.mediaUrl) setRiddleMediaUrl(settings.mediaUrl as string);
+          if (settings.mediaType) setRiddleMediaType(settings.mediaType as 'image' | 'video');
+          if (typeof settings.maxScore === 'number') setRiddleMaxScore(String(settings.maxScore));
+          if (settings.successMessage) setRiddleSuccessMsg(settings.successMessage as string);
+          if (settings.failureMessage) setRiddleFailureMsg(settings.failureMessage as string);
         }
         setInitialLoading(false);
       })
@@ -220,6 +237,15 @@ export default function AdminStationConfigPage() {
       setFeedbackNotesEnabled(settings.notesEnabled !== false);
       if (settings.notesPlaceholder) setFeedbackNotesPlaceholder(settings.notesPlaceholder as string);
     }
+    if (lib.type === 'riddle') {
+      if (settings.clue) setRiddleClue(settings.clue as string);
+      if (settings.answer) setRiddleAnswer(settings.answer as string);
+      if (settings.mediaUrl) setRiddleMediaUrl(settings.mediaUrl as string);
+      if (settings.mediaType) setRiddleMediaType(settings.mediaType as 'image' | 'video');
+      if (typeof settings.maxScore === 'number') setRiddleMaxScore(String(settings.maxScore));
+      if (settings.successMessage) setRiddleSuccessMsg(settings.successMessage as string);
+      if (settings.failureMessage) setRiddleFailureMsg(settings.failureMessage as string);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -268,6 +294,18 @@ export default function AdminStationConfigPage() {
         settings.notesEnabled = feedbackNotesEnabled;
         settings.notesPlaceholder = feedbackNotesPlaceholder.trim() || undefined;
       }
+      if (stationType === 'riddle') {
+        settings.clue = riddleClue.trim();
+        settings.answer = riddleAnswer.trim();
+        if (riddleMediaUrl.trim()) {
+          settings.mediaUrl = riddleMediaUrl.trim();
+          settings.mediaType = riddleMediaType;
+        }
+        const parsedScore = parseInt(riddleMaxScore, 10);
+        settings.maxScore = isNaN(parsedScore) || parsedScore <= 0 ? 100 : parsedScore;
+        if (riddleSuccessMsg.trim()) settings.successMessage = riddleSuccessMsg.trim();
+        if (riddleFailureMsg.trim()) settings.failureMessage = riddleFailureMsg.trim();
+      }
 
       const payload = {
         name: name.trim(),
@@ -304,6 +342,7 @@ export default function AdminStationConfigPage() {
     image: 'תחנת תמונה - טסט',
     collage: 'תחנת קולאז׳ - טסט',
     feedback: 'תחנת משוב - טסט',
+    riddle: 'תחנת חידה - טסט',
   };
 
   const handleFillRandom = () => {
@@ -328,6 +367,13 @@ export default function AdminStationConfigPage() {
     setFeedbackQuestions([{ text: '' }]);
     setFeedbackNotesEnabled(true);
     setFeedbackNotesPlaceholder('');
+    setRiddleClue('');
+    setRiddleAnswer('');
+    setRiddleMediaUrl('');
+    setRiddleMediaType('image');
+    setRiddleMaxScore('100');
+    setRiddleSuccessMsg('');
+    setRiddleFailureMsg('');
     if (randomType === 'text') {
       setTextContent('זהו תוכן טקסט לדוגמה עבור תחנת בדיקה. כאן יופיע המידע שהמשתתף צריך לקרוא.');
     } else if (randomType === 'video') {
@@ -355,6 +401,12 @@ export default function AdminStationConfigPage() {
       ]);
       setFeedbackNotesEnabled(true);
       setFeedbackNotesPlaceholder('עוד הערות?');
+    } else if (randomType === 'riddle') {
+      setRiddleClue('אני יש לי ידיים אבל אין לי אצבעות. אני מראה לך את הזמן. מה אני?');
+      setRiddleAnswer('שעון');
+      setRiddleMaxScore('100');
+      setRiddleSuccessMsg('כל הכבוד! ניחשת נכון!');
+      setRiddleFailureMsg('לא הצלחת הפעם. התשובה הייתה: שעון');
     }
   };
 
@@ -411,6 +463,10 @@ export default function AdminStationConfigPage() {
                     <SelectionButton type="button" selected={stationType === 'feedback'} onClick={() => setStationType('feedback')}>
                       <div>{t.typeFeedback}</div>
                       <SelectionSubtextSmall>{t.typeFeedbackDesc}</SelectionSubtextSmall>
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={stationType === 'riddle'} onClick={() => setStationType('riddle')}>
+                      <div>{t.typeRiddle}</div>
+                      <SelectionSubtextSmall>{t.typeRiddleDesc}</SelectionSubtextSmall>
                     </SelectionButton>
                   </SelectionGroup>
                 </div>
@@ -731,6 +787,81 @@ export default function AdminStationConfigPage() {
                       onChange={(e) => setFeedbackNotesPlaceholder(e.target.value)}
                     />
                   )}
+                </VerticalStack>
+              )}
+              {/* Riddle config */}
+              {stationType === 'riddle' && (
+                <VerticalStack>
+                  <SectionLabel>{t.riddleClue}</SectionLabel>
+                  <Input
+                    placeholder={t.riddleCluePlaceholder}
+                    value={riddleClue}
+                    onChange={(e) => setRiddleClue(e.target.value)}
+                  />
+
+                  <SectionLabel>{t.riddleAnswer}</SectionLabel>
+                  <Input
+                    placeholder={t.riddleAnswerPlaceholder}
+                    value={riddleAnswer}
+                    onChange={(e) => setRiddleAnswer(e.target.value)}
+                  />
+                  <span style={{ fontSize: 12, color: '#999', marginTop: -8 }}>{t.riddleAnswerHint}</span>
+
+                  {riddleAnswer.trim() && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '10px 0', direction: /[\u0590-\u05FF]/.test(riddleAnswer) ? 'rtl' : 'ltr' }}>
+                      {riddleAnswer.trim().split(' ').map((word, wi) => (
+                        <div key={wi} style={{ display: 'flex', gap: 4 }}>
+                          {word.split('').map((ch, ci) => (
+                            <div key={ci} style={{ width: 30, height: 36, border: '2px solid #6c5ce7', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, background: '#f0eefa', color: '#6c5ce7' }}>
+                              {ch}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <SectionLabel>{t.riddleMaxScore}</SectionLabel>
+                  <Input
+                    type="number"
+                    placeholder={t.riddleMaxScorePlaceholder}
+                    value={riddleMaxScore}
+                    onChange={(e) => setRiddleMaxScore(e.target.value)}
+                    style={{ maxWidth: 120 }}
+                  />
+
+                  <SectionLabel>{t.riddleMedia}</SectionLabel>
+                  <SelectionGroup>
+                    <SelectionButton type="button" selected={riddleMediaType === 'image'} onClick={() => setRiddleMediaType('image')}>{t.riddleMediaTypeImage}</SelectionButton>
+                    <SelectionButton type="button" selected={riddleMediaType === 'video'} onClick={() => setRiddleMediaType('video')}>{t.riddleMediaTypeVideo}</SelectionButton>
+                  </SelectionGroup>
+                  <InlineRow>
+                    <FileUploadButton
+                      accept={riddleMediaType === 'image' ? 'image/*' : 'video/*'}
+                      onUploaded={(url) => setRiddleMediaUrl(url)}
+                      label={t.upload}
+                      uploadingLabel={t.uploading}
+                    />
+                    <FlexInput
+                      placeholder={t.mediaUrl}
+                      value={riddleMediaUrl}
+                      onChange={(e) => setRiddleMediaUrl(e.target.value)}
+                    />
+                  </InlineRow>
+
+                  <SectionLabel>{t.riddleSuccessMsg}</SectionLabel>
+                  <Input
+                    placeholder={t.riddleSuccessMsgPlaceholder}
+                    value={riddleSuccessMsg}
+                    onChange={(e) => setRiddleSuccessMsg(e.target.value)}
+                  />
+
+                  <SectionLabel>{t.riddleFailureMsg}</SectionLabel>
+                  <Input
+                    placeholder={t.riddleFailureMsgPlaceholder}
+                    value={riddleFailureMsg}
+                    onChange={(e) => setRiddleFailureMsg(e.target.value)}
+                  />
                 </VerticalStack>
               )}
             </FormSectionCardWide>

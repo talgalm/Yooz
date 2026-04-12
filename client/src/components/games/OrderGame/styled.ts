@@ -225,8 +225,8 @@ export const OrderRoundBannerText = styled('p')({
   fontWeight: 400,
   lineHeight: 1.15,
   letterSpacing: '0.02em',
-  color: '#6c5ce7',
-  WebkitTextStroke: '1.5px #1a1a1a',
+  color: '#ffffff',
+  WebkitTextStroke: '2px #155724',
   paintOrder: 'stroke fill',
   margin: 0,
 });
@@ -453,8 +453,8 @@ export const IntroTitle = styled('h1')({
   fontWeight: 400,
   lineHeight: 1.12,
   letterSpacing: '0.02em',
-  color: '#ffff00',
-  WebkitTextStroke: '4px #666600',
+  color: '#ffffff',
+  WebkitTextStroke: '4px #155724',
   paintOrder: 'stroke fill',
   animation: `${floatIn} 0.5s ease-out`,
 });

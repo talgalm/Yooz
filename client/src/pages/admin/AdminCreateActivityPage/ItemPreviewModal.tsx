@@ -150,7 +150,7 @@ export default function ItemPreviewModal({ item, onClose }: ItemPreviewModalProp
     _id: item.ref,
     name: item.name,
     type: 'station' as const,
-    stationType: stationType as 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback',
+    stationType: stationType as 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle',
     settings: settings!,
   });
 
@@ -210,6 +210,28 @@ export default function ItemPreviewModal({ item, onClose }: ItemPreviewModalProp
             />
           </StationContent>
         );
+      case 'riddle': {
+        const riddleAnswer = (settings.answer as string) || '';
+        const isRTL = /[\u0590-\u05FF]/.test(riddleAnswer);
+        return (
+          <StationContent>
+            {settings.clue && (
+              <StationText style={{ fontWeight: 600, marginBottom: 12 }}>{settings.clue as string}</StationText>
+            )}
+            {riddleAnswer && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', direction: isRTL ? 'rtl' : 'ltr', marginTop: 8 }}>
+                {riddleAnswer.split(' ').map((word, wi) => (
+                  <div key={wi} style={{ display: 'flex', gap: 3 }}>
+                    {word.split('').map((_, ci) => (
+                      <div key={ci} style={{ width: 28, height: 34, border: '2px solid #bbb', borderRadius: 6, background: '#fafafa' }} />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </StationContent>
+        );
+      }
       default:
         return <UnknownType>Unknown station type: {item.subType}</UnknownType>;
     }

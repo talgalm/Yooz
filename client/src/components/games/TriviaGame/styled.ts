@@ -112,7 +112,7 @@ export const IntroContent = styled('div')({
   minHeight: 0,
 });
 
-/** Match TrueFalse intro title sticker (yellow fill + olive outline). */
+/** Intro title: white fill + green outline. */
 export const IntroTitle = styled('h1')({
   margin: '0 0 16px',
   padding: 0,
@@ -126,8 +126,8 @@ export const IntroTitle = styled('h1')({
   fontWeight: 400,
   lineHeight: 1.12,
   letterSpacing: '0.02em',
-  color: '#ffff00',
-  WebkitTextStroke: '4px #666600',
+  color: '#ffffff',
+  WebkitTextStroke: '4px #155724',
   paintOrder: 'stroke fill',
   animation: `${floatIn} 0.5s ease-out`,
 });
@@ -482,19 +482,18 @@ export const HelperLifelineButton = styled('button')<{ disabled?: boolean; kind?
   };
 });
 
-// ─── Answer Grid (2×2) ───
+// ─── Answer Grid (2×2 for 4 answers, single column for 3) ───
 
-export const AnswerGrid = styled('div')({
+export const AnswerGrid = styled('div')<{ answerCount?: number }>(({ answerCount }) => ({
   display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
-  gridTemplateRows: 'auto auto',
+  gridTemplateColumns: answerCount && answerCount < 4 ? '1fr' : '1fr 1fr',
   gap: 6,
   width: '100%',
   position: 'relative',
   zIndex: 1,
   flexShrink: 0,
   minHeight: 0,
-});
+}));
 
 export const AnswerButton = styled('button')<{
   selected?: boolean;
@@ -736,13 +735,13 @@ export const FinishTitleBanner = styled('div')({
   padding: 0,
   background: 'none',
   width: 'min(100%, 340px)',
-  color: FINISH_TITLE_COLOR,
+  color: '#ffffff',
   fontFamily: "'Secular One', 'Heebo', sans-serif",
   fontSize: '48px',
   fontWeight: 400,
   lineHeight: 1.12,
   letterSpacing: '0.02em',
-  WebkitTextStroke: '4px #666600',
+  WebkitTextStroke: '4px #155724',
   paintOrder: 'stroke fill',
   textAlign: 'center',
   position: 'relative',

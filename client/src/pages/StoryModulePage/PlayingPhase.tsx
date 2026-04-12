@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { useMediaPreload } from '../../hooks/useMediaPreload';
 import ThemedBackground from '../../components/ThemedBackground';
 import OrderGame from '../../components/games/OrderGame';
 import TriviaGame from '../../components/games/TriviaGame';
@@ -10,6 +11,7 @@ import NarrativeStation from '../../components/stations/NarrativeStation';
 import BadgeStation from '../../components/stations/BadgeStation';
 import CollageStation from '../../components/stations/CollageStation';
 import FeedbackStation, { type FeedbackResult } from '../../components/stations/FeedbackStation';
+import RiddleStation from '../../components/stations/RiddleStation';
 import { styled, keyframes } from '@mui/material/styles';
 import {
   OutlineButton,
@@ -36,6 +38,7 @@ import {
   StationHeadline,
   StationBodyText,
   StationContinueButton,
+  GameLoadingSpinner,
 } from '../../components/games/styled';
 import MissionInlinePlayer from './MissionInlinePlayer';
 import ActivitySessionHeader, {
@@ -156,6 +159,14 @@ const ModalCloseButton = styled(PrimaryButton)({
   fontSize: 14,
 });
 
+// ─── Media gate — shows spinner until all URLs are loaded ───
+
+function MediaGateWrapper({ urls, children }: { urls: (string | undefined | null)[]; children: React.ReactNode }) {
+  const ready = useMediaPreload(urls);
+  if (!ready) return <GameLoadingSpinner />;
+  return <>{children}</>;
+}
+
 // ─── Component ───
 
 interface PlayingPhaseProps {
@@ -213,7 +224,7 @@ export default function PlayingPhase({
   const isPuzzleGame = isGameStep && (currentItem as GameItemData).gameType === 'puzzle';
   const isOrderGame = isGameStep && (currentItem as GameItemData).gameType === 'order';
   const isBallGame = isGameStep && (currentItem as GameItemData).gameType === 'ballGame';
-  const isTextVideoImageStation = currentItem.type === 'station' && ['text', 'video', 'image'].includes((currentItem as StationItemData).stationType);
+  const isTextVideoImageStation = currentItem.type === 'station' && ['text', 'video', 'image', 'riddle'].includes((currentItem as StationItemData).stationType);
   const puzzleSessionChrome = (isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation) ? 'puzzle' : 'default';
   const useDarkChrome = isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation;
   const SessionHeaderIconButton = useDarkChrome ? PuzzleDarkHeaderActionIconButton : DarkHeaderActionIconButton;
@@ -268,35 +279,33 @@ export default function PlayingPhase({
       }
 
       if (station.stationType === 'image') {
-        const descAfter = station.settings?.descPosition === 'after';
-        const descEl = station.description ? <StationDescriptionText>{station.description}</StationDescriptionText> : null;
-        const mediaEl = (
-          <StationWindow style={{ marginTop: 16 }} isDynamic>
-            <MediaStationImageWrapper style={{ marginBottom: 0 }}>
-              <MediaStationImage
-                src={station.settings?.mediaUrl as string}
-                alt=""
-              />
-            </MediaStationImageWrapper>
-          </StationWindow>
-        );
         return (
-          <MediaStationLayout>
-            <StationTitleText>{station.name}</StationTitleText>
-            {descAfter ? <>{mediaEl}{descEl}</> : <>{descEl}{mediaEl}</>}
-            <FixedContinueButton onClick={onStationContinue}>
-              {t.continueButton}
-            </FixedContinueButton>
-          </MediaStationLayout>
+          <ImageStationDisplay
+            station={station}
+            onContinue={onStationContinue}
+            t={t}
+          />
         );
       }
 
       if (station.stationType === 'narrative') {
-        return <NarrativeStation station={station} onContinue={onStationContinue} />;
+        return (
+          <MediaGateWrapper urls={[
+            station.settings?.backgroundImage as string | undefined,
+            station.settings?.imageUrl as string | undefined,
+          ]}>
+            <NarrativeStation station={station} onContinue={onStationContinue} />
+          </MediaGateWrapper>
+        );
       }
 
       if (station.stationType === 'badge') {
-        return <BadgeStation station={station} onContinue={onStationContinue} />;
+        const badgeUrl = (station.settings?.badgeImageUrl || station.settings?.mediaUrl) as string | undefined;
+        return (
+          <MediaGateWrapper urls={[badgeUrl]}>
+            <BadgeStation station={station} onContinue={onStationContinue} />
+          </MediaGateWrapper>
+        );
       }
 
       if (station.stationType === 'collage') {
@@ -305,6 +314,15 @@ export default function PlayingPhase({
 
       if (station.stationType === 'feedback') {
         return <FeedbackStation station={station} onContinue={onFeedbackContinue} />;
+      }
+
+      if (station.stationType === 'riddle') {
+        const riddleMediaUrl = station.settings?.mediaUrl as string | undefined;
+        return (
+          <MediaGateWrapper urls={[riddleMediaUrl]}>
+            <RiddleStation station={station} onComplete={onGameComplete} />
+          </MediaGateWrapper>
+        );
       }
 
       // Unknown station type fallback
@@ -339,29 +357,32 @@ export default function PlayingPhase({
     }
 
     if (gameData.type === 'trivia') {
+      const triviaSettings = gameData.settings as { questions?: Array<{ media?: string }> };
+      const triviaMedia = (triviaSettings.questions || []).map(q => q.media);
       return (
-        <TriviaGame
-          game={gameData}
-          onComplete={onGameComplete}
-        />
+        <MediaGateWrapper urls={triviaMedia}>
+          <TriviaGame game={gameData} onComplete={onGameComplete} />
+        </MediaGateWrapper>
       );
     }
 
     if (gameData.type === 'puzzle') {
+      const puzzleSettings = gameData.settings as { puzzleImage?: string; questions?: Array<{ media?: string }> };
+      const puzzleMedia = [puzzleSettings.puzzleImage, ...(puzzleSettings.questions || []).map(q => q.media)];
       return (
-        <PuzzleGame
-          game={gameData}
-          onComplete={onGameComplete}
-        />
+        <MediaGateWrapper urls={puzzleMedia}>
+          <PuzzleGame game={gameData} onComplete={onGameComplete} />
+        </MediaGateWrapper>
       );
     }
 
     if (gameData.type === 'trueFalse') {
+      const tfSettings = gameData.settings as { statements?: Array<{ media?: string }> };
+      const tfMedia = (tfSettings.statements || []).map(s => s.media);
       return (
-        <TrueFalseGame
-          game={gameData}
-          onComplete={onGameComplete}
-        />
+        <MediaGateWrapper urls={tfMedia}>
+          <TrueFalseGame game={gameData} onComplete={onGameComplete} />
+        </MediaGateWrapper>
       );
     }
 
@@ -378,11 +399,15 @@ export default function PlayingPhase({
     }
 
     if (gameData.type === 'trashSort') {
+      const tsSettings = gameData.settings as { items?: Array<{ imageUrl?: string }>; bins?: Array<{ iconUrl?: string }> };
+      const tsMedia = [
+        ...(tsSettings.items || []).map(i => i.imageUrl),
+        ...(tsSettings.bins || []).map(b => b.iconUrl),
+      ];
       return (
-        <TrashSortGame
-          game={gameData}
-          onComplete={onGameComplete}
-        />
+        <MediaGateWrapper urls={tsMedia}>
+          <TrashSortGame game={gameData} onComplete={onGameComplete} />
+        </MediaGateWrapper>
       );
     }
 
@@ -500,6 +525,38 @@ export default function PlayingPhase({
       </AnimatedStage>
       {hintModals}
     </ThemedBackground>
+  );
+}
+
+// ─── Image Station with media preloading ───
+
+function ImageStationDisplay({ station, onContinue, t }: {
+  station: StationItemData;
+  onContinue: () => void;
+  t: Record<string, string>;
+}) {
+  const mediaUrl = station.settings?.mediaUrl as string | undefined;
+  const mediaReady = useMediaPreload([mediaUrl]);
+  const descAfter = station.settings?.descPosition === 'after';
+  const descEl = station.description ? <StationDescriptionText>{station.description}</StationDescriptionText> : null;
+  const mediaEl = mediaReady ? (
+    <StationWindow style={{ marginTop: 16 }} isDynamic>
+      <MediaStationImageWrapper style={{ marginBottom: 0 }}>
+        <MediaStationImage src={mediaUrl} alt="" />
+      </MediaStationImageWrapper>
+    </StationWindow>
+  ) : (
+    <GameLoadingSpinner style={{ minHeight: 200, flex: 'none' }} />
+  );
+
+  return (
+    <MediaStationLayout>
+      <StationTitleText>{station.name}</StationTitleText>
+      {descAfter ? <>{mediaEl}{descEl}</> : <>{descEl}{mediaEl}</>}
+      <FixedContinueButton onClick={onContinue} disabled={!mediaReady}>
+        {t.continueButton}
+      </FixedContinueButton>
+    </MediaStationLayout>
   );
 }
 

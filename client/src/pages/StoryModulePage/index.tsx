@@ -353,10 +353,12 @@ export default function StoryModulePage() {
     sessionStorage.setItem(`yooz_session_${code}`, JSON.stringify(session));
   }, [code, sessionRestored, currentItemIndex, scores, phase, stationHintUsed, showGuidelines]);
 
-  useEffect(() => {
-    if (!code) return;
-    const controller = new AbortController();
-    fetch(`/api/activities/${code}/module?group=${encodeURIComponent(participant?.group || '')}`, { signal: controller.signal })
+  const fetchModule = useCallback((signal?: AbortSignal) => {
+    if (!code) return Promise.resolve();
+    return fetch(`/api/activities/${code}/module?group=${encodeURIComponent(participant?.group || '')}`, {
+      signal,
+      cache: 'no-store',
+    })
       .then((res) => {
         if (!res.ok) throw new Error('Failed');
         return res.json();
@@ -364,10 +366,26 @@ export default function StoryModulePage() {
       .then((d) => { setData(d); preloadActivityMedia(d); })
       .catch((err) => {
         if (err.name !== 'AbortError') setError(true);
-      })
-      .finally(() => setLoading(false));
+      });
+  }, [code, participant?.group]);
+
+  useEffect(() => {
+    if (!code) return;
+    const controller = new AbortController();
+    fetchModule(controller.signal).finally(() => setLoading(false));
     return () => controller.abort();
-  }, [code]);
+  }, [code, fetchModule]);
+
+  // Refetch module content when the tab regains visibility (catches edits made in other tabs)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchModule();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [fetchModule]);
 
   // Restore progress from server when no sessionStorage exists (cross-session resume)
   useEffect(() => {
