@@ -12,10 +12,8 @@ import {
   FinishStump,
   FinishScoreNumber,
   FinishScoreLabel,
-  IntroGameTitleSticker,
-  IntroGameTitleLine,
-  IntroStartButton,
 } from '../TrueFalseGame/styled';
+import { IntroTitle, IntroStartButton } from '../TriviaGame/styled';
 import {
   BallGameRoomBackground,
   ROOM_SIDE_WALL_COLOR,
@@ -273,12 +271,8 @@ export default function BallGame({
     }
   );
 
-  const src = `/assets/games/ballgame/index.html?v=4&embedded=1&lang=${encodeURIComponent(lang)}&dir=${encodeURIComponent(dir)}&gameId=${encodeURIComponent(game._id)}&timeLimit=${encodeURIComponent(String(settings.scoring?.timeLimitSeconds ?? 30))}`;
+  const src = `/assets/games/ballgame/index.html?v=5&embedded=1&lang=${encodeURIComponent(lang)}&dir=${encodeURIComponent(dir)}&gameId=${encodeURIComponent(game._id)}&timeLimit=${encodeURIComponent(String(settings.scoring?.timeLimitSeconds ?? 30))}`;
   if (pendingResult) {
-    const answeredQuestions = pendingResult.questionAnswers?.length || filteredQuestions.length;
-    const correctCount = pendingResult.questionAnswers?.filter((entry) => entry.isCorrect).length ?? 0;
-    const accuracy = answeredQuestions > 0 ? Math.round((correctCount / answeredQuestions) * 100) : 0;
-
     return (
       <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}>
         <BallGameRoomBackground>
@@ -286,9 +280,9 @@ export default function BallGame({
         </BallGameRoomBackground>
         <FinishContainer dir={dir}>
           <FinishContent $stumpCentered>
-            <IntroGameTitleSticker dir="auto" style={{ marginTop: 'clamp(24px, 6vh, 52px)' }}>
-              <IntroGameTitleLine style={{ color: '#ffffff', WebkitTextStroke: '4px #155724' }}>{t.gameComplete}</IntroGameTitleLine>
-            </IntroGameTitleSticker>
+            <IntroTitle dir="auto" style={{ marginTop: 'clamp(24px, 6vh, 52px)' }}>
+              {t.gameComplete}
+            </IntroTitle>
 
             <FinishStumpStage aria-hidden>
               <FinishStump>
@@ -297,7 +291,20 @@ export default function BallGame({
               </FinishStump>
             </FinishStumpStage>
 
-            <IntroStartButton type="button" $pinBottom onClick={() => onComplete(pendingResult)} style={{ marginBottom: 'clamp(40px, 10vh, 80px)' }}>
+            <IntroStartButton
+              type="button"
+              onClick={() => onComplete(pendingResult)}
+              style={{
+                marginTop: 'auto',
+                marginBottom: 'clamp(40px, 10vh, 80px)',
+                alignSelf: 'center',
+                width: 'fit-content',
+                minWidth: 'min(132px, 88vw)',
+                maxWidth: 'min(200px, 88vw)',
+                paddingLeft: 'clamp(22px, 6vw, 36px)',
+                paddingRight: 'clamp(22px, 6vw, 36px)',
+              }}
+            >
               {t.continueBtn ?? t.backToRoadmap}
             </IntroStartButton>
           </FinishContent>

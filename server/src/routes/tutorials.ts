@@ -312,13 +312,21 @@ ${steps.join('\n')}
 
 /**
  * Extract clean TypeScript code from Gemini's response.
- * Strips markdown code fences if present.
+ * Handles any leading explanation text before a fenced code block.
  */
 function extractCode(raw: string): string {
-  // Remove ```typescript ... ``` or ``` ... ``` wrappers
-  let code = raw.trim();
+  const trimmed = raw.trim();
+
+  // Find a fenced code block anywhere in the response (Gemini often adds explanation before it)
+  const fenceMatch = trimmed.match(/```(?:typescript|ts)?\r?\n([\s\S]*?)\r?\n?```/);
+  if (fenceMatch) {
+    return fenceMatch[1].trim();
+  }
+
+  // Fallback: strip leading/trailing fences directly
+  let code = trimmed;
   if (code.startsWith('```')) {
-    code = code.replace(/^```(?:typescript|ts)?\n?/, '').replace(/\n?```$/, '');
+    code = code.replace(/^```(?:typescript|ts)?\r?\n?/, '').replace(/\r?\n?```$/, '');
   }
   return code.trim();
 }
@@ -433,14 +441,30 @@ async function generateVideo(tutorialId: string, title: string, description: str
     }
     console.log(`[Tutorial ${safeId}] Gemini spec generated (${specContent.length} chars)`);
 
-    // Syntax-check: write temp file and run Playwright --list to detect compile errors
+    // Syntax-check: write temp file and run Playwright --list to detect compile errors.
+    // If it fails, send the errors back to Gemini for one correction attempt.
     writeFileSync(specFile, specContent);
     const listCmd = `cd "${PROJECT_ROOT}" && npx playwright test --list --project=walkthroughs "${specFile}" 2>&1`;
     const { output: listOutput, exitCode: listExit } = await runCommand(listCmd, 30_000);
     if (listExit !== 0) {
-      console.log(`[Tutorial ${safeId}] Gemini spec has syntax errors:\n${listOutput.slice(-600)}`);
+      const errSnippet = listOutput.slice(-800);
+      console.log(`[Tutorial ${safeId}] Gemini spec has syntax errors — asking Gemini to fix:\n${errSnippet}`);
       try { unlinkSync(specFile); } catch {}
-      throw new Error('Gemini spec has syntax errors — generation aborted');
+
+      // One correction pass: send original spec + compiler errors back to Gemini
+      const fixPrompt = `The following TypeScript Playwright spec has compilation errors. Fix ONLY the TypeScript errors and output the corrected spec. Output ONLY the TypeScript code, nothing else.\n\nOriginal spec:\n\`\`\`typescript\n${specContent}\n\`\`\`\n\nCompiler errors:\n${errSnippet}`;
+      const fixedRaw = await askGemini(fixPrompt);
+      specContent = extractCode(fixedRaw);
+      specContent = specContent.replace(/NARRATION_OUTPUT_PATH/g, narrationJson.replace(/\\/g, '/'));
+
+      writeFileSync(specFile, specContent);
+      const { output: retryOutput, exitCode: retryExit } = await runCommand(listCmd, 30_000);
+      if (retryExit !== 0) {
+        console.log(`[Tutorial ${safeId}] Corrected spec still has errors:\n${retryOutput.slice(-600)}`);
+        try { unlinkSync(specFile); } catch {}
+        throw new Error('Gemini spec has syntax errors — generation aborted');
+      }
+      console.log(`[Tutorial ${safeId}] Correction pass succeeded`);
     }
 
     writeFileSync(specFile, specContent);

@@ -141,12 +141,13 @@ canvas {
 }
 
 .cInstructionBg h4 {
+  font-family: 'Secular One', 'Heebo', sans-serif;
   font-size: 48px;
-  font-weight: 800;
+  font-weight: 400;
   line-height: 1.12;
   letter-spacing: 0.02em;
-  color: #ffff00;
-  -webkit-text-stroke: 4px #666600;
+  color: #ffffff;
+  -webkit-text-stroke: 4px #155724;
   paint-order: stroke fill;
   text-align: center;
   margin: 0 0 16px;
@@ -239,19 +240,24 @@ canvas {
   position: relative;
   z-index: 2;
   flex-shrink: 0;
-  min-width: clamp(100px, 28%, 140px);
-  background: linear-gradient(180deg, #f5d76e 0%, #e8b923 48%, #c9a012 100%);
-  color: #2a1538;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: min(200px, 88vw);
+  min-width: min(132px, 88vw);
+  margin-left: auto;
+  margin-right: auto;
+  background: linear-gradient(180deg, #5cb85c 0%, #28a745 48%, #1e7e34 100%);
+  color: #fff;
   font-size: clamp(1.35rem, 4.2vw, 1.65rem);
   font-weight: 800;
-  padding: clamp(12px, 3vw, 16px) clamp(36px, 10vw, 52px);
+  padding: clamp(12px, 3vw, 16px) clamp(22px, 6vw, 36px);
   border-radius: 16px;
-  border: 5px solid #8b6914;
+  border: 5px solid #155724;
   cursor: pointer;
   font-family: inherit;
-  box-shadow: 0 6px 0 #5c3d0a, 0 12px 24px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 6px 0 #0f3d18, 0 12px 24px rgba(0, 0, 0, 0.28);
   transition: transform 0.1s ease, box-shadow 0.1s ease;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
   margin-top: clamp(-16px, -5.5vw, -20px);
   text-align: center;
   letter-spacing: 0;
@@ -259,7 +265,7 @@ canvas {
 
 .cBallStartBtn:active {
   transform: translateY(4px);
-  box-shadow: 0 2px 0 #5c3d0a, 0 4px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 0 #0f3d18, 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 

@@ -45,7 +45,7 @@ var audio_wrong,
 
 let fliperMargin = 50;
 let optionBoxMarginX = 25;
-let optionBoxMarginY = 28;
+let optionBoxMarginY = 48;
 let fliperAngle = 0.6;
 let fliperScale = 0.4;
 let arrOptionBox = [];
@@ -538,6 +538,8 @@ var NATURE = {
   BOX_BG: '#c68652',
   BOX_BORDER: '#6c3483',
   BOX_SHADOW: '#6e3f22',
+  /** In-game question prompt (main text on the question card) */
+  QUESTION_TEXT: '#4580b8',
   TEXT_DARK: '#2b1609',
   BTN_RED: '#e74c3c',
   BTN_RED_DARK: '#c0392b',
@@ -1181,7 +1183,7 @@ function addQuestion() {
   if (textLayer) {
     var qEl = document.createElement('div');
     qEl.id = 'question-text-html';
-    qEl.style.cssText = 'position:absolute;left:' + questionBox.x + 'px;top:' + questionBox.y + 'px;width:' + questionBox.width + 'px;height:' + questionBox.height + 'px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:"Encode Sans Expanded",Arial,sans-serif;color:#222;text-align:center;padding:0 12px;box-sizing:border-box;line-height:1.3;direction:rtl;pointer-events:none;';
+    qEl.style.cssText = 'position:absolute;left:' + questionBox.x + 'px;top:' + questionBox.y + 'px;width:' + questionBox.width + 'px;height:' + questionBox.height + 'px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:"Encode Sans Expanded",Arial,sans-serif;color:' + NATURE.QUESTION_TEXT + ';text-align:center;padding:0 12px;box-sizing:border-box;line-height:1.3;direction:rtl;pointer-events:none;';
     qEl.textContent = arrQuestions[currentQuestionIndex];
     textLayer.appendChild(qEl);
   }
