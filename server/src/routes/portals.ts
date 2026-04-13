@@ -7,6 +7,7 @@ import { authenticateAdmin } from '../middleware/adminAuth';
 import { createdByEmailForNewResource, customerMongoFilter, customerOwnsDoc } from '../middleware/customerScope';
 import { CreatePortalRequest, PortalUserRequest } from '../types';
 import { Portal, Activity, Report } from '../models';
+import { generateInviteToken } from '../models/Portal';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
@@ -241,6 +242,19 @@ router.patch('/:id/users/:userId/status', authenticateAdmin, async (req: Request
   res.json({ success: true, user: { _id: user._id, username: user.username, status: user.status } });
 });
 
+// ─── Admin: Regenerate invite token ───
+
+router.post('/:id/regenerate-invite', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
+  const portal = await Portal.findById(req.params.id);
+  if (!portal) { res.status(404).json({ error: 'Portal not found' }); return; }
+  if (!customerOwnsDoc(req, portal)) { res.status(404).json({ error: 'Portal not found' }); return; }
+
+  portal.inviteToken = generateInviteToken();
+  await portal.save();
+
+  res.json({ success: true, inviteToken: portal.inviteToken });
+});
+
 // ─── Public Portal Routes ───
 
 // Get portal info (public - by code)
@@ -312,7 +326,7 @@ router.post('/public/:code/login', async (req: Request<{ code: string }>, res: R
 
 // Portal Google sign-in
 router.post('/public/:code/google-login', async (req: Request<{ code: string }>, res: Response) => {
-  const { email } = req.body;
+  const { email, inviteToken } = req.body;
   if (!email) { res.status(400).json({ error: 'Email is required' }); return; }
 
   const portal = await Portal.findOne({ code: req.params.code });
@@ -334,22 +348,33 @@ router.post('/public/:code/google-login', async (req: Request<{ code: string }>,
     return;
   }
 
-  // New user — auto-register as pending
+  // New user — auto-approve if valid invite token, otherwise pending
+  const isAutoApproved = !!(inviteToken && portal.inviteToken && inviteToken === portal.inviteToken);
   const randomPw = await bcrypt.hash(Math.random().toString(36), 10);
   portal.users.push({
     username: email.trim(),
     password: randomPw,
-    status: 'pending',
+    status: isAutoApproved ? 'approved' : 'pending',
     createdAt: new Date(),
   } as any);
   await portal.save();
 
-  res.status(403).json({ error: 'pending_approval' });
+  if (isAutoApproved) {
+    const savedUser = portal.users.find(u => u.username === email.trim());
+    const token = jwt.sign(
+      { portalCode: portal.code, portalId: portal._id, username: email.trim(), userId: savedUser?._id },
+      JWT_SECRET,
+      { expiresIn: '8h' },
+    );
+    res.json({ token, user: { username: email.trim() } });
+  } else {
+    res.status(403).json({ error: 'pending_approval' });
+  }
 });
 
 // Portal user self-registration
 router.post('/public/:code/register', async (req: Request<{ code: string }>, res: Response) => {
-  const { username, password } = req.body;
+  const { username, password, inviteToken } = req.body;
 
   if (!username || !password) {
     res.status(400).json({ error: 'Username and password are required' });
@@ -370,17 +395,30 @@ router.post('/public/:code/register', async (req: Request<{ code: string }>, res
     return;
   }
 
+  // Auto-approve if valid invite token provided
+  const isAutoApproved = !!(inviteToken && portal.inviteToken && inviteToken === portal.inviteToken);
   const hashed = await bcrypt.hash(password, 10);
   portal.users.push({
     username: username.trim(),
     password: hashed,
-    status: 'pending',
+    status: isAutoApproved ? 'approved' : 'pending',
     createdAt: new Date(),
   } as any);
 
   await portal.save();
 
-  res.status(201).json({ success: true, status: 'pending' });
+  if (isAutoApproved) {
+    // Find the newly saved user to get their _id
+    const savedUser = portal.users.find(u => u.username === username.trim());
+    const token = jwt.sign(
+      { portalCode: portal.code, portalId: portal._id, username: username.trim(), userId: savedUser?._id },
+      JWT_SECRET,
+      { expiresIn: '8h' },
+    );
+    res.status(201).json({ success: true, status: 'approved', token, user: { username: username.trim() } });
+  } else {
+    res.status(201).json({ success: true, status: 'pending' });
+  }
 });
 
 // Portal user update profile (change display name / password)

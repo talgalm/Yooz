@@ -21,11 +21,17 @@ export interface IPortal {
   activities: Types.ObjectId[];
   createdAt: Date;
   createdByEmail?: string;
+  inviteToken?: string; // secret token for auto-approve self-registration link
 }
 
 function generatePortalCode(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
   return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+export function generateInviteToken(): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  return Array.from({ length: 32 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
 const portalUserSchema = new Schema<IPortalUser>({
@@ -51,6 +57,7 @@ const portalSchema = new Schema<IPortal>({
   activities: [{ type: Schema.Types.ObjectId, ref: 'Activity' }],
   createdAt: { type: Date, default: Date.now },
   createdByEmail: { type: String, lowercase: true, trim: true },
+  inviteToken: { type: String, default: generateInviteToken },
 });
 
 portalSchema.index({ code: 1 }, { unique: true });

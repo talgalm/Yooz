@@ -828,6 +828,9 @@ export default function PortalPage() {
   const navigate = useNavigate();
   const t = useTranslations(texts);
 
+  // Read invite token from URL query param (?invite=xxx)
+  const inviteToken = new URLSearchParams(window.location.search).get('invite') || '';
+
   const [portal, setPortal] = useState<PortalInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -935,15 +938,25 @@ export default function PortalPage() {
     if (password.length < 4) { setAuthError(t.passwordTooShort); return; }
     setSubmitting(true);
     try {
+      const body: Record<string, string> = { username: username.trim(), password };
+      if (inviteToken) body.inviteToken = inviteToken;
       const res = await fetch(`${API_BASE}/api/admin/portals/public/${code}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (res.status === 409) { setAuthError(t.usernameTaken); setSubmitting(false); return; }
       if (!res.ok) { setAuthError(data.error || t.loginError); setSubmitting(false); return; }
-      setAuthMode('pending');
+      // Auto-approved via invite link — log in directly
+      if (data.status === 'approved' && data.token) {
+        localStorage.setItem(TOKEN_KEY, data.token);
+        localStorage.setItem(USER_KEY, data.user.username);
+        setLoggedInUser(data.user.username);
+        setIsLoggedIn(true);
+      } else {
+        setAuthMode('pending');
+      }
     } catch { setAuthError(t.loginError); } finally { setSubmitting(false); }
   };
 
@@ -974,7 +987,7 @@ export default function PortalPage() {
       const res = await fetch(`${API_BASE}/api/admin/portals/public/${code}/google-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, ...(inviteToken ? { inviteToken } : {}) }),
       });
       const data = await res.json();
       if (res.status === 403) {

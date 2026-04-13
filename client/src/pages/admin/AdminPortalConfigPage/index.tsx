@@ -78,6 +78,32 @@ const GenerateBtn = styled(OutlineButton)({
   padding: '7px 10px',
   fontSize: 11,
   whiteSpace: 'nowrap',
+  flexShrink: 0,
+});
+
+const EyeBtn = styled('button')({
+  padding: '7px 9px',
+  fontSize: 14,
+  background: 'none',
+  border: '1.5px solid #d0cce8',
+  borderRadius: 8,
+  cursor: 'pointer',
+  color: '#666',
+  display: 'flex',
+  alignItems: 'center',
+  flexShrink: 0,
+  '&:hover': { background: '#f0eefa', color: '#6c5ce7' },
+});
+
+const InviteLinkRow = styled('div')({
+  display: 'flex',
+  gap: 8,
+  alignItems: 'center',
+  padding: '10px 14px',
+  background: '#eaf6ea',
+  borderRadius: 10,
+  marginBottom: 4,
+  border: '1px solid #b7ddb7',
 });
 
 const ActivityPickerRow = styled('div')({
@@ -281,6 +307,9 @@ export default function AdminPortalConfigPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [copied, setCopied] = useState(false);
+  const [inviteToken, setInviteToken] = useState('');
+  const [copiedInvite, setCopiedInvite] = useState(false);
+  const [showPasswords, setShowPasswords] = useState<Record<number, boolean>>({});
   const [importingExcel, setImportingExcel] = useState(false);
   const excelInputRef = useRef<HTMLInputElement>(null);
 
@@ -311,6 +340,7 @@ export default function AdminPortalConfigPage() {
             }))
         );
         setAttachedActivities(p.activities || []);
+        setInviteToken(p.inviteToken || '');
       })
       .catch(() => setErrorMsg(t.error));
   }, [id, isEdit]);
@@ -333,7 +363,36 @@ export default function AdminPortalConfigPage() {
   };
 
   const generatePassword = (index: number) => {
-    updateUser(index, 'password', generateRandomPassword());
+    const pw = generateRandomPassword();
+    updateUser(index, 'password', pw);
+    setShowPasswords((prev) => ({ ...prev, [index]: true }));
+  };
+
+  const toggleShowPassword = (index: number) => {
+    setShowPasswords((prev) => ({ ...prev, [index]: !prev[index] }));
+  };
+
+  const inviteLink = portalCode && inviteToken
+    ? `${window.location.origin}/portal/${portalCode}?invite=${inviteToken}`
+    : '';
+
+  const copyInviteLink = () => {
+    if (!inviteLink) return;
+    navigator.clipboard.writeText(inviteLink);
+    setCopiedInvite(true);
+    setTimeout(() => setCopiedInvite(false), 2000);
+  };
+
+  const regenerateInviteToken = async () => {
+    if (!id) return;
+    try {
+      const res = await adminApiFetch<{ inviteToken: string }>(`/api/admin/portals/${id}/regenerate-invite`, {
+        method: 'POST',
+      });
+      setInviteToken(res.inviteToken);
+    } catch {
+      setErrorMsg(t.error);
+    }
   };
 
   const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -469,6 +528,29 @@ export default function AdminPortalConfigPage() {
               </PortalLinkRow>
             )}
 
+            {/* Invite Link (edit mode, auto-approve) */}
+            {isEdit && inviteLink && (
+              <InviteLinkRow>
+                <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 2, minWidth: 0 }}>
+                  <FieldLabel style={{ color: '#2e7d32', whiteSpace: 'nowrap' }}>{t.inviteLink}:</FieldLabel>
+                  <span style={{ fontSize: 11, color: '#555' }}>{t.inviteLinkDescription}</span>
+                  <LinkCode style={{ color: '#2e7d32', fontSize: 12 }}>{inviteLink}</LinkCode>
+                </div>
+                <SmallOutlineButton
+                  onClick={copyInviteLink}
+                  style={{ whiteSpace: 'nowrap', borderColor: '#b7ddb7', color: '#2e7d32' }}
+                >
+                  {copiedInvite ? t.copiedInviteLink : t.copyInviteLink}
+                </SmallOutlineButton>
+                <SmallOutlineButton
+                  onClick={regenerateInviteToken}
+                  style={{ whiteSpace: 'nowrap', borderColor: '#b7ddb7', color: '#666' }}
+                >
+                  {t.regenerateInviteLink}
+                </SmallOutlineButton>
+              </InviteLinkRow>
+            )}
+
             {/* Basic Info */}
             <FormSectionCard>
               <SectionLabel>{t.portalName}</SectionLabel>
@@ -550,9 +632,32 @@ export default function AdminPortalConfigPage() {
                     <FieldLabel>{t.password}</FieldLabel>
                     <PasswordRow>
                       <UserInput
-                        value={user.password.startsWith('$2') ? '********' : user.password}
+                        type={showPasswords[index] ? 'text' : 'password'}
+                        value={user.password.startsWith('$2') ? '' : user.password}
+                        placeholder={user.password.startsWith('$2') ? '(סיסמה שמורה — ייצר חדשה לשינוי)' : ''}
                         onChange={(e) => updateUser(index, 'password', e.target.value)}
+                        readOnly={user.password.startsWith('$2')}
                       />
+                      <EyeBtn
+                        type="button"
+                        onClick={() => toggleShowPassword(index)}
+                        title={showPasswords[index] ? t.hidePassword : t.showPassword}
+                      >
+                        {showPasswords[index] ? (
+                          // Eye with slash (hide)
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                          </svg>
+                        ) : (
+                          // Eye (show)
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        )}
+                      </EyeBtn>
                       <GenerateBtn onClick={() => generatePassword(index)}>
                         {t.generatePassword}
                       </GenerateBtn>

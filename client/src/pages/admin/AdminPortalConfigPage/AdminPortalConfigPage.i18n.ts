@@ -39,6 +39,14 @@ export const texts = {
     activityStatus: 'Status',
     activityCode: 'Code',
 
+    inviteLink: 'Invite Link (Auto-Approve)',
+    inviteLinkDescription: 'Users who register via this link are auto-approved',
+    copyInviteLink: 'Copy Invite',
+    copiedInviteLink: 'Copied!',
+    regenerateInviteLink: 'Regenerate',
+    showPassword: 'Show',
+    hidePassword: 'Hide',
+
     save: 'Save Portal',
     saving: 'Saving...',
     saved: 'Portal saved!',
@@ -84,6 +92,14 @@ export const texts = {
     detach: 'הסר',
     activityStatus: 'סטטוס',
     activityCode: 'קוד',
+
+    inviteLink: 'קישור הזמנה (אישור אוטומטי)',
+    inviteLinkDescription: 'משתמשים שנרשמים דרך הקישור הזה מאושרים אוטומטית',
+    copyInviteLink: 'העתק הזמנה',
+    copiedInviteLink: 'הועתק!',
+    regenerateInviteLink: 'חדש קישור',
+    showPassword: 'הצג',
+    hidePassword: 'הסתר',
 
     save: 'שמור פורטל',
     saving: 'שומר...',
