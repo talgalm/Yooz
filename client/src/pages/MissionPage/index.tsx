@@ -129,7 +129,7 @@ const ErrorWrapper = styled('div')({
   textAlign: 'center',
   padding: 24,
   direction: 'rtl',
-  fontFamily: "'Rubik One', sans-serif",
+  fontFamily: "'Rubik', sans-serif",
 });
 
 // ─── Session helpers ───

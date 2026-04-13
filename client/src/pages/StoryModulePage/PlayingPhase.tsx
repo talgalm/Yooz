@@ -49,6 +49,7 @@ import {
   useActivityPlayingHeaderSlot,
   useActivityGameHeaderFallbackWhenNeeded,
 } from '../../context/activityPlayingHeaderContext';
+import { useHelpChat } from '../../components/HelpChat/HelpChatContext';
 import type { GameResult } from '../../components/games/types';
 import type { ModuleItemData, GameItemData, StationItemData, MissionItemData, GameData, CustomThemeData } from './types';
 
@@ -222,6 +223,7 @@ export default function PlayingPhase({
   t,
 }: PlayingPhaseProps) {
   const activityHeaderSlot = useActivityPlayingHeaderSlot();
+  const { toggle: toggleHelpChat } = useHelpChat();
   const isGameStep = currentItem.type === 'game';
   const isPuzzleGame = isGameStep && (currentItem as GameItemData).gameType === 'puzzle';
   const isOrderGame = isGameStep && (currentItem as GameItemData).gameType === 'order';
@@ -245,6 +247,8 @@ export default function PlayingPhase({
           mission={missionItem}
           onComplete={onGameComplete}
           code={code}
+          onLogout={onLogout}
+          onHelp={toggleHelpChat}
         />
       );
     }

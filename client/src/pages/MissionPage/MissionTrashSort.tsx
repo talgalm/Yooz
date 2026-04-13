@@ -9,10 +9,12 @@ import {
   HeaderText,
   MissionContent,
   MissionButton,
+  TopIconButton,
+  TopActionRow,
 } from './MissionFrame';
 
 // ─── Design tokens ───
-const MISSION_FONT = "'Rubik One', sans-serif";
+const MISSION_FONT = "'Rubik', sans-serif";
 const MISSION_TEXT = '#F2F7FF';
 const MISSION_TEAL = '#39CABC';
 
@@ -35,17 +37,20 @@ const popOut = keyframes`
 // ─── Layout ───
 
 const PageWrapper = styled('div')({
-  width: '100%',
+  position: 'fixed',
+  inset: 0,
+  width: '100vw',
   height: '100dvh',
   display: 'flex',
   flexDirection: 'column',
-  position: 'relative',
   overflow: 'hidden',
   overscrollBehavior: 'none',
+  backgroundColor: '#1a0a2e',
   backgroundImage: 'url(/images/mission-bg-1.svg)',
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',
+  zIndex: 10,
 });
 
 const TopBar = styled('div')({
@@ -70,6 +75,21 @@ const ScoreBox = styled('div')<{ $flash?: 'positive' | 'negative' | null }>(({ $
   transformOrigin: 'center',
   transition: 'color 0.18s ease, transform 0.18s ease',
 }));
+
+const ShareButtonLabel = styled('span')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexDirection: 'row-reverse',
+  gap: 14,
+  fontFamily: "'Rubik', sans-serif",
+  fontWeight: 400,
+  fontStyle: 'normal',
+  lineHeight: 1,
+  letterSpacing: 0,
+  textAlign: 'right',
+  direction: 'rtl',
+});
 
 const MuteBtn = styled('button')({
   background: 'none',
@@ -271,6 +291,8 @@ interface MissionTrashSortProps {
   toggleMute?: () => void;
   startTrashBg?: () => void;
   stopTrashBg?: () => void;
+  onLogout?: () => void;
+  onHelp?: () => void;
   title?: string;
   description?: string;
   scoreLabel?: string;
@@ -349,7 +371,11 @@ const FALL_PX_PER_TICK = 4; // ~160px/s at 50ms ticks
 const CORRECT_BIN_SOUND_SRC = '/sounds/correct-bin-sound.wav';
 const WRONG_BIN_SOUND_SRC = '/sounds/wrong-bin-sound.mp3';
 const TOTAL_TRASH_ITEMS = FUNNEL_TRASH_ITEMS.length;
-const getTrashSortSessionKey = (activityCode?: string) => `mission_trash_sort_${activityCode || 'default'}`;
+function userFingerprint(): string {
+  try { return (localStorage.getItem('yooz_token') ?? '').slice(-10); } catch { return ''; }
+}
+
+const getTrashSortSessionKey = (activityCode?: string) => `mission_trash_sort_${activityCode || 'default'}_${userFingerprint()}`;
 const toPercentNumber = (value: string) => Number.parseFloat(value.replace('%', '')) || 0;
 const moveToward = (current: number, target: number, step: number) => {
   if (current < target) return Math.min(current + step, target);
@@ -376,10 +402,10 @@ export default function MissionTrashSort({
   badgeAwardText = 'מוענק בזאת',
   badgeAchievementText = 'על מציאת המזוודה והצלת הפארק!',
   shareButton = 'שתפו עם חברים',
-  continueButton = 'המשך',
   participantName,
   activityCode,
-  onComplete,
+  onLogout,
+  onHelp,
 }: MissionTrashSortProps) {
   type Phase = 'intro' | 'throwing' | 'countdown' | 'game' | 'complete' | 'badge';
   type ScoreFlash = 'positive' | 'negative' | null;
@@ -401,6 +427,13 @@ export default function MissionTrashSort({
     width: number;
     rotate: number;
   };
+
+  // Hide body background while this component is mounted
+  useEffect(() => {
+    const prev = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = '#1a0a2e';
+    return () => { document.body.style.backgroundColor = prev; };
+  }, []);
 
   const [imagesReady, setImagesReady] = useState(false);
 
@@ -436,7 +469,15 @@ export default function MissionTrashSort({
       if (!raw) return 'intro';
       const data = JSON.parse(raw) as { phase?: string };
       const savedPhase = data.phase;
-      if (savedPhase === 'intro' || savedPhase === 'throwing' || savedPhase === 'countdown' || savedPhase === 'game' || savedPhase === 'complete' || savedPhase === 'badge') {
+      // Active game → back to intro
+      if (savedPhase === 'game' || savedPhase === 'throwing' || savedPhase === 'countdown') {
+        return 'intro';
+      }
+      // Game finished → jump straight to badge (skip intermediate complete screen)
+      if (savedPhase === 'complete') {
+        return 'badge';
+      }
+      if (savedPhase === 'intro' || savedPhase === 'badge') {
         return savedPhase;
       }
     } catch {
@@ -748,12 +789,43 @@ export default function MissionTrashSort({
             <span>{scoreLabel}</span>
             <span>{gameScore}</span>
           </ScoreBox>
-          {toggleMute && (
-            <MuteBtn onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
-              <MuteIcon src="/images/musicOn.png" alt="" $muted={muted} />
-              {muted && <MuteSlash />}
-            </MuteBtn>
-          )}
+          <div style={{ display: 'flex', gap: 6 }}>
+            {onLogout && (
+              <TopIconButton onClick={onLogout} aria-label="Logout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </TopIconButton>
+            )}
+            {toggleMute && (
+              <TopIconButton onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
+                {muted ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
+                    <line x1="23" y1="9" x2="17" y2="15" />
+                    <line x1="17" y1="9" x2="23" y2="15" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                  </svg>
+                )}
+              </TopIconButton>
+            )}
+            {onHelp && (
+              <TopIconButton onClick={onHelp} aria-label="Help">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </TopIconButton>
+            )}
+          </div>
         </TopBar>
 
         <FunnelArea ref={funnelAreaRef}>
@@ -841,20 +913,87 @@ export default function MissionTrashSort({
   // ─── Completion phase ───
   if (phase === 'complete') {
     return (
-      <MissionWrapper bg="/images/after-trash-game-bg.png" step={1}>
-        <FrameContainer>
+      <MissionWrapper bg={undefined} step={1}>
+        <FrameContainer style={{ background: '#1a0a2e' }}>
           <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
           <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
+
+          <TopActionRow>
+            {onLogout && (
+              <TopIconButton onClick={onLogout} aria-label="Logout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </TopIconButton>
+            )}
+            {toggleMute && (
+              <TopIconButton onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
+                {muted ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
+                    <line x1="23" y1="9" x2="17" y2="15" />
+                    <line x1="17" y1="9" x2="23" y2="15" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                  </svg>
+                )}
+              </TopIconButton>
+            )}
+            {onHelp && (
+              <TopIconButton onClick={onHelp} aria-label="Help">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </TopIconButton>
+            )}
+          </TopActionRow>
+
           <MissionHeader>
             <HeaderText>{completeHeader}</HeaderText>
           </MissionHeader>
 
-          <MissionContent>
-
+          <MissionContent style={{ padding: 0, gap: 0, justifyContent: 'center', minHeight: 0, overflow: 'hidden' }}>
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                width: '100%',
+                maxHeight: '52dvh',
+                aspectRatio: '3 / 4',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                borderRadius: 8,
+                transform: 'translateY(-23px)',
+              }}
+            >
+              <video
+                src="/videos/env-finish-video.mp4"
+                autoPlay
+                loop
+                playsInline
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  objectPosition: 'center 30%',
+                  display: 'block',
+                }}
+              />
+            </div>
           </MissionContent>
 
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <MissionButton step={1} onClick={() => setPhase('badge')}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 70 }}>
+            <MissionButton step={3} onClick={() => setPhase('badge')}>
               {completeButton}
             </MissionButton>
           </div>
@@ -867,49 +1006,76 @@ export default function MissionTrashSort({
   if (phase === 'badge') {
     const badgeName = participantName?.trim() || 'למשתתף/ת';
     return (
-      <MissionWrapper bg="/images/mission-bg-1.svg" step={1}>
+      <MissionWrapper bg="/images/mission-bg-1.svg" step={0}>
         <FrameContainer>
-          <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
-          <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
+          <TopActionRow>
+            {onLogout && (
+              <TopIconButton onClick={onLogout} aria-label="Logout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </TopIconButton>
+            )}
+            {toggleMute && (
+              <TopIconButton onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
+                {muted ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
+                    <line x1="23" y1="9" x2="17" y2="15" />
+                    <line x1="17" y1="9" x2="23" y2="15" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                  </svg>
+                )}
+              </TopIconButton>
+            )}
+            {onHelp && (
+              <TopIconButton onClick={onHelp} aria-label="Help">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </TopIconButton>
+            )}
+          </TopActionRow>
+
           <MissionHeader>
             <HeaderText>{badgeHeader}</HeaderText>
           </MissionHeader>
 
-          <MissionContent>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 90 }}>
-              <svg
-                viewBox="0 0 300 80"
-                style={{ width: '80%', maxWidth: 300, overflow: 'visible', marginBottom: -50 }}
+          <MissionContent style={{ paddingTop: 40 }}>
+            <svg
+              viewBox="0 0 300 80"
+              style={{ width: '80%', maxWidth: 300, overflow: 'visible', marginBottom: -50 }}
+            >
+              <defs>
+                <path id="badge-curve" d="M 15,75 A 150,150 0 0,1 285,75" fill="none" />
+              </defs>
+              <text
+                fill="#fff"
+                fontSize="48"
+                fontWeight="900"
+                fontFamily={MISSION_FONT}
+                letterSpacing="2"
+                style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}
               >
-                <defs>
-                  <path id="badge-curve" d="M 15,75 A 150,150 0 0,1 285,75" fill="none" />
-                </defs>
-                <text
-                  fill="#fff"
-                  fontSize="48"
-                  fontWeight="900"
-                  fontFamily={MISSION_FONT}
-                  letterSpacing="2"
-                  style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}
-                >
-                  <textPath href="#badge-curve" startOffset="50%" textAnchor="middle">
-                    {badgeCurveText}
-                  </textPath>
-                </text>
-              </svg>
-              <div style={{ width: '65%', maxWidth: 260, position: 'relative', aspectRatio: '1 / 1' }}>
-                <img
-                  src="/images/badge.svg"
-                  alt="badge"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    display: 'block',
-                  }}
-                />
-              </div>
-            </div>
+                <textPath href="#badge-curve" startOffset="50%" textAnchor="middle">
+                  {badgeCurveText}
+                </textPath>
+              </text>
+            </svg>
+            <img
+              src="/images/badge.svg"
+              alt="badge"
+              style={{ width: '60%', maxWidth: 240, objectFit: 'contain' }}
+            />
             <div
               style={{
                 color: MISSION_TEXT,
@@ -917,14 +1083,12 @@ export default function MissionTrashSort({
                 textAlign: 'center',
                 direction: 'rtl',
                 lineHeight: 1.6,
-                marginTop: 6,
-                fontSize: 'clamp(16px, 4.8vw, 22px)',
-                border: '1.5px solid #39CABC',
+                fontSize: 'clamp(14px, 4vw, 18px)',
+                border: `1.5px solid ${MISSION_TEAL}`,
                 borderRadius: 16,
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                background: 'rgba(0, 0, 0, 0.2)',
-                padding: '14px 20px',
+                background: 'rgba(0,0,0,0.35)',
+                padding: '12px 20px',
+                width: '85%',
               }}
             >
               <div>{badgeAwardText}</div>
@@ -933,15 +1097,16 @@ export default function MissionTrashSort({
             </div>
           </MissionContent>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <MissionButton step={1}>
-              {shareButton}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: -24 }}>
+            <MissionButton step={0} onClick={() => {}}>
+              <ShareButtonLabel>
+                {shareButton}
+                <svg width="20" height="20" viewBox="0 0 75 75" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M12.3698 49.9488C5.48028 49.9488 0 44.4686 0 37.5791C0 30.6896 5.48028 25.2093 12.3698 25.2093C19.2593 25.2093 24.7396 30.6896 24.7396 37.5791C24.7396 44.312 19.2593 49.9488 12.3698 49.9488ZM12.3698 29.7501C8.14213 29.7501 4.69738 33.1948 4.69738 37.4225C4.69738 41.6501 8.14213 45.0949 12.3698 45.0949C16.5974 45.0949 20.0422 41.6501 20.0422 37.4225C20.0422 33.3514 16.5974 29.7501 12.3698 29.7501ZM62.6318 24.7396C55.7423 24.7396 50.262 19.2593 50.262 12.3698C50.262 5.48028 55.7423 0 62.6318 0C69.5213 0 75.0016 5.48028 75.0016 12.3698C75.0016 19.2593 69.3647 24.7396 62.6318 24.7396ZM62.6318 4.69738C58.4041 4.69738 54.9594 8.14213 54.9594 12.3698C54.9594 16.5974 58.4041 20.0422 62.6318 20.0422C66.8594 20.0422 70.3042 16.5974 70.3042 12.3698C70.3042 8.14213 66.8594 4.69738 62.6318 4.69738ZM62.6318 75.0016C55.7423 75.0016 50.262 69.5213 50.262 62.6318C50.262 55.7423 55.7423 50.262 62.6318 50.262C69.5213 50.262 75.0016 55.7423 75.0016 62.6318C75.0016 69.5213 69.3647 75.0016 62.6318 75.0016ZM62.6318 54.9594C58.4041 54.9594 54.9594 58.4041 54.9594 62.6318C54.9594 66.8594 58.4041 70.3042 62.6318 70.3042C66.8594 70.3042 70.3042 66.8594 70.3042 62.6318C70.3042 58.4041 66.8594 54.9594 62.6318 54.9594Z" fill="#F4FBFF" />
+                  <path d="M52.4539 60.436L20.1985 44.3084L22.3906 39.7676L54.8026 55.8952L52.4539 60.436ZM22.3906 35.2268L20.1985 30.8425L52.4539 14.7148L54.8026 19.0991L22.3906 35.2268Z" fill="#F4FBFF" />
+                </svg>
+              </ShareButtonLabel>
             </MissionButton>
-            {onComplete && (
-              <MissionButton step={1} onClick={() => onComplete(gameScore)}>
-                {continueButton}
-              </MissionButton>
-            )}
           </div>
         </FrameContainer>
       </MissionWrapper>
@@ -977,12 +1142,43 @@ export default function MissionTrashSort({
           <span>{scoreLabel}</span>
           <span>{gameScore}</span>
         </ScoreBox>
-        {toggleMute && (
-          <MuteBtn onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
-            <MuteIcon src="/images/musicOn.png" alt="" $muted={muted} />
-            {muted && <MuteSlash />}
-          </MuteBtn>
-        )}
+        <div style={{ display: 'flex', gap: 6 }}>
+          {onLogout && (
+            <TopIconButton onClick={onLogout} aria-label="Logout">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            </TopIconButton>
+          )}
+          {toggleMute && (
+            <TopIconButton onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
+              {muted ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
+                  <line x1="23" y1="9" x2="17" y2="15" />
+                  <line x1="17" y1="9" x2="23" y2="15" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                </svg>
+              )}
+            </TopIconButton>
+          )}
+          {onHelp && (
+            <TopIconButton onClick={onHelp} aria-label="Help">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </TopIconButton>
+          )}
+        </div>
       </TopBar>
 
       <FunnelArea>

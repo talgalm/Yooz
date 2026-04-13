@@ -613,22 +613,20 @@ export default function StoryModulePage() {
     }
   }, [showPopupsOrRun]);
 
-  // Skip roadmap entirely when there's only 1 station — auto-enter it
+  // Skip roadmap entirely when there's only 1 station — go directly to playing immediately
   const singleItemAutoEntered = useRef(false);
   useEffect(() => {
     if (
       phase === 'roadmap' &&
       data &&
       data.module.items.length === 1 &&
-      !showGuidelines &&
-      !currentPopup &&
-      !singleItemAutoEntered.current &&
-      entryTransitionStage === 'idle'
+      !singleItemAutoEntered.current
     ) {
       singleItemAutoEntered.current = true;
-      handleNodeTap(0);
+      itemStartTime.current = Date.now();
+      setPhase('playing');
     }
-  }, [phase, data, showGuidelines, currentPopup, entryTransitionStage]);
+  }, [phase, data]);
 
   const handleGameComplete = (result: GameResult) => {
     if (!data) return;
@@ -981,6 +979,11 @@ export default function StoryModulePage() {
   // ─── Phase rendering ───
 
   if (phase === 'roadmap') {
+    const isSingleItem = data.module.items.length === 1;
+
+    // Single-item activity: useEffect immediately sets phase to 'playing' — render nothing here
+    if (isSingleItem) return null;
+
     const roadmapTotalPoints = Math.max(
       0,
       scores.reduce((sum, s) => sum + s.score, 0) - stationHintUsed.size * stationHintPenalty,
@@ -1194,6 +1197,16 @@ export default function StoryModulePage() {
       </ActivityPlayingHeaderProvider>
       {entryTransitionStage !== 'idle' && (
         <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
+      )}
+      {/* Guidelines overlay on top of station — for single-item activities */}
+      {showGuidelines && !currentPopup && data.module.items.length === 1 && (
+        <GuidelinesPopup
+          itemCount={data.module.items.length}
+          guidelines={data.guidelines}
+          customInstructions={data.customInstructions}
+          onDismiss={handleGuidelinesDismiss}
+          t={t}
+        />
       )}
 
       {/* Exit confirmation for continuous activities */}

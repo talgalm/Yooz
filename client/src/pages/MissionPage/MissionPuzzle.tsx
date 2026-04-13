@@ -8,13 +8,15 @@ import {
   MissionHeader,
   HeaderText,
   MissionButton,
+  TopActionRow,
+  TopIconButton,
 } from './MissionFrame';
 
 // ─── Config ───
 const GRID = 4;
 const TOTAL = GRID * GRID;
 const MISSION_TEAL = '#39CABC';
-const MISSION_FONT = "'Rubik One', sans-serif";
+const MISSION_FONT = "'Rubik', sans-serif";
 const PUZZLE_IMAGE = '/images/puzzle-env.png';
 
 // ─── Jigsaw Geometry ───
@@ -152,6 +154,22 @@ const PuzzleContent = styled('div')({
   fontFamily: MISSION_FONT,
 });
 
+const PuzzleInstruction = styled('p')({
+  fontFamily: MISSION_FONT,
+  fontSize: 'clamp(16px, 5vw, 22px)',
+  color: '#F2F7FF',
+  textAlign: 'center',
+  direction: 'rtl',
+  margin: 0,
+  padding: '0 16px',
+  lineHeight: 1.5,
+  position: 'absolute',
+  top: '7%',
+  left: 0,
+  right: 0,
+  zIndex: 4,
+});
+
 const GridArea = styled('div')({
   position: 'relative',
   width: '85vw',
@@ -160,6 +178,8 @@ const GridArea = styled('div')({
   aspectRatio: '1 / 1',
   borderRadius: 4,
   overflow: 'hidden',
+  border: `2px solid ${MISSION_TEAL}`,
+  boxShadow: `0 0 12px ${MISSION_TEAL}60`,
   // Blurred puzzle image as background hint (via pseudo to avoid blurring children)
   '&::before': {
     content: '""',
@@ -176,7 +196,7 @@ const GridArea = styled('div')({
 const GridCell = styled('div')<{ highlight?: boolean }>(({ highlight }) => ({
   position: 'absolute',
   boxSizing: 'border-box',
-  border: `1px solid ${MISSION_TEAL}15`,
+  border: `2px solid ${MISSION_TEAL}90`,
   transition: 'background 0.2s, border-color 0.2s',
   zIndex: 1,
   ...(highlight ? {
@@ -226,7 +246,7 @@ const CompleteImage = styled('img')({
   aspectRatio: '1 / 1',
   objectFit: 'cover',
   borderRadius: 4,
-  marginTop: '-10%',
+  marginTop: '-18%',
   animation: `${fadeIn} 0.6s ease-out`,
 });
 
@@ -291,11 +311,17 @@ interface MissionPuzzleProps {
   code?: string;
   completeHeader?: string;
   completeButton?: string;
+  onLogout?: () => void;
+  onHelp?: () => void;
 }
 
 // ─── Session helpers ───
 
-function puzzleKey(code: string) { return `mission_puzzle_${code}`; }
+function userFingerprint(): string {
+  try { return (localStorage.getItem('yooz_token') ?? '').slice(-10); } catch { return ''; }
+}
+
+function puzzleKey(code: string) { return `mission_puzzle_${code}_${userFingerprint()}`; }
 
 function loadPuzzleSession(code?: string): { queue: number[]; placed: number[] } | null {
   if (!code) return null;
@@ -312,7 +338,7 @@ function savePuzzleSession(code: string, queue: number[], placed: number[]) {
 
 // ─── Component ───
 
-export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect, playClick, playComplete, muted, toggleMute, code, completeHeader = 'כל הכבוד!', completeButton = 'לשלב הבא' }: MissionPuzzleProps) {
+export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect, playClick, playComplete, muted, toggleMute, code, completeHeader = 'כל הכבוד!', completeButton = 'לשלב הבא', onLogout, onHelp }: MissionPuzzleProps) {
   const savedPuzzle = useRef(loadPuzzleSession(code));
 
   const [queue, setQueue] = useState<number[]>(() => {
@@ -449,12 +475,43 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
           <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
           <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
 
-          {toggleMute && (
-            <MuteBtn onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
-              <MuteBtnIcon src="/images/mic.svg" alt="" $muted={!!muted} />
-              {muted && <MuteBtnSlash />}
-            </MuteBtn>
-          )}
+          <TopActionRow>
+            {onLogout && (
+              <TopIconButton onClick={onLogout} aria-label="Logout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </TopIconButton>
+            )}
+            {toggleMute && (
+              <TopIconButton onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
+                {muted ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
+                    <line x1="23" y1="9" x2="17" y2="15" />
+                    <line x1="17" y1="9" x2="23" y2="15" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                  </svg>
+                )}
+              </TopIconButton>
+            )}
+            {onHelp && (
+              <TopIconButton onClick={onHelp} aria-label="Help">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </TopIconButton>
+            )}
+          </TopActionRow>
 
           <MissionHeader>
             <HeaderText>{completeHeader}</HeaderText>
@@ -464,7 +521,7 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
             <CompleteImage src={PUZZLE_IMAGE} alt="" />
           </PuzzleContent>
 
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 70 }}>
             <MissionButton step={3} onClick={() => { playClick?.(); onComplete(); }}>
               {completeButton}
             </MissionButton>
@@ -481,13 +538,47 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
         <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
         <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
 
-        {/* Mic / mute button */}
-        {toggleMute && (
-          <MuteBtn onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
-            <MuteBtnIcon src="/images/mic.svg" alt="" $muted={!!muted} />
-            {muted && <MuteBtnSlash />}
-          </MuteBtn>
-        )}
+        <TopActionRow>
+          {onLogout && (
+            <TopIconButton onClick={onLogout} aria-label="Logout">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            </TopIconButton>
+          )}
+          {toggleMute && (
+            <TopIconButton onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
+              {muted ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
+                  <line x1="23" y1="9" x2="17" y2="15" />
+                  <line x1="17" y1="9" x2="23" y2="15" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                </svg>
+              )}
+            </TopIconButton>
+          )}
+          {onHelp && (
+            <TopIconButton onClick={onHelp} aria-label="Help">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </TopIconButton>
+          )}
+        </TopActionRow>
+
+        <PuzzleInstruction>
+          גררו את החלק אל תוך התמונה<br />כאשר זה יהיה במקום הנכון יתקבל צליל
+        </PuzzleInstruction>
 
         <PuzzleContent>
           {/* 4×4 Grid */}

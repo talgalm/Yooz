@@ -1,7 +1,7 @@
 import { styled, keyframes } from '@mui/material/styles';
 
 // ─── Mission Design ───
-const MISSION_FONT = "'Rubik One', sans-serif";
+const MISSION_FONT = "'Rubik', sans-serif";
 const MISSION_TEAL = '#39CABC';
 const MISSION_TEXT = '#F2F7FF';
 
@@ -201,13 +201,41 @@ export const MissionButton = styled('button', {
 
 }));
 
+// ─── Top action row (logout + help + mute) ───
+
+export const TopActionRow = styled('div')({
+  position: 'absolute',
+  top: 10,
+  right: 12,
+  zIndex: 15,
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+});
+
+export const TopIconButton = styled('button')({
+  width: 30,
+  height: 30,
+  borderRadius: 8,
+  background: 'rgba(0,0,0,0.55)',
+  border: `1.5px solid rgba(255,255,255,0.25)`,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: MISSION_TEXT,
+  transition: 'background 0.2s, border-color 0.2s',
+  '&:hover': {
+    background: 'rgba(57,202,188,0.18)',
+    borderColor: MISSION_TEAL,
+  },
+  '&:active': { transform: 'scale(0.93)' },
+});
+
 // ─── Mute button ───
 
 export const MuteButton = styled('button')({
-  position: 'absolute',
-  top: -5,
-  left: 16,
-  zIndex: 15,
   background: 'none',
   border: 'none',
   cursor: 'pointer',
