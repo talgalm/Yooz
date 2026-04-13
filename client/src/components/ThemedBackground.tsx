@@ -2,13 +2,36 @@ import React from 'react';
 import NatureBackground from './NatureBackground';
 import OceanBackground from './OceanBackground';
 import DesertBackground from './DesertBackground';
+import type { CustomThemeData } from '../pages/StoryModulePage/types';
 
 interface ThemedBackgroundProps {
   theme?: string;
+  customTheme?: CustomThemeData;
   children: React.ReactNode;
 }
 
-export default function ThemedBackground({ theme, children }: ThemedBackgroundProps) {
+export default function ThemedBackground({ theme, customTheme, children }: ThemedBackgroundProps) {
+  if (customTheme?.stationsImage) {
+    return (
+      <div style={{
+        position: 'relative',
+        minHeight: '100dvh',
+        height: '100dvh',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        backgroundImage: `url(${customTheme.stationsImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}>
+        <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          {children}
+        </div>
+      </div>
+    );
+  }
+
   switch (theme) {
     case 'ocean':
       return <OceanBackground>{children}</OceanBackground>;

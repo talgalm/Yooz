@@ -261,9 +261,22 @@ const ResultScore = styled('div')({
 interface RiddleStationProps {
   station: StationItemData;
   onComplete: (result: GameResult) => void;
+  stationHintText?: string | null;
+  stationHintUsed?: boolean;
+  onStationHintClick?: () => void;
+  hintLabel?: string;
+  textColor?: string;
 }
 
-export default function RiddleStation({ station, onComplete }: RiddleStationProps) {
+export default function RiddleStation({
+  station,
+  onComplete,
+  stationHintText,
+  stationHintUsed = false,
+  onStationHintClick,
+  hintLabel,
+  textColor,
+}: RiddleStationProps) {
   const settings = (station.settings || {}) as RiddleSettings;
   const clue = settings.clue || '';
   const answer = settings.answer || '';
@@ -377,12 +390,10 @@ export default function RiddleStation({ station, onComplete }: RiddleStationProp
   };
 
   const allFilled = inputs.every((c) => c !== '');
-  const potentialScore = getScoreForAttempt(maxScore, attempt);
-
   return (
     <>
       <Container>
-        <StationTitle>{station.name}</StationTitle>
+        <StationTitle style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitle>
 
         {clue ? <ClueText>{clue}</ClueText> : null}
 
@@ -433,9 +444,17 @@ export default function RiddleStation({ station, onComplete }: RiddleStationProp
           </span>
         </AttemptsRow>
 
-        <ScoreBadge>
-          {isRTL ? `ניקוד אפשרי: ${potentialScore}` : `Possible score: ${potentialScore}`}
-        </ScoreBadge>
+        {stationHintText && onStationHintClick ? (
+          <ScoreBadge
+            as="button"
+            type="button"
+            onClick={onStationHintClick}
+            style={{ cursor: 'pointer' }}
+            aria-label={hintLabel || (isRTL ? 'רמז' : 'Hint')}
+          >
+            {hintLabel || (stationHintUsed ? (isRTL ? 'הצג רמז' : 'Show Hint') : (isRTL ? 'רמז' : 'Hint'))}
+          </ScoreBadge>
+        ) : null}
       </Container>
 
       {phase === 'success' ? (

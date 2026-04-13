@@ -50,7 +50,7 @@ import {
   useActivityGameHeaderFallbackWhenNeeded,
 } from '../../context/activityPlayingHeaderContext';
 import type { GameResult } from '../../components/games/types';
-import type { ModuleItemData, GameItemData, StationItemData, MissionItemData, GameData } from './types';
+import type { ModuleItemData, GameItemData, StationItemData, MissionItemData, GameData, CustomThemeData } from './types';
 
 // ─── Local styled components ───
 
@@ -175,6 +175,7 @@ interface PlayingPhaseProps {
   stationHintUsed: boolean;
   bgStyle: React.CSSProperties;
   theme?: string;
+  customTheme?: CustomThemeData;
   code?: string;
   onGameComplete: (result: GameResult) => void;
   onLogout: () => void;
@@ -201,6 +202,7 @@ export default function PlayingPhase({
   stationHintUsed,
   bgStyle: _bgStyle,
   theme,
+  customTheme,
   code,
   onGameComplete,
   onLogout,
@@ -233,6 +235,7 @@ export default function PlayingPhase({
   const showMusicInGameSlot = isGameStep && activityHeaderSlot != null;
   const showStandaloneLeaderboard =
     !isGameStep && Boolean(onViewLeaderboard);
+  const isRiddleStation = currentItem.type === 'station' && (currentItem as StationItemData).stationType === 'riddle';
 
   const renderContent = () => {
     if (currentItem.type === 'mission') {
@@ -252,7 +255,7 @@ export default function PlayingPhase({
       if (station.stationType === 'text') {
         return (
           <StationTopLayout>
-            <StationTitleText>{station.name}</StationTitleText>
+            <StationTitleText style={customTheme?.textColor ? { color: customTheme.textColor } : undefined}>{station.name}</StationTitleText>
             {station.description && (
               <StationDescriptionText>{station.description}</StationDescriptionText>
             )}
@@ -274,6 +277,7 @@ export default function PlayingPhase({
             station={station}
             onContinue={onStationContinue}
             t={t}
+            textColor={customTheme?.textColor}
           />
         );
       }
@@ -284,6 +288,7 @@ export default function PlayingPhase({
             station={station}
             onContinue={onStationContinue}
             t={t}
+            textColor={customTheme?.textColor}
           />
         );
       }
@@ -320,7 +325,15 @@ export default function PlayingPhase({
         const riddleMediaUrl = station.settings?.mediaUrl as string | undefined;
         return (
           <MediaGateWrapper urls={[riddleMediaUrl]}>
-            <RiddleStation station={station} onComplete={onGameComplete} />
+            <RiddleStation
+              station={station}
+              onComplete={onGameComplete}
+              stationHintText={stationHintText}
+              stationHintUsed={stationHintUsed}
+              onStationHintClick={onStationHintClick}
+              textColor={customTheme?.textColor}
+              hintLabel={stationHintUsed ? t.showStationHint : t.stationHint}
+            />
           </MediaGateWrapper>
         );
       }
@@ -446,7 +459,7 @@ export default function PlayingPhase({
       t={t}
       thirdSlot={headerThirdSlot}
       chromeVariant={puzzleSessionChrome}
-      topRow={stationHintText ? (
+      topRow={stationHintText && !isRiddleStation ? (
         <SessionHintButton type="button" onClick={onStationHintClick}>
           {stationHintUsed ? t.showStationHint : t.stationHint}
         </SessionHintButton>
@@ -512,7 +525,7 @@ export default function PlayingPhase({
   }
 
   return (
-    <ThemedBackground theme={theme}>
+    <ThemedBackground theme={theme} customTheme={customTheme}>
       <AnimatedStage>
         <AnimatedHeader>
           {headerBar}
@@ -530,10 +543,11 @@ export default function PlayingPhase({
 
 // ─── Image Station with media preloading ───
 
-function ImageStationDisplay({ station, onContinue, t }: {
+function ImageStationDisplay({ station, onContinue, t, textColor }: {
   station: StationItemData;
   onContinue: () => void;
   t: Record<string, string>;
+  textColor?: string;
 }) {
   const mediaUrl = station.settings?.mediaUrl as string | undefined;
   const mediaReady = useMediaPreload([mediaUrl]);
@@ -551,7 +565,7 @@ function ImageStationDisplay({ station, onContinue, t }: {
 
   return (
     <MediaStationLayout>
-      <StationTitleText>{station.name}</StationTitleText>
+      <StationTitleText style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitleText>
       {descAfter ? <>{mediaEl}{descEl}</> : <>{descEl}{mediaEl}</>}
       <FixedContinueButton onClick={onContinue} disabled={!mediaReady}>
         {t.continueButton}
@@ -588,10 +602,11 @@ const ReplayIcon = styled('div')({
   boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
 });
 
-function VideoStationPlayer({ station, onContinue, t }: {
+function VideoStationPlayer({ station, onContinue, t, textColor }: {
   station: StationItemData;
   onContinue: () => void;
   t: Record<string, string>;
+  textColor?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showReplay, setShowReplay] = useState(false);
@@ -636,7 +651,7 @@ function VideoStationPlayer({ station, onContinue, t }: {
 
   return (
     <MediaStationLayout>
-      <StationTitleText>{station.name}</StationTitleText>
+      <StationTitleText style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitleText>
       {descAfter ? <>{mediaEl}{descEl}</> : <>{descEl}{mediaEl}</>}
       <FixedContinueButton onClick={onContinue}>
         {t.continueButton}

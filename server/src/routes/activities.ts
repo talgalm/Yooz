@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { ActivityConfigResponse } from '../types';
 import { authenticateToken } from '../middleware/auth';
-import { Activity, Report, Game, Station, Mission } from '../models';
+import { Activity, Report, Game, Station, Mission, CustomTheme } from '../models';
+import mongoose from 'mongoose';
 
 const router = Router();
 
@@ -169,10 +170,20 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     });
   }
 
+  // If theme is a custom theme ID, fetch and embed it so the client doesn't need a second request
+  let customThemeData: { mainColor: string; roadmapImage?: string; stationsImage?: string; textColor?: string; bgColor?: string } | undefined;
+  if (activity.module.theme && mongoose.isValidObjectId(activity.module.theme)) {
+    const ct = await CustomTheme.findById(activity.module.theme).lean();
+    if (ct) {
+      customThemeData = { mainColor: ct.mainColor, roadmapImage: ct.roadmapImage, stationsImage: ct.stationsImage, textColor: ct.textColor, bgColor: ct.bgColor };
+    }
+  }
+
   // Build module response with filtered popups (strip condition data — client doesn't need it)
   const moduleResponse = {
     type: activity.module.type,
     theme: activity.module.theme,
+    customTheme: customThemeData,
     backgroundImage: activity.module.backgroundImage,
     items: populatedItems,
     popups: filteredPopups.map((p) => ({

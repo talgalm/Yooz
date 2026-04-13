@@ -44,6 +44,7 @@ import type {
 } from './types';
 import ModuleItemsSection from './ModuleItemsSection';
 import PopupMessagesSection from './PopupMessagesSection';
+import ThemeFormModal, { type CustomTheme } from './ThemeFormModal';
 
 // ─── Clean section card with icon ───
 
@@ -177,6 +178,98 @@ const NameInput = styled(Input)({
   },
 });
 
+
+const AddThemeBtn = styled('button')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  padding: '12px 16px',
+  fontSize: 20,
+  fontWeight: 400,
+  lineHeight: 1,
+  border: '2px dashed #ccc',
+  borderRadius: 12,
+  background: 'transparent',
+  color: '#aaa',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  transition: 'all 0.15s',
+  '&:hover': {
+    background: '#f0eefa',
+    borderColor: '#6c5ce7',
+    color: '#6c5ce7',
+  },
+});
+
+const ThemeGrid = styled('div')({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  gap: 8,
+});
+
+const ThemeBtn = styled(SelectionButton)({
+  flex: 'none',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textAlign: 'center',
+});
+
+const CustomThemeCard = styled(ThemeBtn)({
+  position: 'relative',
+});
+
+const ThemeCardActions = styled('div')({
+  position: 'absolute',
+  top: 4,
+  right: 4,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 2,
+});
+
+const EditThemeBtn = styled('button')({
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: 13,
+  color: '#bbb',
+  padding: 2,
+  lineHeight: 1,
+  borderRadius: 4,
+  '&:hover': {
+    color: '#6c5ce7',
+    background: '#f0eefa',
+  },
+});
+
+const DeleteThemeBtn = styled('button')({
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  fontSize: 13,
+  color: '#bbb',
+  padding: 2,
+  lineHeight: 1,
+  borderRadius: 4,
+  '&:hover': {
+    color: '#e74c3c',
+    background: '#fdecea',
+  },
+});
+
+const ColorDot = styled('span')<{ color: string }>(({ color }) => ({
+  display: 'inline-block',
+  width: 10,
+  height: 10,
+  borderRadius: '50%',
+  background: color,
+  border: '1px solid rgba(0,0,0,0.12)',
+  marginRight: 4,
+  verticalAlign: 'middle',
+}));
+
 export default function AdminCreateActivityPage() {
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
@@ -225,11 +318,34 @@ export default function AdminCreateActivityPage() {
   const [portalId, setPortalId] = useState('');
   const [portals, setPortals] = useState<{ _id: string; name: string; code: string }[]>([]);
 
+  // Custom themes
+  const [customThemes, setCustomThemes] = useState<CustomTheme[]>([]);
+  const [themeModalOpen, setThemeModalOpen] = useState(false);
+  const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
+
   const [step, setStep] = useState<1 | 2>(1);
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEditMode);
+
+  // Fetch custom themes on mount
+  useEffect(() => {
+    adminApiFetch<{ themes: CustomTheme[] }>('/api/admin/themes')
+      .then((data) => setCustomThemes(data.themes))
+      .catch(() => {});
+  }, []);
+
+  const handleDeleteTheme = async (id: string) => {
+    if (!window.confirm('למחוק ערכה זו?')) return;
+    try {
+      await adminApiFetch(`/api/admin/themes/${id}`, { method: 'DELETE' });
+      setCustomThemes((prev) => prev.filter((t) => t._id !== id));
+      if (moduleTheme === id) setModuleTheme('');
+    } catch {
+      // silent
+    }
+  };
 
   // Fetch portals list for continuous activity dropdown
   useEffect(() => {
@@ -546,17 +662,57 @@ export default function AdminCreateActivityPage() {
                       {moduleType === 'story' && (
                         <div>
                           <SectionLabelSmall>{t.themeLabel}</SectionLabelSmall>
-                          <SelectionGroup>
-                            <SelectionButton type="button" selected={moduleTheme === ''} onClick={() => setModuleTheme('')}>
+                          <ThemeGrid>
+                            <AddThemeBtn
+                              type="button"
+                              title={t.themeAddNew}
+                              onClick={() => { setEditingTheme(null); setThemeModalOpen(true); }}
+                            >
+                              +
+                            </AddThemeBtn>
+                            <ThemeBtn type="button" selected={moduleTheme === ''} onClick={() => setModuleTheme('')}>
                               {t.themeDefault}
-                            </SelectionButton>
-                            <SelectionButton type="button" selected={moduleTheme === 'ocean'} onClick={() => setModuleTheme('ocean')}>
+                            </ThemeBtn>
+                            <ThemeBtn type="button" selected={moduleTheme === 'ocean'} onClick={() => setModuleTheme('ocean')}>
                               {t.themeOcean}
-                            </SelectionButton>
-                            <SelectionButton type="button" selected={moduleTheme === 'desert'} onClick={() => setModuleTheme('desert')}>
+                            </ThemeBtn>
+                            <ThemeBtn type="button" selected={moduleTheme === 'desert'} onClick={() => setModuleTheme('desert')}>
                               {t.themeDesert}
-                            </SelectionButton>
-                          </SelectionGroup>
+                            </ThemeBtn>
+                            {customThemes.map((ct) => (
+                              <CustomThemeCard
+                                key={ct._id}
+                                type="button"
+                                selected={moduleTheme === ct._id}
+                                onClick={() => setModuleTheme(ct._id)}
+                              >
+                                {ct.name}
+                                <ThemeCardActions>
+                                  <EditThemeBtn
+                                    type="button"
+                                    title="ערוך ערכה"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingTheme(ct);
+                                      setThemeModalOpen(true);
+                                    }}
+                                  >
+                                    ✎
+                                  </EditThemeBtn>
+                                  <DeleteThemeBtn
+                                    type="button"
+                                    title="מחק ערכה"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteTheme(ct._id);
+                                    }}
+                                  >
+                                    ×
+                                  </DeleteThemeBtn>
+                                </ThemeCardActions>
+                              </CustomThemeCard>
+                            ))}
+                          </ThemeGrid>
                         </div>
                       )}
                     </SectionCard>
@@ -950,6 +1106,27 @@ export default function AdminCreateActivityPage() {
           </Form>
         </AdminCardForm>
       </AdminContent>
+
+      {themeModalOpen && (
+        <ThemeFormModal
+          existing={editingTheme}
+          onSaved={(saved) => {
+            setCustomThemes((prev) => {
+              const idx = prev.findIndex((t) => t._id === saved._id);
+              if (idx >= 0) {
+                const next = [...prev];
+                next[idx] = saved;
+                return next;
+              }
+              return [saved, ...prev];
+            });
+            setModuleTheme(saved._id);
+            setThemeModalOpen(false);
+            setEditingTheme(null);
+          }}
+          onClose={() => { setThemeModalOpen(false); setEditingTheme(null); }}
+        />
+      )}
     </AdminPage>
   );
 }

@@ -75,9 +75,18 @@ export interface PopupData {
   };
 }
 
+export interface CustomThemeData {
+  mainColor: string;
+  roadmapImage?: string;
+  stationsImage?: string;
+  textColor?: string;
+  bgColor?: string;
+}
+
 export interface ModuleData {
   type: string;
   theme?: string;
+  customTheme?: CustomThemeData;
   backgroundImage?: string;
   items: ModuleItemData[];
   popups?: PopupData[];

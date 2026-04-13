@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useMemo, useState, useCallback } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 import { DarkHeaderActionIconButton } from '../../components/styled';
-import type { ModuleItemData } from './types';
+import type { ModuleItemData, CustomThemeData } from './types';
 import ActivitySessionHeader, { SessionHeaderIconPlaceholder, SessionHeaderTrophyIcon } from './ActivitySessionHeader';
 import storySideWave from '../../assets/story-side-wave.svg';
 import storySideWaveBlue from '../../assets/story-side-wave-blue.svg';
@@ -558,13 +558,17 @@ interface RoadmapViewProps {
   popupModal: React.ReactNode;
   t: Record<string, string>;
   theme?: string;
+  customTheme?: CustomThemeData;
 }
 
 export default function RoadmapView({
   items, currentItemIndex, completedCount, currentPoints, pointsRoll, onPointsRollComplete,
-  showFootsteps, onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, popupModal, t, theme,
+  showFootsteps, onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, popupModal, t, theme, customTheme,
 }: RoadmapViewProps) {
   const kit = useMemo(() => getThemeKit(theme), [theme]);
+  const containerBg: React.CSSProperties = customTheme?.roadmapImage
+    ? { backgroundImage: `url(${customTheme.roadmapImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }
+    : { background: kit.containerBg };
   const scrollRef   = useRef<HTMLDivElement>(null);
   const canvasRef   = useRef<HTMLDivElement>(null);
   const activeNodeRef = useRef<HTMLDivElement>(null);
@@ -994,7 +998,7 @@ export default function RoadmapView({
 
   if (W <= 0) {
     return (
-      <RoadmapContainer style={{ background: kit.containerBg, ...themeVars }}>
+      <RoadmapContainer style={{ ...containerBg, ...themeVars }}>
         {header}
         <ScrollArea ref={scrollRef}>
           <div ref={canvasRef} style={{ width: '100%', minHeight: '100dvh' }} />
@@ -1004,7 +1008,7 @@ export default function RoadmapView({
   }
 
   return (
-    <RoadmapContainer style={{ background: kit.containerBg, ...themeVars }}>
+    <RoadmapContainer style={{ ...containerBg, ...themeVars }}>
       {header}
 
       <ScrollArea ref={scrollRef}>
@@ -1013,8 +1017,8 @@ export default function RoadmapView({
           height={totalHeight}
           style={{ ['--roadmap-w' as string]: `${W}px` }}
         >
-          <SceneBackground width={W} height={totalHeight} kit={kit} />
-          <WorldDecorations W={W} numRows={numRows} totalH={totalHeight} />
+          {!customTheme?.roadmapImage && <SceneBackground width={W} height={totalHeight} kit={kit} />}
+          {!customTheme?.roadmapImage && <WorldDecorations W={W} numRows={numRows} totalH={totalHeight} />}
 
           <svg style={{ position: 'absolute', top: 0, left: 0, zIndex: 2 }}
             width={W} height={totalHeight} viewBox={`0 0 ${W} ${totalHeight}`}
@@ -1036,7 +1040,7 @@ export default function RoadmapView({
             </FootprintEl>
           ))}
 
-          {treePlacements.map((placement, index) => (
+          {!customTheme?.roadmapImage && treePlacements.map((placement, index) => (
             <TreeDecoration
               key={`tree-${index}`}
               aria-hidden
@@ -1052,12 +1056,9 @@ export default function RoadmapView({
               }}
               dangerouslySetInnerHTML={{ __html: placement.svg }}
             />
+          ))}
 
-))}
-
-
-
-          {kit.showHouses && housePlacements.map((h, i) => (
+          {!customTheme?.roadmapImage && kit.showHouses && housePlacements.map((h, i) => (
             <HouseDecoration
               key={`house-${i}`}
               src="/images/village-house.svg"
@@ -1073,7 +1074,7 @@ export default function RoadmapView({
             />
           ))}
 
-          {kit.showSideWaves && sideWavePlacements.left.map((placement, index) => (
+          {!customTheme?.roadmapImage && kit.showSideWaves && sideWavePlacements.left.map((placement, index) => (
             <RoadsideWaveDecoration
               key={`left-wave-${index}`}
               src={theme === 'ocean' ? storySideWaveBlue : theme === 'desert' ? storySideWaveDesert : storySideWave}
@@ -1089,7 +1090,7 @@ export default function RoadmapView({
             />
           ))}
 
-          {kit.showSideWaves && sideWavePlacements.right.map((placement, index) => (
+          {!customTheme?.roadmapImage && kit.showSideWaves && sideWavePlacements.right.map((placement, index) => (
             <RoadsideWaveDecoration
               key={`right-wave-${index}`}
               src={theme === 'ocean' ? storySideWaveBlue : theme === 'desert' ? storySideWaveDesert : storySideWave}
@@ -1104,6 +1105,23 @@ export default function RoadmapView({
               }}
             />
           ))}
+
+          {!customTheme?.roadmapImage && kit.showClouds && (
+            <CloudSkyLayer aria-hidden>
+              {clouds.map((c) => (
+                <CloudOuter
+                  key={`cloud-${c.id}`}
+                  duration={c.duration}
+                  top={c.top}
+                  onAnimationEnd={() => {
+                    setClouds((prev) => prev.filter((x) => x.id !== c.id));
+                  }}
+                >
+                  <DriftingCloudSvg width={c.size} />
+                </CloudOuter>
+              ))}
+            </CloudSkyLayer>
+          )}
 
           {/* Station nodes */}
           {items.map((item, index) => {
@@ -1122,26 +1140,10 @@ export default function RoadmapView({
             );
           })}
 
-          {kit.showClouds && (
-            <CloudSkyLayer aria-hidden>
-              {clouds.map((c) => (
-                <CloudOuter
-                  key={`cloud-${c.id}`}
-                  duration={c.duration}
-                  top={c.top}
-                  onAnimationEnd={() => {
-                    setClouds((prev) => prev.filter((x) => x.id !== c.id));
-                  }}
-                >
-                  <DriftingCloudSvg width={c.size} />
-                </CloudOuter>
-              ))}
-            </CloudSkyLayer>
-          )}
         </PathCanvas>
       </ScrollArea>
 
-      {kit.showFish && fish.map((f) => (
+      {!customTheme?.roadmapImage && kit.showFish && fish.map((f) => (
         <FishOuter key={`fish-${f.id}`} duration={f.duration} top={f.top}>
           <FishWobbleWrap wobbleDuration={f.wobbleDuration}>
             <SwimmingFishSvg size={f.size} palette={f.palette} />
@@ -1149,7 +1151,7 @@ export default function RoadmapView({
         </FishOuter>
       ))}
 
-      {kit.showTumbleweed && tumbleweeds.map((tw) => (
+      {!customTheme?.roadmapImage && kit.showTumbleweed && tumbleweeds.map((tw) => (
         <TumbleweedOuter key={`tw-${tw.id}`} duration={tw.duration} top={tw.top}>
           <TumbleweedBounceWrap bounceDuration={tw.bounceDuration}>
             <TumbleweedSpinWrap

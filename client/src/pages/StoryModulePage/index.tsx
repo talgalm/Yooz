@@ -855,6 +855,7 @@ export default function StoryModulePage() {
   }, [isBallGameActive]);
 
   const themeShellColor = getThemeShellColor(data?.module.theme);
+  const customBgColor = data?.module.customTheme?.bgColor;
   const isTextVideoImageStation = phase === 'playing' &&
     activeItemForUi?.type === 'station' &&
     ['text', 'video', 'image'].includes((activeItemForUi as StationItemData).stationType);
@@ -865,11 +866,11 @@ export default function StoryModulePage() {
     if (activeGameType === 'order') {
       return isGolfChallengeActive ? GOLF_BROWSER_GREEN : ORDER_BROWSER_ORANGE;
     }
-    if (isTextVideoImageStation) return getThemeSkyColor(data?.module.theme);
-    return themeShellColor;
+    if (isTextVideoImageStation) return customBgColor || getThemeSkyColor(data?.module.theme);
+    return customBgColor || themeShellColor;
   })();
   const activeThemeBottomColor = isTextVideoImageStation
-    ? getThemeGroundColor(data?.module.theme)
+    ? (customBgColor || getThemeGroundColor(data?.module.theme))
     : activeThemeTopColor;
   useEffect(() => {
     const body = document.body;
@@ -1001,6 +1002,7 @@ export default function StoryModulePage() {
           popupModal={popupModal}
           t={t}
           theme={data.module.theme}
+          customTheme={data.module.customTheme}
         />
         {showGuidelines && !currentPopup && (
           <GuidelinesPopup
@@ -1170,6 +1172,7 @@ export default function StoryModulePage() {
         stationHintUsed={stationHintUsed.has(currentItemIndex)}
         bgStyle={bgStyle}
         theme={data.module.theme}
+        customTheme={data.module.customTheme}
         code={code}
         onGameComplete={handleGameComplete}
         onLogout={handleExit}
