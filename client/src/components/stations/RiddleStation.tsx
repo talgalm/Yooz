@@ -183,40 +183,46 @@ const SubmitButton = styled('button')({
   },
 });
 
-const GreenContinueButton = styled('button')({
+
+const ResultOverlay = styled('div')({
   position: 'fixed',
-  bottom: 24,
-  left: '50%',
-  transform: 'translateX(-50%)',
-  zIndex: 40,
+  inset: 0,
+  background: 'rgba(0,0,0,0.72)',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 200,
+  animation: `${fadeIn} 0.25s ease`,
+  padding: '0 16px',
+  gap: 24,
+});
+
+const SuccessBanner = styled('div')({
+  width: '100%',
+  maxWidth: 520,
+  animation: `${popIn} 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)`,
+  '& svg': { display: 'block', width: '100%', height: 'auto' },
+});
+
+const SuccessContinueBtn = styled('button')({
   background: 'linear-gradient(180deg, #5cb85c 0%, #28a745 48%, #1e7e34 100%)',
   color: '#fff',
-  border: '5px solid #155724',
+  border: '4px solid #155724',
   borderRadius: 16,
   padding: '14px 52px',
   fontSize: 18,
   fontWeight: 800,
   fontFamily: 'inherit',
   cursor: 'pointer',
-  boxShadow: '0 6px 0 #0f3d18, 0 12px 24px rgba(0,0,0,0.28)',
+  boxShadow: '0 5px 0 #0f3d18, 0 10px 20px rgba(0,0,0,0.3)',
   transition: 'transform 0.1s ease, box-shadow 0.1s ease',
   whiteSpace: 'nowrap',
-  textShadow: '0 1px 0 rgba(255,255,255,0.25)',
+  animation: `${popIn} 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both`,
   '&:active': {
-    transform: 'translateX(-50%) translateY(4px)',
-    boxShadow: '0 2px 0 #0f3d18, 0 6px 14px rgba(0,0,0,0.25)',
+    transform: 'translateY(4px)',
+    boxShadow: '0 1px 0 #0f3d18',
   },
-});
-
-const ResultOverlay = styled('div')({
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(0,0,0,0.65)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 200,
-  animation: `${fadeIn} 0.25s ease`,
 });
 
 const ResultCard = styled('div')({
@@ -457,13 +463,7 @@ export default function RiddleStation({
         ) : null}
       </Container>
 
-      {phase === 'success' ? (
-        <GreenContinueButton
-          onClick={() => onComplete({ score: earnedScore, maxPossibleScore: maxScore, durationMs: Date.now() - startTime, hintUsed: false, attempts: attempt + 1 })}
-        >
-          {isRTL ? 'המשך' : 'Continue'}
-        </GreenContinueButton>
-      ) : (
+      {phase !== 'success' && (
         <SubmitButton
           onClick={handleCheck}
           disabled={!allFilled || phase !== 'playing'}
@@ -474,12 +474,74 @@ export default function RiddleStation({
 
       {phase === 'success' && (
         <ResultOverlay>
-          <ResultCard>
-            <ResultEmoji>🎉</ResultEmoji>
-            <ResultTitle>{isRTL ? 'נכון!' : 'Correct!'}</ResultTitle>
-            <ResultMessage>{successMessage}</ResultMessage>
-            <ResultScore>{isRTL ? `+${earnedScore} נקודות` : `+${earnedScore} points`}</ResultScore>
-          </ResultCard>
+          <SuccessBanner>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 260">
+              <defs>
+                <linearGradient id="riddle-cupGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#D7AA3C" />
+                  <stop offset="25%" stopColor="#FCE082" />
+                  <stop offset="50%" stopColor="#F9C03C" />
+                  <stop offset="85%" stopColor="#E29826" />
+                  <stop offset="100%" stopColor="#D7AA3C" />
+                </linearGradient>
+              </defs>
+
+              <rect width="800" height="260" fill="none" />
+              <rect x="30" y="30" width="740" height="200" rx="100" ry="100" fill="#D7AA3C" />
+              <rect x="42" y="42" width="716" height="176" rx="88" ry="88" fill="#2A4384" />
+
+              <g fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" fontWeight="900" fill="#EAD787" textAnchor="middle">
+                <text x="460" y="128" fontSize="64" letterSpacing="1.5">כל הכבוד</text>
+                <text x="460" y="190" fontSize="46" letterSpacing="1">{`קיבלת ${earnedScore} נקודות`}</text>
+              </g>
+
+              <g transform="translate(-15, 10)">
+                {/* Left handle */}
+                <path d="M142,75 C90,70 100,125 155,115" fill="none" stroke="#E29826" strokeWidth="14" strokeLinecap="round" />
+                <path d="M142,75 C90,70 100,125 155,115" fill="none" stroke="#F9C03C" strokeWidth="8" strokeLinecap="round" />
+                {/* Right handle */}
+                <path d="M238,75 C290,70 280,125 225,115" fill="none" stroke="#E29826" strokeWidth="14" strokeLinecap="round" />
+                <path d="M238,75 C290,70 280,125 225,115" fill="none" stroke="#F9C03C" strokeWidth="8" strokeLinecap="round" />
+                {/* Base */}
+                <path d="M145,170 L235,170 L235,185 L145,185 Z" fill="#684631" />
+                <path d="M155,155 L225,155 L225,170 L155,170 Z" fill="#7A533A" />
+                <path d="M172,160 L208,160 L208,166 L172,166 Z" fill="#F9C03C" />
+                {/* Stem */}
+                <path d="M175,115 L205,115 L198,155 L182,155 Z" fill="#E29826" />
+                {/* Cup body */}
+                <path d="M137,68 Q128,118 155,118 L225,118 Q252,118 243,68 Z" fill="url(#riddle-cupGrad)" />
+                {/* Rim */}
+                <ellipse cx="190" cy="65" rx="55" ry="14" fill="#D7AA3C" />
+                <ellipse cx="190" cy="63" rx="48" ry="10" fill="#FCE082" />
+                {/* Left sparkles */}
+                <polygon points="90,105 115,80 110,75" fill="#F9C03C" />
+                <polygon points="94,101 108,87 104,83 90,97" fill="#E29826" />
+                <circle cx="115" cy="77" r="5" fill="#E63946" />
+                <path d="M118,73 C125,60 105,55 115,45" fill="none" stroke="#2A82E4" strokeWidth="3" strokeLinecap="round" />
+                <path d="M100,65 C105,55 90,50 95,40" fill="none" stroke="#E63946" strokeWidth="3" strokeLinecap="round" />
+                <circle cx="128" cy="55" r="3.5" fill="#F9C03C" />
+                <circle cx="85" cy="65" r="2.5" fill="#E63946" />
+                <circle cx="100" cy="45" r="2" fill="#2A82E4" />
+                {/* Right sparkles */}
+                <path d="M260,80 A 15,15 0 0,1 290,80 Z" fill="#F9C03C" />
+                <ellipse cx="275" cy="80" rx="15" ry="3" fill="#D7AA3C" />
+                <path d="M265,80 Q260,95 270,110" fill="none" stroke="#E63946" strokeWidth="3" strokeLinecap="round" />
+                <path d="M275,80 Q285,95 275,110" fill="none" stroke="#2A82E4" strokeWidth="3" strokeLinecap="round" />
+                <path d="M285,80 Q295,90 285,105" fill="none" stroke="#E63946" strokeWidth="3" strokeLinecap="round" />
+                <circle cx="288" cy="65" r="3" fill="#F9C03C" />
+                <circle cx="270" cy="58" r="3" fill="#E63946" />
+                <circle cx="295" cy="85" r="2" fill="#2A82E4" />
+                {/* Sparkle stars */}
+                <path d="M245,170 Q255,170 255,160 Q255,170 265,170 Q255,170 255,180 Q255,170 245,170 Z" fill="#FCE082" />
+                <path d="M230,185 Q235,185 235,180 Q235,185 240,185 Q235,185 235,190 Q235,185 230,185 Z" fill="#FCE082" />
+              </g>
+            </svg>
+          </SuccessBanner>
+          <SuccessContinueBtn
+            onClick={() => onComplete({ score: earnedScore, maxPossibleScore: maxScore, durationMs: Date.now() - startTime, hintUsed: false, attempts: attempt + 1 })}
+          >
+            {isRTL ? 'המשך' : 'Continue'}
+          </SuccessContinueBtn>
         </ResultOverlay>
       )}
 
