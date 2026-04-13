@@ -78,6 +78,17 @@ export const texts = {
     scores: 'Scores',
     count: 'Count',
 
+    // Share stats
+    shareClicks: 'Share Clicks',
+    shareCompleted: 'Actual Shares',
+
+    // Mission stats
+    missionStats: 'Mission Stats',
+    puzzleCompletions: 'Puzzle Completions',
+    avgPuzzleDuration: 'Avg Puzzle Time',
+    trashSortCompletions: 'Trash Sort Completions',
+    avgTrashSortScore: 'Avg Trash Sort Score',
+
     // Duration formatting
     seconds: 's',
     minutes: 'm',
@@ -160,6 +171,17 @@ export const texts = {
     scoreDistribution: 'התפלגות ציונים',
     scores: 'ציונים',
     count: 'כמות',
+
+    // Share stats
+    shareClicks: 'לחיצות שיתוף',
+    shareCompleted: 'שיתופים בפועל',
+
+    // Mission stats
+    missionStats: 'נתוני משימה',
+    puzzleCompletions: 'השלמות פאזל',
+    avgPuzzleDuration: 'זמן פאזל ממוצע',
+    trashSortCompletions: 'השלמות מיון פסולת',
+    avgTrashSortScore: 'ציון מיון ממוצע',
 
     // Duration formatting
     seconds: 'שניות',

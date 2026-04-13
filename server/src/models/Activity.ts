@@ -80,6 +80,13 @@ export interface IActivity {
   /** When true, participants must login via portal username */
   isContinuous?: boolean;
   loginComponent?: string; // legacy
+  /** Share button analytics */
+  shareClicks?: number;
+  shareCompleted?: number;
+  /** Mission aggregate analytics */
+  missionPuzzleCompletions?: number;
+  missionTrashSortCompletions?: number;
+  missionTrashSortScoreSum?: number;
 }
 
 function generateCode(): string {
@@ -160,6 +167,11 @@ const activitySchema = new Schema<IActivity>({
   portalId: { type: Schema.Types.ObjectId, ref: 'Portal' },
   isContinuous: { type: Boolean, default: false },
   loginComponent: { type: String }, // legacy
+  shareClicks: { type: Number, default: 0 },
+  shareCompleted: { type: Number, default: 0 },
+  missionPuzzleCompletions: { type: Number, default: 0 },
+  missionTrashSortCompletions: { type: Number, default: 0 },
+  missionTrashSortScoreSum: { type: Number, default: 0 },
 });
 
 export const Activity = model<IActivity>('Activity', activitySchema, 'activities');

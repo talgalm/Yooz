@@ -18,8 +18,14 @@ export interface TimelinePoint {
   count: number;
 }
 
+export interface MissionStats {
+  puzzleCompletions: number;
+  trashSortCompletions: number;
+  avgTrashSortScore: number;
+}
+
 export interface ActivityAnalyticsData {
-  activity: { _id: string; name: string; code: string; status: string };
+  activity: { _id: string; name: string; code: string; status: string; moduleType?: string };
   totalParticipants: number;
   completionRate: number;
   avgScore: number;
@@ -27,6 +33,9 @@ export interface ActivityAnalyticsData {
   avgDurationMs: number;
   medianDurationMs: number;
   scoreDistribution: { min: number; max: number; count: number }[];
+  shareClicks: number;
+  shareCompleted: number;
+  missionStats?: MissionStats;
 }
 
 export interface FunnelStep {

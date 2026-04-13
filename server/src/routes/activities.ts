@@ -396,4 +396,40 @@ router.post('/:code/scores', authenticateToken, async (req: Request<{ code: stri
   res.json({ success: true });
 });
 
+// Track mission phase completions (public — no auth required)
+router.post('/:code/mission-event', async (req: Request<{ code: string }>, res: Response) => {
+  const { event, score } = req.body as { event?: string; score?: number };
+  const validEvents = ['puzzle_completed', 'trashsort_completed'];
+  if (!validEvents.includes(event ?? '')) {
+    res.status(400).json({ error: 'event must be "puzzle_completed" or "trashsort_completed"' });
+    return;
+  }
+  const inc: Record<string, number> = {};
+  if (event === 'puzzle_completed') {
+    inc.missionPuzzleCompletions = 1;
+  } else {
+    inc.missionTrashSortCompletions = 1;
+    inc.missionTrashSortScoreSum = typeof score === 'number' ? score : 0;
+  }
+  await Activity.findOneAndUpdate({ code: req.params.code }, { $inc: inc });
+  res.json({ success: true });
+});
+
+// Track share button events (public — no auth required)
+router.post('/:code/share-event', async (req: Request<{ code: string }>, res: Response) => {
+  const { event } = req.body as { event?: string };
+  if (event !== 'click' && event !== 'completed') {
+    res.status(400).json({ error: 'event must be "click" or "completed"' });
+    return;
+  }
+
+  const field = event === 'click' ? 'shareClicks' : 'shareCompleted';
+  await Activity.findOneAndUpdate(
+    { code: req.params.code },
+    { $inc: { [field]: 1 } },
+  );
+
+  res.json({ success: true });
+});
+
 export default router;

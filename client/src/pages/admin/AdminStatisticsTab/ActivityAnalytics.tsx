@@ -48,7 +48,7 @@ function formatDuration(ms: number) {
 export default function ActivityAnalytics({ activityId, onBack }: Props) {
   const t = useTranslations(texts);
   const [subTab, setSubTab] = useState<ActivitySubTab>('overview');
-  const { data: analytics, loading } = useActivityAnalytics(activityId);
+  const { data: analytics, loading, refetch } = useActivityAnalytics(activityId);
   const { data: anomalies } = useAnomalies(activityId);
 
   const scoreDist = useMemo(() => {
@@ -74,7 +74,12 @@ export default function ActivityAnalytics({ activityId, onBack }: Props) {
         <SectionTitle>
           {analytics?.activity?.name || t.activityAnalytics}
         </SectionTitle>
-        <BackButton onClick={onBack}>← {t.back}</BackButton>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <BackButton onClick={() => refetch()} disabled={loading} style={{ opacity: loading ? 0.5 : 1 }}>
+            ↻
+          </BackButton>
+          <BackButton onClick={onBack}>← {t.back}</BackButton>
+        </div>
       </SectionHeader>
 
       {/* Sub-tabs */}
@@ -131,6 +136,45 @@ export default function ActivityAnalytics({ activityId, onBack }: Props) {
               </KpiSub>
             </KpiCard>
           </KpiRow>
+
+          <KpiRow>
+            <KpiCard>
+              <KpiValue>{(analytics.shareClicks ?? 0).toLocaleString()}</KpiValue>
+              <KpiLabel>{t.shareClicks}</KpiLabel>
+            </KpiCard>
+            <KpiCard>
+              <KpiValue>{(analytics.shareCompleted ?? 0).toLocaleString()}</KpiValue>
+              <KpiLabel>{t.shareCompleted}</KpiLabel>
+              {(analytics.shareClicks ?? 0) > 0 && (
+                <KpiSub>
+                  {Math.round(((analytics.shareCompleted ?? 0) / analytics.shareClicks) * 100)}%
+                </KpiSub>
+              )}
+            </KpiCard>
+          </KpiRow>
+
+          {/* Mission-specific stats */}
+          {analytics.missionStats && (
+            <>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#6c5ce7', marginBottom: 8, marginTop: 4 }}>
+                {t.missionStats}
+              </div>
+              <KpiRow>
+                <KpiCard>
+                  <KpiValue>{analytics.missionStats.puzzleCompletions}</KpiValue>
+                  <KpiLabel>{t.puzzleCompletions}</KpiLabel>
+                </KpiCard>
+                <KpiCard>
+                  <KpiValue>{analytics.missionStats.trashSortCompletions}</KpiValue>
+                  <KpiLabel>{t.trashSortCompletions}</KpiLabel>
+                </KpiCard>
+                <KpiCard>
+                  <KpiValue>{analytics.missionStats.avgTrashSortScore}</KpiValue>
+                  <KpiLabel>{t.avgTrashSortScore}</KpiLabel>
+                </KpiCard>
+              </KpiRow>
+            </>
+          )}
 
           {/* Score distribution chart */}
           {scoreDist.length > 0 && (

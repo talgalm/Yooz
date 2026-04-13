@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslations } from '../../context/LanguageContext';
+import { apiFetch } from '../../utils/api';
 import { texts } from './MissionPage.i18n';
 import {
   MissionWrapper,
@@ -161,7 +162,7 @@ const BROWSER_CHROME_COLOR = '#1a0a2e';
 
 export default function MissionPage() {
   const { code } = useParams<{ code: string }>();
-  const { token } = useAuth();
+  const { token, participant } = useAuth();
   const t = useTranslations(texts);
   const sounds = useMissionSounds();
   const [mission, setMission] = useState<MissionData | null>(null);
@@ -171,6 +172,9 @@ export default function MissionPage() {
   const [currentScreen, setCurrentScreen] = useState(saved.currentScreen);
   const [phase, setPhase] = useState<Phase>(saved.phase);
   const frameReady = useFrameReady(FRAME_IMAGES);
+  const sessionStartRef = useRef(Date.now());
+  const puzzleStartRef = useRef(Date.now());
+
 
   useEffect(() => {
     const html = document.documentElement;
@@ -245,6 +249,55 @@ export default function MissionPage() {
     if (code) saveSession(code, phase, currentScreen);
   }, [code, phase, currentScreen]);
 
+  // Track when puzzle phase starts
+  useEffect(() => {
+    if (phase === 'puzzle') {
+      puzzleStartRef.current = Date.now();
+    }
+  }, [phase]);
+
+  const savePuzzleProgress = useCallback(() => {
+    if (!code) return;
+    fetch(`${API}/api/activities/${code}/mission-event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'puzzle_completed' }),
+    }).catch(() => {});
+
+    // Update Report: puzzle completed (item 0)
+    const now = new Date();
+    apiFetch(`${API}/api/activities/${code}/progress`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        itemResult: {
+          itemIndex: 0,
+          itemType: 'game',
+          itemName: 'Puzzle',
+          score: 0,
+          maxPossibleScore: 0,
+          startedAt: new Date(puzzleStartRef.current),
+          completedAt: now,
+          durationMs: now.getTime() - puzzleStartRef.current,
+        },
+        totalItemsCompleted: 1,
+        lastActiveItemIndex: 0,
+        runningTotal: 0,
+      }),
+    }).catch(() => {});
+  }, [code]);
+
+  const handleTrashSortComplete = useCallback((score: number) => {
+    if (!code) return;
+    const sessionDurationMs = Date.now() - sessionStartRef.current;
+    apiFetch(`${API}/api/activities/${code}/scores`, {
+      method: 'POST',
+      body: JSON.stringify({
+        scores: [{ gameName: 'Trash Sort', score }],
+        sessionDurationMs,
+      }),
+    }).catch(() => {});
+  }, [code]);
+
   const handleNext = useCallback(() => {
     if (!mission) return;
     sounds.playClick();
@@ -258,8 +311,9 @@ export default function MissionPage() {
   }, [mission, currentScreen, sounds]);
 
   const handlePuzzleComplete = useCallback(() => {
+    savePuzzleProgress();
     setPhase('done');
-  }, []);
+  }, [savePuzzleProgress]);
 
   if (loading || !frameReady) {
     return (
@@ -304,6 +358,9 @@ export default function MissionPage() {
         muted={sounds.muted}
         toggleMute={sounds.toggleMute}
         startTrashBg={sounds.startTrashBg}
+        participantName={participant?.name}
+        activityCode={code}
+        onComplete={handleTrashSortComplete}
         title={mission.trashSortConfig?.title}
         description={mission.trashSortConfig?.description}
         scoreLabel={mission.trashSortConfig?.scoreLabel}

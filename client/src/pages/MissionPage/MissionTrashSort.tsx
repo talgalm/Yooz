@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
+
+const API = import.meta.env.VITE_API_URL || '';
 import {
   MissionWrapper,
   FrameContainer,
@@ -75,6 +77,99 @@ const ScoreBox = styled('div')<{ $flash?: 'positive' | 'negative' | null }>(({ $
   transformOrigin: 'center',
   transition: 'color 0.18s ease, transform 0.18s ease',
 }));
+
+// ─── Share modal overlay ───
+
+const ShareModalOverlay = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 9999,
+  background: 'rgba(10,4,26,0.82)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
+
+const ShareModalBox = styled('div')({
+  background: 'linear-gradient(160deg, #1a0a2e 60%, #0e1a2e 100%)',
+  border: `1.5px solid ${MISSION_TEAL}`,
+  borderRadius: 20,
+  padding: '28px 24px 20px',
+  width: 'clamp(260px, 80vw, 340px)',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 16,
+  fontFamily: "'Rubik', sans-serif",
+  color: '#F2F7FF',
+  direction: 'rtl',
+});
+
+const ShareOptionRow = styled('div')({
+  display: 'flex',
+  gap: 16,
+  justifyContent: 'center',
+});
+
+const ShareOption = styled('button')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 6,
+  background: 'rgba(57,202,188,0.12)',
+  border: `1px solid ${MISSION_TEAL}`,
+  borderRadius: 14,
+  padding: '12px 16px',
+  color: '#F2F7FF',
+  fontFamily: "'Rubik', sans-serif",
+  fontSize: 12,
+  cursor: 'pointer',
+  minWidth: 72,
+  '&:active': { opacity: 0.7 },
+});
+
+const ShareCopyRow = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  width: '100%',
+});
+
+const ShareLinkInput = styled('input')({
+  flex: 1,
+  background: 'rgba(255,255,255,0.07)',
+  border: `1px solid ${MISSION_TEAL}`,
+  borderRadius: 8,
+  color: '#F2F7FF',
+  fontFamily: "'Rubik', sans-serif",
+  fontSize: 12,
+  padding: '6px 10px',
+  direction: 'ltr',
+  outline: 'none',
+});
+
+const ShareCopyBtn = styled('button')({
+  background: MISSION_TEAL,
+  border: 'none',
+  borderRadius: 8,
+  color: '#1a0a2e',
+  fontFamily: "'Rubik', sans-serif",
+  fontWeight: 700,
+  fontSize: 12,
+  padding: '6px 12px',
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+});
+
+const ShareCloseBtn = styled('button')({
+  background: 'none',
+  border: 'none',
+  color: 'rgba(242,247,255,0.5)',
+  fontFamily: "'Rubik', sans-serif",
+  fontSize: 13,
+  cursor: 'pointer',
+  marginTop: 4,
+});
 
 const ShareButtonLabel = styled('span')({
   display: 'inline-flex',
@@ -436,6 +531,191 @@ export default function MissionTrashSort({
   }, []);
 
   const [imagesReady, setImagesReady] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [badgeBlob, setBadgeBlob] = useState<Blob | null>(null);
+  const [badgePreviewUrl, setBadgePreviewUrl] = useState<string | null>(null);
+
+  const trackShareEvent = useCallback((event: 'click' | 'completed') => {
+    if (!activityCode) return;
+    fetch(`${API}/api/activities/${activityCode}/share-event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event }),
+    }).catch(() => {});
+  }, [activityCode]);
+
+  const shareUrl = activityCode ? `${window.location.origin}/play/${activityCode}` : window.location.href;
+
+  // Compose a full share image: background + badge + text
+  const getBadgeBlob = useCallback(async (): Promise<Blob | null> => {
+    if (badgeBlob) return badgeBlob;
+    try {
+      const loadImg = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => reject();
+        img.src = src;
+      });
+
+      const [bgImg, badgeImg] = await Promise.all([
+        loadImg('/images/mission-bg-1.svg'),
+        loadImg('/images/badge.svg'),
+      ]);
+
+      const W = 600, H = 900;
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d')!;
+
+      // Background
+      ctx.drawImage(bgImg, 0, 0, W, H);
+
+      // Dark overlay for readability
+      ctx.fillStyle = 'rgba(10, 4, 30, 0.55)';
+      ctx.fillRect(0, 0, W, H);
+
+      // Teal frame border
+      ctx.strokeStyle = '#39CABC';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(16, 16, W - 32, H - 32);
+
+      // Badge title text (curved arc approximated as straight with letter spacing)
+      ctx.save();
+      ctx.font = 'bold 46px Rubik, Arial, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 12;
+      ctx.fillText(badgeCurveText, W / 2, 130);
+      ctx.restore();
+
+      // Badge image centered
+      const badgeSize = 320;
+      const badgeX = (W - badgeSize) / 2;
+      const badgeY = 160;
+      ctx.drawImage(badgeImg, badgeX, badgeY, badgeSize, badgeSize);
+
+      // Award text box
+      const boxX = 60, boxY = 530, boxW = W - 120, boxH = 130;
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.strokeStyle = '#39CABC';
+      ctx.lineWidth = 2;
+      const r = 16;
+      ctx.beginPath();
+      ctx.moveTo(boxX + r, boxY);
+      ctx.lineTo(boxX + boxW - r, boxY);
+      ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + r);
+      ctx.lineTo(boxX + boxW, boxY + boxH - r);
+      ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - r, boxY + boxH);
+      ctx.lineTo(boxX + r, boxY + boxH);
+      ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - r);
+      ctx.lineTo(boxX, boxY + r);
+      ctx.quadraticCurveTo(boxX, boxY, boxX + r, boxY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 6;
+      ctx.font = '22px Rubik, Arial, sans-serif';
+      ctx.fillStyle = '#F2F7FF';
+      ctx.fillText(badgeAwardText, W / 2, boxY + 36);
+      ctx.font = 'bold 22px Rubik, Arial, sans-serif';
+      ctx.fillStyle = '#39CABC';
+      ctx.fillText(participantName ?? '', W / 2, boxY + 68);
+      ctx.font = '20px Rubik, Arial, sans-serif';
+      ctx.fillStyle = '#F2F7FF';
+      ctx.fillText(badgeAchievementText, W / 2, boxY + 104);
+      ctx.restore();
+
+      // Bottom URL hint
+      ctx.save();
+      ctx.font = '16px Rubik, Arial, sans-serif';
+      ctx.fillStyle = 'rgba(242,247,255,0.5)';
+      ctx.textAlign = 'center';
+      ctx.fillText(shareUrl, W / 2, H - 28);
+      ctx.restore();
+
+      const blob = await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob((b) => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png'),
+      );
+      setBadgeBlob(blob);
+      return blob;
+    } catch {
+      return null;
+    }
+  }, [badgeBlob, badgeCurveText, badgeAwardText, badgeAchievementText, participantName, shareUrl]);
+
+  const handleShareClick = useCallback(async () => {
+    trackShareEvent('click');
+    const blob = await getBadgeBlob();
+
+    // Try native share with image file + url
+    if (navigator.share) {
+      const shareData: ShareData = { url: shareUrl };
+      if (blob && navigator.canShare) {
+        const file = new File([blob], 'badge.png', { type: 'image/png' });
+        const withFile = { files: [file], url: shareUrl };
+        if (navigator.canShare(withFile)) {
+          shareData.files = [file];
+        }
+      }
+      try {
+        await navigator.share(shareData);
+        trackShareEvent('completed');
+        return;
+      } catch {
+        // cancelled or failed — fall through to modal
+      }
+    }
+
+    // Set preview URL for modal
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      setBadgePreviewUrl(url);
+    }
+    setShowShareModal(true);
+  }, [trackShareEvent, getBadgeBlob, shareUrl]);
+
+  const handleSocialShare = useCallback((platform: 'whatsapp' | 'facebook' | 'twitter') => {
+    const encodedUrl = encodeURIComponent(shareUrl);
+    let url = '';
+    if (platform === 'whatsapp') url = `https://wa.me/?text=${encodedUrl}`;
+    else if (platform === 'facebook') url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+    else if (platform === 'twitter') url = `https://twitter.com/intent/tweet?url=${encodedUrl}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+    trackShareEvent('completed');
+  }, [shareUrl, trackShareEvent]);
+
+  const handleDownloadImage = useCallback(async () => {
+    const blob = await getBadgeBlob();
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'badge.png';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    trackShareEvent('completed');
+  }, [getBadgeBlob, trackShareEvent]);
+
+  const handleCopyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedLink(true);
+      trackShareEvent('completed');
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch {
+      // clipboard not available
+    }
+  }, [shareUrl, trackShareEvent]);
 
   useEffect(() => {
     const srcs = [
@@ -510,6 +790,21 @@ export default function MissionTrashSort({
 
   // Game state
   const [gameScore, setGameScore] = useState(initialScore);
+
+  // Save analytics when game ends — fire-and-forget, no navigation side-effects
+  const analyticsSavedRef = useRef(false);
+  useEffect(() => {
+    if (phase !== 'complete' || analyticsSavedRef.current) return;
+    analyticsSavedRef.current = true;
+    if (activityCode) {
+      fetch(`${API}/api/activities/${activityCode}/mission-event`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'trashsort_completed', score: gameScore }),
+      }).catch(() => {});
+    }
+    onComplete?.(gameScore);
+  }, [phase, gameScore, activityCode, onComplete]);
   const [, setSortedItemsCount] = useState(0);
   const [scoreFlash, setScoreFlash] = useState<ScoreFlash>(null);
   const scoreFlashTimerRef = useRef<number | null>(null);
@@ -1006,6 +1301,7 @@ export default function MissionTrashSort({
   if (phase === 'badge') {
     const badgeName = participantName?.trim() || 'למשתתף/ת';
     return (
+      <>
       <MissionWrapper bg="/images/mission-bg-1.svg" step={0}>
         <FrameContainer>
           <TopActionRow>
@@ -1098,7 +1394,7 @@ export default function MissionTrashSort({
           </MissionContent>
 
           <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: -24 }}>
-            <MissionButton step={0} onClick={() => {}}>
+            <MissionButton step={0} onClick={handleShareClick}>
               <ShareButtonLabel>
                 {shareButton}
                 <svg width="20" height="20" viewBox="0 0 75 75" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -1110,6 +1406,70 @@ export default function MissionTrashSort({
           </div>
         </FrameContainer>
       </MissionWrapper>
+
+      {/* Share modal (desktop fallback) */}
+      {showShareModal && (
+        <ShareModalOverlay onClick={() => setShowShareModal(false)}>
+          <ShareModalBox onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 16, fontWeight: 700, textAlign: 'center' }}>
+              {shareButton}
+            </div>
+
+            {/* Badge image preview */}
+            {badgePreviewUrl && (
+              <img
+                src={badgePreviewUrl}
+                alt="badge preview"
+                style={{ width: '100%', borderRadius: 10, objectFit: 'cover' }}
+              />
+            )}
+
+            {/* Download image button */}
+            <ShareCopyBtn
+              onClick={handleDownloadImage}
+              style={{ width: '100%', padding: '9px 0', fontSize: 13 }}
+            >
+              ⬇ שמור תמונה
+            </ShareCopyBtn>
+
+            {/* Social share (URL) */}
+            <div style={{ fontSize: 11, color: 'rgba(242,247,255,0.5)', textAlign: 'center' }}>
+              שתף לינק לפעילות
+            </div>
+            <ShareOptionRow>
+              <ShareOption onClick={() => handleSocialShare('whatsapp')}>
+                <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                  <circle cx="16" cy="16" r="16" fill="#25D366"/>
+                  <path d="M22.5 9.5A9.1 9.1 0 0 0 7.1 20.3L6 26l5.9-1.5A9.1 9.1 0 0 0 22.5 9.5zm-6.5 14a7.5 7.5 0 0 1-3.8-1l-.3-.2-3.1.8.8-3-.2-.3a7.5 7.5 0 1 1 6.6 3.7zm4.1-5.6c-.2-.1-1.3-.6-1.5-.7-.2-.1-.4-.1-.5.1-.2.2-.6.7-.8.9-.1.2-.3.2-.5.1a6.3 6.3 0 0 1-3-2.6c-.2-.4.2-.4.6-1.2.1-.2 0-.3-.1-.5l-.7-1.6c-.2-.4-.4-.4-.5-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.8 2.7 4.3 3.8.6.3 1.1.4 1.4.5.6.2 1.2.1 1.6-.1.5-.3 1.3-.5 1.5-1s.2-.9.1-1c-.1-.1-.3-.2-.5-.3z" fill="#fff"/>
+                </svg>
+                WhatsApp
+              </ShareOption>
+              <ShareOption onClick={() => handleSocialShare('facebook')}>
+                <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                  <circle cx="16" cy="16" r="16" fill="#1877F2"/>
+                  <path d="M21 16h-3v10h-4V16h-2v-4h2v-2c0-2.5 1.5-4 4-4h3v4h-2c-.6 0-1 .4-1 1v1h3l-.5 4z" fill="#fff"/>
+                </svg>
+                Facebook
+              </ShareOption>
+              <ShareOption onClick={() => handleSocialShare('twitter')}>
+                <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                  <circle cx="16" cy="16" r="16" fill="#000"/>
+                  <path d="M17.8 14.8 23.2 8h-1.3l-4.7 5.5L13 8H8l5.6 8.2L8 24h1.3l4.9-5.7 3.9 5.7H23L17.8 14.8zm-1.7 2-.6-.8-4.6-6.6h2l3.7 5.3.6.8 4.8 6.9h-2l-3.9-5.6z" fill="#fff"/>
+                </svg>
+                X / Twitter
+              </ShareOption>
+            </ShareOptionRow>
+            <ShareCopyRow>
+              <ShareLinkInput readOnly value={shareUrl} />
+              <ShareCopyBtn onClick={handleCopyLink}>
+                {copiedLink ? '✓ הועתק' : 'העתק'}
+              </ShareCopyBtn>
+            </ShareCopyRow>
+            <ShareCloseBtn onClick={() => setShowShareModal(false)}>סגור</ShareCloseBtn>
+          </ShareModalBox>
+        </ShareModalOverlay>
+      )}
+      </>
     );
   }
 

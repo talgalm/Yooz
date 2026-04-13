@@ -142,11 +142,13 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
     return;
   }
 
+  const isMission = activity.module?.type === 'mission';
+
   const reports = await Report.find(
     { activityId: new Types.ObjectId(activityId) },
     {
       participantName: 1, email: 1, phoneNumber: 1, group: 1,
-      joinedAt: 1, 'data.totalScore': 1, completionStatus: 1,
+      joinedAt: 1, 'data.totalScore': 1, 'data.itemResults': 1, completionStatus: 1,
       sessionDurationMs: 1, totalItemsCompleted: 1, totalItemsInModule: 1,
     },
   ).lean();
@@ -167,8 +169,28 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
     buckets[idx].count++;
   });
 
+  // ── Mission-specific stats (read from activity counters) ──
+  let missionStats: {
+    puzzleCompletions: number;
+    trashSortCompletions: number;
+    avgTrashSortScore: number;
+  } | undefined;
+
+  if (isMission) {
+    const puzzleCompletions = activity.missionPuzzleCompletions ?? 0;
+    const trashSortCompletions = activity.missionTrashSortCompletions ?? 0;
+    const trashSortScoreSum = activity.missionTrashSortScoreSum ?? 0;
+    missionStats = {
+      puzzleCompletions,
+      trashSortCompletions,
+      avgTrashSortScore: trashSortCompletions > 0
+        ? Math.round(trashSortScoreSum / trashSortCompletions)
+        : 0,
+    };
+  }
+
   res.json({
-    activity: { _id: activity._id, name: activity.name, code: activity.code, status: activity.status },
+    activity: { _id: activity._id, name: activity.name, code: activity.code, status: activity.status, moduleType: activity.module?.type },
     totalParticipants,
     completionRate: totalParticipants > 0 ? Math.round((completedCount / totalParticipants) * 100) : 0,
     avgScore: scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0,
@@ -176,6 +198,9 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
     avgDurationMs: durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0,
     medianDurationMs: Math.round(median(durations)),
     scoreDistribution: buckets,
+    shareClicks: activity.shareClicks ?? 0,
+    shareCompleted: activity.shareCompleted ?? 0,
+    ...(missionStats && { missionStats }),
   });
 });
 
