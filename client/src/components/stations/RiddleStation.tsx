@@ -401,7 +401,7 @@ export default function RiddleStation({
       <Container>
         <StationTitle style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitle>
 
-        {clue ? <ClueText>{clue}</ClueText> : null}
+        {clue ? <ClueText style={textColor ? { color: textColor } : undefined}>{clue}</ClueText> : null}
 
         {settings.mediaUrl && settings.mediaType === 'image' && (
           <MediaWrapper>

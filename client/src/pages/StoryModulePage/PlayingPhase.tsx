@@ -257,7 +257,7 @@ export default function PlayingPhase({
           <StationTopLayout>
             <StationTitleText style={customTheme?.textColor ? { color: customTheme.textColor } : undefined}>{station.name}</StationTitleText>
             {station.description && (
-              <StationDescriptionText>{station.description}</StationDescriptionText>
+              <StationDescriptionText style={customTheme?.textColor ? { color: customTheme.textColor } : undefined}>{station.description}</StationDescriptionText>
             )}
             <StationWindow style={{ marginTop: 16 }}>
               <StationBodyText>
@@ -552,7 +552,7 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
   const mediaUrl = station.settings?.mediaUrl as string | undefined;
   const mediaReady = useMediaPreload([mediaUrl]);
   const descAfter = station.settings?.descPosition === 'after';
-  const descEl = station.description ? <StationDescriptionText>{station.description}</StationDescriptionText> : null;
+  const descEl = station.description ? <StationDescriptionText style={textColor ? { color: textColor } : undefined}>{station.description}</StationDescriptionText> : null;
   const mediaEl = mediaReady ? (
     <StationWindow style={{ marginTop: 16 }} isDynamic>
       <MediaStationImageWrapper style={{ marginBottom: 0 }}>
@@ -624,7 +624,7 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
   }, []);
 
   const descAfter = station.settings?.descPosition === 'after';
-  const descEl = station.description ? <StationDescriptionText>{station.description}</StationDescriptionText> : null;
+  const descEl = station.description ? <StationDescriptionText style={textColor ? { color: textColor } : undefined}>{station.description}</StationDescriptionText> : null;
   const mediaEl = (
     <StationWindow isDynamic style={{ marginTop: 16 }}>
       <MediaStationWrapper style={{ position: 'relative', marginBottom: 0 }}>
