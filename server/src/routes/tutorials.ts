@@ -443,6 +443,8 @@ async function generateVideo(tutorialId: string, title: string, description: str
 
     // Syntax-check: write temp file and run Playwright --list to detect compile errors.
     // If it fails, send the errors back to Gemini for one correction attempt.
+    const NODE20 = '/Users/tal/.nvm/versions/node/v20.18.3/bin/node';
+    const PW_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/playwright');
     writeFileSync(specFile, specContent);
     const listCmd = `cd "${PROJECT_ROOT}" && "${NODE20}" "${PW_BIN}" test --list --project=walkthroughs "${specFile}" 2>&1`;
     const { output: listOutput, exitCode: listExit } = await runCommand(listCmd, 30_000);
@@ -476,8 +478,6 @@ async function generateVideo(tutorialId: string, title: string, description: str
     console.log(`[Tutorial ${safeId}] Running Playwright...`);
     if (!existsSync(videoDir)) mkdirSync(videoDir, { recursive: true });
 
-    const NODE20 = '/Users/tal/.nvm/versions/node/v20.18.3/bin/node';
-    const PW_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/playwright');
     const playwrightCmd = `cd "${PROJECT_ROOT}" && PLAYWRIGHT_BASE_URL="${baseUrl}" "${NODE20}" "${PW_BIN}" test --reporter=list --project=walkthroughs "${specFile}" 2>&1`;
     const { output: playwrightOutput, exitCode } = await runCommand(playwrightCmd, 600_000);
     console.log(`[Tutorial ${safeId}] Playwright output (exit ${exitCode}):\n${playwrightOutput.slice(-1500)}`);
