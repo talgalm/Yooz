@@ -70,7 +70,7 @@ const DashTabBar = styled('div')({
   borderBottom: '3px solid #c9bfe0',
   marginBottom: 32,
   '@media (max-width: 600px)': {
-    marginBottom: 20,
+    display: 'none',
   },
 });
 
@@ -92,10 +92,79 @@ const DashTab = styled('button')<{ active?: boolean }>(({ active }) => ({
     color: active ? '#6c5ce7' : '#444',
     background: active ? 'rgba(108,92,231,0.06)' : 'rgba(0,0,0,0.02)',
   },
+}));
+
+// ─── Mobile tab header (hamburger) ───
+
+const MobileTabHeader = styled('div')({
+  display: 'none',
   '@media (max-width: 600px)': {
-    padding: '14px 12px',
-    fontSize: 14,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottom: '3px solid #c9bfe0',
+    marginBottom: 20,
+    paddingBottom: 12,
+    position: 'relative',
   },
+});
+
+const MobileActiveTabLabel = styled('span')({
+  fontSize: 17,
+  fontWeight: 700,
+  color: '#6c5ce7',
+});
+
+const MobileHamburgerBtn = styled('button')({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 5,
+  background: 'none',
+  border: 'none',
+  cursor: 'pointer',
+  padding: '4px 6px',
+  borderRadius: 8,
+  '&:active': { background: 'rgba(108,92,231,0.08)' },
+  '& span': {
+    display: 'block',
+    width: 22,
+    height: 2.5,
+    borderRadius: 2,
+    background: '#6c5ce7',
+    transition: 'all 0.2s',
+  },
+});
+
+const MobileTabDropdown = styled('div')<{ open: boolean }>(({ open }) => ({
+  display: open ? 'block' : 'none',
+  position: 'absolute',
+  top: '100%',
+  right: 0,
+  zIndex: 300,
+  background: '#fff',
+  border: '1px solid #e0d8f0',
+  borderRadius: 14,
+  boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
+  minWidth: 180,
+  overflow: 'hidden',
+  marginTop: 8,
+}));
+
+const MobileTabItem = styled('button')<{ active?: boolean }>(({ active }) => ({
+  display: 'block',
+  width: '100%',
+  padding: '14px 20px',
+  textAlign: 'right',
+  background: active ? 'rgba(108,92,231,0.07)' : 'none',
+  color: active ? '#6c5ce7' : '#333',
+  fontWeight: active ? 700 : 500,
+  fontSize: 15,
+  border: 'none',
+  borderBottom: '1px solid #f0ecfa',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  '&:last-child': { borderBottom: 'none' },
+  '&:active': { background: 'rgba(108,92,231,0.1)' },
 }));
 
 const TableCard = styled('div')({
@@ -466,6 +535,7 @@ export default function AdminDashboardPage() {
   const [gameSubTab, setGameSubTab] = useState<GameSubTab>('all');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createStep, setCreateStep] = useState<CreateStep>('main');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const { logout, admin } = useAdminAuth();
   const navigate = useNavigate();
@@ -587,7 +657,7 @@ export default function AdminDashboardPage() {
       </AdminHeader>
 
       <DashContent>
-        {/* ── Main Tabs ── */}
+        {/* ── Main Tabs — desktop ── */}
         <DashTabBar>
           {visibleTabs.map((tab) => (
             <DashTab key={tab.key} active={activeTab === tab.key} onClick={() => {
@@ -598,6 +668,36 @@ export default function AdminDashboardPage() {
             </DashTab>
           ))}
         </DashTabBar>
+
+        {/* ── Main Tabs — mobile hamburger ── */}
+        <MobileTabHeader>
+          <MobileActiveTabLabel>
+            {visibleTabs.find((t) => t.key === activeTab)?.label ?? ''}
+          </MobileActiveTabLabel>
+          <div style={{ position: 'relative' }}>
+            <MobileHamburgerBtn
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-label="פתח תפריט"
+            >
+              <span /><span /><span />
+            </MobileHamburgerBtn>
+            <MobileTabDropdown open={mobileMenuOpen}>
+              {visibleTabs.map((tab) => (
+                <MobileTabItem
+                  key={tab.key}
+                  active={activeTab === tab.key}
+                  onClick={() => {
+                    setActiveTab(tab.key);
+                    setSearchParams({});
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  {tab.label}
+                </MobileTabItem>
+              ))}
+            </MobileTabDropdown>
+          </div>
+        </MobileTabHeader>
 
         {/* ── Activities Tab ── */}
         {activeTab === 'activities' && (

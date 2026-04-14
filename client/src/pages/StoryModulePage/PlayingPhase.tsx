@@ -105,7 +105,7 @@ const StationTitleText = styled('h2')({
   color: '#fff',
   WebkitTextStroke: '1.5px #000',
   paintOrder: 'stroke fill',
-  margin: '-12px 0 12px',
+  margin: '-16px 0 18px',
   textAlign: 'center',
 });
 
