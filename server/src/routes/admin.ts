@@ -100,6 +100,7 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
         type: moduleConfig.type || 'story',
         theme: mod.theme || undefined,
         backgroundImage: moduleConfig.backgroundImage || undefined,
+        ...(mod.showStationNumbers === true && { showStationNumbers: true }),
         items: Array.isArray(mod.items)
           ? mod.items
               .filter((item: { type: string; ref: string }) => item.type && item.ref && ['game', 'station', 'mission'].includes(item.type))

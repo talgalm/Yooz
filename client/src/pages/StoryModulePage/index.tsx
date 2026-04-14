@@ -1058,6 +1058,7 @@ export default function StoryModulePage() {
             t={t}
             theme={data.module.theme}
             customTheme={data.module.customTheme}
+            showStationNumbers={data.module.showStationNumbers}
           />
           {showGuidelines && !currentPopup && (
             <GuidelinesPopup

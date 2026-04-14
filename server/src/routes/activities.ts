@@ -188,6 +188,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     theme: activity.module.theme,
     customTheme: customThemeData,
     backgroundImage: activity.module.backgroundImage,
+    ...(activity.module.showStationNumbers && { showStationNumbers: true }),
     items: populatedItems,
     popups: filteredPopups.map((p) => ({
       _id: p._id,

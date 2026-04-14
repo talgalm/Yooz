@@ -93,6 +93,7 @@ export interface ModuleData {
   backgroundImage?: string;
   items: ModuleItemData[];
   popups?: PopupData[];
+  showStationNumbers?: boolean;
 }
 
 export interface CustomInstructionsData {

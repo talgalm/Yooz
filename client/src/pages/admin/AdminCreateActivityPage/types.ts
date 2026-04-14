@@ -74,6 +74,7 @@ export interface Activity {
     theme?: string;
     backgroundImage?: string;
     missionRef?: string;
+    showStationNumbers?: boolean;
     items: { type: 'game' | 'station'; ref: string; groups?: string[]; data?: { _id: string; name: string; type?: string; settings?: Record<string, unknown>; description?: string; customer?: string; theme?: string } }[];
     popups?: {
       _id?: string;

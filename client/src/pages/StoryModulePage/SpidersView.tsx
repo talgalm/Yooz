@@ -266,6 +266,26 @@ const CompletedSvgBadge = styled('div')({
   boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
 });
 
+const StationNumberBadge = styled('div')({
+  position: 'absolute',
+  top: -6,
+  right: -6,
+  minWidth: 22,
+  height: 22,
+  borderRadius: 11,
+  background: 'rgba(0,0,0,0.65)',
+  border: '2px solid rgba(255,255,255,0.85)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 11,
+  fontWeight: 700,
+  color: '#fff',
+  padding: '0 4px',
+  zIndex: 4,
+  pointerEvents: 'none',
+});
+
 const TreeDecoration = styled('div')({
   position: 'absolute',
   pointerEvents: 'none',
@@ -368,6 +388,7 @@ interface SpidersViewProps {
   t: Record<string, string>;
   theme?: string;
   customTheme?: CustomThemeData;
+  showStationNumbers?: boolean;
 }
 
 export default function SpidersView({
@@ -381,6 +402,7 @@ export default function SpidersView({
   t,
   theme,
   customTheme,
+  showStationNumbers,
 }: SpidersViewProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState<{ w: number; h: number } | null>(null);
@@ -663,16 +685,20 @@ export default function SpidersView({
                   <div style={{ position: 'relative' }}>
                     <SvgImg src={item.spiderSvg!} alt={item.name} />
                     {completed && <CompletedSvgBadge>✓</CompletedSvgBadge>}
+                    {showStationNumbers && <StationNumberBadge>{index + 1}</StationNumberBadge>}
                   </div>
                 ) : (
-                  <Circle themeColor={nodeColor}>
-                    <ItemNumber>{index + 1}</ItemNumber>
-                    {completed && (
-                      <CompletedOverlay>
-                        <CheckIcon>✓</CheckIcon>
-                      </CompletedOverlay>
-                    )}
-                  </Circle>
+                  <div style={{ position: 'relative' }}>
+                    <Circle themeColor={nodeColor}>
+                      <ItemNumber>{index + 1}</ItemNumber>
+                      {completed && (
+                        <CompletedOverlay>
+                          <CheckIcon>✓</CheckIcon>
+                        </CompletedOverlay>
+                      )}
+                    </Circle>
+                    {showStationNumbers && <StationNumberBadge>{index + 1}</StationNumberBadge>}
+                  </div>
                 )}
                 <ItemLabel>{item.name}</ItemLabel>
               </NodeWrapper>

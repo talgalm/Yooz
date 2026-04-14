@@ -36,6 +36,7 @@ export interface IModuleConfig {
   items: IModuleItem[]; // ordered mix of games and stations
   popups?: IPopupMessage[];
   missionRef?: Types.ObjectId; // reference to Mission document (when type='mission')
+  showStationNumbers?: boolean; // spiders only: show station number in top-right of each node
 }
 
 export type ActivityStatus = 'preview' | 'live';

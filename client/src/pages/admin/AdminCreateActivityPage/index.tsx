@@ -314,6 +314,8 @@ export default function AdminCreateActivityPage() {
     buttonText: '',
   });
 
+  const [showStationNumbers, setShowStationNumbers] = useState(false);
+
   const [isContinuous, setIsContinuous] = useState(false);
   const [portalId, setPortalId] = useState('');
   const [portals, setPortals] = useState<{ _id: string; name: string; code: string }[]>([]);
@@ -379,6 +381,7 @@ export default function AdminCreateActivityPage() {
           setModuleType(mType as ModuleType);
           setModuleTheme(a.module.theme || '');
           setBackgroundImage(a.module.backgroundImage || '');
+          if (a.module.showStationNumbers) setShowStationNumbers(true);
           if (a.module.items && a.module.items.length > 0) {
             setSelectedItems(
               a.module.items.map((item) => ({
@@ -528,6 +531,7 @@ export default function AdminCreateActivityPage() {
             ...(i.groups && i.groups.length > 0 && { groups: i.groups }),
             ...(moduleType === 'spiders' && i.spiderSvg && { spiderSvg: i.spiderSvg }),
           })),
+          ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
         };
         if (popups.length > 0) {
           modulePayload.popups = popups
@@ -955,6 +959,17 @@ export default function AdminCreateActivityPage() {
                     groupNames={groupNames}
                     t={t}
                   />
+                  {moduleType === 'spiders' && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 12 }}>
+                      <input
+                        type="checkbox"
+                        checked={showStationNumbers}
+                        onChange={(e) => setShowStationNumbers(e.target.checked)}
+                        style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                      />
+                      {t.showStationNumbers}
+                    </label>
+                  )}
                 </SectionCardWide>
 
                 <SectionCardWide>

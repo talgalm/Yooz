@@ -5,6 +5,8 @@ export default defineConfig({
   timeout: 600_000,
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173',
+    actionTimeout: 10_000,
+    navigationTimeout: 20_000,
     viewport: { width: 1280, height: 720 },
     video: {
       mode: 'on',
