@@ -176,7 +176,8 @@ export const MissionButton = styled('button', {
 })<{ step?: number }>(({ step }) => ({
   width: '70%',
   maxWidth: 360,
-  padding: '45px 36px',
+  height: 'clamp(60px, 14vw, 80px)',
+  padding: '0 36px',
   fontSize: 'clamp(18px, 5vw, 24px)',
   fontWeight: 400,
   fontFamily: MISSION_FONT,
@@ -185,16 +186,19 @@ export const MissionButton = styled('button', {
   border: 'none',
   borderRadius: 30,
   cursor: 'pointer',
-  display: 'block',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   textAlign: 'center',
   lineHeight: 1,
   WebkitAppearance: 'none',
   appearance: 'none',
   direction: 'rtl',
   marginBottom: '3%',
-  // currentScreen is 0-based: screens 0–2 keep large padding; from index 3 onward use compact padding.
+  boxSizing: 'border-box',
+  // currentScreen is 0-based: screens 0–2 keep large size; from index 3 onward use compact size.
   ...((step ?? 0) >= 3 ? {
-    padding: '22px 36px',
+    height: 'clamp(50px, 12vw, 64px)',
     marginBottom: 0,
     fontSize: 'clamp(18px, 10vw, 24px)',
   } : {}),
