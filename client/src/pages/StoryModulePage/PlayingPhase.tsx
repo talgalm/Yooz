@@ -100,10 +100,12 @@ const AnimatedContent = styled('div')({
 });
 
 const StationTitleText = styled('h2')({
-  fontSize: 22,
+  fontSize: 26,
   fontWeight: 800,
-  color: '#111',
-  margin: '0 0 6px',
+  color: '#fff',
+  WebkitTextStroke: '1.5px #000',
+  paintOrder: 'stroke fill',
+  margin: '-8px 0 6px',
   textAlign: 'center',
 });
 

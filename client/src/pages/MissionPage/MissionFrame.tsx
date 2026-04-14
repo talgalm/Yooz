@@ -185,10 +185,10 @@ export const MissionButton = styled('button', {
   border: 'none',
   borderRadius: 30,
   cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
   textAlign: 'center',
+  lineHeight: 1,
+  WebkitAppearance: 'none',
+  appearance: 'none',
   direction: 'rtl',
   marginBottom: '3%',
   // currentScreen is 0-based: screens 0–2 keep large padding; from index 3 onward use compact padding.
