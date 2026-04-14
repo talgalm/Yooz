@@ -49,6 +49,7 @@ const PageBg = styled('div')({
   minHeight: '100vh',
   direction: 'rtl',
   background: 'linear-gradient(160deg, #f5edf4 0%, #eee8f8 40%, #f5f5f7 100%)',
+  overflowX: 'hidden',
 });
 
 const DashContent = styled('main')({
@@ -139,13 +140,13 @@ const MobileTabDropdown = styled('div')<{ open: boolean }>(({ open }) => ({
   display: open ? 'block' : 'none',
   position: 'absolute',
   top: '100%',
-  right: 0,
+  left: 0,
   zIndex: 300,
   background: '#fff',
   border: '1px solid #e0d8f0',
   borderRadius: 14,
   boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
-  minWidth: 180,
+  minWidth: 160,
   overflow: 'hidden',
   marginTop: 8,
 }));

@@ -112,7 +112,7 @@ const StationTitleText = styled('h2')({
 const StationDescriptionText = styled(StationHeadline)({
   color: '#111',
   marginBottom: 0,
-  marginTop: 0,
+  marginTop: 8,
 });
 
 const StationTopLayout = styled('div')({
