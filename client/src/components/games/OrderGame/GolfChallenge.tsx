@@ -607,13 +607,13 @@ const floatIn = keyframes`
 `;
 
 const ResultTitle = styled('div')({
-  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontFamily: "'Rubik', sans-serif",
   fontSize: 48,
   fontWeight: 400,
   lineHeight: 1.12,
   letterSpacing: '0.02em',
-  color: '#ffffffדד',
-  WebkitTextStroke: '4px #666600',
+  color: '#ffffff',
+  WebkitTextStroke: '4px #155724',
   paintOrder: 'stroke fill',
   textAlign: 'center',
   animation: `${floatIn} 0.5s ease-out`,

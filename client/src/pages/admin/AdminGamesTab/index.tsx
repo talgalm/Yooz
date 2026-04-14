@@ -242,9 +242,10 @@ interface AdminGamesTabProps {
   gameType: string;
   title: string;
   onRefresh: () => void;
+  hideCreateButton?: boolean;
 }
 
-export default function AdminGamesTab({ games, gameType, title, onRefresh }: AdminGamesTabProps) {
+export default function AdminGamesTab({ games, gameType, title, onRefresh, hideCreateButton }: AdminGamesTabProps) {
   const navigate = useNavigate();
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -252,7 +253,9 @@ export default function AdminGamesTab({ games, gameType, title, onRefresh }: Adm
   const [tagDrawerOpen, setTagDrawerOpen] = useState(false);
   const t = useTranslations(texts);
 
-  const typeFiltered = games.filter((g) => g.type === gameType);
+  const typeFiltered = gameType === 'all'
+    ? games.filter((g) => g.type !== 'trashSort')
+    : games.filter((g) => g.type === gameType);
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -357,9 +360,11 @@ export default function AdminGamesTab({ games, gameType, title, onRefresh }: Adm
     <>
       <SectionHeaderRow>
         <PageTitleNoMargin>{title}</PageTitleNoMargin>
-        <SmallActionButton onClick={() => navigate(`/admin/games/new?type=${gameType}`)}>
-          {t.createNew}
-        </SmallActionButton>
+        {!hideCreateButton && (
+          <SmallActionButton onClick={() => navigate(`/admin/games/new?type=${gameType}`)}>
+            {t.createNew}
+          </SmallActionButton>
+        )}
       </SectionHeaderRow>
 
       <FilterRow>

@@ -21,8 +21,7 @@ const BTN_GREEN_BG = '#6cac5e';
 const BTN_GREEN_BORDER = '#2d5626';
 
 /** Matches app body typography */
-const TF_FONT_FAMILY =
-  "'Encode Sans Expanded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+const TF_FONT_FAMILY = "'Rubik', sans-serif";
 
 // ─── Animations ───
 
@@ -601,9 +600,9 @@ export const IntroContent = styled('div')({
   minHeight: 0,
 });
 
-/** Intro title: yellow fill + olive stroke; no panel (shows welcome art behind). */
-const GAME_TITLE_YELLOW = '#ffff00';
-const GAME_TITLE_OUTLINE = '#666600';
+/** Intro title: white fill + green stroke; no panel (shows welcome art behind). */
+const GAME_TITLE_YELLOW = '#ffffff';
+const GAME_TITLE_OUTLINE = '#155724';
 
 export const IntroGameTitleSticker = styled('h1')({
   margin: '0 0 16px',

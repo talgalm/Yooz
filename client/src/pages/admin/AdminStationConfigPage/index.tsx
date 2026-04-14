@@ -328,7 +328,7 @@ export default function AdminStationConfigPage() {
           body: JSON.stringify(payload),
         });
       }
-      navigate('/admin/dashboard');
+      navigate('/admin/dashboard?tab=activities');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {

@@ -26,6 +26,7 @@ export const SortContainer = styled('div')({
   overflow: 'hidden',
   userSelect: 'none',
   touchAction: 'none',
+  background: '#0f1923',
 });
 
 export const TutorialScreen = styled('div')({

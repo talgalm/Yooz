@@ -220,7 +220,7 @@ export const OrderRoundBanner = styled('div')<{ compact?: boolean }>({
 });
 
 export const OrderRoundBannerText = styled('p')({
-  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontFamily: "'Rubik', sans-serif",
   fontSize: 26,
   fontWeight: 400,
   lineHeight: 1.15,
@@ -448,7 +448,7 @@ export const IntroTitle = styled('h1')({
   boxSizing: 'border-box',
   width: 'min(100%, 340px)',
   flexShrink: 0,
-  fontFamily: "'Secular One', 'Heebo', sans-serif",
+  fontFamily: "'Rubik', sans-serif",
   fontSize: '48px',
   fontWeight: 400,
   lineHeight: 1.12,

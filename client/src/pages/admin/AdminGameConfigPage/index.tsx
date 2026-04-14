@@ -62,7 +62,7 @@ export default function AdminGameConfigPage() {
   const location = useLocation();
   const t = useTranslations(texts);
 
-  const validTypes = ['order', 'trivia', 'puzzle', 'trueFalse', 'ballGame', 'trashSort'];
+  const validTypes = ['order', 'trivia', 'puzzle', 'trueFalse', 'ballGame'];
   const typeFromUrl = searchParams.get('type');
   const defaultType = typeFromUrl && validTypes.includes(typeFromUrl) ? typeFromUrl : 'order';
 
@@ -204,7 +204,7 @@ export default function AdminGameConfigPage() {
           body: JSON.stringify(payload),
         });
       }
-      navigate('/admin/dashboard');
+      navigate('/admin/dashboard?tab=activities');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
@@ -274,9 +274,6 @@ export default function AdminGameConfigPage() {
                     </SelectionButton>
                     <SelectionButton type="button" selected={type === 'ballGame'} onClick={() => setType('ballGame')}>
                       Ball Game
-                    </SelectionButton>
-                    <SelectionButton type="button" selected={type === 'trashSort'} onClick={() => setType('trashSort')}>
-                      Trash Sort
                     </SelectionButton>
                   </SelectionGroup>
                 </div>

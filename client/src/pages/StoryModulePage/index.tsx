@@ -908,6 +908,7 @@ export default function StoryModulePage() {
   const isTextVideoImageStation = phase === 'playing' &&
     activeItemForUi?.type === 'station' &&
     ['text', 'video', 'image'].includes((activeItemForUi as StationItemData).stationType);
+  const isMissionActive = phase === 'playing' && activeItemForUi?.type === 'mission';
   const activeThemeTopColor = (() => {
     if (isTriviaGameActive) return TRIVIA_BROWSER_PURPLE;
     if (activeGameType === 'puzzle') return PUZZLE_BROWSER_GREEN;
@@ -915,6 +916,7 @@ export default function StoryModulePage() {
     if (activeGameType === 'order') {
       return isGolfChallengeActive ? GOLF_BROWSER_GREEN : ORDER_BROWSER_ORANGE;
     }
+    if (activeGameType === 'trashSort' || isMissionActive) return '#1a0a2e';
     if (isTextVideoImageStation) return customBgColor || getThemeSkyColor(data?.module.theme);
     return customBgColor || themeShellColor;
   })();

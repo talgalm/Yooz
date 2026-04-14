@@ -241,9 +241,10 @@ interface AdminStationsTabProps {
   stations: Station[];
   onRefresh: () => void;
   defaultType?: string;
+  hideCreateButton?: boolean;
 }
 
-export default function AdminStationsTab({ stations, onRefresh, defaultType }: AdminStationsTabProps) {
+export default function AdminStationsTab({ stations, onRefresh, defaultType, hideCreateButton }: AdminStationsTabProps) {
   const navigate = useNavigate();
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -367,9 +368,11 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType }: A
     <>
       <SectionHeaderRow>
         <PageTitleNoMargin>{t.title}</PageTitleNoMargin>
-        <SmallActionButton onClick={() => navigate(`/admin/stations/new${defaultType ? `?type=${defaultType}` : ''}`)}>
-          {t.createNew}
-        </SmallActionButton>
+        {!hideCreateButton && (
+          <SmallActionButton onClick={() => navigate(`/admin/stations/new${defaultType ? `?type=${defaultType}` : ''}`)}>
+            {t.createNew}
+          </SmallActionButton>
+        )}
       </SectionHeaderRow>
 
       <FilterRow>

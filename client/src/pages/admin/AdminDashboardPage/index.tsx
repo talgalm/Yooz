@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
 import { useTranslations } from '../../../context/LanguageContext';
@@ -249,11 +249,161 @@ const MobileCard = styled('div')({
   },
 });
 
+// ─── Create Modal styled components ───
+
+const ModalOverlay = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0,0,0,0.45)',
+  zIndex: 1200,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '20px',
+});
+
+const ModalCard = styled('div')({
+  background: '#fff',
+  borderRadius: 20,
+  padding: '28px 28px 32px',
+  width: '100%',
+  maxWidth: 480,
+  boxShadow: '0 12px 48px rgba(0,0,0,0.22)',
+  direction: 'rtl',
+});
+
+const ModalHeader = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginBottom: 24,
+});
+
+const ModalTitle = styled('h2')({
+  margin: 0,
+  fontSize: 20,
+  fontWeight: 700,
+  color: '#222',
+  fontFamily: 'inherit',
+});
+
+const ModalCloseBtn = styled('button')({
+  background: 'none',
+  border: 'none',
+  fontSize: 22,
+  cursor: 'pointer',
+  color: '#aaa',
+  lineHeight: 1,
+  padding: '2px 6px',
+  borderRadius: 6,
+  fontFamily: 'inherit',
+  '&:hover': { color: '#555', background: '#f5f5f5' },
+});
+
+const ModalBackBtn = styled('button')({
+  background: 'none',
+  border: 'none',
+  fontSize: 14,
+  cursor: 'pointer',
+  color: '#6c5ce7',
+  fontWeight: 600,
+  fontFamily: 'inherit',
+  padding: '0 4px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+  '&:hover': { textDecoration: 'underline' },
+});
+
+const ModalSubtitle = styled('div')({
+  fontSize: 14,
+  color: '#888',
+  marginBottom: 20,
+  marginTop: -12,
+});
+
+const CreateGrid = styled('div')({
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: 12,
+});
+
+const CreateTile = styled('button')<{ accent?: string }>(({ accent = '#6c5ce7' }) => ({
+  background: '#fafafe',
+  border: `2px solid #e8e8ec`,
+  borderRadius: 14,
+  padding: '20px 16px 16px',
+  cursor: 'pointer',
+  textAlign: 'right',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+  transition: 'all 0.15s',
+  fontFamily: 'inherit',
+  '&:hover': {
+    borderColor: accent,
+    background: `${accent}10`,
+    transform: 'translateY(-2px)',
+    boxShadow: `0 4px 16px ${accent}22`,
+  },
+}));
+
+const TileEmoji = styled('span')({
+  fontSize: 28,
+  lineHeight: 1,
+});
+
+const TileName = styled('span')({
+  fontSize: 15,
+  fontWeight: 700,
+  color: '#222',
+});
+
+const TileDesc = styled('span')({
+  fontSize: 12,
+  color: '#888',
+  lineHeight: 1.3,
+});
+
+const TypeGrid = styled('div')({
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: 10,
+});
+
+const TypeTile = styled('button')({
+  background: '#fafafe',
+  border: '2px solid #e8e8ec',
+  borderRadius: 12,
+  padding: '16px 14px',
+  cursor: 'pointer',
+  textAlign: 'right',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  transition: 'all 0.15s',
+  fontFamily: 'inherit',
+  fontSize: 14,
+  fontWeight: 600,
+  color: '#333',
+  '&:hover': {
+    borderColor: '#6c5ce7',
+    background: '#f5f0ff',
+    color: '#6c5ce7',
+  },
+});
+
+const TypeTileEmoji = styled('span')({
+  fontSize: 22,
+  flexShrink: 0,
+});
+
 // ─── Types ───
 
 type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'users' | 'portals' | 'tutorials';
-type StationsSection = 'stations' | 'games' | 'missions' | 'collage' | 'feedback';
-type GameSubTab = 'order' | 'trivia' | 'puzzle' | 'trueFalse' | 'ballGame';
+type StationsSection = 'stations' | 'games' | 'missions';
+type GameSubTab = 'all' | 'order' | 'trivia' | 'puzzle' | 'trueFalse' | 'ballGame';
+type CreateStep = 'main' | 'game' | 'station';
 
 interface Activity {
   _id: string;
@@ -300,6 +450,7 @@ export interface Mission {
 
 export default function AdminDashboardPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const initialTab = (searchParams.get('tab') as MainTab) || 'activities';
   const initialActivityId = searchParams.get('activityId');
 
@@ -312,7 +463,9 @@ export default function AdminDashboardPage() {
     ['activities', 'statistics', 'stations', 'library', 'users', 'portals', 'tutorials'].includes(initialTab) ? initialTab : 'activities'
   );
   const [stationsSection, setStationsSection] = useState<StationsSection>('stations');
-  const [gameSubTab, setGameSubTab] = useState<GameSubTab>('order');
+  const [gameSubTab, setGameSubTab] = useState<GameSubTab>('all');
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createStep, setCreateStep] = useState<CreateStep>('main');
   const [loading, setLoading] = useState(true);
   const { logout, admin } = useAdminAuth();
   const navigate = useNavigate();
@@ -344,6 +497,15 @@ export default function AdminDashboardPage() {
       setActiveTab('activities');
     }
   }, [visibleTabKeys, activeTab]);
+
+  // Sync tab from URL when navigating back to this page (e.g. after creating a game/station)
+  useEffect(() => {
+    const tab = searchParams.get('tab') as MainTab | null;
+    if (tab && visibleTabKeys.includes(tab) && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location]);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -450,6 +612,29 @@ export default function AdminDashboardPage() {
         {/* ── Stations Tab (stations + games + missions) ── */}
         {activeTab === 'stations' && (
           <>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+              <button
+                onClick={() => { setCreateStep('main'); setCreateModalOpen(true); }}
+                style={{
+                  background: 'linear-gradient(135deg, #6c5ce7 0%, #8B2FC9 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 10,
+                  padding: '10px 22px',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  boxShadow: '0 2px 8px rgba(108,92,231,0.3)',
+                  transition: 'opacity 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+              >
+                {t.createButtonLabel}
+              </button>
+            </div>
+
             <SegmentedControlCenter>
               <SegmentedControl>
                 <SegmentedButton active={stationsSection === 'stations'} onClick={() => setStationsSection('stations')}>
@@ -461,23 +646,20 @@ export default function AdminDashboardPage() {
                 <SegmentedButton active={stationsSection === 'missions'} onClick={() => setStationsSection('missions')}>
                   {t.sectionMissions}
                 </SegmentedButton>
-                <SegmentedButton active={stationsSection === 'collage'} onClick={() => setStationsSection('collage')}>
-                  {t.sectionCollage}
-                </SegmentedButton>
-                <SegmentedButton active={stationsSection === 'feedback'} onClick={() => setStationsSection('feedback')}>
-                  {t.sectionFeedback}
-                </SegmentedButton>
               </SegmentedControl>
             </SegmentedControlCenter>
 
             {stationsSection === 'stations' && (
-              <AdminStationsTab stations={stations.filter((s) => s.type !== 'collage' && s.type !== 'feedback')} onRefresh={refreshStations} />
+              <AdminStationsTab stations={stations} onRefresh={refreshStations} hideCreateButton />
             )}
 
             {stationsSection === 'games' && (
               <>
                 <GameTabBar>
                   <GameTabGroup>
+                    <GameTab active={gameSubTab === 'all'} onClick={() => setGameSubTab('all')}>
+                      {t.subTabAll}
+                    </GameTab>
                     <GameTab active={gameSubTab === 'order'} onClick={() => setGameSubTab('order')}>
                       {t.subTabOrder}
                     </GameTab>
@@ -499,36 +681,22 @@ export default function AdminDashboardPage() {
                 <AdminGamesTab
                   games={games}
                   gameType={gameSubTab}
-                  title={{
+                  title={({
+                    all: t.subTabAll,
                     order: t.subTabOrder,
                     trivia: t.subTabTrivia,
                     puzzle: t.subTabPuzzle,
                     trueFalse: t.subTabTrueFalse,
                     ballGame: t.subTabBallGame,
-                  }[gameSubTab]}
+                  } as Record<string, string>)[gameSubTab] ?? t.subTabAll}
                   onRefresh={refreshGames}
+                  hideCreateButton
                 />
               </>
             )}
 
             {stationsSection === 'missions' && (
               <MissionsSection missions={missions} navigate={navigate} t={t} />
-            )}
-
-            {stationsSection === 'collage' && (
-              <AdminStationsTab
-                stations={stations.filter((s) => s.type === 'collage')}
-                onRefresh={refreshStations}
-                defaultType="collage"
-              />
-            )}
-
-            {stationsSection === 'feedback' && (
-              <AdminStationsTab
-                stations={stations.filter((s) => s.type === 'feedback')}
-                onRefresh={refreshStations}
-                defaultType="feedback"
-              />
             )}
           </>
         )}
@@ -553,6 +721,93 @@ export default function AdminDashboardPage() {
           <AdminTutorialsTab />
         )}
       </DashContent>
+
+      {/* ── Create Modal ── */}
+      {createModalOpen && (
+        <ModalOverlay onClick={() => setCreateModalOpen(false)}>
+          <ModalCard onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {createStep !== 'main' && (
+                  <ModalBackBtn type="button" onClick={() => setCreateStep('main')}>
+                    ← {t.createBack}
+                  </ModalBackBtn>
+                )}
+                <ModalTitle>
+                  {createStep === 'main' && t.createModalTitle}
+                  {createStep === 'game' && t.createChooseGameType}
+                  {createStep === 'station' && t.createChooseStationType}
+                </ModalTitle>
+              </div>
+              <ModalCloseBtn type="button" onClick={() => setCreateModalOpen(false)}>×</ModalCloseBtn>
+            </ModalHeader>
+
+            {createStep === 'main' && (
+              <CreateGrid>
+                <CreateTile accent="#6c5ce7" onClick={() => setCreateStep('game')}>
+                  <TileEmoji>🎮</TileEmoji>
+                  <TileName>{t.createGame}</TileName>
+                  <TileDesc>{t.createGameDesc}</TileDesc>
+                </CreateTile>
+                <CreateTile accent="#2e7d32" onClick={() => setCreateStep('station')}>
+                  <TileEmoji>📍</TileEmoji>
+                  <TileName>{t.createStation}</TileName>
+                  <TileDesc>{t.createStationDesc}</TileDesc>
+                </CreateTile>
+                <CreateTile accent="#c0392b" onClick={() => { setCreateModalOpen(false); navigate('/admin/stations/new?type=collage'); }}>
+                  <TileEmoji>🖼️</TileEmoji>
+                  <TileName>{t.createCollage}</TileName>
+                  <TileDesc>{t.createCollageDesc}</TileDesc>
+                </CreateTile>
+                <CreateTile accent="#e67e22" onClick={() => { setCreateModalOpen(false); navigate('/admin/stations/new?type=feedback'); }}>
+                  <TileEmoji>📝</TileEmoji>
+                  <TileName>{t.createFeedback}</TileName>
+                  <TileDesc>{t.createFeedbackDesc}</TileDesc>
+                </CreateTile>
+              </CreateGrid>
+            )}
+
+            {createStep === 'game' && (
+              <TypeGrid>
+                {[
+                  { type: 'order', emoji: '🔢', label: t.createTypeOrder },
+                  { type: 'trivia', emoji: '❓', label: t.createTypeTrivia },
+                  { type: 'puzzle', emoji: '🧩', label: t.createTypePuzzle },
+                  { type: 'trueFalse', emoji: '✅', label: t.createTypeTrueFalse },
+                  { type: 'ballGame', emoji: '🏀', label: t.createTypeBallGame },
+                ].map(({ type, emoji, label }) => (
+                  <TypeTile
+                    key={type}
+                    onClick={() => { setCreateModalOpen(false); navigate(`/admin/games/new?type=${type}`); }}
+                  >
+                    <TypeTileEmoji>{emoji}</TypeTileEmoji>
+                    {label}
+                  </TypeTile>
+                ))}
+              </TypeGrid>
+            )}
+
+            {createStep === 'station' && (
+              <TypeGrid>
+                {[
+                  { type: 'text', emoji: '📝', label: t.createTypeText },
+                  { type: 'video', emoji: '🎬', label: t.createTypeVideo },
+                  { type: 'image', emoji: '🖼️', label: t.createTypeImage },
+                  { type: 'riddle', emoji: '🔤', label: t.createTypeRiddle },
+                ].map(({ type, emoji, label }) => (
+                  <TypeTile
+                    key={type}
+                    onClick={() => { setCreateModalOpen(false); navigate(`/admin/stations/new?type=${type}`); }}
+                  >
+                    <TypeTileEmoji>{emoji}</TypeTileEmoji>
+                    {label}
+                  </TypeTile>
+                ))}
+              </TypeGrid>
+            )}
+          </ModalCard>
+        </ModalOverlay>
+      )}
     </PageBg>
   );
 }

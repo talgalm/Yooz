@@ -71,11 +71,13 @@ export const IntroOverlay = styled('div')({
 
 export const IntroTitle = styled('h1')({
   color: '#fff',
-  fontSize: 28,
-  fontWeight: 800,
-  margin: 0,
+  fontFamily: "'Rubik', sans-serif",
+  fontSize: 48,
+  fontWeight: 700,
+  margin: '0 0 16px',
   textAlign: 'center',
-  textShadow: '0 2px 8px rgba(139, 47, 201, 0.5)',
+  WebkitTextStroke: '4px #155724',
+  paintOrder: 'stroke fill',
 });
 
 export const IntroText = styled('p')({

@@ -153,8 +153,7 @@ export const PlayPhaseRoot = styled('div', {
 // ─── Opening / Intro Screen ───
 // ═══════════════════════════════════════════
 
-const INTRO_FONT_FAMILY =
-  "'Encode Sans Expanded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+const INTRO_FONT_FAMILY = "'Rubik', sans-serif";
 
 export const IntroContainer = styled('div', {
   shouldForwardProp: (prop) => prop !== '$externalBackdrop',

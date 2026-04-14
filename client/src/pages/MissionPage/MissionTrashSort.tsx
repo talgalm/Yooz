@@ -497,8 +497,10 @@ export default function MissionTrashSort({
   badgeAwardText = 'מוענק בזאת',
   badgeAchievementText = 'על מציאת המזוודה והצלת הפארק!',
   shareButton = 'שתפו עם חברים',
+  continueButton,
   participantName,
   activityCode,
+  onComplete,
   onLogout,
   onHelp,
 }: MissionTrashSortProps) {
