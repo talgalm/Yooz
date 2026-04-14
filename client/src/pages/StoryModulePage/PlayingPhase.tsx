@@ -124,7 +124,7 @@ const StationTopLayout = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '8px 24px 100px',
+  padding: '24px 24px 100px',
   textAlign: 'center',
 });
 

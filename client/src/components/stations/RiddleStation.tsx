@@ -56,7 +56,7 @@ const Container = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '16px 20px 120px',
+  padding: '32px 20px 120px',
   gap: 18,
   overflowY: 'auto',
 });
