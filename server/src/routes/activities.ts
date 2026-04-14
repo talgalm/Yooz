@@ -130,6 +130,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         explanationScreens: data.explanationScreens || [],
         puzzleConfig: data.puzzleConfig,
         trashSortConfig: data.trashSortConfig,
+        spiderSvg: item.spiderSvg,
       };
     }
     const data = item.type === 'game'
@@ -144,6 +145,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         gameType: data.type, // 'order', 'trivia', 'puzzle', 'trueFalse'
         description: data.description,
         settings: data.settings || {},
+        spiderSvg: item.spiderSvg,
       };
     } else {
       return {
@@ -153,6 +155,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         stationType: data.type, // 'text', 'video', 'image'
         description: data.description,
         settings: data.settings || {},
+        spiderSvg: item.spiderSvg,
       };
     }
   }).filter(Boolean);

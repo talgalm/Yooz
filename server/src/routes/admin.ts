@@ -103,10 +103,11 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
         items: Array.isArray(mod.items)
           ? mod.items
               .filter((item: { type: string; ref: string }) => item.type && item.ref && ['game', 'station', 'mission'].includes(item.type))
-              .map((item: { type: string; ref: string; groups?: string[] }) => ({
+              .map((item: { type: string; ref: string; groups?: string[]; spiderSvg?: string }) => ({
                 type: item.type,
                 ref: item.ref,
                 ...(Array.isArray(item.groups) && item.groups.length > 0 && { groups: item.groups }),
+                ...(item.spiderSvg && { spiderSvg: item.spiderSvg }),
               }))
           : [],
         popups: Array.isArray(mod.popups) ? mod.popups.map((p: Record<string, unknown>) => {
@@ -215,7 +216,7 @@ async function populateActivityItems(activities: any[]): Promise<any[]> {
         if (item.type === 'game') data = gameMap.get(item.ref.toString());
         else if (item.type === 'station') data = stationMap.get(item.ref.toString());
         else if (item.type === 'mission') data = missionMap.get(item.ref.toString());
-        return { type: item.type, ref: item.ref, data };
+        return { type: item.type, ref: item.ref, data, groups: item.groups, spiderSvg: item.spiderSvg };
       });
     }
     return obj;

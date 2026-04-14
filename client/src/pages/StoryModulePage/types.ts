@@ -12,6 +12,7 @@ export interface GameItemData {
   gameType: string; // 'order', 'trivia', 'puzzle', 'trueFalse'
   description?: string;
   settings: Record<string, unknown>;
+  spiderSvg?: string;
 }
 
 export interface StationItemData {
@@ -21,6 +22,7 @@ export interface StationItemData {
   stationType: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle';
   description?: string;
   settings?: Record<string, unknown>;
+  spiderSvg?: string;
 }
 
 export interface MissionScreen {
@@ -58,6 +60,7 @@ export interface MissionItemData {
   explanationScreens: MissionScreen[];
   puzzleConfig?: MissionPuzzleConfig;
   trashSortConfig?: MissionTrashSortConfig;
+  spiderSvg?: string;
 }
 
 export type ModuleItemData = GameItemData | StationItemData | MissionItemData;

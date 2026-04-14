@@ -9,6 +9,7 @@ export interface IModuleItem {
   type: 'game' | 'station' | 'mission';
   ref: Types.ObjectId;
   groups?: string[]; // when set, only these groups see this item (empty/undefined = all groups)
+  spiderSvg?: string; // optional SVG URL for spiders module display
 }
 
 export interface IPopupCondition {
@@ -29,7 +30,7 @@ export interface IPopupMessage {
 }
 
 export interface IModuleConfig {
-  type: 'story' | 'mission'; // module types
+  type: 'story' | 'mission' | 'spiders'; // module types
   theme?: string; // e.g. 'spy' – visual theme wrapper
   backgroundImage?: string; // URL or empty
   items: IModuleItem[]; // ordered mix of games and stations
@@ -119,10 +120,11 @@ const moduleItemSchema = new Schema<IModuleItem>({
   type: { type: String, required: true, enum: ['game', 'station', 'mission'] },
   ref: { type: Schema.Types.ObjectId, required: true },
   groups: { type: [String], default: undefined },
+  spiderSvg: { type: String },
 }, { _id: false });
 
 const moduleConfigSchema = new Schema<IModuleConfig>({
-  type: { type: String, required: true, enum: ['story', 'mission'], default: 'story' },
+  type: { type: String, required: true, enum: ['story', 'mission', 'spiders'], default: 'story' },
   theme: { type: String },
   backgroundImage: { type: String },
   items: { type: [moduleItemSchema], default: [] },

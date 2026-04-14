@@ -1,6 +1,6 @@
 export type LoginField = 'email' | 'phoneNumber' | 'name';
 export type ConnectionType = 'single' | 'group';
-export type ModuleType = 'none' | 'story';
+export type ModuleType = 'none' | 'story' | 'spiders';
 export type OpeningType = 'none' | 'video' | 'image';
 export type TriggerPoint = 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
 export type ConditionType = 'none' | 'participantCount';
@@ -49,6 +49,7 @@ export interface ModuleItem {
   theme?: string;
   settings?: Record<string, unknown>;
   groups?: string[]; // when set, only these groups see this item
+  spiderSvg?: string; // optional SVG URL for spiders module display
 }
 
 export interface CustomInstructions {

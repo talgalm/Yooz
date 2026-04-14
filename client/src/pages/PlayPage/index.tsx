@@ -233,7 +233,7 @@ export default function PlayPage() {
   const handleSuccess = () => {
     if (activity?.moduleType === 'mission') {
       navigate(`/mission/${activity.code}`);
-    } else if (activity?.moduleType === 'story') {
+    } else if (activity?.moduleType === 'story' || activity?.moduleType === 'spiders') {
       navigate(`/story/${activity.code}`);
     } else {
       navigate('/home');

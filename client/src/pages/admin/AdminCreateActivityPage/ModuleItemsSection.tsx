@@ -383,6 +383,8 @@ interface ModuleItemsSectionProps {
   onRemoveItem: (index: number) => void;
   onMoveItem: (index: number, direction: -1 | 1) => void;
   onUpdateItemGroups: (index: number, groups: string[]) => void;
+  onUpdateItemSvg?: (index: number, svgUrl: string) => void;
+  moduleType?: string;
   connectionType: string;
   groupNames: string[];
   t: Record<string, string>;
@@ -396,10 +398,13 @@ export default function ModuleItemsSection({
   onRemoveItem,
   onMoveItem,
   onUpdateItemGroups,
+  onUpdateItemSvg,
+  moduleType,
   connectionType,
   groupNames,
   t,
 }: ModuleItemsSectionProps) {
+  const isSpiders = moduleType === 'spiders';
   const [activeTab, setActiveTab] = useState<TabType>('games');
   const [filterText, setFilterText] = useState('');
   const [allGames, setAllGames] = useState<GameOption[]>([]);
@@ -695,6 +700,23 @@ export default function ModuleItemsSection({
                 </ItemTypeBadge>
                 <DragItemName>{item.name}</DragItemName>
                 {item.subType && <SmallText style={{ flexShrink: 0 }}>{item.subType}</SmallText>}
+                {isSpiders && onUpdateItemSvg && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                    {item.spiderSvg && (
+                      <img
+                        src={item.spiderSvg}
+                        alt=""
+                        style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 4, border: '1px solid #e0e0e0', background: '#f9f9f9', flexShrink: 0 }}
+                      />
+                    )}
+                    <FileUploadButton
+                      accept="image/svg+xml"
+                      onUploaded={(url) => onUpdateItemSvg(index, url)}
+                      label={item.spiderSvg ? '↺' : (t.spidersSvgUpload || 'SVG')}
+                      uploadingLabel={t.spidersSvgUploading || '...'}
+                    />
+                  </div>
+                )}
                 {connectionType === 'group' && groupNames.length > 0 && (
                   <GroupButton
                     type="button"

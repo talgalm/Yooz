@@ -45,6 +45,7 @@ import type {
 } from './types';
 import GuidelinesPopup from './GuidelinesPopup';
 import RoadmapView from './RoadmapView';
+import SpidersView from './SpidersView';
 import FinishScreen from './FinishScreen';
 import LeaderboardView from './LeaderboardView';
 import PlayingPhase from './PlayingPhase';
@@ -269,6 +270,9 @@ export default function StoryModulePage() {
   const [showGuidelines, setShowGuidelines] = useState(true);
   const hasProcessedEntry = useRef(false);
 
+  // Spiders mode: track which items have been completed (any order)
+  const [completedSpiderItems, setCompletedSpiderItems] = useState<Set<number>>(new Set());
+
   // Station hint
   const [stationHintUsed, setStationHintUsed] = useState<Set<number>>(new Set());
   const [showStationHintWarning, setShowStationHintWarning] = useState(false);
@@ -317,6 +321,7 @@ export default function StoryModulePage() {
       setPhase(session.phase === 'playing' ? 'roadmap' : (session.phase ?? 'roadmap'));
       (session.shownPopupIds ?? []).forEach((id: string) => shownPopupIds.current.add(id));
       setStationHintUsed(new Set(session.stationHintUsed ?? []));
+      setCompletedSpiderItems(new Set(session.completedSpiderItems ?? []));
       if (session.guidelinesDismissed) setShowGuidelines(false);
       if (session.scoresSaved) scoresSaved.current = true;
       setSessionRestored(true);
@@ -346,12 +351,13 @@ export default function StoryModulePage() {
       phase: phase === 'playing' ? 'roadmap' : phase,
       shownPopupIds: Array.from(shownPopupIds.current),
       stationHintUsed: Array.from(stationHintUsed),
+      completedSpiderItems: Array.from(completedSpiderItems),
       guidelinesDismissed: !showGuidelines,
       scoresSaved: scoresSaved.current,
       lastActive: Date.now(),
     };
     sessionStorage.setItem(`yooz_session_${code}`, JSON.stringify(session));
-  }, [code, sessionRestored, currentItemIndex, scores, phase, stationHintUsed, showGuidelines]);
+  }, [code, sessionRestored, currentItemIndex, scores, phase, stationHintUsed, completedSpiderItems, showGuidelines]);
 
   const fetchModule = useCallback((signal?: AbortSignal) => {
     if (!code) return Promise.resolve();
@@ -404,10 +410,15 @@ export default function StoryModulePage() {
           setShowGuidelines(false);
           setPhase('finish');
         } else if (progress.completionStatus === 'in_progress' && progress.totalItemsCompleted > 0) {
-          const resumeIndex = Math.min(progress.lastActiveItemIndex + 1, data.module.items.length - 1);
-          setCurrentItemIndex(resumeIndex);
           if (progress.itemResults?.length) {
             setScores(progress.itemResults.map((ir) => ({ itemIndex: ir.itemIndex, gameName: ir.itemName, score: ir.score })));
+          }
+          if (data.module.type === 'spiders' && progress.itemResults?.length) {
+            // Restore completed items for spiders mode from itemResults
+            setCompletedSpiderItems(new Set(progress.itemResults.map((ir) => ir.itemIndex)));
+          } else {
+            const resumeIndex = Math.min(progress.lastActiveItemIndex + 1, data.module.items.length - 1);
+            setCurrentItemIndex(resumeIndex);
           }
           setShowGuidelines(false);
         }
@@ -557,6 +568,23 @@ export default function StoryModulePage() {
   const advanceToNextItem = () => {
     if (!data) return;
     const completedIdx = currentItemIndex;
+
+    // Spiders mode: all items can be played in any order, track completed set
+    if (data.module.type === 'spiders') {
+      const newCompleted = new Set([...completedSpiderItems, completedIdx]);
+      setCompletedSpiderItems(newCompleted);
+      const allDone = data.module.items.every((_, idx) => newCompleted.has(idx));
+      if (allDone) {
+        showPopupsOrRun('endOfActivity', undefined, () => {
+          setPhase('finish');
+        });
+      } else {
+        setPhase('roadmap');
+      }
+      return;
+    }
+
+    // Sequential (story) mode
     const nextIdx = completedIdx + 1;
     const isLast = nextIdx >= data.module.items.length;
 
@@ -572,6 +600,28 @@ export default function StoryModulePage() {
         });
       });
     }
+  };
+
+  const handleSpidersNodeTap = (index: number) => {
+    if (entryTransitionStage !== 'idle') return;
+    if (completedSpiderItems.has(index)) return; // already done
+
+    const goPlay = () => {
+      setCurrentItemIndex(index);
+      setEntryTransitionStage('closing');
+      const closeTimer = setTimeout(() => {
+        itemStartTime.current = Date.now();
+        setPhase('playing');
+        setEntryTransitionStage('opening');
+        const openTimer = setTimeout(() => {
+          setEntryTransitionStage('idle');
+        }, ENTRY_TRANSITION_OPEN_MS);
+        entryTransitionTimeouts.current.push(openTimer);
+      }, ENTRY_TRANSITION_CLOSE_MS);
+      entryTransitionTimeouts.current.push(closeTimer);
+    };
+
+    showPopupsOrRun('beforeItem', index, goPlay);
   };
 
   const handleNodeTap = (index: number) => {
@@ -613,13 +663,14 @@ export default function StoryModulePage() {
     }
   }, [showPopupsOrRun]);
 
-  // Skip roadmap entirely when there's only 1 station — go directly to playing immediately
+  // Skip roadmap entirely when there's only 1 station — go directly to playing immediately (not for spiders)
   const singleItemAutoEntered = useRef(false);
   useEffect(() => {
     if (
       phase === 'roadmap' &&
       data &&
       data.module.items.length === 1 &&
+      data.module.type !== 'spiders' &&
       !singleItemAutoEntered.current
     ) {
       singleItemAutoEntered.current = true;
@@ -981,13 +1032,46 @@ export default function StoryModulePage() {
   if (phase === 'roadmap') {
     const isSingleItem = data.module.items.length === 1;
 
-    // Single-item activity: useEffect immediately sets phase to 'playing' — render nothing here
-    if (isSingleItem) return null;
+    // Single-item activity (non-spiders): useEffect immediately sets phase to 'playing' — render nothing here
+    if (isSingleItem && data.module.type !== 'spiders') return null;
 
     const roadmapTotalPoints = Math.max(
       0,
       scores.reduce((sum, s) => sum + s.score, 0) - stationHintUsed.size * stationHintPenalty,
     );
+
+    // Spiders module: scatter view with free-order item selection
+    if (data.module.type === 'spiders') {
+      return (
+        <>
+          <SpidersView
+            items={data.module.items}
+            completedItemIndices={completedSpiderItems}
+            currentPoints={roadmapTotalPoints}
+            onNodeTap={handleSpidersNodeTap}
+            onLogout={doExit}
+            onViewLeaderboard={handleViewLeaderboard}
+            popupModal={popupModal}
+            t={t}
+            theme={data.module.theme}
+            customTheme={data.module.customTheme}
+          />
+          {showGuidelines && !currentPopup && (
+            <GuidelinesPopup
+              itemCount={data.module.items.length}
+              guidelines={data.guidelines}
+              customInstructions={data.customInstructions}
+              onDismiss={handleGuidelinesDismiss}
+              t={t}
+            />
+          )}
+          {entryTransitionStage !== 'idle' && (
+            <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
+          )}
+        </>
+      );
+    }
+
     return (
       <>
         <RoadmapView
@@ -1035,7 +1119,7 @@ export default function StoryModulePage() {
           totalScore={totalScore}
           hasScores={scores.length > 0}
           itemCount={data.module.items.length}
-          completedItems={data.module.items.length}
+          completedItems={data.module.type === 'spiders' ? completedSpiderItems.size : data.module.items.length}
           countdown={countdown}
           countdownSeconds={GAME_CONSTANTS.FINISH_COUNTDOWN_SECONDS}
           bgStyle={bgStyle}

@@ -391,6 +391,7 @@ export default function AdminCreateActivityPage() {
                 theme: item.data?.theme,
                 settings: item.data?.settings,
                 groups: item.groups,
+                spiderSvg: (item as { spiderSvg?: string }).spiderSvg,
               }))
             );
           }
@@ -474,6 +475,9 @@ export default function AdminCreateActivityPage() {
 
   const addItem = (item: ModuleItem) => setSelectedItems((prev) => [...prev, item]);
   const removeItem = (index: number) => setSelectedItems((prev) => prev.filter((_, i) => i !== index));
+  const updateItemSvg = (index: number, svgUrl: string) => {
+    setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, spiderSvg: svgUrl || undefined } : item));
+  };
   const moveItem = (index: number, direction: -1 | 1) => {
     setSelectedItems((prev) => {
       const next = [...prev];
@@ -513,7 +517,7 @@ export default function AdminCreateActivityPage() {
       if (openingType !== 'none' && openingUrl.trim()) {
         payload.opening = { type: openingType, url: openingUrl.trim() };
       }
-      if (moduleType === 'story') {
+      if (moduleType === 'story' || moduleType === 'spiders') {
         const modulePayload: Record<string, unknown> = {
           type: moduleType,
           theme: moduleTheme || undefined,
@@ -522,6 +526,7 @@ export default function AdminCreateActivityPage() {
             type: i.itemType,
             ref: i.ref,
             ...(i.groups && i.groups.length > 0 && { groups: i.groups }),
+            ...(moduleType === 'spiders' && i.spiderSvg && { spiderSvg: i.spiderSvg }),
           })),
         };
         if (popups.length > 0) {
@@ -590,7 +595,7 @@ export default function AdminCreateActivityPage() {
 
   const hasAnyField = loginFields.size > 0;
   if (initialLoading) return null;
-  const canGoToStep2 = name.trim().length > 0 && hasAnyField && moduleType === 'story';
+  const canGoToStep2 = name.trim().length > 0 && hasAnyField && (moduleType === 'story' || moduleType === 'spiders');
 
   return (
     <AdminPage>
@@ -602,8 +607,8 @@ export default function AdminCreateActivityPage() {
         <AdminCardForm>
           <PageTitle>{isEditMode ? t.editTitle : t.title}</PageTitle>
 
-          {/* Step bar — only for story module */}
-          {moduleType === 'story' && (
+          {/* Step bar — only for story/spiders module */}
+          {(moduleType === 'story' || moduleType === 'spiders') && (
             <StepBar>
               <StepPill
                 type="button"
@@ -658,8 +663,12 @@ export default function AdminCreateActivityPage() {
                           <div>{t.story}</div>
                           <SelectionSubtext>{t.storyDesc}</SelectionSubtext>
                         </SelectionButton>
+                        <SelectionButton type="button" selected={moduleType === 'spiders'} onClick={() => setModuleType('spiders')}>
+                          <div>{t.spiders}</div>
+                          <SelectionSubtext>{t.spidersDesc}</SelectionSubtext>
+                        </SelectionButton>
                       </SelectionGroup>
-                      {moduleType === 'story' && (
+                      {(moduleType === 'story' || moduleType === 'spiders') && (
                         <div>
                           <SectionLabelSmall>{t.themeLabel}</SectionLabelSmall>
                           <ThemeGrid>
@@ -904,7 +913,7 @@ export default function AdminCreateActivityPage() {
 
                 {/* Step 1 navigation */}
                 <SectionCardWide>
-                  {moduleType === 'story' ? (
+                  {(moduleType === 'story' || moduleType === 'spiders') ? (
                     <StepNav>
                       <div />
                       <PrimaryButton
@@ -929,7 +938,7 @@ export default function AdminCreateActivityPage() {
             )}
 
             {/* ──── STEP 2 ──── */}
-            {step === 2 && moduleType === 'story' && (
+            {step === 2 && (moduleType === 'story' || moduleType === 'spiders') && (
               <>
                 <SectionCardWide>
                   <ModuleItemsSection
@@ -940,6 +949,8 @@ export default function AdminCreateActivityPage() {
                     onRemoveItem={removeItem}
                     onMoveItem={moveItem}
                     onUpdateItemGroups={(index, groups) => setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, groups } : item))}
+                    onUpdateItemSvg={updateItemSvg}
+                    moduleType={moduleType}
                     connectionType={connectionType}
                     groupNames={groupNames}
                     t={t}
