@@ -105,14 +105,14 @@ const StationTitleText = styled('h2')({
   color: '#fff',
   WebkitTextStroke: '1.5px #000',
   paintOrder: 'stroke fill',
-  margin: '-8px 0 6px',
+  margin: '-12px 0 12px',
   textAlign: 'center',
 });
 
 const StationDescriptionText = styled(StationHeadline)({
   color: '#111',
   marginBottom: 0,
-  marginTop: -4,
+  marginTop: 0,
 });
 
 const StationTopLayout = styled('div')({
