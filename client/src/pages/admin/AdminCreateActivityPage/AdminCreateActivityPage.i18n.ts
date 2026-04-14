@@ -178,7 +178,7 @@ export const texts = {
     storyDesc: 'תחנות ומשחקים ברצף',
     spiders: 'עכבישים',
     spidersDesc: 'כל התחנות מוצגות יחד, ניתן לשחק בכל סדר',
-    spidersSvgUpload: 'העלאת SVG',
+    spidersSvgUpload: 'בחירת תמונה לתחנה',
     spidersSvgUploading: 'מעלה...',
     spidersSvgLabel: 'אייקון מותאם (SVG)',
     noModule: 'ללא',
