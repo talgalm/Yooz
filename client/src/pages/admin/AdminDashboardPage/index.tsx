@@ -102,18 +102,12 @@ const MobileTabHeader = styled('div')({
   '@media (max-width: 600px)': {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     borderBottom: '3px solid #c9bfe0',
     marginBottom: 20,
     paddingBottom: 12,
     position: 'relative',
   },
-});
-
-const MobileActiveTabLabel = styled('span')({
-  fontSize: 17,
-  fontWeight: 700,
-  color: '#6c5ce7',
 });
 
 const MobileHamburgerBtn = styled('button')({
@@ -140,7 +134,7 @@ const MobileTabDropdown = styled('div')<{ open: boolean }>(({ open }) => ({
   display: open ? 'block' : 'none',
   position: 'absolute',
   top: '100%',
-  left: 0,
+  right: 0,
   zIndex: 300,
   background: '#fff',
   border: '1px solid #e0d8f0',
@@ -672,9 +666,6 @@ export default function AdminDashboardPage() {
 
         {/* ── Main Tabs — mobile hamburger ── */}
         <MobileTabHeader>
-          <MobileActiveTabLabel>
-            {visibleTabs.find((t) => t.key === activeTab)?.label ?? ''}
-          </MobileActiveTabLabel>
           <div style={{ position: 'relative' }}>
             <MobileHamburgerBtn
               onClick={() => setMobileMenuOpen((v) => !v)}

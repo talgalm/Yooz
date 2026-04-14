@@ -126,10 +126,10 @@ async function askGemini(userText: string): Promise<string> {
         signal: controller.signal,
       });
 
-      if (res.status === 429 && attempt < maxRetries) {
+      if ((res.status === 429 || res.status === 503) && attempt < maxRetries) {
         clearTimeout(timeout);
-        const waitSec = Math.pow(2, attempt + 1) * 15; // 30s, 60s, 120s
-        console.log(`[Gemini] Rate limited (429). Retrying in ${waitSec}s... (attempt ${attempt + 1}/${maxRetries})`);
+        const waitSec = Math.pow(2, attempt + 1) * 5; // 10s, 20s, 40s
+        console.log(`[Gemini] ${res.status} error. Retrying in ${waitSec}s... (attempt ${attempt + 1}/${maxRetries})`);
         await new Promise((r) => setTimeout(r, waitSec * 1000));
         continue;
       }

@@ -29,7 +29,7 @@ export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET || '';
 
 // Gemini AI config
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
 if (!process.env.JWT_SECRET) {
   console.warn('⚠ JWT_SECRET not set in .env, using fallback (not safe for production)');

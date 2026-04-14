@@ -62,12 +62,18 @@ const Container = styled('div')({
 });
 
 const StationTitle = styled('h2')({
-  fontSize: 22,
+  fontSize: 26,
   fontWeight: 800,
-  color: '#111',
+  color: '#fff',
+  WebkitTextStroke: '1.5px #000',
+  paintOrder: 'stroke fill',
   margin: 0,
-  textAlign: 'center',
   marginBottom: 16,
+  textAlign: 'center',
+  position: 'sticky',
+  top: 0,
+  zIndex: 10,
+  paddingTop: 8,
 });
 
 const ClueText = styled('p')({

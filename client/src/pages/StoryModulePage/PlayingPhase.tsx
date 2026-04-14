@@ -105,8 +105,12 @@ const StationTitleText = styled('h2')({
   color: '#fff',
   WebkitTextStroke: '1.5px #000',
   paintOrder: 'stroke fill',
-  margin: '-16px 0 18px',
+  margin: '0 0 16px',
   textAlign: 'center',
+  position: 'sticky',
+  top: 0,
+  zIndex: 10,
+  paddingTop: 8,
 });
 
 const StationDescriptionText = styled(StationHeadline)({
@@ -124,10 +128,8 @@ const StationTopLayout = styled('div')({
   textAlign: 'center',
 });
 
-/** Same as StationTopLayout but vertically + horizontally centered — for video/image stations */
-const MediaStationLayout = styled(StationTopLayout)({
-  justifyContent: 'center',
-});
+/** Same as StationTopLayout but for video/image stations */
+const MediaStationLayout = styled(StationTopLayout)({});
 
 const FixedContinueButton = styled(StationContinueButton)({
   position: 'fixed',
