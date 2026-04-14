@@ -916,7 +916,8 @@ export default function StoryModulePage() {
     if (activeGameType === 'order') {
       return isGolfChallengeActive ? GOLF_BROWSER_GREEN : ORDER_BROWSER_ORANGE;
     }
-    if (activeGameType === 'trashSort' || isMissionActive) return '#1a0a2e';
+    if (activeGameType === 'trashSort') return '#0f1923';
+    if (isMissionActive) return '#ffffff';
     if (isTextVideoImageStation) return customBgColor || getThemeSkyColor(data?.module.theme);
     return customBgColor || themeShellColor;
   })();

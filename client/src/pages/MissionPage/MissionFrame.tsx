@@ -17,14 +17,13 @@ const revealIn = keyframes`
 
 // Full-screen wrapper — the background image sits here, behind the frame
 export const MissionWrapper = styled('div')<{ bg?: string, step?: number, ready?: boolean }>(({ bg, step, ready = true }) => ({
-  width: '100%',
-  height: '100dvh',
+  position: 'fixed',
+  inset: 0,
   background: '#1a0a2e',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  position: 'relative',
   overflow: 'hidden',
   overscrollBehavior: 'none',
   isolation: 'isolate',
@@ -186,6 +185,9 @@ export const MissionButton = styled('button', {
   border: 'none',
   borderRadius: 30,
   cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
   textAlign: 'center',
   direction: 'rtl',
   marginBottom: '3%',

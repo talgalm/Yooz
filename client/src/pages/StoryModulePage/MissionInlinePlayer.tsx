@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   MissionWrapper,
   FrameContainer,
@@ -40,7 +40,12 @@ function useFrameReady(imageSrcs: string[]) {
   return ready;
 }
 
-const FRAME_IMAGES = ['/images/mission-frame.svg'];
+const FRAME_IMAGES = [
+  '/images/mission-frame.svg',
+  '/images/mission-header.svg',
+  '/images/mission-footer.svg',
+];
+const PUZZLE_BG = '/images/puzzle-env.png';
 
 type MissionPhase = 'screens' | 'puzzle' | 'done';
 
@@ -77,7 +82,18 @@ export default function MissionInlinePlayer({ mission, onComplete, code, onLogou
   const [currentScreen, setCurrentScreen] = useState(0);
   const [phase, setPhase] = useState<MissionPhase>(() => loadMissionPhase(code));
   const [startTime] = useState(Date.now());
-  const frameReady = useFrameReady(FRAME_IMAGES);
+
+  const allImagesToPreload = useMemo(() => {
+    const srcs: string[] = [...FRAME_IMAGES, PUZZLE_BG];
+    mission.explanationScreens.forEach((screen) => {
+      if (screen.backgroundImage) srcs.push(screen.backgroundImage);
+      if (screen.image) srcs.push(screen.image);
+    });
+    return srcs;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // stable — mission data never changes after mount
+
+  const frameReady = useFrameReady(allImagesToPreload);
 
   const handleNext = useCallback(() => {
     sounds.playClick();
@@ -105,8 +121,6 @@ export default function MissionInlinePlayer({ mission, onComplete, code, onLogou
       hintUsed: false,
     });
   }, [onComplete, startTime, code]);
-
-  const PUZZLE_BG = '/images/puzzle-env.png';
 
   if (phase === 'puzzle') {
     return (
