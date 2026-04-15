@@ -204,7 +204,7 @@ export default function MissionPage() {
 
     const metas = document.querySelectorAll('meta[name="theme-color"]') as NodeListOf<HTMLMetaElement>;
     const prevThemes = Array.from(metas).map((m) => m.content);
-    metas.forEach((m) => { m.content = BROWSER_CHROME_COLOR; });
+    metas.forEach((m) => { m.content = 'transparent'; });
 
     return () => {
       body.style.backgroundColor = prevBodyBg;

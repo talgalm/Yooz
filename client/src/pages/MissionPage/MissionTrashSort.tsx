@@ -400,6 +400,7 @@ interface MissionTrashSortProps {
   badgeAchievementText?: string;
   shareButton?: string;
   continueButton?: string;
+  onContinue?: () => void;
   participantName?: string;
   activityCode?: string;
   onComplete?: (score: number) => void;
@@ -498,6 +499,7 @@ export default function MissionTrashSort({
   badgeAchievementText = 'על מציאת המזוודה והצלת הפארק!',
   shareButton = 'שתפו עם חברים',
   continueButton,
+  onContinue,
   participantName,
   activityCode,
   onComplete,
@@ -1395,7 +1397,7 @@ export default function MissionTrashSort({
             </div>
           </MissionContent>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: -24 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: -24 }}>
             <MissionButton step={0} onClick={handleShareClick}>
               <ShareButtonLabel>
                 {shareButton}
@@ -1405,6 +1407,11 @@ export default function MissionTrashSort({
                 </svg>
               </ShareButtonLabel>
             </MissionButton>
+            {continueButton && onContinue && (
+              <MissionButton step={3} onClick={onContinue}>
+                {continueButton}
+              </MissionButton>
+            )}
           </div>
         </FrameContainer>
       </MissionWrapper>

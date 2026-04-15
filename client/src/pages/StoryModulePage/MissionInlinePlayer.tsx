@@ -16,6 +16,7 @@ import {
 import MissionPuzzle from '../MissionPage/MissionPuzzle';
 import MissionTrashSort from '../MissionPage/MissionTrashSort';
 import { useMissionSounds } from '../MissionPage/useMissionSounds';
+import { useAuth } from '../../context/AuthContext';
 import type { MissionItemData } from './types';
 import type { GameResult } from '../../components/games/types';
 
@@ -79,9 +80,21 @@ interface MissionInlinePlayerProps {
 
 export default function MissionInlinePlayer({ mission, onComplete, code, onLogout, onHelp }: MissionInlinePlayerProps) {
   const sounds = useMissionSounds();
+  const { participant } = useAuth();
   const [currentScreen, setCurrentScreen] = useState(0);
   const [phase, setPhase] = useState<MissionPhase>(() => loadMissionPhase(code));
   const [startTime] = useState(Date.now());
+  const trashSortScoreRef = useRef(0);
+
+  // Set theme-color to transparent during mission so browser chrome uses device default
+  useEffect(() => {
+    const metas = document.querySelectorAll('meta[name="theme-color"]') as NodeListOf<HTMLMetaElement>;
+    const prevThemes = Array.from(metas).map((m) => m.content);
+    metas.forEach((m) => { m.content = 'transparent'; });
+    return () => {
+      metas.forEach((m, i) => { m.content = prevThemes[i]; });
+    };
+  }, []);
 
   const allImagesToPreload = useMemo(() => {
     const srcs: string[] = [...FRAME_IMAGES, PUZZLE_BG];
@@ -111,11 +124,16 @@ export default function MissionInlinePlayer({ mission, onComplete, code, onLogou
     setPhase('done');
   }, [code]);
 
+  // Called when the game ends — saves score for later, but stays on video/badge screens
   const handleTrashSortComplete = useCallback((score: number) => {
-    // Clear session so next play starts fresh
+    trashSortScoreRef.current = score;
+  }, []);
+
+  // Called when the user taps the continue button on the badge screen
+  const handleMissionContinue = useCallback(() => {
     if (code) try { sessionStorage.removeItem(missionPhaseKey(code)); } catch { /* ignore */ }
     onComplete({
-      score,
+      score: trashSortScoreRef.current,
       maxPossibleScore: 100,
       durationMs: Date.now() - startTime,
       hintUsed: false,
@@ -149,6 +167,9 @@ export default function MissionInlinePlayer({ mission, onComplete, code, onLogou
         toggleMute={sounds.toggleMute}
         startTrashBg={sounds.startTrashBg}
         onComplete={handleTrashSortComplete}
+        onContinue={handleMissionContinue}
+        activityCode={code}
+        participantName={participant?.name}
         title={mission.trashSortConfig?.title}
         description={mission.trashSortConfig?.description}
         scoreLabel={mission.trashSortConfig?.scoreLabel}
