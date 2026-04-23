@@ -50,6 +50,19 @@ const Content = styled('div')({
   alignItems: 'center',
   padding: '40px 24px 32px',
   position: 'relative',
+  '@media (min-width: 900px)': {
+    padding: '64px 48px 48px',
+    justifyContent: 'center',
+  },
+});
+
+const HeroLogo = styled('img')({
+  width: 120,
+  marginBottom: 16,
+  '@media (min-width: 900px)': {
+    width: 180,
+    marginBottom: 20,
+  },
 });
 
 const Tagline = styled('div')({
@@ -59,6 +72,10 @@ const Tagline = styled('div')({
   textShadow: '0 1px 4px rgba(0,0,0,0.3)',
   marginBottom: 8,
   animation: `${fadeInUp} 0.5s ease-out 0.45s both`,
+  '@media (min-width: 900px)': {
+    fontSize: 24,
+    marginBottom: 12,
+  },
 });
 
 const Subtitle = styled('p')({
@@ -69,6 +86,11 @@ const Subtitle = styled('p')({
   maxWidth: 320,
   margin: '0 0 32px',
   animation: `${fadeInUp} 0.5s ease-out 0.55s both`,
+  '@media (min-width: 900px)': {
+    fontSize: 16,
+    maxWidth: 560,
+    margin: '0 0 40px',
+  },
 });
 
 const FeatureCards = styled('div')({
@@ -78,6 +100,13 @@ const FeatureCards = styled('div')({
   width: '100%',
   maxWidth: 340,
   marginBottom: 28,
+  '@media (min-width: 900px)': {
+    flexDirection: 'row',
+    gap: 20,
+    maxWidth: 1040,
+    marginBottom: 40,
+    alignItems: 'stretch',
+  },
 });
 
 const FeatureCard = styled('div')<{ delay?: number }>(({ delay = 0 }) => ({
@@ -90,6 +119,15 @@ const FeatureCard = styled('div')<{ delay?: number }>(({ delay = 0 }) => ({
   boxShadow: '0 3px 12px rgba(0,0,0,0.12)',
   animation: `${fadeInUp} 0.45s ease-out ${0.65 + delay * 0.12}s both`,
   transition: 'transform 0.2s',
+  '@media (min-width: 900px)': {
+    flex: 1,
+    flexDirection: 'column',
+    textAlign: 'center',
+    gap: 16,
+    padding: '28px 22px',
+    borderRadius: 24,
+    boxShadow: '0 6px 22px rgba(0,0,0,0.14)',
+  },
 }));
 
 const FeatureIconWrap = styled('div')<{ bg: string }>(({ bg }) => ({
@@ -102,6 +140,11 @@ const FeatureIconWrap = styled('div')<{ bg: string }>(({ bg }) => ({
   justifyContent: 'center',
   flexShrink: 0,
   animation: `${float} 3s ease-in-out infinite`,
+  '@media (min-width: 900px)': {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+  },
 }));
 
 const FeatureInfo = styled('div')({
@@ -114,6 +157,10 @@ const FeatureTitle = styled('div')({
   fontWeight: 800,
   color: '#390363',
   marginBottom: 2,
+  '@media (min-width: 900px)': {
+    fontSize: 19,
+    marginBottom: 6,
+  },
 });
 
 const FeatureDesc = styled('div')({
@@ -121,6 +168,10 @@ const FeatureDesc = styled('div')({
   color: '#390363',
 
   lineHeight: 1.4,
+  '@media (min-width: 900px)': {
+    fontSize: 14,
+    lineHeight: 1.5,
+  },
 });
 
 const CTASection = styled('div')({
@@ -135,12 +186,19 @@ const CTATitle = styled('div')({
   color: '#fff',
   textShadow: '0 1px 4px rgba(0,0,0,0.3)',
   marginBottom: 6,
+  '@media (min-width: 900px)': {
+    fontSize: 26,
+    marginBottom: 10,
+  },
 });
 
 const CTADesc = styled('div')({
   fontSize: 13,
   color: 'rgba(255,255,255,0.8)',
   marginBottom: 8,
+  '@media (min-width: 900px)': {
+    fontSize: 16,
+  },
 });
 
 const FooterLinks = styled('div')({
@@ -204,7 +262,7 @@ export default function LandingPage() {
 
 
         <Content>
-          <img src="/images/logo-purple.png" alt="Yooz" style={{ width: 120, marginBottom: 16 }} />
+          <HeroLogo src="/images/logo-purple.png" alt="Yooz" />
           <Tagline>{t.heroTagline}</Tagline>
           <Subtitle>{t.heroSubtitle}</Subtitle>
 

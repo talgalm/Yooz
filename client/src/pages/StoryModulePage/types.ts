@@ -19,7 +19,7 @@ export interface StationItemData {
   type: 'station';
   _id: string;
   name: string;
-  stationType: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle';
+  stationType: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar';
   description?: string;
   settings?: Record<string, unknown>;
   spiderSvg?: string;

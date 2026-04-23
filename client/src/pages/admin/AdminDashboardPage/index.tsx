@@ -886,6 +886,7 @@ export default function AdminDashboardPage() {
                   { type: 'video', emoji: '🎬', label: t.createTypeVideo },
                   { type: 'image', emoji: '🖼️', label: t.createTypeImage },
                   { type: 'riddle', emoji: '🔤', label: t.createTypeRiddle },
+                  { type: 'avatar', emoji: '🕵️', label: t.createTypeAvatar },
                 ].map(({ type, emoji, label }) => (
                   <TypeTile
                     key={type}

@@ -477,7 +477,7 @@ export default function AdminLibraryTab() {
       return;
     }
 
-    const SUPPORTED_STATION_TYPES = ['text', 'video', 'image', 'collage'];
+    const SUPPORTED_STATION_TYPES = ['text', 'video', 'image', 'collage', 'riddle'];
     const SUPPORTED_GAME_TYPES = ['trivia', 'order', 'puzzle', 'trueFalse', 'ballGame', 'trashSort'];
 
     if (item.kind === 'station') {
@@ -492,6 +492,10 @@ export default function AdminLibraryTab() {
         return;
       }
       if ((item.type === 'video' || item.type === 'image') && !s.mediaUrl) {
+        setExportError(`${t.exportError} ${t.exportErrorCorruptData} ${t.exportSuggestManual}`);
+        return;
+      }
+      if (item.type === 'riddle' && !s.answer) {
         setExportError(`${t.exportError} ${t.exportErrorCorruptData} ${t.exportSuggestManual}`);
         return;
       }

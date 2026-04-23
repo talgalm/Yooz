@@ -34,7 +34,38 @@ import {
   SelectionSubtextSmall,
 } from '../styled';
 
-type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle';
+const TextArea = styled('textarea')({
+  width: '100%',
+  padding: '12px 14px',
+  fontSize: 14,
+  border: '1px solid #d8dce5',
+  borderRadius: 10,
+  outline: 'none',
+  background: '#ffffff',
+  color: '#1a1a2e',
+  fontFamily: 'inherit',
+  resize: 'vertical',
+  minHeight: 80,
+  boxSizing: 'border-box',
+  '&:focus': { borderColor: '#6c5ce7' },
+});
+
+type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar';
+
+interface AvatarVideoConfig {
+  url: string;
+  matchingWords: string[];
+}
+
+interface AvatarNamedEntry {
+  name: string;
+  description: string;
+}
+
+interface AvatarKnowledgeGate {
+  trigger: string;
+  reveal: string;
+}
 
 interface StationData {
   _id: string;
@@ -73,7 +104,7 @@ export default function AdminStationConfigPage() {
   const location = useLocation();
   const t = useTranslations(texts);
 
-  const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle'];
+  const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle', 'avatar'];
   const stationTypesWithoutHint: StationTypeOption[] = ['text', 'video', 'image', 'feedback'];
   const typeFromUrl = searchParams.get('type') as StationTypeOption | null;
   const defaultType: StationTypeOption =
@@ -125,6 +156,18 @@ export default function AdminStationConfigPage() {
   const [riddleMaxScore, setRiddleMaxScore] = useState('100');
   const [riddleSuccessMsg, setRiddleSuccessMsg] = useState('');
   const [riddleFailureMsg, setRiddleFailureMsg] = useState('');
+  // Avatar station
+  const [avatarCharacterName, setAvatarCharacterName] = useState('');
+  const [avatarCharacterImageUrl, setAvatarCharacterImageUrl] = useState('');
+  const [avatarDetectiveRiddle, setAvatarDetectiveRiddle] = useState('');
+  const [avatarInstructions, setAvatarInstructions] = useState('');
+  const [avatarOptionalAnswers, setAvatarOptionalAnswers] = useState<string[]>([]);
+  const [avatarForbiddenPhrases, setAvatarForbiddenPhrases] = useState<string[]>([]);
+  const [avatarVideos, setAvatarVideos] = useState<AvatarVideoConfig[]>([]);
+  const [avatarCharacters, setAvatarCharacters] = useState<AvatarNamedEntry[]>([]);
+  const [avatarClues, setAvatarClues] = useState<AvatarNamedEntry[]>([]);
+  const [avatarKnowledgeGates, setAvatarKnowledgeGates] = useState<AvatarKnowledgeGate[]>([]);
+  const [avatarHintStrategy, setAvatarHintStrategy] = useState('');
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -183,6 +226,19 @@ export default function AdminStationConfigPage() {
           if (typeof settings.maxScore === 'number') setRiddleMaxScore(String(settings.maxScore));
           if (settings.successMessage) setRiddleSuccessMsg(settings.successMessage as string);
           if (settings.failureMessage) setRiddleFailureMsg(settings.failureMessage as string);
+        }
+        if (s.type === 'avatar') {
+          if (settings.characterName) setAvatarCharacterName(settings.characterName as string);
+          if (settings.characterImageUrl) setAvatarCharacterImageUrl(settings.characterImageUrl as string);
+          if (settings.detectiveRiddle) setAvatarDetectiveRiddle(settings.detectiveRiddle as string);
+          if (settings.instructions) setAvatarInstructions(settings.instructions as string);
+          if (Array.isArray(settings.optionalAnswers)) setAvatarOptionalAnswers(settings.optionalAnswers as string[]);
+          if (Array.isArray(settings.forbiddenPhrases)) setAvatarForbiddenPhrases(settings.forbiddenPhrases as string[]);
+          if (Array.isArray(settings.videos)) setAvatarVideos(settings.videos as AvatarVideoConfig[]);
+          if (Array.isArray(settings.characters)) setAvatarCharacters(settings.characters as AvatarNamedEntry[]);
+          if (Array.isArray(settings.clues)) setAvatarClues(settings.clues as AvatarNamedEntry[]);
+          if (Array.isArray(settings.knowledgeGates)) setAvatarKnowledgeGates(settings.knowledgeGates as AvatarKnowledgeGate[]);
+          if (settings.hintStrategy) setAvatarHintStrategy(settings.hintStrategy as string);
         }
         setInitialLoading(false);
       })
@@ -246,6 +302,19 @@ export default function AdminStationConfigPage() {
       if (settings.successMessage) setRiddleSuccessMsg(settings.successMessage as string);
       if (settings.failureMessage) setRiddleFailureMsg(settings.failureMessage as string);
     }
+    if (lib.type === 'avatar') {
+      if (settings.characterName) setAvatarCharacterName(settings.characterName as string);
+      if (settings.characterImageUrl) setAvatarCharacterImageUrl(settings.characterImageUrl as string);
+      if (settings.detectiveRiddle) setAvatarDetectiveRiddle(settings.detectiveRiddle as string);
+      if (settings.instructions) setAvatarInstructions(settings.instructions as string);
+      if (Array.isArray(settings.optionalAnswers)) setAvatarOptionalAnswers(settings.optionalAnswers as string[]);
+      if (Array.isArray(settings.forbiddenPhrases)) setAvatarForbiddenPhrases(settings.forbiddenPhrases as string[]);
+      if (Array.isArray(settings.videos)) setAvatarVideos(settings.videos as AvatarVideoConfig[]);
+      if (Array.isArray(settings.characters)) setAvatarCharacters(settings.characters as AvatarNamedEntry[]);
+      if (Array.isArray(settings.clues)) setAvatarClues(settings.clues as AvatarNamedEntry[]);
+      if (Array.isArray(settings.knowledgeGates)) setAvatarKnowledgeGates(settings.knowledgeGates as AvatarKnowledgeGate[]);
+      if (settings.hintStrategy) setAvatarHintStrategy(settings.hintStrategy as string);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -306,6 +375,30 @@ export default function AdminStationConfigPage() {
         if (riddleSuccessMsg.trim()) settings.successMessage = riddleSuccessMsg.trim();
         if (riddleFailureMsg.trim()) settings.failureMessage = riddleFailureMsg.trim();
       }
+      if (stationType === 'avatar') {
+        settings.characterName = avatarCharacterName.trim();
+        settings.characterImageUrl = avatarCharacterImageUrl.trim();
+        settings.detectiveRiddle = avatarDetectiveRiddle.trim();
+        settings.instructions = avatarInstructions.trim();
+        settings.optionalAnswers = avatarOptionalAnswers.map((a) => a.trim()).filter(Boolean);
+        settings.forbiddenPhrases = avatarForbiddenPhrases.map((p) => p.trim()).filter(Boolean);
+        settings.videos = avatarVideos
+          .filter((v) => v.url.trim())
+          .map((v) => ({
+            url: v.url.trim(),
+            matchingWords: v.matchingWords.map((w) => w.trim()).filter(Boolean),
+          }));
+        settings.characters = avatarCharacters
+          .map((c) => ({ name: c.name.trim(), description: c.description.trim() }))
+          .filter((c) => c.name || c.description);
+        settings.clues = avatarClues
+          .map((c) => ({ name: c.name.trim(), description: c.description.trim() }))
+          .filter((c) => c.name || c.description);
+        settings.knowledgeGates = avatarKnowledgeGates
+          .map((g) => ({ trigger: g.trigger.trim(), reveal: g.reveal.trim() }))
+          .filter((g) => g.trigger && g.reveal);
+        settings.hintStrategy = avatarHintStrategy.trim();
+      }
 
       const payload = {
         name: name.trim(),
@@ -343,6 +436,7 @@ export default function AdminStationConfigPage() {
     collage: 'תחנת קולאז׳ - טסט',
     feedback: 'תחנת משוב - טסט',
     riddle: 'תחנת חידה - טסט',
+    avatar: 'תחנת אוואטר - טסט',
   };
 
   const handleFillRandom = () => {
@@ -374,6 +468,13 @@ export default function AdminStationConfigPage() {
     setRiddleMaxScore('100');
     setRiddleSuccessMsg('');
     setRiddleFailureMsg('');
+    setAvatarCharacterName('');
+    setAvatarCharacterImageUrl('');
+    setAvatarDetectiveRiddle('');
+    setAvatarInstructions('');
+    setAvatarOptionalAnswers([]);
+    setAvatarForbiddenPhrases([]);
+    setAvatarVideos([]);
     if (randomType === 'text') {
       setTextContent('זהו תוכן טקסט לדוגמה עבור תחנת בדיקה. כאן יופיע המידע שהמשתתף צריך לקרוא.');
     } else if (randomType === 'video') {
@@ -407,6 +508,13 @@ export default function AdminStationConfigPage() {
       setRiddleMaxScore('100');
       setRiddleSuccessMsg('כל הכבוד! ניחשת נכון!');
       setRiddleFailureMsg('לא הצלחת הפעם. התשובה הייתה: שעון');
+    } else if (randomType === 'avatar') {
+      setAvatarCharacterName('הבלש קולומבו');
+      setAvatarDetectiveRiddle('מי גנב את תכשיטי הכתר מהארמון בליל ההצגה?');
+      setAvatarInstructions('שאלו את הדמות שאלות כדי לפתור את החידה. היא תענה לכם ברמזים.');
+      setAvatarOptionalAnswers(['המשרת', 'הטבח', 'הגננת']);
+      setAvatarForbiddenPhrases(['אני לא יודע', 'אין לי מושג']);
+      setAvatarVideos([]);
     }
   };
 
@@ -467,6 +575,10 @@ export default function AdminStationConfigPage() {
                     <SelectionButton type="button" selected={stationType === 'riddle'} onClick={() => setStationType('riddle')}>
                       <div>{t.typeRiddle}</div>
                       <SelectionSubtextSmall>{t.typeRiddleDesc}</SelectionSubtextSmall>
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={stationType === 'avatar'} onClick={() => setStationType('avatar')}>
+                      <div>{t.typeAvatar}</div>
+                      <SelectionSubtextSmall>{t.typeAvatarDesc}</SelectionSubtextSmall>
                     </SelectionButton>
                   </SelectionGroup>
                 </div>
@@ -861,6 +973,282 @@ export default function AdminStationConfigPage() {
                     placeholder={t.riddleFailureMsgPlaceholder}
                     value={riddleFailureMsg}
                     onChange={(e) => setRiddleFailureMsg(e.target.value)}
+                  />
+                </VerticalStack>
+              )}
+              {/* Avatar config */}
+              {stationType === 'avatar' && (
+                <VerticalStack>
+                  <SectionLabel>{t.avatarCharacterName}</SectionLabel>
+                  <Input
+                    placeholder={t.avatarCharacterNamePlaceholder}
+                    value={avatarCharacterName}
+                    onChange={(e) => setAvatarCharacterName(e.target.value)}
+                  />
+
+                  <SectionLabel>{t.avatarCharacterImage}</SectionLabel>
+                  <InlineRow>
+                    <FileUploadButton
+                      accept="image/*"
+                      onUploaded={(url) => setAvatarCharacterImageUrl(url)}
+                      label={t.upload}
+                      uploadingLabel={t.uploading}
+                    />
+                    <FlexInput
+                      placeholder={t.avatarCharacterImage}
+                      value={avatarCharacterImageUrl}
+                      onChange={(e) => setAvatarCharacterImageUrl(e.target.value)}
+                    />
+                  </InlineRow>
+
+                  <SectionLabel>{t.avatarDetectiveRiddle}</SectionLabel>
+                  <Input
+                    placeholder={t.avatarDetectiveRiddlePlaceholder}
+                    value={avatarDetectiveRiddle}
+                    onChange={(e) => setAvatarDetectiveRiddle(e.target.value)}
+                  />
+
+                  <SectionLabel>{t.avatarInstructions}</SectionLabel>
+                  <Input
+                    placeholder={t.avatarInstructionsPlaceholder}
+                    value={avatarInstructions}
+                    onChange={(e) => setAvatarInstructions(e.target.value)}
+                  />
+
+                  <SectionLabel>{t.avatarOptionalAnswers}</SectionLabel>
+                  {avatarOptionalAnswers.map((ans, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#999', minWidth: 24 }}>{i + 1}</span>
+                      <Input
+                        placeholder={t.avatarOptionalAnswerPlaceholder}
+                        value={ans}
+                        onChange={(e) => {
+                          const updated = [...avatarOptionalAnswers];
+                          updated[i] = e.target.value;
+                          setAvatarOptionalAnswers(updated);
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                      <SmallOutlineButton
+                        type="button"
+                        onClick={() => setAvatarOptionalAnswers(avatarOptionalAnswers.filter((_, j) => j !== i))}
+                      >
+                        {t.avatarRemove}
+                      </SmallOutlineButton>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setAvatarOptionalAnswers((xs) => [...xs, ''])}
+                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    + {t.avatarAddOptionalAnswer}
+                  </button>
+
+                  <SectionLabel style={{ marginTop: 16 }}>{t.avatarForbiddenPhrases}</SectionLabel>
+                  {avatarForbiddenPhrases.map((phrase, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#999', minWidth: 24 }}>{i + 1}</span>
+                      <Input
+                        placeholder={t.avatarForbiddenPhrasePlaceholder}
+                        value={phrase}
+                        onChange={(e) => {
+                          const updated = [...avatarForbiddenPhrases];
+                          updated[i] = e.target.value;
+                          setAvatarForbiddenPhrases(updated);
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                      <SmallOutlineButton
+                        type="button"
+                        onClick={() => setAvatarForbiddenPhrases(avatarForbiddenPhrases.filter((_, j) => j !== i))}
+                      >
+                        {t.avatarRemove}
+                      </SmallOutlineButton>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setAvatarForbiddenPhrases((xs) => [...xs, ''])}
+                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    + {t.avatarAddForbiddenPhrase}
+                  </button>
+
+                  <SectionLabel style={{ marginTop: 16 }}>{t.avatarVideos}</SectionLabel>
+                  {avatarVideos.map((video, vi) => (
+                    <div key={vi} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <SectionLabelNoMargin style={{ margin: 0 }}>
+                          {t.avatarVideoNum} {vi + 1}
+                        </SectionLabelNoMargin>
+                        <button
+                          type="button"
+                          onClick={() => setAvatarVideos(avatarVideos.filter((_, j) => j !== vi))}
+                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
+                        >
+                          {t.avatarRemove}
+                        </button>
+                      </div>
+                      <InlineRow>
+                        <FileUploadButton
+                          accept="video/*"
+                          onUploaded={(url) => setAvatarVideos(avatarVideos.map((v, j) => j === vi ? { ...v, url } : v))}
+                          label={t.upload}
+                          uploadingLabel={t.uploading}
+                        />
+                        <FlexInput
+                          placeholder={t.avatarVideoUrl}
+                          value={video.url}
+                          onChange={(e) => setAvatarVideos(avatarVideos.map((v, j) => j === vi ? { ...v, url: e.target.value } : v))}
+                        />
+                      </InlineRow>
+
+                      <SectionLabelNoMargin style={{ marginTop: 12 }}>{t.avatarMatchingWords}</SectionLabelNoMargin>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8, marginTop: 8 }}>
+                        {video.matchingWords.map((w, wi) => (
+                          <span key={wi} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 12, fontWeight: 600, borderRadius: 20, background: '#f0eefa', color: '#6c5ce7' }}>
+                            {w}
+                            <span
+                              style={{ cursor: 'pointer', marginInlineStart: 2 }}
+                              onClick={() => setAvatarVideos(avatarVideos.map((v, j) => j === vi ? { ...v, matchingWords: v.matchingWords.filter((_, k) => k !== wi) } : v))}
+                            >
+                              ×
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                      <Input
+                        placeholder={t.avatarMatchingWordsPlaceholder}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const input = e.currentTarget;
+                            const v = input.value.trim();
+                            if (v && !video.matchingWords.includes(v)) {
+                              setAvatarVideos(avatarVideos.map((vv, j) => j === vi ? { ...vv, matchingWords: [...vv.matchingWords, v] } : vv));
+                            }
+                            input.value = '';
+                          }
+                        }}
+                      />
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setAvatarVideos((xs) => [...xs, { url: '', matchingWords: [] }])}
+                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    + {t.avatarAddVideo}
+                  </button>
+
+                  <SectionLabel style={{ marginTop: 16 }}>{t.avatarCharacters}</SectionLabel>
+                  {avatarCharacters.map((c, i) => (
+                    <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <SectionLabelNoMargin style={{ margin: 0 }}>#{i + 1}</SectionLabelNoMargin>
+                        <button
+                          type="button"
+                          onClick={() => setAvatarCharacters(avatarCharacters.filter((_, j) => j !== i))}
+                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
+                        >
+                          {t.avatarRemove}
+                        </button>
+                      </div>
+                      <Input
+                        placeholder={t.avatarCharacterItemName}
+                        value={c.name}
+                        onChange={(e) => setAvatarCharacters(avatarCharacters.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
+                        style={{ marginBottom: 8 }}
+                      />
+                      <TextArea
+                        placeholder={t.avatarCharacterItemDesc}
+                        value={c.description}
+                        onChange={(e) => setAvatarCharacters(avatarCharacters.map((x, j) => j === i ? { ...x, description: e.target.value } : x))}
+                      />
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setAvatarCharacters((xs) => [...xs, { name: '', description: '' }])}
+                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    + {t.avatarAddCharacter}
+                  </button>
+
+                  <SectionLabel style={{ marginTop: 16 }}>{t.avatarClues}</SectionLabel>
+                  {avatarClues.map((c, i) => (
+                    <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <SectionLabelNoMargin style={{ margin: 0 }}>#{i + 1}</SectionLabelNoMargin>
+                        <button
+                          type="button"
+                          onClick={() => setAvatarClues(avatarClues.filter((_, j) => j !== i))}
+                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
+                        >
+                          {t.avatarRemove}
+                        </button>
+                      </div>
+                      <Input
+                        placeholder={t.avatarClueItemName}
+                        value={c.name}
+                        onChange={(e) => setAvatarClues(avatarClues.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
+                        style={{ marginBottom: 8 }}
+                      />
+                      <TextArea
+                        placeholder={t.avatarClueItemDesc}
+                        value={c.description}
+                        onChange={(e) => setAvatarClues(avatarClues.map((x, j) => j === i ? { ...x, description: e.target.value } : x))}
+                      />
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setAvatarClues((xs) => [...xs, { name: '', description: '' }])}
+                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    + {t.avatarAddClue}
+                  </button>
+
+                  <SectionLabel style={{ marginTop: 16 }}>{t.avatarKnowledgeGates}</SectionLabel>
+                  {avatarKnowledgeGates.map((g, i) => (
+                    <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <SectionLabelNoMargin style={{ margin: 0 }}>#{i + 1}</SectionLabelNoMargin>
+                        <button
+                          type="button"
+                          onClick={() => setAvatarKnowledgeGates(avatarKnowledgeGates.filter((_, j) => j !== i))}
+                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
+                        >
+                          {t.avatarRemove}
+                        </button>
+                      </div>
+                      <Input
+                        placeholder={t.avatarGateTrigger}
+                        value={g.trigger}
+                        onChange={(e) => setAvatarKnowledgeGates(avatarKnowledgeGates.map((x, j) => j === i ? { ...x, trigger: e.target.value } : x))}
+                        style={{ marginBottom: 8 }}
+                      />
+                      <TextArea
+                        placeholder={t.avatarGateReveal}
+                        value={g.reveal}
+                        onChange={(e) => setAvatarKnowledgeGates(avatarKnowledgeGates.map((x, j) => j === i ? { ...x, reveal: e.target.value } : x))}
+                      />
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setAvatarKnowledgeGates((xs) => [...xs, { trigger: '', reveal: '' }])}
+                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    + {t.avatarAddGate}
+                  </button>
+
+                  <SectionLabel style={{ marginTop: 16 }}>{t.avatarHintStrategy}</SectionLabel>
+                  <TextArea
+                    placeholder={t.avatarHintStrategyPlaceholder}
+                    value={avatarHintStrategy}
+                    onChange={(e) => setAvatarHintStrategy(e.target.value)}
                   />
                 </VerticalStack>
               )}

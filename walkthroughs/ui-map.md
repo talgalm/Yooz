@@ -35,7 +35,7 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 ### Public Routes
 | Route | Page | Description |
 |-------|------|-------------|
-| `/` | Landing Page | Public landing |
+| `/` | Landing Page | Public landing (responsive — mobile stacked, desktop 3-column feature row) |
 | `/manager` | Manager Login | Manager login form |
 | `/portal/:code` | Portal Login | Portal login/register |
 
@@ -167,7 +167,8 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 
 **Fields:**
 - Station Name: `input[placeholder*="Station Name"], input[placeholder*="שם התחנה"]`
-- Station Type: buttons for Text/Video/Image/Narrative/Badge/Collage/Feedback
+- Station Type: buttons for Text/Video/Image/Narrative/Badge/Collage/Feedback/Riddle/Avatar
+- Avatar config fields: Character Name, Character Image (upload), Detective Riddle (absolute truth), Instructions, Optional Answers list (0-N), Forbidden Phrases list (0-N), Videos list (0-N with URL + matching words Enter-to-add), Characters list (0-N name+description), Clues list (0-N name+description), Knowledge Gates list (0-N trigger+reveal), Hint Strategy (textarea). All fields passed to Gemini via POST `/api/avatar-chat`.
 - Description: textarea
 - Customer: `input[placeholder*="customer"]`
 
@@ -372,3 +373,5 @@ page.waitForURL('**/story/**')
 | Badge | תג |
 | Collage | קולאז׳ |
 | Feedback | משוב |
+| Riddle | חידה |
+| Avatar | אוואטר |

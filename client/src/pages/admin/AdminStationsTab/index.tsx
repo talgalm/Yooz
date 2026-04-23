@@ -271,6 +271,8 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
       case 'badge': return t.typeBadge;
       case 'collage': return t.typeCollage;
       case 'feedback': return t.typeFeedback;
+      case 'riddle': return t.typeRiddle;
+      case 'avatar': return t.typeAvatar;
       default: return type || '—';
     }
   };

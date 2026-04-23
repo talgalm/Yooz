@@ -13,6 +13,7 @@ import BadgeStation from '../../components/stations/BadgeStation';
 import CollageStation from '../../components/stations/CollageStation';
 import FeedbackStation, { type FeedbackResult } from '../../components/stations/FeedbackStation';
 import RiddleStation from '../../components/stations/RiddleStation';
+import AvatarStation from '../../components/stations/AvatarStation';
 import { styled, keyframes } from '@mui/material/styles';
 import {
   OutlineButton,
@@ -235,7 +236,7 @@ export default function PlayingPhase({
   const isPuzzleGame = isGameStep && (currentItem as GameItemData).gameType === 'puzzle';
   const isOrderGame = isGameStep && (currentItem as GameItemData).gameType === 'order';
   const isBallGame = isGameStep && (currentItem as GameItemData).gameType === 'ballGame';
-  const isTextVideoImageStation = currentItem.type === 'station' && ['text', 'video', 'image', 'riddle'].includes((currentItem as StationItemData).stationType);
+  const isTextVideoImageStation = currentItem.type === 'station' && ['text', 'video', 'image', 'riddle', 'avatar'].includes((currentItem as StationItemData).stationType);
   const puzzleSessionChrome = (isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation) ? 'puzzle' : 'default';
   const useDarkChrome = isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation;
   const SessionHeaderIconButton = useDarkChrome ? PuzzleDarkHeaderActionIconButton : DarkHeaderActionIconButton;
@@ -344,6 +345,20 @@ export default function PlayingPhase({
               onStationHintClick={onStationHintClick}
               textColor={customTheme?.textColor}
               hintLabel={stationHintUsed ? t.showStationHint : t.stationHint}
+            />
+          </MediaGateWrapper>
+        );
+      }
+
+      if (station.stationType === 'avatar') {
+        const avatarImageUrl = station.settings?.characterImageUrl as string | undefined;
+        return (
+          <MediaGateWrapper urls={[avatarImageUrl]}>
+            <AvatarStation
+              station={station}
+              onContinue={onStationContinue}
+              continueLabel={t.continueButton}
+              textColor={customTheme?.textColor}
             />
           </MediaGateWrapper>
         );

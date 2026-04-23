@@ -7,3 +7,5 @@ dist/
 .claude/
 MEMORY.md
 deploy/.ec2-info
+firestore-service-account*.json
+server/firestore-service-account*.json

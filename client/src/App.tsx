@@ -88,8 +88,8 @@ export default function App() {
                 {/* Portal route — public */}
                 <Route path="/portal/:code" element={<PortalPage />} />
 
-                {/* Default: YOOZ landing page */}
-                <Route path="/" element={<MobileContainer><LandingPage /></MobileContainer>} />
+                {/* Default: YOOZ landing page — responsive (mobile + desktop) */}
+                <Route path="/" element={<LandingPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </BrowserRouter>
