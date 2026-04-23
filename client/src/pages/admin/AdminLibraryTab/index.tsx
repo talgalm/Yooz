@@ -406,7 +406,7 @@ export default function AdminLibraryTab() {
   const t = useTranslations(texts);
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [search, setSearch] = useState('');
   const [kindFilter, setKindFilter] = useState<'all' | 'game' | 'station'>('all');
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
@@ -437,7 +437,7 @@ export default function AdminLibraryTab() {
     } catch {
       // silent
     } finally {
-      setLoading(false);
+      setInitialLoad(false);
     }
   }, [kindFilter, activeTags, customerFilter, search]);
 
@@ -455,7 +455,6 @@ export default function AdminLibraryTab() {
   }, [fetchTags]);
 
   useEffect(() => {
-    setLoading(true);
     const timer = setTimeout(() => fetchItems(), 300); // debounce search
     return () => clearTimeout(timer);
   }, [fetchItems]);
@@ -582,7 +581,7 @@ export default function AdminLibraryTab() {
     return Array.isArray(questions) ? questions.length : 0;
   };
 
-  if (loading && items.length === 0) {
+  if (initialLoad) {
     return (
       <LoadingContainer>
         <LoadingCenter>
