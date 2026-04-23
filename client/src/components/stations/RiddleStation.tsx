@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'; // useEffect k
 import { styled, keyframes } from '@mui/material/styles';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 import type { GameResult } from '../games/types';
+import { resolveVideoSource } from '../../utils/videoSource';
 
 // ─── Types ───
 
@@ -416,11 +417,25 @@ export default function RiddleStation({
           </MediaWrapper>
         )}
 
-        {settings.mediaUrl && settings.mediaType === 'video' && (
-          <MediaWrapper>
-            <video src={settings.mediaUrl} controls autoPlay muted playsInline style={{ width: '100%', display: 'block', maxHeight: 260 }} />
-          </MediaWrapper>
-        )}
+        {settings.mediaUrl && settings.mediaType === 'video' && (() => {
+          const source = resolveVideoSource(settings.mediaUrl);
+          return (
+            <MediaWrapper>
+              {source.kind === 'iframe' ? (
+                <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%', background: '#000' }}>
+                  <iframe
+                    src={source.src}
+                    allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                    allowFullScreen
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+                  />
+                </div>
+              ) : (
+                <video src={source.src} controls autoPlay muted playsInline style={{ width: '100%', display: 'block', maxHeight: 260 }} />
+              )}
+            </MediaWrapper>
+          );
+        })()}
 
         <BoxesArea isrtl={String(isRTL)}>
           {wordGroups.map((indices, wIdx) => (

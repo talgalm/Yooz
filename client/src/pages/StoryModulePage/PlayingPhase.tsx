@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useMediaPreload } from '../../hooks/useMediaPreload';
+import { resolveVideoSource } from '../../utils/videoSource';
 import ThemedBackground from '../../components/ThemedBackground';
 import OrderGame from '../../components/games/OrderGame';
 import TriviaGame from '../../components/games/TriviaGame';
@@ -29,6 +30,8 @@ import {
   PlayingContent,
   MediaStationWrapper,
   MediaStationVideo,
+  MediaStationIframeWrapper,
+  MediaStationIframe,
   MediaStationImageWrapper,
   MediaStationImage,
   ModalTitle,
@@ -618,6 +621,7 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showReplay, setShowReplay] = useState(false);
+  const source = resolveVideoSource(station.settings?.mediaUrl as string);
 
   const handleEnded = useCallback(() => {
     setShowReplay(true);
@@ -636,22 +640,34 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
   const mediaEl = (
     <StationWindow isDynamic style={{ marginTop: 16 }}>
       <MediaStationWrapper style={{ position: 'relative', marginBottom: 0 }}>
-        <MediaStationVideo
-          ref={videoRef}
-          src={station.settings?.mediaUrl as string}
-          controls
-          autoPlay
-          onEnded={handleEnded}
-        />
-        {showReplay && (
-          <ReplayOverlay onClick={handleReplay} type="button" aria-label="Replay video">
-            <ReplayIcon>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="1 4 1 10 7 10" />
-                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-              </svg>
-            </ReplayIcon>
-          </ReplayOverlay>
+        {source.kind === 'iframe' ? (
+          <MediaStationIframeWrapper>
+            <MediaStationIframe
+              src={source.src}
+              allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+              allowFullScreen
+            />
+          </MediaStationIframeWrapper>
+        ) : (
+          <>
+            <MediaStationVideo
+              ref={videoRef}
+              src={source.src}
+              controls
+              autoPlay
+              onEnded={handleEnded}
+            />
+            {showReplay && (
+              <ReplayOverlay onClick={handleReplay} type="button" aria-label="Replay video">
+                <ReplayIcon>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="1 4 1 10 7 10" />
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                  </svg>
+                </ReplayIcon>
+              </ReplayOverlay>
+            )}
+          </>
         )}
       </MediaStationWrapper>
     </StationWindow>

@@ -765,6 +765,23 @@ export const MediaStationVideo = styled('video')({
   borderRadius: 12,
 });
 
+export const MediaStationIframeWrapper = styled('div')({
+  position: 'relative',
+  width: '100%',
+  paddingTop: '56.25%',
+  borderRadius: 12,
+  overflow: 'hidden',
+  background: '#000',
+});
+
+export const MediaStationIframe = styled('iframe')({
+  position: 'absolute',
+  inset: 0,
+  width: '100%',
+  height: '100%',
+  border: 0,
+});
+
 export const MediaStationImageWrapper = styled('div')({
   marginBottom: 24,
   textAlign: 'center',
