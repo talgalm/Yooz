@@ -9,6 +9,34 @@ interface ChatMessage {
   text: string;
 }
 
+function speakHebrew(text: string) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'he-IL';
+    u.rate = 1;
+    u.pitch = 1;
+    const voices = window.speechSynthesis.getVoices();
+    const hebVoice = voices.find((v) => v.lang === 'he-IL' || v.lang.startsWith('he'));
+    if (hebVoice) u.voice = hebVoice;
+    window.speechSynthesis.speak(u);
+  } catch {
+    /* noop */
+  }
+}
+
+function primeSpeech() {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  try {
+    const u = new SpeechSynthesisUtterance('');
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+  } catch {
+    /* noop */
+  }
+}
+
 async function askAvatar(
   message: string,
   settings: AvatarSettings,
@@ -166,6 +194,32 @@ const MessageBubble = styled('div')<{ role: 'user' | 'character' }>(({ role }) =
   wordBreak: 'break-word',
 }));
 
+const CharacterMessageRow = styled('div')({
+  display: 'flex',
+  alignItems: 'flex-end',
+  gap: 6,
+  alignSelf: 'flex-start',
+  maxWidth: '90%',
+});
+
+const SpeakButton = styled('button')({
+  appearance: 'none',
+  background: 'rgba(108,92,231,0.12)',
+  border: '1px solid rgba(108,92,231,0.25)',
+  color: '#6c5ce7',
+  width: 30,
+  height: 30,
+  borderRadius: '50%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  flexShrink: 0,
+  padding: 0,
+  '&:hover': { background: 'rgba(108,92,231,0.2)' },
+  '&:active': { transform: 'scale(0.95)' },
+});
+
 const StationTitle = styled('h2')({
   fontSize: 26,
   fontWeight: 800,
@@ -291,10 +345,19 @@ export default function AvatarStation({ station, onContinue, continueLabel, text
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages.length, popupOpen]);
 
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = message.trim();
     if (!text) return;
+    primeSpeech();
     const userMsg: ChatMessage = { id: nextIdRef.current++, role: 'user', text };
     setMessage('');
     const historySnapshot = messages.map((m) => ({ role: m.role, text: m.text }));
@@ -302,6 +365,7 @@ export default function AvatarStation({ station, onContinue, continueLabel, text
     setPopupOpen(true);
     const replyText = await askAvatar(text, settings, historySnapshot);
     setMessages((prev) => [...prev, { id: nextIdRef.current++, role: 'character', text: replyText }]);
+    speakHebrew(replyText);
   };
 
   const placeholder = `שאל את ${settings.characterName || ''}`.trim();
@@ -359,9 +423,22 @@ export default function AvatarStation({ station, onContinue, continueLabel, text
               </PopupCloseButton>
             </PopupTitleBar>
             <ScrollArea ref={scrollRef}>
-              {messages.map((m) => (
-                <MessageBubble key={m.id} role={m.role}>{m.text}</MessageBubble>
-              ))}
+              {messages.map((m) =>
+                m.role === 'character' ? (
+                  <CharacterMessageRow key={m.id}>
+                    <MessageBubble role={m.role}>{m.text}</MessageBubble>
+                    <SpeakButton type="button" aria-label="play" onClick={() => speakHebrew(m.text)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                      </svg>
+                    </SpeakButton>
+                  </CharacterMessageRow>
+                ) : (
+                  <MessageBubble key={m.id} role={m.role}>{m.text}</MessageBubble>
+                ),
+              )}
             </ScrollArea>
             {chatInput}
           </PopupPanel>

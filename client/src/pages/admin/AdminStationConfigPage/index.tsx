@@ -105,7 +105,7 @@ export default function AdminStationConfigPage() {
   const t = useTranslations(texts);
 
   const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle', 'avatar'];
-  const stationTypesWithoutHint: StationTypeOption[] = ['text', 'video', 'image', 'feedback'];
+  const stationTypesWithoutHint: StationTypeOption[] = ['text', 'video', 'image', 'feedback', 'avatar'];
   const typeFromUrl = searchParams.get('type') as StationTypeOption | null;
   const defaultType: StationTypeOption =
     typeFromUrl && creatableTypes.includes(typeFromUrl) ? typeFromUrl : 'text';

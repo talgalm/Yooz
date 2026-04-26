@@ -2,19 +2,19 @@
  * POST /api/collage/generate
  *
  * Accepts:
- *   - images[]   multiple image files (multipart)
+ *   - images[]   exactly 3 image files (multipart)
  *   - activityCode  string  (validates the request belongs to a real activity)
- *   - title      string  (shown as title-card overlay text)
  *
  * Flow:
- *   1. Validate activity code
+ *   1. Validate activity code + that exactly 3 images were uploaded
  *   2. Write each image to a temp directory
- *   3. Run ffmpeg: scale → xfade transitions → background music → MP4
+ *   3. Run ffmpeg with a green-screen template:
+ *        - Each image is overlaid at its panel's tracked position (piecewise linear)
+ *        - Template video is layered on top with chromakey → green becomes transparent
+ *        - Result: each image appears "printed" on its green panel, locked through camera motion
  *   4. Upload MP4 to Cloudinary
  *   5. Clean up temp files
  *   6. Return { url, isVideo: true }
- *
- * No admin auth required — any participant with a valid activity code may use it.
  */
 
 import { Router, Request, Response } from 'express';
@@ -36,116 +36,170 @@ cloudinary.config({
   api_secret: CLOUDINARY_API_SECRET,
 });
 
-// Accept up to 20 images, max 50 MB each
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024, files: 20 },
+  limits: { fileSize: 50 * 1024 * 1024, files: 3 },
 });
 
-// ─── ffmpeg helpers ────────────────────────────────────────────────────────────
+// ─── Template config ──────────────────────────────────────────────────────────
+//
+// The template video has 2 green panels filmed under a slow camera pan.
+// We track each panel's world-space position with piecewise-linear motion
+// and overlay user images at those positions. Chromakey then trims each
+// image to the exact green-pixel shape per frame, so the image appears
+// glued to the panel even as perspective shifts.
+//
+// To re-derive these numbers for a different template, run:
+//   /tmp/yooz-collage-inspect/detect_panels.py against the new video.
+
+// Per-panel keyframes are sampled every 0.25s from green-region detection.
+// They drive the FFmpeg overlay x-expression as a piecewise-linear function,
+// which keeps the image locked to the panel through the camera pan's
+// non-uniform deceleration.
+type Keyframe = readonly [tSec: number, x: number];
+
+const PANEL_A_KEYFRAMES: readonly Keyframe[] = [
+  [0.00, 128], [0.25, 100], [0.50,  64], [0.75,  18],
+  [1.00, -26], [1.25, -76], [1.50,-128], [1.75,-180],
+  [2.00,-232], [2.25,-280], [2.50,-324], [2.75,-369],
+  [3.00,-397], [3.25,-418], [3.50,-428], [3.75,-433],
+];
+
+const PANEL_B_KEYFRAMES: readonly Keyframe[] = [
+  [0.75, 666], [1.00, 616], [1.25, 563], [1.50, 510],
+  [1.75, 458], [2.00, 406], [2.25, 359], [2.50, 316],
+  [2.75, 272], [3.00, 245], [3.25, 226], [3.50, 216],
+  [3.75, 212], [4.00, 210], [4.25, 208], [4.50, 205],
+];
+
+function piecewiseLinearExpr(points: readonly Keyframe[]): string {
+  // Build a nested if() FFmpeg expression that linearly interpolates between
+  // adjacent keyframes and clamps to the last value past the final keyframe.
+  let s = String(points[points.length - 1][1]);
+  for (let i = points.length - 1; i >= 1; i--) {
+    const [t0, x0] = points[i - 1];
+    const [t1, x1] = points[i];
+    const slope = (x1 - x0) / (t1 - t0);
+    const seg = `(${x0}+(${slope})*(t-${t0}))`;
+    s = `if(lt(t,${t1}),${seg},${s})`;
+  }
+  return s;
+}
+
+const TEMPLATE = {
+  videoFile: 'collage-template.mp4',
+  width: 720,
+  height: 1280,
+  duration: 6.13,
+  fps: 24,
+  // tpad clones the template's first frame backwards so the first
+  // ~80ms (before the source's first PTS) doesn't render as a black gap.
+  startPad: 0.1,
+  // Sampled hex of the green panels (RGB 67,152,39).
+  chroma: { color: '0x439827', similarity: 0.10, blend: 0.02 },
+  // Each image is sized 30px wider and taller than its panel and shifted -15/-15
+  // so it over-covers the green region by ~15px on every side. Without this
+  // buffer, the chromakey's edge transition reveals the BG at panel borders
+  // (showing as a black/green halo around the photo).
+  slots: [
+    {
+      imageIndex: 0,
+      width: 475,
+      height: 705,
+      yExpr: '270',
+      xExpr: `${piecewiseLinearExpr(PANEL_A_KEYFRAMES)}-15`,
+      enableStart: 0,
+      enableEnd: 3.5,
+    },
+    {
+      imageIndex: 1,
+      width: 375,
+      height: 600,
+      yExpr: '345',
+      xExpr: `${piecewiseLinearExpr(PANEL_B_KEYFRAMES)}-15`,
+      enableStart: 0.75,
+      enableEnd: 4.5,
+    },
+    {
+      imageIndex: 2,
+      width: 375,
+      height: 600,
+      yExpr: '345',
+      xExpr: '190',
+      enableStart: 4.5,
+      enableEnd: 6.13,
+    },
+  ],
+};
 
 const FFMPEG_BIN = process.env.FFMPEG_PATH || ffmpegPath || 'ffmpeg';
-const FRAME_W = 540;
-const FRAME_H = 960;
-const IMG_DURATION = 3;   // seconds each image is shown
-const FADE_DURATION = 0.5; // seconds for crossfade between images
+const REQUIRED_IMAGES = TEMPLATE.slots.length;
 
-/**
- * Build the -filter_complex string for an N-image slideshow with xfade.
- */
-function buildFilterComplex(numImages: number): string {
+function buildFilterComplex(): string {
+  const { width, height, duration, fps, chroma, slots, startPad } = TEMPLATE;
   const parts: string[] = [];
 
-  // Scale + pad every input to 540×960 (letterbox with black bars if needed)
-  for (let i = 0; i < numImages; i++) {
-    parts.push(
-      `[${i}:v]scale=${FRAME_W}:${FRAME_H}:force_original_aspect_ratio=decrease,` +
-      `pad=${FRAME_W}:${FRAME_H}:(ow-iw)/2:(oh-ih)/2:color=#0d0d1a,setsar=1[vs${i}]`,
-    );
-  }
+  // Pad the template's start with a clone of its first frame so output isn't
+  // a black flash for the ~80ms before the source's first PTS.
+  parts.push(
+    `[0:v]tpad=start_mode=clone:start_duration=${startPad},setpts=PTS-STARTPTS[tmpl]`,
+  );
 
-  if (numImages === 1) {
-    return parts.join(';') + ';[vs0]null[vout]';
-  }
+  parts.push(
+    `color=c=black:s=${width}x${height}:d=${duration}:r=${fps},format=yuv420p[bg]`,
+  );
 
-  // Chain xfade between consecutive images
-  // Offset formula: i * (IMG_DURATION - FADE_DURATION) for the i-th transition
-  let prevOut = 'vs0';
-  for (let i = 1; i < numImages; i++) {
-    const offset = (i * (IMG_DURATION - FADE_DURATION)).toFixed(2);
-    const outLabel = i === numImages - 1 ? 'vout' : `vx${i}`;
+  // Each user image: input index 1..N (input 0 is the template video).
+  slots.forEach((slot, i) => {
+    const inputIdx = i + 1;
+    parts.push(`[${inputIdx}:v]scale=${slot.width}:${slot.height},setsar=1[i${i}]`);
+  });
+
+  // Stack slot overlays on top of the black background, time-gated.
+  let prev = 'bg';
+  slots.forEach((slot, i) => {
+    const out = i === slots.length - 1 ? 'comp' : `b${i}`;
     parts.push(
-      `[${prevOut}][vs${i}]xfade=transition=fade:duration=${FADE_DURATION}:offset=${offset}[${outLabel}]`,
+      `[${prev}][i${i}]overlay=x='${slot.xExpr}':y=${slot.yExpr}` +
+        `:enable='between(t,${slot.enableStart},${slot.enableEnd})'[${out}]`,
     );
-    prevOut = outLabel;
-  }
+    prev = out;
+  });
+
+  // Chromakey the (padded) template, then composite it over the image stack.
+  parts.push(
+    `[tmpl]chromakey=color=${chroma.color}:similarity=${chroma.similarity}:blend=${chroma.blend},` +
+      `format=yuva420p[fg]`,
+  );
+  parts.push(`[comp][fg]overlay=0:0:format=auto[vout]`);
 
   return parts.join(';');
 }
 
-/**
- * Run ffmpeg to create a slideshow MP4 from image/video files.
- * Returns a promise that resolves when ffmpeg exits 0.
- */
-function runFfmpeg(mediaFiles: Array<{ path: string; isVideo: boolean }>, outputPath: string, musicPath: string | null): Promise<void> {
-  const n = mediaFiles.length;
-  const args: string[] = ['-y'];
-
-  // Images: loop a still frame for the slot duration.
-  // Videos: trim to slot duration (no -loop needed — they already have frames).
-  for (const media of mediaFiles) {
-    if (media.isVideo) {
-      args.push('-t', String(IMG_DURATION + FADE_DURATION + 0.1), '-i', media.path);
-    } else {
-      args.push('-loop', '1', '-t', String(IMG_DURATION + FADE_DURATION + 0.1), '-i', media.path);
-    }
+function runFfmpeg(templatePath: string, imagePaths: string[], outputPath: string): Promise<void> {
+  const args: string[] = ['-y', '-i', templatePath];
+  for (const p of imagePaths) {
+    args.push('-loop', '1', '-t', String(TEMPLATE.duration), '-i', p);
   }
-
-  // Optional: background music (stream-looped so it covers any video length)
-  const hasMusicFile = musicPath !== null && fs.existsSync(musicPath);
-  if (hasMusicFile) {
-    args.push('-stream_loop', '-1', '-t', '3600', '-i', musicPath!);
-  }
-
-  // Filter complex
-  args.push('-filter_complex', buildFilterComplex(n));
-  args.push('-map', '[vout]');
-
-  if (hasMusicFile) {
-    const musicInputIdx = n; // music is the last input
-    args.push('-map', `${musicInputIdx}:a`);
-    args.push('-c:a', 'aac', '-b:a', '128k', '-af', 'afade=t=in:d=1');
-  }
-
-  // Video encoding
-  args.push('-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'fast', '-crf', '23');
-
-  // Hard limit to actual video duration so we don't get extra black frames
-  const totalDuration = n === 1
-    ? IMG_DURATION
-    : n * IMG_DURATION - (n - 1) * FADE_DURATION;
-  args.push('-t', String(totalDuration));
-
-  if (hasMusicFile) {
-    args.push('-shortest');
-  }
-
-  args.push(outputPath);
+  args.push(
+    '-filter_complex', buildFilterComplex(),
+    '-map', '[vout]',
+    '-t', String(TEMPLATE.duration),
+    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'fast', '-crf', '23',
+    outputPath,
+  );
 
   return new Promise<void>((resolve, reject) => {
     const proc = spawn(FFMPEG_BIN, args);
     let stderrBuf = '';
-    proc.stderr.on('data', (chunk: Buffer) => {
-      stderrBuf += chunk.toString();
-    });
+    proc.stderr.on('data', (chunk: Buffer) => { stderrBuf += chunk.toString(); });
     proc.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`ffmpeg exited with code ${code}.\n${stderrBuf.slice(-1500)}`));
-      }
+      if (code === 0) resolve();
+      else reject(new Error(`ffmpeg exited with code ${code}.\n${stderrBuf.slice(-1500)}`));
     });
-    proc.on('error', (err) => reject(new Error(`Failed to spawn ffmpeg: ${err.message}. Make sure ffmpeg is installed (brew install ffmpeg).`)));
+    proc.on('error', (err) =>
+      reject(new Error(`Failed to spawn ffmpeg: ${err.message}. Make sure ffmpeg is installed (brew install ffmpeg).`)),
+    );
   });
 }
 
@@ -153,9 +207,9 @@ function runFfmpeg(mediaFiles: Array<{ path: string; isVideo: boolean }>, output
 
 router.post(
   '/generate',
-  upload.array('images', 20),
+  upload.array('images', REQUIRED_IMAGES),
   async (req: Request, res: Response) => {
-    const { activityCode } = req.body as { activityCode?: string; title?: string };
+    const { activityCode } = req.body as { activityCode?: string };
 
     if (!activityCode) {
       res.status(400).json({ error: 'activityCode is required' });
@@ -169,8 +223,10 @@ router.post(
     }
 
     const files = req.files as Express.Multer.File[] | undefined;
-    if (!files || files.length === 0) {
-      res.status(400).json({ error: 'At least one image is required' });
+    if (!files || files.length !== REQUIRED_IMAGES) {
+      res.status(400).json({
+        error: `Exactly ${REQUIRED_IMAGES} images are required (got ${files?.length ?? 0})`,
+      });
       return;
     }
 
@@ -179,31 +235,29 @@ router.post(
       return;
     }
 
-    // ── Temp directory for this session ────────────────────────────────────────
+    const templatePath = path.join(process.cwd(), 'assets', TEMPLATE.videoFile);
+    if (!fs.existsSync(templatePath)) {
+      res.status(500).json({ error: `Template video not found at ${templatePath}` });
+      return;
+    }
+
     const sessionId = `collage_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const tmpDir = path.join(os.tmpdir(), sessionId);
     fs.mkdirSync(tmpDir, { recursive: true });
 
-    const mediaFiles: Array<{ path: string; isVideo: boolean }> = [];
+    const imagePaths: string[] = [];
     const outputPath = path.join(tmpDir, 'output.mp4');
 
-    // Path to optional background music bundled with the server
-    const musicPath = path.join(process.cwd(), 'assets', 'collage-music.mp3');
-
     try {
-      // Write uploaded files to disk
       for (let i = 0; i < files.length; i++) {
-        const isVideo = files[i].mimetype.startsWith('video/');
-        const ext = isVideo ? 'mp4' : (files[i].mimetype.includes('png') ? 'png' : 'jpg');
-        const filePath = path.join(tmpDir, `media_${i}.${ext}`);
+        const ext = files[i].mimetype.includes('png') ? 'png' : 'jpg';
+        const filePath = path.join(tmpDir, `image_${i}.${ext}`);
         fs.writeFileSync(filePath, files[i].buffer);
-        mediaFiles.push({ path: filePath, isVideo });
+        imagePaths.push(filePath);
       }
 
-      // Run ffmpeg
-      await runFfmpeg(mediaFiles, outputPath, musicPath);
+      await runFfmpeg(templatePath, imagePaths, outputPath);
 
-      // Upload the generated MP4 to Cloudinary
       const cloudResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { resource_type: 'video', folder: 'yooz/collages' },
@@ -220,7 +274,6 @@ router.post(
       console.error('[collage] generation error:', err);
       res.status(500).json({ error: err instanceof Error ? err.message : 'Collage generation failed' });
     } finally {
-      // Always clean up temp files
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
   },
