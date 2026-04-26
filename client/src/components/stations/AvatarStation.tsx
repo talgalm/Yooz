@@ -9,8 +9,11 @@ interface ChatMessage {
   text: string;
 }
 
-function speakHebrew(text: string) {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+function speakHebrew(text: string, onEnd?: () => void) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    onEnd?.();
+    return;
+  }
   try {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
@@ -20,10 +23,31 @@ function speakHebrew(text: string) {
     const voices = window.speechSynthesis.getVoices();
     const hebVoice = voices.find((v) => v.lang === 'he-IL' || v.lang.startsWith('he'));
     if (hebVoice) u.voice = hebVoice;
+    if (onEnd) {
+      u.onend = onEnd;
+      u.onerror = onEnd;
+    }
     window.speechSynthesis.speak(u);
   } catch {
-    /* noop */
+    onEnd?.();
   }
+}
+
+function pickVideoForAnswer(
+  answer: string,
+  videos: Array<{ url: string; matchingWords?: string[] }>
+): string | undefined {
+  const valid = videos.filter((v) => v.url?.trim());
+  if (valid.length === 0) return undefined;
+  const haystack = answer.toLowerCase();
+  const match = valid.find((v) =>
+    (v.matchingWords || [])
+      .map((w) => w.trim().toLowerCase())
+      .filter(Boolean)
+      .some((w) => haystack.includes(w))
+  );
+  if (match) return match.url.trim();
+  return valid[Math.floor(Math.random() * valid.length)].url.trim();
 }
 
 function primeSpeech() {
@@ -155,21 +179,6 @@ const ScrollArea = styled('div')({
   padding: '8px 2px',
 });
 
-const OpenChatHint = styled('button')({
-  appearance: 'none',
-  border: '1.5px solid rgba(255,255,255,0.7)',
-  background: 'rgba(255,255,255,0.5)',
-  backdropFilter: 'blur(6px)',
-  WebkitBackdropFilter: 'blur(6px)',
-  padding: '8px 16px',
-  borderRadius: 999,
-  fontSize: 14,
-  fontWeight: 700,
-  color: '#1a1a2e',
-  cursor: 'pointer',
-  boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-});
-
 const messageIn = keyframes`
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
@@ -251,6 +260,51 @@ const CharacterImage = styled('img')({
   display: 'block',
 });
 
+const CharacterVideo = styled('video')({
+  width: '100%',
+  aspectRatio: '1 / 1',
+  objectFit: 'cover',
+  borderRadius: 16,
+  display: 'block',
+  background: '#000',
+});
+
+const bubblePop = keyframes`
+  from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+`;
+
+const SpeakingBubble = styled('div')({
+  position: 'absolute',
+  top: 'calc(100% + 14px)',
+  insetInlineStart: 0,
+  insetInlineEnd: 0,
+  background: '#ffffff',
+  color: '#1a1a2e',
+  borderRadius: 18,
+  padding: '12px 16px',
+  fontSize: 15,
+  lineHeight: 1.45,
+  fontWeight: 500,
+  textAlign: 'start',
+  boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
+  border: '1.5px solid rgba(108,92,231,0.25)',
+  animation: `${bubblePop} 0.18s ease-out`,
+  zIndex: 5,
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: -8,
+    insetInlineStart: 28,
+    width: 14,
+    height: 14,
+    background: '#ffffff',
+    borderTop: '1.5px solid rgba(108,92,231,0.25)',
+    borderLeft: '1.5px solid rgba(108,92,231,0.25)',
+    transform: 'rotate(45deg)',
+  },
+});
+
 const CharacterNameBadge = styled('div')({
   position: 'absolute',
   top: 12,
@@ -267,6 +321,46 @@ const CharacterNameBadge = styled('div')({
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
+});
+
+const HistoryButton = styled('button')({
+  position: 'absolute',
+  bottom: 12,
+  insetInlineEnd: 12,
+  appearance: 'none',
+  border: '1.5px solid rgba(255,255,255,0.7)',
+  background: 'rgba(0,0,0,0.55)',
+  backdropFilter: 'blur(6px)',
+  WebkitBackdropFilter: 'blur(6px)',
+  width: 44,
+  height: 44,
+  borderRadius: '50%',
+  color: '#fff',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  padding: 0,
+  boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+  '&:active': { transform: 'scale(0.95)' },
+});
+
+const HistoryCountBadge = styled('span')({
+  position: 'absolute',
+  top: -4,
+  insetInlineEnd: -4,
+  minWidth: 20,
+  height: 20,
+  borderRadius: 10,
+  background: '#ef4444',
+  color: '#fff',
+  fontSize: 11,
+  fontWeight: 800,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '0 5px',
+  border: '2px solid #1a1a2e',
 });
 
 const ChatBar = styled('form')({
@@ -337,8 +431,29 @@ export default function AvatarStation({ station, onContinue, continueLabel, text
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [popupOpen, setPopupOpen] = useState(false);
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+  const [speakingMessageId, setSpeakingMessageId] = useState<number | null>(null);
+  const [speakingText, setSpeakingText] = useState<string | null>(null);
   const nextIdRef = useRef(1);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const suspenseTimerRef = useRef<number | null>(null);
+
+  const clearSuspenseTimer = () => {
+    if (suspenseTimerRef.current !== null) {
+      window.clearTimeout(suspenseTimerRef.current);
+      suspenseTimerRef.current = null;
+    }
+  };
+
+  const stopSpeaking = () => {
+    clearSuspenseTimer();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setActiveVideoUrl(null);
+    setSpeakingMessageId(null);
+    setSpeakingText(null);
+  };
 
   useEffect(() => {
     if (messages.length === 0 || !popupOpen) return;
@@ -347,10 +462,12 @@ export default function AvatarStation({ station, onContinue, continueLabel, text
 
   useEffect(() => {
     return () => {
+      clearSuspenseTimer();
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -362,10 +479,24 @@ export default function AvatarStation({ station, onContinue, continueLabel, text
     setMessage('');
     const historySnapshot = messages.map((m) => ({ role: m.role, text: m.text }));
     setMessages((prev) => [...prev, userMsg]);
-    setPopupOpen(true);
+    setPopupOpen(false);
     const replyText = await askAvatar(text, settings, historySnapshot);
-    setMessages((prev) => [...prev, { id: nextIdRef.current++, role: 'character', text: replyText }]);
-    speakHebrew(replyText);
+    const replyId = nextIdRef.current++;
+    setMessages((prev) => [...prev, { id: replyId, role: 'character', text: replyText }]);
+    const videoUrl = pickVideoForAnswer(replyText, settings.videos || []);
+    if (videoUrl) setActiveVideoUrl(videoUrl);
+    setSpeakingMessageId(replyId);
+    setSpeakingText(replyText);
+    clearSuspenseTimer();
+    speakHebrew(replyText, () => {
+      clearSuspenseTimer();
+      suspenseTimerRef.current = window.setTimeout(() => {
+        suspenseTimerRef.current = null;
+        setActiveVideoUrl(null);
+        setSpeakingMessageId(null);
+        setSpeakingText(null);
+      }, 1500);
+    });
   };
 
   const placeholder = `שאל את ${settings.characterName || ''}`.trim();
@@ -393,21 +524,30 @@ export default function AvatarStation({ station, onContinue, continueLabel, text
       <StationTitle style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitle>
 
       <CharacterWindow>
-        {settings.characterImageUrl && (
+        {activeVideoUrl ? (
+          <CharacterVideo
+            src={activeVideoUrl}
+            autoPlay
+            loop
+            muted
+            playsInline
+          />
+        ) : settings.characterImageUrl ? (
           <CharacterImage src={settings.characterImageUrl} alt={settings.characterName || ''} />
-        )}
+        ) : null}
         {settings.characterName && <CharacterNameBadge>{settings.characterName}</CharacterNameBadge>}
+        {messages.length > 0 && (
+          <HistoryButton type="button" aria-label="open chat history" onClick={() => setPopupOpen(true)}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <HistoryCountBadge>{messages.length}</HistoryCountBadge>
+          </HistoryButton>
+        )}
+        {speakingText && <SpeakingBubble>{speakingText}</SpeakingBubble>}
       </CharacterWindow>
 
-      {messages.length > 0 ? (
-        !popupOpen && (
-          <OpenChatHint type="button" onClick={() => setPopupOpen(true)}>
-            פתח שיחה ({messages.length})
-          </OpenChatHint>
-        )
-      ) : (
-        <InputWrap>{chatInput}</InputWrap>
-      )}
+      <InputWrap>{chatInput}</InputWrap>
 
       {showPopup && (
         <>
@@ -427,13 +567,15 @@ export default function AvatarStation({ station, onContinue, continueLabel, text
                 m.role === 'character' ? (
                   <CharacterMessageRow key={m.id}>
                     <MessageBubble role={m.role}>{m.text}</MessageBubble>
-                    <SpeakButton type="button" aria-label="play" onClick={() => speakHebrew(m.text)}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-                      </svg>
-                    </SpeakButton>
+                    {speakingMessageId === m.id && (
+                      <SpeakButton type="button" aria-label="mute" onClick={stopSpeaking}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                          <line x1="23" y1="9" x2="17" y2="15" />
+                          <line x1="17" y1="9" x2="23" y2="15" />
+                        </svg>
+                      </SpeakButton>
+                    )}
                   </CharacterMessageRow>
                 ) : (
                   <MessageBubble key={m.id} role={m.role}>{m.text}</MessageBubble>
