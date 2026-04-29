@@ -13,6 +13,7 @@ export interface GameItemData {
   description?: string;
   settings: Record<string, unknown>;
   spiderSvg?: string;
+  isFinal?: boolean;
 }
 
 export interface StationItemData {
@@ -23,6 +24,7 @@ export interface StationItemData {
   description?: string;
   settings?: Record<string, unknown>;
   spiderSvg?: string;
+  isFinal?: boolean;
 }
 
 export interface MissionScreen {
@@ -61,6 +63,7 @@ export interface MissionItemData {
   puzzleConfig?: MissionPuzzleConfig;
   trashSortConfig?: MissionTrashSortConfig;
   spiderSvg?: string;
+  isFinal?: boolean;
 }
 
 export type ModuleItemData = GameItemData | StationItemData | MissionItemData;

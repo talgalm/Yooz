@@ -262,6 +262,23 @@ const GroupButton = styled('button')<{ hasGroups?: boolean }>(({ hasGroups }) =>
   '&:hover': { background: '#f5f0ff', borderColor: '#6c5ce7', color: '#6c5ce7' },
 }));
 
+const FinalButton = styled('button')<{ isFinal?: boolean }>(({ isFinal }) => ({
+  background: isFinal ? '#f59e0b' : 'none',
+  border: `1px solid ${isFinal ? '#f59e0b' : '#d0d0d0'}`,
+  color: isFinal ? '#fff' : '#999',
+  borderRadius: 6,
+  padding: '2px 8px',
+  fontSize: 12,
+  cursor: 'pointer',
+  fontWeight: 600,
+  flexShrink: 0,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 3,
+  fontFamily: 'inherit',
+  '&:hover': { background: isFinal ? '#d97706' : '#fff8ec', borderColor: '#f59e0b', color: isFinal ? '#fff' : '#f59e0b' },
+}));
+
 const GroupPopupOverlay = styled('div')({
   position: 'fixed',
   inset: 0,
@@ -384,6 +401,7 @@ interface ModuleItemsSectionProps {
   onMoveItem: (index: number, direction: -1 | 1) => void;
   onUpdateItemGroups: (index: number, groups: string[]) => void;
   onUpdateItemSvg?: (index: number, svgUrl: string) => void;
+  onToggleItemFinal?: (index: number) => void;
   moduleType?: string;
   connectionType: string;
   groupNames: string[];
@@ -399,6 +417,7 @@ export default function ModuleItemsSection({
   onMoveItem,
   onUpdateItemGroups,
   onUpdateItemSvg,
+  onToggleItemFinal,
   moduleType,
   connectionType,
   groupNames,
@@ -728,6 +747,16 @@ export default function ModuleItemsSection({
                       ? `${item.groups.length}/${groupNames.length}`
                       : (t.allGroups || 'All')}
                   </GroupButton>
+                )}
+                {isSpiders && onToggleItemFinal && (
+                  <FinalButton
+                    type="button"
+                    isFinal={item.isFinal}
+                    onClick={(e) => { e.stopPropagation(); onToggleItemFinal(index); }}
+                    title={item.isFinal ? (t.spidersFinalRemove || 'Remove final mark') : (t.spidersFinalMark || 'Mark as final station')}
+                  >
+                    🏁 {item.isFinal ? (t.spidersFinal || 'Final') : (t.spidersSetFinal || 'Set Final')}
+                  </FinalButton>
                 )}
                 <PreviewButton type="button" onClick={(e) => { e.stopPropagation(); setPreviewItem(item); }}>
                   {t.preview}

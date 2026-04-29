@@ -372,6 +372,7 @@ interface SpidersViewProps {
   leaderboardMode?: 'points' | 'time';
   elapsedSeconds?: number;
   activityDurationMinutes?: number;
+  finalItemIndex?: number;
 }
 
 export default function SpidersView({
@@ -389,6 +390,7 @@ export default function SpidersView({
   leaderboardMode,
   elapsedSeconds,
   activityDurationMinutes,
+  finalItemIndex,
 }: SpidersViewProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState<{ w: number; h: number } | null>(null);
@@ -660,11 +662,14 @@ export default function SpidersView({
             if (!pos) return null;
             const completed = completedItemIndices.has(index);
             const hasSvg = Boolean(item.spiderSvg);
+            const isFinalNode = finalItemIndex !== undefined && finalItemIndex === index;
+            const nonFinalCount = finalItemIndex !== undefined ? items.length - 1 : items.length;
+            const isLocked = isFinalNode && completedItemIndices.size < nonFinalCount;
 
             return (
               <NodeWrapper
                 key={item._id}
-                style={{ left: pos.x, top: pos.y }}
+                style={{ left: pos.x, top: pos.y, opacity: isLocked ? 0.55 : 1, filter: isLocked ? 'grayscale(0.4)' : 'none' }}
                 completed={completed}
                 onClick={() => onNodeTap(index)}
                 aria-label={item.name}
@@ -673,12 +678,19 @@ export default function SpidersView({
                   <div style={{ position: 'relative' }}>
                     <SvgImg src={item.spiderSvg!} alt={item.name} />
                     {completed && <CompletedSvgBadge>✓</CompletedSvgBadge>}
+                    {isLocked && !completed && (
+                      <div style={{ position: 'absolute', top: -6, left: -6, width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,0,0,0.65)', border: '2px solid rgba(255,255,255,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, zIndex: 4 }}>🔒</div>
+                    )}
                     {showStationNumbers && <StationNumberBadge>{index + 1}</StationNumberBadge>}
                   </div>
                 ) : (
                   <div style={{ position: 'relative' }}>
                     <Circle themeColor={nodeColor}>
-                      <ItemNumber>{index + 1}</ItemNumber>
+                      {isLocked && !completed ? (
+                        <span style={{ fontSize: 30 }}>🔒</span>
+                      ) : (
+                        <ItemNumber>{index + 1}</ItemNumber>
+                      )}
                     </Circle>
                     {completed && <CompletedSvgBadge>✓</CompletedSvgBadge>}
                     {showStationNumbers && <StationNumberBadge>{index + 1}</StationNumberBadge>}

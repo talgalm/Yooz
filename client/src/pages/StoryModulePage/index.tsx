@@ -642,8 +642,18 @@ export default function StoryModulePage() {
     }
   };
 
+  const spidersFinalItemIndex = data
+    ? data.module.items.findIndex((it) => it.isFinal)
+    : -1;
+
   const handleSpidersNodeTap = (index: number) => {
     if (entryTransitionStage !== 'idle') return;
+
+    // Block entry to the final station until all others are completed
+    if (spidersFinalItemIndex !== -1 && index === spidersFinalItemIndex) {
+      const nonFinalCount = data!.module.items.length - 1;
+      if (completedSpiderItems.size < nonFinalCount) return;
+    }
 
     const goPlay = () => {
       setCurrentItemIndex(index);
@@ -1127,6 +1137,7 @@ export default function StoryModulePage() {
             leaderboardMode={data.leaderboardMode}
             elapsedSeconds={elapsedSeconds}
             activityDurationMinutes={data.activityDurationMinutes}
+            finalItemIndex={spidersFinalItemIndex !== -1 ? spidersFinalItemIndex : undefined}
           />
           {showGuidelines && !currentPopup && (
             <GuidelinesPopup

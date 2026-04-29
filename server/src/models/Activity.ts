@@ -10,6 +10,7 @@ export interface IModuleItem {
   ref: Types.ObjectId;
   groups?: string[]; // when set, only these groups see this item (empty/undefined = all groups)
   spiderSvg?: string; // optional SVG URL for spiders module display
+  isFinal?: boolean; // spiders only: this item is locked until all others are completed
 }
 
 export interface IPopupCondition {
@@ -126,6 +127,7 @@ const moduleItemSchema = new Schema<IModuleItem>({
   ref: { type: Schema.Types.ObjectId, required: true },
   groups: { type: [String], default: undefined },
   spiderSvg: { type: String },
+  isFinal: { type: Boolean },
 }, { _id: false });
 
 const moduleConfigSchema = new Schema<IModuleConfig>({

@@ -50,6 +50,7 @@ export interface ModuleItem {
   settings?: Record<string, unknown>;
   groups?: string[]; // when set, only these groups see this item
   spiderSvg?: string; // optional SVG URL for spiders module display
+  isFinal?: boolean; // spiders only: locked until all others are completed
 }
 
 export interface CustomInstructions {

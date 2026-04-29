@@ -397,6 +397,7 @@ export default function AdminCreateActivityPage() {
                 settings: item.data?.settings,
                 groups: item.groups,
                 spiderSvg: (item as { spiderSvg?: string }).spiderSvg,
+                isFinal: (item as { isFinal?: boolean }).isFinal || undefined,
               }))
             );
           }
@@ -485,6 +486,15 @@ export default function AdminCreateActivityPage() {
   const updateItemSvg = (index: number, svgUrl: string) => {
     setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, spiderSvg: svgUrl || undefined } : item));
   };
+  const toggleItemFinal = (index: number) => {
+    setSelectedItems((prev) => {
+      const isAlreadyFinal = prev[index]?.isFinal;
+      return prev.map((item, i) => ({
+        ...item,
+        isFinal: isAlreadyFinal ? undefined : (i === index ? true : undefined),
+      }));
+    });
+  };
   const moveItem = (index: number, direction: -1 | 1) => {
     setSelectedItems((prev) => {
       const next = [...prev];
@@ -534,6 +544,7 @@ export default function AdminCreateActivityPage() {
             ref: i.ref,
             ...(i.groups && i.groups.length > 0 && { groups: i.groups }),
             ...(moduleType === 'spiders' && i.spiderSvg && { spiderSvg: i.spiderSvg }),
+            ...(moduleType === 'spiders' && i.isFinal && { isFinal: true }),
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
         };
@@ -966,6 +977,7 @@ export default function AdminCreateActivityPage() {
                     onMoveItem={moveItem}
                     onUpdateItemGroups={(index, groups) => setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, groups } : item))}
                     onUpdateItemSvg={updateItemSvg}
+                    onToggleItemFinal={toggleItemFinal}
                     moduleType={moduleType}
                     connectionType={connectionType}
                     groupNames={groupNames}
