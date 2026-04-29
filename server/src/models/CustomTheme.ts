@@ -8,6 +8,8 @@ export interface ICustomTheme {
   stationsImage?: string;  // Cloudinary URL used behind station screens
   textColor?: string;      // hex — station title text color
   bgColor?: string;        // hex — browser theme-color (meta tag) for roadmap + stations
+  roadmapActiveNodeColor?: string; // hex — optional active roadmap node color
+  roadmapPathColor?: string; // hex — optional roadmap path color
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,6 +22,8 @@ const customThemeSchema = new Schema<ICustomTheme>(
     stationsImage: { type: String },
     textColor: { type: String },
     bgColor: { type: String },
+    roadmapActiveNodeColor: { type: String },
+    roadmapPathColor: { type: String },
   },
   { timestamps: true },
 );

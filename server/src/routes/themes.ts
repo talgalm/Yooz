@@ -12,21 +12,59 @@ router.get('/', authenticateAdmin, async (_req: Request, res: Response) => {
 
 // POST /api/admin/themes — create a new custom theme
 router.post('/', authenticateAdmin, async (req: Request, res: Response) => {
-  const { name, mainColor, roadmapImage, stationsImage, textColor, bgColor } = req.body;
+  const {
+    name,
+    mainColor,
+    roadmapImage,
+    stationsImage,
+    textColor,
+    bgColor,
+    roadmapActiveNodeColor,
+    roadmapPathColor,
+  } = req.body;
   if (!name || !mainColor) {
     res.status(400).json({ error: 'name and mainColor are required' });
     return;
   }
-  const theme = await CustomTheme.create({ name, mainColor, roadmapImage, stationsImage, textColor, bgColor });
+  const theme = await CustomTheme.create({
+    name,
+    mainColor,
+    roadmapImage,
+    stationsImage,
+    textColor,
+    bgColor,
+    roadmapActiveNodeColor,
+    roadmapPathColor,
+  });
   res.status(201).json({ theme });
 });
 
 // PATCH /api/admin/themes/:id — update a custom theme
 router.patch('/:id', authenticateAdmin, async (req: Request, res: Response) => {
-  const { name, mainColor, roadmapImage, stationsImage, textColor, bgColor } = req.body;
+  const {
+    name,
+    mainColor,
+    roadmapImage,
+    stationsImage,
+    textColor,
+    bgColor,
+    roadmapActiveNodeColor,
+    roadmapPathColor,
+  } = req.body;
   const theme = await CustomTheme.findByIdAndUpdate(
     req.params.id,
-    { $set: { name, mainColor, roadmapImage, stationsImage, textColor, bgColor } },
+    {
+      $set: {
+        name,
+        mainColor,
+        roadmapImage,
+        stationsImage,
+        textColor,
+        bgColor,
+        roadmapActiveNodeColor,
+        roadmapPathColor,
+      },
+    },
     { new: true, runValidators: true },
   ).lean();
   if (!theme) {

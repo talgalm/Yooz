@@ -11,6 +11,8 @@ export interface CustomTheme {
   stationsImage?: string;
   textColor?: string;
   bgColor?: string;
+  roadmapActiveNodeColor?: string;
+  roadmapPathColor?: string;
 }
 
 // ─── Styled ───
@@ -177,6 +179,8 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
   const [stationsImage, setStationsImage] = useState(existing?.stationsImage ?? '');
   const [textColor, setTextColor] = useState(existing?.textColor ?? '#111111');
   const [bgColor, setBgColor] = useState(existing?.bgColor ?? '#8fb248');
+  const [roadmapActiveNodeColor, setRoadmapActiveNodeColor] = useState(existing?.roadmapActiveNodeColor ?? '');
+  const [roadmapPathColor, setRoadmapPathColor] = useState(existing?.roadmapPathColor ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -187,6 +191,10 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
   useEffect(() => { setTextHexInput(textColor); }, [textColor]);
   const [bgHexInput, setBgHexInput] = useState(existing?.bgColor ?? '#8fb248');
   useEffect(() => { setBgHexInput(bgColor); }, [bgColor]);
+  const [roadmapActiveNodeHexInput, setRoadmapActiveNodeHexInput] = useState(existing?.roadmapActiveNodeColor ?? '');
+  useEffect(() => { setRoadmapActiveNodeHexInput(roadmapActiveNodeColor); }, [roadmapActiveNodeColor]);
+  const [roadmapPathHexInput, setRoadmapPathHexInput] = useState(existing?.roadmapPathColor ?? '');
+  useEffect(() => { setRoadmapPathHexInput(roadmapPathColor); }, [roadmapPathColor]);
 
   const handleHexInput = (val: string) => {
     setHexInput(val);
@@ -200,6 +208,22 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
     setBgHexInput(val);
     if (/^#[0-9a-fA-F]{6}$/.test(val)) setBgColor(val);
   };
+  const handleRoadmapActiveNodeHexInput = (val: string) => {
+    setRoadmapActiveNodeHexInput(val);
+    if (!val) {
+      setRoadmapActiveNodeColor('');
+      return;
+    }
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) setRoadmapActiveNodeColor(val);
+  };
+  const handleRoadmapPathHexInput = (val: string) => {
+    setRoadmapPathHexInput(val);
+    if (!val) {
+      setRoadmapPathColor('');
+      return;
+    }
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) setRoadmapPathColor(val);
+  };
 
   const handleSave = async () => {
     if (!name.trim()) { setError('שם הערכה הוא שדה חובה'); return; }
@@ -207,7 +231,16 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
     setSaving(true);
     setError('');
     try {
-      const body = { name: name.trim(), mainColor, roadmapImage: roadmapImage || undefined, stationsImage: stationsImage || undefined, textColor, bgColor };
+      const body = {
+        name: name.trim(),
+        mainColor,
+        roadmapImage: roadmapImage || undefined,
+        stationsImage: stationsImage || undefined,
+        textColor,
+        bgColor,
+        roadmapActiveNodeColor: roadmapActiveNodeColor || undefined,
+        roadmapPathColor: roadmapPathColor || undefined,
+      };
       let result: { theme: CustomTheme };
       if (isEdit && existing) {
         result = await adminApiFetch<{ theme: CustomTheme }>(`/api/admin/themes/${existing._id}`, {
@@ -280,6 +313,46 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
               placeholder="#8fb248"
               style={{ width: 120 }}
             />
+          </ColorRow>
+        </Field>
+
+        <Field>
+          <FieldLabel>צבע עיגול תחנה/משחק פעיל במסלול (אופציונלי)</FieldLabel>
+          <ColorRow>
+            <ColorSwatch color={roadmapActiveNodeColor || '#d4e84e'}>
+              <ColorInput
+                type="color"
+                value={roadmapActiveNodeColor || '#d4e84e'}
+                onChange={(e) => setRoadmapActiveNodeColor(e.target.value)}
+              />
+            </ColorSwatch>
+            <TextInput
+              value={roadmapActiveNodeHexInput}
+              onChange={(e) => handleRoadmapActiveNodeHexInput(e.target.value)}
+              placeholder="default: nature"
+              style={{ width: 160 }}
+            />
+            {roadmapActiveNodeColor && <ClearBtn type="button" title="נקה צבע" onClick={() => setRoadmapActiveNodeColor('')}>×</ClearBtn>}
+          </ColorRow>
+        </Field>
+
+        <Field>
+          <FieldLabel>צבע המסלול (אופציונלי)</FieldLabel>
+          <ColorRow>
+            <ColorSwatch color={roadmapPathColor || '#3A291A'}>
+              <ColorInput
+                type="color"
+                value={roadmapPathColor || '#3A291A'}
+                onChange={(e) => setRoadmapPathColor(e.target.value)}
+              />
+            </ColorSwatch>
+            <TextInput
+              value={roadmapPathHexInput}
+              onChange={(e) => handleRoadmapPathHexInput(e.target.value)}
+              placeholder="default: nature"
+              style={{ width: 160 }}
+            />
+            {roadmapPathColor && <ClearBtn type="button" title="נקה צבע" onClick={() => setRoadmapPathColor('')}>×</ClearBtn>}
           </ColorRow>
         </Field>
 

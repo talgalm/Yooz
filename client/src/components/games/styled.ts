@@ -762,6 +762,7 @@ export const MediaStationWrapper = styled('div')({
 
 export const MediaStationVideo = styled('video')({
   width: '100%',
+  border: '2px solid #fff',
   borderRadius: 12,
 });
 
@@ -790,6 +791,7 @@ export const MediaStationImageWrapper = styled('div')({
 export const MediaStationImage = styled('img')({
   maxWidth: '100%',
   maxHeight: 350,
+  border: '2px solid #fff',
   borderRadius: 12,
   objectFit: 'contain',
 });

@@ -167,13 +167,13 @@ const NodeWrapper = styled('button')<{ completed?: boolean }>(({ completed }) =>
   background: 'none',
   border: 'none',
   padding: 0,
-  cursor: completed ? 'default' : 'pointer',
+  cursor: 'pointer',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   gap: 6,
-  opacity: completed ? 0.52 : 1,
-  filter: completed ? 'grayscale(0.35)' : 'none',
+  opacity: 1,
+  filter: 'none',
   zIndex: completed ? 1 : 10,
   transition: 'opacity 0.3s, filter 0.3s',
   '&:active:not(:disabled)': {
@@ -226,26 +226,6 @@ const ItemLabel = styled('div')({
   whiteSpace: 'nowrap',
   textShadow: '0 1px 4px rgba(0,0,0,0.7), 0 0 8px rgba(0,0,0,0.5)',
   userSelect: 'none',
-});
-
-const CompletedOverlay = styled('div')({
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  borderRadius: '50%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'rgba(0,0,0,0.22)',
-  animation: `${completedBounce} 400ms cubic-bezier(0.34, 1.45, 0.64, 1) forwards`,
-});
-
-const CheckIcon = styled('span')({
-  fontSize: 32,
-  lineHeight: 1,
-  filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.4))',
 });
 
 const CompletedSvgBadge = styled('div')({
@@ -677,9 +657,8 @@ export default function SpidersView({
                 key={item._id}
                 style={{ left: pos.x, top: pos.y }}
                 completed={completed}
-                onClick={() => !completed && onNodeTap(index)}
+                onClick={() => onNodeTap(index)}
                 aria-label={item.name}
-                disabled={completed}
               >
                 {hasSvg ? (
                   <div style={{ position: 'relative' }}>
@@ -691,12 +670,8 @@ export default function SpidersView({
                   <div style={{ position: 'relative' }}>
                     <Circle themeColor={nodeColor}>
                       <ItemNumber>{index + 1}</ItemNumber>
-                      {completed && (
-                        <CompletedOverlay>
-                          <CheckIcon>✓</CheckIcon>
-                        </CompletedOverlay>
-                      )}
                     </Circle>
+                    {completed && <CompletedSvgBadge>✓</CompletedSvgBadge>}
                     {showStationNumbers && <StationNumberBadge>{index + 1}</StationNumberBadge>}
                   </div>
                 )}

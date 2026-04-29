@@ -84,6 +84,8 @@ export interface CustomThemeData {
   stationsImage?: string;
   textColor?: string;
   bgColor?: string;
+  roadmapActiveNodeColor?: string;
+  roadmapPathColor?: string;
 }
 
 export interface ModuleData {

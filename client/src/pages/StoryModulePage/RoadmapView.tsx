@@ -7,7 +7,7 @@ import storySideWave from '../../assets/story-side-wave.svg';
 import storySideWaveBlue from '../../assets/story-side-wave-blue.svg';
 import storySideWaveDesert from '../../assets/story-side-wave-desert.svg';
 import { ROADMAP_DECORATIONS } from './roadmapTrees';
-import { getThemeKit, OCEAN_DECORATIONS, DESERT_DECORATIONS, type RoadmapThemeKit } from './roadmapThemes';
+import { getThemeKit, NATURE_THEME, OCEAN_DECORATIONS, DESERT_DECORATIONS, type RoadmapThemeKit } from './roadmapThemes';
 
 // ─── Constants ───
 
@@ -566,6 +566,8 @@ export default function RoadmapView({
   showFootsteps, onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, popupModal, t, theme, customTheme,
 }: RoadmapViewProps) {
   const kit = useMemo(() => getThemeKit(theme), [theme]);
+  const activeNodeColor = customTheme?.roadmapActiveNodeColor || NATURE_THEME.nodeActiveBg;
+  const pathColor = customTheme?.roadmapPathColor || NATURE_THEME.roadSurface;
   const containerBg: React.CSSProperties = customTheme?.roadmapImage
     ? { backgroundImage: `url(${customTheme.roadmapImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }
     : { background: kit.containerBg };
@@ -969,8 +971,8 @@ export default function RoadmapView({
   );
 
   const themeVars: React.CSSProperties & Record<string, string> = {
-    '--node-active-border': kit.nodeActiveBorder,
-    '--node-active-bg': kit.nodeActiveBg,
+    '--node-active-border': customTheme?.roadmapActiveNodeColor || kit.nodeActiveBorder,
+    '--node-active-bg': activeNodeColor,
     '--node-completed-border': kit.nodeCompletedBorder,
     '--node-completed-bg': kit.nodeCompletedBg,
     '--node-locked-border': kit.nodeLockedBorder,
@@ -1025,7 +1027,7 @@ export default function RoadmapView({
             overflow="visible">
             <path d={svgPath} fill="none" stroke={kit.roadBorder}
               strokeWidth={ROAD_BORDER} strokeLinecap="round" strokeLinejoin="round" />
-            <path d={svgPath} fill="none" stroke={kit.roadSurface}
+            <path d={svgPath} fill="none" stroke={pathColor}
               strokeWidth={ROAD_WIDTH} strokeLinecap="round" strokeLinejoin="round" />
             <path d={svgPath} fill="none" stroke={kit.roadCenterLine}
               strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"

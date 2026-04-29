@@ -604,7 +604,6 @@ export default function StoryModulePage() {
 
   const handleSpidersNodeTap = (index: number) => {
     if (entryTransitionStage !== 'idle') return;
-    if (completedSpiderItems.has(index)) return; // already done
 
     const goPlay = () => {
       setCurrentItemIndex(index);

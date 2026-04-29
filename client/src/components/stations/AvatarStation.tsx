@@ -424,9 +424,16 @@ interface AvatarStationProps {
   onContinue: () => void;
   continueLabel: string;
   textColor?: string;
+  sessionStorageKey?: string;
 }
 
-export default function AvatarStation({ station, onContinue, continueLabel, textColor }: AvatarStationProps) {
+export default function AvatarStation({
+  station,
+  onContinue,
+  continueLabel,
+  textColor,
+  sessionStorageKey,
+}: AvatarStationProps) {
   const settings = (station.settings || {}) as AvatarSettings;
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -459,6 +466,40 @@ export default function AvatarStation({ station, onContinue, continueLabel, text
     if (messages.length === 0 || !popupOpen) return;
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages.length, popupOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !sessionStorageKey) return;
+    try {
+      const raw = window.sessionStorage.getItem(sessionStorageKey);
+      if (!raw) {
+        setMessages([]);
+        nextIdRef.current = 1;
+        return;
+      }
+      const parsed = JSON.parse(raw) as ChatMessage[];
+      if (!Array.isArray(parsed)) return;
+      const sanitized = parsed.filter(
+        (item): item is ChatMessage =>
+          typeof item?.id === 'number' &&
+          (item?.role === 'user' || item?.role === 'character') &&
+          typeof item?.text === 'string'
+      );
+      setMessages(sanitized);
+      nextIdRef.current = sanitized.reduce((maxId, item) => Math.max(maxId, item.id), 0) + 1;
+    } catch {
+      setMessages([]);
+      nextIdRef.current = 1;
+    }
+  }, [sessionStorageKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !sessionStorageKey) return;
+    try {
+      window.sessionStorage.setItem(sessionStorageKey, JSON.stringify(messages));
+    } catch {
+      /* best effort */
+    }
+  }, [messages, sessionStorageKey]);
 
   useEffect(() => {
     return () => {

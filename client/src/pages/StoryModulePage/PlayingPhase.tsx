@@ -359,6 +359,7 @@ export default function PlayingPhase({
               onContinue={onStationContinue}
               continueLabel={t.continueButton}
               textColor={customTheme?.textColor}
+              sessionStorageKey={code ? `yooz_avatar_chat_${code}_${station._id}` : undefined}
             />
           </MediaGateWrapper>
         );
