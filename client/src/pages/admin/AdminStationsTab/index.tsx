@@ -273,6 +273,7 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
       case 'feedback': return t.typeFeedback;
       case 'riddle': return t.typeRiddle;
       case 'avatar': return t.typeAvatar;
+      case 'enteringText': return t.typeEnteringText;
       default: return type || '—';
     }
   };

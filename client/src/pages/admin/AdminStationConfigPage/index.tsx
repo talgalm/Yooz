@@ -50,7 +50,7 @@ const TextArea = styled('textarea')({
   '&:focus': { borderColor: '#6c5ce7' },
 });
 
-type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar';
+type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'enteringText';
 
 interface AvatarVideoConfig {
   url: string;
@@ -65,6 +65,13 @@ interface AvatarNamedEntry {
 interface AvatarKnowledgeGate {
   trigger: string;
   reveal: string;
+}
+
+interface EnteringTextField {
+  statement: string;
+  placeholder: string;
+  rightAnswer: string;
+  keywordsBank: string;
 }
 
 interface StationData {
@@ -104,8 +111,8 @@ export default function AdminStationConfigPage() {
   const location = useLocation();
   const t = useTranslations(texts);
 
-  const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle', 'avatar'];
-  const stationTypesWithoutHint: StationTypeOption[] = ['text', 'video', 'image', 'feedback', 'avatar'];
+  const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle', 'avatar', 'enteringText'];
+  const stationTypesWithoutHint: StationTypeOption[] = ['text', 'video', 'image', 'feedback', 'avatar', 'enteringText'];
   const typeFromUrl = searchParams.get('type') as StationTypeOption | null;
   const defaultType: StationTypeOption =
     typeFromUrl && creatableTypes.includes(typeFromUrl) ? typeFromUrl : 'text';
@@ -168,6 +175,16 @@ export default function AdminStationConfigPage() {
   const [avatarClues, setAvatarClues] = useState<AvatarNamedEntry[]>([]);
   const [avatarKnowledgeGates, setAvatarKnowledgeGates] = useState<AvatarKnowledgeGate[]>([]);
   const [avatarHintStrategy, setAvatarHintStrategy] = useState('');
+  // Entering text station
+  const [enteringTextTitle, setEnteringTextTitle] = useState('');
+  const [enteringTextFields, setEnteringTextFields] = useState<EnteringTextField[]>([{ statement: '', placeholder: '', rightAnswer: '', keywordsBank: '' }]);
+  const [enteringTextSubmitButtonText, setEnteringTextSubmitButtonText] = useState('');
+  const [enteringTextReturnButtonText, setEnteringTextReturnButtonText] = useState('');
+  const [enteringTextMaxAttempts, setEnteringTextMaxAttempts] = useState('3');
+  const [enteringTextSuccessTitle, setEnteringTextSuccessTitle] = useState('');
+  const [enteringTextSuccessSubtitle, setEnteringTextSuccessSubtitle] = useState('');
+  const [enteringTextSuccessMediaType, setEnteringTextSuccessMediaType] = useState<'image' | 'video' | ''>('');
+  const [enteringTextSuccessMediaUrl, setEnteringTextSuccessMediaUrl] = useState('');
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -239,6 +256,24 @@ export default function AdminStationConfigPage() {
           if (Array.isArray(settings.clues)) setAvatarClues(settings.clues as AvatarNamedEntry[]);
           if (Array.isArray(settings.knowledgeGates)) setAvatarKnowledgeGates(settings.knowledgeGates as AvatarKnowledgeGate[]);
           if (settings.hintStrategy) setAvatarHintStrategy(settings.hintStrategy as string);
+        }
+        if (s.type === 'enteringText') {
+          if (settings.title) setEnteringTextTitle(settings.title as string);
+          if (Array.isArray(settings.fields) && (settings.fields as unknown[]).length > 0) {
+            setEnteringTextFields((settings.fields as Array<Record<string, unknown>>).map((f) => ({
+              statement: (f.statement as string) || '',
+              placeholder: (f.placeholder as string) || (f.description as string) || '',
+              rightAnswer: (f.rightAnswer as string) || '',
+              keywordsBank: (f.keywordsBank as string) || '',
+            })));
+          }
+          if (settings.submitButtonText) setEnteringTextSubmitButtonText(settings.submitButtonText as string);
+          if (settings.returnButtonText) setEnteringTextReturnButtonText(settings.returnButtonText as string);
+          if (typeof settings.maxAttempts === 'number') setEnteringTextMaxAttempts(String(settings.maxAttempts));
+          if (settings.successTitle) setEnteringTextSuccessTitle(settings.successTitle as string);
+          if (settings.successSubtitle) setEnteringTextSuccessSubtitle(settings.successSubtitle as string);
+          if (settings.successMediaType) setEnteringTextSuccessMediaType(settings.successMediaType as 'image' | 'video');
+          if (settings.successMediaUrl) setEnteringTextSuccessMediaUrl(settings.successMediaUrl as string);
         }
         setInitialLoading(false);
       })
@@ -314,6 +349,24 @@ export default function AdminStationConfigPage() {
       if (Array.isArray(settings.clues)) setAvatarClues(settings.clues as AvatarNamedEntry[]);
       if (Array.isArray(settings.knowledgeGates)) setAvatarKnowledgeGates(settings.knowledgeGates as AvatarKnowledgeGate[]);
       if (settings.hintStrategy) setAvatarHintStrategy(settings.hintStrategy as string);
+    }
+    if (lib.type === 'enteringText') {
+      if (settings.title) setEnteringTextTitle(settings.title as string);
+      if (Array.isArray(settings.fields) && (settings.fields as unknown[]).length > 0) {
+        setEnteringTextFields((settings.fields as Array<Record<string, unknown>>).map((f) => ({
+          statement: (f.statement as string) || '',
+          placeholder: (f.placeholder as string) || (f.description as string) || '',
+          rightAnswer: (f.rightAnswer as string) || '',
+          keywordsBank: (f.keywordsBank as string) || '',
+        })));
+      }
+      if (settings.submitButtonText) setEnteringTextSubmitButtonText(settings.submitButtonText as string);
+      if (settings.returnButtonText) setEnteringTextReturnButtonText(settings.returnButtonText as string);
+      if (typeof settings.maxAttempts === 'number') setEnteringTextMaxAttempts(String(settings.maxAttempts));
+      if (settings.successTitle) setEnteringTextSuccessTitle(settings.successTitle as string);
+      if (settings.successSubtitle) setEnteringTextSuccessSubtitle(settings.successSubtitle as string);
+      if (settings.successMediaType) setEnteringTextSuccessMediaType(settings.successMediaType as 'image' | 'video');
+      if (settings.successMediaUrl) setEnteringTextSuccessMediaUrl(settings.successMediaUrl as string);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -399,6 +452,20 @@ export default function AdminStationConfigPage() {
           .filter((g) => g.trigger && g.reveal);
         settings.hintStrategy = avatarHintStrategy.trim();
       }
+      if (stationType === 'enteringText') {
+        settings.title = enteringTextTitle.trim();
+        settings.fields = enteringTextFields
+          .map((f) => ({ statement: f.statement.trim(), placeholder: f.placeholder.trim(), rightAnswer: f.rightAnswer.trim(), keywordsBank: f.keywordsBank.trim() }))
+          .filter((f) => f.statement);
+        settings.submitButtonText = enteringTextSubmitButtonText.trim() || undefined;
+        settings.returnButtonText = enteringTextReturnButtonText.trim() || undefined;
+        const parsedMaxAttempts = parseInt(enteringTextMaxAttempts, 10);
+        settings.maxAttempts = isNaN(parsedMaxAttempts) || parsedMaxAttempts < 1 ? 3 : parsedMaxAttempts;
+        if (enteringTextSuccessTitle.trim()) settings.successTitle = enteringTextSuccessTitle.trim();
+        if (enteringTextSuccessSubtitle.trim()) settings.successSubtitle = enteringTextSuccessSubtitle.trim();
+        if (enteringTextSuccessMediaType) settings.successMediaType = enteringTextSuccessMediaType;
+        if (enteringTextSuccessMediaUrl.trim()) settings.successMediaUrl = enteringTextSuccessMediaUrl.trim();
+      }
 
       const payload = {
         name: name.trim(),
@@ -437,6 +504,7 @@ export default function AdminStationConfigPage() {
     feedback: 'תחנת משוב - טסט',
     riddle: 'תחנת חידה - טסט',
     avatar: 'תחנת אוואטר - טסט',
+    enteringText: 'תחנת מילוי טקסט - טסט',
   };
 
   const handleFillRandom = () => {
@@ -475,6 +543,15 @@ export default function AdminStationConfigPage() {
     setAvatarOptionalAnswers([]);
     setAvatarForbiddenPhrases([]);
     setAvatarVideos([]);
+    setEnteringTextTitle('');
+    setEnteringTextFields([{ statement: '', placeholder: '', rightAnswer: '', keywordsBank: '' }]);
+    setEnteringTextSubmitButtonText('');
+    setEnteringTextReturnButtonText('');
+    setEnteringTextMaxAttempts('3');
+    setEnteringTextSuccessTitle('');
+    setEnteringTextSuccessSubtitle('');
+    setEnteringTextSuccessMediaType('');
+    setEnteringTextSuccessMediaUrl('');
     if (randomType === 'text') {
       setTextContent('זהו תוכן טקסט לדוגמה עבור תחנת בדיקה. כאן יופיע המידע שהמשתתף צריך לקרוא.');
     } else if (randomType === 'video') {
@@ -515,6 +592,15 @@ export default function AdminStationConfigPage() {
       setAvatarOptionalAnswers(['המשרת', 'הטבח', 'הגננת']);
       setAvatarForbiddenPhrases(['אני לא יודע', 'אין לי מושג']);
       setAvatarVideos([]);
+    } else if (randomType === 'enteringText') {
+      setEnteringTextTitle('טופס פרטים קצרים');
+      setEnteringTextFields([
+        { statement: 'הרוצח:', placeholder: 'הזינו תשובה', rightAnswer: '', keywordsBank: '' },
+        { statement: 'כלי הרצח:', placeholder: 'הזינו תשובה', rightAnswer: '', keywordsBank: '' },
+      ]);
+      setEnteringTextSubmitButtonText('שליחה');
+      setEnteringTextReturnButtonText('ניקוי');
+      setEnteringTextMaxAttempts('3');
     }
   };
 
@@ -579,6 +665,10 @@ export default function AdminStationConfigPage() {
                     <SelectionButton type="button" selected={stationType === 'avatar'} onClick={() => setStationType('avatar')}>
                       <div>{t.typeAvatar}</div>
                       <SelectionSubtextSmall>{t.typeAvatarDesc}</SelectionSubtextSmall>
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={stationType === 'enteringText'} onClick={() => setStationType('enteringText')}>
+                      <div>{t.typeEnteringText}</div>
+                      <SelectionSubtextSmall>{t.typeEnteringTextDesc}</SelectionSubtextSmall>
                     </SelectionButton>
                   </SelectionGroup>
                 </div>
@@ -1250,6 +1340,128 @@ export default function AdminStationConfigPage() {
                     value={avatarHintStrategy}
                     onChange={(e) => setAvatarHintStrategy(e.target.value)}
                   />
+                </VerticalStack>
+              )}
+              {stationType === 'enteringText' && (
+                <VerticalStack>
+                  <SectionLabelNoMargin>{t.enteringTextTitle}</SectionLabelNoMargin>
+                  <Input
+                    placeholder={t.enteringTextTitlePlaceholder}
+                    value={enteringTextTitle}
+                    onChange={(e) => setEnteringTextTitle(e.target.value)}
+                  />
+                  <SectionLabelNoMargin>{t.enteringTextFields}</SectionLabelNoMargin>
+                  {enteringTextFields.map((field, idx) => (
+                    <div key={idx} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <SectionLabelNoMargin style={{ margin: 0 }}>
+                          {t.enteringTextFieldNum} {idx + 1}
+                        </SectionLabelNoMargin>
+                        {enteringTextFields.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setEnteringTextFields((prev) => prev.filter((_, i) => i !== idx))}
+                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
+                          >
+                            {t.avatarRemove}
+                          </button>
+                        )}
+                      </div>
+                      <Input
+                        placeholder={t.enteringTextFieldStatement}
+                        value={field.statement}
+                        onChange={(e) => setEnteringTextFields((prev) => prev.map((f, i) => i === idx ? { ...f, statement: e.target.value } : f))}
+                        style={{ marginBottom: 8 }}
+                      />
+                      <Input
+                        placeholder={t.enteringTextFieldPlaceholder}
+                        value={field.placeholder}
+                        onChange={(e) => setEnteringTextFields((prev) => prev.map((f, i) => i === idx ? { ...f, placeholder: e.target.value } : f))}
+                        style={{ marginBottom: 8 }}
+                      />
+                      <Input
+                        placeholder={t.enteringTextFieldRightAnswer}
+                        value={field.rightAnswer}
+                        onChange={(e) => setEnteringTextFields((prev) => prev.map((f, i) => i === idx ? { ...f, rightAnswer: e.target.value } : f))}
+                        style={{ marginBottom: 8 }}
+                      />
+                      <Input
+                        placeholder={t.enteringTextFieldKeywordsBank}
+                        value={field.keywordsBank}
+                        onChange={(e) => setEnteringTextFields((prev) => prev.map((f, i) => i === idx ? { ...f, keywordsBank: e.target.value } : f))}
+                      />
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setEnteringTextFields((prev) => [...prev, { statement: '', placeholder: '', rightAnswer: '', keywordsBank: '' }])}
+                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    + {t.enteringTextFieldAdd}
+                  </button>
+                  <SectionLabelNoMargin>{t.enteringTextSubmitButtonText}</SectionLabelNoMargin>
+                  <Input
+                    placeholder={t.enteringTextSubmitButtonPlaceholder}
+                    value={enteringTextSubmitButtonText}
+                    onChange={(e) => setEnteringTextSubmitButtonText(e.target.value)}
+                  />
+                  <SectionLabelNoMargin>{t.enteringTextReturnButtonText}</SectionLabelNoMargin>
+                  <Input
+                    placeholder={t.enteringTextReturnButtonPlaceholder}
+                    value={enteringTextReturnButtonText}
+                    onChange={(e) => setEnteringTextReturnButtonText(e.target.value)}
+                  />
+                  <SectionLabelNoMargin>{t.enteringTextMaxAttempts}</SectionLabelNoMargin>
+                  <Input
+                    type="number"
+                    placeholder={t.enteringTextMaxAttemptsPlaceholder}
+                    value={enteringTextMaxAttempts}
+                    onChange={(e) => setEnteringTextMaxAttempts(e.target.value)}
+                    style={{ maxWidth: 120 }}
+                  />
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: 8, paddingTop: 16 }}>
+                    <SectionLabelNoMargin>{t.enteringTextSuccessSection}</SectionLabelNoMargin>
+                    <Input
+                      placeholder={t.enteringTextSuccessTitlePlaceholder}
+                      value={enteringTextSuccessTitle}
+                      onChange={(e) => setEnteringTextSuccessTitle(e.target.value)}
+                      style={{ marginBottom: 8 }}
+                    />
+                    <Input
+                      placeholder={t.enteringTextSuccessSubtitlePlaceholder}
+                      value={enteringTextSuccessSubtitle}
+                      onChange={(e) => setEnteringTextSuccessSubtitle(e.target.value)}
+                      style={{ marginBottom: 8 }}
+                    />
+                    <SectionLabelNoMargin style={{ marginBottom: 6 }}>{t.enteringTextSuccessMediaType}</SectionLabelNoMargin>
+                    <SelectionGroup style={{ marginBottom: 8 }}>
+                      {(['', 'image', 'video'] as const).map((type) => (
+                        <ToggleButton
+                          key={type}
+                          type="button"
+                          selected={enteringTextSuccessMediaType === type}
+                          onClick={() => { setEnteringTextSuccessMediaType(type); setEnteringTextSuccessMediaUrl(''); }}
+                        >
+                          {type === '' ? t.enteringTextSuccessMediaNone : type === 'image' ? t.enteringTextSuccessMediaImage : t.enteringTextSuccessMediaVideo}
+                        </ToggleButton>
+                      ))}
+                    </SelectionGroup>
+                    {enteringTextSuccessMediaType !== '' && (
+                      <InlineRow>
+                        <FileUploadButton
+                          accept={enteringTextSuccessMediaType === 'video' ? 'video/*' : 'image/*'}
+                          onUploaded={(url) => setEnteringTextSuccessMediaUrl(url)}
+                          label={t.upload}
+                          uploadingLabel={t.uploading}
+                        />
+                        <FlexInput
+                          placeholder={t.enteringTextSuccessMediaUrlPlaceholder}
+                          value={enteringTextSuccessMediaUrl}
+                          onChange={(e) => setEnteringTextSuccessMediaUrl(e.target.value)}
+                        />
+                      </InlineRow>
+                    )}
+                  </div>
                 </VerticalStack>
               )}
             </FormSectionCardWide>

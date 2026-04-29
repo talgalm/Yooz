@@ -494,7 +494,7 @@ export interface Game {
 export interface Station {
   _id: string;
   name: string;
-  type?: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback';
+  type?: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'enteringText';
   description?: string;
   customer?: string;
   theme?: string;
@@ -887,6 +887,7 @@ export default function AdminDashboardPage() {
                   { type: 'image', emoji: '🖼️', label: t.createTypeImage },
                   { type: 'riddle', emoji: '🔤', label: t.createTypeRiddle },
                   { type: 'avatar', emoji: '🕵️', label: t.createTypeAvatar },
+                  { type: 'enteringText', emoji: '⌨️', label: t.createTypeEnteringText },
                 ].map(({ type, emoji, label }) => (
                   <TypeTile
                     key={type}

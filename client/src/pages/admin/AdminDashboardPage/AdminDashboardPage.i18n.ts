@@ -63,6 +63,7 @@ export const texts = {
     createTypeImage: 'Image',
     createTypeRiddle: 'Riddle',
     createTypeAvatar: 'Avatar',
+    createTypeEnteringText: 'Entering Text',
   },
   he: {
     title: 'פעילויות',
@@ -128,5 +129,6 @@ export const texts = {
     createTypeImage: 'תמונה',
     createTypeRiddle: 'חידה',
     createTypeAvatar: 'אוואטר',
+    createTypeEnteringText: 'מילוי טקסט',
   },
 };

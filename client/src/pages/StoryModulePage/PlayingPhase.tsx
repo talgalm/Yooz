@@ -14,6 +14,7 @@ import CollageStation from '../../components/stations/CollageStation';
 import FeedbackStation, { type FeedbackResult } from '../../components/stations/FeedbackStation';
 import RiddleStation from '../../components/stations/RiddleStation';
 import AvatarStation from '../../components/stations/AvatarStation';
+import EnteringTextStation from '../../components/stations/EnteringTextStation';
 import { styled, keyframes } from '@mui/material/styles';
 import {
   OutlineButton,
@@ -236,7 +237,7 @@ export default function PlayingPhase({
   const isPuzzleGame = isGameStep && (currentItem as GameItemData).gameType === 'puzzle';
   const isOrderGame = isGameStep && (currentItem as GameItemData).gameType === 'order';
   const isBallGame = isGameStep && (currentItem as GameItemData).gameType === 'ballGame';
-  const isTextVideoImageStation = currentItem.type === 'station' && ['text', 'video', 'image', 'riddle', 'avatar'].includes((currentItem as StationItemData).stationType);
+  const isTextVideoImageStation = currentItem.type === 'station' && ['text', 'video', 'image', 'riddle', 'avatar', 'enteringText'].includes((currentItem as StationItemData).stationType);
   const puzzleSessionChrome = (isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation) ? 'puzzle' : 'default';
   const useDarkChrome = isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation;
   const SessionHeaderIconButton = useDarkChrome ? PuzzleDarkHeaderActionIconButton : DarkHeaderActionIconButton;
@@ -363,6 +364,10 @@ export default function PlayingPhase({
             />
           </MediaGateWrapper>
         );
+      }
+
+      if (station.stationType === 'enteringText') {
+        return <EnteringTextStation station={station} onContinue={onStationContinue} />;
       }
 
       // Unknown station type fallback

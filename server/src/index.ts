@@ -23,6 +23,7 @@ import alertsRouter from './routes/alerts';
 import portalsRouter from './routes/portals';
 import tutorialsRouter from './routes/tutorials';
 import themesRouter from './routes/themes';
+import checkAnswerRouter from './routes/checkAnswer';
 
 const app = express();
 
@@ -58,6 +59,7 @@ app.use('/api/alerts', alertsRouter);
 app.use('/api/admin/portals', portalsRouter);
 app.use('/api/admin/tutorials', tutorialsRouter);
 app.use('/api/admin/themes', themesRouter);
+app.use('/api/check-answer', checkAnswerRouter);
 
 // Serve static client build in production
 app.use(express.static(CLIENT_BUILD_PATH));
