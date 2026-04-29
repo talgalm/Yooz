@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 80" fill="none">
+  <!-- Shadow -->
+  <ellipse cx="30" cy="74" rx="16" ry="3" fill="#000" opacity="0.12"/>
+  <!-- Pot -->
+  <path d="M16 56 L44 56 L41 74 L19 74 Z" fill="#fbfaf6" stroke="#cfc8be" stroke-width="1"/>
+  <rect x="16" y="54" width="28" height="4" rx="1.5" fill="#eae3d4" stroke="#bdb1a0" stroke-width="1"/>
+  <!-- Soil -->
+  <ellipse cx="30" cy="56" rx="13" ry="2.2" fill="#5a3a22"/>
+  <!-- Snake plant leaves (vertical, sword-like) -->
+  <path d="M30 56 Q26 30 24 8 Q23 4 26 4 Q29 4 30 12 Q31 30 32 56 Z" fill="#3f8a44"/>
+  <path d="M30 56 Q34 32 38 12 Q39 6 36 6 Q32 7 31 14 Q30 32 30 56 Z" fill="#4f9c52"/>
+  <path d="M30 56 Q22 38 18 18 Q17 12 20 12 Q24 14 25 22 Q27 38 30 56 Z" fill="#56a85a"/>
+  <path d="M30 56 Q38 40 42 22 Q43 16 40 16 Q36 18 34 26 Q31 40 30 56 Z" fill="#3f8a44"/>
+  <path d="M30 56 L30 14" stroke="#83c785" stroke-width="0.8" opacity="0.6"/>
+  <!-- Light streaks for variegation -->
+  <path d="M28 14 Q27 30 28 50" stroke="#a8d99a" stroke-width="0.8" fill="none" opacity="0.7"/>
+  <path d="M36 18 Q35 32 33 52" stroke="#a8d99a" stroke-width="0.8" fill="none" opacity="0.7"/>
+  <path d="M22 22 Q24 36 27 54" stroke="#a8d99a" stroke-width="0.8" fill="none" opacity="0.7"/>
+</svg>

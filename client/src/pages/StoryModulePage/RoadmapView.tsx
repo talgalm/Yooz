@@ -42,6 +42,15 @@ const fishSwim = keyframes`
   0%   { transform: translateX(-120px); }
   100% { transform: translateX(calc(100vw + 120px)); }
 `;
+const airplaneFly = keyframes`
+  0%   { transform: translateX(-160px); }
+  100% { transform: translateX(calc(100vw + 160px)); }
+`;
+const airplaneWobble = keyframes`
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%      { transform: translateY(-6px) rotate(-2deg); }
+  75%      { transform: translateY(6px) rotate(2deg); }
+`;
 /** Nature sky: straight L→R drift; width from --roadmap-w on PathCanvas (scrolls with layout). */
 const cloudDrift = keyframes`
   0%   { transform: translateX(-140px); }
@@ -157,6 +166,35 @@ const FishOuter = styled('div')<{ duration: number; top: number }>(({ duration, 
   animation: `${fishSwim} ${duration}s linear forwards`,
 }));
 
+const AirplaneOuter = styled('div')<{ duration: number; top: number }>(({ duration, top }) => ({
+  position: 'fixed',
+  left: 0,
+  top,
+  pointerEvents: 'none',
+  userSelect: 'none',
+  zIndex: 50,
+  animation: `${airplaneFly} ${duration}s linear forwards`,
+}));
+
+const AirplaneWobbleWrap = styled('div')<{ wobbleDuration: number }>(({ wobbleDuration }) => ({
+  animation: `${airplaneWobble} ${wobbleDuration}s ease-in-out infinite`,
+}));
+
+const PaperAirplaneSvg = ({ size }: { size: number }) => (
+  <img
+    src="/images/paper-airplane.svg"
+    alt=""
+    aria-hidden
+    style={{
+      display: 'block',
+      width: size,
+      height: size * (368 / 506),
+      filter: 'drop-shadow(0 3px 6px rgba(0,0,0,.18))',
+      transform: 'rotate(-18deg)',
+    }}
+  />
+);
+
 const FishWobbleWrap = styled('div')<{ wobbleDuration: number }>(({ wobbleDuration }) => ({
   animation: `${fishWobble} ${wobbleDuration}s ease-in-out infinite`,
 }));
@@ -260,6 +298,7 @@ const SwimmingFishSvg = ({ size, palette }: { size: number; palette: number }) =
 // ─── Background ───
 
 function SceneBackground({ width: W, height: H, kit }: { width: number; height: number; kit: RoadmapThemeKit }) {
+  const gridSize = kit.gridSize || 32;
   return (
     <svg style={{ position: 'absolute', top: 0, left: 0, zIndex: 0 }}
       width={W} height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
@@ -269,8 +308,21 @@ function SceneBackground({ width: W, height: H, kit }: { width: number; height: 
           <stop offset="55%" stopColor={kit.sceneBgMid} />
           <stop offset="100%" stopColor={kit.sceneBgBottom} />
         </linearGradient>
+        {kit.showGridPattern && (
+          <pattern id="officeGrid" width={gridSize} height={gridSize} patternUnits="userSpaceOnUse">
+            <path
+              d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`}
+              fill="none"
+              stroke={kit.gridLineColor || 'rgba(0,0,0,0.1)'}
+              strokeWidth={1}
+            />
+          </pattern>
+        )}
       </defs>
       <rect x="0" y="0" width={W} height={H} fill="url(#bgGrad)" />
+      {kit.showGridPattern && (
+        <rect x="0" y="0" width={W} height={H} fill="url(#officeGrid)" />
+      )}
     </svg>
   );
 }
@@ -673,8 +725,9 @@ export default function RoadmapView({
   const themedDecorations = useMemo(() => {
     if (theme === 'ocean') return OCEAN_DECORATIONS;
     if (theme === 'desert') return DESERT_DECORATIONS;
+    if (kit.decorationCategories.length === 0) return [];
     return ROADMAP_DECORATIONS;
-  }, [theme]);
+  }, [theme, kit.decorationCategories]);
 
   const treePlacements = useMemo(() => {
     if (W <= 0 || totalHeight <= 0 || items.length < 2) {
@@ -851,6 +904,75 @@ export default function RoadmapView({
     return result;
   }, [W, totalHeight, items, numRows]);
 
+  // ─── Office item placements (per-station counts, scattered freely incl. over the path) ───
+  const officeItemPlacements = useMemo(() => {
+    if (theme !== 'office' || W <= 0 || totalHeight <= 0 || items.length < 1) {
+      return [] as Array<{ src: string; left: number; top: number; width: number; height: number }>;
+    }
+    const seed = hashString(items.map((i) => i._id).join('!')) + W * 13 + 4242;
+    const rng = createSeededRandom(seed);
+
+    const { trackLeft, trackRight } = getTrackMetrics(W);
+    const roadPad = ROAD_BORDER / 2 + 4;
+    const forbidden: Rect[] = [];
+    for (let row = 0; row < numRows; row += 1) {
+      const y = getRowY(row);
+      forbidden.push({ left: trackLeft - roadPad, right: trackRight + roadPad, top: y - roadPad, bottom: y + roadPad });
+      if (row < numRows - 1) {
+        const nextY = getRowY(row + 1);
+        const x = row % 2 === 0 ? trackRight : trackLeft;
+        forbidden.push({ left: x - roadPad, right: x + roadPad, top: y, bottom: nextY });
+      }
+    }
+    for (let i = 0; i < items.length; i += 1) {
+      const pos = getNodePosition(i, W);
+      const r = NODE_SIZE / 2 + 6;
+      forbidden.push({ left: pos.x - r, right: pos.x + r, top: pos.y - r, bottom: pos.y + r });
+    }
+
+    // Counts scale with station count so the canvas always feels populated.
+    const stationFactor = Math.max(1, items.length / 5);
+    const itemSpecs: Array<{ src: string; count: number; width: number; ratio: number }> = [
+      { src: '/images/office/desk_chair_no_bg.svg', count: Math.round(7 * stationFactor), width: 92, ratio: 1 },
+      { src: '/images/office/desk-laptop.svg',     count: Math.round(5 * stationFactor), width: 92, ratio: 140 / 120 },
+      { src: '/images/office/file-cabinet.svg',    count: Math.round(4 * stationFactor), width: 50, ratio: 90 / 70 },
+      { src: '/images/office/plant-fiddle-leaf.svg', count: Math.max(1, Math.round(1 * stationFactor)), width: 56, ratio: 110 / 80 },
+      { src: '/images/office/plant-snake.svg',     count: Math.max(2, Math.round(2 * stationFactor)), width: 38, ratio: 80 / 60 },
+      { src: '/images/office/water_cooler_filing_cabinet.svg', count: Math.round(3 * stationFactor), width: 78, ratio: 1 },
+    ];
+
+    // Flatten + shuffle so item types interleave (not block-grouped).
+    const queue: Array<{ src: string; width: number; ratio: number }> = [];
+    for (const spec of itemSpecs) {
+      for (let n = 0; n < spec.count; n += 1) {
+        queue.push({ src: spec.src, width: spec.width, ratio: spec.ratio });
+      }
+    }
+    for (let i = queue.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(rng() * (i + 1));
+      [queue[i], queue[j]] = [queue[j], queue[i]];
+    }
+
+    const result: Array<{ src: string; left: number; top: number; width: number; height: number }> = [];
+
+    for (const item of queue) {
+      const w = item.width + (rng() - 0.5) * 10;
+      const h = w * item.ratio;
+      let placed = false;
+      for (let attempt = 0; attempt < 1500 && !placed; attempt += 1) {
+        const x = 8 + rng() * Math.max(1, W - 16);
+        const y = PADDING_TOP + 16 + rng() * Math.max(1, totalHeight - PADDING_TOP - PADDING_BOTTOM - 12);
+        const rect: Rect = { left: x - w / 2, right: x + w / 2, top: y - h, bottom: y };
+        if (forbidden.some((f) => rectsOverlap(rect, f, 2))) continue;
+        result.push({ src: item.src, left: x, top: y, width: w, height: h });
+        forbidden.push(rect);
+        placed = true;
+      }
+    }
+
+    return result;
+  }, [theme, W, totalHeight, items, numRows]);
+
   // ─── Animated fish ───
   const [fish, setFish] = useState<Array<{
     id: number; top: number; duration: number;
@@ -885,6 +1007,34 @@ export default function RoadmapView({
 
     return () => clearInterval(interval);
   }, [kit.showFish]);
+
+  // ─── Animated paper airplanes (office) ───
+  const [airplanes, setAirplanes] = useState<Array<{
+    id: number; top: number; duration: number;
+    wobbleDuration: number; size: number;
+  }>>([]);
+  const airplaneIdRef = useRef(0);
+
+  useEffect(() => {
+    if (!kit.showAirplane) return;
+    const vh = window.innerHeight || 600;
+    const interval = setInterval(() => {
+      airplaneIdRef.current += 1;
+      const newPlane = {
+        id: airplaneIdRef.current,
+        top: 80 + Math.random() * (vh - 200),
+        duration: 8 + Math.random() * 5,
+        wobbleDuration: 1.6 + Math.random() * 1.0,
+        size: 50 + Math.random() * 20,
+      };
+      setAirplanes((prev) => [...prev, newPlane]);
+      setTimeout(() => {
+        setAirplanes((prev) => prev.filter((a) => a.id !== newPlane.id));
+      }, (newPlane.duration + 1) * 1000);
+    }, 4500);
+
+    return () => clearInterval(interval);
+  }, [kit.showAirplane]);
 
   // ─── Drifting clouds (nature sky only): straight L→R, quick, max 2 on screen ───
   const [clouds, setClouds] = useState<Array<{ id: number; top: number; duration: number; size: number }>>([]);
@@ -1027,17 +1177,19 @@ export default function RoadmapView({
           {!customTheme?.roadmapImage && <SceneBackground width={W} height={totalHeight} kit={kit} />}
           {!customTheme?.roadmapImage && <WorldDecorations W={W} numRows={numRows} totalH={totalHeight} />}
 
-          <svg style={{ position: 'absolute', top: 0, left: 0, zIndex: 2 }}
-            width={W} height={totalHeight} viewBox={`0 0 ${W} ${totalHeight}`}
-            overflow="visible">
-            <path d={svgPath} fill="none" stroke={kit.roadBorder}
-              strokeWidth={ROAD_BORDER} strokeLinecap="round" strokeLinejoin="round" />
-            <path d={svgPath} fill="none" stroke={pathColor}
-              strokeWidth={ROAD_WIDTH} strokeLinecap="round" strokeLinejoin="round" />
-            <path d={svgPath} fill="none" stroke={kit.roadCenterLine}
-              strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"
-              strokeDasharray="20 24" />
-          </svg>
+          {!kit.hideRoad && (
+            <svg style={{ position: 'absolute', top: 0, left: 0, zIndex: 2 }}
+              width={W} height={totalHeight} viewBox={`0 0 ${W} ${totalHeight}`}
+              overflow="visible">
+              <path d={svgPath} fill="none" stroke={kit.roadBorder}
+                strokeWidth={ROAD_BORDER} strokeLinecap="round" strokeLinejoin="round" />
+              <path d={svgPath} fill="none" stroke={pathColor}
+                strokeWidth={ROAD_WIDTH} strokeLinecap="round" strokeLinejoin="round" />
+              <path d={svgPath} fill="none" stroke={kit.roadCenterLine}
+                strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"
+                strokeDasharray="20 24" />
+            </svg>
+          )}
 
           {/* Footsteps */}
           {showFootsteps && footstepPoints.map((pt, i) => (
@@ -1076,6 +1228,23 @@ export default function RoadmapView({
                 top: h.top,
                 width: h.width,
                 transform: `translate(-50%, -100%)${h.flipX ? ' scaleX(-1)' : ''}`,
+                transformOrigin: 'center bottom',
+              }}
+            />
+          ))}
+
+          {!customTheme?.roadmapImage && officeItemPlacements.map((o, i) => (
+            <HouseDecoration
+              key={`office-${i}`}
+              src={o.src}
+              alt=""
+              aria-hidden
+              style={{
+                left: o.left,
+                top: o.top,
+                width: o.width,
+                height: o.height,
+                transform: 'translate(-50%, -100%)',
                 transformOrigin: 'center bottom',
               }}
             />
@@ -1156,6 +1325,14 @@ export default function RoadmapView({
             <SwimmingFishSvg size={f.size} palette={f.palette} />
           </FishWobbleWrap>
         </FishOuter>
+      ))}
+
+      {!customTheme?.roadmapImage && kit.showAirplane && airplanes.map((a) => (
+        <AirplaneOuter key={`plane-${a.id}`} duration={a.duration} top={a.top}>
+          <AirplaneWobbleWrap wobbleDuration={a.wobbleDuration}>
+            <PaperAirplaneSvg size={a.size} />
+          </AirplaneWobbleWrap>
+        </AirplaneOuter>
       ))}
 
       {!customTheme?.roadmapImage && kit.showTumbleweed && tumbleweeds.map((tw) => (

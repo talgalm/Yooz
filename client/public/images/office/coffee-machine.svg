@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 90" fill="none">
+  <!-- Shadow -->
+  <ellipse cx="35" cy="85" rx="22" ry="3" fill="#000" opacity="0.15"/>
+  <!-- Base -->
+  <rect x="10" y="68" width="50" height="16" rx="2" fill="#3c4250" stroke="#1c2027" stroke-width="1.2"/>
+  <!-- Drip tray -->
+  <rect x="22" y="62" width="26" height="6" rx="1" fill="#5a6271"/>
+  <rect x="24" y="64" width="22" height="2" rx="0.5" fill="#2e3441"/>
+  <!-- Cup -->
+  <path d="M28 56 L28 62 Q28 64 30 64 L40 64 Q42 64 42 62 L42 56 Z" fill="#fff" stroke="#bdb6a8" stroke-width="0.8"/>
+  <ellipse cx="35" cy="57" rx="6.5" ry="1.5" fill="#5a3a22"/>
+  <!-- Spout -->
+  <rect x="32" y="46" width="6" height="8" rx="1" fill="#7a8089"/>
+  <circle cx="35" cy="54" r="1.5" fill="#1c2027"/>
+  <!-- Main body -->
+  <rect x="12" y="8" width="46" height="46" rx="3" fill="#2d333d" stroke="#1c2027" stroke-width="1.2"/>
+  <!-- Top highlight -->
+  <rect x="12" y="8" width="46" height="6" rx="3" fill="#4a5160"/>
+  <!-- Display screen -->
+  <rect x="20" y="18" width="30" height="10" rx="1.5" fill="#3aa0e8"/>
+  <rect x="20" y="18" width="30" height="3" rx="1.5" fill="#5fb8df" opacity="0.7"/>
+  <line x1="24" y1="24" x2="46" y2="24" stroke="#fff" stroke-width="0.6" opacity="0.7"/>
+  <!-- Buttons -->
+  <circle cx="22" cy="36" r="2.5" fill="#7a8089" stroke="#4a5160" stroke-width="0.6"/>
+  <circle cx="30" cy="36" r="2.5" fill="#7a8089" stroke="#4a5160" stroke-width="0.6"/>
+  <circle cx="38" cy="36" r="2.5" fill="#7a8089" stroke="#4a5160" stroke-width="0.6"/>
+  <circle cx="46" cy="36" r="2.5" fill="#e64545" stroke="#a02828" stroke-width="0.6"/>
+  <!-- Steam wand line -->
+  <rect x="24" y="44" width="22" height="3" rx="1" fill="#7a8089"/>
+  <!-- Bean hopper top -->
+  <rect x="24" y="4" width="22" height="6" rx="1.5" fill="#5a3a22" stroke="#2e1f12" stroke-width="0.8"/>
+</svg>

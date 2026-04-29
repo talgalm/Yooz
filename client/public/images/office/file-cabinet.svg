@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 90" fill="none">
+  <!-- Shadow -->
+  <ellipse cx="35" cy="85" rx="26" ry="3" fill="#000" opacity="0.15"/>
+  <!-- Cabinet body -->
+  <rect x="8" y="6" width="54" height="78" rx="2" fill="#c0c5cc" stroke="#7a8089" stroke-width="1.2"/>
+  <!-- Top edge highlight -->
+  <rect x="8" y="6" width="54" height="4" rx="2" fill="#d4d8de"/>
+  <!-- Drawer separators -->
+  <line x1="8" y1="32" x2="62" y2="32" stroke="#7a8089" stroke-width="1.2"/>
+  <line x1="8" y1="58" x2="62" y2="58" stroke="#7a8089" stroke-width="1.2"/>
+  <!-- Drawer 1 -->
+  <rect x="11" y="11" width="48" height="19" rx="1" fill="#c8cdd3" opacity="0.5"/>
+  <rect x="28" y="20" width="14" height="3" rx="1" fill="#7a8089"/>
+  <circle cx="35" cy="21.5" r="1" fill="#4a5160"/>
+  <!-- Drawer 2 -->
+  <rect x="11" y="35" width="48" height="21" rx="1" fill="#c8cdd3" opacity="0.5"/>
+  <rect x="28" y="45" width="14" height="3" rx="1" fill="#7a8089"/>
+  <circle cx="35" cy="46.5" r="1" fill="#4a5160"/>
+  <!-- Drawer 3 -->
+  <rect x="11" y="61" width="48" height="21" rx="1" fill="#c8cdd3" opacity="0.5"/>
+  <rect x="28" y="71" width="14" height="3" rx="1" fill="#7a8089"/>
+  <circle cx="35" cy="72.5" r="1" fill="#4a5160"/>
+  <!-- Side highlight -->
+  <rect x="9" y="10" width="2" height="72" fill="#d4d8de" opacity="0.6"/>
+</svg>

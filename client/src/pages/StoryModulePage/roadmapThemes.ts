@@ -25,6 +25,11 @@ export interface RoadmapThemeKit {
   showTumbleweed: boolean;
   showHouses: boolean;
   showSideWaves: boolean;
+  showAirplane?: boolean;
+  showGridPattern?: boolean;
+  gridLineColor?: string;
+  gridSize?: number;
+  hideRoad?: boolean;
   decorationCategories: string[];
 }
 
@@ -118,10 +123,45 @@ export const DESERT_THEME: RoadmapThemeKit = {
   decorationCategories: ['Cactus', 'DesertRocks', 'SandDunes', 'DesertPlants'],
 };
 
+// ─── Office ───
+
+export const OFFICE_THEME: RoadmapThemeKit = {
+  containerBg: '#8a7c6a',
+  headerGradient: 'linear-gradient(135deg, rgba(101,82,59,0.94) 0%, rgba(120,98,72,0.90) 100%)',
+  headerBorder: 'rgba(255,255,255,0.10)',
+  sceneBgTop: '#ECE4D2',
+  sceneBgMid: '#E8E0CC',
+  sceneBgBottom: '#E4DBC6',
+  roadBorder: '#6B5A3E',
+  roadSurface: '#A88B5F',
+  roadCenterLine: 'rgba(255,255,255,.18)',
+  nodeActiveBorder: '#6B5A3E',
+  nodeActiveBg: '#E8C878',
+  nodeCompletedBorder: '#4A3A22',
+  nodeCompletedBg: '#E8C878',
+  nodeLockedBorder: '#9A8A70',
+  nodeLockedBg: '#C8BCA0',
+  nodeNumberColor: '#fff',
+  nodeLabelColor: '#3A2E1E',
+  nodeLabelShadow: '0 1px 3px rgba(255,255,255,.4)',
+  pulseRingColor: 'rgba(232,200,120,.5)',
+  showFish: false,
+  showClouds: false,
+  showTumbleweed: false,
+  showHouses: false,
+  showSideWaves: false,
+  showAirplane: true,
+  showGridPattern: true,
+  gridLineColor: 'rgba(140,118,82,0.18)',
+  gridSize: 32,
+  decorationCategories: [],
+};
+
 export function getThemeKit(theme?: string): RoadmapThemeKit {
   switch (theme) {
     case 'ocean':  return OCEAN_THEME;
     case 'desert': return DESERT_THEME;
+    case 'office': return OFFICE_THEME;
     default:       return NATURE_THEME;
   }
 }

@@ -1,0 +1,93 @@
+<svg width="100%" viewBox="0 0 720 720" xmlns="http://www.w3.org/2000/svg" role="img" style="">
+<title style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">L-shaped office desk and white office chair</title>
+<desc style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">Top-down illustration of a light gray L-shaped desk with two equal arms and a white wheeled office chair angled near the inner corner, on a transparent background.</desc>
+
+<defs>
+<linearGradient id="deskTopGrad" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#fafafa"/>
+<stop offset="1" stop-color="#dadbde"/>
+</linearGradient>
+<radialGradient id="seatGrad" cx="0.4" cy="0.3" r="0.8">
+<stop offset="0" stop-color="#ffffff"/>
+<stop offset="1" stop-color="#bcbec3"/>
+</radialGradient>
+<radialGradient id="backGrad" cx="0.5" cy="0.3" r="0.7">
+<stop offset="0" stop-color="#ffffff"/>
+<stop offset="1" stop-color="#c4c6cb"/>
+</radialGradient>
+<radialGradient id="wheelHub" cx="0.5" cy="0.5" r="0.5">
+<stop offset="0" stop-color="#f0f1f3"/>
+<stop offset="0.7" stop-color="#bdbfc4"/>
+<stop offset="1" stop-color="#8b8e94"/>
+</radialGradient>
+</defs>
+
+<!-- ===========================
+     L-SHAPED DESK
+     =========================== -->
+
+<!-- desk top surface -->
+<path d="M 70 78 L 70 555 L 280 555 L 280 290 L 600 290 L 600 78 Z" fill="url(#deskTopGrad)" stroke="#7d8086" stroke-width="2" stroke-linejoin="round" style="stroke:rgb(125, 128, 134);color:rgb(255, 255, 255);stroke-width:2px;stroke-linecap:butt;stroke-linejoin:round;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+<!-- inner edges of the L notch -->
+<path d="M 280 290 L 600 290" stroke="#9a9da3" stroke-width="1.5" fill="none" style="fill:none;stroke:rgb(154, 157, 163);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<path d="M 280 290 L 280 555" stroke="#9a9da3" stroke-width="1.5" fill="none" style="fill:none;stroke:rgb(154, 157, 163);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+<!-- subtle inner highlight on top of desk -->
+<path d="M 78 86 L 78 547 L 272 547 L 272 282 L 592 282 L 592 86 Z" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.6" style="fill:none;stroke:rgb(255, 255, 255);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.6;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+<!-- desk legs visible at front edge (bottom of vertical arm) -->
+<g fill="#bcbec3" stroke="#7d8086" stroke-width="1.5" style="fill:rgb(188, 190, 195);stroke:rgb(125, 128, 134);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+  <rect x="88" y="555" width="14" height="32" rx="2" style="fill:rgb(188, 190, 195);stroke:rgb(125, 128, 134);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <rect x="248" y="555" width="14" height="32" rx="2" style="fill:rgb(188, 190, 195);stroke:rgb(125, 128, 134);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+</g>
+
+<!-- ===========================
+     OFFICE CHAIR (rotated 180°)
+     =========================== -->
+
+<g transform="translate(430,440)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+
+  <!-- 5-star wheel base -->
+  <g stroke="#7e8188" stroke-width="9" stroke-linecap="round" fill="none" opacity="0.95" style="fill:none;stroke:rgb(126, 129, 136);color:rgb(255, 255, 255);stroke-width:9px;stroke-linecap:round;stroke-linejoin:miter;opacity:0.95;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <line x1="0" y1="0" x2="58" y2="-65" style="fill:none;stroke:rgb(126, 129, 136);color:rgb(255, 255, 255);stroke-width:9px;stroke-linecap:round;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="0" y1="0" x2="86" y2="20" style="fill:none;stroke:rgb(126, 129, 136);color:rgb(255, 255, 255);stroke-width:9px;stroke-linecap:round;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="0" y1="0" x2="35" y2="82" style="fill:none;stroke:rgb(126, 129, 136);color:rgb(255, 255, 255);stroke-width:9px;stroke-linecap:round;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="0" y1="0" x2="-58" y2="70" style="fill:none;stroke:rgb(126, 129, 136);color:rgb(255, 255, 255);stroke-width:9px;stroke-linecap:round;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <line x1="0" y1="0" x2="-86" y2="-15" style="fill:none;stroke:rgb(126, 129, 136);color:rgb(255, 255, 255);stroke-width:9px;stroke-linecap:round;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  </g>
+  <!-- caster wheels -->
+  <g fill="#5e6168" stroke="#3a3d42" stroke-width="1.5" style="fill:rgb(94, 97, 104);stroke:rgb(58, 61, 66);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+    <ellipse cx="58" cy="-65" rx="10" ry="7" style="fill:rgb(94, 97, 104);stroke:rgb(58, 61, 66);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <ellipse cx="86" cy="20" rx="10" ry="7" style="fill:rgb(94, 97, 104);stroke:rgb(58, 61, 66);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <ellipse cx="35" cy="82" rx="10" ry="7" style="fill:rgb(94, 97, 104);stroke:rgb(58, 61, 66);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <ellipse cx="-58" cy="70" rx="10" ry="7" style="fill:rgb(94, 97, 104);stroke:rgb(58, 61, 66);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <ellipse cx="-86" cy="-15" rx="10" ry="7" style="fill:rgb(94, 97, 104);stroke:rgb(58, 61, 66);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  </g>
+
+  <!-- center hub / gas cylinder -->
+  <circle cx="0" cy="0" r="20" fill="url(#wheelHub)" stroke="#5e6168" stroke-width="1.5" style="stroke:rgb(94, 97, 104);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  <circle cx="0" cy="0" r="9" fill="#828590" stroke="#5e6168" stroke-width="1" style="fill:rgb(130, 133, 144);stroke:rgb(94, 97, 104);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+  <!-- Seat & back rotated 158° (-22 + 180) -->
+  <g transform="rotate(158) translate(0,-18)" style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
+
+    <!-- seat cushion -->
+    <rect x="-58" y="-50" width="116" height="100" rx="22" fill="url(#seatGrad)" stroke="#7d8086" stroke-width="1.8" style="stroke:rgb(125, 128, 134);color:rgb(255, 255, 255);stroke-width:1.8px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <rect x="-50" y="-42" width="100" height="84" rx="16" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.65" style="fill:none;stroke:rgb(255, 255, 255);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.65;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+    <!-- armrests -->
+    <rect x="-72" y="-30" width="14" height="58" rx="6" fill="#dadbde" stroke="#7d8086" stroke-width="1.4" style="fill:rgb(218, 219, 222);stroke:rgb(125, 128, 134);color:rgb(255, 255, 255);stroke-width:1.4px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <rect x="58" y="-30" width="14" height="58" rx="6" fill="#dadbde" stroke="#7d8086" stroke-width="1.4" style="fill:rgb(218, 219, 222);stroke:rgb(125, 128, 134);color:rgb(255, 255, 255);stroke-width:1.4px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+    <!-- backrest -->
+    <rect x="-54" y="-78" width="108" height="38" rx="18" fill="url(#backGrad)" stroke="#7d8086" stroke-width="1.8" style="stroke:rgb(125, 128, 134);color:rgb(255, 255, 255);stroke-width:1.8px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+    <rect x="-46" y="-72" width="92" height="26" rx="12" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.6" style="fill:none;stroke:rgb(255, 255, 255);color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:0.6;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+
+    <!-- back-to-seat connector -->
+    <rect x="-8" y="-42" width="16" height="6" fill="#a8abb0" style="fill:rgb(168, 171, 176);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, &quot;system-ui&quot;, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+  </g>
+
+</g>
+
+</svg>
