@@ -52,7 +52,7 @@ function validateActivityPayload(body: CreateActivityRequest): string | null {
 }
 
 async function buildActivityData(body: CreateActivityRequest, existingPasswordHash?: string): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId } = body;
+  const { name, loginFields, emailGoogle, connectionType, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, activityDurationMinutes } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -151,6 +151,12 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
   } else {
     data.customInstructions = undefined;
   }
+
+  // Handle leaderboard mode
+  data.leaderboardMode = leaderboardMode === 'time' ? 'time' : 'points';
+  data.activityDurationMinutes = (leaderboardMode === 'time' && activityDurationMinutes && activityDurationMinutes > 0)
+    ? activityDurationMinutes
+    : undefined;
 
   // Handle continuous activity
   data.isContinuous = isContinuous === true;

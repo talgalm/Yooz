@@ -221,6 +221,8 @@ export interface CreateActivityRequest {
   managerPassword?: string;
   isContinuous?: boolean;
   portalId?: string;
+  leaderboardMode?: 'points' | 'time';
+  activityDurationMinutes?: number;
 }
 
 export interface ActivityConfigResponse {

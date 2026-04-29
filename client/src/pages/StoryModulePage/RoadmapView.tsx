@@ -545,9 +545,7 @@ interface RoadmapViewProps {
   items: ModuleItemData[];
   currentItemIndex: number;
   completedCount: number;
-  /** Running total (games) minus hint penalties — same basis as the finish screen. */
   currentPoints: number;
-  /** Optional: animate header points from → to when returning from a game. */
   pointsRoll?: { from: number; to: number } | null;
   onPointsRollComplete?: () => void;
   showFootsteps: boolean;
@@ -559,11 +557,15 @@ interface RoadmapViewProps {
   t: Record<string, string>;
   theme?: string;
   customTheme?: CustomThemeData;
+  leaderboardMode?: 'points' | 'time';
+  elapsedSeconds?: number;
+  activityDurationMinutes?: number;
 }
 
 export default function RoadmapView({
   items, currentItemIndex, completedCount, currentPoints, pointsRoll, onPointsRollComplete,
   showFootsteps, onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, popupModal, t, theme, customTheme,
+  leaderboardMode, elapsedSeconds, activityDurationMinutes,
 }: RoadmapViewProps) {
   const kit = useMemo(() => getThemeKit(theme), [theme]);
   const activeNodeColor = customTheme?.roadmapActiveNodeColor || NATURE_THEME.nodeActiveBg;
@@ -987,6 +989,9 @@ export default function RoadmapView({
       currentPoints={currentPoints}
       pointsRoll={pointsRoll}
       onPointsRollComplete={onPointsRollComplete}
+      leaderboardMode={leaderboardMode}
+      elapsedSeconds={elapsedSeconds}
+      activityDurationMinutes={activityDurationMinutes}
       t={t}
       thirdSlot={onViewLeaderboard ? (
         <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>

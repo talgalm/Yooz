@@ -114,6 +114,8 @@ export interface ActivityModuleResponse {
   guidelines?: string;
   customInstructions?: CustomInstructionsData;
   isContinuous?: boolean;
+  leaderboardMode?: 'points' | 'time';
+  activityDurationMinutes?: number;
 }
 
 export interface LeaderboardEntry {
@@ -121,6 +123,7 @@ export interface LeaderboardEntry {
   name: string;
   group?: string;
   score: number;
+  durationMs?: number;
 }
 
 export type Phase = 'roadmap' | 'playing' | 'summary' | 'finish' | 'leaderboard';

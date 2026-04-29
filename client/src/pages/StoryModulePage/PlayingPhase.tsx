@@ -204,6 +204,9 @@ interface PlayingPhaseProps {
   currentPoints: number;
   popupModal: React.ReactNode;
   t: Record<string, string>;
+  leaderboardMode?: 'points' | 'time';
+  elapsedSeconds?: number;
+  activityDurationMinutes?: number;
 }
 
 export default function PlayingPhase({
@@ -230,6 +233,9 @@ export default function PlayingPhase({
   currentPoints,
   popupModal,
   t,
+  leaderboardMode,
+  elapsedSeconds,
+  activityDurationMinutes,
 }: PlayingPhaseProps) {
   const activityHeaderSlot = useActivityPlayingHeaderSlot();
   const { toggle: toggleHelpChat } = useHelpChat();
@@ -491,6 +497,9 @@ export default function PlayingPhase({
       t={t}
       thirdSlot={headerThirdSlot}
       chromeVariant={puzzleSessionChrome}
+      leaderboardMode={leaderboardMode}
+      elapsedSeconds={elapsedSeconds}
+      activityDurationMinutes={activityDurationMinutes}
       topRow={stationHintText && !isRiddleStation ? (
         <SessionHintButton type="button" onClick={onStationHintClick}>
           {stationHintUsed ? t.showStationHint : t.stationHint}

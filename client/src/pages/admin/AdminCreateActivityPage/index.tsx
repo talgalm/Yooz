@@ -316,6 +316,8 @@ export default function AdminCreateActivityPage() {
 
   const [showStationNumbers, setShowStationNumbers] = useState(false);
 
+  const [leaderboardMode, setLeaderboardMode] = useState<'points' | 'time'>('points');
+  const [activityDurationMinutes, setActivityDurationMinutes] = useState('');
   const [isContinuous, setIsContinuous] = useState(false);
   const [portalId, setPortalId] = useState('');
   const [portals, setPortals] = useState<{ _id: string; name: string; code: string }[]>([]);
@@ -435,6 +437,8 @@ export default function AdminCreateActivityPage() {
           setIsContinuous(true);
           if (a.portalId) setPortalId(a.portalId);
         }
+        if (a.leaderboardMode) setLeaderboardMode(a.leaderboardMode as 'points' | 'time');
+        if (a.activityDurationMinutes) setActivityDurationMinutes(String(a.activityDurationMinutes));
         setInitialLoading(false);
       })
       .catch(() => navigate('/admin/dashboard'));
@@ -573,6 +577,11 @@ export default function AdminCreateActivityPage() {
       if (!alwaysOpen) {
         if (scheduledStart) payload.scheduledStart = new Date(scheduledStart).toISOString();
         if (scheduledEnd) payload.scheduledEnd = new Date(scheduledEnd).toISOString();
+      }
+      payload.leaderboardMode = leaderboardMode;
+      if (leaderboardMode === 'time' && activityDurationMinutes.trim()) {
+        const parsed = parseInt(activityDurationMinutes, 10);
+        if (!isNaN(parsed) && parsed > 0) payload.activityDurationMinutes = parsed;
       }
       if (isContinuous) {
         payload.isContinuous = true;
@@ -969,6 +978,41 @@ export default function AdminCreateActivityPage() {
                       />
                       {t.showStationNumbers}
                     </label>
+                  )}
+                </SectionCardWide>
+
+                <SectionCardWide>
+                  <SectionHeader>
+                    <SectionHeaderTitle>{t.leaderboardModeSection}</SectionHeaderTitle>
+                  </SectionHeader>
+                  <SectionDescription style={{ margin: 0 }}>{t.leaderboardModeDesc}</SectionDescription>
+                  <SelectionGroup>
+                    <SelectionButton type="button" selected={leaderboardMode === 'points'} onClick={() => setLeaderboardMode('points')}>
+                      {t.leaderboardModePoints}
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={leaderboardMode === 'time'} onClick={() => setLeaderboardMode('time')}>
+                      {t.leaderboardModeTime}
+                    </SelectionButton>
+                  </SelectionGroup>
+                  {leaderboardMode === 'time' && (
+                    <>
+                      <SectionDescription style={{ margin: '4px 0 0', color: '#6c5ce7', fontSize: 13 }}>
+                        {t.leaderboardModeTimeDesc}
+                      </SectionDescription>
+                      <SectionLabelSmall style={{ marginTop: 12 }}>{t.activityDurationLabel}</SectionLabelSmall>
+                      <Input
+                        type="number"
+                        placeholder={t.activityDurationPlaceholder}
+                        value={activityDurationMinutes}
+                        onChange={(e) => setActivityDurationMinutes(e.target.value)}
+                        style={{ maxWidth: 140 }}
+                      />
+                      {activityDurationMinutes.trim() && (
+                        <SectionDescription style={{ margin: '4px 0 0', color: '#888', fontSize: 12 }}>
+                          {t.activityDurationHint}
+                        </SectionDescription>
+                      )}
+                    </>
                   )}
                 </SectionCardWide>
 

@@ -369,6 +369,9 @@ interface SpidersViewProps {
   theme?: string;
   customTheme?: CustomThemeData;
   showStationNumbers?: boolean;
+  leaderboardMode?: 'points' | 'time';
+  elapsedSeconds?: number;
+  activityDurationMinutes?: number;
 }
 
 export default function SpidersView({
@@ -383,6 +386,9 @@ export default function SpidersView({
   theme,
   customTheme,
   showStationNumbers,
+  leaderboardMode,
+  elapsedSeconds,
+  activityDurationMinutes,
 }: SpidersViewProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState<{ w: number; h: number } | null>(null);
@@ -582,6 +588,9 @@ export default function SpidersView({
         onPointsRollComplete={() => {}}
         onLogout={onLogout}
         t={t}
+        leaderboardMode={leaderboardMode}
+        elapsedSeconds={elapsedSeconds}
+        activityDurationMinutes={activityDurationMinutes}
         thirdSlot={
           <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
             <SessionHeaderTrophyIcon />

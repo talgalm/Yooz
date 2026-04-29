@@ -64,6 +64,7 @@ const FullScreenLoader = styled('div')({
   justifyContent: 'center',
 });
 
+
 const SummaryTotal = styled(Title)({
   fontSize: 36,
   color: PRIMARY,
@@ -263,7 +264,18 @@ export default function StoryModulePage() {
   const [entryTransitionStage, setEntryTransitionStage] = useState<'idle' | 'closing' | 'opening'>('idle');
   const scoresSaved = useRef(false);
   const entryTransitionTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const sessionStartedAt = useRef(Date.now());
+  const sessionStartedAt = useRef((() => {
+    const token = localStorage.getItem('yooz_token') ?? 'anon';
+    const key = `yooz_start_${code}_${token}`;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      const t = parseInt(stored, 10);
+      if (!isNaN(t)) return t;
+    }
+    const now = Date.now();
+    localStorage.setItem(key, String(now));
+    return now;
+  })());
   const itemStartTime = useRef(Date.now());
 
   // Guidelines popup (shown once on first roadmap entry)
@@ -294,6 +306,27 @@ export default function StoryModulePage() {
   // Leaderboard state
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+
+  // Live timer for time-mode leaderboard
+  const [elapsedSeconds, setElapsedSeconds] = useState(() =>
+    Math.floor((Date.now() - sessionStartedAt.current) / 1000)
+  );
+  const [showTimeWarning, setShowTimeWarning] = useState(false);
+  const timeWarningShown = useRef(false);
+  const isTimeMode = data?.leaderboardMode === 'time';
+  useEffect(() => {
+    if (!isTimeMode) return;
+    const id = setInterval(() => {
+      const secs = Math.floor((Date.now() - sessionStartedAt.current) / 1000);
+      setElapsedSeconds(secs);
+      const limitMins = data?.activityDurationMinutes;
+      if (limitMins && !timeWarningShown.current && secs >= limitMins * 60 - 60) {
+        timeWarningShown.current = true;
+        setShowTimeWarning(true);
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [isTimeMode, data?.activityDurationMinutes]);
   const [ballGameMuted, setBallGameMuted] = useState(false);
 
   /** Roadmap header: animate points from → to after a game (ATM-style tally). */
@@ -432,6 +465,8 @@ export default function StoryModulePage() {
     const loginPath = code ? `/play/${code}` : '/';
     if (countdownRef.current) clearInterval(countdownRef.current);
     if (code) sessionStorage.removeItem(`yooz_session_${code}`);
+    const token = localStorage.getItem('yooz_token') ?? 'anon';
+    if (code) localStorage.removeItem(`yooz_start_${code}_${token}`);
     navigate(loginPath, { replace: true });
     logout();
   }, [code, logout, navigate]);
@@ -1058,6 +1093,9 @@ export default function StoryModulePage() {
             theme={data.module.theme}
             customTheme={data.module.customTheme}
             showStationNumbers={data.module.showStationNumbers}
+            leaderboardMode={data.leaderboardMode}
+            elapsedSeconds={elapsedSeconds}
+            activityDurationMinutes={data.activityDurationMinutes}
           />
           {showGuidelines && !currentPopup && (
             <GuidelinesPopup
@@ -1093,6 +1131,9 @@ export default function StoryModulePage() {
           t={t}
           theme={data.module.theme}
           customTheme={data.module.customTheme}
+          leaderboardMode={data.leaderboardMode}
+          elapsedSeconds={elapsedSeconds}
+          activityDurationMinutes={data.activityDurationMinutes}
         />
         {showGuidelines && !currentPopup && (
           <GuidelinesPopup
@@ -1154,6 +1195,7 @@ export default function StoryModulePage() {
           currentParticipantName={participant?.name}
           isLoading={leaderboardLoading}
           bgStyle={bgStyle}
+          leaderboardMode={data.leaderboardMode}
           onBack={handleBackFromLeaderboard}
           onLogout={handleExit}
           t={t}
@@ -1280,6 +1322,9 @@ export default function StoryModulePage() {
         onCloseHintText={() => setShowStationHintText(false)}
         popupModal={popupModal}
         t={t}
+        leaderboardMode={data.leaderboardMode}
+        elapsedSeconds={elapsedSeconds}
+        activityDurationMinutes={data.activityDurationMinutes}
       />
       </ActivityPlayingHeaderProvider>
       {entryTransitionStage !== 'idle' && (
@@ -1294,6 +1339,32 @@ export default function StoryModulePage() {
           onDismiss={handleGuidelinesDismiss}
           t={t}
         />
+      )}
+
+      {/* 1-minute time warning popup */}
+      {showTimeWarning && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9998,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: '28px 32px', maxWidth: 340, width: '90%',
+            textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', direction: 'rtl',
+          }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>⏰</div>
+            <h3 style={{ margin: '0 0 8px', fontSize: 20, color: '#333', fontWeight: 700 }}>נשארה דקה אחת!</h3>
+            <p style={{ margin: '0 0 20px', fontSize: 15, color: '#666' }}>נשארה דקה אחת לסיום הפעילות</p>
+            <button
+              onClick={() => setShowTimeWarning(false)}
+              style={{
+                padding: '10px 32px', borderRadius: 10, border: 'none',
+                background: '#e74c3c', color: '#fff', fontSize: 15, cursor: 'pointer', fontWeight: 700,
+              }}
+            >
+              הבנתי
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Exit confirmation for continuous activities */}

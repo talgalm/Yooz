@@ -237,6 +237,14 @@ function formatLeaderboardScore(score: number): string {
   return Number.isInteger(t) ? String(t) : t.toFixed(1);
 }
 
+/** Format milliseconds as m:ss (e.g. 75300 → "1:15") */
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
 // ─── Component ───
 
 interface LeaderboardViewProps {
@@ -245,6 +253,7 @@ interface LeaderboardViewProps {
   currentParticipantName?: string;
   isLoading: boolean;
   bgStyle: React.CSSProperties;
+  leaderboardMode?: 'points' | 'time';
   onBack: () => void;
   onLogout: () => void;
   t: Record<string, string>;
@@ -255,6 +264,7 @@ export default function LeaderboardView({
   leaderboard,
   currentParticipantName,
   isLoading,
+  leaderboardMode = 'points',
   onBack,
   onLogout,
   t,
@@ -306,8 +316,12 @@ export default function LeaderboardView({
                     {/* Name — center */}
                     <PlayerName>{entry.name}</PlayerName>
 
-                    {/* Score — left side in RTL */}
-                    <ScoreValue>{formatLeaderboardScore(entry.score)}</ScoreValue>
+                    {/* Score / time — left side in RTL */}
+                    <ScoreValue>
+                      {leaderboardMode === 'time' && entry.durationMs != null
+                        ? formatDuration(entry.durationMs)
+                        : formatLeaderboardScore(entry.score)}
+                    </ScoreValue>
                   </PlayerCard>
                 );
               })}

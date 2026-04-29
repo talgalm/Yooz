@@ -82,6 +82,10 @@ export interface IActivity {
   /** When true, participants must login via portal username */
   isContinuous?: boolean;
   loginComponent?: string; // legacy
+  /** Leaderboard scoring mode */
+  leaderboardMode?: 'points' | 'time';
+  /** Optional time limit in minutes (only relevant when leaderboardMode is 'time') */
+  activityDurationMinutes?: number;
   /** Share button analytics */
   shareClicks?: number;
   shareCompleted?: number;
@@ -170,6 +174,8 @@ const activitySchema = new Schema<IActivity>({
   portalId: { type: Schema.Types.ObjectId, ref: 'Portal' },
   isContinuous: { type: Boolean, default: false },
   loginComponent: { type: String }, // legacy
+  leaderboardMode: { type: String, enum: ['points', 'time'], default: 'points' },
+  activityDurationMinutes: { type: Number },
   shareClicks: { type: Number, default: 0 },
   shareCompleted: { type: Number, default: 0 },
   missionPuzzleCompletions: { type: Number, default: 0 },

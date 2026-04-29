@@ -209,10 +209,12 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     guidelines: activity.guidelines || undefined,
     customInstructions: activity.customInstructions || undefined,
     ...(activity.isContinuous && { isContinuous: true }),
+    leaderboardMode: activity.leaderboardMode || 'points',
+    ...(activity.activityDurationMinutes && { activityDurationMinutes: activity.activityDurationMinutes }),
   });
 });
 
-// Get leaderboard for activity (public, sorted by totalScore desc)
+// Get leaderboard for activity (public)
 router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Response) => {
   const { code } = req.params;
   const activity = await Activity.findOne({ code });
@@ -221,22 +223,43 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
     return;
   }
 
-  const reports = await Report.find(
-    { activityId: activity._id, 'data.totalScore': { $exists: true } },
-    { participantName: 1, group: 1, data: 1 }
-  )
-    .sort({ 'data.totalScore': -1 })
-    .limit(50)
-    .lean();
+  const isTimeMode = activity.leaderboardMode === 'time';
 
-  const leaderboard = reports.map((r, i) => ({
-    rank: i + 1,
-    name: r.participantName,
-    group: r.group,
-    score: (r.data as { totalScore?: number }).totalScore ?? 0,
-  }));
+  let leaderboard;
+  if (isTimeMode) {
+    const reports = await Report.find(
+      { activityId: activity._id, completionStatus: 'completed', sessionDurationMs: { $exists: true, $gt: 0 } },
+      { participantName: 1, group: 1, sessionDurationMs: 1 }
+    )
+      .sort({ sessionDurationMs: 1 })
+      .limit(50)
+      .lean();
 
-  res.json({ leaderboard });
+    leaderboard = reports.map((r, i) => ({
+      rank: i + 1,
+      name: r.participantName,
+      group: r.group,
+      score: 0,
+      durationMs: r.sessionDurationMs as number,
+    }));
+  } else {
+    const reports = await Report.find(
+      { activityId: activity._id, 'data.totalScore': { $exists: true } },
+      { participantName: 1, group: 1, data: 1 }
+    )
+      .sort({ 'data.totalScore': -1 })
+      .limit(50)
+      .lean();
+
+    leaderboard = reports.map((r, i) => ({
+      rank: i + 1,
+      name: r.participantName,
+      group: r.group,
+      score: (r.data as { totalScore?: number }).totalScore ?? 0,
+    }));
+  }
+
+  res.json({ leaderboard, leaderboardMode: activity.leaderboardMode || 'points' });
 });
 
 // Save incremental progress after each game/station
