@@ -2,6 +2,7 @@ import React from 'react';
 import NatureBackground from './NatureBackground';
 import OceanBackground from './OceanBackground';
 import DesertBackground from './DesertBackground';
+import OfficeBackground from './OfficeBackground';
 import type { CustomThemeData } from '../pages/StoryModulePage/types';
 
 interface ThemedBackgroundProps {
@@ -37,6 +38,8 @@ export default function ThemedBackground({ theme, customTheme, children }: Theme
       return <OceanBackground>{children}</OceanBackground>;
     case 'desert':
       return <DesertBackground>{children}</DesertBackground>;
+    case 'office':
+      return <OfficeBackground>{children}</OfficeBackground>;
     default:
       return <NatureBackground>{children}</NatureBackground>;
   }
@@ -46,6 +49,7 @@ export function getThemeShellColor(theme?: string): string {
   switch (theme) {
     case 'ocean':  return '#428bad';
     case 'desert': return '#D4A84B';
+    case 'office': return '#8a7c6a';
     default:       return '#8fb248';
   }
 }
@@ -55,6 +59,7 @@ export function getThemeSkyColor(theme?: string): string {
   switch (theme) {
     case 'ocean':  return '#5ABED6';
     case 'desert': return '#F0C860';
+    case 'office': return '#ECE4D2';
     default:       return '#b8e8f0';
   }
 }
@@ -64,6 +69,7 @@ export function getThemeGroundColor(theme?: string): string {
   switch (theme) {
     case 'ocean':  return '#0e3a58';
     case 'desert': return '#C89838';
+    case 'office': return '#E4DBC6';
     default:       return '#4b8838';
   }
 }
@@ -79,6 +85,11 @@ export function getThemeTransitionBackground(theme?: string): string {
       return `
         radial-gradient(circle at center, rgba(255,255,255,0.18) 0%, rgba(255,240,180,0.1) 26%, rgba(200,152,56,0.25) 56%, rgba(152,112,24,0.4) 100%),
         linear-gradient(180deg, rgba(240,200,96,0.2) 0%, rgba(200,152,56,0.25) 42%, rgba(136,96,16,0.35) 100%)
+      `;
+    case 'office':
+      return `
+        radial-gradient(circle at center, rgba(255,255,255,0.20) 0%, rgba(255,248,228,0.08) 26%, rgba(140,118,82,0.20) 56%, rgba(101,82,59,0.35) 100%),
+        linear-gradient(180deg, rgba(236,228,210,0.18) 0%, rgba(200,180,140,0.20) 42%, rgba(120,98,72,0.32) 100%)
       `;
     default:
       return `

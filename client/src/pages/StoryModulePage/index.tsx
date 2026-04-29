@@ -320,7 +320,12 @@ export default function StoryModulePage() {
       const secs = Math.floor((Date.now() - sessionStartedAt.current) / 1000);
       setElapsedSeconds(secs);
       const limitMins = data?.activityDurationMinutes;
-      if (limitMins && !timeWarningShown.current && secs >= limitMins * 60 - 60) {
+      if (
+        limitMins
+        && !timeWarningShown.current
+        && secs >= limitMins * 60 - 60
+        && secs < limitMins * 60
+      ) {
         timeWarningShown.current = true;
         setShowTimeWarning(true);
       }
@@ -1035,6 +1040,32 @@ export default function StoryModulePage() {
   const activityTheme = data.module.theme;
   const transitionBg = getThemeTransitionBackground(activityTheme);
 
+  // 1-minute time warning popup — rendered in every phase so it shows wherever the user is.
+  const timeWarningPopup = showTimeWarning ? (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9998,
+      background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 16, padding: '28px 32px', maxWidth: 340, width: '90%',
+        textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', direction: 'rtl',
+      }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>⏰</div>
+        <h3 style={{ margin: '0 0 8px', fontSize: 20, color: '#333', fontWeight: 700 }}>נשארה דקה אחת!</h3>
+        <p style={{ margin: '0 0 20px', fontSize: 15, color: '#666' }}>נשארה דקה אחת לסיום הפעילות</p>
+        <button
+          onClick={() => setShowTimeWarning(false)}
+          style={{
+            padding: '10px 32px', borderRadius: 10, border: 'none',
+            background: '#e74c3c', color: '#fff', fontSize: 15, cursor: 'pointer', fontWeight: 700,
+          }}
+        >
+          הבנתי
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   // Popup modal (shared across all phases)
   const popupModal = currentPopup ? (
     <PopupModalOverlay key={currentPopup._id}>
@@ -1109,6 +1140,7 @@ export default function StoryModulePage() {
           {entryTransitionStage !== 'idle' && (
             <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
           )}
+          {timeWarningPopup}
         </>
       );
     }
@@ -1147,6 +1179,7 @@ export default function StoryModulePage() {
         {entryTransitionStage !== 'idle' && (
           <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
         )}
+        {timeWarningPopup}
       </>
     );
   }
@@ -1182,6 +1215,7 @@ export default function StoryModulePage() {
         {entryTransitionStage !== 'idle' && (
           <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
         )}
+        {timeWarningPopup}
       </>
     );
   }
@@ -1203,6 +1237,7 @@ export default function StoryModulePage() {
         {entryTransitionStage !== 'idle' && (
           <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
         )}
+        {timeWarningPopup}
       </>
     );
   }
@@ -1282,6 +1317,7 @@ export default function StoryModulePage() {
           </OutlineButton>
         </CenteredContent>
         {popupModal}
+        {timeWarningPopup}
       </div>
     );
   }
@@ -1341,31 +1377,7 @@ export default function StoryModulePage() {
         />
       )}
 
-      {/* 1-minute time warning popup */}
-      {showTimeWarning && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9998,
-          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <div style={{
-            background: '#fff', borderRadius: 16, padding: '28px 32px', maxWidth: 340, width: '90%',
-            textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', direction: 'rtl',
-          }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>⏰</div>
-            <h3 style={{ margin: '0 0 8px', fontSize: 20, color: '#333', fontWeight: 700 }}>נשארה דקה אחת!</h3>
-            <p style={{ margin: '0 0 20px', fontSize: 15, color: '#666' }}>נשארה דקה אחת לסיום הפעילות</p>
-            <button
-              onClick={() => setShowTimeWarning(false)}
-              style={{
-                padding: '10px 32px', borderRadius: 10, border: 'none',
-                background: '#e74c3c', color: '#fff', fontSize: 15, cursor: 'pointer', fontWeight: 700,
-              }}
-            >
-              הבנתי
-            </button>
-          </div>
-        </div>
-      )}
+      {timeWarningPopup}
 
       {/* Exit confirmation for continuous activities */}
       {showExitConfirm && (
