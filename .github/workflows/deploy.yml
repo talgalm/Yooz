@@ -5,11 +5,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-    inputs:
-      update_secrets:
-        description: 'Update AWS Secrets Manager? (yes/no)'
-        required: false
-        default: 'no'
 
 jobs:
   deploy:
@@ -29,55 +24,61 @@ jobs:
           chmod 400 ~/.ssh/yooz-key.pem
           ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
-      # ── 3. (Optional) Update AWS Secrets Manager ────────────
-      #    Run manually with update_secrets=yes to push new
-      #    env values from GitHub Secrets → AWS Secrets Manager
-      - name: Update AWS Secrets Manager
-        if: github.event.inputs.update_secrets == 'yes'
+      # ── 3. Sync AWS Secrets Manager ─────────────────────────
+      #    Auto-syncs every GitHub Secret named SM_* to AWS
+      #    Secrets Manager. Add a new env var by creating a new
+      #    GitHub Secret SM_<NAME> — no workflow edit needed.
+      #    Merges with current AWS secret (never wipes keys not
+      #    in GitHub) and skips the API call if nothing changed.
+      - name: Sync AWS Secrets Manager
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
-          SM_JWT_SECRET: ${{ secrets.SM_JWT_SECRET }}
-          SM_ADMIN_EMAIL: ${{ secrets.SM_ADMIN_EMAIL }}
-          SM_ADMIN_PASSWORD: ${{ secrets.SM_ADMIN_PASSWORD }}
-          SM_MONGODB_URI: ${{ secrets.SM_MONGODB_URI }}
-          SM_VITE_GOOGLE_CLIENT_ID: ${{ secrets.SM_VITE_GOOGLE_CLIENT_ID }}
-          SM_CLOUDINARY_CLOUD_NAME: ${{ secrets.SM_CLOUDINARY_CLOUD_NAME }}
-          SM_CLOUDINARY_API_KEY: ${{ secrets.SM_CLOUDINARY_API_KEY }}
-          SM_CLOUDINARY_API_SECRET: ${{ secrets.SM_CLOUDINARY_API_SECRET }}
-          SM_GEMINI_API_KEY: ${{ secrets.SM_GEMINI_API_KEY }}
+          ALL_SECRETS: ${{ toJSON(secrets) }}
         run: |
           python3 - <<'PYEOF'
           import json, os, subprocess
 
-          secret = {
-            "JWT_SECRET":            os.environ["SM_JWT_SECRET"],
-            "PORT":                  "3000",
-            "ADMIN_EMAIL":           os.environ["SM_ADMIN_EMAIL"],
-            "ADMIN_PASSWORD":        os.environ["SM_ADMIN_PASSWORD"],
-            "MONGODB_URI":           os.environ["SM_MONGODB_URI"],
-            "VITE_GOOGLE_CLIENT_ID": os.environ["SM_VITE_GOOGLE_CLIENT_ID"],
-            "CLOUDINARY_CLOUD_NAME": os.environ["SM_CLOUDINARY_CLOUD_NAME"],
-            "CLOUDINARY_API_KEY":    os.environ["SM_CLOUDINARY_API_KEY"],
-            "CLOUDINARY_API_SECRET": os.environ["SM_CLOUDINARY_API_SECRET"],
-            "GEMINI_API_KEY":        os.environ["SM_GEMINI_API_KEY"],
-            "CORS_ORIGIN":           "https://yooz.org.il,https://www.yooz.org.il",
-            "APP_URL":               "https://yooz.org.il"
+          # Static literals (not stored in GitHub Secrets)
+          STATIC = {
+            "PORT":        "3000",
+            "CORS_ORIGIN": "https://yooz.org.il,https://www.yooz.org.il",
+            "APP_URL":     "https://yooz.org.il",
           }
 
-          r = subprocess.run([
-            "aws", "secretsmanager", "update-secret",
-            "--secret-id", "yooz/production",
-            "--secret-string", json.dumps(secret),
-            "--region", "eu-west-1"
-          ], capture_output=True, text=True)
+          # Pull every SM_* GitHub Secret, strip prefix
+          gh = json.loads(os.environ["ALL_SECRETS"])
+          from_gh = {k[3:]: v for k, v in gh.items() if k.startswith("SM_")}
 
-          if r.returncode == 0:
-            print("✅ Secrets Manager updated")
+          # Pull current AWS secret (so we merge, not replace)
+          r = subprocess.run([
+            "aws", "secretsmanager", "get-secret-value",
+            "--secret-id", "yooz/production",
+            "--region", "eu-west-1",
+            "--query", "SecretString", "--output", "text"
+          ], capture_output=True, text=True)
+          current = json.loads(r.stdout) if r.returncode == 0 and r.stdout.strip() else {}
+
+          merged = {**current, **from_gh, **STATIC}
+
+          if merged == current:
+            print("✓ No changes to AWS Secrets Manager")
           else:
-            print("❌", r.stderr)
-            exit(1)
+            added   = sorted(set(merged) - set(current))
+            changed = sorted(k for k in merged if k in current and current[k] != merged[k])
+            if added:   print("  + added:  ", ", ".join(added))
+            if changed: print("  ~ changed:", ", ".join(changed))
+
+            r = subprocess.run([
+              "aws", "secretsmanager", "update-secret",
+              "--secret-id", "yooz/production",
+              "--secret-string", json.dumps(merged),
+              "--region", "eu-west-1"
+            ], capture_output=True, text=True)
+            if r.returncode != 0:
+              print("❌", r.stderr); exit(1)
+            print("✅ Secrets Manager updated")
           PYEOF
 
       # ── 4. Sync code to EC2 ─────────────────────────────────
