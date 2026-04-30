@@ -175,6 +175,7 @@ export default function AdminStationConfigPage() {
   const [avatarClues, setAvatarClues] = useState<AvatarNamedEntry[]>([]);
   const [avatarKnowledgeGates, setAvatarKnowledgeGates] = useState<AvatarKnowledgeGate[]>([]);
   const [avatarHintStrategy, setAvatarHintStrategy] = useState('');
+  const [avatarVoiceType, setAvatarVoiceType] = useState<'man' | 'woman'>('man');
   // Entering text station
   const [enteringTextTitle, setEnteringTextTitle] = useState('');
   const [enteringTextFields, setEnteringTextFields] = useState<EnteringTextField[]>([{ statement: '', placeholder: '', rightAnswer: '', keywordsBank: '' }]);
@@ -256,6 +257,7 @@ export default function AdminStationConfigPage() {
           if (Array.isArray(settings.clues)) setAvatarClues(settings.clues as AvatarNamedEntry[]);
           if (Array.isArray(settings.knowledgeGates)) setAvatarKnowledgeGates(settings.knowledgeGates as AvatarKnowledgeGate[]);
           if (settings.hintStrategy) setAvatarHintStrategy(settings.hintStrategy as string);
+          if (settings.voiceType === 'man' || settings.voiceType === 'woman') setAvatarVoiceType(settings.voiceType);
         }
         if (s.type === 'enteringText') {
           if (settings.title) setEnteringTextTitle(settings.title as string);
@@ -349,6 +351,7 @@ export default function AdminStationConfigPage() {
       if (Array.isArray(settings.clues)) setAvatarClues(settings.clues as AvatarNamedEntry[]);
       if (Array.isArray(settings.knowledgeGates)) setAvatarKnowledgeGates(settings.knowledgeGates as AvatarKnowledgeGate[]);
       if (settings.hintStrategy) setAvatarHintStrategy(settings.hintStrategy as string);
+      if (settings.voiceType === 'man' || settings.voiceType === 'woman') setAvatarVoiceType(settings.voiceType);
     }
     if (lib.type === 'enteringText') {
       if (settings.title) setEnteringTextTitle(settings.title as string);
@@ -451,6 +454,7 @@ export default function AdminStationConfigPage() {
           .map((g) => ({ trigger: g.trigger.trim(), reveal: g.reveal.trim() }))
           .filter((g) => g.trigger && g.reveal);
         settings.hintStrategy = avatarHintStrategy.trim();
+        settings.voiceType = avatarVoiceType;
       }
       if (stationType === 'enteringText') {
         settings.title = enteringTextTitle.trim();
@@ -543,6 +547,7 @@ export default function AdminStationConfigPage() {
     setAvatarOptionalAnswers([]);
     setAvatarForbiddenPhrases([]);
     setAvatarVideos([]);
+    setAvatarVoiceType('man');
     setEnteringTextTitle('');
     setEnteringTextFields([{ statement: '', placeholder: '', rightAnswer: '', keywordsBank: '' }]);
     setEnteringTextSubmitButtonText('');
@@ -1089,6 +1094,16 @@ export default function AdminStationConfigPage() {
                       value={avatarCharacterImageUrl}
                       onChange={(e) => setAvatarCharacterImageUrl(e.target.value)}
                     />
+                  </InlineRow>
+
+                  <SectionLabel>{t.avatarVoiceType}</SectionLabel>
+                  <InlineRow>
+                    <SelectionButton type="button" selected={avatarVoiceType === 'man'} onClick={() => setAvatarVoiceType('man')}>
+                      {t.avatarVoiceTypeMen}
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={avatarVoiceType === 'woman'} onClick={() => setAvatarVoiceType('woman')}>
+                      {t.avatarVoiceTypeWomen}
+                    </SelectionButton>
                   </InlineRow>
 
                   <SectionLabel>{t.avatarDetectiveRiddle}</SectionLabel>

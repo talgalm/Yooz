@@ -31,6 +31,10 @@ export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET || '';
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
+// Azure Speech (Text-to-Speech) config
+export const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY || '';
+export const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION || '';
+
 if (!process.env.JWT_SECRET) {
   console.warn('⚠ JWT_SECRET not set in .env, using fallback (not safe for production)');
 }

@@ -9,27 +9,99 @@ interface ChatMessage {
   text: string;
 }
 
-function speakHebrew(text: string, onEnd?: () => void) {
+interface SpeechHandle {
+  stop: () => void;
+}
+
+function speakBrowser(text: string, voiceType: 'man' | 'woman', onEnd?: () => void): SpeechHandle {
+  const noop: SpeechHandle = { stop: () => {} };
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
     onEnd?.();
-    return;
+    return noop;
   }
   try {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'he-IL';
-    u.rate = 1;
-    u.pitch = 1;
+    u.rate = voiceType === 'man' ? 0.92 : 1;
+    u.pitch = voiceType === 'woman' ? 1.3 : 0.4;
     const voices = window.speechSynthesis.getVoices();
-    const hebVoice = voices.find((v) => v.lang === 'he-IL' || v.lang.startsWith('he'));
-    if (hebVoice) u.voice = hebVoice;
+    const hebVoices = voices.filter((v) => v.lang === 'he-IL' || v.lang.startsWith('he'));
+    if (hebVoices.length > 0) {
+      const genderKey = voiceType === 'woman' ? 'female' : 'male';
+      const gendered = hebVoices.find(
+        (v) =>
+          v.name.toLowerCase().includes(genderKey) ||
+          (v as unknown as { gender?: string }).gender === genderKey
+      );
+      u.voice = gendered || hebVoices[0];
+    }
     if (onEnd) {
       u.onend = onEnd;
       u.onerror = onEnd;
     }
     window.speechSynthesis.speak(u);
+    return {
+      stop: () => {
+        try {
+          window.speechSynthesis.cancel();
+        } catch {
+          /* noop */
+        }
+      },
+    };
   } catch {
     onEnd?.();
+    return noop;
+  }
+}
+
+async function speakHebrew(
+  text: string,
+  voiceType: 'man' | 'woman' = 'man',
+  onEnd?: () => void
+): Promise<SpeechHandle> {
+  let cancelled = false;
+  let activeAudio: HTMLAudioElement | null = null;
+  let activeBrowser: SpeechHandle | null = null;
+  const handle: SpeechHandle = {
+    stop: () => {
+      cancelled = true;
+      if (activeAudio) {
+        activeAudio.pause();
+        activeAudio.src = '';
+        activeAudio = null;
+      }
+      activeBrowser?.stop();
+    },
+  };
+
+  try {
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voiceType }),
+    });
+    if (cancelled) return handle;
+    if (!res.ok) throw new Error(`TTS HTTP ${res.status}`);
+    const blob = await res.blob();
+    if (cancelled) return handle;
+    const audioUrl = URL.createObjectURL(blob);
+    const audio = new Audio(audioUrl);
+    activeAudio = audio;
+    const cleanup = () => {
+      URL.revokeObjectURL(audioUrl);
+      activeAudio = null;
+      onEnd?.();
+    };
+    audio.onended = cleanup;
+    audio.onerror = cleanup;
+    await audio.play();
+    return handle;
+  } catch {
+    if (cancelled) return handle;
+    activeBrowser = speakBrowser(text, voiceType, onEnd);
+    return handle;
   }
 }
 
@@ -87,6 +159,7 @@ interface AvatarSettings {
   instructions?: string;
   optionalAnswers?: string[];
   forbiddenPhrases?: string[];
+  voiceType?: 'man' | 'woman';
   videos?: Array<{ url: string; matchingWords: string[] }>;
 }
 
@@ -105,6 +178,7 @@ const InputWrap = styled('div')({
   maxWidth: 340,
   display: 'flex',
   flexDirection: 'column',
+  marginTop: -10,
 });
 
 const popupIn = keyframes`
@@ -186,13 +260,13 @@ const messageIn = keyframes`
 
 
 const MessageBubble = styled('div')<{ role: 'user' | 'character' }>(({ role }) => ({
-  alignSelf: role === 'user' ? 'flex-end' : 'flex-start',
+  alignSelf: role === 'user' ? 'flex-start' : 'flex-end',
   background: role === 'user' ? '#6c5ce7' : '#ffffff',
   color: role === 'user' ? '#fff' : '#1a1a2e',
   padding: '10px 14px',
   borderRadius: 16,
-  borderBottomRightRadius: role === 'user' ? 4 : 16,
-  borderBottomLeftRadius: role === 'character' ? 4 : 16,
+  borderBottomLeftRadius: role === 'user' ? 4 : 16,
+  borderBottomRightRadius: role === 'character' ? 4 : 16,
   fontSize: 15,
   fontWeight: 500,
   lineHeight: 1.4,
@@ -207,8 +281,10 @@ const CharacterMessageRow = styled('div')({
   display: 'flex',
   alignItems: 'flex-end',
   gap: 6,
-  alignSelf: 'flex-start',
-  maxWidth: '90%',
+  alignSelf: 'flex-end',
+  width: '100%',
+  justifyContent: 'flex-end',
+  maxWidth: '100%',
 });
 
 const SpeakButton = styled('button')({
@@ -250,6 +326,7 @@ const CharacterWindow = styled('div')({
   position: 'relative',
   width: '100%',
   maxWidth: CHARACTER_WIDTH,
+  marginTop: -18,
 });
 
 const CharacterImage = styled('img')({
@@ -444,6 +521,7 @@ export default function AvatarStation({
   const nextIdRef = useRef(1);
   const scrollRef = useRef<HTMLDivElement>(null);
   const suspenseTimerRef = useRef<number | null>(null);
+  const speechHandleRef = useRef<SpeechHandle | null>(null);
 
   const clearSuspenseTimer = () => {
     if (suspenseTimerRef.current !== null) {
@@ -454,6 +532,8 @@ export default function AvatarStation({
 
   const stopSpeaking = () => {
     clearSuspenseTimer();
+    speechHandleRef.current?.stop();
+    speechHandleRef.current = null;
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
@@ -504,6 +584,8 @@ export default function AvatarStation({
   useEffect(() => {
     return () => {
       clearSuspenseTimer();
+      speechHandleRef.current?.stop();
+      speechHandleRef.current = null;
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
@@ -529,7 +611,8 @@ export default function AvatarStation({
     setSpeakingMessageId(replyId);
     setSpeakingText(replyText);
     clearSuspenseTimer();
-    speakHebrew(replyText, () => {
+    speechHandleRef.current?.stop();
+    speechHandleRef.current = await speakHebrew(replyText, settings.voiceType || 'man', () => {
       clearSuspenseTimer();
       suspenseTimerRef.current = window.setTimeout(() => {
         suspenseTimerRef.current = null;
