@@ -319,6 +319,27 @@ const StationTitle = styled('h2')({
   paddingTop: 8,
 });
 
+const StationHeader = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 6,
+  width: '100%',
+  '& > h2': { marginBottom: 0 },
+});
+
+const StationDescriptionText = styled('p')({
+  fontSize: 15,
+  fontWeight: 700,
+  color: '#fff',
+  WebkitTextStroke: '1px #000',
+  paintOrder: 'stroke fill',
+  margin: 0,
+  textAlign: 'center',
+  lineHeight: 1.35,
+  maxWidth: 360,
+});
+
 const CHARACTER_WIDTH = 340;
 const BUTTON_WIDTH = 220;
 
@@ -645,7 +666,12 @@ export default function AvatarStation({
 
   return (
     <Container>
-      <StationTitle style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitle>
+      <StationHeader>
+        <StationTitle style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitle>
+        {station.description && (
+          <StationDescriptionText style={textColor ? { color: textColor } : undefined}>{station.description}</StationDescriptionText>
+        )}
+      </StationHeader>
 
       <CharacterWindow>
         {activeVideoUrl ? (
