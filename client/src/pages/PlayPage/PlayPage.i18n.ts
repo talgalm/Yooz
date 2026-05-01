@@ -1,6 +1,10 @@
 export const texts = {
   en: {
     loading: 'Loading activity...',
+    stillLoading: 'Still working on it... almost there',
+    loadFailed: 'Connection problem',
+    loadFailedMessage: 'We couldn\'t reach the server. Please try again.',
+    retry: 'Try again',
     notFound: 'Activity not found',
     notFoundMessage: 'This activity link may be invalid or expired.',
     joinActivity: 'Join your activity',
@@ -19,6 +23,10 @@ export const texts = {
   },
   he: {
     loading: 'טוען פעילות...',
+    stillLoading: 'עוד רגע, כבר מתחברים...',
+    loadFailed: 'בעיית חיבור',
+    loadFailedMessage: 'לא הצלחנו להתחבר לשרת. נסו שוב.',
+    retry: 'נסו שוב',
     notFound: 'פעילות לא נמצאה',
     notFoundMessage: 'הקישור לפעילות לא תקין או שפג תוקפו.',
     joinActivity: 'הצטרפו לפעילות',

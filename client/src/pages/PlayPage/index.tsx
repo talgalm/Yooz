@@ -63,6 +63,7 @@ const PurpleLoadingScreen = styled('div')({
   zIndex: 10,
 });
 
+
 const ScheduleScreen = styled('div')({
   position: 'fixed',
   inset: 0,
@@ -125,6 +126,9 @@ export default function PlayPage() {
   const [activity, setActivity] = useState<ActivityConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [slowLoad, setSlowLoad] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const { login } = useAuth();
   const navigate = useNavigate();
   const t = useTranslations(texts);
@@ -142,21 +146,57 @@ export default function PlayPage() {
 
   useEffect(() => {
     if (!code) return;
-    fetch(`/api/activities/${code}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Not found');
-        return res.json();
-      })
-      .then((data) => {
-        setActivity(data);
-        // If no opening, show default purple splash instead
-        if (!data.opening?.url) {
-          setShowDefaultSplash(true);
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(false);
+    setNotFound(false);
+    setSlowLoad(false);
+
+    const slowTimer = setTimeout(() => {
+      if (!cancelled) setSlowLoad(true);
+    }, 4000);
+
+    const fetchWithTimeout = async (attempt: number): Promise<void> => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      try {
+        const res = await fetch(`/api/activities/${code}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (cancelled) return;
+        if (res.status === 404) {
+          setNotFound(true);
+          return;
         }
-      })
-      .catch(() => setNotFound(true))
-      .finally(() => setLoading(false));
-  }, [code]);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (cancelled) return;
+        setActivity(data);
+        if (!data.opening?.url) setShowDefaultSplash(true);
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (cancelled) return;
+        // Auto-retry once on network/timeout failures (handles cold-start / PM2 restart windows)
+        if (attempt < 1) {
+          await new Promise((r) => setTimeout(r, 1500));
+          if (!cancelled) await fetchWithTimeout(attempt + 1);
+          return;
+        }
+        setLoadError(true);
+      }
+    };
+
+    fetchWithTimeout(0).finally(() => {
+      if (!cancelled) {
+        clearTimeout(slowTimer);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      clearTimeout(slowTimer);
+    };
+  }, [code, retryCount]);
 
   // Check scheduling and run countdown
   useEffect(() => {
@@ -249,7 +289,40 @@ export default function PlayPage() {
           <span>o</span>
           <span>Y</span>
         </LoaderWave>
+        {slowLoad && (
+          <div style={{ position: 'absolute', bottom: 80, color: '#fff', opacity: 0.85, fontSize: 14 }}>
+            {t.stillLoading}
+          </div>
+        )}
       </PurpleLoadingScreen>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <CenteredPage>
+        <Card>
+          <img src="/images/logo-purple.png" alt="Yooz" style={{ width: 120, marginBottom: 16 }} />
+          <BodyText style={{ fontWeight: 600, fontSize: 18, marginBottom: 8 }}>{t.loadFailed}</BodyText>
+          <BodyText style={{ marginBottom: 16 }}>{t.loadFailedMessage}</BodyText>
+          <button
+            onClick={() => setRetryCount((n) => n + 1)}
+            style={{
+              padding: '12px 24px',
+              fontSize: 16,
+              fontWeight: 600,
+              color: '#fff',
+              background: '#8B2FC9',
+              border: 'none',
+              borderRadius: 8,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+            }}
+          >
+            {t.retry}
+          </button>
+        </Card>
+      </CenteredPage>
     );
   }
 

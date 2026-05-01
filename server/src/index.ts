@@ -41,6 +41,17 @@ app.use(
 );
 app.use(express.json());
 
+// Health check — used by deploy and external uptime monitors. Verifies DB is reachable.
+app.get('/api/health', async (_req, res) => {
+  const mongoose = (await import('mongoose')).default;
+  const dbState = mongoose.connection.readyState; // 1 = connected
+  if (dbState !== 1) {
+    res.status(503).json({ status: 'down', db: dbState });
+    return;
+  }
+  res.json({ status: 'ok', db: 'connected' });
+});
+
 // API routes
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);

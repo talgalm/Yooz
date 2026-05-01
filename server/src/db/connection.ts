@@ -6,7 +6,12 @@ export async function connectDB(): Promise<void> {
     throw new Error('MONGODB_URI is not set in .env');
   }
 
-  await mongoose.connect(MONGODB_URI);
+  await mongoose.connect(MONGODB_URI, {
+    serverSelectionTimeoutMS: 8000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 20,
+    minPoolSize: 2,
+  });
   console.log('✅ Connected to MongoDB');
 
   // Drop stale indexes that no longer match the schema
