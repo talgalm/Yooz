@@ -176,6 +176,7 @@ export default function AdminStationConfigPage() {
   const [avatarKnowledgeGates, setAvatarKnowledgeGates] = useState<AvatarKnowledgeGate[]>([]);
   const [avatarHintStrategy, setAvatarHintStrategy] = useState('');
   const [avatarVoiceType, setAvatarVoiceType] = useState<'man' | 'woman'>('man');
+  const [avatarDescriptionAsPopup, setAvatarDescriptionAsPopup] = useState(false);
   // Entering text station
   const [enteringTextTitle, setEnteringTextTitle] = useState('');
   const [enteringTextFields, setEnteringTextFields] = useState<EnteringTextField[]>([{ statement: '', placeholder: '', rightAnswer: '', keywordsBank: '' }]);
@@ -258,6 +259,7 @@ export default function AdminStationConfigPage() {
           if (Array.isArray(settings.knowledgeGates)) setAvatarKnowledgeGates(settings.knowledgeGates as AvatarKnowledgeGate[]);
           if (settings.hintStrategy) setAvatarHintStrategy(settings.hintStrategy as string);
           if (settings.voiceType === 'man' || settings.voiceType === 'woman') setAvatarVoiceType(settings.voiceType);
+          setAvatarDescriptionAsPopup(!!settings.descriptionAsPopup);
         }
         if (s.type === 'enteringText') {
           if (settings.title) setEnteringTextTitle(settings.title as string);
@@ -352,6 +354,7 @@ export default function AdminStationConfigPage() {
       if (Array.isArray(settings.knowledgeGates)) setAvatarKnowledgeGates(settings.knowledgeGates as AvatarKnowledgeGate[]);
       if (settings.hintStrategy) setAvatarHintStrategy(settings.hintStrategy as string);
       if (settings.voiceType === 'man' || settings.voiceType === 'woman') setAvatarVoiceType(settings.voiceType);
+      setAvatarDescriptionAsPopup(!!settings.descriptionAsPopup);
     }
     if (lib.type === 'enteringText') {
       if (settings.title) setEnteringTextTitle(settings.title as string);
@@ -455,6 +458,7 @@ export default function AdminStationConfigPage() {
           .filter((g) => g.trigger && g.reveal);
         settings.hintStrategy = avatarHintStrategy.trim();
         settings.voiceType = avatarVoiceType;
+        settings.descriptionAsPopup = avatarDescriptionAsPopup;
       }
       if (stationType === 'enteringText') {
         settings.title = enteringTextTitle.trim();
@@ -548,6 +552,7 @@ export default function AdminStationConfigPage() {
     setAvatarForbiddenPhrases([]);
     setAvatarVideos([]);
     setAvatarVoiceType('man');
+    setAvatarDescriptionAsPopup(false);
     setEnteringTextTitle('');
     setEnteringTextFields([{ statement: '', placeholder: '', rightAnswer: '', keywordsBank: '' }]);
     setEnteringTextSubmitButtonText('');
@@ -1105,6 +1110,17 @@ export default function AdminStationConfigPage() {
                       {t.avatarVoiceTypeWomen}
                     </SelectionButton>
                   </InlineRow>
+
+                  <SectionLabel style={{ marginTop: 16 }}>{t.avatarDescriptionAsPopup}</SectionLabel>
+                  <InlineRowGap12>
+                    <ToggleButton
+                      type="button"
+                      selected={avatarDescriptionAsPopup}
+                      onClick={() => setAvatarDescriptionAsPopup((v) => !v)}
+                    >
+                      {avatarDescriptionAsPopup ? 'ON' : 'OFF'}
+                    </ToggleButton>
+                  </InlineRowGap12>
 
                   <SectionLabel>{t.avatarDetectiveRiddle}</SectionLabel>
                   <Input

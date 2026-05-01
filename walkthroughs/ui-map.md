@@ -168,7 +168,7 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 **Fields:**
 - Station Name: `input[placeholder*="Station Name"], input[placeholder*="שם התחנה"]`
 - Station Type: buttons for Text/Video/Image/Narrative/Badge/Collage/Feedback/Riddle/Avatar
-- Avatar config fields: Character Name, Character Image (upload), Detective Riddle (absolute truth), Instructions, Optional Answers list (0-N), Forbidden Phrases list (0-N), Videos list (0-N with URL + matching words Enter-to-add), Characters list (0-N name+description), Clues list (0-N name+description), Knowledge Gates list (0-N trigger+reveal), Hint Strategy (textarea). All fields passed to Gemini via POST `/api/avatar-chat`.
+- Avatar config fields: Character Name, Character Image (upload), Voice Type (man/woman), Show description as popup before (toggle ON/OFF — when ON, station description is shown as a guidelines-style intro popup on entry, hidden below title, and reopenable via an info-icon at top-right of the avatar image), Detective Riddle (absolute truth), Instructions, Optional Answers list (0-N), Forbidden Phrases list (0-N), Videos list (0-N with URL + matching words Enter-to-add), Characters list (0-N name+description), Clues list (0-N name+description), Knowledge Gates list (0-N trigger+reveal), Hint Strategy (textarea). All fields passed to Gemini via POST `/api/avatar-chat`.
 - Description: textarea
 - Customer: `input[placeholder*="customer"]`
 
@@ -375,3 +375,4 @@ page.waitForURL('**/story/**')
 | Feedback | משוב |
 | Riddle | חידה |
 | Avatar | אוואטר |
+| Entering Text | הזנת טקסט | Multi-field guess station with persisted attempts (sessionStorage `yooz_entering_text_${code}_${stationId}`). Return button → roadmap without marking complete. Out-of-attempts triggers Hebrew failure popup, then returns to roadmap. |

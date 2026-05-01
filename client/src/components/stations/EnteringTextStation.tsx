@@ -251,20 +251,36 @@ interface EnteringTextField {
 interface EnteringTextStationProps {
   station: StationItemData;
   onContinue: () => void;
+  onBackToRoadmap?: () => void;
+  code?: string;
 }
 
-export default function EnteringTextStation({ station, onContinue }: EnteringTextStationProps) {
+export default function EnteringTextStation({ station, onContinue, onBackToRoadmap, code }: EnteringTextStationProps) {
   const fields = useMemo(() => {
     const raw = station.settings?.fields;
     if (!Array.isArray(raw)) return [];
     return raw.filter(Boolean) as EnteringTextField[];
   }, [station.settings]);
+
+  const sessionStorageKey = code ? `yooz_entering_text_${code}_${station._id}` : undefined;
+
   const [values, setValues] = useState<string[]>(() => fields.map(() => ''));
-  const [attempts, setAttempts] = useState(0);
+  const [attempts, setAttempts] = useState<number>(() => {
+    if (typeof window === 'undefined' || !sessionStorageKey) return 0;
+    try {
+      const raw = window.sessionStorage.getItem(sessionStorageKey);
+      if (!raw) return 0;
+      const parsed = JSON.parse(raw) as { attempts?: number };
+      return typeof parsed?.attempts === 'number' && parsed.attempts >= 0 ? parsed.attempts : 0;
+    } catch {
+      return 0;
+    }
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingDots, setLoadingDots] = useState(1);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showFailure, setShowFailure] = useState(false);
 
   useEffect(() => {
     if (!loading) return;
@@ -274,9 +290,17 @@ export default function EnteringTextStation({ station, onContinue }: EnteringTex
 
   useEffect(() => {
     setValues(fields.map(() => ''));
-    setAttempts(0);
     setError('');
   }, [fields]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !sessionStorageKey) return;
+    try {
+      window.sessionStorage.setItem(sessionStorageKey, JSON.stringify({ attempts }));
+    } catch {
+      /* best effort */
+    }
+  }, [attempts, sessionStorageKey]);
 
   const title = (station.settings?.title as string) || 'פתרון התעלומה';
   const submitButtonText = (station.settings?.submitButtonText as string) || 'תשובה סופית';
@@ -288,8 +312,40 @@ export default function EnteringTextStation({ station, onContinue }: EnteringTex
   const successMediaType = station.settings?.successMediaType as 'image' | 'video' | undefined;
   const successMediaUrl = station.settings?.successMediaUrl as string | undefined;
   const hasSuccessPopup = !!(successTitle || successMediaUrl);
+  const failureTitle = (station.settings?.failureTitle as string) || 'לא הצלחת לענות נכון';
+  const failureSubtitle = (station.settings?.failureSubtitle as string) || 'ניצלת את כל הניסיונות. נחזור לחקירה.';
+  const failureContinueText = (station.settings?.failureContinueText as string) || 'חזרה לחקירה';
+
+  useEffect(() => {
+    if (attempts >= maxAttempts && !showSuccess) {
+      setShowFailure(true);
+    }
+  }, []);
+
+  const handleBack = () => {
+    if (onBackToRoadmap) {
+      onBackToRoadmap();
+    } else {
+      onContinue();
+    }
+  };
+
+  const clearPersistedAttempts = () => {
+    if (typeof window === 'undefined' || !sessionStorageKey) return;
+    try {
+      window.sessionStorage.removeItem(sessionStorageKey);
+    } catch {
+      /* best effort */
+    }
+  };
+
+  const handleFailureDismiss = () => {
+    setShowFailure(false);
+    handleBack();
+  };
 
   const handleCorrect = () => {
+    clearPersistedAttempts();
     if (!hasSuccessPopup) {
       onContinue();
       return;
@@ -312,7 +368,12 @@ export default function EnteringTextStation({ station, onContinue }: EnteringTex
       const next = attempts + 1;
       setAttempts(next);
       const remaining = Math.max(maxAttempts - next, 0);
-      setError(remaining > 0 ? `נא למלא את כל השדות. נשארו ${remaining} ניסיונות.` : 'נא למלא את כל השדות.');
+      if (remaining > 0) {
+        setError(`נא למלא את כל השדות. נשארו ${remaining} ניסיונות.`);
+      } else {
+        setError('');
+        setShowFailure(true);
+      }
       return;
     }
 
@@ -346,7 +407,12 @@ export default function EnteringTextStation({ station, onContinue }: EnteringTex
         const next = attempts + 1;
         setAttempts(next);
         const remaining = Math.max(maxAttempts - next, 0);
-        setError(remaining > 0 ? `תשובה לא נכונה. נשארו ${remaining} ניסיונות.` : 'תשובה לא נכונה.');
+        if (remaining > 0) {
+          setError(`תשובה לא נכונה. נשארו ${remaining} ניסיונות.`);
+        } else {
+          setError('');
+          setShowFailure(true);
+        }
       }
     } catch {
       setError('שגיאה בבדיקה, נסו שוב.');
@@ -391,11 +457,7 @@ export default function EnteringTextStation({ station, onContinue }: EnteringTex
         </PrimaryActionButton>
         <SecondaryActionButton
           type="button"
-          onClick={() => {
-            setValues(fields.map(() => ''));
-            setAttempts(0);
-            setError('');
-          }}
+          onClick={handleBack}
         >
           {returnButtonText}
         </SecondaryActionButton>
@@ -419,6 +481,17 @@ export default function EnteringTextStation({ station, onContinue }: EnteringTex
           </SuccessCard>
         </ModalOverlay>
         </>
+      )}
+      {showFailure && (
+        <ModalOverlay>
+          <SuccessCard onClick={(e) => e.stopPropagation()}>
+            <SuccessTitle>{failureTitle}</SuccessTitle>
+            <SuccessSubtitle>{failureSubtitle}</SuccessSubtitle>
+            <SuccessContinueButton type="button" onClick={handleFailureDismiss}>
+              {failureContinueText}
+            </SuccessContinueButton>
+          </SuccessCard>
+        </ModalOverlay>
       )}
     </Wrap>
   );

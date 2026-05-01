@@ -191,6 +191,7 @@ interface PlayingPhaseProps {
   onLogout: () => void;
   onViewLeaderboard?: () => void;
   onStationContinue: () => void;
+  onStationBackToRoadmap: () => void;
   onFeedbackContinue: (result: FeedbackResult) => void;
   onBallGameMuteToggle: () => void;
   ballGameMuted: boolean;
@@ -221,6 +222,7 @@ export default function PlayingPhase({
   onLogout,
   onViewLeaderboard,
   onStationContinue,
+  onStationBackToRoadmap,
   onFeedbackContinue,
   onBallGameMuteToggle,
   ballGameMuted,
@@ -373,7 +375,14 @@ export default function PlayingPhase({
       }
 
       if (station.stationType === 'enteringText') {
-        return <EnteringTextStation station={station} onContinue={onStationContinue} />;
+        return (
+          <EnteringTextStation
+            station={station}
+            onContinue={onStationContinue}
+            onBackToRoadmap={onStationBackToRoadmap}
+            code={code}
+          />
+        );
       }
 
       // Unknown station type fallback

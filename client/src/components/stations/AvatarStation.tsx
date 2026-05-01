@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 import { StationContinueButton } from '../games/styled';
+import StationDescriptionPopup from './StationDescriptionPopup';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 
 interface ChatMessage {
@@ -161,6 +162,7 @@ interface AvatarSettings {
   forbiddenPhrases?: string[];
   voiceType?: 'man' | 'woman';
   videos?: Array<{ url: string; matchingWords: string[] }>;
+  descriptionAsPopup?: boolean;
 }
 
 const Container = styled('div')({
@@ -421,6 +423,29 @@ const CharacterNameBadge = styled('div')({
   textOverflow: 'ellipsis',
 });
 
+const InfoButton = styled('button')({
+  position: 'absolute',
+  top: 12,
+  insetInlineStart: 12,
+  appearance: 'none',
+  border: '1.5px solid rgba(255,255,255,0.7)',
+  background: 'rgba(0,0,0,0.55)',
+  backdropFilter: 'blur(6px)',
+  WebkitBackdropFilter: 'blur(6px)',
+  width: 34,
+  height: 34,
+  borderRadius: '50%',
+  color: '#fff',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  padding: 0,
+  boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+  zIndex: 6,
+  '&:active': { transform: 'scale(0.95)' },
+});
+
 const HistoryButton = styled('button')({
   position: 'absolute',
   bottom: 12,
@@ -533,9 +558,11 @@ export default function AvatarStation({
   sessionStorageKey,
 }: AvatarStationProps) {
   const settings = (station.settings || {}) as AvatarSettings;
+  const descriptionAsPopup = !!settings.descriptionAsPopup && !!station.description;
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [popupOpen, setPopupOpen] = useState(false);
+  const [descriptionPopupOpen, setDescriptionPopupOpen] = useState(descriptionAsPopup);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
   const [speakingMessageId, setSpeakingMessageId] = useState<number | null>(null);
   const [speakingText, setSpeakingText] = useState<string | null>(null);
@@ -668,7 +695,7 @@ export default function AvatarStation({
     <Container>
       <StationHeader>
         <StationTitle style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitle>
-        {station.description && (
+        {station.description && !descriptionAsPopup && (
           <StationDescriptionText style={textColor ? { color: textColor } : undefined}>{station.description}</StationDescriptionText>
         )}
       </StationHeader>
@@ -686,6 +713,15 @@ export default function AvatarStation({
           <CharacterImage src={settings.characterImageUrl} alt={settings.characterName || ''} />
         ) : null}
         {settings.characterName && <CharacterNameBadge>{settings.characterName}</CharacterNameBadge>}
+        {descriptionAsPopup && (
+          <InfoButton type="button" aria-label="show description" onClick={() => setDescriptionPopupOpen(true)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+          </InfoButton>
+        )}
         {messages.length > 0 && (
           <HistoryButton type="button" aria-label="open chat history" onClick={() => setPopupOpen(true)}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -738,6 +774,14 @@ export default function AvatarStation({
       )}
 
       <FixedContinue onClick={onContinue}>{continueLabel}</FixedContinue>
+
+      {descriptionAsPopup && descriptionPopupOpen && station.description && (
+        <StationDescriptionPopup
+          title={station.name}
+          description={station.description}
+          onDismiss={() => setDescriptionPopupOpen(false)}
+        />
+      )}
     </Container>
   );
 }

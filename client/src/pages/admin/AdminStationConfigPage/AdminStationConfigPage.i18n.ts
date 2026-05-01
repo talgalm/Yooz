@@ -147,6 +147,7 @@ export const texts = {
     avatarVoiceTypeWomen: 'Woman',
     avatarHintStrategy: 'Hint Strategy (when user is stuck)',
     avatarHintStrategyPlaceholder: 'e.g. Instead of giving an answer, ask a guiding question like "did you notice anything strange about the window glass?"',
+    avatarDescriptionAsPopup: 'Show description as popup before',
   },
   he: {
     title: 'הגדרות תחנה',
@@ -297,5 +298,6 @@ export const texts = {
     avatarVoiceTypeWomen: 'אישה',
     avatarHintStrategy: 'אסטרטגיית רמזים (כשהמשתמש נתקע)',
     avatarHintStrategyPlaceholder: 'לדוגמה: במקום לתת תשובה, שאל שאלה מכוונת כמו "שמת לב למשהו מוזר בזכוכיות החלון?"',
+    avatarDescriptionAsPopup: 'הצגת תיאור לפני',
   },
 };

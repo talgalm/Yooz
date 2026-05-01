@@ -10,7 +10,6 @@ import { preloadActivityMedia } from '../../utils/mediaPreloader';
 import { texts } from './StoryModulePage.i18n';
 import { GAME_CONSTANTS, type GameResult } from '../../components/games/types';
 import LangDrawer from '../../components/LangDrawer';
-import NatureBackground from '../../components/NatureBackground';
 import ThemedBackground, { getThemeShellColor, getThemeTransitionBackground, getThemeSkyColor, getThemeGroundColor } from '../../components/ThemedBackground';
 import { styled, keyframes } from '@mui/material/styles';
 import {
@@ -793,6 +792,10 @@ export default function StoryModulePage() {
     advanceToNextItem();
   };
 
+  const handleStationBackToRoadmap = () => {
+    setPhase('roadmap');
+  };
+
   const handleFeedbackContinue = (feedbackResult: { answers: { questionIndex: number; questionText: string; value: number; label: string }[]; notes: string }) => {
     if (!data) return;
     const currentItem = data.module.items[currentItemIndex];
@@ -993,17 +996,15 @@ export default function StoryModulePage() {
 
   if (loading) {
     return (
-      <PageShell>
-        <NatureBackground>
-          <FullScreenLoader>
-            <LoaderWave aria-label={t.loading}>
-              <span>z</span>
-              <span>o</span>
-              <span>o</span>
-              <span>Y</span>
-            </LoaderWave>
-          </FullScreenLoader>
-        </NatureBackground>
+      <PageShell shellColor="#8B2FC9">
+        <FullScreenLoader>
+          <LoaderWave aria-label={t.loading}>
+            <span>z</span>
+            <span>o</span>
+            <span>o</span>
+            <span>Y</span>
+          </LoaderWave>
+        </FullScreenLoader>
       </PageShell>
     );
   }
@@ -1022,17 +1023,15 @@ export default function StoryModulePage() {
 
   if (!data) {
     return (
-      <PageShell>
-        <NatureBackground>
-          <FullScreenLoader>
-            <LoaderWave aria-label={t.loading}>
-              <span>z</span>
-              <span>o</span>
-              <span>o</span>
-              <span>Y</span>
-            </LoaderWave>
-          </FullScreenLoader>
-        </NatureBackground>
+      <PageShell shellColor="#8B2FC9">
+        <FullScreenLoader>
+          <LoaderWave aria-label={t.loading}>
+            <span>z</span>
+            <span>o</span>
+            <span>o</span>
+            <span>Y</span>
+          </LoaderWave>
+        </FullScreenLoader>
       </PageShell>
     );
   }
@@ -1358,6 +1357,7 @@ export default function StoryModulePage() {
         onViewLeaderboard={handleViewLeaderboard}
         currentPoints={playingTotalPoints}
         onStationContinue={handleStationContinue}
+        onStationBackToRoadmap={handleStationBackToRoadmap}
         onFeedbackContinue={handleFeedbackContinue}
         onBallGameMuteToggle={toggleBallGameMute}
         ballGameMuted={ballGameMuted}
