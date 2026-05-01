@@ -180,6 +180,7 @@ const AirplaneWobbleWrap = styled('div')<{ wobbleDuration: number }>(({ wobbleDu
   animation: `${airplaneWobble} ${wobbleDuration}s ease-in-out infinite`,
 }));
 
+
 const PaperAirplaneSvg = ({ size }: { size: number }) => (
   <img
     src="/images/paper-airplane.svg"
