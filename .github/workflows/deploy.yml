@@ -131,7 +131,7 @@ jobs:
           import json
           env = dict(l.strip().split('=',1) for l in open('/etc/yooz/prod.env') if '=' in l)
           cfg = {'apps':[{'name':'yooz','script':'dist/index.js','cwd':'/opt/yooz/server',
-                 'instances':1,'autorestart':True,'watch':False,'max_memory_restart':'400M',
+                 'instances':1,'autorestart':True,'watch':False,'max_memory_restart':'800M',
                  'error_file':'/var/log/yooz/error.log','out_file':'/var/log/yooz/out.log',
                  'merge_logs':True,'time':True,'env':env}]}
           open('/opt/yooz/deploy/ecosystem.config.js','w').write('module.exports = '+json.dumps(cfg,indent=2)+';\n')
