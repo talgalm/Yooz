@@ -228,6 +228,7 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 2. Scheduled (pending): countdown with days/hours/minutes/seconds
 3. Scheduled (expired): "הפעילות הסתיימה" message
 4. Active: shows opening media (if configured) then login form
+   - Video splash autoplays muted (browser policy); shows "🔊 Tap for sound" / "לחצו להפעלת הקול" button top-right that unmutes on tap (stops propagation so it doesn't skip)
 
 **Login Form** (ActivityLogin component):
 - Name input: `input[placeholder*="name"], input[placeholder*="שם"]` (if configured)

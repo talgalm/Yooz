@@ -868,6 +868,31 @@ export const SkipHint = styled('div')({
   animation: 'fadeInUp 1s ease-out 1.5s both',
 });
 
+export const UnmuteButton = styled('button')({
+  position: 'absolute',
+  top: 24,
+  right: 24,
+  zIndex: 2,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '10px 16px',
+  borderRadius: 999,
+  border: '1px solid rgba(255,255,255,0.3)',
+  background: 'rgba(0,0,0,0.55)',
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
+  color: '#fff',
+  fontSize: 14,
+  fontWeight: 600,
+  cursor: 'pointer',
+  boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+  animation: 'fadeInUp 0.6s ease-out 0.3s both',
+  '&:hover': {
+    background: 'rgba(0,0,0,0.7)',
+  },
+});
+
 export const LoginFadeIn = styled('div')<{ visible?: boolean }>(({ visible }) => ({
   opacity: visible ? 1 : 0,
   transform: visible ? 'translateY(0)' : 'translateY(20px)',

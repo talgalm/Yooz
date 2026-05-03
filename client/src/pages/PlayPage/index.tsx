@@ -18,6 +18,7 @@ import {
   OpeningMedia,
   OpeningImage,
   SkipHint,
+  UnmuteButton,
   DefaultSplashOverlay,
   SplashLogo,
   PurpleLoginPage,
@@ -140,6 +141,7 @@ export default function PlayPage() {
   // Opening state
   const [openingPhase, setOpeningPhase] = useState<OpeningPhase>('playing');
   const [showDefaultSplash, setShowDefaultSplash] = useState(false);
+  const [videoMuted, setVideoMuted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fadeStartedRef = useRef(false);
   const hasOpening = activity?.opening?.url;
@@ -268,6 +270,16 @@ export default function PlayPage() {
     if (openingPhase === 'playing') {
       startFadeOut();
     }
+  };
+
+  const handleUnmute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = false;
+    v.volume = 1;
+    setVideoMuted(false);
+    v.play().catch(() => {});
   };
 
   const handleSuccess = () => {
@@ -410,20 +422,34 @@ export default function PlayPage() {
           onClick={handleOpeningClick}
         >
           {activity.opening!.type === 'video' ? (
-            <OpeningMedia
-              ref={videoRef}
-              src={activity.opening!.url}
-              autoPlay
-              playsInline
-              onEnded={handleVideoEnded}
-              onCanPlay={(e) => {
-                const v = e.currentTarget;
-                v.play().catch(() => {
-                  v.muted = true;
-                  v.play().catch(() => {});
-                });
-              }}
-            />
+            <>
+              <OpeningMedia
+                ref={videoRef}
+                src={activity.opening!.url}
+                autoPlay
+                playsInline
+                muted={videoMuted}
+                onEnded={handleVideoEnded}
+                onCanPlay={(e) => {
+                  const v = e.currentTarget;
+                  if (v.dataset.tried) return;
+                  v.dataset.tried = '1';
+                  v.muted = false;
+                  v.volume = 1;
+                  v.play().catch(() => {
+                    v.muted = true;
+                    setVideoMuted(true);
+                    v.play().catch(() => {});
+                  });
+                }}
+              />
+              {videoMuted && (
+                <UnmuteButton type="button" onClick={handleUnmute}>
+                  <span aria-hidden="true">🔊</span>
+                  <span>{t.tapForSound}</span>
+                </UnmuteButton>
+              )}
+            </>
           ) : (
             <OpeningImage
               src={activity.opening!.url}
