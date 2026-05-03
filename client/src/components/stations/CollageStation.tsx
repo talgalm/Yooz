@@ -160,9 +160,56 @@ const ResultVideo = styled('video')({ width: '100%', display: 'block' });
 
 // ─── XHR upload with progress ─────────────────────────────────────────────────
 
+function renderTitlePng(title: string): Blob | null {
+  // Render the title with the same look as station titles: white fill, thin
+  // black stroke, bold. Output is a PNG sized to the text + padding so the
+  // server can overlay it directly without scaling.
+  const trimmed = title.trim();
+  if (!trimmed) return null;
+  const fontSize = 96;
+  const padX = 32;
+  const padY = 24;
+  const strokeW = 6;
+  const fontStack = '900 96px system-ui, "Segoe UI", "Heebo", "Rubik", Arial, sans-serif';
+
+  const measureCanvas = document.createElement('canvas');
+  const measureCtx = measureCanvas.getContext('2d')!;
+  measureCtx.font = fontStack;
+  const metrics = measureCtx.measureText(trimmed);
+  const textW = Math.ceil(metrics.width);
+  const textH = Math.ceil(fontSize * 1.25);
+
+  const w = textW + padX * 2;
+  const h = textH + padY * 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+  ctx.font = fontStack;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  ctx.lineJoin = 'round';
+  ctx.miterLimit = 2;
+  ctx.lineWidth = strokeW;
+  ctx.strokeStyle = '#000';
+  ctx.fillStyle = '#fff';
+  const cx = w / 2;
+  const cy = h / 2;
+  ctx.strokeText(trimmed, cx, cy);
+  ctx.fillText(trimmed, cx, cy);
+
+  // Synchronous PNG via toDataURL (toBlob is async; this keeps uploadCollageParts simple)
+  const dataUrl = canvas.toDataURL('image/png');
+  const bytes = atob(dataUrl.split(',')[1]);
+  const buf = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) buf[i] = bytes.charCodeAt(i);
+  return new Blob([buf], { type: 'image/png' });
+}
+
 function uploadCollageParts(
   photos: CapturedPhoto[],
   title: string,
+  logoUrl: string,
   activityCode: string,
   onUploadProgress: (pct: number) => void, // 0-60
 ): Promise<{ url: string; isVideo: boolean }> {
@@ -170,6 +217,9 @@ function uploadCollageParts(
     const formData = new FormData();
     formData.append('activityCode', activityCode);
     formData.append('title', title);
+    if (logoUrl) formData.append('logoUrl', logoUrl);
+    const titlePng = renderTitlePng(title);
+    if (titlePng) formData.append('titleImage', titlePng, 'title.png');
     photos.forEach((p, i) => {
       const ext = p.blob.type.includes('png') ? 'png' : 'jpg';
       formData.append('images', p.blob, `photo_${i}.${ext}`);
@@ -206,6 +256,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const settings = (station.settings ?? {}) as Record<string, unknown>;
   const header = (settings.header as string) || station.name || 'תחנת צילום';
   const description = (settings.description as string) || station.description || '';
+  const logoUrl = (settings.logoUrl as string) || '';
   const rawMissions = settings.missions as CollageMission[] | undefined;
   const missions: CollageMission[] =
     Array.isArray(rawMissions) && rawMissions.length > 0
@@ -215,7 +266,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const [phase, setPhase] = useState<Phase>('intro');
   const [currentMission, setCurrentMission] = useState(0);
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
-  const [collageTitle, setCollageTitle] = useState(header);
+  const [collageTitle, setCollageTitle] = useState('');
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('מעלה תמונות...');
   const [resultUrl, setResultUrl] = useState('');
@@ -284,6 +335,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       const result = await uploadCollageParts(
         photos,
         collageTitle,
+        logoUrl,
         activityCode,
         (uploadPct) => {
           setProgress(uploadPct);
@@ -420,9 +472,9 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         <Content>
           <TopLabel>תחנת קולאז׳</TopLabel>
           <BigTitle>יש לנו {photos.length} תמונות 🎉</BigTitle>
-          <SubText>תנו לסרטון כותרת ולחצו על יצירת סרטון קולאז׳.</SubText>
+          <SubText>אפשר להוסיף כותרת לסרטון, וללחוץ על יצירת סרטון קולאז׳.</SubText>
 
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.48)', marginBottom: 6 }}>כותרת הסרטון</p>
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.48)', marginBottom: 6 }}>כותרת לסרטון (אופציונלי)</p>
           <TitleInput value={collageTitle} onChange={(e) => setCollageTitle(e.target.value)} placeholder="הרגעים שלנו יחד" dir="rtl" />
 
           {photos.map((photo, i) => {

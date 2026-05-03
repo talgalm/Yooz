@@ -66,20 +66,29 @@ const SCENES = motionData as MotionScene[];
 const TEMPLATE_META = {
   videoFile: 'collage-template.mp4',
   width: 1080,
-  height: 1920,
-  duration: 30.27,
+  height: 1350,
+  duration: 32.733,
   fps: 30,
   // tpad clones the template's first frame backwards so the first ~80ms
   // (before the source's first PTS) doesn't render as a black gap.
   startPad: 0.1,
-  // Sampled hex of the green panels — varies a bit per scene so we use a
-  // wider similarity threshold than for the previous template.
-  chroma: { color: '0x499941', similarity: 0.20, blend: 0.05 },
+  // Sampled hex of the panel green (BGR 105,222,79 → RGB 0x4FDE69). The
+  // panels are uniform across all scenes (std < 3 per channel) and the
+  // panel is rendered as a solid block (no anti-aliased edge, no fade),
+  // so we use a tight similarity with NO blend. A wider blend would give
+  // grass partial alpha (its dark green is in the YUV blend zone), which
+  // makes the lingering image visible as a ghost after the panel ends.
+  chroma: { color: '0x4FDE69', similarity: 0.10, blend: 0.0 },
   // Each image is rendered larger than its panel and shifted -BUFFER on both
   // axes, so it over-covers the green region by BUFFER px on every side.
   // Without this margin the chromakey edge transition reveals the BG at
   // panel borders (showing as a black/green halo around the photo).
   buffer: 30,
+  // Static yellow logo placeholder in the template — same position throughout.
+  // Sampled at #F9F532 (uniform). The logo image is overlaid here, and the
+  // foreground template is also chromakey'd against this color so the photo
+  // sits behind the template without yellow showing through.
+  logo: { color: '0xF9F532', similarity: 0.10, blend: 0.0, x: 160, y: 0, w: 130, h: 134 },
 };
 
 const FFMPEG_BIN = process.env.FFMPEG_PATH || ffmpegPath || 'ffmpeg';
@@ -106,8 +115,9 @@ function piecewiseLinearExpr(keyframes: number[][], axis: 'x' | 'y'): string {
   return s;
 }
 
-function buildFilterComplex(): string {
-  const { width, height, chroma, startPad, buffer } = TEMPLATE_META;
+function buildFilterComplex(opts: { logoIdx: number | null; titleIdx: number | null }): string {
+  const { width, height, chroma, startPad, buffer, logo } = TEMPLATE_META;
+  const { logoIdx, titleIdx } = opts;
   const parts: string[] = [];
 
   // Pad the template's start with a clone of its first frame, then split
@@ -124,13 +134,13 @@ function buildFilterComplex(): string {
     parts.push(`[${i + 1}:v]scale=${w}:${h},setsar=1[i${i}]`);
   });
 
-  // Stack overlays time-gated by scene window. Each image is positioned at
-  // (panelX - buffer, panelY - buffer) so its center sits on the panel.
+  // Stack photo overlays time-gated by scene window. Each image is positioned
+  // at (panelX - buffer, panelY - buffer) so its center sits on the panel.
   let prev = 'bg';
   SCENES.forEach((sc, i) => {
-    const out = i === SCENES.length - 1 ? 'comp' : `b${i}`;
     const xExpr = `(${piecewiseLinearExpr(sc.keyframes, 'x')})-${buffer}`;
     const yExpr = `(${piecewiseLinearExpr(sc.keyframes, 'y')})-${buffer}`;
+    const out = `b${i}`;
     parts.push(
       `[${prev}][i${i}]overlay=x='${xExpr}':y='${yExpr}'` +
         `:enable='between(t,${sc.startSec},${sc.endSec})'[${out}]`,
@@ -138,12 +148,47 @@ function buildFilterComplex(): string {
     prev = out;
   });
 
-  // Chromakey the FG copy of the template, then composite over the image stack.
-  parts.push(
-    `[tmpl_fg]chromakey=color=${chroma.color}:similarity=${chroma.similarity}:blend=${chroma.blend},` +
-      `format=yuva420p[fg]`,
-  );
-  parts.push(`[comp][fg]overlay=0:0:format=auto[vout]`);
+  // Logo: scale to the yellow panel size and overlay at its top-left, behind
+  // the template foreground. The yellow color is also added to the chromakey
+  // chain below so the template no longer occludes the logo.
+  if (logoIdx !== null) {
+    parts.push(`[${logoIdx}:v]scale=${logo.w}:${logo.h}:force_original_aspect_ratio=decrease,pad=${logo.w}:${logo.h}:(ow-iw)/2:(oh-ih)/2:color=0x00000000,setsar=1[logo]`);
+    parts.push(`[${prev}][logo]overlay=x=${logo.x}:y=${logo.y}[bgL]`);
+    prev = 'bgL';
+  }
+
+  parts.push(`[${prev}]null[comp]`);
+
+  // Chromakey the FG copy of the template. When a logo is provided we ALSO
+  // need to key out the yellow placeholder so the logo behind it stays visible.
+  // Chained chromakey filters can't be used because each one overwrites the
+  // alpha channel — so we generate two alpha masks separately and combine
+  // them with `blend=darken` (pixel is opaque only if both masks are opaque).
+  if (logoIdx !== null) {
+    parts.push(
+      `[tmpl_fg]format=yuva420p,split=3[fgRGB][fgG][fgY];` +
+      `[fgG]chromakey=color=${chroma.color}:similarity=${chroma.similarity}:blend=${chroma.blend},alphaextract[mg];` +
+      `[fgY]chromakey=color=${logo.color}:similarity=${logo.similarity}:blend=${logo.blend},alphaextract[my];` +
+      `[mg][my]blend=all_mode=darken,format=gray[combined];` +
+      `[fgRGB][combined]alphamerge[fg]`,
+    );
+  } else {
+    parts.push(
+      `[tmpl_fg]chromakey=color=${chroma.color}:similarity=${chroma.similarity}:blend=${chroma.blend},format=yuva420p[fg]`,
+    );
+  }
+
+  // Composite the chromakey'd template over the photo + logo stack.
+  let outLabel = 'vout';
+  if (titleIdx !== null) {
+    parts.push(`[comp][fg]overlay=0:0:format=auto[withFg]`);
+    // Title image is rendered client-side at native resolution. Center it
+    // horizontally; place near top with a small margin.
+    parts.push(`[${titleIdx}:v]format=rgba,setsar=1[title]`);
+    parts.push(`[withFg][title]overlay=x=(W-w)/2:y=40:format=auto[${outLabel}]`);
+  } else {
+    parts.push(`[comp][fg]overlay=0:0:format=auto[${outLabel}]`);
+  }
 
   // Quiet the unused dimension lints
   void width;
@@ -152,13 +197,31 @@ function buildFilterComplex(): string {
   return parts.join(';');
 }
 
-function runFfmpeg(templatePath: string, imagePaths: string[], outputPath: string): Promise<void> {
+function runFfmpeg(
+  templatePath: string,
+  imagePaths: string[],
+  outputPath: string,
+  extras: { logoPath?: string; titlePath?: string },
+): Promise<void> {
   const args: string[] = ['-y', '-i', templatePath];
   for (const p of imagePaths) {
     args.push('-loop', '1', '-t', String(TEMPLATE_META.duration), '-i', p);
   }
+
+  let nextIdx = 1 + imagePaths.length;
+  let logoIdx: number | null = null;
+  let titleIdx: number | null = null;
+  if (extras.logoPath) {
+    args.push('-loop', '1', '-t', String(TEMPLATE_META.duration), '-i', extras.logoPath);
+    logoIdx = nextIdx++;
+  }
+  if (extras.titlePath) {
+    args.push('-loop', '1', '-t', String(TEMPLATE_META.duration), '-i', extras.titlePath);
+    titleIdx = nextIdx++;
+  }
+
   args.push(
-    '-filter_complex', buildFilterComplex(),
+    '-filter_complex', buildFilterComplex({ logoIdx, titleIdx }),
     '-map', '[vout]',
     '-map', '0:a?',  // pass through original soundtrack if present
     '-t', String(TEMPLATE_META.duration),
@@ -184,16 +247,26 @@ function runFfmpeg(templatePath: string, imagePaths: string[], outputPath: strin
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024, files: REQUIRED_IMAGES },
+  limits: { fileSize: 50 * 1024 * 1024, files: REQUIRED_IMAGES + 1 },
 });
+
+async function downloadToFile(url: string, destPath: string): Promise<void> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to download logo (${res.status})`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  fs.writeFileSync(destPath, buf);
+}
 
 // ─── Route ────────────────────────────────────────────────────────────────────
 
 router.post(
   '/generate',
-  upload.array('images', REQUIRED_IMAGES),
+  upload.fields([
+    { name: 'images', maxCount: REQUIRED_IMAGES },
+    { name: 'titleImage', maxCount: 1 },
+  ]),
   async (req: Request, res: Response) => {
-    const { activityCode } = req.body as { activityCode?: string };
+    const { activityCode, logoUrl } = req.body as { activityCode?: string; logoUrl?: string };
 
     if (!activityCode) {
       res.status(400).json({ error: 'activityCode is required' });
@@ -206,10 +279,12 @@ router.post(
       return;
     }
 
-    const files = req.files as Express.Multer.File[] | undefined;
-    if (!files || files.length !== REQUIRED_IMAGES) {
+    const fileMap = (req.files as Record<string, Express.Multer.File[]> | undefined) ?? {};
+    const files = fileMap.images ?? [];
+    const titleFiles = fileMap.titleImage ?? [];
+    if (files.length !== REQUIRED_IMAGES) {
       res.status(400).json({
-        error: `Exactly ${REQUIRED_IMAGES} images are required (got ${files?.length ?? 0})`,
+        error: `Exactly ${REQUIRED_IMAGES} images are required (got ${files.length})`,
       });
       return;
     }
@@ -240,7 +315,24 @@ router.post(
         imagePaths.push(filePath);
       }
 
-      await runFfmpeg(templatePath, imagePaths, outputPath);
+      let logoPath: string | undefined;
+      if (logoUrl && /^https?:\/\//i.test(logoUrl)) {
+        logoPath = path.join(tmpDir, 'logo.png');
+        try {
+          await downloadToFile(logoUrl, logoPath);
+        } catch (e) {
+          console.warn('[collage] logo download failed, skipping:', e);
+          logoPath = undefined;
+        }
+      }
+
+      let titlePath: string | undefined;
+      if (titleFiles.length > 0) {
+        titlePath = path.join(tmpDir, 'title.png');
+        fs.writeFileSync(titlePath, titleFiles[0].buffer);
+      }
+
+      await runFfmpeg(templatePath, imagePaths, outputPath, { logoPath, titlePath });
 
       const cloudResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(

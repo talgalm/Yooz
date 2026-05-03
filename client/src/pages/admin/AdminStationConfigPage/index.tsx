@@ -146,6 +146,7 @@ export default function AdminStationConfigPage() {
   // Collage station
   const [collageHeader, setCollageHeader] = useState('');
   const [collageDescription, setCollageDescription] = useState('');
+  const [collageLogoUrl, setCollageLogoUrl] = useState('');
   const [collageMissions, setCollageMissions] = useState<{ title: string; description: string }[]>([
     { title: '', description: '' },
   ]);
@@ -224,6 +225,7 @@ export default function AdminStationConfigPage() {
         if (s.type === 'collage') {
           if (settings.header) setCollageHeader(settings.header as string);
           if (settings.description) setCollageDescription(settings.description as string);
+          if (settings.logoUrl) setCollageLogoUrl(settings.logoUrl as string);
           if (Array.isArray(settings.missions) && (settings.missions as unknown[]).length > 0) {
             setCollageMissions(settings.missions as { title: string; description: string }[]);
           }
@@ -319,6 +321,7 @@ export default function AdminStationConfigPage() {
     if (lib.type === 'collage') {
       if (settings.header) setCollageHeader(settings.header as string);
       if (settings.description) setCollageDescription(settings.description as string);
+      if (settings.logoUrl) setCollageLogoUrl(settings.logoUrl as string);
       if (Array.isArray(settings.missions) && (settings.missions as unknown[]).length > 0) {
         setCollageMissions(settings.missions as { title: string; description: string }[]);
       }
@@ -409,6 +412,7 @@ export default function AdminStationConfigPage() {
       if (stationType === 'collage') {
         settings.header = collageHeader.trim();
         settings.description = collageDescription.trim();
+        if (collageLogoUrl.trim()) settings.logoUrl = collageLogoUrl.trim();
         settings.missions = collageMissions
           .filter((m) => m.title.trim())
           .map((m) => ({ title: m.title.trim(), description: m.description.trim() }));
@@ -894,6 +898,22 @@ export default function AdminStationConfigPage() {
                     value={collageDescription}
                     onChange={(e) => setCollageDescription(e.target.value)}
                   />
+
+                  <SectionLabelNoMargin>{t.collageLogo}</SectionLabelNoMargin>
+                  <div style={{ fontSize: 12, color: '#888', marginTop: -4, marginBottom: 4 }}>{t.collageLogoDesc}</div>
+                  <InlineRow>
+                    <FileUploadButton
+                      accept="image/*"
+                      onUploaded={(url) => setCollageLogoUrl(url)}
+                      label={t.upload}
+                      uploadingLabel={t.uploading}
+                    />
+                    <FlexInput
+                      placeholder="https://..."
+                      value={collageLogoUrl}
+                      onChange={(e) => setCollageLogoUrl(e.target.value)}
+                    />
+                  </InlineRow>
 
                   <SectionLabelNoMargin>{t.collageMissions}</SectionLabelNoMargin>
                   {collageMissions.map((mission, idx) => (

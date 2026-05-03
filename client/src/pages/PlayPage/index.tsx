@@ -414,9 +414,15 @@ export default function PlayPage() {
               ref={videoRef}
               src={activity.opening!.url}
               autoPlay
-              muted
               playsInline
               onEnded={handleVideoEnded}
+              onCanPlay={(e) => {
+                const v = e.currentTarget;
+                v.play().catch(() => {
+                  v.muted = true;
+                  v.play().catch(() => {});
+                });
+              }}
             />
           ) : (
             <OpeningImage

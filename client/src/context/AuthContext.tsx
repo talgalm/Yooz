@@ -81,7 +81,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('yooz_token');
     for (let i = sessionStorage.length - 1; i >= 0; i -= 1) {
       const key = sessionStorage.key(i);
-      if (key?.startsWith('yooz_session_') || key?.startsWith('yooz_game_progress_') || key?.startsWith('puzzle_progress_')) {
+      if (
+        key?.startsWith('yooz_session_') ||
+        key?.startsWith('yooz_game_progress_') ||
+        key?.startsWith('puzzle_progress_') ||
+        key?.startsWith('yooz_avatar_chat_') ||
+        key?.startsWith('yooz_entering_text_')
+      ) {
         sessionStorage.removeItem(key);
       }
     }
