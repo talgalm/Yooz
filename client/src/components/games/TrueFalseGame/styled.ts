@@ -62,6 +62,10 @@ export const NatureContainer = styled('div')({
   boxSizing: 'border-box',
   gap: 4,
   fontFamily: TF_FONT_FAMILY,
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+  },
 });
 
 export const NatureDecorations = styled('div')({
@@ -576,6 +580,11 @@ export const IntroContainer = styled('div', {
     zIndex: 1,
   },
   fontFamily: TF_FONT_FAMILY,
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+    alignItems: 'center',
+  },
 }));
 
 export const IntroDecorations = styled('div')({
@@ -770,6 +779,12 @@ export const FinishContainer = styled('div')({
   overflow: 'hidden',
   minHeight: '100%',
   height: '100%',
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+    width: '100%',
+    alignItems: 'center',
+  },
 });
 
 export const FinishContent = styled('div', {

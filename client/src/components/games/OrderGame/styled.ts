@@ -148,6 +148,10 @@ export const OrderContainer = styled('div')({
   alignItems: 'center',
   padding: '8px 12px 10px',
   boxSizing: 'border-box',
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+  },
 });
 
 export const OrderDecorations = styled('div')({
@@ -423,6 +427,11 @@ export const IntroContainer = styled('div')({
   overflow: 'hidden',
   minHeight: 0,
   width: '100%',
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+    alignItems: 'center',
+  },
 });
 
 export const IntroContent = styled('div')({
@@ -593,6 +602,11 @@ export const FinishContainer = styled('div')({
   overflow: 'auto',
   minHeight: 0,
   width: '100%',
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+    alignItems: 'center',
+  },
 });
 
 export const FinishDecorations = styled('div')({

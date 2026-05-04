@@ -57,53 +57,103 @@ function speakBrowser(text: string, voiceType: 'man' | 'woman', onEnd?: () => vo
   }
 }
 
-async function speakHebrew(
-  text: string,
-  voiceType: 'man' | 'woman' = 'man',
-  onEnd?: () => void
-): Promise<SpeechHandle> {
-  let cancelled = false;
-  let activeAudio: HTMLAudioElement | null = null;
-  let activeBrowser: SpeechHandle | null = null;
-  const handle: SpeechHandle = {
-    stop: () => {
-      cancelled = true;
-      if (activeAudio) {
-        activeAudio.pause();
-        activeAudio.src = '';
-        activeAudio = null;
-      }
-      activeBrowser?.stop();
-    },
-  };
+interface PreparedSpeech {
+  play: (onEnd: () => void) => void;
+  stop: () => void;
+}
 
+/** Pre-fetch and buffer TTS audio so playback can start with no network gap.
+ *  Falls back to browser SpeechSynthesis when the TTS API is unavailable. */
+async function prepareSpeech(
+  text: string,
+  voiceType: 'man' | 'woman' = 'man'
+): Promise<PreparedSpeech> {
   try {
     const res = await fetch('/api/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, voiceType }),
     });
-    if (cancelled) return handle;
     if (!res.ok) throw new Error(`TTS HTTP ${res.status}`);
     const blob = await res.blob();
-    if (cancelled) return handle;
     const audioUrl = URL.createObjectURL(blob);
     const audio = new Audio(audioUrl);
-    activeAudio = audio;
-    const cleanup = () => {
-      URL.revokeObjectURL(audioUrl);
-      activeAudio = null;
-      onEnd?.();
+    audio.preload = 'auto';
+    await new Promise<void>((resolve, reject) => {
+      const ok = () => { cleanup(); resolve(); };
+      const err = () => { cleanup(); reject(new Error('audio load failed')); };
+      const cleanup = () => {
+        audio.removeEventListener('canplaythrough', ok);
+        audio.removeEventListener('error', err);
+      };
+      audio.addEventListener('canplaythrough', ok);
+      audio.addEventListener('error', err);
+      audio.load();
+      // safety: some mobile browsers never fire canplaythrough
+      window.setTimeout(() => { cleanup(); resolve(); }, 1500);
+    });
+
+    let stopped = false;
+    return {
+      play: (onEnd) => {
+        if (stopped) { onEnd(); return; }
+        const finish = () => {
+          try { URL.revokeObjectURL(audioUrl); } catch { /* noop */ }
+          if (!stopped) onEnd();
+        };
+        audio.onended = finish;
+        audio.onerror = finish;
+        audio.play().catch(finish);
+      },
+      stop: () => {
+        stopped = true;
+        try { audio.pause(); } catch { /* noop */ }
+        try { URL.revokeObjectURL(audioUrl); } catch { /* noop */ }
+      },
     };
-    audio.onended = cleanup;
-    audio.onerror = cleanup;
-    await audio.play();
-    return handle;
   } catch {
-    if (cancelled) return handle;
-    activeBrowser = speakBrowser(text, voiceType, onEnd);
-    return handle;
+    let browserHandle: SpeechHandle | null = null;
+    let stopped = false;
+    return {
+      play: (onEnd) => {
+        if (stopped) { onEnd(); return; }
+        browserHandle = speakBrowser(text, voiceType, onEnd);
+      },
+      stop: () => {
+        stopped = true;
+        browserHandle?.stop();
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+      },
+    };
   }
+}
+
+/** Warm the browser cache for the video URL so `<video>` plays immediately
+ *  when it mounts, instead of waiting on a fresh network fetch. */
+function preloadVideoUrl(url: string): Promise<void> {
+  return new Promise((resolve) => {
+    try {
+      const v = document.createElement('video');
+      v.preload = 'auto';
+      v.muted = true;
+      v.src = url;
+      const done = () => {
+        v.removeEventListener('canplaythrough', done);
+        v.removeEventListener('loadeddata', done);
+        v.removeEventListener('error', done);
+        resolve();
+      };
+      v.addEventListener('canplaythrough', done);
+      v.addEventListener('loadeddata', done);
+      v.addEventListener('error', done);
+      v.load();
+      window.setTimeout(done, 1500);
+    } catch {
+      resolve();
+    }
+  });
 }
 
 function pickVideoForAnswer(
@@ -350,6 +400,9 @@ const CharacterWindow = styled('div')({
   width: '100%',
   maxWidth: CHARACTER_WIDTH,
   marginTop: -18,
+  '@media (min-width: 768px)': {
+    maxWidth: 520,
+  },
 });
 
 const CharacterImage = styled('img')({
@@ -578,6 +631,13 @@ export default function AvatarStation({
     }
   };
 
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+  const speakingMessageIdRef = useRef<number | null>(null);
+
   const stopSpeaking = () => {
     clearSuspenseTimer();
     speechHandleRef.current?.stop();
@@ -651,23 +711,52 @@ export default function AvatarStation({
     const historySnapshot = messages.map((m) => ({ role: m.role, text: m.text }));
     setMessages((prev) => [...prev, userMsg]);
     setPopupOpen(false);
+
     const replyText = await askAvatar(text, settings, historySnapshot);
+    if (!isMountedRef.current) return;
     const replyId = nextIdRef.current++;
     setMessages((prev) => [...prev, { id: replyId, role: 'character', text: replyText }]);
-    const videoUrl = pickVideoForAnswer(replyText, settings.videos || []);
-    if (videoUrl) setActiveVideoUrl(videoUrl);
-    setSpeakingMessageId(replyId);
-    setSpeakingText(replyText);
+
+    // Stop any prior playback before starting the new one
     clearSuspenseTimer();
     speechHandleRef.current?.stop();
-    speechHandleRef.current = await speakHebrew(replyText, settings.voiceType || 'man', () => {
-      clearSuspenseTimer();
-      suspenseTimerRef.current = window.setTimeout(() => {
-        suspenseTimerRef.current = null;
-        setActiveVideoUrl(null);
-        setSpeakingMessageId(null);
-        setSpeakingText(null);
-      }, 1500);
+    speechHandleRef.current = null;
+
+    // Show the bubble immediately so the user sees the reply text right away
+    speakingMessageIdRef.current = replyId;
+    setSpeakingMessageId(replyId);
+    setSpeakingText(replyText);
+
+    const videoUrl = pickVideoForAnswer(replyText, settings.videos || []);
+
+    // Pre-fetch BOTH the TTS audio and the video file in parallel so playback
+    // can start with no network gap between video and voice.
+    let speech: PreparedSpeech;
+    try {
+      const [s] = await Promise.all([
+        prepareSpeech(replyText, settings.voiceType || 'man'),
+        videoUrl ? preloadVideoUrl(videoUrl) : Promise.resolve(),
+      ]);
+      speech = s;
+    } catch {
+      return;
+    }
+
+    // If the user navigated away or started another reply while we were loading, bail.
+    if (!isMountedRef.current || speakingMessageIdRef.current !== replyId) {
+      speech.stop();
+      return;
+    }
+
+    // Start video and audio in the same tick so they begin together.
+    if (videoUrl) setActiveVideoUrl(videoUrl);
+    speechHandleRef.current = speech;
+    speech.play(() => {
+      if (speechHandleRef.current === speech) speechHandleRef.current = null;
+      if (!isMountedRef.current) return;
+      setActiveVideoUrl(null);
+      setSpeakingMessageId(null);
+      setSpeakingText(null);
     });
   };
 
@@ -703,6 +792,7 @@ export default function AvatarStation({
       <CharacterWindow>
         {activeVideoUrl ? (
           <CharacterVideo
+            key={activeVideoUrl}
             src={activeVideoUrl}
             autoPlay
             loop

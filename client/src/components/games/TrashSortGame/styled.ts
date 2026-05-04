@@ -27,6 +27,11 @@ export const SortContainer = styled('div')({
   userSelect: 'none',
   touchAction: 'none',
   background: '#0f1923',
+  width: '100%',
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+  },
 });
 
 export const TutorialScreen = styled('div')({

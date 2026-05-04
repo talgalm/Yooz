@@ -102,11 +102,6 @@ const AnimatedContent = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   animation: `${pageFadeIn} 680ms cubic-bezier(0.22, 1, 0.36, 1) 90ms both`,
-  '@media (min-width: 768px)': {
-    width: '100%',
-    maxWidth: 720,
-    marginInline: 'auto',
-  },
 });
 
 const StationTitleText = styled('h2')({

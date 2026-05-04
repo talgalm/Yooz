@@ -183,6 +183,11 @@ export const IntroContainer = styled('div', {
       }),
   '& > *': { position: 'relative', zIndex: 1 },
   fontFamily: INTRO_FONT_FAMILY,
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+    alignItems: 'center',
+  },
 }));
 
 export const IntroDecorations = styled('div')({
@@ -367,6 +372,10 @@ export const PuzzleContainer = styled('div')({
   padding: '6px 12px 0',
   boxSizing: 'border-box',
   gap: 6,
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+  },
 });
 
 /** Scrollable question body; bottom bar stays fixed. */
@@ -874,6 +883,10 @@ export const DragPhaseContainer = styled('div')({
   gap: 12,
   padding: '8px 12px',
   boxSizing: 'border-box',
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+  },
   minHeight: 0,
   position: 'relative',
   zIndex: 1,
@@ -998,6 +1011,12 @@ export const FinishContainer = styled('div')({
   overflow: 'hidden',
   minHeight: '100%',
   height: '100%',
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+    width: '100%',
+    alignItems: 'center',
+  },
 });
 
 export const FinishContent = styled('div')({

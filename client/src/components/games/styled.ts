@@ -29,6 +29,11 @@ export const GameCenteredLayout = styled('div')({
   justifyContent: 'center',
   padding: 24,
   textAlign: 'center',
+  '@media (min-width: 768px)': {
+    width: '100%',
+    maxWidth: 720,
+    marginInline: 'auto',
+  },
 });
 
 // ─── Shared intro / phase header (mute aligned with trivia top bar) ───

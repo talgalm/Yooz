@@ -59,6 +59,11 @@ export const IntroContainer = styled('div')({
   overflow: 'hidden',
   minHeight: 0,
   width: '100%',
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+    alignItems: 'center',
+  },
 });
 
 export const IntroDecorations = styled('div')({
@@ -235,6 +240,10 @@ export const TriviaContainer = styled('div')({
   padding: '6px 12px 0',
   boxSizing: 'border-box',
   gap: 6,
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+  },
 });
 
 /** Question body; overflow hidden — no horizontal or vertical scroll in play view. */
@@ -713,6 +722,11 @@ export const FinishContainer = styled('div')({
   overflow: 'auto',
   minHeight: 0,
   width: '100%',
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+    marginInline: 'auto',
+    alignItems: 'center',
+  },
 });
 
 export const FinishContent = styled('div')({

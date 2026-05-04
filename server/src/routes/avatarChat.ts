@@ -124,7 +124,7 @@ function buildSystemPrompt(settings: AvatarSettings): string {
       lines.push(`- אם השחקן שואל על "${g.trigger.trim()}" → חשוף: ${g.reveal.trim()}`);
     });
     if (optional.length > 0) {
-      lines.push('- רמזים נוספים שמותר לחשוף אם נשאלת עליהם ישירות:');
+      lines.push('- תשובות מאושרות (אם השאלה של השחקן מתאימה לאחת מהן, השב/י אותה במילים שלה בדיוק, ללא תוספות, פתיחים או הסברים):');
       optional.forEach((a) => lines.push(`  • ${a}`));
     }
     if (settings.hintStrategy?.trim()) {
@@ -204,6 +204,90 @@ async function askGemini(
   }
 }
 
+// ─── Snap-to-config: if Gemini's response is "very close" to one of the
+// configured optional answers, return the configured answer verbatim. This
+// keeps the chat text + TTS reading aligned with what the admin authored.
+
+function normalizeText(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[֑-ֽֿ-ׇ]/g, '') // strip Hebrew niqqud
+    .replace(/[׳״".,!?\-–—:;()'\[\]{}]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const HEB_PREFIXES = ['ה', 'ו', 'ש', 'ב', 'כ', 'ל', 'מ'];
+
+function stripHebPrefixes(word: string): string {
+  let w = word;
+  // strip up to 2 layered prefixes (e.g. "וה", "שה")
+  for (let i = 0; i < 2; i++) {
+    if (w.length > 3 && HEB_PREFIXES.includes(w[0])) w = w.slice(1);
+    else break;
+  }
+  return w;
+}
+
+function tokens(s: string): string[] {
+  return normalizeText(s)
+    .split(' ')
+    .filter(Boolean)
+    .map(stripHebPrefixes);
+}
+
+function jaccardSimilarity(a: string, b: string): number {
+  const setA = new Set(tokens(a));
+  const setB = new Set(tokens(b));
+  if (setA.size === 0 || setB.size === 0) return 0;
+  let inter = 0;
+  for (const t of setA) if (setB.has(t)) inter++;
+  return inter / (setA.size + setB.size - inter);
+}
+
+/** How well is `answer` "covered" by `response`? (fraction of answer's tokens
+ *  that also appear in the response). High coverage means the response said
+ *  the answer plus some extra wording. */
+function coverage(answer: string, response: string): number {
+  const ans = tokens(answer);
+  if (ans.length === 0) return 0;
+  const resp = new Set(tokens(response));
+  let hit = 0;
+  for (const t of ans) if (resp.has(t)) hit++;
+  return hit / ans.length;
+}
+
+function snapToOptionalAnswer(response: string, optionalAnswers: string[] | undefined): string {
+  const candidates = (optionalAnswers || []).map((a) => a.trim()).filter(Boolean);
+  if (candidates.length === 0) return response;
+
+  const normResp = normalizeText(response);
+
+  // 1. Substring match — Gemini said the answer almost verbatim with extras.
+  //    Require the answer to have meaningful length so trivial words don't snap.
+  for (const ans of candidates) {
+    const normAns = normalizeText(ans);
+    if (normAns.length >= 8 && normResp.includes(normAns)) return ans;
+  }
+
+  // 2. Coverage + Jaccard — Gemini paraphrased but reused most of the answer's
+  //    words. Coverage ≥ 0.8 means almost every word of the answer appears in
+  //    the response; Jaccard ≥ 0.55 prevents matching when the response is
+  //    dramatically longer/different.
+  let best: { ans: string; cov: number; jac: number } | null = null;
+  for (const ans of candidates) {
+    const cov = coverage(ans, response);
+    const jac = jaccardSimilarity(ans, response);
+    if (!best || cov > best.cov || (cov === best.cov && jac > best.jac)) {
+      best = { ans, cov, jac };
+    }
+  }
+
+  if (best && best.cov >= 0.8 && best.jac >= 0.55) return best.ans;
+
+  return response;
+}
+
 function matchVideo(message: string, videos: AvatarVideo[]): string | undefined {
   const text = message.toLowerCase();
   for (const v of videos) {
@@ -252,7 +336,8 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   try {
-    const response = await askGemini(safeMessage, safeSettings, safeHistory);
+    const raw = await askGemini(safeMessage, safeSettings, safeHistory);
+    const response = snapToOptionalAnswer(raw, safeSettings.optionalAnswers);
     res.json({ response, videoUrl, source: 'gemini' });
   } catch (err) {
     console.error('Avatar chat endpoint error:', err);
