@@ -21,7 +21,7 @@ import ManagerDashboardPage from './pages/manager/ManagerDashboardPage';
 import LandingPage from './pages/LandingPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpChatProvider, HelpChatFab } from './components/HelpChat';
-import { MobileContainer } from './components/styled';
+import { MobileContainer } from './components/MobileContainer';
 import './App.css';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {

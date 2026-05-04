@@ -5,12 +5,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './PlayPage.i18n';
 import ActivityLogin from '../../components/login/ActivityLogin';
-import LangDrawer from '../../components/LangDrawer';
 import {
   CenteredPage,
   Card,
   BodyText,
-  TopEndCorner,
   LoaderWave,
 } from '../../components/styled';
 import {
@@ -468,7 +466,6 @@ export default function PlayPage() {
 
       {/* Login page — full screen purple */}
       <PurpleLoginPage visible={openingPhase !== 'playing'}>
-        <TopEndCorner><LangDrawer variant="darkHeader" /></TopEndCorner>
         <LoginLogo src="/images/logo-white.png" alt="Yooz" />
         <LoginHeading>{t.readyForAdventure}</LoginHeading>
         <LoginSubheading>{t.connectAndPlay}</LoginSubheading>

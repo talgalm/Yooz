@@ -170,6 +170,12 @@ const Content = styled('div')({
   justifyContent: 'center',
   padding: '24px 20px',
   textAlign: 'center',
+  '@media (min-width: 768px)': {
+    width: '100%',
+    maxWidth: 560,
+    marginInline: 'auto',
+    padding: '40px 24px',
+  },
 });
 
 const RibbonTitle = styled('div')({

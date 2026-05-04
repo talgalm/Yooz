@@ -14,6 +14,9 @@ const GameHeader = styled('div')({
   gap: 8,
   padding: '10px 16px',
   backdropFilter: 'blur(8px)',
+  '@media (min-width: 768px)': {
+    padding: '10px max(16px, calc((100% - 760px) / 2))',
+  },
 });
 
 const RoadmapHeaderTop = styled('div')({

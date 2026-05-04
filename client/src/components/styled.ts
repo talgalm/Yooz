@@ -72,6 +72,9 @@ export const HeaderBar = styled('div')({
   gap: 12,
   padding: '16px 20px',
   borderBottom: '1px solid #f0f0f0',
+  '@media (min-width: 768px)': {
+    padding: '16px max(20px, calc((100% - 760px) / 2))',
+  },
 });
 
 export const HeaderActions = styled('div')({
@@ -324,15 +327,6 @@ export const AccentText = styled('span')({
   fontWeight: 700,
   fontSize: 16,
   color: PRIMARY,
-});
-
-// ─── Mobile Container ───
-
-export const MobileContainer = styled('div')({
-  maxWidth: 480,
-  margin: '0 auto',
-  minHeight: '100dvh',
-  background: '#fff',
 });
 
 // ─── Admin Layout ───
@@ -743,6 +737,11 @@ export const CenteredContent = styled('div')({
   justifyContent: 'center',
   padding: 24,
   textAlign: 'center',
+  '@media (min-width: 768px)': {
+    width: '100%',
+    maxWidth: 760,
+    marginInline: 'auto',
+  },
 });
 
 // ─── Mobile Helpers ───

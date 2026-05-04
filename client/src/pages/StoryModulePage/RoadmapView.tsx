@@ -40,11 +40,11 @@ const nodePopIn = keyframes`
 `;
 const fishSwim = keyframes`
   0%   { transform: translateX(-120px); }
-  100% { transform: translateX(calc(100vw + 120px)); }
+  100% { transform: translateX(calc(var(--roadmap-w, 100vw) + 120px)); }
 `;
 const airplaneFly = keyframes`
   0%   { transform: translateX(-160px); }
-  100% { transform: translateX(calc(100vw + 160px)); }
+  100% { transform: translateX(calc(var(--roadmap-w, 100vw) + 160px)); }
 `;
 const airplaneWobble = keyframes`
   0%, 100% { transform: translateY(0) rotate(0deg); }
@@ -63,7 +63,7 @@ const fishWobble = keyframes`
 `;
 const tumbleweedDrift = keyframes`
   0%   { transform: translateX(-100px); }
-  100% { transform: translateX(calc(100vw + 100px)); }
+  100% { transform: translateX(calc(var(--roadmap-w, 100vw) + 100px)); }
 `;
 const tumbleweedBounce = keyframes`
   0%, 100% { transform: translateY(0); }

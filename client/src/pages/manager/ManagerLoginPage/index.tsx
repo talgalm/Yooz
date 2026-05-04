@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useManagerAuth } from '../../../context/ManagerAuthContext';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './ManagerLoginPage.i18n';
-import LangDrawer from '../../../components/LangDrawer';
 import {
   AdminPage,
   AdminHeader,
@@ -47,7 +46,6 @@ export default function ManagerLoginPage() {
     <AdminPage>
       <AdminHeader>
         <img src="/images/logo-purple.png" alt="Yooz" style={{ height: 32 }} />
-        <LangDrawer />
       </AdminHeader>
       <AdminContent>
         <AdminCardCentered>

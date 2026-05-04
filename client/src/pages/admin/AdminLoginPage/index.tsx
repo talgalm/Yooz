@@ -4,7 +4,6 @@ import { styled } from '@mui/material/styles';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminLoginPage.i18n';
-import LangDrawer from '../../../components/LangDrawer';
 import { isGoogleAuthAvailable, openGooglePopup } from '../../../utils/googleAuth';
 import {
   CenteredPage,
@@ -14,7 +13,6 @@ import {
   Input,
   PrimaryButton,
   ErrorText,
-  TopEndCorner,
 } from '../../../components/styled';
 
 const Divider = styled('div')({
@@ -95,7 +93,6 @@ export default function AdminLoginPage() {
 
   return (
     <CenteredPage>
-      <TopEndCorner><LangDrawer /></TopEndCorner>
       <Card>
         <img src="/images/logo-purple.png" alt="Yooz" style={{ width: 120, marginBottom: 8 }} />
         <Subtitle>{t.subtitle}</Subtitle>
