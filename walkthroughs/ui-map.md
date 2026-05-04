@@ -228,7 +228,8 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 2. Scheduled (pending): countdown with days/hours/minutes/seconds
 3. Scheduled (expired): "הפעילות הסתיימה" message
 4. Active: shows opening media (if configured) then login form
-   - Video splash autoplays muted (browser policy); shows "🔊 Tap for sound" / "לחצו להפעלת הקול" button top-right that unmutes on tap (stops propagation so it doesn't skip)
+   - Video splash does NOT autoplay; shows centered "▶ Tap to play with sound" / "לחצו לצפייה עם קול" button. Video stays hidden until pressed; tapping the button starts playback with audio. Skip hint and outside-click skip are disabled until the video has started.
+   - Image splash auto-fades after 5s; default Yooz splash auto-fades after 1.5s. Both can be skipped on tap.
 
 **Login Form** (ActivityLogin component):
 - Name input: `input[placeholder*="name"], input[placeholder*="שם"]` (if configured)

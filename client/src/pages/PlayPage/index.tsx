@@ -18,7 +18,7 @@ import {
   OpeningMedia,
   OpeningImage,
   SkipHint,
-  UnmuteButton,
+  PlayWithSoundButton,
   DefaultSplashOverlay,
   SplashLogo,
   PurpleLoginPage,
@@ -141,10 +141,11 @@ export default function PlayPage() {
   // Opening state
   const [openingPhase, setOpeningPhase] = useState<OpeningPhase>('playing');
   const [showDefaultSplash, setShowDefaultSplash] = useState(false);
-  const [videoMuted, setVideoMuted] = useState(false);
+  const [videoStarted, setVideoStarted] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const fadeStartedRef = useRef(false);
   const hasOpening = activity?.opening?.url;
+  const openingType = activity?.opening?.type;
 
   useEffect(() => {
     if (!code) return;
@@ -242,14 +243,16 @@ export default function PlayPage() {
     }, 1200); // match CSS transition duration
   }, []);
 
-  // Auto-fade: 3s for default splash, 5s for custom opening
+  // Auto-fade: 1.5s for default splash, 5s for image opening.
+  // Video openings wait for the user to press play; fade-out is then triggered by onEnded.
   useEffect(() => {
     if (openingPhase !== 'playing') return;
     if (!hasOpening && !showDefaultSplash) return;
+    if (hasOpening && openingType === 'video') return;
     const delay = showDefaultSplash ? 1500 : 5000;
     const timer = setTimeout(startFadeOut, delay);
     return () => clearTimeout(timer);
-  }, [hasOpening, showDefaultSplash, openingPhase, startFadeOut]);
+  }, [hasOpening, openingType, showDefaultSplash, openingPhase, startFadeOut]);
 
   // Lock body scroll while opening is visible
   useEffect(() => {
@@ -267,18 +270,22 @@ export default function PlayPage() {
   };
 
   const handleOpeningClick = () => {
+    // Don't let an outside click skip the splash before the user has chosen
+    // to start the video — they need to press the play button first.
+    if (hasOpening && openingType === 'video' && !videoStarted) return;
     if (openingPhase === 'playing') {
       startFadeOut();
     }
   };
 
-  const handleUnmute = (e: React.MouseEvent) => {
+  const handleStartVideo = (e: React.MouseEvent) => {
     e.stopPropagation();
     const v = videoRef.current;
     if (!v) return;
     v.muted = false;
     v.volume = 1;
-    setVideoMuted(false);
+    try { v.currentTime = 0; } catch {}
+    setVideoStarted(true);
     v.play().catch(() => {});
   };
 
@@ -426,28 +433,25 @@ export default function PlayPage() {
               <OpeningMedia
                 ref={videoRef}
                 src={activity.opening!.url}
-                autoPlay
                 playsInline
-                muted={videoMuted}
+                preload="auto"
+                muted={!videoStarted}
                 onEnded={handleVideoEnded}
-                onCanPlay={(e) => {
+                onLoadedMetadata={(e) => {
+                  // Force the first frame to paint so the splash isn't a black
+                  // screen before the user presses play. iOS/Safari only renders
+                  // a frame after currentTime moves.
                   const v = e.currentTarget;
-                  if (v.dataset.tried) return;
-                  v.dataset.tried = '1';
-                  v.muted = false;
-                  v.volume = 1;
-                  v.play().catch(() => {
-                    v.muted = true;
-                    setVideoMuted(true);
-                    v.play().catch(() => {});
-                  });
+                  if (!videoStarted && v.currentTime === 0) {
+                    try { v.currentTime = 0.001; } catch {}
+                  }
                 }}
               />
-              {videoMuted && (
-                <UnmuteButton type="button" onClick={handleUnmute}>
-                  <span aria-hidden="true">🔊</span>
-                  <span>{t.tapForSound}</span>
-                </UnmuteButton>
+              {!videoStarted && (
+                <PlayWithSoundButton type="button" onClick={handleStartVideo}>
+                  <span className="play-icon" aria-hidden="true">▶</span>
+                  <span>{t.tapToStart}</span>
+                </PlayWithSoundButton>
               )}
             </>
           ) : (
@@ -456,7 +460,9 @@ export default function PlayPage() {
               alt=""
             />
           )}
-          <SkipHint>{t.tapToSkip}</SkipHint>
+          {(openingType !== 'video' || videoStarted) && (
+            <SkipHint>{t.tapToSkip}</SkipHint>
+          )}
         </OpeningOverlay>
       )}
 
