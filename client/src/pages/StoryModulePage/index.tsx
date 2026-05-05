@@ -887,6 +887,16 @@ export default function StoryModulePage() {
     setShowStationHintWarning(true);
   };
 
+  // Push the session start backward to apply a time penalty. Persisted so it
+  // survives reload (the activities API computes durationMs from this).
+  const applyTimePenalty = (penaltyMs: number) => {
+    const newStart = sessionStartedAt.current - penaltyMs;
+    sessionStartedAt.current = newStart;
+    const token = localStorage.getItem('yooz_token') ?? 'anon';
+    localStorage.setItem(`yooz_start_${code}_${token}`, String(newStart));
+    setElapsedSeconds(Math.floor((Date.now() - newStart) / 1000));
+  };
+
   const confirmStationHint = () => {
     setShowStationHintWarning(false);
     if (stationHintUsed.has(currentItemIndex)) {
@@ -895,13 +905,15 @@ export default function StoryModulePage() {
     }
     setStationHintUsed((prev) => new Set(prev).add(currentItemIndex));
     if (isTimeMode) {
-      const newStart = sessionStartedAt.current - GAME_CONSTANTS.HINT_TIME_PENALTY_MS;
-      sessionStartedAt.current = newStart;
-      const token = localStorage.getItem('yooz_token') ?? 'anon';
-      localStorage.setItem(`yooz_start_${code}_${token}`, String(newStart));
-      setElapsedSeconds(Math.floor((Date.now() - newStart) / 1000));
+      applyTimePenalty(GAME_CONSTANTS.HINT_TIME_PENALTY_MS);
     }
     setShowStationHintText(true);
+  };
+
+  // EnteringText "show solution" hint: always costs 4 minutes (regardless of
+  // mode — even in points mode the time is still recorded for the leaderboard).
+  const handleEnteringTextSolutionHintUsed = () => {
+    applyTimePenalty(GAME_CONSTANTS.SOLUTION_HINT_TIME_PENALTY_MS);
   };
 
   // Persist scores to server when finish phase is reached (with retry).
@@ -1412,6 +1424,7 @@ export default function StoryModulePage() {
         onConfirmStationHint={confirmStationHint}
         onCloseHintWarning={() => setShowStationHintWarning(false)}
         onCloseHintText={() => setShowStationHintText(false)}
+        onEnteringTextSolutionHintUsed={handleEnteringTextSolutionHintUsed}
         popupModal={popupModal}
         t={t}
         leaderboardMode={data.leaderboardMode}

@@ -202,6 +202,8 @@ interface PlayingPhaseProps {
   onConfirmStationHint: () => void;
   onCloseHintWarning: () => void;
   onCloseHintText: () => void;
+  /** Called when the EnteringText "show solution" hint is confirmed — applies the 4-min time penalty. */
+  onEnteringTextSolutionHintUsed: () => void;
   /** Running total minus hint penalties — same basis as roadmap / finish. */
   currentPoints: number;
   popupModal: React.ReactNode;
@@ -234,6 +236,7 @@ export default function PlayingPhase({
   onConfirmStationHint,
   onCloseHintWarning,
   onCloseHintText,
+  onEnteringTextSolutionHintUsed,
   currentPoints,
   popupModal,
   t,
@@ -389,6 +392,14 @@ export default function PlayingPhase({
             stationHintUsed={stationHintUsed}
             onStationHintClick={onStationHintClick}
             hintLabel={stationHintUsed ? t.showStationHint : t.stationHint}
+            onSolutionHintUsed={onEnteringTextSolutionHintUsed}
+            solutionHintLabel={t.solutionHint}
+            solutionHintWarning={t.solutionHintWarning}
+            solutionHintConfirmLabel={t.solutionHintConfirm}
+            hintCancelLabel={t.hintCancel}
+            retryTitle={t.enteringTextRetryTitle}
+            retryMessage={t.enteringTextRetryMessage}
+            retryButtonLabel={t.enteringTextRetryButton}
           />
         );
       }

@@ -189,6 +189,7 @@ export default function AdminStationConfigPage() {
   const [enteringTextSuccessMediaType, setEnteringTextSuccessMediaType] = useState<'image' | 'video' | ''>('');
   const [enteringTextSuccessMediaUrl, setEnteringTextSuccessMediaUrl] = useState('');
   const [enteringTextLastStep, setEnteringTextLastStep] = useState(false);
+  const [enteringTextSolutionHintEnabled, setEnteringTextSolutionHintEnabled] = useState(false);
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -282,6 +283,10 @@ export default function AdminStationConfigPage() {
           if (settings.successMediaType) setEnteringTextSuccessMediaType(settings.successMediaType as 'image' | 'video');
           if (settings.successMediaUrl) setEnteringTextSuccessMediaUrl(settings.successMediaUrl as string);
           setEnteringTextLastStep(!!settings.lastStep);
+          if (settings.solutionHint && typeof settings.solutionHint === 'object') {
+            const sh = settings.solutionHint as Record<string, unknown>;
+            setEnteringTextSolutionHintEnabled(!!sh.enabled);
+          }
         }
         setInitialLoading(false);
       })
@@ -379,6 +384,10 @@ export default function AdminStationConfigPage() {
       if (settings.successMediaType) setEnteringTextSuccessMediaType(settings.successMediaType as 'image' | 'video');
       if (settings.successMediaUrl) setEnteringTextSuccessMediaUrl(settings.successMediaUrl as string);
       setEnteringTextLastStep(!!settings.lastStep);
+      if (settings.solutionHint && typeof settings.solutionHint === 'object') {
+        const sh = settings.solutionHint as Record<string, unknown>;
+        setEnteringTextSolutionHintEnabled(!!sh.enabled);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -481,6 +490,9 @@ export default function AdminStationConfigPage() {
         if (enteringTextSuccessMediaType) settings.successMediaType = enteringTextSuccessMediaType;
         if (enteringTextSuccessMediaUrl.trim()) settings.successMediaUrl = enteringTextSuccessMediaUrl.trim();
         settings.lastStep = enteringTextLastStep;
+        if (enteringTextSolutionHintEnabled) {
+          settings.solutionHint = { enabled: true };
+        }
       }
 
       const payload = {
@@ -1531,6 +1543,21 @@ export default function AdminStationConfigPage() {
                     </HintToggleRow>
                     <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 6 }}>
                       {t.enteringTextLastStepHelper}
+                    </div>
+                  </div>
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: 8, paddingTop: 16 }}>
+                    <HintToggleRow>
+                      <SectionLabelNoMargin>{t.enteringTextSolutionHint}</SectionLabelNoMargin>
+                      <ToggleButton
+                        type="button"
+                        selected={enteringTextSolutionHintEnabled}
+                        onClick={() => setEnteringTextSolutionHintEnabled((v) => !v)}
+                      >
+                        {enteringTextSolutionHintEnabled ? 'ON' : 'OFF'}
+                      </ToggleButton>
+                    </HintToggleRow>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 6 }}>
+                      {t.enteringTextSolutionHintHelper}
                     </div>
                   </div>
                 </VerticalStack>

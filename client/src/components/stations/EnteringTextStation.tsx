@@ -103,6 +103,45 @@ const HintIconButton = styled('button')({
   },
 });
 
+// Second hint (solution) icon — sits just to the left of the regular hint icon.
+const SolutionHintIconButton = styled(HintIconButton)({
+  right: 56,
+  background: '#fef3c7',
+});
+
+const ConfirmModalActions = styled('div')({
+  display: 'flex',
+  gap: 10,
+  marginTop: 16,
+  justifyContent: 'center',
+});
+
+const ConfirmModalSecondary = styled('button')({
+  flex: 1,
+  padding: '12px 18px',
+  borderRadius: 10,
+  border: '2px solid #333',
+  background: '#fff',
+  color: '#333',
+  fontWeight: 700,
+  fontSize: 15,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+});
+
+const ConfirmModalPrimary = styled('button')({
+  flex: 1,
+  padding: '12px 18px',
+  borderRadius: 10,
+  border: '2px solid #333',
+  background: '#7c4dff',
+  color: '#fff',
+  fontWeight: 700,
+  fontSize: 15,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+});
+
 const Title = styled('h2')({
   margin: '0 0 22px',
   fontSize: 44,
@@ -285,9 +324,36 @@ interface EnteringTextStationProps {
   stationHintUsed?: boolean;
   onStationHintClick?: () => void;
   hintLabel?: string;
+  /** Called when the participant confirms the "show solution" hint — parent applies the 4-min penalty. */
+  onSolutionHintUsed?: () => void;
+  solutionHintLabel?: string;
+  solutionHintWarning?: string;
+  solutionHintConfirmLabel?: string;
+  hintCancelLabel?: string;
+  retryTitle?: string;
+  retryMessage?: string;
+  retryButtonLabel?: string;
 }
 
-export default function EnteringTextStation({ station, onContinue, onBackToRoadmap, onFinishActivity, code, stationHintText, stationHintUsed, onStationHintClick, hintLabel }: EnteringTextStationProps) {
+export default function EnteringTextStation({
+  station,
+  onContinue,
+  onBackToRoadmap,
+  onFinishActivity,
+  code,
+  stationHintText,
+  stationHintUsed,
+  onStationHintClick,
+  hintLabel,
+  onSolutionHintUsed,
+  solutionHintLabel,
+  solutionHintWarning,
+  solutionHintConfirmLabel,
+  hintCancelLabel,
+  retryTitle,
+  retryMessage,
+  retryButtonLabel,
+}: EnteringTextStationProps) {
   const fields = useMemo(() => {
     const raw = station.settings?.fields;
     if (!Array.isArray(raw)) return [];
@@ -296,23 +362,33 @@ export default function EnteringTextStation({ station, onContinue, onBackToRoadm
 
   const sessionStorageKey = code ? `yooz_entering_text_${code}_${station._id}` : undefined;
 
-  const [values, setValues] = useState<string[]>(() => fields.map(() => ''));
-  const [attempts, setAttempts] = useState<number>(() => {
-    if (typeof window === 'undefined' || !sessionStorageKey) return 0;
+  const persistedState = (() => {
+    const fallback = { attempts: 0, failedRoundCount: 0, solutionHintUsed: false };
+    if (typeof window === 'undefined' || !sessionStorageKey) return fallback;
     try {
       const raw = window.sessionStorage.getItem(sessionStorageKey);
-      if (!raw) return 0;
-      const parsed = JSON.parse(raw) as { attempts?: number };
-      return typeof parsed?.attempts === 'number' && parsed.attempts >= 0 ? parsed.attempts : 0;
+      if (!raw) return fallback;
+      const parsed = JSON.parse(raw) as { attempts?: number; failedRoundCount?: number; solutionHintUsed?: boolean };
+      return {
+        attempts: typeof parsed?.attempts === 'number' && parsed.attempts >= 0 ? parsed.attempts : 0,
+        failedRoundCount: typeof parsed?.failedRoundCount === 'number' && parsed.failedRoundCount >= 0 ? parsed.failedRoundCount : 0,
+        solutionHintUsed: !!parsed?.solutionHintUsed,
+      };
     } catch {
-      return 0;
+      return fallback;
     }
-  });
+  })();
+
+  const [values, setValues] = useState<string[]>(() => fields.map(() => ''));
+  const [attempts, setAttempts] = useState<number>(persistedState.attempts);
+  const [failedRoundCount, setFailedRoundCount] = useState<number>(persistedState.failedRoundCount);
+  const [solutionHintUsed, setSolutionHintUsed] = useState<boolean>(persistedState.solutionHintUsed);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingDots, setLoadingDots] = useState(1);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [showFailure, setShowFailure] = useState(false);
+  const [showRetryPopup, setShowRetryPopup] = useState(false);
+  const [showSolutionHintWarning, setShowSolutionHintWarning] = useState(false);
 
   useEffect(() => {
     if (!loading) return;
@@ -328,11 +404,14 @@ export default function EnteringTextStation({ station, onContinue, onBackToRoadm
   useEffect(() => {
     if (typeof window === 'undefined' || !sessionStorageKey) return;
     try {
-      window.sessionStorage.setItem(sessionStorageKey, JSON.stringify({ attempts }));
+      window.sessionStorage.setItem(
+        sessionStorageKey,
+        JSON.stringify({ attempts, failedRoundCount, solutionHintUsed }),
+      );
     } catch {
       /* best effort */
     }
-  }, [attempts, sessionStorageKey]);
+  }, [attempts, failedRoundCount, solutionHintUsed, sessionStorageKey]);
 
   const title = (station.settings?.title as string) || 'פתרון התעלומה';
   const submitButtonText = (station.settings?.submitButtonText as string) || 'תשובה סופית';
@@ -344,16 +423,20 @@ export default function EnteringTextStation({ station, onContinue, onBackToRoadm
   const successMediaType = station.settings?.successMediaType as 'image' | 'video' | undefined;
   const successMediaUrl = station.settings?.successMediaUrl as string | undefined;
   const hasSuccessPopup = !!(successTitle || successMediaUrl);
-  const failureTitle = (station.settings?.failureTitle as string) || 'לא הצלחת לענות נכון';
-  const failureSubtitle = (station.settings?.failureSubtitle as string) || 'ניצלת את כל הניסיונות. נחזור לחקירה.';
-  const failureContinueText = (station.settings?.failureContinueText as string) || 'חזרה לחקירה';
   const isLastStep = !!station.settings?.lastStep;
   const handleSuccessContinue = isLastStep && onFinishActivity ? onFinishActivity : onContinue;
+  const solutionHintConfig = station.settings?.solutionHint as { enabled?: boolean } | undefined;
+  const solutionHintEnabled = !!solutionHintConfig?.enabled;
+  // Visibility rule: solution hint enabled AND user has failed at least one
+  // round AND has used the regular hint AND hasn't used solution hint yet.
+  const showSolutionHintIcon =
+    solutionHintEnabled && failedRoundCount >= 1 && !!stationHintUsed && !solutionHintUsed;
 
   useEffect(() => {
     if (attempts >= maxAttempts && !showSuccess) {
-      setShowFailure(true);
+      setShowRetryPopup(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleBack = () => {
@@ -373,9 +456,28 @@ export default function EnteringTextStation({ station, onContinue, onBackToRoadm
     }
   };
 
-  const handleFailureDismiss = () => {
-    setShowFailure(false);
-    handleBack();
+  const handleRetryDismiss = () => {
+    // Reset attempts (try again) and stay in the station so the user can use
+    // the solution hint (if enabled + first hint used).
+    setShowRetryPopup(false);
+    setAttempts(0);
+    setError('');
+    setValues(fields.map(() => ''));
+  };
+
+  const handleSolutionHintClick = () => {
+    if (!solutionHintEnabled || solutionHintUsed) return;
+    setShowSolutionHintWarning(true);
+  };
+
+  const handleSolutionHintConfirm = () => {
+    setShowSolutionHintWarning(false);
+    setSolutionHintUsed(true);
+    // Fill each input with the configured rightAnswer.
+    setValues(fields.map((f) => (f.rightAnswer || '').toString()));
+    setError('');
+    // Apply the 4-minute time penalty via parent.
+    if (onSolutionHintUsed) onSolutionHintUsed();
   };
 
   const handleCorrect = () => {
@@ -396,6 +498,12 @@ export default function EnteringTextStation({ station, onContinue, onBackToRoadm
     }
   };
 
+  const triggerFailedRound = () => {
+    setError('');
+    setFailedRoundCount((n) => n + 1);
+    setShowRetryPopup(true);
+  };
+
   const handleSubmit = async () => {
     const hasEmpty = fields.some((_, i) => !(values[i] || '').trim());
     if (hasEmpty) {
@@ -405,8 +513,7 @@ export default function EnteringTextStation({ station, onContinue, onBackToRoadm
       if (remaining > 0) {
         setError(`נא למלא את כל השדות. נשארו ${remaining} ניסיונות.`);
       } else {
-        setError('');
-        setShowFailure(true);
+        triggerFailedRound();
       }
       return;
     }
@@ -444,8 +551,7 @@ export default function EnteringTextStation({ station, onContinue, onBackToRoadm
         if (remaining > 0) {
           setError(`תשובה לא נכונה. נשארו ${remaining} ניסיונות.`);
         } else {
-          setError('');
-          setShowFailure(true);
+          triggerFailedRound();
         }
       }
     } catch {
@@ -472,6 +578,22 @@ export default function EnteringTextStation({ station, onContinue, onBackToRoadm
               <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z" />
             </svg>
           </HintIconButton>
+        )}
+        {showSolutionHintIcon && (
+          <SolutionHintIconButton
+            type="button"
+            onClick={handleSolutionHintClick}
+            aria-label={solutionHintLabel || 'הצג פתרון'}
+            title={solutionHintLabel || 'הצג פתרון'}
+          >
+            {/* Key icon = "unlock the solution" */}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b88300" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="8" cy="15" r="4" />
+              <path d="M10.85 12.15 19 4" />
+              <path d="M18 5l3 3" />
+              <path d="M15 8l3 3" />
+            </svg>
+          </SolutionHintIconButton>
         )}
         <AttemptsRow>
           {[...Array(maxAttempts)].map((_, i) => (
@@ -530,14 +652,32 @@ export default function EnteringTextStation({ station, onContinue, onBackToRoadm
         </ModalOverlay>
         </>
       )}
-      {showFailure && (
+      {showRetryPopup && (
         <ModalOverlay>
           <SuccessCard onClick={(e) => e.stopPropagation()}>
-            <SuccessTitle>{failureTitle}</SuccessTitle>
-            <SuccessSubtitle>{failureSubtitle}</SuccessSubtitle>
-            <SuccessContinueButton type="button" onClick={handleFailureDismiss}>
-              {failureContinueText}
+            <SuccessTitle>{retryTitle || 'נגמרו הניסיונות'}</SuccessTitle>
+            <SuccessSubtitle>{retryMessage || 'לא נורא — נסו שוב.'}</SuccessSubtitle>
+            <SuccessContinueButton type="button" onClick={handleRetryDismiss}>
+              {retryButtonLabel || 'ניסיון נוסף'}
             </SuccessContinueButton>
+          </SuccessCard>
+        </ModalOverlay>
+      )}
+      {showSolutionHintWarning && (
+        <ModalOverlay onClick={() => setShowSolutionHintWarning(false)}>
+          <SuccessCard onClick={(e) => e.stopPropagation()}>
+            <SuccessTitle>{solutionHintLabel || 'הצג פתרון'}</SuccessTitle>
+            <SuccessSubtitle>
+              {solutionHintWarning || 'הצגת הפתרון תמלא את התשובה הנכונה ותוסיף 4 דקות לזמן שלך. להמשיך?'}
+            </SuccessSubtitle>
+            <ConfirmModalActions>
+              <ConfirmModalSecondary type="button" onClick={() => setShowSolutionHintWarning(false)}>
+                {hintCancelLabel || 'ביטול'}
+              </ConfirmModalSecondary>
+              <ConfirmModalPrimary type="button" onClick={handleSolutionHintConfirm}>
+                {solutionHintConfirmLabel || 'הצג פתרון'}
+              </ConfirmModalPrimary>
+            </ConfirmModalActions>
           </SuccessCard>
         </ModalOverlay>
       )}

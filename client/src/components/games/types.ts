@@ -40,9 +40,11 @@ export interface GameProps {
 /** Magic numbers used across game components */
 export const GAME_CONSTANTS = {
   /** Points deducted for using a hint */
-  HINT_PENALTY: 5,
+  HINT_PENALTY: 4,
   /** Time added to elapsed duration for using a station hint in time mode (ms) */
   HINT_TIME_PENALTY_MS: 4 * 60 * 1000,
+  /** Time added when using the EnteringText "show solution" hint (ms) */
+  SOLUTION_HINT_TIME_PENALTY_MS: 4 * 60 * 1000,
   /** Feedback display duration default (ms) */
   FEEDBACK_DURATION_MS: 1500,
   /** Timer warning threshold (seconds) */
