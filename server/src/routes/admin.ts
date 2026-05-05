@@ -404,7 +404,7 @@ router.post('/activities/:id/duplicate', authenticateAdmin, async (req: Request<
   if (!existing) { res.status(404).json({ error: 'Activity not found' }); return; }
   if (!customerOwnsDoc(req, existing)) { res.status(404).json({ error: 'Activity not found' }); return; }
 
-  const source = existing.toObject() as Record<string, unknown>;
+  const source = existing.toObject() as unknown as Record<string, unknown>;
   // Strip identifiers / generated fields so the new doc gets fresh values
   delete source._id;
   delete source.code;
