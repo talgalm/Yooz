@@ -143,6 +143,13 @@ const Container = styled('div')<{ bg?: string }>(({ bg }) => ({
   background: bg || '#8fb247',
 }));
 
+const CanvasArea = styled('div')({
+  position: 'relative',
+  flex: 1,
+  minHeight: 0,
+  display: 'flex',
+});
+
 const Canvas = styled('div')({
   flex: 1,
   minHeight: 0,
@@ -175,6 +182,31 @@ const CanvasInner = styled('div')<{ h: number }>(({ h }) => ({
   width: '100%',
   height: h,
 }));
+
+// Custom always-visible scroll indicator overlay. Native mobile scrollbars
+// auto-hide on Android, so we paint our own.
+const ScrollIndicatorTrack = styled('div')({
+  position: 'absolute',
+  top: 8,
+  bottom: 8,
+  right: 4,
+  width: 6,
+  borderRadius: 4,
+  background: 'rgba(0,0,0,0.25)',
+  pointerEvents: 'none',
+  zIndex: 50,
+});
+
+const ScrollIndicatorThumb = styled('div')({
+  position: 'absolute',
+  left: 0,
+  width: '100%',
+  borderRadius: 4,
+  background: 'rgba(255,255,255,0.9)',
+  border: '1px solid rgba(0,0,0,0.3)',
+  boxShadow: '0 1px 2px rgba(0,0,0,0.25)',
+  transition: 'top 60ms linear, height 60ms linear',
+});
 
 const NodeWrapper = styled('button')<{ completed?: boolean }>(({ completed }) => ({
   position: 'absolute',
@@ -408,7 +440,42 @@ export default function SpidersView({
   finalItemIndex,
 }: SpidersViewProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canvasSize, setCanvasSize] = useState<{ w: number; h: number } | null>(null);
+  const [scrollState, setScrollState] = useState<{ thumbHeightPct: number; thumbTopPct: number; visible: boolean }>({
+    thumbHeightPct: 0,
+    thumbTopPct: 0,
+    visible: false,
+  });
+
+  // Track scroll position to drive the custom always-visible scroll indicator.
+  // Native scrollbars auto-hide on mobile (Android Chrome), so we render our own.
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const update = () => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      if (scrollHeight <= clientHeight + 1) {
+        setScrollState((prev) => (prev.visible ? { thumbHeightPct: 0, thumbTopPct: 0, visible: false } : prev));
+        return;
+      }
+      const heightPct = Math.max((clientHeight / scrollHeight) * 100, 8);
+      const maxTopPct = 100 - heightPct;
+      const topPct = Math.min((scrollTop / (scrollHeight - clientHeight)) * maxTopPct, maxTopPct);
+      setScrollState({ thumbHeightPct: heightPct, thumbTopPct: topPct, visible: true });
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    if (ro) {
+      ro.observe(el);
+      if (canvasRef.current) ro.observe(canvasRef.current);
+    }
+    return () => {
+      el.removeEventListener('scroll', update);
+      if (ro) ro.disconnect();
+    };
+  }, [canvasSize]);
 
   useLayoutEffect(() => {
     if (!canvasRef.current) return;
@@ -615,8 +682,9 @@ export default function SpidersView({
         }
       />
 
-      <Canvas>
-        <CanvasInner ref={canvasRef} h={canvasH}>
+      <CanvasArea>
+        <Canvas ref={scrollContainerRef}>
+          <CanvasInner ref={canvasRef} h={canvasH}>
 
           {/* Scene background gradient */}
           {!customTheme && canvasW > 0 && (
@@ -716,8 +784,16 @@ export default function SpidersView({
             );
           })}
 
-        </CanvasInner>
-      </Canvas>
+          </CanvasInner>
+        </Canvas>
+        {scrollState.visible && (
+          <ScrollIndicatorTrack aria-hidden>
+            <ScrollIndicatorThumb
+              style={{ top: `${scrollState.thumbTopPct}%`, height: `${scrollState.thumbHeightPct}%` }}
+            />
+          </ScrollIndicatorTrack>
+        )}
+      </CanvasArea>
 
       {/* Animated fish (ocean) — fixed, outside scroll */}
       {kit.showFish && !customTheme && fish.map((f) => (
