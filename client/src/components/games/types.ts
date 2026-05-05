@@ -41,6 +41,8 @@ export interface GameProps {
 export const GAME_CONSTANTS = {
   /** Points deducted for using a hint */
   HINT_PENALTY: 5,
+  /** Time added to elapsed duration for using a station hint in time mode (ms) */
+  HINT_TIME_PENALTY_MS: 4 * 60 * 1000,
   /** Feedback display duration default (ms) */
   FEEDBACK_DURATION_MS: 1500,
   /** Timer warning threshold (seconds) */

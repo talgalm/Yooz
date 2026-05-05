@@ -889,7 +889,18 @@ export default function StoryModulePage() {
 
   const confirmStationHint = () => {
     setShowStationHintWarning(false);
+    if (stationHintUsed.has(currentItemIndex)) {
+      setShowStationHintText(true);
+      return;
+    }
     setStationHintUsed((prev) => new Set(prev).add(currentItemIndex));
+    if (isTimeMode) {
+      const newStart = sessionStartedAt.current - GAME_CONSTANTS.HINT_TIME_PENALTY_MS;
+      sessionStartedAt.current = newStart;
+      const token = localStorage.getItem('yooz_token') ?? 'anon';
+      localStorage.setItem(`yooz_start_${code}_${token}`, String(newStart));
+      setElapsedSeconds(Math.floor((Date.now() - newStart) / 1000));
+    }
     setShowStationHintText(true);
   };
 

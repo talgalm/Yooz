@@ -74,6 +74,33 @@ const Card = styled('div')({
   borderRadius: 16,
   padding: '18px 20px 22px',
   boxSizing: 'border-box',
+  position: 'relative',
+});
+
+const HintIconButton = styled('button')({
+  position: 'absolute',
+  top: 14,
+  right: 14,
+  width: 32,
+  height: 32,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: '#fff',
+  border: '2px solid #333',
+  borderRadius: '50%',
+  cursor: 'pointer',
+  padding: 0,
+  boxShadow: '0 2px 0 #333',
+  zIndex: 2,
+  '&:active': {
+    transform: 'translateY(2px)',
+    boxShadow: '0 0 0 #333',
+  },
+  '&:disabled': {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+  },
 });
 
 const Title = styled('h2')({
@@ -254,9 +281,13 @@ interface EnteringTextStationProps {
   onBackToRoadmap?: () => void;
   onFinishActivity?: () => void;
   code?: string;
+  stationHintText?: string | null;
+  stationHintUsed?: boolean;
+  onStationHintClick?: () => void;
+  hintLabel?: string;
 }
 
-export default function EnteringTextStation({ station, onContinue, onBackToRoadmap, onFinishActivity, code }: EnteringTextStationProps) {
+export default function EnteringTextStation({ station, onContinue, onBackToRoadmap, onFinishActivity, code, stationHintText, stationHintUsed, onStationHintClick, hintLabel }: EnteringTextStationProps) {
   const fields = useMemo(() => {
     const raw = station.settings?.fields;
     if (!Array.isArray(raw)) return [];
@@ -428,6 +459,20 @@ export default function EnteringTextStation({ station, onContinue, onBackToRoadm
     <Wrap>
       <Title>{title}</Title>
       <Card>
+        {stationHintText && onStationHintClick && (
+          <HintIconButton
+            type="button"
+            onClick={onStationHintClick}
+            aria-label={hintLabel || 'רמז'}
+            title={hintLabel || 'רמז'}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stationHintUsed ? '#7c4dff' : '#333'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18h6" />
+              <path d="M10 22h4" />
+              <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z" />
+            </svg>
+          </HintIconButton>
+        )}
         <AttemptsRow>
           {[...Array(maxAttempts)].map((_, i) => (
             <AttemptDot key={i} used={String(i < attempts)} />

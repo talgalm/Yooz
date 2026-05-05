@@ -257,6 +257,7 @@ export default function PlayingPhase({
   const showStandaloneLeaderboard =
     !isGameStep && Boolean(onViewLeaderboard);
   const isRiddleStation = currentItem.type === 'station' && (currentItem as StationItemData).stationType === 'riddle';
+  const isEnteringTextStation = currentItem.type === 'station' && (currentItem as StationItemData).stationType === 'enteringText';
 
   const renderContent = () => {
     if (currentItem.type === 'mission') {
@@ -384,6 +385,10 @@ export default function PlayingPhase({
             onBackToRoadmap={onStationBackToRoadmap}
             onFinishActivity={onStationFinishActivity}
             code={code}
+            stationHintText={stationHintText}
+            stationHintUsed={stationHintUsed}
+            onStationHintClick={onStationHintClick}
+            hintLabel={stationHintUsed ? t.showStationHint : t.stationHint}
           />
         );
       }
@@ -512,7 +517,7 @@ export default function PlayingPhase({
       leaderboardMode={leaderboardMode}
       elapsedSeconds={elapsedSeconds}
       activityDurationMinutes={activityDurationMinutes}
-      topRow={stationHintText && !isRiddleStation ? (
+      topRow={stationHintText && !isRiddleStation && !isEnteringTextStation ? (
         <SessionHintButton type="button" onClick={onStationHintClick}>
           {stationHintUsed ? t.showStationHint : t.stationHint}
         </SessionHintButton>
@@ -525,7 +530,7 @@ export default function PlayingPhase({
       {showStationHintWarning && (
         <ModalOverlay onClick={onCloseHintWarning}>
           <ModalCard onClick={(e) => e.stopPropagation()}>
-            <ModalTitle>{t.hintWarning}</ModalTitle>
+            <ModalTitle>{leaderboardMode === 'time' ? (t.hintWarningTime || t.hintWarning) : t.hintWarning}</ModalTitle>
             <ModalButtonRow>
               <OutlineButton onClick={onCloseHintWarning}>{t.hintCancel}</OutlineButton>
               <ModalActionButton onClick={onConfirmStationHint}>

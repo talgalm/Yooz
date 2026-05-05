@@ -150,9 +150,24 @@ const Canvas = styled('div')({
   overflowX: 'hidden',
   position: 'relative',
   WebkitOverflowScrolling: 'touch',
-  scrollbarWidth: 'none',
-  msOverflowStyle: 'none',
-  '&::-webkit-scrollbar': { display: 'none' },
+  scrollbarGutter: 'stable',
+  scrollbarWidth: 'thin',
+  scrollbarColor: 'rgba(255,255,255,0.85) rgba(0,0,0,0.25)',
+  '&::-webkit-scrollbar': {
+    width: 12,
+  },
+  '&::-webkit-scrollbar-track': {
+    background: 'rgba(0,0,0,0.25)',
+    borderRadius: 8,
+  },
+  '&::-webkit-scrollbar-thumb': {
+    background: 'rgba(255,255,255,0.85)',
+    borderRadius: 8,
+    border: '2px solid rgba(0,0,0,0.25)',
+  },
+  '&::-webkit-scrollbar-thumb:hover': {
+    background: '#fff',
+  },
 });
 
 const CanvasInner = styled('div')<{ h: number }>(({ h }) => ({
