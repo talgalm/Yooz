@@ -158,13 +158,15 @@ function generateFallbackSpec(title: string, description: string, narrationJsonP
 
   // Detect what the user wants based on keywords
   const wantsLogin = /login|התחברות|כניסה/.test(text);
-  const wantsCreate = /create|יצירה|יצירת|ליצור|צור|פעילות חדשה/.test(text);
+  const wantsDuplicate = /duplicate|copy|clone|שכפ|העתק|מעתיק|העתקה|כפיל/.test(text);
+  const wantsCreate = !wantsDuplicate && /create|יצירה|יצירת|ליצור|צור|פעילות חדשה/.test(text);
   const wantsLibrary = /library|ספרייה|ייבוא|ייצוא|שחזור/.test(text);
   const wantsStats = /statistic|סטטיסטיק|אנליטיק|נתונים|דוחות/.test(text);
   const wantsGames = /game|משחק|משחקים/.test(text);
   const wantsStations = /station|תחנה|תחנות/.test(text);
   const wantsUsers = /user|משתמש|משתמשים/.test(text);
   const wantsParticipant = /play|לשחק|משתתף|פעילות מסוימת|נכנסים לפעילות|להיכנס לפעילות/.test(text);
+  const duplicateTarget: 'station' | 'activity' = wantsDuplicate && wantsStations ? 'station' : 'activity';
 
   const steps: string[] = [];
 
@@ -223,6 +225,39 @@ ${steps.join('\n')}
   await page.waitForURL('**/admin/dashboard', { timeout: 15000 }).catch(() => {});
   await pause(page, 2000);
   await showCaption(page, 'נכנסתם בהצלחה ללוח הבקרה');`);
+
+  if (wantsDuplicate) {
+    if (duplicateTarget === 'station') {
+      steps.push(`
+  // Duplicate station
+  await showCaption(page, 'נכנסים ללשונית תחנות');
+  await page.click('button:has-text("Stations"), button:has-text("תחנות")').catch(() => {});
+  await pause(page, 2000);
+  await showCaption(page, 'בכל שורה יש כפתור פעולות (אייקון עיפרון)');
+  await pause(page, 1500);
+  await page.locator('button[aria-label="Actions"], button[aria-label="פעולות"]').first().click().catch(() => {});
+  await pause(page, 1500);
+  await showCaption(page, 'לוחצים על שכפול ליצירת עותק של התחנה');
+  await page.click('button:has-text("Duplicate"), button:has-text("שכפול")').catch(() => {});
+  await pause(page, 2500);
+  await showCaption(page, 'נוצרה תחנה חדשה בשם "(עותק)" — אפשר לערוך אותה כעת');
+  await pause(page, 2000);`);
+    } else {
+      steps.push(`
+  // Duplicate activity
+  await showCaption(page, 'בלשונית פעילויות רואים את כל הפעילויות');
+  await pause(page, 1500);
+  await showCaption(page, 'בכל שורה יש כפתור פעולות (אייקון עיפרון)');
+  await pause(page, 1500);
+  await page.locator('button[aria-label="Actions"], button[aria-label="פעולות"]').first().click().catch(() => {});
+  await pause(page, 1500);
+  await showCaption(page, 'לוחצים על שכפול ליצירת עותק של הפעילות');
+  await page.click('button:has-text("Duplicate"), button:has-text("שכפול")').catch(() => {});
+  await pause(page, 3000);
+  await showCaption(page, 'נוצרה פעילות חדשה בשם "(עותק)" עם קוד חדש במצב תצוגה מקדימה');
+  await pause(page, 2000);`);
+    }
+  }
 
   if (wantsCreate) {
     steps.push(`
@@ -287,7 +322,7 @@ ${steps.join('\n')}
   }
 
   // If nothing specific matched, just show the dashboard
-  if (!wantsCreate && !wantsLibrary && !wantsStats && !wantsGames && !wantsStations && !wantsUsers && !wantsLogin) {
+  if (!wantsCreate && !wantsLibrary && !wantsStats && !wantsGames && !wantsStations && !wantsUsers && !wantsLogin && !wantsDuplicate) {
     steps.push(`
   await showCaption(page, 'זהו לוח הבקרה הראשי — כאן מנהלים את כל המערכת');
   await pause(page, 2000);
@@ -462,11 +497,19 @@ async function generateVideo(tutorialId: string, title: string, description: str
       writeFileSync(specFile, specContent);
       const { output: retryOutput, exitCode: retryExit } = await runCommand(listCmd, 30_000);
       if (retryExit !== 0) {
-        console.log(`[Tutorial ${safeId}] Corrected spec still has errors:\n${retryOutput.slice(-600)}`);
-        try { unlinkSync(specFile); } catch {}
-        throw new Error('Gemini spec has syntax errors — generation aborted');
+        console.log(`[Tutorial ${safeId}] Corrected spec still has errors — falling back to keyword template:\n${retryOutput.slice(-600)}`);
+        specContent = generateFallbackSpec(title, description, narrationJson);
+        writeFileSync(specFile, specContent);
+        const { output: fbOutput, exitCode: fbExit } = await runCommand(listCmd, 30_000);
+        if (fbExit !== 0) {
+          console.log(`[Tutorial ${safeId}] Fallback spec ALSO failed to compile:\n${fbOutput.slice(-600)}`);
+          try { unlinkSync(specFile); } catch {}
+          throw new Error('Gemini spec has syntax errors — generation aborted');
+        }
+        console.log(`[Tutorial ${safeId}] Using keyword fallback spec`);
+      } else {
+        console.log(`[Tutorial ${safeId}] Correction pass succeeded`);
       }
-      console.log(`[Tutorial ${safeId}] Correction pass succeeded`);
     }
 
     writeFileSync(specFile, specContent);

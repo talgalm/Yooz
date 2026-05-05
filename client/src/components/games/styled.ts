@@ -763,6 +763,12 @@ export const MediaStationWrapper = styled('div')({
   marginBottom: 24,
   width: '100%',
   maxWidth: 400,
+  '@media (min-width: 768px)': {
+    maxWidth: 720,
+  },
+  '@media (min-width: 1200px)': {
+    maxWidth: 880,
+  },
 });
 
 export const MediaStationVideo = styled('video')({
