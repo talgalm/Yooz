@@ -398,6 +398,36 @@ router.patch('/activities/:id/status', authenticateAdmin, async (req: Request<{ 
   res.json({ activity: stripManagerPassword(activity) });
 });
 
+// Duplicate activity — creates a clone with " (עותק)" suffix and a fresh code
+router.post('/activities/:id/duplicate', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
+  const existing = await Activity.findById(req.params.id);
+  if (!existing) { res.status(404).json({ error: 'Activity not found' }); return; }
+  if (!customerOwnsDoc(req, existing)) { res.status(404).json({ error: 'Activity not found' }); return; }
+
+  const source = existing.toObject() as Record<string, unknown>;
+  // Strip identifiers / generated fields so the new doc gets fresh values
+  delete source._id;
+  delete source.code;
+  delete source.createdAt;
+  delete source.__v;
+  // Reset usage counters and start in preview
+  delete source.shareClicks;
+  delete source.shareCompleted;
+  delete source.missionPuzzleCompletions;
+  delete source.missionTrashSortCompletions;
+  delete source.missionTrashSortScoreSum;
+
+  const activity = await Activity.create({
+    ...source,
+    name: `${existing.name} (עותק)`,
+    status: 'preview',
+    createdByEmail: createdByEmailForNewResource(req),
+    customerEditLocked: false,
+  });
+  logAdminAction(req, 'duplicate_activity', 'activity', activity._id.toString(), activity.name, { sourceId: existing._id.toString() });
+  res.status(201).json({ activity: stripManagerPassword(activity) });
+});
+
 // Delete activity
 router.delete('/activities/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const existing = await Activity.findById(req.params.id);

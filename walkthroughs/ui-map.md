@@ -76,6 +76,9 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 - Activity rows: `tr` in table, clickable → navigates to `/admin/activities/{id}`
 - Status badge: "Live" / "פעיל" or "Preview" / "תצוגה מקדימה"
 - Logout: `button:has-text("Logout"), button:has-text("יציאה")`
+- Activity row actions (each row + each mobile card): single pencil-icon button (aria-label "Actions" / "פעולות") opens an inline dropdown menu (same white panel style as the Stations row menu). Esc, outside click, or clicking the icon again closes it. Menu items:
+  - Duplicate: `button:has-text("Duplicate"), button:has-text("שכפול")` — POSTs `/api/admin/activities/:id/duplicate`, closes the menu, then navigates to `/admin/activities/{newId}` (clones name with " (עותק)" suffix; new activity starts as Preview with a fresh code).
+  - Delete: `button:has-text("Delete"), button:has-text("מחיקה")` — first click switches the same item to "Are you sure?" / "בטוח?" (red filled style), second click DELETEs `/api/admin/activities/:id` and refreshes the list.
 
 **Stations Tab Sub-sections** (segmented buttons):
 | English | Hebrew | Selector |

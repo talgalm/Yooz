@@ -64,6 +64,11 @@ export const texts = {
     createTypeRiddle: 'Riddle',
     createTypeAvatar: 'Avatar',
     createTypeEnteringText: 'Entering Text',
+    actions: 'Actions',
+    duplicate: 'Duplicate',
+    duplicating: 'Duplicating...',
+    delete: 'Delete',
+    confirmDelete: 'Are you sure?',
   },
   he: {
     title: 'פעילויות',
@@ -130,5 +135,10 @@ export const texts = {
     createTypeRiddle: 'חידה',
     createTypeAvatar: 'אוואטר',
     createTypeEnteringText: 'מילוי טקסט',
+    actions: 'פעולות',
+    duplicate: 'שכפול',
+    duplicating: 'משכפל...',
+    delete: 'מחיקה',
+    confirmDelete: 'בטוח?',
   },
 };

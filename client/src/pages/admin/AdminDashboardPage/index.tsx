@@ -313,6 +313,83 @@ const MobileCard = styled('div')({
   },
 });
 
+// ─── Row action menu (matches AdminStationsTab) ───
+
+const RowActionWrapper = styled('div')({
+  position: 'relative',
+  display: 'inline-flex',
+});
+
+const RowActionIconButton = styled('button')({
+  background: 'transparent',
+  border: '1.5px solid #d8d2e6',
+  borderRadius: 10,
+  width: 36,
+  height: 36,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: '#555',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  transition: 'all 0.15s',
+  '&:hover': {
+    borderColor: '#6c5ce7',
+    color: '#6c5ce7',
+    background: '#f5f3ff',
+  },
+});
+
+const RowActionMenu = styled('div')({
+  position: 'absolute',
+  top: '100%',
+  insetInlineEnd: 0,
+  zIndex: 300,
+  background: '#fff',
+  border: '1px solid #e0d8f0',
+  borderRadius: 14,
+  boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
+  minWidth: 160,
+  overflow: 'hidden',
+  marginTop: 8,
+});
+
+const RowActionMenuItem = styled('button')<{ danger?: boolean; confirm?: boolean }>(({ danger, confirm }) => ({
+  display: 'block',
+  width: '100%',
+  padding: '14px 20px',
+  textAlign: 'start',
+  background: confirm ? '#c62828' : 'none',
+  color: confirm ? '#fff' : danger ? '#c62828' : '#333',
+  fontWeight: confirm ? 700 : 500,
+  fontSize: 15,
+  border: 'none',
+  borderBottom: '1px solid #f0ecfa',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  whiteSpace: 'nowrap',
+  '&:last-child': { borderBottom: 'none' },
+  '&:active': { background: confirm ? '#a01818' : 'rgba(108,92,231,0.1)' },
+  '&:hover': {
+    background: confirm ? '#a01818' : danger ? 'rgba(198,40,40,0.07)' : 'rgba(108,92,231,0.07)',
+  },
+  '&:disabled': { opacity: 0.6, cursor: 'default' },
+}));
+
+const RowActionsCell = styled('td')({
+  textAlign: 'end',
+  whiteSpace: 'nowrap',
+});
+
+function PencilIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+    </svg>
+  );
+}
+
 // ─── Create Modal styled components ───
 
 const ModalOverlay = styled('div')({
@@ -693,7 +770,7 @@ export default function AdminDashboardPage() {
 
         {/* ── Activities Tab ── */}
         {activeTab === 'activities' && (
-          <ActivitiesSection activities={activities} navigate={navigate} t={t} />
+          <ActivitiesSection activities={activities} navigate={navigate} t={t} onRefresh={fetchAll} />
         )}
 
         {/* ── Statistics Tab ── */}
@@ -908,8 +985,74 @@ export default function AdminDashboardPage() {
 
 // ─── Activities sub-section with pagination ───
 
-function ActivitiesSection({ activities, navigate, t }: { activities: Activity[]; navigate: ReturnType<typeof useNavigate>; t: Record<string, string> }) {
+function ActivitiesSection({ activities, navigate, t, onRefresh }: { activities: Activity[]; navigate: ReturnType<typeof useNavigate>; t: Record<string, string>; onRefresh: () => void }) {
   const [search, setSearch] = useState('');
+  const [actionsActivityId, setActionsActivityId] = useState<string | null>(null);
+  const [confirmDeleteInDrawer, setConfirmDeleteInDrawer] = useState(false);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const openActions = (id: string) => {
+    setActionsActivityId(id);
+    setConfirmDeleteInDrawer(false);
+  };
+
+  const closeActions = () => {
+    setActionsActivityId(null);
+    setConfirmDeleteInDrawer(false);
+  };
+
+  const handleDuplicateFromDrawer = async () => {
+    if (!actionsActivityId || duplicatingId) return;
+    const id = actionsActivityId;
+    setDuplicatingId(id);
+    try {
+      const data = await adminApiFetch<{ activity: Activity }>(`/api/admin/activities/${id}/duplicate`, { method: 'POST' });
+      closeActions();
+      if (data?.activity?._id) {
+        navigate(`/admin/activities/${data.activity._id}`);
+      } else {
+        onRefresh();
+      }
+    } finally {
+      setDuplicatingId(null);
+    }
+  };
+
+  const handleDeleteFromDrawer = async () => {
+    if (!actionsActivityId) return;
+    if (!confirmDeleteInDrawer) {
+      setConfirmDeleteInDrawer(true);
+      return;
+    }
+    const id = actionsActivityId;
+    setDeletingId(id);
+    try {
+      await adminApiFetch(`/api/admin/activities/${id}`, { method: 'DELETE' });
+      closeActions();
+      onRefresh();
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!actionsActivityId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeActions();
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest('[data-row-actions]')) return;
+      closeActions();
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('mousedown', onMouseDown);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('mousedown', onMouseDown);
+    };
+  }, [actionsActivityId]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return activities;
@@ -972,6 +1115,7 @@ function ActivitiesSection({ activities, navigate, t }: { activities: Activity[]
                     <th>{t.typeModule}</th>
                     <th>{t.customer}</th>
                     <th>{t.created}</th>
+                    <th />
                   </tr>
                 </thead>
                 <tbody>
@@ -1003,6 +1147,38 @@ function ActivitiesSection({ activities, navigate, t }: { activities: Activity[]
                       <td>
                         <DateCell>{new Date(activity.createdAt).toLocaleDateString()}</DateCell>
                       </td>
+                      <RowActionsCell>
+                        <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
+                          <RowActionIconButton
+                            type="button"
+                            aria-label={t.actions}
+                            title={t.actions}
+                            onClick={() => actionsActivityId === activity._id ? closeActions() : openActions(activity._id)}
+                          >
+                            <PencilIcon />
+                          </RowActionIconButton>
+                          {actionsActivityId === activity._id && (
+                            <RowActionMenu>
+                              <RowActionMenuItem
+                                type="button"
+                                disabled={duplicatingId === activity._id || deletingId === activity._id}
+                                onClick={handleDuplicateFromDrawer}
+                              >
+                                {duplicatingId === activity._id ? t.duplicating : t.duplicate}
+                              </RowActionMenuItem>
+                              <RowActionMenuItem
+                                type="button"
+                                danger
+                                confirm={confirmDeleteInDrawer}
+                                disabled={duplicatingId === activity._id || deletingId === activity._id}
+                                onClick={handleDeleteFromDrawer}
+                              >
+                                {confirmDeleteInDrawer ? t.confirmDelete : t.delete}
+                              </RowActionMenuItem>
+                            </RowActionMenu>
+                          )}
+                        </RowActionWrapper>
+                      </RowActionsCell>
                     </tr>
                   ))}
                 </tbody>
@@ -1015,10 +1191,42 @@ function ActivitiesSection({ activities, navigate, t }: { activities: Activity[]
               {pageItems.map((activity) => (
                 <MobileCard key={activity._id} onClick={() => navigate(`/admin/activities/${activity._id}`)}>
                   <MobileCardHeader>
-                    <MobileCardNameLarge>{activity.name}</MobileCardNameLarge>
-                    <StatusBadge status={activity.status}>
-                      {activity.status === 'live' ? t.live : t.preview}
-                    </StatusBadge>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
+                      <MobileCardNameLarge>{activity.name}</MobileCardNameLarge>
+                      <StatusBadge status={activity.status}>
+                        {activity.status === 'live' ? t.live : t.preview}
+                      </StatusBadge>
+                    </div>
+                    <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
+                      <RowActionIconButton
+                        type="button"
+                        aria-label={t.actions}
+                        title={t.actions}
+                        onClick={() => actionsActivityId === activity._id ? closeActions() : openActions(activity._id)}
+                      >
+                        <PencilIcon />
+                      </RowActionIconButton>
+                      {actionsActivityId === activity._id && (
+                        <RowActionMenu>
+                          <RowActionMenuItem
+                            type="button"
+                            disabled={duplicatingId === activity._id || deletingId === activity._id}
+                            onClick={handleDuplicateFromDrawer}
+                          >
+                            {duplicatingId === activity._id ? t.duplicating : t.duplicate}
+                          </RowActionMenuItem>
+                          <RowActionMenuItem
+                            type="button"
+                            danger
+                            confirm={confirmDeleteInDrawer}
+                            disabled={duplicatingId === activity._id || deletingId === activity._id}
+                            onClick={handleDeleteFromDrawer}
+                          >
+                            {confirmDeleteInDrawer ? t.confirmDelete : t.delete}
+                          </RowActionMenuItem>
+                        </RowActionMenu>
+                      )}
+                    </RowActionWrapper>
                   </MobileCardHeader>
                   <MobileCardDetails>
                     <MobileCardCode>{activity.code}</MobileCardCode>
