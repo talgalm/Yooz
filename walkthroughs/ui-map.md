@@ -86,6 +86,9 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 | Collage | קולאז׳ | `button:has-text("Collage"), button:has-text("קולאז׳")` |
 | Feedback | משוב | `button:has-text("Feedback"), button:has-text("משוב")` |
 
+**Stations table type filter** (above the search/tag row in `/admin/dashboard` Stations tab):
+- Segmented sub-tab bar (same `GameTabBar`/`GameTabGroup`/`GameTab` styled components used by Games sub-tabs). First tab is "All" / "הכל"; remaining tabs are dynamically derived from the station types currently present in the data (sorted), labeled via `typeLabel(type)` (e.g. Text/Video/Image/Narrative/Badge/Collage/Feedback/Riddle/Avatar/Entering Text). Bar scrolls horizontally if it overflows. Hidden if only one type is present.
+
 **Stations table row actions** (each row in `/admin/dashboard` Stations tab):
 - Single pencil-icon button per row (aria-label "Actions" / "פעולות") opens an inline dropdown menu anchored under the icon (white panel, rounded, separator lines — same style as the dashboard mobile-nav hamburger). Clicking outside the menu, pressing `Esc`, or clicking the icon again closes it. Menu items:
   - Duplicate: `button:has-text("Duplicate"), button:has-text("שכפול")` — POSTs `/api/admin/stations/:id/duplicate`, closes the menu, then navigates to `/admin/stations/{newId}` config page (clones name with " (עותק)" suffix, type, description, customer, theme, tags, settings).

@@ -544,6 +544,10 @@ export const PuzzleGridOverlay = styled('div')<{ cols: number; rows: number }>((
   gridTemplateRows: `repeat(${rows}, 1fr)`,
   borderRadius: 9,
   zIndex: 1,
+  // Cell index must align with the puzzle image's LTR coordinate system
+  // (DraggablePiece computes backgroundPosition from col = pieceIndex % cols).
+  // The parent container is RTL, which would otherwise mirror the column order.
+  direction: 'ltr',
 }));
 
 export const PuzzlePiece = styled('div')<{ revealed?: boolean; justRevealed?: boolean }>(({ revealed, justRevealed }) => ({

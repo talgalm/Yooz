@@ -16,6 +16,9 @@ import {
   MobileCardList,
   MobileCardItem,
   Input,
+  GameTabBar,
+  GameTabGroup,
+  GameTab,
 } from '../../../components/styled';
 import {
   SectionHeaderRow,
@@ -235,6 +238,13 @@ const FilterRow = styled('div')({
   flexWrap: 'wrap',
 });
 
+const ScrollableTabBar = styled(GameTabBar)({
+  overflowX: 'auto',
+  paddingBottom: 4,
+  '&::-webkit-scrollbar': { height: 4 },
+  '&::-webkit-scrollbar-thumb': { background: '#d0d0d8', borderRadius: 2 },
+});
+
 const TagGroupsContainer = styled('div')({
   display: 'flex',
   gap: 24,
@@ -323,6 +333,7 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
   const [search, setSearch] = useState('');
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [tagDrawerOpen, setTagDrawerOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const t = useTranslations(texts);
 
   const openActions = (id: string) => {
@@ -444,6 +455,10 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
   const filtered = useMemo(() => {
     let result = stations;
 
+    if (typeFilter !== 'all') {
+      result = result.filter((s) => s.type === typeFilter);
+    }
+
     if (activeTags.size > 0) {
       result = result.filter((s) => {
         const tags = s.tags || [];
@@ -463,7 +478,7 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
     }
 
     return result;
-  }, [stations, search, activeTags]);
+  }, [stations, search, activeTags, typeFilter]);
 
   useEffect(() => {
     if (!tagDrawerOpen) return;
@@ -502,6 +517,21 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
           </SmallActionButton>
         )}
       </SectionHeaderRow>
+
+      {allTypes.length > 1 && (
+        <ScrollableTabBar>
+          <GameTabGroup>
+            <GameTab active={typeFilter === 'all'} onClick={() => setTypeFilter('all')}>
+              {t.allTypes}
+            </GameTab>
+            {allTypes.map((type) => (
+              <GameTab key={type} active={typeFilter === type} onClick={() => setTypeFilter(type)}>
+                {typeLabel(type)}
+              </GameTab>
+            ))}
+          </GameTabGroup>
+        </ScrollableTabBar>
+      )}
 
       <FilterRow>
         {allTags.length > 0 && (
