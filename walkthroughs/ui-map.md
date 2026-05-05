@@ -86,6 +86,11 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 | Collage | קולאז׳ | `button:has-text("Collage"), button:has-text("קולאז׳")` |
 | Feedback | משוב | `button:has-text("Feedback"), button:has-text("משוב")` |
 
+**Stations table row actions** (each row in `/admin/dashboard` Stations tab):
+- Single pencil-icon button per row (aria-label "Actions" / "פעולות") opens an inline dropdown menu anchored under the icon (white panel, rounded, separator lines — same style as the dashboard mobile-nav hamburger). Clicking outside the menu, pressing `Esc`, or clicking the icon again closes it. Menu items:
+  - Duplicate: `button:has-text("Duplicate"), button:has-text("שכפול")` — POSTs `/api/admin/stations/:id/duplicate`, closes the menu, then navigates to `/admin/stations/{newId}` config page (clones name with " (עותק)" suffix, type, description, customer, theme, tags, settings).
+  - Delete: `button:has-text("Delete"), button:has-text("מחיקה")` — first click switches the same item to "Are you sure?" / "בטוח?" (red filled style), second click deletes.
+
 **Game Sub-tabs** (when Games section active):
 | English | Hebrew | Selector |
 |---------|--------|----------|

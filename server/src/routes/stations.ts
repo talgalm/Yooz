@@ -80,6 +80,27 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
   res.json({ station });
 });
 
+// Duplicate station
+router.post('/:id/duplicate', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
+  const existing = await Station.findById(req.params.id);
+  if (!existing) { res.status(404).json({ error: 'Station not found' }); return; }
+  if (!customerOwnsDoc(req, existing)) { res.status(404).json({ error: 'Station not found' }); return; }
+
+  const source = existing.toObject();
+  const station = await Station.create({
+    name: `${source.name} (עותק)`,
+    type: source.type,
+    description: source.description,
+    customer: source.customer,
+    theme: source.theme,
+    tags: Array.isArray(source.tags) ? [...source.tags] : [],
+    settings: source.settings || {},
+    createdByEmail: createdByEmailForNewResource(req),
+  });
+
+  res.status(201).json({ station });
+});
+
 // Delete station
 router.delete('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const existing = await Station.findById(req.params.id);

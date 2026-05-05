@@ -115,7 +115,7 @@ export default function AdminGameConfigPage() {
         setInitialSettings(s);
         setInitialLoading(false);
       })
-      .catch(() => navigate('/admin/dashboard'));
+      .catch(() => navigate('/admin/dashboard?tab=stations'));
   }, [id, navigate]);
 
   // Prefill from library item (export from Content Library)
@@ -204,7 +204,7 @@ export default function AdminGameConfigPage() {
           body: JSON.stringify(payload),
         });
       }
-      navigate('/admin/dashboard?tab=activities');
+      navigate('/admin/dashboard?tab=stations');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
@@ -240,7 +240,7 @@ export default function AdminGameConfigPage() {
     <AdminPage>
       <AdminHeader>
         <img src="/images/logo-purple.png" alt="Yooz" style={{ height: 32 }} />
-        <SmallOutlineButton onClick={() => navigate('/admin/dashboard')}>{t.back}</SmallOutlineButton>
+        <SmallOutlineButton onClick={() => navigate('/admin/dashboard?tab=stations')}>{t.back}</SmallOutlineButton>
       </AdminHeader>
       <AdminContent>
         <AdminCardWide>

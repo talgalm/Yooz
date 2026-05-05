@@ -450,7 +450,7 @@ export default function AdminMissionConfigPage() {
           body: JSON.stringify(payload),
         });
       }
-      navigate('/admin/dashboard');
+      navigate('/admin/dashboard?tab=stations');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save mission');
     } finally {
@@ -481,7 +481,7 @@ export default function AdminMissionConfigPage() {
     <AdminPage>
       <AdminHeader>
         <img src="/images/logo-purple.png" alt="Yooz" style={{ height: 32 }} />
-        <OutlineButton onClick={() => navigate('/admin/dashboard')}>{t.back}</OutlineButton>
+        <OutlineButton onClick={() => navigate('/admin/dashboard?tab=stations')}>{t.back}</OutlineButton>
       </AdminHeader>
       <AdminContent>
         <PageTitle>{isEdit ? t.editTitle : t.createTitle}</PageTitle>
@@ -787,7 +787,7 @@ export default function AdminMissionConfigPage() {
           {error && <ErrorText style={{ marginBottom: 12 }}>{error}</ErrorText>}
 
           <ActionRow>
-            <OutlineButton onClick={() => navigate('/admin/dashboard')}>{t.cancel}</OutlineButton>
+            <OutlineButton onClick={() => navigate('/admin/dashboard?tab=stations')}>{t.cancel}</OutlineButton>
             <PrimaryButton onClick={handleSave} disabled={saving} style={{ width: 'auto', padding: '12px 32px' }}>
               {saving ? t.saving : isEdit ? t.updateMission : t.createMission}
             </PrimaryButton>
