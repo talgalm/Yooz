@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HelpChatHeaderButton } from '../../components/HelpChat';
-import LangDrawer from '../../components/LangDrawer';
 import { styled, keyframes } from '@mui/material/styles';
 import { HeaderBar, HeaderActions, AccentText } from '../../components/styled';
 import type { ConfettiPiece } from './types';
@@ -405,11 +404,21 @@ interface FinishScreenProps {
   countdown: number | null;
   countdownSeconds: number;
   bgStyle: React.CSSProperties;
+  leaderboardMode?: 'points' | 'time';
+  finalDurationMs?: number | null;
   onStay: () => void;
   onViewLeaderboard: () => void;
   onExit: () => void;
   popupModal: React.ReactNode;
   t: Record<string, string>;
+}
+
+/** Format milliseconds as m:ss (e.g. 75300 → "1:15") */
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
 export default function FinishScreen({
@@ -419,12 +428,16 @@ export default function FinishScreen({
   itemCount,
   completedItems,
   countdown,
+  leaderboardMode,
+  finalDurationMs,
   onStay,
   onViewLeaderboard,
   onExit,
   popupModal,
   t,
 }: FinishScreenProps) {
+  const isTimeMode = leaderboardMode === 'time';
+  const timeDisplay = isTimeMode && finalDurationMs != null ? formatDuration(finalDurationMs) : null;
   return (
     <PageRoot>
       <SparklesBg />
@@ -434,14 +447,20 @@ export default function FinishScreen({
         <HeaderActions>
           <HelpChatHeaderButton />
           <ActivityLogoutButton onClick={onExit} ariaLabel={t.exitActivity} />
-          <LangDrawer variant="darkHeader" />
         </HeaderActions>
       </HeaderBar>
 
       <Content>
         <RibbonTitle>{t.finishTitle}</RibbonTitle>
 
-        {hasScores ? (
+        {timeDisplay !== null ? (
+          <Badge>
+            <ScoreInBadge>
+              <ScoreNumber>{timeDisplay}</ScoreNumber>
+              <ScoreLabel>{t.finishTime || 'Time'}</ScoreLabel>
+            </ScoreInBadge>
+          </Badge>
+        ) : hasScores ? (
           <Badge>
             <ScoreInBadge>
               <ScoreNumber>{totalScore}</ScoreNumber>
@@ -465,7 +484,17 @@ export default function FinishScreen({
             <StatLabel>{t.finishItems}</StatLabel>
           </StatCard>
 
-          {hasScores && (
+          {timeDisplay !== null ? (
+            <StatCard delay={1}>
+              <StatIcon>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill={C_PURPLE_MAIN}>
+                  <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z" />
+                </svg>
+              </StatIcon>
+              <StatValue>{timeDisplay}</StatValue>
+              <StatLabel>{t.finishTime || 'Time'}</StatLabel>
+            </StatCard>
+          ) : hasScores && (
             <StatCard delay={1}>
               <StatIcon>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill={C_YELLOW_STAR}>

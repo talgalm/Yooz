@@ -252,10 +252,11 @@ interface EnteringTextStationProps {
   station: StationItemData;
   onContinue: () => void;
   onBackToRoadmap?: () => void;
+  onFinishActivity?: () => void;
   code?: string;
 }
 
-export default function EnteringTextStation({ station, onContinue, onBackToRoadmap, code }: EnteringTextStationProps) {
+export default function EnteringTextStation({ station, onContinue, onBackToRoadmap, onFinishActivity, code }: EnteringTextStationProps) {
   const fields = useMemo(() => {
     const raw = station.settings?.fields;
     if (!Array.isArray(raw)) return [];
@@ -315,6 +316,8 @@ export default function EnteringTextStation({ station, onContinue, onBackToRoadm
   const failureTitle = (station.settings?.failureTitle as string) || 'לא הצלחת לענות נכון';
   const failureSubtitle = (station.settings?.failureSubtitle as string) || 'ניצלת את כל הניסיונות. נחזור לחקירה.';
   const failureContinueText = (station.settings?.failureContinueText as string) || 'חזרה לחקירה';
+  const isLastStep = !!station.settings?.lastStep;
+  const handleSuccessContinue = isLastStep && onFinishActivity ? onFinishActivity : onContinue;
 
   useEffect(() => {
     if (attempts >= maxAttempts && !showSuccess) {
@@ -347,7 +350,7 @@ export default function EnteringTextStation({ station, onContinue, onBackToRoadm
   const handleCorrect = () => {
     clearPersistedAttempts();
     if (!hasSuccessPopup) {
-      onContinue();
+      handleSuccessContinue();
       return;
     }
     if (successMediaType === 'image' && successMediaUrl) {
@@ -475,7 +478,7 @@ export default function EnteringTextStation({ station, onContinue, onBackToRoadm
             {successMediaUrl && successMediaType === 'video' && (
               <SuccessVideo src={successMediaUrl} autoPlay controls />
             )}
-            <SuccessContinueButton type="button" onClick={onContinue}>
+            <SuccessContinueButton type="button" onClick={handleSuccessContinue}>
               המשיכו
             </SuccessContinueButton>
           </SuccessCard>

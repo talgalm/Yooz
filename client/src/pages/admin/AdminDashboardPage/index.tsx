@@ -916,7 +916,8 @@ function ActivitiesSection({ activities, navigate, t }: { activities: Activity[]
     const q = search.trim().toLowerCase();
     return activities.filter((a) =>
       a.name.toLowerCase().includes(q) ||
-      (a.createdByEmail || '').toLowerCase().includes(q)
+      (a.createdByEmail || '').toLowerCase().includes(q) ||
+      (a.code || '').toLowerCase().includes(q)
     );
   }, [activities, search]);
 
@@ -934,7 +935,7 @@ function ActivitiesSection({ activities, navigate, t }: { activities: Activity[]
         <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#bbb', fontSize: 15, pointerEvents: 'none' }}>🔍</span>
         <input
           type="text"
-          placeholder={t.searchActivities || 'Search name or customer...'}
+          placeholder={t.searchActivities || 'Search name, customer, or code...'}
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           style={{

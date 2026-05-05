@@ -301,6 +301,13 @@ export default function StoryModulePage() {
   // Finish page state
   const [countdown, setCountdown] = useState<number | null>(90);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Once the user presses "Stay Here", the auto-exit countdown is permanently
+  // disabled for this finish-screen visit (re-armed only when leaving and
+  // returning via leaderboard, which clears this ref).
+  const userStayedRef = useRef(false);
+  // Locked at the instant phase becomes 'finish' so the displayed time matches
+  // what's posted to the leaderboard (and doesn't keep ticking on screen).
+  const [finalDurationMs, setFinalDurationMs] = useState<number | null>(null);
 
   // Leaderboard state
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -315,6 +322,7 @@ export default function StoryModulePage() {
   const isTimeMode = data?.leaderboardMode === 'time';
   useEffect(() => {
     if (!isTimeMode) return;
+    if (phase === 'finish') return; // lock final time once activity ends
     const id = setInterval(() => {
       const secs = Math.floor((Date.now() - sessionStartedAt.current) / 1000);
       setElapsedSeconds(secs);
@@ -330,7 +338,7 @@ export default function StoryModulePage() {
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [isTimeMode, data?.activityDurationMinutes]);
+  }, [isTimeMode, data?.activityDurationMinutes, phase]);
   const [ballGameMuted, setBallGameMuted] = useState(false);
 
   /** Roadmap header: animate points from → to after a game (ATM-style tally). */
@@ -501,12 +509,20 @@ export default function StoryModulePage() {
     doExit();
   }, [code, doExit]);
 
+  // Lock the final session duration the moment we arrive at the finish screen.
+  useEffect(() => {
+    if (phase !== 'finish') return;
+    setFinalDurationMs((prev) => prev ?? Date.now() - sessionStartedAt.current);
+  }, [phase]);
+
   // Auto-exit countdown for finish page
   useEffect(() => {
     if (phase !== 'finish') return;
+    if (userStayedRef.current) return; // user opted to stay — don't re-arm
     setCountdown(GAME_CONSTANTS.FINISH_COUNTDOWN_SECONDS);
     countdownRef.current = setInterval(() => {
       setCountdown((prev) => {
+        if (userStayedRef.current || prev === null) return prev;
         if (prev <= 1) {
           handleExit();
           return 0;
@@ -531,11 +547,12 @@ export default function StoryModulePage() {
   const handleBackFromLeaderboard = () => {
     const returnTo = preLeaderboardPhase.current;
     setPhase(returnTo);
-    // Only restart countdown if returning to finish
-    if (returnTo === 'finish') {
+    // Only restart countdown if returning to finish AND user hasn't opted to stay
+    if (returnTo === 'finish' && !userStayedRef.current) {
       if (countdownRef.current) clearInterval(countdownRef.current);
       countdownRef.current = setInterval(() => {
         setCountdown((prev) => {
+          if (userStayedRef.current || prev === null) return prev;
           if (prev <= 1) {
             handleExit();
             return 0;
@@ -796,6 +813,16 @@ export default function StoryModulePage() {
     setPhase('roadmap');
   };
 
+  /** Triggered by a "last step" station to end the activity immediately,
+   *  skipping any remaining roadmap items and going straight to finish. */
+  const handleStationFinishActivity = () => {
+    showPopupsOrRun('afterItem', currentItemIndex, () => {
+      showPopupsOrRun('endOfActivity', undefined, () => {
+        setPhase('finish');
+      });
+    });
+  };
+
   const handleFeedbackContinue = (feedbackResult: { answers: { questionIndex: number; questionText: string; value: number; label: string }[]; notes: string }) => {
     if (!data) return;
     const currentItem = data.module.items[currentItemIndex];
@@ -866,9 +893,12 @@ export default function StoryModulePage() {
     setShowStationHintText(true);
   };
 
-  // Persist scores to server when finish phase is reached (with retry)
+  // Persist scores to server when finish phase is reached (with retry).
+  // Always run on entering finish (even when there are no game scores) so the
+  // session is marked completed and sessionDurationMs is saved — required for
+  // the participant to appear on the leaderboard (especially time mode).
   useEffect(() => {
-    if (phase !== 'finish' || scoresSaved.current || !code || scores.length === 0) return;
+    if (phase !== 'finish' || scoresSaved.current || !code) return;
     scoresSaved.current = true;
     const totalHintPen = stationHintUsed.size * stationHintPenalty;
     const scorePayload = scores.map((s) => ({ gameName: s.gameName, score: s.score }));
@@ -1210,7 +1240,10 @@ export default function StoryModulePage() {
           countdown={countdown}
           countdownSeconds={GAME_CONSTANTS.FINISH_COUNTDOWN_SECONDS}
           bgStyle={bgStyle}
+          leaderboardMode={data.leaderboardMode}
+          finalDurationMs={finalDurationMs}
           onStay={() => {
+            userStayedRef.current = true;
             if (countdownRef.current) {
               clearInterval(countdownRef.current);
               countdownRef.current = null;
@@ -1358,6 +1391,7 @@ export default function StoryModulePage() {
         currentPoints={playingTotalPoints}
         onStationContinue={handleStationContinue}
         onStationBackToRoadmap={handleStationBackToRoadmap}
+        onStationFinishActivity={handleStationFinishActivity}
         onFeedbackContinue={handleFeedbackContinue}
         onBallGameMuteToggle={toggleBallGameMute}
         ballGameMuted={ballGameMuted}

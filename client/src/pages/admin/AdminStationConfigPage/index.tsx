@@ -188,6 +188,7 @@ export default function AdminStationConfigPage() {
   const [enteringTextSuccessSubtitle, setEnteringTextSuccessSubtitle] = useState('');
   const [enteringTextSuccessMediaType, setEnteringTextSuccessMediaType] = useState<'image' | 'video' | ''>('');
   const [enteringTextSuccessMediaUrl, setEnteringTextSuccessMediaUrl] = useState('');
+  const [enteringTextLastStep, setEnteringTextLastStep] = useState(false);
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -280,6 +281,7 @@ export default function AdminStationConfigPage() {
           if (settings.successSubtitle) setEnteringTextSuccessSubtitle(settings.successSubtitle as string);
           if (settings.successMediaType) setEnteringTextSuccessMediaType(settings.successMediaType as 'image' | 'video');
           if (settings.successMediaUrl) setEnteringTextSuccessMediaUrl(settings.successMediaUrl as string);
+          setEnteringTextLastStep(!!settings.lastStep);
         }
         setInitialLoading(false);
       })
@@ -376,6 +378,7 @@ export default function AdminStationConfigPage() {
       if (settings.successSubtitle) setEnteringTextSuccessSubtitle(settings.successSubtitle as string);
       if (settings.successMediaType) setEnteringTextSuccessMediaType(settings.successMediaType as 'image' | 'video');
       if (settings.successMediaUrl) setEnteringTextSuccessMediaUrl(settings.successMediaUrl as string);
+      setEnteringTextLastStep(!!settings.lastStep);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -477,6 +480,7 @@ export default function AdminStationConfigPage() {
         if (enteringTextSuccessSubtitle.trim()) settings.successSubtitle = enteringTextSuccessSubtitle.trim();
         if (enteringTextSuccessMediaType) settings.successMediaType = enteringTextSuccessMediaType;
         if (enteringTextSuccessMediaUrl.trim()) settings.successMediaUrl = enteringTextSuccessMediaUrl.trim();
+        settings.lastStep = enteringTextLastStep;
       }
 
       const payload = {
@@ -566,6 +570,7 @@ export default function AdminStationConfigPage() {
     setEnteringTextSuccessSubtitle('');
     setEnteringTextSuccessMediaType('');
     setEnteringTextSuccessMediaUrl('');
+    setEnteringTextLastStep(false);
     if (randomType === 'text') {
       setTextContent('זהו תוכן טקסט לדוגמה עבור תחנת בדיקה. כאן יופיע המידע שהמשתתף צריך לקרוא.');
     } else if (randomType === 'video') {
@@ -1512,6 +1517,21 @@ export default function AdminStationConfigPage() {
                         />
                       </InlineRow>
                     )}
+                  </div>
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: 8, paddingTop: 16 }}>
+                    <HintToggleRow>
+                      <SectionLabelNoMargin>{t.enteringTextLastStep}</SectionLabelNoMargin>
+                      <ToggleButton
+                        type="button"
+                        selected={enteringTextLastStep}
+                        onClick={() => setEnteringTextLastStep((v) => !v)}
+                      >
+                        {enteringTextLastStep ? 'ON' : 'OFF'}
+                      </ToggleButton>
+                    </HintToggleRow>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 6 }}>
+                      {t.enteringTextLastStepHelper}
+                    </div>
                   </div>
                 </VerticalStack>
               )}

@@ -192,6 +192,7 @@ interface PlayingPhaseProps {
   onViewLeaderboard?: () => void;
   onStationContinue: () => void;
   onStationBackToRoadmap: () => void;
+  onStationFinishActivity: () => void;
   onFeedbackContinue: (result: FeedbackResult) => void;
   onBallGameMuteToggle: () => void;
   ballGameMuted: boolean;
@@ -223,6 +224,7 @@ export default function PlayingPhase({
   onViewLeaderboard,
   onStationContinue,
   onStationBackToRoadmap,
+  onStationFinishActivity,
   onFeedbackContinue,
   onBallGameMuteToggle,
   ballGameMuted,
@@ -380,6 +382,7 @@ export default function PlayingPhase({
             station={station}
             onContinue={onStationContinue}
             onBackToRoadmap={onStationBackToRoadmap}
+            onFinishActivity={onStationFinishActivity}
             code={code}
           />
         );
