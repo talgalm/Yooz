@@ -469,9 +469,22 @@ export default function AdminViewActivityPage() {
 
   useEffect(() => {
     if (!id) return;
-    adminApiFetch<{ activity: Activity }>(`/api/admin/activities/${id}`)
-      .then((data) => setActivity(data.activity))
-      .catch(() => navigate('/admin/dashboard'));
+    const fetchActivity = (onError?: () => void) => {
+      adminApiFetch<{ activity: Activity }>(`/api/admin/activities/${id}`)
+        .then((data) => setActivity(data.activity))
+        .catch(() => { if (onError) onError(); });
+    };
+    fetchActivity(() => navigate('/admin/dashboard'));
+    // Refresh on focus / tab visibility so edits to nested games/stations
+    // (made in another page) are reflected here without a manual reload.
+    const refresh = () => fetchActivity();
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [id, navigate]);
 
   const playUrl = activity ? `${window.location.origin}/play/${activity.code}` : '';

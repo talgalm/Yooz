@@ -445,6 +445,55 @@ export default function AdminCreateActivityPage() {
       .catch(() => navigate('/admin/dashboard'));
   }, [id, navigate]);
 
+  // Re-fetch each item's underlying game/station data when the window regains
+  // focus. This way, edits made to a game/station in another tab/page show up
+  // here without requiring a manual reload — preserving any unsaved order /
+  // groups / spider config in `selectedItems`.
+  useEffect(() => {
+    if (!id) return;
+    const refreshItems = () => {
+      setSelectedItems((prev) => {
+        if (prev.length === 0) return prev;
+        const gameRefs = Array.from(new Set(prev.filter((i) => i.itemType === 'game').map((i) => i.ref)));
+        const stationRefs = Array.from(new Set(prev.filter((i) => i.itemType === 'station').map((i) => i.ref)));
+        Promise.all([
+          ...gameRefs.map((r) => adminApiFetch<{ game: { _id: string; name: string; type?: string; description?: string; customer?: string; theme?: string; settings?: Record<string, unknown> } }>(`/api/admin/games/${r}`).catch(() => null)),
+          ...stationRefs.map((r) => adminApiFetch<{ station: { _id: string; name: string; type?: string; description?: string; customer?: string; theme?: string; settings?: Record<string, unknown> } }>(`/api/admin/stations/${r}`).catch(() => null)),
+        ]).then((results) => {
+          const map = new Map<string, { name: string; type?: string; description?: string; customer?: string; theme?: string; settings?: Record<string, unknown> }>();
+          for (const r of results) {
+            if (!r) continue;
+            const obj = ('game' in r ? r.game : 'station' in r ? r.station : null) as { _id: string; name: string; type?: string; description?: string; customer?: string; theme?: string; settings?: Record<string, unknown> } | null;
+            if (obj && obj._id) map.set(obj._id.toString(), obj);
+          }
+          setSelectedItems((current) =>
+            current.map((it) => {
+              const fresh = map.get(it.ref);
+              if (!fresh) return it;
+              return {
+                ...it,
+                name: fresh.name ?? it.name,
+                subType: fresh.type ?? it.subType,
+                description: fresh.description ?? it.description,
+                customer: fresh.customer ?? it.customer,
+                theme: fresh.theme ?? it.theme,
+                settings: fresh.settings ?? it.settings,
+              };
+            })
+          );
+        }).catch(() => { /* silent */ });
+        return prev;
+      });
+    };
+    const onVisible = () => { if (document.visibilityState === 'visible') refreshItems(); };
+    window.addEventListener('focus', refreshItems);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', refreshItems);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [id]);
+
   const toggleField = (field: LoginField) => {
     setLoginFields((prev) => {
       const next = new Set(prev);

@@ -120,22 +120,22 @@ interface ItemPreviewModalProps {
 }
 
 export default function ItemPreviewModal({ item, onClose }: ItemPreviewModalProps) {
-  const [settings, setSettings] = useState<Record<string, unknown> | null>(item.settings || null);
-  const [loading, setLoading] = useState(!item.settings);
+  // Always fetch fresh — cached settings on `item` may be stale if the user
+  // edited the underlying game/station after opening the activity editor.
+  const [settings, setSettings] = useState<Record<string, unknown> | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch settings if not available
   useEffect(() => {
-    if (item.settings) return;
     setLoading(true);
     const endpoint = item.itemType === 'game'
       ? `/api/admin/games/${item.ref}`
       : `/api/admin/stations/${item.ref}`;
     adminApiFetch<{ game?: { settings: Record<string, unknown> }; station?: { settings: Record<string, unknown> } }>(endpoint)
       .then((data) => {
-        const s = data.game?.settings || data.station?.settings || {};
+        const s = data.game?.settings || data.station?.settings || item.settings || {};
         setSettings(s);
       })
-      .catch(() => setSettings({}))
+      .catch(() => setSettings(item.settings || {}))
       .finally(() => setLoading(false));
   }, [item]);
 
