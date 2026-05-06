@@ -12,7 +12,7 @@ export const texts = {
   },
   he: {
     email: 'אימייל',
-    name: 'שם משתמש',
+    name: 'שם מלא',
     phoneNumber: 'מספר טלפון',
     join: 'התחברו!',
     joining: 'מתחברים...',
