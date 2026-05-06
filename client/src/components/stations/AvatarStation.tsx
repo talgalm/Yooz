@@ -585,10 +585,10 @@ const FixedContinue = styled(StationContinueButton)({
   zIndex: 40,
   width: 'calc(100% - 40px)',
   maxWidth: BUTTON_WIDTH,
-  background: '#6c5ce7',
+  background: '#fff',
   color: '#111',
   border: '3px solid #000',
-  boxShadow: '0 3px 0 #000, 0 4px 20px rgba(108,92,231,0.35)',
+  boxShadow: '0 3px 0 #000',
   '&:active': {
     transform: 'translateX(-50%) translateY(3px)',
     boxShadow: '0 0 0 #000',

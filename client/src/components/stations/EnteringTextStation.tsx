@@ -204,9 +204,9 @@ const PrimaryActionButton = styled(StationContinueButton)({
   fontSize: 18,
   padding: '14px 24px',
   border: '3px solid #000',
-  boxShadow: '0 3px 0 #000, 0 4px 20px rgba(124,77,255,0.35)',
+  boxShadow: '0 3px 0 #000',
   color: '#111',
-  background: '#7c4dff',
+  background: '#fff',
   '&:active': {
     transform: 'translateY(3px)',
     boxShadow: '0 0 0 #000',

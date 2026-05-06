@@ -491,11 +491,16 @@ export const HelperLifelineButton = styled('button')<{ disabled?: boolean; kind?
   };
 });
 
-// ─── Answer Grid (2×2 for 4 answers, single column for 3) ───
+// ─── Answer Grid (3 cols for >6, 2×2 for 4–6, single column for <4) ───
 
 export const AnswerGrid = styled('div')<{ answerCount?: number }>(({ answerCount }) => ({
   display: 'grid',
-  gridTemplateColumns: answerCount && answerCount < 4 ? '1fr' : '1fr 1fr',
+  gridTemplateColumns:
+    answerCount && answerCount < 4
+      ? '1fr'
+      : answerCount && answerCount > 6
+        ? '1fr 1fr 1fr'
+        : '1fr 1fr',
   gap: 6,
   width: '100%',
   position: 'relative',
