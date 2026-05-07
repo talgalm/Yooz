@@ -4,7 +4,8 @@ import bcrypt from 'bcryptjs';
 import { JWT_SECRET } from '../config';
 import { authenticateManager } from '../middleware/managerAuth';
 import { ManagerLoginRequest } from '../types';
-import { Activity, Report } from '../models';
+import { Activity, Report, Game, Station, Mission } from '../models';
+import { broadcastLock } from '../utils/lockBroadcaster';
 
 const router = Router();
 
@@ -143,6 +144,100 @@ router.get('/reports', authenticateManager, async (req: Request, res: Response) 
     participants,
     groupStandings,
   });
+});
+
+// Manager: get module items (for the Control Flow tab) and current lock state.
+router.get('/activity', authenticateManager, async (req: Request, res: Response) => {
+  const { activityCode } = req.manager!;
+
+  const activity = await Activity.findOne({ code: activityCode }).lean();
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  const moduleItems = activity.module?.items || [];
+  const gameIds: string[] = [];
+  const stationIds: string[] = [];
+  const missionIds: string[] = [];
+  for (const item of moduleItems) {
+    if (item.type === 'game') gameIds.push(item.ref.toString());
+    else if (item.type === 'station') stationIds.push(item.ref.toString());
+    else if (item.type === 'mission') missionIds.push(item.ref.toString());
+  }
+
+  const [games, stations, missions] = await Promise.all([
+    gameIds.length ? Game.find({ _id: { $in: gameIds } }, { name: 1, type: 1 }).lean() : [],
+    stationIds.length ? Station.find({ _id: { $in: stationIds } }, { name: 1, type: 1 }).lean() : [],
+    missionIds.length ? Mission.find({ _id: { $in: missionIds } }, { name: 1 }).lean() : [],
+  ]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const gameMap = new Map(games.map((g: any) => [g._id.toString(), g]));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const stationMap = new Map(stations.map((s: any) => [s._id.toString(), s]));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const missionMap = new Map(missions.map((m: any) => [m._id.toString(), m]));
+
+  const items = moduleItems.map((item, index) => {
+    let name = '';
+    let subType: string | undefined;
+    if (item.type === 'game') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const g = gameMap.get(item.ref.toString()) as any;
+      name = g?.name || `Item ${index + 1}`;
+      subType = g?.type;
+    } else if (item.type === 'station') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const s = stationMap.get(item.ref.toString()) as any;
+      name = s?.name || `Item ${index + 1}`;
+      subType = s?.type;
+    } else if (item.type === 'mission') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const m = missionMap.get(item.ref.toString()) as any;
+      name = m?.name || `Item ${index + 1}`;
+    }
+    return { index, type: item.type, name, subType };
+  });
+
+  res.json({
+    code: activity.code,
+    name: activity.name,
+    items,
+    lockedFromIndex: typeof activity.lockedFromIndex === 'number' ? activity.lockedFromIndex : null,
+  });
+});
+
+// Manager: set the lock-from index. Pass `null` to unlock everything.
+router.post('/lock', authenticateManager, async (req: Request, res: Response) => {
+  const { activityCode } = req.manager!;
+  const { lockedFromIndex } = req.body as { lockedFromIndex: number | null };
+
+  const activity = await Activity.findOne({ code: activityCode });
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  const itemCount = activity.module?.items.length ?? 0;
+
+  let next: number | null;
+  if (lockedFromIndex === null) {
+    next = null;
+  } else if (typeof lockedFromIndex === 'number' && Number.isInteger(lockedFromIndex)
+    && lockedFromIndex >= 0 && lockedFromIndex <= itemCount) {
+    next = lockedFromIndex;
+  } else {
+    res.status(400).json({ error: 'Invalid lockedFromIndex' });
+    return;
+  }
+
+  activity.lockedFromIndex = next;
+  await activity.save();
+
+  // Push to all connected participants for this activity.
+  broadcastLock(activity.code, next);
+
+  res.json({ lockedFromIndex: next });
 });
 
 export default router;

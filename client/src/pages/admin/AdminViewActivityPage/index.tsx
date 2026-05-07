@@ -683,18 +683,6 @@ export default function AdminViewActivityPage() {
           </CardBox>
         </TopGrid>
 
-        {/* Play link card */}
-        <LinkCardBox>
-          <LinkCardLabel>{t.playLink}</LinkCardLabel>
-          <LinkCardUrlBox>
-            <LinkCardUrlText>{playUrl}</LinkCardUrlText>
-            <CopyIconBtn onClick={handleCopy} title={t.copy}>
-              {copied ? '✓' : '📋'}
-            </CopyIconBtn>
-          </LinkCardUrlBox>
-          <CopyLinkBtn onClick={handleCopy}>{copied ? t.copied : t.copy}</CopyLinkBtn>
-        </LinkCardBox>
-
         {/* QR code card */}
         <QrCardBox>
           <QrTextSection>

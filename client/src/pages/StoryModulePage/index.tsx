@@ -48,6 +48,7 @@ import SpidersView from './SpidersView';
 import FinishScreen from './FinishScreen';
 import LeaderboardView from './LeaderboardView';
 import PlayingPhase from './PlayingPhase';
+import { useLockStream } from '../../hooks/useLockStream';
 
 // ─── Local styled components (only those used in this file) ───
 
@@ -255,6 +256,9 @@ export default function StoryModulePage() {
   const [data, setData] = useState<ActivityModuleResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  // Live manager-controlled progress lock (SSE). Initial value comes from the
+  // module fetch; SSE updates override it as soon as the manager toggles.
+  const lockedFromIndex = useLockStream(code, data?.lockedFromIndex ?? null);
 
   const [phase, setPhase] = useState<Phase>('roadmap');
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
@@ -664,6 +668,8 @@ export default function StoryModulePage() {
 
   const handleSpidersNodeTap = (index: number) => {
     if (entryTransitionStage !== 'idle') return;
+    // Manager-controlled progress lock — block opening locked items.
+    if (typeof lockedFromIndex === 'number' && index >= lockedFromIndex) return;
 
     // Block entry to the final station until all others are completed
     if (spidersFinalItemIndex !== -1 && index === spidersFinalItemIndex) {
@@ -691,6 +697,8 @@ export default function StoryModulePage() {
 
   const handleNodeTap = (index: number) => {
     if (entryTransitionStage !== 'idle') return;
+    // Manager-controlled progress lock — block opening locked items.
+    if (typeof lockedFromIndex === 'number' && index >= lockedFromIndex) return;
 
     const goPlay = () => {
       setEntryTransitionStage('closing');
@@ -1190,6 +1198,7 @@ export default function StoryModulePage() {
             elapsedSeconds={elapsedSeconds}
             activityDurationMinutes={data.activityDurationMinutes}
             finalItemIndex={spidersFinalItemIndex !== -1 ? spidersFinalItemIndex : undefined}
+            lockedFromIndex={lockedFromIndex}
           />
           {showGuidelines && !currentPopup && (
             <GuidelinesPopup
@@ -1229,6 +1238,7 @@ export default function StoryModulePage() {
           leaderboardMode={data.leaderboardMode}
           elapsedSeconds={elapsedSeconds}
           activityDurationMinutes={data.activityDurationMinutes}
+          lockedFromIndex={lockedFromIndex}
         />
         {showGuidelines && !currentPopup && (
           <GuidelinesPopup

@@ -119,6 +119,7 @@ export interface ActivityModuleResponse {
   isContinuous?: boolean;
   leaderboardMode?: 'points' | 'time';
   activityDurationMinutes?: number;
+  lockedFromIndex?: number | null;
 }
 
 export interface LeaderboardEntry {

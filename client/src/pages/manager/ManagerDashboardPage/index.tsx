@@ -34,6 +34,7 @@ import {
   ScoreBadge,
 } from '../../admin/styled';
 import AnimatedLeaderboard, { LeaderboardRow } from './AnimatedLeaderboard';
+import ControlFlowTab from './ControlFlowTab';
 
 // ─── Types ───
 
@@ -66,7 +67,7 @@ interface ReportsResponse {
   groupStandings: GroupStanding[];
 }
 
-type TabKey = 'overview' | 'leaderboard' | 'participants' | 'groups';
+type TabKey = 'overview' | 'leaderboard' | 'participants' | 'groups' | 'controlFlow';
 
 // ─── Styled Components ───
 
@@ -471,6 +472,15 @@ export default function ManagerDashboardPage() {
               {t.tabGroups}
             </TabBtn>
           )}
+          <TabBtn
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'controlFlow'}
+            active={activeTab === 'controlFlow'}
+            onClick={() => setActiveTab('controlFlow')}
+          >
+            {t.tabControlFlow}
+          </TabBtn>
         </TabBar>
 
         {/* Tab content */}
@@ -485,6 +495,9 @@ export default function ManagerDashboardPage() {
         )}
         {activeTab === 'groups' && data && isGroup && (
           <GroupsTab groupStandings={data.groupStandings} t={t} />
+        )}
+        {activeTab === 'controlFlow' && (
+          <ControlFlowTab t={t} />
         )}
       </AdminContent>
     </AdminPage>

@@ -120,6 +120,30 @@ const NodeNumber = styled('span')<{ state: 'completed' | 'active' | 'locked' }>(
   opacity: state === 'locked' ? 0.6 : 1,
 }));
 
+const lockPopIn = keyframes`
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+`;
+
+const ManagerLockBadge = styled('div')({
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  width: 26,
+  height: 26,
+  borderRadius: '50%',
+  background: 'rgba(0,0,0,0.75)',
+  color: '#fff',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  pointerEvents: 'none',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+  border: '2px solid #fff',
+  zIndex: 12,
+  animation: `${lockPopIn} 220ms ease-out`,
+});
+
 const FootprintEl = styled('div')<{ delay: number; isRight?: boolean }>(({ delay, isRight }) => ({
   position: 'absolute', width: 22, height: 22,
   transform: 'translate(-50%,-50%)', opacity: 0,
@@ -613,12 +637,14 @@ interface RoadmapViewProps {
   leaderboardMode?: 'points' | 'time';
   elapsedSeconds?: number;
   activityDurationMinutes?: number;
+  /** Manager-controlled progress lock: items with index >= this are blocked. */
+  lockedFromIndex?: number | null;
 }
 
 export default function RoadmapView({
   items, currentItemIndex, completedCount, currentPoints, pointsRoll, onPointsRollComplete,
   showFootsteps, onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, popupModal, t, theme, customTheme,
-  leaderboardMode, elapsedSeconds, activityDurationMinutes,
+  leaderboardMode, elapsedSeconds, activityDurationMinutes, lockedFromIndex,
 }: RoadmapViewProps) {
   const kit = useMemo(() => getThemeKit(theme), [theme]);
   const activeNodeColor = customTheme?.roadmapActiveNodeColor || NATURE_THEME.nodeActiveBg;
@@ -1114,13 +1140,20 @@ export default function RoadmapView({
     return () => { if (footstepsTimerRef.current) clearTimeout(footstepsTimerRef.current); };
   }, [showFootsteps, onFootstepsComplete]);
 
+  const isManagerLocked = useCallback(
+    (index: number): boolean =>
+      typeof lockedFromIndex === 'number' && index >= lockedFromIndex,
+    [lockedFromIndex],
+  );
+
   const getNodeState = useCallback(
     (index: number): 'completed' | 'active' | 'locked' => {
-      if (index < completedCount)     return 'completed';
-      if (index === currentItemIndex) return 'active';
+      if (index < completedCount)               return 'completed';
+      if (isManagerLocked(index))               return 'locked';
+      if (index === currentItemIndex)           return 'active';
       return 'locked';
     },
-    [completedCount, currentItemIndex],
+    [completedCount, currentItemIndex, isManagerLocked],
   );
 
   const themeVars: React.CSSProperties & Record<string, string> = {
@@ -1304,6 +1337,7 @@ export default function RoadmapView({
           {items.map((item, index) => {
             const pos   = getNodePosition(index, W);
             const state = getNodeState(index);
+            const managerLocked = state === 'locked' && isManagerLocked(index);
             return (
               <div key={item._id}
                 style={{ position: 'absolute', left: pos.x, top: pos.y, zIndex: 10 }}
@@ -1312,6 +1346,14 @@ export default function RoadmapView({
                   animateIn={state === 'completed' && index === completedCount - 1 && showFootsteps}
                   onClick={state === 'active' ? () => onNodeTap(index) : undefined}>
                   <NodeNumber state={state}>{index + 1}</NodeNumber>
+                  {managerLocked && (
+                    <ManagerLockBadge aria-label="locked by manager" title="Locked by manager">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <rect x="3" y="11" width="18" height="10" rx="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                    </ManagerLockBadge>
+                  )}
                 </NodeWrapper>
               </div>
             );

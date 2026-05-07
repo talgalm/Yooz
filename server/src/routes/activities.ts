@@ -3,6 +3,7 @@ import { ActivityConfigResponse } from '../types';
 import { authenticateToken } from '../middleware/auth';
 import { Activity, Report, Game, Station, Mission, CustomTheme } from '../models';
 import mongoose from 'mongoose';
+import { subscribe, sendLockEvent } from '../utils/lockBroadcaster';
 
 const router = Router();
 
@@ -214,6 +215,38 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     ...(activity.isContinuous && { isContinuous: true }),
     leaderboardMode: activity.leaderboardMode || 'points',
     ...(activity.activityDurationMinutes && { activityDurationMinutes: activity.activityDurationMinutes }),
+    lockedFromIndex: typeof activity.lockedFromIndex === 'number' ? activity.lockedFromIndex : null,
+  });
+});
+
+// SSE: live updates of the manager-controlled progress lock for an activity.
+// Public stream — nothing sensitive flows through it.
+router.get('/:code/lock-stream', async (req: Request<{ code: string }>, res: Response) => {
+  const activity = await Activity.findOne({ code: req.params.code });
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // disable proxy buffering (nginx)
+  res.flushHeaders?.();
+
+  // Initial payload: current state.
+  const initial = typeof activity.lockedFromIndex === 'number' ? activity.lockedFromIndex : null;
+  sendLockEvent(res, initial);
+
+  // Heartbeat every 25s to keep the connection alive through proxies.
+  const heartbeat = setInterval(() => {
+    try { res.write(': ping\n\n'); } catch { /* ignore */ }
+  }, 25000);
+
+  const unsubscribe = subscribe(activity.code, res);
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    unsubscribe();
   });
 });
 

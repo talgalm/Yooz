@@ -420,6 +420,8 @@ interface SpidersViewProps {
   elapsedSeconds?: number;
   activityDurationMinutes?: number;
   finalItemIndex?: number;
+  /** Manager-controlled progress lock: items with index >= this are blocked. */
+  lockedFromIndex?: number | null;
 }
 
 export default function SpidersView({
@@ -438,6 +440,7 @@ export default function SpidersView({
   elapsedSeconds,
   activityDurationMinutes,
   finalItemIndex,
+  lockedFromIndex,
 }: SpidersViewProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -747,14 +750,16 @@ export default function SpidersView({
             const hasSvg = Boolean(item.spiderSvg);
             const isFinalNode = finalItemIndex !== undefined && finalItemIndex === index;
             const nonFinalCount = finalItemIndex !== undefined ? items.length - 1 : items.length;
-            const isLocked = isFinalNode && completedItemIndices.size < nonFinalCount;
+            const isFinalLocked = isFinalNode && completedItemIndices.size < nonFinalCount;
+            const isManagerLocked = typeof lockedFromIndex === 'number' && index >= lockedFromIndex && !completed;
+            const isLocked = isFinalLocked || isManagerLocked;
 
             return (
               <NodeWrapper
                 key={item._id}
                 style={{ left: pos.x, top: pos.y, opacity: isLocked ? 0.55 : 1, filter: isLocked ? 'grayscale(0.4)' : 'none' }}
                 completed={completed}
-                onClick={() => onNodeTap(index)}
+                onClick={() => { if (!isManagerLocked) onNodeTap(index); }}
                 aria-label={item.name}
               >
                 {hasSvg ? (

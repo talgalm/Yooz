@@ -9,7 +9,23 @@ export const texts = {
     tabLeaderboard: 'Leaderboard',
     tabParticipants: 'Participants',
     tabGroups: 'Groups',
+    tabControlFlow: 'Control Flow',
     live: 'Live',
+
+    // Control Flow
+    controlFlowTitle: 'Activity flow control',
+    controlFlowHint: 'Lock the roadmap from a chosen item onward. Players will see a lock icon and cannot open locked items until you unlock.',
+    statusOpen: 'Open',
+    statusLocked: 'Locked',
+    unlockAll: 'Unlock all',
+    unlockHere: 'Unlock from here',
+    lockFromHere: 'Lock from here',
+    noItems: 'No items in this activity yet.',
+    loadFailed: 'Could not load items.',
+    lockFailed: 'Could not update lock state.',
+    type_game: 'Game',
+    type_station: 'Station',
+    type_mission: 'Mission',
 
     // Stats
     statTotal: 'Participants',
@@ -58,7 +74,23 @@ export const texts = {
     tabLeaderboard: 'טבלת ניקוד',
     tabParticipants: 'משתתפים',
     tabGroups: 'קבוצות',
+    tabControlFlow: 'שליטה',
     live: 'בשידור חי',
+
+    // Control Flow
+    controlFlowTitle: 'בקרת זרימת פעילות',
+    controlFlowHint: 'נעלו את המסלול מנקודה מסוימת והלאה. השחקנים יראו אייקון מנעול ולא יוכלו לפתוח את התחנות הנעולות עד שתפתחו אותן.',
+    statusOpen: 'פתוח',
+    statusLocked: 'נעול',
+    unlockAll: 'פתח הכל',
+    unlockHere: 'בטל נעילה מכאן',
+    lockFromHere: 'נעל מכאן',
+    noItems: 'אין עדיין פריטים בפעילות זו.',
+    loadFailed: 'שגיאה בטעינת הפריטים.',
+    lockFailed: 'שגיאה בעדכון מצב הנעילה.',
+    type_game: 'משחק',
+    type_station: 'תחנה',
+    type_mission: 'משימה',
 
     // Stats
     statTotal: 'משתתפים',
