@@ -1,0 +1,28 @@
+export const texts = {
+  en: {
+    title: 'Manager Login',
+    subtitle: 'Sign in to manage this activity',
+    email: 'Email',
+    password: 'Password',
+    login: 'Log In',
+    loggingIn: 'Signing in...',
+    googleSignIn: 'Continue with Google',
+    or: 'or',
+    close: 'Close',
+    loginFailed: 'Login failed',
+    googleUnavailable: 'Google sign-in is not available.',
+  },
+  he: {
+    title: 'כניסת מנהל',
+    subtitle: 'התחברו כדי לנהל את הפעילות',
+    email: 'אימייל',
+    password: 'סיסמה',
+    login: 'כניסה',
+    loggingIn: 'מתחבר...',
+    googleSignIn: 'המשך עם Google',
+    or: 'או',
+    close: 'סגור',
+    loginFailed: 'ההתחברות נכשלה',
+    googleUnavailable: 'כניסה עם Google אינה זמינה.',
+  },
+};

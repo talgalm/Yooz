@@ -45,6 +45,7 @@ export const texts = {
     lockCustomerEdits: 'Lock customer edits',
     unlockCustomerEdits: 'Unlock customer edits',
     customerEditLockedNotice: 'This activity is locked. Customer accounts cannot edit or delete it.',
+    managerLogin: 'Open manager panel',
   },
   he: {
     back: 'חזרה',
@@ -92,5 +93,6 @@ export const texts = {
     lockCustomerEdits: 'נעל עריכת לקוח',
     unlockCustomerEdits: 'בטל נעילת עריכת לקוח',
     customerEditLockedNotice: 'הפעילות נעולה. חשבונות לקוח לא יכולים לערוך או למחוק אותה.',
+    managerLogin: 'פתח פאנל מנהל',
   },
 };

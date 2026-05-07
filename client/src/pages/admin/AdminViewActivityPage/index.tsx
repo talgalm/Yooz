@@ -19,6 +19,7 @@ import {
   ModalActions,
   ModalBodyText,
 } from '../styled';
+import ManagerLoginModal from '../../../components/login/ManagerLoginModal';
 
 // ─── Styled Components ───
 
@@ -410,6 +411,30 @@ const LockBtn = styled('button')({
   '&:active': { transform: 'scale(0.98)' },
 });
 
+const HeaderActionsRow = styled('div')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+});
+
+const ManagerIconBtn = styled('button')({
+  width: 38,
+  height: 38,
+  borderRadius: '50%',
+  border: '1px solid #d8d2e0',
+  background: '#fff',
+  color: '#6c5ce7',
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  fontFamily: 'inherit',
+  transition: 'background 0.15s, border-color 0.15s',
+  '&:hover': { background: '#f0eefa', borderColor: '#6c5ce7' },
+  '&:active': { transform: 'scale(0.97)' },
+});
+
 // ─── Types ───
 
 interface Activity {
@@ -428,6 +453,8 @@ interface Activity {
   };
   createdAt: number;
   customerEditLocked?: boolean;
+  managerEmail?: string;
+  managerHasPassword?: boolean;
 }
 
 // ─── Game/module icons ───
@@ -462,6 +489,7 @@ export default function AdminViewActivityPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showGoLiveModal, setShowGoLiveModal] = useState(false);
   const [lockSaving, setLockSaving] = useState(false);
+  const [managerLoginOpen, setManagerLoginOpen] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const t = useTranslations(texts);
@@ -554,7 +582,22 @@ export default function AdminViewActivityPage() {
     <PageBg>
       <AdminHeader>
         <img src="/images/logo-purple.png" alt="Yooz" style={{ height: 32 }} />
-        <OutlineButton onClick={() => navigate('/admin/dashboard')}>{t.back}</OutlineButton>
+        <HeaderActionsRow>
+          {activity.managerEmail && (
+            <ManagerIconBtn
+              type="button"
+              aria-label={t.managerLogin}
+              title={t.managerLogin}
+              onClick={() => setManagerLoginOpen(true)}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="11" width="18" height="10" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </ManagerIconBtn>
+          )}
+          <OutlineButton onClick={() => navigate('/admin/dashboard')}>{t.back}</OutlineButton>
+        </HeaderActionsRow>
       </AdminHeader>
 
       <ContentWrapper>
@@ -719,6 +762,14 @@ export default function AdminViewActivityPage() {
             </ModalActions>
           </ModalCard>
         </ModalOverlay>
+      )}
+
+      {managerLoginOpen && activity.managerEmail && (
+        <ManagerLoginModal
+          activityCode={activity.code}
+          requiresPassword={!!activity.managerHasPassword}
+          onClose={() => setManagerLoginOpen(false)}
+        />
       )}
     </PageBg>
   );

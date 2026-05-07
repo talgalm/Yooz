@@ -33,7 +33,7 @@ export default function ManagerLoginPage() {
     setError('');
     setLoading(true);
     try {
-      await login(activityCode.trim(), email.trim(), password);
+      await login({ activityCode: activityCode.trim(), email: email.trim(), password });
       navigate('/manager/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');

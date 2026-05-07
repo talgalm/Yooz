@@ -32,8 +32,9 @@ export interface ManagerJwtPayload {
 
 export interface ManagerLoginRequest {
   activityCode: string;
-  email: string;
-  password: string;
+  email?: string;
+  password?: string;
+  googleAccessToken?: string;
 }
 
 export interface AdminLoginRequest {

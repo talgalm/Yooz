@@ -181,6 +181,7 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
 function stripManagerPassword(activity: any) {
   if (!activity) return activity;
   const obj = typeof activity.toObject === 'function' ? activity.toObject() : { ...activity };
+  obj.managerHasPassword = !!obj.managerPassword;
   delete obj.managerPassword;
   return obj;
 }

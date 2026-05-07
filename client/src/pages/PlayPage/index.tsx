@@ -120,6 +120,7 @@ const CountdownLabel = styled('span')({
   marginTop: 4,
 });
 
+
 export default function PlayPage() {
   const { code } = useParams<{ code: string }>();
   const [activity, setActivity] = useState<ActivityConfig | null>(null);

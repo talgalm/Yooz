@@ -8,12 +8,12 @@ import { Activity, Report } from '../models';
 
 const router = Router();
 
-// Manager login
+// Manager login (supports password or Google OAuth)
 router.post('/login', async (req: Request<{}, {}, ManagerLoginRequest>, res: Response) => {
-  const { activityCode, email, password } = req.body;
+  const { activityCode, email, password, googleAccessToken } = req.body;
 
-  if (!activityCode || !email || !password) {
-    res.status(400).json({ error: 'Activity code, email and password are required' });
+  if (!activityCode) {
+    res.status(400).json({ error: 'Activity code is required' });
     return;
   }
 
@@ -23,18 +23,53 @@ router.post('/login', async (req: Request<{}, {}, ManagerLoginRequest>, res: Res
     return;
   }
 
-  if (!activity.managerEmail || !activity.managerPassword) {
+  if (!activity.managerEmail) {
     res.status(401).json({ error: 'No manager configured for this activity' });
     return;
   }
 
-  if (email.trim().toLowerCase() !== activity.managerEmail.toLowerCase()) {
-    res.status(401).json({ error: 'Invalid credentials' });
-    return;
+  // Determine the email being authenticated
+  let resolvedEmail: string | undefined;
+
+  if (googleAccessToken) {
+    // Google flow: fetch email from Google and verify it matches the manager's email
+    try {
+      const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { Authorization: `Bearer ${googleAccessToken}` },
+      });
+      if (!profileRes.ok) {
+        res.status(401).json({ error: 'Invalid Google token' });
+        return;
+      }
+      const profile = await profileRes.json() as { email?: string };
+      if (!profile.email) {
+        res.status(401).json({ error: 'No email in Google profile' });
+        return;
+      }
+      resolvedEmail = profile.email;
+    } catch {
+      res.status(401).json({ error: 'Failed to verify Google token' });
+      return;
+    }
+  } else {
+    // Password flow: requires email + password
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email and password are required' });
+      return;
+    }
+    if (!activity.managerPassword) {
+      res.status(401).json({ error: 'Password login not enabled for this activity' });
+      return;
+    }
+    const valid = await bcrypt.compare(password, activity.managerPassword);
+    if (!valid) {
+      res.status(401).json({ error: 'Invalid credentials' });
+      return;
+    }
+    resolvedEmail = email;
   }
 
-  const valid = await bcrypt.compare(password, activity.managerPassword);
-  if (!valid) {
+  if (!resolvedEmail || resolvedEmail.trim().toLowerCase() !== activity.managerEmail.toLowerCase()) {
     res.status(401).json({ error: 'Invalid credentials' });
     return;
   }

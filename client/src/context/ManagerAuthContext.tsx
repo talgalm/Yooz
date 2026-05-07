@@ -7,11 +7,18 @@ interface Manager {
   activityName: string;
 }
 
+interface ManagerLoginInput {
+  activityCode: string;
+  email?: string;
+  password?: string;
+  googleAccessToken?: string;
+}
+
 interface ManagerAuthContextType {
   token: string | null;
   manager: Manager | null;
   isManagerAuthenticated: boolean;
-  login: (activityCode: string, email: string, password: string) => Promise<void>;
+  login: (input: ManagerLoginInput) => Promise<void>;
   logout: () => void;
 }
 
@@ -52,10 +59,10 @@ export function ManagerAuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = async (activityCode: string, email: string, password: string) => {
+  const login = async (input: ManagerLoginInput) => {
     const data = await managerApiFetch<{ token: string; manager: Manager }>('/api/manager/login', {
       method: 'POST',
-      body: JSON.stringify({ activityCode, email, password }),
+      body: JSON.stringify(input),
     });
     localStorage.setItem('yooz_manager_token', data.token);
     localStorage.setItem('yooz_manager_activity_name', data.manager.activityName);
