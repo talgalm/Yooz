@@ -128,7 +128,8 @@ export default function AdminGameConfigPage() {
     if (lib.type && validTypes.includes(lib.type)) {
       setType(lib.type);
     }
-    setDescription(lib.description || '');
+    const desc = lib.description || '';
+    setDescription(/^imported from/i.test(desc.trim()) ? '' : desc);
     setCustomer(lib.customer || '');
     setTags((lib.tags || []).filter(t => t !== 'imported'));
 

@@ -303,7 +303,8 @@ export default function AdminStationConfigPage() {
     if (lib.type && creatableTypes.includes(lib.type as StationTypeOption)) {
       setStationType(lib.type as StationTypeOption);
     }
-    setDescription(lib.description || '');
+    const desc = lib.description || '';
+    setDescription(/^imported from/i.test(desc.trim()) ? '' : desc);
     setCustomer(lib.customer || '');
     setTags((lib.tags || []).filter(t => t !== 'imported'));
 

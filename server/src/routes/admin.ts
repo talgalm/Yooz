@@ -346,7 +346,16 @@ router.put('/activities/:id', authenticateAdmin, async (req: Request<{ id: strin
   if (moduleErr) { res.status(403).json({ error: moduleErr }); return; }
 
   const activityData = await buildActivityData(req.body, existing.managerPassword);
-  const activity = await Activity.findByIdAndUpdate(req.params.id, { $set: activityData }, { new: true, runValidators: true });
+  const $set: Record<string, unknown> = {};
+  const $unset: Record<string, ''> = {};
+  for (const [k, v] of Object.entries(activityData)) {
+    if (v === undefined) $unset[k] = '';
+    else $set[k] = v;
+  }
+  const update: Record<string, unknown> = {};
+  if (Object.keys($set).length > 0) update.$set = $set;
+  if (Object.keys($unset).length > 0) update.$unset = $unset;
+  const activity = await Activity.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
   logAdminAction(req, 'update_activity', 'activity', req.params.id, req.body.name);
   res.json({ activity: activity ? stripManagerPassword(activity) : activity });
 });
