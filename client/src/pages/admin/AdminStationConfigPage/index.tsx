@@ -498,9 +498,9 @@ export default function AdminStationConfigPage() {
       const payload = {
         name: name.trim(),
         type: stationType,
-        description: description.trim() || undefined,
-        customer: customer.trim() || undefined,
-        theme: theme.trim() || undefined,
+        description: description.trim(),
+        customer: customer.trim(),
+        theme: theme.trim(),
         tags,
         settings,
       };

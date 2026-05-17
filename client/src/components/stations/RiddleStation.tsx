@@ -3,6 +3,7 @@ import { styled, keyframes } from '@mui/material/styles';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 import type { GameResult } from '../games/types';
 import { resolveVideoSource } from '../../utils/videoSource';
+import { StationContinueButton } from '../games/styled';
 
 // ─── Types ───
 
@@ -163,27 +164,18 @@ const ScoreBadge = styled('div')({
   border: '1.5px solid #d8c7f0',
 });
 
-const SubmitButton = styled('button')({
+const SubmitButton = styled(StationContinueButton)({
   position: 'fixed',
   bottom: 24,
   left: '50%',
   transform: 'translateX(-50%)',
   zIndex: 40,
-  background: '#6c5ce7',
-  color: '#fff',
-  border: '3px solid #000',
-  borderRadius: 50,
+  width: 'auto',
   padding: '14px 48px',
-  fontSize: 16,
-  fontWeight: 800,
-  fontFamily: 'inherit',
-  cursor: 'pointer',
-  boxShadow: '0 3px 0 #000, 0 4px 20px rgba(108,92,231,0.35)',
-  transition: 'all 0.1s ease',
+  borderRadius: 50,
   whiteSpace: 'nowrap',
   '&:active': {
     transform: 'translateX(-50%) translateY(3px)',
-    boxShadow: '0 0 0 #000',
   },
   '&:disabled': {
     opacity: 0.5,

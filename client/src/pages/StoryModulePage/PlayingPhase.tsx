@@ -142,13 +142,8 @@ const FixedContinueButton = styled(StationContinueButton)({
   left: '50%',
   transform: 'translateX(-50%)',
   zIndex: 40,
-  background: '#6c5ce7',
-  color: '#111',
-  border: '3px solid #000',
-  boxShadow: '0 3px 0 #000, 0 4px 20px rgba(108,92,231,0.35)',
   '&:active': {
     transform: 'translateX(-50%) translateY(3px)',
-    boxShadow: '0 0 0 #000',
   },
 });
 
@@ -345,7 +340,13 @@ export default function PlayingPhase({
       }
 
       if (station.stationType === 'feedback') {
-        return <FeedbackStation station={station} onContinue={onFeedbackContinue} />;
+        return (
+          <FeedbackStation
+            station={station}
+            onContinue={onFeedbackContinue}
+            textColor={customTheme?.textColor}
+          />
+        );
       }
 
       if (station.stationType === 'riddle') {

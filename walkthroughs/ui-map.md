@@ -200,6 +200,13 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 - Status toggle button (Preview ↔ Live)
 - Delete button with confirmation
 
+**Manager login icon** (only when `activity.managerEmail` is set):
+- Small round lock icon in the page header (next to "Back"): `button[aria-label="Open manager panel"], button[aria-label="פתח פאנל מנהל"]`
+- Click opens ManagerLoginModal:
+  - If `managerHasPassword`: email + password + "Log In" button
+  - Else: "Continue with Google" button (Google email must match `managerEmail`)
+  - On success: navigates to `/manager/dashboard`
+
 ---
 
 ### 7. Statistics Tab (in Dashboard)

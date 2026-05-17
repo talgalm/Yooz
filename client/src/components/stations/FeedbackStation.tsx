@@ -316,9 +316,10 @@ function SliderQuestion({
 interface FeedbackStationProps {
   station: StationItemData;
   onContinue: (feedbackResult: FeedbackResult) => void;
+  textColor?: string;
 }
 
-export default function FeedbackStation({ station, onContinue }: FeedbackStationProps) {
+export default function FeedbackStation({ station, onContinue, textColor }: FeedbackStationProps) {
   const settings = (station.settings || {}) as FeedbackSettings;
   const questions = settings.questions || [];
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -353,8 +354,14 @@ export default function FeedbackStation({ station, onContinue }: FeedbackStation
 
   return (
     <FeedbackContainer>
-      {settings.title && <Title>{settings.title}</Title>}
-      {settings.introText && <IntroText>{settings.introText}</IntroText>}
+      {settings.title && (
+        <Title style={textColor ? { color: textColor } : undefined}>{settings.title}</Title>
+      )}
+      {settings.introText && (
+        <IntroText style={textColor ? { color: textColor, opacity: 0.85 } : undefined}>
+          {settings.introText}
+        </IntroText>
+      )}
 
       {questions.map((q, qIndex) => (
         <SliderQuestion

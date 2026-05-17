@@ -950,10 +950,11 @@ export const DraggablePiece = styled('div', {
   ({ cols, rows, pieceIndex, isDragging }) => {
     const col = pieceIndex % cols;
     const row = Math.floor(pieceIndex / cols);
-    const pctX = (col / cols) * 100;
-    const pctY = (row / rows) * 100;
-    const pctW = (1 / cols) * 100;
-    const pctH = (1 / rows) * 100;
+    // With backgroundSize: (cols*100%) x (rows*100%), CSS background-position
+    // percent aligns the same-percent point of the image with the same point
+    // of the container — so the right column needs 100%, not (col/cols)*100.
+    const pctX = cols > 1 ? (col / (cols - 1)) * 100 : 0;
+    const pctY = rows > 1 ? (row / (rows - 1)) * 100 : 0;
 
     return {
       width: `calc(85vw / ${cols})`,
