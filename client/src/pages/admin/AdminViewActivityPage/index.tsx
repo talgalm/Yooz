@@ -204,59 +204,6 @@ const ReviewBadges = styled('div')({
   marginInlineStart: 'auto',
 });
 
-const LinkCardBox = styled('div')({
-  background: '#fff',
-  borderRadius: 16,
-  padding: '18px 20px',
-  boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
-  border: '1px solid #ece8f0',
-  marginBottom: 16,
-  display: 'flex',
-  alignItems: 'center',
-  gap: 14,
-  flexWrap: 'wrap',
-});
-
-const LinkCardLabel = styled('div')({
-  fontSize: 14,
-  fontWeight: 600,
-  color: '#555',
-  whiteSpace: 'nowrap',
-});
-
-const LinkCardUrlBox = styled('div')({
-  flex: 1,
-  display: 'flex',
-  alignItems: 'center',
-  gap: 8,
-  background: '#f5f5f7',
-  borderRadius: 10,
-  padding: '10px 14px',
-  minWidth: 0,
-});
-
-const LinkCardUrlText = styled('code')({
-  flex: 1,
-  fontSize: 13,
-  color: '#555',
-  wordBreak: 'break-all',
-  fontFamily: 'monospace',
-});
-
-const CopyLinkBtn = styled('button')({
-  padding: '8px 18px',
-  fontSize: 13,
-  fontWeight: 600,
-  color: '#555',
-  background: '#f0f0f4',
-  border: '1px solid #ddd',
-  borderRadius: 8,
-  cursor: 'pointer',
-  fontFamily: 'inherit',
-  whiteSpace: 'nowrap',
-  '&:hover': { background: '#e8e8ec' },
-});
-
 const QrCardBox = styled('div')({
   background: '#fff',
   borderRadius: 16,
@@ -457,7 +404,6 @@ function getActivityIcon(activity: Activity): string {
 export default function AdminViewActivityPage() {
   const { id } = useParams<{ id: string }>();
   const [activity, setActivity] = useState<Activity | null>(null);
-  const [copied, setCopied] = useState(false);
   const [copiedInline, setCopiedInline] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showGoLiveModal, setShowGoLiveModal] = useState(false);
@@ -499,11 +445,6 @@ export default function AdminViewActivityPage() {
     link.click();
   }, [activity?.code]);
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(playUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleCopyInline = async () => {
     await navigator.clipboard.writeText(playUrl);
@@ -640,17 +581,6 @@ export default function AdminViewActivityPage() {
           </CardBox>
         </TopGrid>
 
-        {/* Play link card */}
-        <LinkCardBox>
-          <LinkCardLabel>{t.playLink}</LinkCardLabel>
-          <LinkCardUrlBox>
-            <LinkCardUrlText>{playUrl}</LinkCardUrlText>
-            <CopyIconBtn onClick={handleCopy} title={t.copy}>
-              {copied ? '✓' : '📋'}
-            </CopyIconBtn>
-          </LinkCardUrlBox>
-          <CopyLinkBtn onClick={handleCopy}>{copied ? t.copied : t.copy}</CopyLinkBtn>
-        </LinkCardBox>
 
         {/* QR code card */}
         <QrCardBox>
