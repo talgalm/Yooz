@@ -37,8 +37,6 @@ import {
   TopBarRightCluster,
   PuzzleGameTopBarItem,
   PuzzleGameTopBarTimer,
-  PuzzleFullImg,
-  PuzzleGridOverlay,
   QuestionBox,
   QuestionBadge,
   QuestionContent,
@@ -59,6 +57,7 @@ import {
   DragGridWrapper,
   DragGridCell,
   DraggablePiece,
+  PuzzlePieceSlot,
   FinishContainer,
   FinishContent,
   FinishPuzzleImage,
@@ -139,6 +138,51 @@ function savePuzzleProgress(gameId: string, data: SavedPuzzleProgress) {
 
 function clearPuzzleProgress(gameId: string) {
   try { sessionStorage.removeItem(getProgressKey(gameId)); } catch {}
+}
+
+// ─── SVG Piece ───
+
+/**
+ * A single puzzle piece rendered as SVG. The image is drawn at fixed SVG
+ * coordinates (`cols*100 × rows*100`) using `preserveAspectRatio="xMidYMid slice"`
+ * — SVG's equivalent of `object-fit: cover` — and the SVG `viewBox` clips it
+ * to the 0-100 region representing this single piece. Since every piece uses
+ * the *same* image transform and just shifts `x`/`y`, neighbouring pieces are
+ * guaranteed to line up regardless of how the parent is sized in CSS pixels.
+ *
+ * Mirrors the technique used by `MissionPuzzle`, minus the jigsaw clip-path.
+ */
+function PuzzlePieceSvg({
+  src,
+  cols,
+  rows,
+  pieceIndex,
+}: {
+  src: string;
+  cols: number;
+  rows: number;
+  pieceIndex: number;
+}) {
+  const col = pieceIndex % cols;
+  const row = Math.floor(pieceIndex / cols);
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      width="100%"
+      height="100%"
+      preserveAspectRatio="xMidYMid meet"
+      style={{ display: 'block', pointerEvents: 'none' }}
+    >
+      <image
+        href={src}
+        x={-col * 100}
+        y={-row * 100}
+        width={cols * 100}
+        height={rows * 100}
+        preserveAspectRatio="xMidYMid slice"
+      />
+    </svg>
+  );
 }
 
 // ─── Component ───
@@ -739,25 +783,30 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
           <DragPhaseContainer>
             <DragInstruction>{t.dragInstruction}</DragInstruction>
 
-            {/* The puzzle grid showing revealed pieces and empty slots */}
-            <DragGridWrapper
-              ref={gridRef}
-              style={{ aspectRatio: `${cols}/${rows}` }}
-            >
-              <PuzzleFullImg src={settings.puzzleImage} alt="Puzzle" />
-              <PuzzleGridOverlay cols={cols} rows={rows}>
-                {Array.from({ length: totalPieces }, (_, i) => (
-                  <DragGridCell
-                    key={i}
-                    ref={(el) => { if (el) cellRefs.current.set(i, el); }}
-                    revealed={revealedPieces.has(i)}
-                    isTarget={!revealedPieces.has(i)}
-                    wrongAttempt={wrongCellIndex === i}
-                  >
-                    {!revealedPieces.has(i) && '?'}
-                  </DragGridCell>
-                ))}
-              </PuzzleGridOverlay>
+            {/* The puzzle grid — each cell hosts the same SVG, clipped to its slot. */}
+            <DragGridWrapper ref={gridRef} cols={cols} rows={rows}>
+              {Array.from({ length: totalPieces }, (_, i) => (
+                <DragGridCell
+                  key={i}
+                  ref={(el) => { if (el) cellRefs.current.set(i, el); }}
+                  revealed={revealedPieces.has(i)}
+                  isTarget={!revealedPieces.has(i)}
+                  wrongAttempt={wrongCellIndex === i}
+                >
+                  {revealedPieces.has(i) ? (
+                    <PuzzlePieceSlot>
+                      <PuzzlePieceSvg
+                        src={settings.puzzleImage}
+                        cols={cols}
+                        rows={rows}
+                        pieceIndex={i}
+                      />
+                    </PuzzlePieceSlot>
+                  ) : (
+                    '?'
+                  )}
+                </DragGridCell>
+              ))}
             </DragGridWrapper>
 
             {/* The draggable piece — wrapper always present to hold layout */}
@@ -765,34 +814,46 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
               {/* Spacer always occupies the piece's space */}
               <DraggablePiece
                 cols={cols}
-                rows={rows}
-                pieceIndex={dragPieceIndex}
                 style={{
                   visibility: isDragging || dragFeedback === 'correct' ? 'hidden' : 'visible',
-                  backgroundImage: `url(${settings.puzzleImage})`,
                 }}
                 ref={pieceRef}
                 onMouseDown={dragFeedback !== 'correct' ? onMouseDown : undefined}
                 onTouchStart={dragFeedback !== 'correct' ? onTouchStart : undefined}
                 onTouchMove={dragFeedback !== 'correct' ? onTouchMove : undefined}
                 onTouchEnd={dragFeedback !== 'correct' ? onTouchEnd : undefined}
-              />
+              >
+                <PuzzlePieceSlot>
+                  <PuzzlePieceSvg
+                    src={settings.puzzleImage}
+                    cols={cols}
+                    rows={rows}
+                    pieceIndex={dragPieceIndex}
+                  />
+                </PuzzlePieceSlot>
+              </DraggablePiece>
               {/* Fixed-position clone that follows the pointer */}
               {isDragging && (
                 <DraggablePiece
                   cols={cols}
-                  rows={rows}
-                  pieceIndex={dragPieceIndex}
                   isDragging
                   style={{
-                    backgroundImage: `url(${settings.puzzleImage})`,
                     position: 'fixed',
                     left: dragPos.x - dragStartOffset.current.x,
                     top: dragPos.y - dragStartOffset.current.y,
                     zIndex: 1000,
                     pointerEvents: 'none',
                   }}
-                />
+                >
+                  <PuzzlePieceSlot>
+                    <PuzzlePieceSvg
+                      src={settings.puzzleImage}
+                      cols={cols}
+                      rows={rows}
+                      pieceIndex={dragPieceIndex}
+                    />
+                  </PuzzlePieceSlot>
+                </DraggablePiece>
               )}
             </div>
           </DragPhaseContainer>
