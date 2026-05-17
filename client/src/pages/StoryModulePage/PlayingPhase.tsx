@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useMediaPreload } from '../../hooks/useMediaPreload';
 import { resolveVideoSource } from '../../utils/videoSource';
 import ThemedBackground from '../../components/ThemedBackground';
@@ -621,11 +621,27 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
   const mediaUrl = station.settings?.mediaUrl as string | undefined;
   const mediaReady = useMediaPreload([mediaUrl]);
   const descAfter = station.settings?.descPosition === 'after';
+  const [fullscreen, setFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreen(false);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [fullscreen]);
+
   const descEl = station.description ? <StationDescriptionText style={textColor ? { color: textColor } : undefined}>{station.description}</StationDescriptionText> : null;
   const mediaEl = mediaReady ? (
     <StationWindow style={{ marginTop: 16 }} isDynamic>
       <MediaStationImageWrapper style={{ marginBottom: 0 }}>
-        <MediaStationImage src={mediaUrl} alt="" />
+        <MediaStationImage
+          src={mediaUrl}
+          alt=""
+          style={{ cursor: 'zoom-in' }}
+          onClick={() => setFullscreen(true)}
+        />
       </MediaStationImageWrapper>
     </StationWindow>
   ) : (
@@ -639,9 +655,63 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
       <FixedContinueButton onClick={onContinue} disabled={!mediaReady}>
         {t.continueButton}
       </FixedContinueButton>
+      {fullscreen && mediaUrl && (
+        <ImageFullscreenOverlay onClick={() => setFullscreen(false)} role="dialog" aria-modal="true">
+          <ImageFullscreenClose
+            type="button"
+            aria-label="Close"
+            onClick={(e) => { e.stopPropagation(); setFullscreen(false); }}
+          >
+            ×
+          </ImageFullscreenClose>
+          <ImageFullscreenImg src={mediaUrl} alt="" onClick={(e) => e.stopPropagation()} />
+        </ImageFullscreenOverlay>
+      )}
     </MediaStationLayout>
   );
 }
+
+const ImageFullscreenOverlay = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0,0,0,0.92)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 2000,
+  cursor: 'zoom-out',
+  padding: 16,
+});
+
+const ImageFullscreenImg = styled('img')({
+  maxWidth: '100%',
+  maxHeight: '100%',
+  objectFit: 'contain',
+  borderRadius: 8,
+  cursor: 'default',
+});
+
+const ImageFullscreenClose = styled('button')({
+  position: 'absolute',
+  top: 16,
+  right: 16,
+  width: 44,
+  height: 44,
+  borderRadius: '50%',
+  border: 'none',
+  background: 'rgba(255,255,255,0.15)',
+  color: '#fff',
+  fontSize: 28,
+  lineHeight: 1,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 1,
+  '&:hover': {
+    background: 'rgba(255,255,255,0.25)',
+  },
+});
 
 // ─── Video Station with replay + conditional continue ───
 

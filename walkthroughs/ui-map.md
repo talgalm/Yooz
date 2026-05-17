@@ -274,6 +274,10 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 - Click card to start playing
 - Progress indicators on completed items
 
+**Image Station (player):**
+- Title + description + image inside `StationWindow`, with a Continue button below
+- Click image → opens fullscreen overlay (dark background) showing the image at max size; close via × button (top-right), clicking outside the image, or Escape key
+
 **Finish screen:**
 - Score display
 - Leaderboard table
