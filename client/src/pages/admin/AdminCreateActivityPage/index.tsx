@@ -580,7 +580,9 @@ export default function AdminCreateActivityPage() {
       if (connectionType === 'group') {
         payload.groups = groupNames.map((n) => ({ name: n.trim() || 'Group' }));
       }
-      if (openingType !== 'none' && openingUrl.trim()) {
+      if (openingType === 'none') {
+        payload.opening = null;
+      } else if (openingUrl.trim()) {
         payload.opening = { type: openingType, url: openingUrl.trim() };
       }
       if (moduleType === 'story' || moduleType === 'spiders') {

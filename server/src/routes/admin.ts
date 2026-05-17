@@ -76,11 +76,11 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
   } else {
     data.groups = [];
   }
-  // Handle opening (optional splash screen)
-  if (opening && opening.url && opening.url.trim() && ['video', 'image'].includes(opening.type)) {
+  // Handle opening (optional splash screen); null explicitly clears on update
+  if (opening === null) {
+    data.opening = null;
+  } else if (opening && opening.url && opening.url.trim() && ['video', 'image'].includes(opening.type)) {
     data.opening = { type: opening.type, url: opening.url.trim() };
-  } else {
-    data.opening = undefined;
   }
   // Handle module config
   if (moduleConfig) {
@@ -321,6 +321,7 @@ router.post('/activities', authenticateAdmin, async (req: Request<{}, {}, Create
   if (moduleErr) { res.status(403).json({ error: moduleErr }); return; }
 
   const activityData = await buildActivityData(req.body);
+  if (activityData.opening === null) delete activityData.opening;
   const activity = await Activity.create({
     ...activityData,
     createdByEmail: createdByEmailForNewResource(req),
@@ -346,7 +347,16 @@ router.put('/activities/:id', authenticateAdmin, async (req: Request<{ id: strin
   if (moduleErr) { res.status(403).json({ error: moduleErr }); return; }
 
   const activityData = await buildActivityData(req.body, existing.managerPassword);
-  const activity = await Activity.findByIdAndUpdate(req.params.id, { $set: activityData }, { new: true, runValidators: true });
+  const unset: Record<string, 1> = {};
+  if (activityData.opening === null) {
+    unset.opening = 1;
+    delete activityData.opening;
+  }
+  const activity = await Activity.findByIdAndUpdate(
+    req.params.id,
+    { $set: activityData, ...(Object.keys(unset).length > 0 && { $unset: unset }) },
+    { new: true, runValidators: true },
+  );
   logAdminAction(req, 'update_activity', 'activity', req.params.id, req.body.name);
   res.json({ activity: activity ? stripManagerPassword(activity) : activity });
 });

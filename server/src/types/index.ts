@@ -212,7 +212,7 @@ export interface CreateActivityRequest {
   emailGoogle?: boolean;
   connectionType: ConnectionType;
   groups?: GroupConfig[];
-  opening?: OpeningConfig;
+  opening?: OpeningConfig | null;
   module?: ModuleConfigRequest;
   guidelines?: string;
   customInstructions?: CustomInstructionsConfig;
