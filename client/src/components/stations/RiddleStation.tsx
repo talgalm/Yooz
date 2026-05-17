@@ -15,6 +15,8 @@ interface RiddleSettings {
   maxScore?: number;
   successMessage?: string;
   failureMessage?: string;
+  continueButtonText?: string;
+  successImageUrl?: string;
 }
 
 // ─── Helpers ───
@@ -289,7 +291,11 @@ export default function RiddleStation({
   const maxScore = typeof settings.maxScore === 'number' ? settings.maxScore : 100;
   const successMessage = settings.successMessage || (isHebrewText(clue + answer) ? 'כל הכבוד! ענית נכון!' : 'Correct! Well done!');
   const failureMessage = settings.failureMessage || (isHebrewText(clue + answer) ? 'לא הצלחת הפעם. נסה שוב בפעם הבאה!' : 'Better luck next time!');
+  const isHebrew = isHebrewText(clue + answer);
   const isRTL = isHebrewText(answer);
+  const continueLabel = settings.continueButtonText?.trim() || (isHebrew ? 'המשך' : 'Continue');
+  const checkLabel = isHebrew ? 'בדיקה' : 'Check';
+  const customSuccessImage = settings.successImageUrl?.trim();
 
   // Build word groups (split answer by spaces)
   const words = answer ? answer.split(' ') : [];
@@ -460,7 +466,7 @@ export default function RiddleStation({
             <AttemptDot key={i} used={String(i < attempt)} />
           ))}
           <span style={{ marginInlineStart: 4 }}>
-            {isRTL ? `ניסיון ${attempt + 1} מתוך 3` : `Attempt ${attempt + 1} of 3`}
+            {isHebrew ? `ניסיון ${attempt + 1} מתוך 3` : `Attempt ${attempt + 1} of 3`}
           </span>
         </AttemptsRow>
 
@@ -470,9 +476,9 @@ export default function RiddleStation({
             type="button"
             onClick={onStationHintClick}
             style={{ cursor: 'pointer' }}
-            aria-label={hintLabel || (isRTL ? 'רמז' : 'Hint')}
+            aria-label={hintLabel || (isHebrew ? 'רמז' : 'Hint')}
           >
-            {hintLabel || (stationHintUsed ? (isRTL ? 'הצג רמז' : 'Show Hint') : (isRTL ? 'רמז' : 'Hint'))}
+            {hintLabel || (stationHintUsed ? (isHebrew ? 'הצג רמז' : 'Show Hint') : (isHebrew ? 'רמז' : 'Hint'))}
           </ScoreBadge>
         ) : null}
       </Container>
@@ -482,13 +488,20 @@ export default function RiddleStation({
           onClick={handleCheck}
           disabled={!allFilled || phase !== 'playing'}
         >
-          {isRTL ? 'בדיקה' : 'Check'}
+          {checkLabel}
         </SubmitButton>
       )}
 
       {phase === 'success' && (
         <ResultOverlay>
           <SuccessBanner>
+            {customSuccessImage ? (
+              <img
+                src={customSuccessImage}
+                alt=""
+                style={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block', borderRadius: 14 }}
+              />
+            ) : (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 260">
               <defs>
                 <linearGradient id="riddle-cupGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -505,8 +518,8 @@ export default function RiddleStation({
               <rect x="42" y="42" width="716" height="176" rx="88" ry="88" fill="#2A4384" />
 
               <g fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" fontWeight="900" fill="#EAD787" textAnchor="middle">
-                <text x="460" y="128" fontSize="64" letterSpacing="1.5">כל הכבוד</text>
-                <text x="460" y="190" fontSize="46" letterSpacing="1">{`קיבלת ${earnedScore} נקודות`}</text>
+                <text x="460" y="128" fontSize="64" letterSpacing="1.5">{isHebrew ? 'כל הכבוד' : 'Well done!'}</text>
+                <text x="460" y="190" fontSize="46" letterSpacing="1">{isHebrew ? `קיבלת ${earnedScore} נקודות` : `You got ${earnedScore} points`}</text>
               </g>
 
               <g transform="translate(-15, 10)">
@@ -550,11 +563,12 @@ export default function RiddleStation({
                 <path d="M230,185 Q235,185 235,180 Q235,185 240,185 Q235,185 235,190 Q235,185 230,185 Z" fill="#FCE082" />
               </g>
             </svg>
+            )}
           </SuccessBanner>
           <SuccessContinueBtn
             onClick={() => onComplete({ score: earnedScore, maxPossibleScore: maxScore, durationMs: Date.now() - startTime, hintUsed: false, attempts: attempt + 1 })}
           >
-            {isRTL ? 'המשך' : 'Continue'}
+            {continueLabel}
           </SuccessContinueBtn>
         </ResultOverlay>
       )}
@@ -563,10 +577,10 @@ export default function RiddleStation({
         <ResultOverlay>
           <ResultCard>
             <ResultEmoji>😔</ResultEmoji>
-            <ResultTitle>{isRTL ? 'לא הצלחת' : 'Game Over'}</ResultTitle>
+            <ResultTitle>{isHebrew ? 'לא הצלחת' : 'Game Over'}</ResultTitle>
             <ResultMessage>{failureMessage}</ResultMessage>
             <div style={{ fontSize: 14, color: '#888', marginTop: 8 }}>
-              {isRTL ? `התשובה הנכונה: ` : `The answer was: `}
+              {isHebrew ? `התשובה הנכונה: ` : `The answer was: `}
               <strong style={{ color: '#333' }}>{answer}</strong>
             </div>
           </ResultCard>

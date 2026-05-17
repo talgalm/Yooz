@@ -164,6 +164,8 @@ export default function AdminStationConfigPage() {
   const [riddleMaxScore, setRiddleMaxScore] = useState('100');
   const [riddleSuccessMsg, setRiddleSuccessMsg] = useState('');
   const [riddleFailureMsg, setRiddleFailureMsg] = useState('');
+  const [riddleContinueBtnText, setRiddleContinueBtnText] = useState('');
+  const [riddleSuccessImageUrl, setRiddleSuccessImageUrl] = useState('');
   // Avatar station
   const [avatarCharacterName, setAvatarCharacterName] = useState('');
   const [avatarCharacterImageUrl, setAvatarCharacterImageUrl] = useState('');
@@ -249,6 +251,8 @@ export default function AdminStationConfigPage() {
           if (typeof settings.maxScore === 'number') setRiddleMaxScore(String(settings.maxScore));
           if (settings.successMessage) setRiddleSuccessMsg(settings.successMessage as string);
           if (settings.failureMessage) setRiddleFailureMsg(settings.failureMessage as string);
+          if (settings.continueButtonText) setRiddleContinueBtnText(settings.continueButtonText as string);
+          if (settings.successImageUrl) setRiddleSuccessImageUrl(settings.successImageUrl as string);
         }
         if (s.type === 'avatar') {
           if (settings.characterName) setAvatarCharacterName(settings.characterName as string);
@@ -350,6 +354,8 @@ export default function AdminStationConfigPage() {
       if (typeof settings.maxScore === 'number') setRiddleMaxScore(String(settings.maxScore));
       if (settings.successMessage) setRiddleSuccessMsg(settings.successMessage as string);
       if (settings.failureMessage) setRiddleFailureMsg(settings.failureMessage as string);
+      if (settings.continueButtonText) setRiddleContinueBtnText(settings.continueButtonText as string);
+      if (settings.successImageUrl) setRiddleSuccessImageUrl(settings.successImageUrl as string);
     }
     if (lib.type === 'avatar') {
       if (settings.characterName) setAvatarCharacterName(settings.characterName as string);
@@ -449,6 +455,8 @@ export default function AdminStationConfigPage() {
         settings.maxScore = isNaN(parsedScore) || parsedScore <= 0 ? 100 : parsedScore;
         if (riddleSuccessMsg.trim()) settings.successMessage = riddleSuccessMsg.trim();
         if (riddleFailureMsg.trim()) settings.failureMessage = riddleFailureMsg.trim();
+        if (riddleContinueBtnText.trim()) settings.continueButtonText = riddleContinueBtnText.trim();
+        if (riddleSuccessImageUrl.trim()) settings.successImageUrl = riddleSuccessImageUrl.trim();
       }
       if (stationType === 'avatar') {
         settings.characterName = avatarCharacterName.trim();
@@ -1111,6 +1119,35 @@ export default function AdminStationConfigPage() {
                     value={riddleFailureMsg}
                     onChange={(e) => setRiddleFailureMsg(e.target.value)}
                   />
+
+                  <SectionLabel>{t.riddleContinueBtnText}</SectionLabel>
+                  <Input
+                    placeholder={t.riddleContinueBtnTextPlaceholder}
+                    value={riddleContinueBtnText}
+                    onChange={(e) => setRiddleContinueBtnText(e.target.value)}
+                  />
+
+                  <SectionLabel>{t.riddleSuccessImage}</SectionLabel>
+                  <InlineRow>
+                    <FileUploadButton
+                      accept="image/*"
+                      onUploaded={(url) => setRiddleSuccessImageUrl(url)}
+                      label={t.upload}
+                      uploadingLabel={t.uploading}
+                    />
+                    <FlexInput
+                      placeholder={t.riddleSuccessImagePlaceholder}
+                      value={riddleSuccessImageUrl}
+                      onChange={(e) => setRiddleSuccessImageUrl(e.target.value)}
+                    />
+                  </InlineRow>
+                  {riddleSuccessImageUrl.trim() && (
+                    <img
+                      src={riddleSuccessImageUrl.trim()}
+                      alt=""
+                      style={{ maxWidth: 240, maxHeight: 160, objectFit: 'contain', borderRadius: 8, border: '1px solid #eee' }}
+                    />
+                  )}
                 </VerticalStack>
               )}
               {/* Avatar config */}
