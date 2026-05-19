@@ -502,7 +502,7 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
   } else if (exportType === 'scores') {
     sheetName = 'Scores';
     rows = reports.map((r, i) => {
-      const data = r.data as { totalScore?: number; scores?: { gameName: string; score: number }[] };
+      const data = (r.data || {}) as { totalScore?: number; scores?: { gameName: string; score: number }[] };
       const row: Record<string, unknown> = {
         '#': i + 1,
         Name: r.participantName,
@@ -513,7 +513,7 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
       };
       // Add per-game columns
       (data.scores || []).forEach((s, j) => {
-        row[`Game ${j + 1}: ${s.gameName}`] = s.score;
+        row[`Game ${j + 1}: ${s.gameName ?? ''}`] = s?.score ?? 0;
       });
       return row;
     });
