@@ -40,6 +40,8 @@ export default function ThemedBackground({ theme, customTheme, children }: Theme
       return <DesertBackground>{children}</DesertBackground>;
     case 'office':
       return <OfficeBackground>{children}</OfficeBackground>;
+    case 'ganei-yehoshua':
+      return <NatureBackground showClouds={false} showStaticTrees={false}>{children}</NatureBackground>;
     default:
       return <NatureBackground>{children}</NatureBackground>;
   }

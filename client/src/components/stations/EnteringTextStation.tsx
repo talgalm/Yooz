@@ -77,38 +77,6 @@ const Card = styled('div')({
   position: 'relative',
 });
 
-const HintIconButton = styled('button')({
-  position: 'absolute',
-  top: 14,
-  right: 14,
-  width: 32,
-  height: 32,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: '#fff',
-  border: '2px solid #333',
-  borderRadius: '50%',
-  cursor: 'pointer',
-  padding: 0,
-  boxShadow: '0 2px 0 #333',
-  zIndex: 2,
-  '&:active': {
-    transform: 'translateY(2px)',
-    boxShadow: '0 0 0 #333',
-  },
-  '&:disabled': {
-    opacity: 0.5,
-    cursor: 'not-allowed',
-  },
-});
-
-// Second hint (solution) icon — sits just to the left of the regular hint icon.
-const SolutionHintIconButton = styled(HintIconButton)({
-  right: 56,
-  background: '#fef3c7',
-});
-
 const ConfirmModalActions = styled('div')({
   display: 'flex',
   gap: 10,
@@ -143,11 +111,14 @@ const ConfirmModalPrimary = styled('button')({
 });
 
 const Title = styled('h2')({
-  margin: '0 0 22px',
-  fontSize: 44,
+  margin: '0 0 16px',
+  fontSize: 26,
   fontWeight: 800,
-  color: '#111',
+  color: '#fff',
+  WebkitTextStroke: '1.5px #000',
+  paintOrder: 'stroke fill',
   textAlign: 'center',
+  paddingTop: 8,
 });
 
 const FieldWrap = styled('div')({
@@ -201,16 +172,6 @@ const Row = styled('div')({
 const PrimaryActionButton = styled(StationContinueButton)({
   width: '100%',
   maxWidth: 280,
-  fontSize: 18,
-  padding: '14px 24px',
-  border: '3px solid #000',
-  boxShadow: '0 3px 0 #000',
-  color: '#111',
-  background: '#fff',
-  '&:active': {
-    transform: 'translateY(3px)',
-    boxShadow: '0 0 0 #000',
-  },
 });
 
 const SecondaryActionButton = styled(StationContinueButton)({
@@ -228,15 +189,65 @@ const SecondaryActionButton = styled(StationContinueButton)({
   },
 });
 
-const AttemptsRow = styled('div')({
+const BelowCardRow = styled('div')({
+  width: '100%',
+  maxWidth: 330,
+  marginTop: 14,
+  display: 'flex',
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  direction: 'rtl',
+});
+
+const BelowAttemptsRow = styled('div')({
   display: 'flex',
   alignItems: 'center',
   gap: 5,
   fontSize: 14,
-  color: '#555',
-  marginBottom: 18,
-  justifyContent: 'flex-start',
+  color: '#fff',
   direction: 'ltr',
+});
+
+const SmallHintButton = styled('button')({
+  padding: '6px 18px',
+  fontSize: 13,
+  fontWeight: 700,
+  color: '#fff',
+  background: '#6c5ce7',
+  border: '2px solid #5143c6',
+  borderRadius: 8,
+  cursor: 'pointer',
+  boxShadow: '0 2px 0 #5143c6',
+  fontFamily: 'inherit',
+  '&:active': {
+    background: '#5b4ed6',
+    boxShadow: '0 1px 0 #5143c6',
+    transform: 'translateY(1px)',
+  },
+  '&:disabled': {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+  },
+});
+
+const SolutionHintTextButton = styled(SmallHintButton)({
+  background: '#fef3c7',
+  color: '#7a4d00',
+  border: '2px solid #b88300',
+  boxShadow: '0 2px 0 #b88300',
+  '&:active': {
+    background: '#fde9a0',
+    boxShadow: '0 1px 0 #b88300',
+    transform: 'translateY(1px)',
+  },
+});
+
+const HintGroup = styled('div')({
+  display: 'flex',
+  gap: 8,
+  alignItems: 'center',
 });
 
 const AttemptDot = styled('div')<{ used: string }>(({ used }) => ({
@@ -333,6 +344,7 @@ interface EnteringTextStationProps {
   retryTitle?: string;
   retryMessage?: string;
   retryButtonLabel?: string;
+  textColor?: string;
 }
 
 export default function EnteringTextStation({
@@ -353,6 +365,7 @@ export default function EnteringTextStation({
   retryTitle,
   retryMessage,
   retryButtonLabel,
+  textColor,
 }: EnteringTextStationProps) {
   const fields = useMemo(() => {
     const raw = station.settings?.fields;
@@ -561,46 +574,11 @@ export default function EnteringTextStation({
     }
   };
 
+  const showBackButton = station.settings?.showBackButton !== false;
   return (
     <Wrap>
-      <Title>{title}</Title>
+      <Title style={textColor ? { color: textColor } : undefined}>{title}</Title>
       <Card>
-        {stationHintText && onStationHintClick && (
-          <HintIconButton
-            type="button"
-            onClick={onStationHintClick}
-            aria-label={hintLabel || 'רמז'}
-            title={hintLabel || 'רמז'}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stationHintUsed ? '#7c4dff' : '#333'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 18h6" />
-              <path d="M10 22h4" />
-              <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z" />
-            </svg>
-          </HintIconButton>
-        )}
-        {showSolutionHintIcon && (
-          <SolutionHintIconButton
-            type="button"
-            onClick={handleSolutionHintClick}
-            aria-label={solutionHintLabel || 'הצג פתרון'}
-            title={solutionHintLabel || 'הצג פתרון'}
-          >
-            {/* Key icon = "unlock the solution" */}
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b88300" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="8" cy="15" r="4" />
-              <path d="M10.85 12.15 19 4" />
-              <path d="M18 5l3 3" />
-              <path d="M15 8l3 3" />
-            </svg>
-          </SolutionHintIconButton>
-        )}
-        <AttemptsRow>
-          {[...Array(maxAttempts)].map((_, i) => (
-            <AttemptDot key={i} used={String(i < attempts)} />
-          ))}
-          <span style={{ direction: 'rtl', unicodeBidi: 'isolate' }}>נסיונות:</span>
-        </AttemptsRow>
         {fields.map((field, index) => (
           <FieldWrap key={index}>
             <Statement>{field.statement || `Field ${index + 1}`}</Statement>
@@ -617,6 +595,35 @@ export default function EnteringTextStation({
         ))}
         {error && <ErrorText>{error}</ErrorText>}
       </Card>
+      <BelowCardRow>
+        <BelowAttemptsRow style={textColor ? { color: textColor } : undefined}>
+          {[...Array(maxAttempts)].map((_, i) => (
+            <AttemptDot key={i} used={String(i < attempts)} />
+          ))}
+          <span style={{ direction: 'rtl', unicodeBidi: 'isolate' }}>נסיונות:</span>
+        </BelowAttemptsRow>
+        <HintGroup>
+          {showSolutionHintIcon && (
+            <SolutionHintTextButton
+              type="button"
+              onClick={handleSolutionHintClick}
+              aria-label={solutionHintLabel || 'הצג פתרון'}
+              title={solutionHintLabel || 'הצג פתרון'}
+            >
+              {solutionHintLabel || 'הצג פתרון'}
+            </SolutionHintTextButton>
+          )}
+          {stationHintText && onStationHintClick && (
+            <SmallHintButton
+              type="button"
+              onClick={onStationHintClick}
+              aria-label={hintLabel || 'רמז'}
+            >
+              {hintLabel || 'רמז'}
+            </SmallHintButton>
+          )}
+        </HintGroup>
+      </BelowCardRow>
       <Row>
         <PrimaryActionButton
           type="button"
@@ -625,12 +632,14 @@ export default function EnteringTextStation({
         >
           {loading ? `בודק${'.'.repeat(loadingDots)}` : submitButtonText}
         </PrimaryActionButton>
-        <SecondaryActionButton
-          type="button"
-          onClick={handleBack}
-        >
-          {returnButtonText}
-        </SecondaryActionButton>
+        {showBackButton && (
+          <SecondaryActionButton
+            type="button"
+            onClick={handleBack}
+          >
+            {returnButtonText}
+          </SecondaryActionButton>
+        )}
       </Row>
       {showSuccess && (
         <>

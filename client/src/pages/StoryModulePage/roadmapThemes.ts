@@ -26,6 +26,7 @@ export interface RoadmapThemeKit {
   showHouses: boolean;
   showSideWaves: boolean;
   showAirplane?: boolean;
+  showBalloon?: boolean;
   showGridPattern?: boolean;
   gridLineColor?: string;
   gridSize?: number;
@@ -61,6 +62,15 @@ export const NATURE_THEME: RoadmapThemeKit = {
   showHouses: true,
   showSideWaves: true,
   decorationCategories: ['Trees', 'Bushes', 'Grass', 'Rocks', 'Water', 'Clouds', 'Shadows'],
+};
+
+// ─── Ganei Yehoshua (nature + balloons, no clouds/houses) ───
+
+export const GANEI_YEHOSHUA_THEME: RoadmapThemeKit = {
+  ...NATURE_THEME,
+  showClouds: false,
+  showHouses: false,
+  showBalloon: true,
 };
 
 // ─── Ocean ───
@@ -159,10 +169,11 @@ export const OFFICE_THEME: RoadmapThemeKit = {
 
 export function getThemeKit(theme?: string): RoadmapThemeKit {
   switch (theme) {
-    case 'ocean':  return OCEAN_THEME;
-    case 'desert': return DESERT_THEME;
-    case 'office': return OFFICE_THEME;
-    default:       return NATURE_THEME;
+    case 'ocean':          return OCEAN_THEME;
+    case 'desert':         return DESERT_THEME;
+    case 'office':         return OFFICE_THEME;
+    case 'ganei-yehoshua': return GANEI_YEHOSHUA_THEME;
+    default:               return NATURE_THEME;
   }
 }
 

@@ -401,6 +401,7 @@ export default function PlayingPhase({
             retryTitle={t.enteringTextRetryTitle}
             retryMessage={t.enteringTextRetryMessage}
             retryButtonLabel={t.enteringTextRetryButton}
+            textColor={customTheme?.textColor}
           />
         );
       }

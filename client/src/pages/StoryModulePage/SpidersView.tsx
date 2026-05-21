@@ -114,6 +114,15 @@ const cloudDrift = keyframes`
   0%   { transform: translateX(-140px); }
   100% { transform: translateX(calc(100vw + 140px)); }
 `;
+const balloonFly = keyframes`
+  0%   { transform: translateX(-180px); }
+  100% { transform: translateX(calc(100vw + 180px)); }
+`;
+const balloonWobble = keyframes`
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%       { transform: translateY(-10px) rotate(-1.5deg); }
+  75%       { transform: translateY(10px) rotate(1.5deg); }
+`;
 const tumbleweedDrift = keyframes`
   0%   { transform: translateX(-100px); }
   100% { transform: translateX(calc(100vw + 100px)); }
@@ -365,6 +374,25 @@ const FishWobbleWrap = styled('div')<{ wobbleDuration: number }>(({ wobbleDurati
   animation: `${fishWobble} ${wobbleDuration}s ease-in-out infinite`,
 }));
 
+const BalloonOuter = styled('div')<{ duration: number; top: number }>(({ duration, top }) => ({
+  position: 'fixed',
+  left: 0,
+  top,
+  pointerEvents: 'none',
+  userSelect: 'none',
+  zIndex: 50,
+  animation: `${balloonFly} ${duration}s linear forwards`,
+}));
+
+const BalloonWobbleWrap = styled('div')<{ wobbleDuration: number }>(({ wobbleDuration }) => ({
+  animation: `${balloonWobble} ${wobbleDuration}s ease-in-out infinite`,
+}));
+
+const BalloonImg = styled('img')({
+  display: 'block',
+  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,.18))',
+});
+
 const TumbleweedOuter = styled('div')<{ duration: number; top: number }>(({ duration, top }) => ({
   position: 'fixed',
   left: 0,
@@ -499,6 +527,9 @@ export default function SpidersView({
   const themedDecorations = useMemo(() => {
     if (theme === 'ocean') return OCEAN_DECORATIONS;
     if (theme === 'desert') return DESERT_DECORATIONS;
+    if (theme === 'ganei-yehoshua') {
+      return ROADMAP_DECORATIONS.filter((d) => d.category !== 'Bushes');
+    }
     return ROADMAP_DECORATIONS;
   }, [theme]);
 
@@ -537,7 +568,7 @@ export default function SpidersView({
     const pool = [...primary, ...others];
     if (!pool.length) return [];
 
-    const wantedCount = Math.min(items.length * 6 + 18, 55);
+    const wantedCount = theme === 'ganei-yehoshua' ? 24 : Math.min(items.length * 6 + 18, 55);
     const placements: Array<{
       svg: string; category: string;
       left: number; top: number; width: number; height: number; flipX: boolean;
@@ -559,7 +590,7 @@ export default function SpidersView({
       forbidden.push(rect);
     }
     return placements;
-  }, [canvasSize, positions, seed, themedDecorations, kit, items.length, customTheme]);
+  }, [canvasSize, positions, seed, themedDecorations, kit, items.length, customTheme, theme]);
 
   // ─── Wave placements — exactly 1 left edge, 1 right edge ───
   const wavePlacements = useMemo(() => {
@@ -628,6 +659,36 @@ export default function SpidersView({
     return () => clearInterval(interval);
   }, [kit.showClouds, customTheme]);
 
+  // ─── Drifting balloons (ganei-yehoshua) ───
+  const [balloons, setBalloons] = useState<Array<{
+    id: number; top: number; duration: number;
+    wobbleDuration: number; size: number;
+  }>>([]);
+  const balloonIdRef = useRef(0);
+
+  useEffect(() => {
+    if (!kit.showBalloon || customTheme) { setBalloons([]); return; }
+    const vh = window.innerHeight || 600;
+    const interval = setInterval(() => {
+      setBalloons((prev) => {
+        if (prev.length >= 1) return prev;
+        balloonIdRef.current += 1;
+        const newBalloon = {
+          id: balloonIdRef.current,
+          top: 40 + Math.random() * Math.min(vh * 0.45, 320),
+          duration: 14 + Math.random() * 8,
+          wobbleDuration: 2.2 + Math.random() * 1.4,
+          size: 60 + Math.random() * 36,
+        };
+        setTimeout(() => {
+          setBalloons((cur) => cur.filter((b) => b.id !== newBalloon.id));
+        }, (newBalloon.duration + 1) * 1000);
+        return [...prev, newBalloon];
+      });
+    }, 5200);
+    return () => clearInterval(interval);
+  }, [kit.showBalloon, customTheme]);
+
   // ─── Animated tumbleweeds ───
   const [tumbleweeds, setTumbleweeds] = useState<Array<{
     id: number; top: number; duration: number;
@@ -694,6 +755,40 @@ export default function SpidersView({
             <SceneBackground width={canvasW} height={canvasH} kit={kit} />
           )}
 
+          {/* Ganei Yehoshua scenery (ropes park + lake, behind everything) */}
+          {!customTheme && theme === 'ganei-yehoshua' && canvasW > 0 && (() => {
+            const ropesW = Math.min(canvasW * 0.42, 200);
+            const ropesH = ropesW * (500 / 680);
+            const lakeW = Math.min(canvasW * 0.5, 220);
+            const lakeH = lakeW * (320 / 680);
+            const ropesTop = 30;
+            const lakeTop = Math.min(canvasH * 0.4, canvasH - lakeH - 60);
+            return (
+              <>
+                <img
+                  src="/images/ganei-yehoshua-ropes.svg"
+                  alt=""
+                  aria-hidden
+                  style={{
+                    position: 'absolute', pointerEvents: 'none', userSelect: 'none',
+                    zIndex: 1, opacity: 0.9,
+                    left: canvasW * 0.28, top: ropesTop, width: ropesW, height: ropesH,
+                  }}
+                />
+                <img
+                  src="/images/ganei-yehoshua-lake.svg"
+                  alt=""
+                  aria-hidden
+                  style={{
+                    position: 'absolute', pointerEvents: 'none', userSelect: 'none',
+                    zIndex: 1, opacity: 0.9,
+                    left: canvasW - lakeW - 8, top: lakeTop, width: lakeW, height: lakeH,
+                  }}
+                />
+              </>
+            );
+          })()}
+
           {/* Static tree / decoration elements */}
           {treePlacements.map((p, i) => (
             <TreeDecoration
@@ -712,6 +807,40 @@ export default function SpidersView({
               dangerouslySetInnerHTML={{ __html: p.svg }}
             />
           ))}
+
+          {/* Ganei Yehoshua fixed trees (top + bottom edges) */}
+          {!customTheme && theme === 'ganei-yehoshua' && canvasW > 0 && (() => {
+            const tree = ROADMAP_DECORATIONS.find((d) => d.name === 'Tall dark green tree');
+            if (!tree) return null;
+            const baseW = 52;
+            const baseH = baseW * (tree.viewBoxHeight / tree.viewBoxWidth);
+            const topY = 55;
+            const bottomY = canvasH - 25;
+            const placements = [
+              { left: canvasW * 0.08, top: topY, width: baseW, height: baseH, flipX: false },
+              { left: canvasW * 0.5, top: topY + 8, width: baseW * 0.9, height: baseH * 0.9, flipX: true },
+              { left: canvasW * 0.92, top: topY, width: baseW, height: baseH, flipX: true },
+              { left: canvasW * 0.08, top: bottomY, width: baseW, height: baseH, flipX: true },
+              { left: canvasW * 0.5, top: bottomY - 8, width: baseW * 0.9, height: baseH * 0.9, flipX: false },
+              { left: canvasW * 0.92, top: bottomY, width: baseW, height: baseH, flipX: false },
+            ];
+            return placements.map((p, i) => (
+              <TreeDecoration
+                key={`ganei-tree-${i}`}
+                aria-hidden
+                style={{
+                  left: p.left,
+                  top: p.top,
+                  width: p.width,
+                  height: p.height,
+                  zIndex: 4,
+                  transform: p.flipX ? 'translate(-50%, -100%) scaleX(-1)' : 'translate(-50%, -100%)',
+                  transformOrigin: 'center bottom',
+                }}
+                dangerouslySetInnerHTML={{ __html: tree.svg }}
+              />
+            ));
+          })()}
 
           {/* Side wave decorations — 1 left, 1 right */}
           {wavePlacements.map((w, i) => (
@@ -807,6 +936,20 @@ export default function SpidersView({
             <SwimmingFishSvg size={f.size} palette={f.palette} />
           </FishWobbleWrap>
         </FishOuter>
+      ))}
+
+      {/* Drifting balloons (ganei-yehoshua) — fixed, outside scroll */}
+      {kit.showBalloon && !customTheme && balloons.map((b) => (
+        <BalloonOuter key={`balloon-${b.id}`} duration={b.duration} top={b.top}>
+          <BalloonWobbleWrap wobbleDuration={b.wobbleDuration}>
+            <BalloonImg
+              src="/images/baloon.svg"
+              alt=""
+              aria-hidden
+              style={{ width: b.size, height: b.size * (1000 / 600) }}
+            />
+          </BalloonWobbleWrap>
+        </BalloonOuter>
       ))}
 
       {/* Tumbleweeds (desert) — fixed, outside scroll */}

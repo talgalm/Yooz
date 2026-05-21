@@ -766,6 +766,9 @@ export default function AdminCreateActivityPage() {
                             <ThemeBtn type="button" selected={moduleTheme === 'office'} onClick={() => setModuleTheme('office')}>
                               {t.themeOffice}
                             </ThemeBtn>
+                            <ThemeBtn type="button" selected={moduleTheme === 'ganei-yehoshua'} onClick={() => setModuleTheme('ganei-yehoshua')}>
+                              {t.themeGaneiYehoshua}
+                            </ThemeBtn>
                             {customThemes.map((ct) => (
                               <CustomThemeCard
                                 key={ct._id}

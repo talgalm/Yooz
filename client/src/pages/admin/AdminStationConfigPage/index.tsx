@@ -192,6 +192,7 @@ export default function AdminStationConfigPage() {
   const [enteringTextSuccessMediaUrl, setEnteringTextSuccessMediaUrl] = useState('');
   const [enteringTextLastStep, setEnteringTextLastStep] = useState(false);
   const [enteringTextSolutionHintEnabled, setEnteringTextSolutionHintEnabled] = useState(false);
+  const [enteringTextShowBackButton, setEnteringTextShowBackButton] = useState(true);
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -291,6 +292,7 @@ export default function AdminStationConfigPage() {
             const sh = settings.solutionHint as Record<string, unknown>;
             setEnteringTextSolutionHintEnabled(!!sh.enabled);
           }
+          setEnteringTextShowBackButton(settings.showBackButton !== false);
         }
         setInitialLoading(false);
       })
@@ -501,6 +503,7 @@ export default function AdminStationConfigPage() {
         if (enteringTextSolutionHintEnabled) {
           settings.solutionHint = { enabled: true };
         }
+        settings.showBackButton = enteringTextShowBackButton;
       }
 
       const payload = {
@@ -1566,6 +1569,21 @@ export default function AdminStationConfigPage() {
                         />
                       </InlineRow>
                     )}
+                  </div>
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: 8, paddingTop: 16 }}>
+                    <HintToggleRow>
+                      <SectionLabelNoMargin>{t.enteringTextShowBackButton}</SectionLabelNoMargin>
+                      <ToggleButton
+                        type="button"
+                        selected={enteringTextShowBackButton}
+                        onClick={() => setEnteringTextShowBackButton((v) => !v)}
+                      >
+                        {enteringTextShowBackButton ? 'ON' : 'OFF'}
+                      </ToggleButton>
+                    </HintToggleRow>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 6 }}>
+                      {t.enteringTextShowBackButtonHelper}
+                    </div>
                   </div>
                   <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: 8, paddingTop: 16 }}>
                     <HintToggleRow>

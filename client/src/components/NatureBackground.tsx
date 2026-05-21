@@ -29,7 +29,7 @@ const ContentLayer = styled('div')({
 
 // ─── Scene SVG (matching roadmap SceneBackground exactly) ───
 
-function SceneSvg({ W, H }: { W: number; H: number }) {
+function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: number; H: number; showClouds?: boolean; showStaticTrees?: boolean }) {
   const B = H - BOTTOM_ZONE;
 
   return (
@@ -57,16 +57,20 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
       <rect x="0" y={SKY_TOP - 30} width={W} height={H - SKY_TOP + 30} fill="#9cd060" />
 
       {/* ── Clouds ── */}
-      <g opacity="0.85">
-        <ellipse cx={W * 0.23} cy={55} rx={28} ry={12} fill="#fff" />
-        <ellipse cx={W * 0.17} cy={55} rx={18} ry={10} fill="#fff" />
-        <ellipse cx={W * 0.30} cy={55} rx={18} ry={10} fill="#fff" />
-      </g>
-      <g opacity="0.85">
-        <ellipse cx={W * 0.71} cy={38} rx={22} ry={9} fill="#fff" />
-        <ellipse cx={W * 0.65} cy={38} rx={14} ry={8} fill="#fff" />
-        <ellipse cx={W * 0.77} cy={38} rx={14} ry={8} fill="#fff" />
-      </g>
+      {showClouds && (
+        <>
+          <g opacity="0.85">
+            <ellipse cx={W * 0.23} cy={55} rx={28} ry={12} fill="#fff" />
+            <ellipse cx={W * 0.17} cy={55} rx={18} ry={10} fill="#fff" />
+            <ellipse cx={W * 0.30} cy={55} rx={18} ry={10} fill="#fff" />
+          </g>
+          <g opacity="0.85">
+            <ellipse cx={W * 0.71} cy={38} rx={22} ry={9} fill="#fff" />
+            <ellipse cx={W * 0.65} cy={38} rx={14} ry={8} fill="#fff" />
+            <ellipse cx={W * 0.77} cy={38} rx={14} ry={8} fill="#fff" />
+          </g>
+        </>
+      )}
 
       {/* ── Back hill (far) ── */}
       <ellipse cx={W * 0.5} cy={160} rx={W * 0.85} ry={100} fill="#8ecf72" />
@@ -79,65 +83,68 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
       <ellipse cx={W * 0.5} cy={SKY_TOP + 30} rx={W * 0.77} ry={40} fill="#5aaa48" />
 
       {/* ── Trees on the hills ── */}
+      {showStaticTrees && (
+        <>
+          {/* BIG RED round tree — left */}
+          <g transform={`translate(${W * 0.05}, 84)`} filter="url(#nbTreeShadow)">
+            <rect x="13" y="54" width="10" height="18" rx="4" fill="#7a4a28" />
+            <ellipse cx="18" cy="62" rx="20" ry="6" fill="#00000015" />
+            <circle cx="18" cy="44" r="22" fill="#cc5a4a" />
+            <circle cx="18" cy="34" r="18" fill="#dd6655" />
+            <circle cx="18" cy="24" r="13" fill="#e87060" />
+            <circle cx="11" cy="18" r="5" fill="#f09080" opacity="0.6" />
+          </g>
 
-      {/* BIG RED round tree — left */}
-      <g transform={`translate(${W * 0.05}, 84)`} filter="url(#nbTreeShadow)">
-        <rect x="13" y="54" width="10" height="18" rx="4" fill="#7a4a28" />
-        <ellipse cx="18" cy="62" rx="20" ry="6" fill="#00000015" />
-        <circle cx="18" cy="44" r="22" fill="#cc5a4a" />
-        <circle cx="18" cy="34" r="18" fill="#dd6655" />
-        <circle cx="18" cy="24" r="13" fill="#e87060" />
-        <circle cx="11" cy="18" r="5" fill="#f09080" opacity="0.6" />
-      </g>
+          {/* TALL ORANGE round tree */}
+          <g transform={`translate(${W * 0.16}, 106)`} filter="url(#nbTreeShadow)">
+            <rect x="10" y="46" width="8" height="16" rx="3" fill="#7a4a28" />
+            <ellipse cx="14" cy="52" rx="16" ry="5" fill="#00000012" />
+            <circle cx="14" cy="36" r="18" fill="#c07828" />
+            <circle cx="14" cy="26" r="14" fill="#d48a34" />
+            <circle cx="14" cy="18" r="10" fill="#e09a40" />
+            <circle cx="9" cy="13" r="4" fill="#f0b858" opacity="0.55" />
+          </g>
 
-      {/* TALL ORANGE round tree */}
-      <g transform={`translate(${W * 0.16}, 106)`} filter="url(#nbTreeShadow)">
-        <rect x="10" y="46" width="8" height="16" rx="3" fill="#7a4a28" />
-        <ellipse cx="14" cy="52" rx="16" ry="5" fill="#00000012" />
-        <circle cx="14" cy="36" r="18" fill="#c07828" />
-        <circle cx="14" cy="26" r="14" fill="#d48a34" />
-        <circle cx="14" cy="18" r="10" fill="#e09a40" />
-        <circle cx="9" cy="13" r="4" fill="#f0b858" opacity="0.55" />
-      </g>
+          {/* SMALL ORANGE round tree */}
+          <g transform={`translate(${W * 0.02}, 120)`} filter="url(#nbTreeShadow)">
+            <rect x="8" y="36" width="7" height="13" rx="3" fill="#7a4a28" />
+            <circle cx="11" cy="28" r="14" fill="#b87030" />
+            <circle cx="11" cy="20" r="10" fill="#cc8238" />
+            <circle cx="11" cy="13" r="7" fill="#de9240" />
+            <circle cx="7" cy="10" r="3" fill="#eea850" opacity="0.5" />
+          </g>
 
-      {/* SMALL ORANGE round tree */}
-      <g transform={`translate(${W * 0.02}, 120)`} filter="url(#nbTreeShadow)">
-        <rect x="8" y="36" width="7" height="13" rx="3" fill="#7a4a28" />
-        <circle cx="11" cy="28" r="14" fill="#b87030" />
-        <circle cx="11" cy="20" r="10" fill="#cc8238" />
-        <circle cx="11" cy="13" r="7" fill="#de9240" />
-        <circle cx="7" cy="10" r="3" fill="#eea850" opacity="0.5" />
-      </g>
+          {/* TALL PINE — right */}
+          <g transform={`translate(${W * 0.76}, 60)`} filter="url(#nbTreeShadow)">
+            <rect x="11" y="72" width="8" height="16" rx="3" fill="#6a4020" />
+            <polygon points="15,72 -4,52 34,52" fill="#2d7a35" />
+            <polygon points="15,58 0,40 30,40" fill="#358c3e" />
+            <polygon points="15,44 3,28 27,28" fill="#3d9e47" />
+            <polygon points="15,32 6,18 24,18" fill="#45b050" />
+            <polygon points="15,22 9,10 21,10" fill="#50c05a" />
+            <polygon points="15,10 11,2 19,2" fill="#5ad064" />
+          </g>
 
-      {/* TALL PINE — right */}
-      <g transform={`translate(${W * 0.76}, 60)`} filter="url(#nbTreeShadow)">
-        <rect x="11" y="72" width="8" height="16" rx="3" fill="#6a4020" />
-        <polygon points="15,72 -4,52 34,52" fill="#2d7a35" />
-        <polygon points="15,58 0,40 30,40" fill="#358c3e" />
-        <polygon points="15,44 3,28 27,28" fill="#3d9e47" />
-        <polygon points="15,32 6,18 24,18" fill="#45b050" />
-        <polygon points="15,22 9,10 21,10" fill="#50c05a" />
-        <polygon points="15,10 11,2 19,2" fill="#5ad064" />
-      </g>
+          {/* MEDIUM ROUND GREEN — right */}
+          <g transform={`translate(${W * 0.84}, 78)`} filter="url(#nbTreeShadowSm)">
+            <rect x="11" y="44" width="8" height="14" rx="3" fill="#6a4020" />
+            <ellipse cx="15" cy="50" rx="15" ry="4" fill="#00000010" />
+            <circle cx="15" cy="34" r="17" fill="#2a7030" />
+            <circle cx="15" cy="24" r="13" fill="#348040" />
+            <circle cx="15" cy="16" r="9" fill="#3d9050" />
+            <circle cx="10" cy="11" r="4" fill="#58b068" opacity="0.55" />
+          </g>
 
-      {/* MEDIUM ROUND GREEN — right */}
-      <g transform={`translate(${W * 0.84}, 78)`} filter="url(#nbTreeShadowSm)">
-        <rect x="11" y="44" width="8" height="14" rx="3" fill="#6a4020" />
-        <ellipse cx="15" cy="50" rx="15" ry="4" fill="#00000010" />
-        <circle cx="15" cy="34" r="17" fill="#2a7030" />
-        <circle cx="15" cy="24" r="13" fill="#348040" />
-        <circle cx="15" cy="16" r="9" fill="#3d9050" />
-        <circle cx="10" cy="11" r="4" fill="#58b068" opacity="0.55" />
-      </g>
-
-      {/* SMALL ROUND GREEN — far right */}
-      <g transform={`translate(${W * 0.93}, 94)`} filter="url(#nbTreeShadowSm)">
-        <rect x="9" y="36" width="6" height="12" rx="2" fill="#6a4020" />
-        <circle cx="12" cy="28" r="13" fill="#3a8844" />
-        <circle cx="12" cy="20" r="9" fill="#48a054" />
-        <circle cx="12" cy="14" r="6" fill="#55b562" />
-        <circle cx="8" cy="10" r="3" fill="#70cc80" opacity="0.5" />
-      </g>
+          {/* SMALL ROUND GREEN — far right */}
+          <g transform={`translate(${W * 0.93}, 94)`} filter="url(#nbTreeShadowSm)">
+            <rect x="9" y="36" width="6" height="12" rx="2" fill="#6a4020" />
+            <circle cx="12" cy="28" r="13" fill="#3a8844" />
+            <circle cx="12" cy="20" r="9" fill="#48a054" />
+            <circle cx="12" cy="14" r="6" fill="#55b562" />
+            <circle cx="8" cy="10" r="3" fill="#70cc80" opacity="0.5" />
+          </g>
+        </>
+      )}
 
       {/* ── Flowers on hillside ── */}
       <circle cx={W * 0.58} cy={130} r="3" fill="#ff9090" />
@@ -304,9 +311,11 @@ function WorldDecorations({ W, H }: { W: number; H: number }) {
 
 interface NatureBackgroundProps {
   children: React.ReactNode;
+  showClouds?: boolean;
+  showStaticTrees?: boolean;
 }
 
-export default function NatureBackground({ children }: NatureBackgroundProps) {
+export default function NatureBackground({ children, showClouds = true, showStaticTrees = true }: NatureBackgroundProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [dims, setDims] = useState({ w: 0, h: 0 });
   const [sceneOverlay, setSceneOverlay] = useState<React.ReactNode | null>(null);
@@ -324,8 +333,8 @@ export default function NatureBackground({ children }: NatureBackgroundProps) {
   }, []);
 
   const scene = useMemo(
-    () => dims.w > 0 && dims.h > 0 ? <SceneSvg W={dims.w} H={dims.h} /> : null,
-    [dims.w, dims.h],
+    () => dims.w > 0 && dims.h > 0 ? <SceneSvg W={dims.w} H={dims.h} showClouds={showClouds} showStaticTrees={showStaticTrees} /> : null,
+    [dims.w, dims.h, showClouds, showStaticTrees],
   );
 
   const decos = useMemo(

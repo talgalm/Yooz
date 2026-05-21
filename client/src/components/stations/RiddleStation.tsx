@@ -98,6 +98,48 @@ const MediaWrapper = styled('div')({
   flexShrink: 0,
 });
 
+const ImageFullscreenOverlay = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0,0,0,0.92)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 2000,
+  cursor: 'zoom-out',
+  padding: 16,
+});
+
+const ImageFullscreenImg = styled('img')({
+  maxWidth: '100%',
+  maxHeight: '100%',
+  objectFit: 'contain',
+  borderRadius: 8,
+  cursor: 'default',
+});
+
+const ImageFullscreenClose = styled('button')({
+  position: 'absolute',
+  top: 16,
+  right: 16,
+  width: 44,
+  height: 44,
+  borderRadius: '50%',
+  border: 'none',
+  background: 'rgba(255,255,255,0.15)',
+  color: '#fff',
+  fontSize: 28,
+  lineHeight: 1,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 1,
+  '&:hover': {
+    background: 'rgba(255,255,255,0.25)',
+  },
+});
+
 const BoxesArea = styled('div')<{ isrtl: string }>(({ isrtl }) => ({
   display: 'flex',
   flexDirection: 'row',
@@ -285,6 +327,7 @@ export default function RiddleStation({
   hintLabel,
   textColor,
 }: RiddleStationProps) {
+  const [imageFullscreen, setImageFullscreen] = useState(false);
   const settings = (station.settings || {}) as RiddleSettings;
   const clue = settings.clue || '';
   const answer = settings.answer || '';
@@ -327,6 +370,16 @@ export default function RiddleStation({
     const t = setTimeout(() => inputRefs.current[0]?.focus(), 120);
     return () => clearTimeout(t);
   }, []);
+
+  // Close fullscreen image on Escape
+  useEffect(() => {
+    if (!imageFullscreen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setImageFullscreen(false);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [imageFullscreen]);
 
   const handleCheck = useCallback(() => {
     if (phase !== 'playing') return;
@@ -411,7 +464,13 @@ export default function RiddleStation({
 
         {settings.mediaUrl && settings.mediaType === 'image' && (
           <MediaWrapper>
-            <img src={settings.mediaUrl} alt="" style={{ width: '100%', display: 'block', maxHeight: 260, objectFit: 'cover' }} />
+            <img
+              src={settings.mediaUrl}
+              alt=""
+              style={{ width: '100%', display: 'block', maxHeight: 260, objectFit: 'contain', cursor: 'zoom-in' }}
+              onClick={() => setImageFullscreen(true)}
+              onTouchStart={(e) => { if (e.touches.length >= 2) setImageFullscreen(true); }}
+            />
           </MediaWrapper>
         )}
 
@@ -482,6 +541,19 @@ export default function RiddleStation({
           </ScoreBadge>
         ) : null}
       </Container>
+
+      {imageFullscreen && settings.mediaUrl && settings.mediaType === 'image' && (
+        <ImageFullscreenOverlay onClick={() => setImageFullscreen(false)} role="dialog" aria-modal="true">
+          <ImageFullscreenClose
+            type="button"
+            aria-label="Close"
+            onClick={(e) => { e.stopPropagation(); setImageFullscreen(false); }}
+          >
+            ×
+          </ImageFullscreenClose>
+          <ImageFullscreenImg src={settings.mediaUrl} alt="" onClick={(e) => e.stopPropagation()} />
+        </ImageFullscreenOverlay>
+      )}
 
       {phase !== 'success' && (
         <SubmitButton

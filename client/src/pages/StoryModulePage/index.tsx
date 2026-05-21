@@ -794,8 +794,14 @@ export default function StoryModulePage() {
     };
 
     const completedCount = currentItemIndex + 1;
-    // scores state hasn't updated yet (setScores is async), so compute running total manually
-    const runningTotal = scores.reduce((sum, s) => sum + s.score, 0) + result.score;
+    // scores state hasn't updated yet (setScores is async), so compute running total manually.
+    // Subtract station-level hint penalty so the leaderboard reflects it during the activity
+    // (the final /scores save also includes it as a "Hint Penalty" entry — this keeps the in-progress
+    // leaderboard consistent with what the participant sees in the header).
+    const runningTotal = Math.max(
+      0,
+      scores.reduce((sum, s) => sum + s.score, 0) + result.score - stationHintUsed.size * stationHintPenalty,
+    );
 
     // Save incrementally (fire & forget)
     if (code) {

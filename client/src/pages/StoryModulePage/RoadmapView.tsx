@@ -61,6 +61,15 @@ const fishWobble = keyframes`
   25%      { transform: translateY(-8px) rotate(-2deg); }
   75%      { transform: translateY(8px) rotate(2deg); }
 `;
+const balloonFly = keyframes`
+  0%   { transform: translateX(-180px); }
+  100% { transform: translateX(calc(var(--roadmap-w, 100vw) + 180px)); }
+`;
+const balloonWobble = keyframes`
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%      { transform: translateY(-10px) rotate(-1.5deg); }
+  75%      { transform: translateY(10px) rotate(1.5deg); }
+`;
 const tumbleweedDrift = keyframes`
   0%   { transform: translateX(-100px); }
   100% { transform: translateX(calc(var(--roadmap-w, 100vw) + 100px)); }
@@ -180,6 +189,14 @@ const HouseDecoration = styled('img')({
   opacity: 0.95,
 });
 
+const BackgroundScenery = styled('img')({
+  position: 'absolute',
+  pointerEvents: 'none',
+  userSelect: 'none',
+  zIndex: 1,
+  opacity: 0.9,
+});
+
 const FishOuter = styled('div')<{ duration: number; top: number }>(({ duration, top }) => ({
   position: 'fixed',
   left: 0,
@@ -223,6 +240,34 @@ const PaperAirplaneSvg = ({ size }: { size: number }) => (
 const FishWobbleWrap = styled('div')<{ wobbleDuration: number }>(({ wobbleDuration }) => ({
   animation: `${fishWobble} ${wobbleDuration}s ease-in-out infinite`,
 }));
+
+const BalloonOuter = styled('div')<{ duration: number; top: number }>(({ duration, top }) => ({
+  position: 'fixed',
+  left: 0,
+  top,
+  pointerEvents: 'none',
+  userSelect: 'none',
+  zIndex: 50,
+  animation: `${balloonFly} ${duration}s linear forwards`,
+}));
+
+const BalloonWobbleWrap = styled('div')<{ wobbleDuration: number }>(({ wobbleDuration }) => ({
+  animation: `${balloonWobble} ${wobbleDuration}s ease-in-out infinite`,
+}));
+
+const BalloonSvg = ({ size }: { size: number }) => (
+  <img
+    src="/images/baloon.svg"
+    alt=""
+    aria-hidden
+    style={{
+      display: 'block',
+      width: size,
+      height: size * (1000 / 600),
+      filter: 'drop-shadow(0 4px 8px rgba(0,0,0,.18))',
+    }}
+  />
+);
 
 /** Clips cloud transforms so they don’t widen scroll overflow and shift the roadmap horizontally. */
 const CloudSkyLayer = styled('div')({
@@ -753,6 +798,9 @@ export default function RoadmapView({
     if (theme === 'ocean') return OCEAN_DECORATIONS;
     if (theme === 'desert') return DESERT_DECORATIONS;
     if (kit.decorationCategories.length === 0) return [];
+    if (theme === 'ganei-yehoshua') {
+      return ROADMAP_DECORATIONS.filter((d) => d.category !== 'Bushes');
+    }
     return ROADMAP_DECORATIONS;
   }, [theme, kit.decorationCategories]);
 
@@ -778,8 +826,9 @@ export default function RoadmapView({
     const primaryDecorations = themedDecorations.filter((item) => item.category === primaryCategory && !singletonCategories.has(item.category));
     const otherDecorations = themedDecorations.filter((item) => item.category !== primaryCategory && !singletonCategories.has(item.category));
     const singletonDecorations = themedDecorations.filter((item) => singletonCategories.has(item.category));
-    const wantedPrimaryCount = primaryDecorations.length > 0 ? 30 : 0;
-    const wantedOtherCount = otherDecorations.length > 0 ? 40 : 0;
+    const isGanei = theme === 'ganei-yehoshua';
+    const wantedPrimaryCount = primaryDecorations.length > 0 ? (isGanei ? 18 : 30) : 0;
+    const wantedOtherCount = otherDecorations.length > 0 ? (isGanei ? 24 : 40) : 0;
 
     const forbiddenRects: Rect[] = [];
 
@@ -884,7 +933,7 @@ export default function RoadmapView({
     }
 
     return placements;
-  }, [W, totalHeight, items, numRows, kit, themedDecorations]);
+  }, [W, totalHeight, items, numRows, kit, themedDecorations, theme]);
 
   // ─── House placements (2 small houses anywhere except on the road) ───
   const housePlacements = useMemo(() => {
@@ -930,6 +979,70 @@ export default function RoadmapView({
     }
     return result;
   }, [W, totalHeight, items, numRows]);
+
+  // ─── Ganei Yehoshua fixed trees (extras along top + bottom edges) ───
+  const ganeiYehoshuaFixedTrees = useMemo(() => {
+    if (theme !== 'ganei-yehoshua' || W <= 0 || totalHeight <= 0) {
+      return [] as Array<{ svg: string; left: number; top: number; width: number; height: number; flipX: boolean }>;
+    }
+    const tree = ROADMAP_DECORATIONS.find((d) => d.name === 'Tall dark green tree');
+    if (!tree) return [];
+
+    const baseW = 52;
+    const baseH = baseW * (tree.viewBoxHeight / tree.viewBoxWidth);
+    const trees: Array<{ svg: string; left: number; top: number; width: number; height: number; flipX: boolean }> = [];
+
+    const topY = 55;
+    trees.push({ svg: tree.svg, left: W * 0.08, top: topY, width: baseW, height: baseH, flipX: false });
+    trees.push({ svg: tree.svg, left: W * 0.5, top: topY + 8, width: baseW * 0.9, height: baseH * 0.9, flipX: true });
+    trees.push({ svg: tree.svg, left: W * 0.92, top: topY, width: baseW, height: baseH, flipX: true });
+
+    const bottomY = totalHeight - 25;
+    trees.push({ svg: tree.svg, left: W * 0.08, top: bottomY, width: baseW, height: baseH, flipX: true });
+    trees.push({ svg: tree.svg, left: W * 0.5, top: bottomY - 8, width: baseW * 0.9, height: baseH * 0.9, flipX: false });
+    trees.push({ svg: tree.svg, left: W * 0.92, top: bottomY, width: baseW, height: baseH, flipX: false });
+
+    return trees;
+  }, [theme, W, totalHeight]);
+
+  // ─── Ganei Yehoshua scenery (lake + ropes park, one of each, behind the road) ───
+  const ganeiYehoshuaScenery = useMemo(() => {
+    if (theme !== 'ganei-yehoshua' || W <= 0 || totalHeight <= 0) {
+      return [] as Array<{ src: string; left: number; top: number; width: number; height: number }>;
+    }
+    const ropesW = Math.min(W * 0.42, 200);
+    const ropesH = ropesW * (500 / 680);
+    const lakeW = Math.min(W * 0.5, 220);
+    const lakeH = lakeW * (320 / 680);
+
+    // Ropes course: upper-left triangle between stations 1 and 3, shifted past the left side wave
+    const ropesTop = PADDING_TOP + 15;
+    const ropesLeft = W * 0.28;
+
+    // Lake: between the row-1 and row-2 horizontal paths on the right side
+    // Falls back to bottom of canvas for very short activities (< 4 stations)
+    const hasRow2 = items.length >= 4;
+    const lakeTop = hasRow2
+      ? getRowY(1) + (VERTICAL_SPACING - lakeH) / 2
+      : totalHeight - PADDING_BOTTOM - lakeH - 40;
+
+    return [
+      {
+        src: '/images/ganei-yehoshua-ropes.svg',
+        left: ropesLeft,
+        top: ropesTop,
+        width: ropesW,
+        height: ropesH,
+      },
+      {
+        src: '/images/ganei-yehoshua-lake.svg',
+        left: W - lakeW - 8,
+        top: lakeTop,
+        width: lakeW,
+        height: lakeH,
+      },
+    ];
+  }, [theme, W, totalHeight, items.length]);
 
   // ─── Office item placements (per-station counts, scattered freely incl. over the path) ───
   const officeItemPlacements = useMemo(() => {
@@ -1062,6 +1175,37 @@ export default function RoadmapView({
 
     return () => clearInterval(interval);
   }, [kit.showAirplane]);
+
+  // ─── Animated hot-air balloons (ganei-yehoshua) ───
+  const [balloons, setBalloons] = useState<Array<{
+    id: number; top: number; duration: number;
+    wobbleDuration: number; size: number;
+  }>>([]);
+  const balloonIdRef = useRef(0);
+
+  useEffect(() => {
+    if (!kit.showBalloon) return;
+    const vh = window.innerHeight || 600;
+    const interval = setInterval(() => {
+      setBalloons((prev) => {
+        if (prev.length >= 1) return prev;
+        balloonIdRef.current += 1;
+        const newBalloon = {
+          id: balloonIdRef.current,
+          top: 40 + Math.random() * Math.min(vh * 0.45, 320),
+          duration: 14 + Math.random() * 8,
+          wobbleDuration: 2.2 + Math.random() * 1.4,
+          size: 60 + Math.random() * 36,
+        };
+        setTimeout(() => {
+          setBalloons((cur) => cur.filter((b) => b.id !== newBalloon.id));
+        }, (newBalloon.duration + 1) * 1000);
+        return [...prev, newBalloon];
+      });
+    }, 5200);
+
+    return () => clearInterval(interval);
+  }, [kit.showBalloon]);
 
   // ─── Drifting clouds (nature sky only): straight L→R, quick, max 2 on screen ───
   const [clouds, setClouds] = useState<Array<{ id: number; top: number; duration: number; size: number }>>([]);
@@ -1211,6 +1355,16 @@ export default function RoadmapView({
           {!customTheme?.roadmapImage && <SceneBackground width={W} height={totalHeight} kit={kit} />}
           {!customTheme?.roadmapImage && <WorldDecorations W={W} numRows={numRows} totalH={totalHeight} />}
 
+          {!customTheme?.roadmapImage && ganeiYehoshuaScenery.map((s) => (
+            <BackgroundScenery
+              key={s.src}
+              src={s.src}
+              alt=""
+              aria-hidden
+              style={{ left: s.left, top: s.top, width: s.width, height: s.height }}
+            />
+          ))}
+
           {!kit.hideRoad && (
             <svg style={{ position: 'absolute', top: 0, left: 0, zIndex: 2 }}
               width={W} height={totalHeight} viewBox={`0 0 ${W} ${totalHeight}`}
@@ -1248,6 +1402,23 @@ export default function RoadmapView({
                 transformOrigin: 'center bottom',
               }}
               dangerouslySetInnerHTML={{ __html: placement.svg }}
+            />
+          ))}
+
+          {!customTheme?.roadmapImage && ganeiYehoshuaFixedTrees.map((p, i) => (
+            <TreeDecoration
+              key={`ganei-tree-${i}`}
+              aria-hidden
+              style={{
+                left: p.left,
+                top: p.top,
+                width: p.width,
+                height: p.height,
+                zIndex: 4,
+                transform: p.flipX ? 'translate(-50%, -100%) scaleX(-1)' : 'translate(-50%, -100%)',
+                transformOrigin: 'center bottom',
+              }}
+              dangerouslySetInnerHTML={{ __html: p.svg }}
             />
           ))}
 
@@ -1376,6 +1547,14 @@ export default function RoadmapView({
             <PaperAirplaneSvg size={a.size} />
           </AirplaneWobbleWrap>
         </AirplaneOuter>
+      ))}
+
+      {!customTheme?.roadmapImage && kit.showBalloon && balloons.map((b) => (
+        <BalloonOuter key={`balloon-${b.id}`} duration={b.duration} top={b.top}>
+          <BalloonWobbleWrap wobbleDuration={b.wobbleDuration}>
+            <BalloonSvg size={b.size} />
+          </BalloonWobbleWrap>
+        </BalloonOuter>
       ))}
 
       {!customTheme?.roadmapImage && kit.showTumbleweed && tumbleweeds.map((tw) => (
