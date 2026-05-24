@@ -225,7 +225,13 @@ function runFfmpeg(
     '-map', '[vout]',
     '-map', '0:a?',  // pass through original soundtrack if present
     '-t', String(TEMPLATE_META.duration),
-    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'fast', '-crf', '23',
+    // Memory-constrained prod (t3.small, 2GB). Single-thread the filter graph
+    // and encoder so peak RSS stays well below the PM2 cap. ultrafast preset
+    // uses less memory than 'fast' and the visual quality is acceptable here.
+    '-threads', '1',
+    '-filter_threads', '1',
+    '-filter_complex_threads', '1',
+    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '23',
     '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart',
     outputPath,
@@ -235,9 +241,14 @@ function runFfmpeg(
     const proc = spawn(FFMPEG_BIN, args);
     let stderrBuf = '';
     proc.stderr.on('data', (chunk: Buffer) => { stderrBuf += chunk.toString(); });
-    proc.on('close', (code) => {
+    proc.on('close', (code, signal) => {
       if (code === 0) resolve();
-      else reject(new Error(`ffmpeg exited with code ${code}.\n${stderrBuf.slice(-1500)}`));
+      else {
+        // signal === 'SIGKILL' usually means the OS OOM-killer reaped us.
+        const sigStr = signal ? `, signal ${signal}` : '';
+        console.error(`[collage] ffmpeg failed (code ${code}${sigStr}). stderr tail:\n${stderrBuf.slice(-2000)}`);
+        reject(new Error(`ffmpeg exited with code ${code}${sigStr}.\n${stderrBuf.slice(-1500)}`));
+      }
     });
     proc.on('error', (err) =>
       reject(new Error(`Failed to spawn ffmpeg: ${err.message}. Make sure ffmpeg is installed (brew install ffmpeg).`)),

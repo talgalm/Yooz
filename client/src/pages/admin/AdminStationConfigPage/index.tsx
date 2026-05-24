@@ -150,6 +150,8 @@ export default function AdminStationConfigPage() {
   const [collageMissions, setCollageMissions] = useState<{ title: string; description: string }[]>([
     { title: '', description: '' },
   ]);
+  const [collageMultiSelect, setCollageMultiSelect] = useState(false);
+  const [collageMultiSelectCount, setCollageMultiSelectCount] = useState('6');
   // Feedback station
   const [feedbackTitle, setFeedbackTitle] = useState('');
   const [feedbackIntroText, setFeedbackIntroText] = useState('');
@@ -233,6 +235,10 @@ export default function AdminStationConfigPage() {
           if (settings.logoUrl) setCollageLogoUrl(settings.logoUrl as string);
           if (Array.isArray(settings.missions) && (settings.missions as unknown[]).length > 0) {
             setCollageMissions(settings.missions as { title: string; description: string }[]);
+          }
+          setCollageMultiSelect(!!settings.multiSelect);
+          if (typeof settings.multiSelectCount === 'number') {
+            setCollageMultiSelectCount(String(settings.multiSelectCount));
           }
         }
         if (s.type === 'feedback') {
@@ -338,6 +344,10 @@ export default function AdminStationConfigPage() {
       if (Array.isArray(settings.missions) && (settings.missions as unknown[]).length > 0) {
         setCollageMissions(settings.missions as { title: string; description: string }[]);
       }
+      setCollageMultiSelect(!!settings.multiSelect);
+      if (typeof settings.multiSelectCount === 'number') {
+        setCollageMultiSelectCount(String(settings.multiSelectCount));
+      }
     }
     if (lib.type === 'feedback') {
       if (settings.title) setFeedbackTitle(settings.title as string);
@@ -436,6 +446,11 @@ export default function AdminStationConfigPage() {
         settings.missions = collageMissions
           .filter((m) => m.title.trim())
           .map((m) => ({ title: m.title.trim(), description: m.description.trim() }));
+        settings.multiSelect = collageMultiSelect;
+        if (collageMultiSelect) {
+          const n = parseInt(collageMultiSelectCount, 10);
+          settings.multiSelectCount = Number.isFinite(n) && n > 0 ? n : 1;
+        }
       }
       if (stationType === 'feedback') {
         settings.title = feedbackTitle.trim();
@@ -563,6 +578,8 @@ export default function AdminStationConfigPage() {
     setCollageHeader('');
     setCollageDescription('');
     setCollageMissions([{ title: '', description: '' }]);
+    setCollageMultiSelect(false);
+    setCollageMultiSelectCount('6');
     setFeedbackTitle('');
     setFeedbackIntroText('');
     setFeedbackQuestions([{ text: '' }]);
@@ -943,6 +960,30 @@ export default function AdminStationConfigPage() {
                     />
                   </InlineRow>
 
+                  <HintToggleRow>
+                    <SectionLabelNoMargin>{t.collageMultiSelect}</SectionLabelNoMargin>
+                    <ToggleButton
+                      type="button"
+                      selected={collageMultiSelect}
+                      onClick={() => setCollageMultiSelect((v) => !v)}
+                    >
+                      {collageMultiSelect ? 'ON' : 'OFF'}
+                    </ToggleButton>
+                  </HintToggleRow>
+                  <div style={{ fontSize: 12, color: '#888', marginTop: -4, marginBottom: 4 }}>{t.collageMultiSelectHelper}</div>
+                  {collageMultiSelect && (
+                    <>
+                      <SectionLabelNoMargin>{t.collageMultiSelectCount}</SectionLabelNoMargin>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={collageMultiSelectCount}
+                        onChange={(e) => setCollageMultiSelectCount(e.target.value)}
+                      />
+                    </>
+                  )}
+
+                  {!collageMultiSelect && (<>
                   <SectionLabelNoMargin>{t.collageMissions}</SectionLabelNoMargin>
                   {collageMissions.map((mission, idx) => (
                     <div key={idx} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
@@ -980,6 +1021,7 @@ export default function AdminStationConfigPage() {
                   >
                     + {t.collageMissionAdd}
                   </button>
+                  </>)}
                 </VerticalStack>
               )}
 

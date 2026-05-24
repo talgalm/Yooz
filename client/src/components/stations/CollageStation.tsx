@@ -257,11 +257,16 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const header = (settings.header as string) || station.name || 'תחנת צילום';
   const description = (settings.description as string) || station.description || '';
   const logoUrl = (settings.logoUrl as string) || '';
+  const multiSelect = !!settings.multiSelect;
+  const multiSelectCount = typeof settings.multiSelectCount === 'number' && settings.multiSelectCount > 0
+    ? (settings.multiSelectCount as number)
+    : 1;
   const rawMissions = settings.missions as CollageMission[] | undefined;
-  const missions: CollageMission[] =
-    Array.isArray(rawMissions) && rawMissions.length > 0
-      ? rawMissions
-      : [{ title: 'צלמו תמונה', description: '' }];
+  const missions: CollageMission[] = multiSelect
+    ? Array.from({ length: multiSelectCount }, (_, i) => ({ title: `פריט ${i + 1}`, description: '' }))
+    : (Array.isArray(rawMissions) && rawMissions.length > 0
+        ? rawMissions
+        : [{ title: 'צלמו תמונה', description: '' }]);
 
   const [phase, setPhase] = useState<Phase>('intro');
   const [currentMission, setCurrentMission] = useState(0);
@@ -289,6 +294,30 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     setPreviewBlob(file);
     setPreviewIsVideo(file.type.startsWith('video/'));
     e.target.value = '';
+  };
+
+  const handleMultiFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    if (files.length === 0) return;
+    const remaining = Math.max(0, multiSelectCount - photos.length);
+    const toAdd = files.slice(0, remaining);
+    const startIdx = photos.length;
+    const newPhotos: CapturedPhoto[] = toAdd.map((file, i) => ({
+      missionIndex: startIdx + i,
+      blob: file,
+      previewUrl: URL.createObjectURL(file),
+      isVideo: file.type.startsWith('video/'),
+    }));
+    setPhotos((prev) => [...prev, ...newPhotos]);
+  };
+
+  const removeMultiPhoto = (idx: number) => {
+    setPhotos((prev) =>
+      prev
+        .filter((_, i) => i !== idx)
+        .map((p, i) => ({ ...p, missionIndex: i })),
+    );
   };
 
   // ── Capture navigation ──────────────────────────────────────────────────────
@@ -394,15 +423,25 @@ export default function CollageStation({ station, onContinue, code }: Props) {
           <BigTitle>{header}</BigTitle>
           {description && <SubText>{description}</SubText>}
 
-          {missions.map((m, i) => (
-            <MissionCard key={i}>
-              <MissionNum>{i + 1}</MissionNum>
+          {multiSelect ? (
+            <MissionCard>
+              <MissionNum>{multiSelectCount}</MissionNum>
               <MissionInfo>
-                <MissionTitle>{m.title}</MissionTitle>
-                {m.description && <MissionDesc>{m.description}</MissionDesc>}
+                <MissionTitle>בחרו {multiSelectCount} תמונות או סרטונים</MissionTitle>
+                <MissionDesc>אפשר לבחור הכול בבת אחת מהגלריה</MissionDesc>
               </MissionInfo>
             </MissionCard>
-          ))}
+          ) : (
+            missions.map((m, i) => (
+              <MissionCard key={i}>
+                <MissionNum>{i + 1}</MissionNum>
+                <MissionInfo>
+                  <MissionTitle>{m.title}</MissionTitle>
+                  {m.description && <MissionDesc>{m.description}</MissionDesc>}
+                </MissionInfo>
+              </MissionCard>
+            ))
+          )}
 
           <div style={{ marginTop: 16 }}>
             <PrimaryBtn onClick={() => { setCurrentMission(0); setPhotos([]); setPreviewUrl(''); setPreviewBlob(null); setPhase('capture'); }}>
@@ -410,6 +449,59 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             </PrimaryBtn>
             <OutlineBtn onClick={onContinue}>דלג על התחנה הזו</OutlineBtn>
           </div>
+        </Content>
+      </Wrap>
+    );
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // CAPTURE — multiSelect mode (single page, pick up to X items at once)
+  // ════════════════════════════════════════════════════════════════════════════
+  if (phase === 'capture' && multiSelect) {
+    const remaining = Math.max(0, multiSelectCount - photos.length);
+    return (
+      <Wrap>
+        <Content>
+          <TopLabel>תחנת צילום</TopLabel>
+          <BigTitle style={{ fontSize: 22 }}>בחרו {multiSelectCount} תמונות או סרטונים</BigTitle>
+          <SubText style={{ marginBottom: 14 }}>
+            נבחרו {photos.length} מתוך {multiSelectCount}
+          </SubText>
+
+          {photos.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
+              {photos.map((p, i) => (
+                <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', background: 'rgba(0,0,0,0.4)' }}>
+                  {p.isVideo
+                    ? <video src={p.previewUrl} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <img src={p.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  }
+                  <button
+                    onClick={() => removeMultiPhoto(i)}
+                    style={{
+                      position: 'absolute', top: 4, left: 4,
+                      width: 24, height: 24, borderRadius: '50%', border: 'none',
+                      background: 'rgba(0,0,0,0.65)', color: '#fff', cursor: 'pointer',
+                      fontSize: 14, lineHeight: 1, padding: 0, fontFamily: 'inherit',
+                    }}
+                    aria-label="הסר"
+                  >×</button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: 13, marginBottom: 8 }}>{error}</p>}
+
+          <ButtonRow>
+            <HalfBtn onClick={() => quickCaptureRef.current?.click()} disabled={remaining === 0}>📷 צילום ברגע</HalfBtn>
+            <HalfBtn onClick={() => fileInputRef.current?.click()} disabled={remaining === 0}>🖼 מהגלריה</HalfBtn>
+          </ButtonRow>
+
+          <PrimaryBtn onClick={() => setPhase('review')} disabled={photos.length === 0}>אישור והמשך</PrimaryBtn>
+
+          <input ref={quickCaptureRef} type="file" accept="image/*,video/*" capture="environment" style={{ display: 'none' }} onChange={handleMultiFilesSelected} />
+          <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={handleMultiFilesSelected} />
         </Content>
       </Wrap>
     );
