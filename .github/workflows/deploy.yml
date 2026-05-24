@@ -138,6 +138,18 @@ jobs:
           print('  ecosystem.config.js updated')
           "
 
+            echo "=== Updating Nginx limits ==="
+            # Bump client_max_body_size to 200M so 6 iPhone 4K photos
+            # (~5-10MB each) don't get rejected with HTTP 413. sed in-place
+            # so the certbot-managed SSL block is left untouched.
+            if [ -f /etc/nginx/sites-available/yooz ]; then
+              sudo sed -i 's/client_max_body_size [0-9]\+M;/client_max_body_size 200M;/g' /etc/nginx/sites-available/yooz
+              sudo nginx -t && sudo systemctl reload nginx
+              echo "  Nginx reloaded"
+            else
+              echo "  /etc/nginx/sites-available/yooz not found, skipping"
+            fi
+
             echo "=== Restarting PM2 ==="
             pm2 delete yooz 2>/dev/null || true
             pm2 start /opt/yooz/deploy/ecosystem.config.js

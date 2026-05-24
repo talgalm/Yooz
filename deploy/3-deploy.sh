@@ -126,7 +126,7 @@ server {
     listen [::]:80;
     server_name yooz.org.il www.yooz.org.il;
 
-    client_max_body_size 50M;
+    client_max_body_size 200M;
 
     location / {
         proxy_pass http://localhost:3000;
