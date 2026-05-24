@@ -60,7 +60,9 @@ const Container = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '32px 20px 120px',
+  // Bottom padding reserves a safety zone above the fixed SubmitButton so the
+  // AttemptsRow / hint badge are never positioned behind it.
+  padding: '32px 20px 160px',
   gap: 18,
   overflowY: 'auto',
 });
@@ -222,7 +224,9 @@ const SubmitButton = styled(StationContinueButton)({
     transform: 'translateX(-50%) translateY(3px)',
   },
   '&:disabled': {
-    opacity: 0.5,
+    // Use filter instead of opacity so the button remains fully opaque and
+    // doesn't reveal the AttemptDots / "ניסיון X מתוך 3" row sitting behind it.
+    filter: 'grayscale(0.6) brightness(0.85)',
     cursor: 'default',
   },
 });

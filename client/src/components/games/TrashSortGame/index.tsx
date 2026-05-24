@@ -117,6 +117,14 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
   }, [phase, countdownValue]);
 
   // ─── Fall animation ───
+  // `handleMissed` is recreated on every item change (its deps include
+  // currentItemIdx). But startFalling is memoized on [fallSpeedMs] only, so
+  // the `animate` closure inside it would otherwise capture the FIRST
+  // render's handleMissed forever — meaning after the first natural miss,
+  // every later "missed" call records against currentItemIdx=0 and the
+  // game freezes on item 1 / item 2. A ref keeps the latest handleMissed
+  // available to animate without forcing startFalling to re-create.
+  const handleMissedRef = useRef<() => void>(() => {});
   const startFalling = useCallback(() => {
     setItemY(0);
     setIsDragging(false);
@@ -130,7 +138,7 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
 
       if (progress >= 1) {
         // Item fell to bottom — missed!
-        handleMissed();
+        handleMissedRef.current();
         return;
       }
       fallAnimRef.current = requestAnimationFrame(animate);
@@ -158,6 +166,10 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
     }
     advanceToNext();
   }, [currentItemIdx, allItems, bins]);
+
+  // Keep handleMissedRef pointing at the latest handleMissed so the
+  // memoized animate() loop in startFalling always calls the current one.
+  useEffect(() => { handleMissedRef.current = handleMissed; }, [handleMissed]);
 
   const advanceToNext = useCallback(() => {
     const nextIdx = currentItemIdx + 1;
@@ -228,32 +240,57 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
     setIsDragging(true);
   };
 
-  const handlePointerMove = (e: React.PointerEvent) => {
+  // Pointer move/up/cancel are wired to `window` (not the SortContainer) while
+  // dragging. If we bound them on SortContainer the gesture would break the
+  // moment the finger slid past the container's edge (off the screen, into
+  // mobile safe-areas, etc.) — pointerup would never fire and the game would
+  // be stuck with isDragging=true and the fall animation cancelled.
+  // pointercancel covers OS-level interruptions (multi-touch zoom, swipe-in
+  // notification) — treat them as a release outside any bin → resume falling.
+  useEffect(() => {
     if (!isDragging) return;
-    setDragPos({ x: e.clientX, y: e.clientY });
-  };
 
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    setIsDragging(false);
+    const onMove = (e: PointerEvent) => {
+      setDragPos({ x: e.clientX, y: e.clientY });
+    };
 
-    // Check which bin was dropped on
-    for (const [binId, binEl] of binRefs.current.entries()) {
-      const rect = binEl.getBoundingClientRect();
-      if (
-        e.clientX >= rect.left &&
-        e.clientX <= rect.right &&
-        e.clientY >= rect.top &&
-        e.clientY <= rect.bottom
-      ) {
-        handleDrop(binId);
-        return;
+    const onUp = (e: PointerEvent) => {
+      setIsDragging(false);
+      for (const [binId, binEl] of binRefs.current.entries()) {
+        const rect = binEl.getBoundingClientRect();
+        if (
+          e.clientX >= rect.left &&
+          e.clientX <= rect.right &&
+          e.clientY >= rect.top &&
+          e.clientY <= rect.bottom
+        ) {
+          handleDrop(binId);
+          return;
+        }
       }
-    }
+      // Released outside any bin (including off-screen) — resume falling.
+      startFalling();
+    };
 
-    // Not on any bin — resume falling
-    startFalling();
-  };
+    const onCancel = () => {
+      setIsDragging(false);
+      startFalling();
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onCancel);
+    // If the tab/window loses focus mid-drag (e.g. iOS gesture switching
+    // apps), recover the same way as a cancel.
+    window.addEventListener('blur', onCancel);
+
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onCancel);
+      window.removeEventListener('blur', onCancel);
+    };
+  }, [isDragging, handleDrop, startFalling]);
 
   const handleFinish = () => {
     const durationMs = Date.now() - gameStartTime.current;
@@ -318,10 +355,7 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
   // ─── Countdown ───
   // ─── Playing ───
   return (
-    <SortContainer
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-    >
+    <SortContainer>
       {phase === 'countdown' && (
         <CountdownOverlay>
           <CountdownNumber key={countdownValue}>{countdownValue || 'GO!'}</CountdownNumber>
