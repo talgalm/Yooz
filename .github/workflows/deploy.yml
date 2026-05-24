@@ -139,11 +139,18 @@ jobs:
           "
 
             echo "=== Updating Nginx limits ==="
-            # Bump client_max_body_size to 200M so 6 iPhone 4K photos
-            # (~5-10MB each) don't get rejected with HTTP 413. sed in-place
-            # so the certbot-managed SSL block is left untouched.
+            # - client_max_body_size 200M: 6 iPhone 4K photos can total ~30-60MB.
+            # - proxy_read_timeout 900s: collage ffmpeg can take 5-10 min on t3.medium.
+            # sed in-place so the certbot-managed SSL block stays untouched.
             if [ -f /etc/nginx/sites-available/yooz ]; then
               sudo sed -i 's/client_max_body_size [0-9]\+M;/client_max_body_size 200M;/g' /etc/nginx/sites-available/yooz
+              sudo sed -i 's/proxy_read_timeout [0-9]\+s;/proxy_read_timeout 900s;/g' /etc/nginx/sites-available/yooz
+              # Add proxy_send_timeout if missing, otherwise update it
+              if grep -q 'proxy_send_timeout' /etc/nginx/sites-available/yooz; then
+                sudo sed -i 's/proxy_send_timeout [0-9]\+s;/proxy_send_timeout 900s;/g' /etc/nginx/sites-available/yooz
+              else
+                sudo sed -i '/proxy_read_timeout 900s;/a\        proxy_send_timeout 900s;' /etc/nginx/sites-available/yooz
+              fi
               sudo nginx -t && sudo systemctl reload nginx
               echo "  Nginx reloaded"
             else
