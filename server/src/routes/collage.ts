@@ -225,13 +225,7 @@ function runFfmpeg(
     '-map', '[vout]',
     '-map', '0:a?',  // pass through original soundtrack if present
     '-t', String(TEMPLATE_META.duration),
-    // Memory-constrained prod (t3.small, 2GB). Single-thread the filter graph
-    // and encoder so peak RSS stays well below the PM2 cap. ultrafast preset
-    // uses less memory than 'fast' and the visual quality is acceptable here.
-    '-threads', '1',
-    '-filter_threads', '1',
-    '-filter_complex_threads', '1',
-    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '23',
+    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'fast', '-crf', '23',
     '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart',
     outputPath,
