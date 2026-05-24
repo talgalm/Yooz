@@ -27,6 +27,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import ffmpegPath from 'ffmpeg-static';
+import sharp from 'sharp';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from '../config';
 import { Activity } from '../models';
 import motionData from '../data/collage-template-motion.json';
@@ -313,10 +314,31 @@ router.post(
     const outputPath = path.join(tmpDir, 'output.mp4');
 
     try {
+      // Pre-scale every uploaded photo to max 1080px (longest edge) before
+      // handing them to ffmpeg. Without this, ffmpeg's scale filter runs on
+      // 4K iPhone photos at every output frame (30fps × 32s = ~960 times per
+      // input), which dominates encode time. Pre-scaling once cuts the
+      // collage render from 5+ min down to ~2-3 min on t3.medium.
+      //
+      // sharp().rotate() honors EXIF Orientation so portrait iPhone photos
+      // render upright. failOn:'none' tolerates slightly malformed JPEGs.
+      // On any sharp failure (e.g. an unexpected video upload), we fall back
+      // to writing the original buffer so ffmpeg can still try.
       for (let i = 0; i < files.length; i++) {
-        const ext = files[i].mimetype.includes('png') ? 'png' : 'jpg';
-        const filePath = path.join(tmpDir, `image_${i}.${ext}`);
-        fs.writeFileSync(filePath, files[i].buffer);
+        const filePath = path.join(tmpDir, `image_${i}.jpg`);
+        const origBytes = files[i].buffer.length;
+        try {
+          const resized = await sharp(files[i].buffer, { failOn: 'none' })
+            .rotate()
+            .resize({ width: 1080, height: 1080, fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: 85, mozjpeg: true })
+            .toBuffer();
+          fs.writeFileSync(filePath, resized);
+          console.log(`[collage] image_${i}: ${(origBytes / 1024).toFixed(0)}KB → ${(resized.length / 1024).toFixed(0)}KB`);
+        } catch (err) {
+          console.warn(`[collage] sharp resize failed for image ${i}, using original:`, err);
+          fs.writeFileSync(filePath, files[i].buffer);
+        }
         imagePaths.push(filePath);
       }
 
