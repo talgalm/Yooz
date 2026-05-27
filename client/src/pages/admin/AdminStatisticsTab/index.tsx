@@ -38,16 +38,11 @@ export default function AdminStatisticsTab({ activities, initialActivityId }: Pr
     return <ActivityAnalytics activityId={selectedActivityId} onBack={handleBack} />;
   }
 
-  if (view === 'showcase') {
-    return <ActivityAnalytics activityId={null} onBack={handleBack} showcase />;
-  }
-
   return (
     <OverviewSection
       activities={activities}
       onSelectActivity={handleSelectActivity}
       onViewAuditLog={() => setView('audit')}
-      onViewShowcase={() => setView('showcase')}
     />
   );
 }

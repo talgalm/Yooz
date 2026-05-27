@@ -5,7 +5,6 @@ import { customerMongoFilter, customerOwnsDoc, isCustomerRole } from '../middlew
 import { Activity, Report, AdminAuditLog } from '../models';
 import {
   buildAnalyticsWorkbookBuffer,
-  createShowcaseExportData,
   type AnalyticsExportType,
   type ExportActivity,
   type ExportReport,
@@ -550,12 +549,6 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
     res.setHeader('Content-Disposition', `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
     res.send(buffer);
   };
-
-  if (activityId === 'showcase') {
-    const { activity, reports } = createShowcaseExportData();
-    await sendWorkbook(activity, reports, `mock_${exportType}`);
-    return;
-  }
 
   if (!Types.ObjectId.isValid(activityId)) {
     res.status(400).json({ error: 'Invalid activity ID' });

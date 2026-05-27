@@ -35,7 +35,6 @@ interface Props {
   activities: Activity[];
   onSelectActivity: (id: string) => void;
   onViewAuditLog: () => void;
-  onViewShowcase: () => void;
 }
 
 function formatDuration(ms: number) {
@@ -47,7 +46,7 @@ function formatDuration(ms: number) {
   return rest ? `${m}m ${rest}s` : `${m}m`;
 }
 
-export default function OverviewSection({ activities, onSelectActivity, onViewAuditLog, onViewShowcase }: Props) {
+export default function OverviewSection({ activities, onSelectActivity, onViewAuditLog }: Props) {
   const t = useTranslations(texts);
   const { data: overview, loading: overviewLoading } = useOverview();
   const { data: timeline } = useTimeline(30);
@@ -68,10 +67,7 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
   if (!overview) {
     return (
       <div style={{ textAlign: 'center', padding: 40, color: '#888' }}>
-        <div style={{ marginBottom: 14 }}>{t.noData}</div>
-        <ActionButton type="button" onClick={onViewShowcase} variant="primary">
-          {t.viewShowcase}
-        </ActionButton>
+        {t.noData}
       </div>
     );
   }
@@ -142,9 +138,6 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
       <SectionHeader>
         <SectionTitle>{t.activitiesTable}</SectionTitle>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <ActionButton type="button" onClick={onViewShowcase} variant="primary">
-            {t.viewShowcase}
-          </ActionButton>
           <ActionButton type="button" onClick={onViewAuditLog}>
             {t.viewAuditLog}
           </ActionButton>

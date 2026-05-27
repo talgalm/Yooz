@@ -75,19 +75,10 @@ import FunnelChart from './FunnelChart';
 import ItemAnalyticsTable from './ItemAnalyticsTable';
 import GroupComparison from './GroupComparison';
 import ExportSection from './ExportSection';
-import {
-  showcaseAnalytics,
-  showcaseAnomalies,
-  showcaseFunnel,
-  showcaseGroups,
-  showcaseItems,
-  showcaseQuestions,
-} from './showcaseData';
 
 interface Props {
   activityId: string | null;
   onBack: () => void;
-  showcase?: boolean;
 }
 
 type Tone = 'green' | 'blue' | 'amber' | 'red';
@@ -190,17 +181,6 @@ function buildRecommendations(
     }
   }
 
-  const shareConversion = analytics.shareClicks > 0
-    ? Math.round((analytics.shareCompleted / analytics.shareClicks) * 100)
-    : 0;
-  if (analytics.shareClicks > 0 && shareConversion < 65) {
-    recommendations.push({
-      title: t.improveSharing,
-      body: template(t.improveSharingBody, { rate: shareConversion }),
-      tone: 'blue',
-    });
-  }
-
   if (recommendations.length === 0) {
     recommendations.push({
       title: t.readyForClient,
@@ -212,22 +192,22 @@ function buildRecommendations(
   return recommendations.slice(0, 4);
 }
 
-export default function ActivityAnalytics({ activityId, onBack, showcase = false }: Props) {
+export default function ActivityAnalytics({ activityId, onBack }: Props) {
   const t = useTranslations(texts);
   const [subTab, setSubTab] = useState<ActivitySubTab>('overview');
 
-  const analyticsQuery = useActivityAnalytics(showcase ? null : activityId);
-  const anomaliesQuery = useAnomalies(showcase ? null : activityId);
-  const funnelQuery = useFunnel(showcase ? null : activityId);
-  const itemsQuery = useItemStats(showcase ? null : activityId);
-  const groupsQuery = useGroupStats(showcase ? null : activityId);
+  const analyticsQuery = useActivityAnalytics(activityId);
+  const anomaliesQuery = useAnomalies(activityId);
+  const funnelQuery = useFunnel(activityId);
+  const itemsQuery = useItemStats(activityId);
+  const groupsQuery = useGroupStats(activityId);
 
-  const analytics = showcase ? showcaseAnalytics : analyticsQuery.data;
-  const anomalies = showcase ? showcaseAnomalies : anomaliesQuery.data ?? [];
-  const funnel = showcase ? showcaseFunnel : funnelQuery.data ?? [];
-  const items = showcase ? showcaseItems : itemsQuery.data ?? [];
-  const groups = showcase ? showcaseGroups : groupsQuery.data ?? [];
-  const loading = !showcase && analyticsQuery.loading;
+  const analytics = analyticsQuery.data;
+  const anomalies = anomaliesQuery.data ?? [];
+  const funnel = funnelQuery.data ?? [];
+  const items = itemsQuery.data ?? [];
+  const groups = groupsQuery.data ?? [];
+  const loading = analyticsQuery.loading;
 
   const scoreDist = useMemo(() => {
     if (!analytics?.scoreDistribution) return [];
@@ -246,7 +226,6 @@ export default function ActivityAnalytics({ activityId, onBack, showcase = false
   ];
 
   const refetchAll = () => {
-    if (showcase) return;
     analyticsQuery.refetch();
     anomaliesQuery.refetch();
     funnelQuery.refetch();
@@ -268,19 +247,7 @@ export default function ActivityAnalytics({ activityId, onBack, showcase = false
     completed: Math.round((analytics.completionRate / 100) * analytics.totalParticipants),
   };
   const statusTotal = Math.max(analytics.totalParticipants, status.joined + status.inProgress + status.completed, 1);
-  const shareConversion = analytics.shareClicks > 0
-    ? Math.round((analytics.shareCompleted / analytics.shareClicks) * 100)
-    : 0;
   const passRate = analytics.scoreSummary?.passRate ?? 0;
-  const completedFunnelPct = funnel.find((step) => step.step === 'completed')?.pct ?? analytics.completionRate;
-  const healthScore = Math.round(
-    analytics.completionRate * 0.35 +
-    (analytics.avgProgressPct ?? analytics.completionRate) * 0.2 +
-    passRate * 0.2 +
-    completedFunnelPct * 0.15 +
-    Math.min(shareConversion, 100) * 0.1,
-  );
-  const healthTone = percentTone(healthScore);
   const itemHighlights = [...items]
     .sort((a, b) => {
       const riskA = (100 - a.completionPct) * 2 + a.hintUsagePct + Math.max(0, a.avgMaxScore * 0.65 - a.avgScore);
@@ -304,7 +271,6 @@ export default function ActivityAnalytics({ activityId, onBack, showcase = false
         <div>
           <HeaderEyebrow>
             {t.activityAnalytics}
-            {showcase && <MetaPill tone="amber">{t.showcase}</MetaPill>}
           </HeaderEyebrow>
           <SectionTitle style={{ fontSize: 24 }}>
             {analytics.activity.name || t.activityAnalytics}
@@ -317,11 +283,10 @@ export default function ActivityAnalytics({ activityId, onBack, showcase = false
             {analytics.activity.moduleType && (
               <MetaPill tone="blue">{t.module}: {analytics.activity.moduleType}</MetaPill>
             )}
-            {showcase && <MetaPill tone="amber">{t.sampleData}</MetaPill>}
           </HeaderMeta>
         </div>
         <HeaderActionGroup>
-          <ActionButton type="button" onClick={refetchAll} disabled={loading || showcase}>
+          <ActionButton type="button" onClick={refetchAll} disabled={loading}>
             {t.refresh}
           </ActionButton>
           <ActionButton type="button" onClick={onBack}>
@@ -380,18 +345,6 @@ export default function ActivityAnalytics({ activityId, onBack, showcase = false
                 <MetricSubtext>
                   {t.fastest}: {formatDuration(analytics.durationSummary?.fastestMs)}
                 </MetricSubtext>
-              </MetricCard>
-              <MetricCard tone={percentTone(shareConversion)}>
-                <MetricLabel>{t.shareConversion}</MetricLabel>
-                <MetricValue>{shareConversion}%</MetricValue>
-                <MetricSubtext>
-                  {analytics.shareCompleted}/{analytics.shareClicks} {t.shareCompleted}
-                </MetricSubtext>
-              </MetricCard>
-              <MetricCard tone={healthTone}>
-                <MetricLabel>{t.reportHealth}</MetricLabel>
-                <MetricValue>{healthScore}%</MetricValue>
-                <MetricSubtext>{t.topScore}: {analytics.scoreSummary?.highest ?? 0}</MetricSubtext>
               </MetricCard>
             </MetricGrid>
           </FullPanel>
@@ -618,22 +571,18 @@ export default function ActivityAnalytics({ activityId, onBack, showcase = false
       )}
 
       {subTab === 'funnel' && (
-        <FunnelChart activityId={activityId} data={showcase ? showcaseFunnel : undefined} />
+        <FunnelChart activityId={activityId} />
       )}
 
       {subTab === 'items' && (
-        <ItemAnalyticsTable
-          activityId={activityId}
-          data={showcase ? showcaseItems : undefined}
-          questionsByItem={showcase ? showcaseQuestions : undefined}
-        />
+        <ItemAnalyticsTable activityId={activityId} />
       )}
 
       {subTab === 'groups' && (
-        <GroupComparison activityId={activityId} data={showcase ? showcaseGroups : undefined} />
+        <GroupComparison activityId={activityId} />
       )}
 
-      {subTab === 'export' && <ExportSection activityId={activityId} showcase={showcase} />}
+      {subTab === 'export' && <ExportSection activityId={activityId} />}
     </>
   );
 }

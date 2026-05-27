@@ -6,22 +6,19 @@ import { ExportGrid, ExportCard, ExportIcon, ExportLabel, ExportDescription } fr
 
 interface Props {
   activityId: string | null;
-  previewOnly?: boolean;
-  showcase?: boolean;
 }
 
-export default function ExportSection({ activityId, previewOnly = false, showcase = false }: Props) {
+export default function ExportSection({ activityId }: Props) {
   const t = useTranslations(texts);
   const [downloading, setDownloading] = useState<AnalyticsExportType | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const exportActivityId = showcase ? 'showcase' : activityId;
 
   const handleExport = async (type: AnalyticsExportType) => {
-    if (!exportActivityId || previewOnly) return;
+    if (!activityId) return;
     setDownloading(type);
     setError(null);
     try {
-      await downloadExport(exportActivityId, type);
+      await downloadExport(activityId, type);
     } catch {
       setError(t.exportFailed);
     } finally {
@@ -34,25 +31,25 @@ export default function ExportSection({ activityId, previewOnly = false, showcas
       type: 'executive',
       icon: 'XL',
       label: t.exportExecutive,
-      description: showcase ? t.exportMockDescription : t.exportExecutiveDescription,
+      description: t.exportExecutiveDescription,
     },
     {
       type: 'participants',
       icon: 'P',
       label: t.exportParticipants,
-      description: showcase ? t.exportMockDescription : t.exportParticipantsDescription,
+      description: t.exportParticipantsDescription,
     },
     {
       type: 'scores',
       icon: 'S',
       label: t.exportScores,
-      description: showcase ? t.exportMockDescription : t.exportScoresDescription,
+      description: t.exportScoresDescription,
     },
     {
       type: 'progress',
       icon: '%',
       label: t.exportProgress,
-      description: showcase ? t.exportMockDescription : t.exportProgressDescription,
+      description: t.exportProgressDescription,
     },
   ];
 
@@ -68,14 +65,14 @@ export default function ExportSection({ activityId, previewOnly = false, showcas
           <ExportCard
             key={exp.type}
             onClick={() => handleExport(exp.type)}
-            disabled={downloading !== null || previewOnly || !exportActivityId}
-            style={{ opacity: (downloading && downloading !== exp.type) || previewOnly ? 0.5 : 1 }}
+            disabled={downloading !== null || !activityId}
+            style={{ opacity: downloading && downloading !== exp.type ? 0.5 : 1 }}
           >
             <ExportIcon>{exp.icon}</ExportIcon>
             <ExportLabel>
               {downloading === exp.type ? t.downloading : exp.label}
             </ExportLabel>
-            <ExportDescription>{previewOnly ? t.previewOnly : exp.description}</ExportDescription>
+            <ExportDescription>{exp.description}</ExportDescription>
           </ExportCard>
         ))}
       </ExportGrid>

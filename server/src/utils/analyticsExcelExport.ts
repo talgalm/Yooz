@@ -171,8 +171,6 @@ interface ExportStats {
   slowestMs: number;
   totalItemsInModule: number;
   avgProgressPct: number;
-  shareConversion: number;
-  healthScore: number;
   scoreBuckets: { range: string; count: number }[];
 }
 
@@ -649,24 +647,13 @@ function buildRecommendations(
     }
   }
 
-  if ((activity.shareClicks ?? 0) > 0 && stats.shareConversion < 65) {
-    recommendations.push({
-      severity: 'נמוכה',
-      topic: 'המרת שיתוף',
-      insight: `${stats.shareConversion}% מלחיצות השיתוף הסתיימו בשיתוף בפועל.`,
-      action: 'לחדד את קריאת הפעולה בסוף הפעילות ולהציג תצוגה מקדימה ברורה יותר לשיתוף.',
-      metric: `${activity.shareCompleted ?? 0}/${activity.shareClicks ?? 0} שיתופים`,
-      tone: 'blue',
-    });
-  }
-
   if (recommendations.length === 0) {
     recommendations.push({
       severity: 'חיובי',
       topic: 'מוכן להצגה ללקוח',
       insight: 'ההשלמה, הציונים וקצב ההתקדמות נמצאים בטווח טוב להצגת סיכום מנהלים.',
       action: 'לייצא את הדוח המלא ולצרף אותו לסיכום האירוע.',
-      metric: `בריאות דוח ${stats.healthScore}%`,
+      metric: `סיום ${stats.completionRate}% | ציון ${stats.avgScore}`,
       tone: 'green',
     });
   }
@@ -685,9 +672,6 @@ function buildStats(activity: ExportActivity, reports: ExportReport[]): ExportSt
   const passRate = scores.length > 0 ? Math.round((scores.filter((score) => score >= 70).length / scores.length) * 100) : 0;
   const avgProgressPct = Math.round(average(participants.map((participant) => participant.progressPct)));
   const completionRate = participants.length > 0 ? Math.round((completedCount / participants.length) * 100) : 0;
-  const shareConversion = (activity.shareClicks ?? 0) > 0
-    ? Math.round(((activity.shareCompleted ?? 0) / (activity.shareClicks ?? 1)) * 100)
-    : 0;
   const items = buildItems(reports, participants.length);
   const groups = buildGroups(participants);
   const statsWithoutRecommendations = {
@@ -711,14 +695,6 @@ function buildStats(activity: ExportActivity, reports: ExportReport[]): ExportSt
     slowestMs: durations.length > 0 ? Math.max(...durations) : 0,
     totalItemsInModule,
     avgProgressPct,
-    shareConversion,
-    healthScore: Math.round(
-      completionRate * 0.35 +
-      avgProgressPct * 0.2 +
-      passRate * 0.2 +
-      Math.min(shareConversion, 100) * 0.1 +
-      Math.min(100, Math.round(average(items.map((item) => item.completionRate)))) * 0.15,
-    ),
     scoreBuckets: buildScoreBuckets(scores),
   };
 
@@ -878,12 +854,12 @@ function addSummarySheet(workbook: ExcelJS.Workbook, activity: ExportActivity, s
   addKpi(worksheet, 4, 1, 'משתתפים', stats.totalParticipants, `${stats.completedCount} סיימו`, 'blue');
   addKpi(worksheet, 4, 3, 'אחוז סיום', `${stats.completionRate}%`, `${stats.inProgressCount} עדיין בתהליך`, pctTone(stats.completionRate));
   addKpi(worksheet, 4, 5, 'ציון ממוצע', stats.avgScore, `חציון ${stats.medianScore} | מעבר ${stats.passRate}%`, pctTone(stats.avgScore));
-  addKpi(worksheet, 4, 7, 'בריאות הדוח', `${stats.healthScore}%`, `התקדמות ${stats.avgProgressPct}%`, pctTone(stats.healthScore));
-  addKpi(worksheet, 4, 9, 'המרת שיתוף', `${stats.shareConversion}%`, `${activity.shareCompleted ?? 0}/${activity.shareClicks ?? 0} שיתופים`, pctTone(stats.shareConversion));
+  addKpi(worksheet, 4, 7, 'זמן ממוצע', formatDuration(stats.avgDurationMs) || '-', `חציון ${formatDuration(stats.medianDurationMs) || '-'}`, 'amber');
+  addKpi(worksheet, 4, 9, 'התקדמות ממוצעת', `${stats.avgProgressPct}%`, `${stats.totalItemsInModule} תחנות במסלול`, pctTone(stats.avgProgressPct));
 
-  addKpi(worksheet, 8, 1, 'זמן ממוצע', formatDuration(stats.avgDurationMs) || '-', `חציון ${formatDuration(stats.medianDurationMs) || '-'}`, 'amber');
-  addKpi(worksheet, 8, 3, 'המהיר ביותר', formatDuration(stats.fastestMs) || '-', `הארוך ביותר ${formatDuration(stats.slowestMs) || '-'}`, 'green');
-  addKpi(worksheet, 8, 5, 'ציון גבוה', stats.highestScore, `נמוך ${stats.lowestScore}`, 'green');
+  addKpi(worksheet, 8, 1, 'המהיר ביותר', formatDuration(stats.fastestMs) || '-', `הארוך ביותר ${formatDuration(stats.slowestMs) || '-'}`, 'green');
+  addKpi(worksheet, 8, 3, 'ציון גבוה', stats.highestScore, `נמוך ${stats.lowestScore}`, 'green');
+  addKpi(worksheet, 8, 5, 'אחוז מעבר', `${stats.passRate}%`, 'משתתפים עם ציון 70 ומעלה', pctTone(stats.passRate));
   addKpi(worksheet, 8, 7, 'תחנות', stats.totalItemsInModule, `${stats.items.length} עם נתוני ביצוע`, 'slate');
   addKpi(worksheet, 8, 9, 'מודול', activity.module?.type || '-', activity.connectionType === 'group' ? 'פעילות קבוצתית' : 'פעילות אישית', 'blue');
 
@@ -1226,151 +1202,4 @@ export async function buildAnalyticsWorkbookBuffer(
 
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
-}
-
-export function createShowcaseExportData(): { activity: ExportActivity; reports: ExportReport[] } {
-  const activity: ExportActivity = {
-    name: 'אתגר סייבר ליום מנהלים',
-    code: 'BOSS24',
-    status: 'live',
-    connectionType: 'group',
-    module: {
-      type: 'סיפור',
-      items: Array.from({ length: 6 }, (_, index) => ({ index })),
-    },
-    groups: [
-      { name: 'הנהלה' },
-      { name: 'מוצר' },
-      { name: 'מכירות' },
-      { name: 'תפעול' },
-      { name: 'הצלחת לקוחות' },
-    ],
-    shareClicks: 68,
-    shareCompleted: 49,
-    missionPuzzleCompletions: 95,
-    missionTrashSortCompletions: 91,
-    missionTrashSortScoreSum: 7644,
-  };
-
-  const names = [
-    'מאיה לוי',
-    'דניאל כהן',
-    'עמית רוזן',
-    'נועה ברק',
-    'אלי מזרחי',
-    'תמר וייס',
-    'רוני אברהמי',
-    'ליאור בן דוד',
-    'שירה גולן',
-    'ירדן כץ',
-    'אורן שפירא',
-    'הילה פרץ',
-    'איתי סגל',
-    'קרן מלמד',
-    'יואב אלון',
-    'נעמה דיין',
-    'אדם צור',
-    'עדי בן עמי',
-    'רעות שמיר',
-    'גיא הררי',
-  ];
-  const groups = ['הנהלה', 'מוצר', 'מכירות', 'תפעול', 'הצלחת לקוחות'];
-  const items = [
-    { itemName: 'תדריך פתיחה', itemType: 'תחנה', gameType: '', max: 100, baseDuration: 52_000 },
-    { itemName: 'טריוויה לזיהוי פישינג', itemType: 'משחק', gameType: 'טריוויה', max: 100, baseDuration: 228_000 },
-    { itemName: 'פאזל נוהלי אבטחה', itemType: 'משחק', gameType: 'פאזל', max: 100, baseDuration: 326_000 },
-    { itemName: 'מיון מידע רגיש', itemType: 'משחק', gameType: 'מיון', max: 100, baseDuration: 156_000 },
-    { itemName: 'תרחיש הנהלה', itemType: 'תחנה', gameType: '', max: 100, baseDuration: 134_000 },
-    { itemName: 'תג סיום לשיתוף', itemType: 'תחנה', gameType: '', max: 100, baseDuration: 48_000 },
-  ];
-  const questionSets: Record<number, { questionText: string; points: number }[]> = {
-    1: [
-      { questionText: 'איזה מייל צריך לדווח לאבטחת מידע?', points: 10 },
-      { questionText: 'מה הפעולה הבטוחה ביותר עם קובץ חשוד?', points: 10 },
-      { questionText: 'מי מאשר שיתוף מידע מחוץ לארגון?', points: 10 },
-    ],
-    2: [
-      { questionText: 'סדרו את שלבי הטיפול באירוע אבטחה', points: 10 },
-      { questionText: 'התאימו בעלי תפקידים למסלולי הסלמה', points: 10 },
-    ],
-  };
-
-  const baseDate = new Date('2026-05-20T07:30:00.000Z');
-  const reports: ExportReport[] = Array.from({ length: 128 }, (_, index) => {
-    const status: CompletionStatus = index < 95 ? 'completed' : index < 116 ? 'in_progress' : 'joined';
-    const totalItemsCompleted = status === 'completed'
-      ? 6
-      : status === 'in_progress'
-        ? 2 + (index % 4)
-        : 0;
-    const joinedAt = new Date(baseDate.getTime() + index * 3 * 60_000);
-    const sessionStartedAt = status === 'joined' ? undefined : new Date(joinedAt.getTime() + 60_000);
-    const sessionDurationMs = status === 'joined'
-      ? undefined
-      : (7 * 60_000) + ((index * 37) % (17 * 60_000));
-    const sessionCompletedAt = status === 'completed' && sessionDurationMs && sessionStartedAt
-      ? new Date(sessionStartedAt.getTime() + sessionDurationMs)
-      : undefined;
-    const quality = Math.max(28, Math.min(108, 94 - (index % 17) * 3 + (index < 10 ? 12 : 0) + (index % 5) * 2));
-
-    const itemResults: ExportItemResult[] = items.slice(0, totalItemsCompleted).map((item, itemIndex) => {
-      const itemScore = Math.max(35, Math.min(item.max, quality - itemIndex * 2 + ((index + itemIndex) % 9)));
-      const startedAt = sessionStartedAt
-        ? new Date(sessionStartedAt.getTime() + itemIndex * 90_000)
-        : joinedAt;
-      const durationMs = item.baseDuration + ((index + itemIndex * 13) % 70) * 1000;
-      return {
-        itemIndex,
-        itemId: `mock-item-${itemIndex}`,
-        itemType: item.itemType,
-        itemName: item.itemName,
-        gameType: item.gameType,
-        score: itemScore,
-        maxPossibleScore: item.max,
-        startedAt,
-        completedAt: new Date(startedAt.getTime() + durationMs),
-        durationMs,
-        hintUsed: itemIndex === 2 ? index % 3 === 0 : itemIndex === 1 ? index % 6 === 0 : false,
-        hintPenalty: itemIndex === 2 && index % 3 === 0 ? 5 : 0,
-        attempts: itemIndex === 2 ? 2 + (index % 3) : 1,
-        questionAnswers: (questionSets[itemIndex] ?? []).map((question, questionIndex) => {
-          const isCorrect = itemIndex === 2
-            ? (index + questionIndex) % 5 !== 0
-            : (index + questionIndex) % 7 !== 0;
-          return {
-            questionIndex,
-            questionText: question.questionText,
-            selectedAnswers: [isCorrect ? 1 : 2],
-            correctAnswers: [1],
-            isCorrect,
-            pointsEarned: isCorrect ? question.points : Math.round(question.points / 2),
-            timeSpentMs: 18_000 + ((index + questionIndex * 11) % 70) * 1000,
-          };
-        }),
-      };
-    });
-
-    return {
-      participantName: `${names[index % names.length]} ${index >= names.length ? index + 1 : ''}`.trim(),
-      email: `player${index + 1}@example.co.il`,
-      phoneNumber: `050-${String(1000000 + index * 137).slice(0, 7)}`,
-      connectionType: 'group',
-      group: groups[index % groups.length],
-      joinedAt,
-      data: {
-        totalScore: status === 'joined' ? 0 : quality,
-        scores: itemResults.map((item) => ({ gameName: item.itemName || '', score: item.score ?? 0 })),
-        itemResults,
-      },
-      completionStatus: status,
-      sessionStartedAt,
-      sessionCompletedAt,
-      sessionDurationMs,
-      totalItemsCompleted,
-      totalItemsInModule: 6,
-      lastActiveItemIndex: Math.max(0, totalItemsCompleted - 1),
-    };
-  });
-
-  return { activity, reports };
 }

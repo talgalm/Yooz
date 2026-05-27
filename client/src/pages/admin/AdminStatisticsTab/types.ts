@@ -131,5 +131,5 @@ export interface AuditLogEntry {
   createdAt: string;
 }
 
-export type StatisticsView = 'overview' | 'activity' | 'audit' | 'showcase';
+export type StatisticsView = 'overview' | 'activity' | 'audit';
 export type ActivitySubTab = 'overview' | 'funnel' | 'items' | 'groups' | 'export';
