@@ -56,6 +56,7 @@ import {
   MetricSubtext,
   MetricValue,
   NarrowPanel,
+  NumberRun,
   PanelTitle,
   ParticipantTable,
   ProgressFill,
@@ -401,7 +402,9 @@ export default function ActivityAnalytics({ activityId }: Props) {
                           </ProgressTrack>
                         </InsightMain>
                         <ValueBadge tone={percentTone(step.pct)}>
-                          {step.count} / {step.pct}%{drop > 0 ? ` -${drop}%` : ''}
+                          <NumberRun>
+                            {step.count} / {step.pct}%{drop > 0 ? ` -${drop}%` : ''}
+                          </NumberRun>
                         </ValueBadge>
                       </InsightItem>
                     );

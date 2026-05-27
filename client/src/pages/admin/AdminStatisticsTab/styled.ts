@@ -534,6 +534,12 @@ export const ValueBadge = styled('span')<{ tone?: 'green' | 'blue' | 'amber' | '
   };
 });
 
+export const NumberRun = styled('span')({
+  direction: 'ltr',
+  unicodeBidi: 'isolate',
+  display: 'inline-block',
+});
+
 export const ProgressTrack = styled('div')({
   height: 8,
   borderRadius: 8,
