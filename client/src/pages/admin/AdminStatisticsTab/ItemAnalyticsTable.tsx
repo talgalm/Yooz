@@ -13,10 +13,11 @@ import {
   StatsMobileValue,
 } from './styled';
 import { DesktopOnly, HideOnDesktop } from '../../../components/styled';
-import type { ItemStats, QuestionStats } from './types';
+import type { ActivityPeriod, ItemStats, QuestionStats } from './types';
 
 interface Props {
   activityId: string | null;
+  period?: ActivityPeriod;
   data?: ItemStats[];
   questionsByItem?: Record<number, QuestionStats[]>;
 }
@@ -28,9 +29,9 @@ function formatDuration(ms: number) {
   return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
-export default function ItemAnalyticsTable({ activityId, data, questionsByItem }: Props) {
+export default function ItemAnalyticsTable({ activityId, period, data, questionsByItem }: Props) {
   const t = useTranslations(texts);
-  const { data: fetchedItems, loading } = useItemStats(data ? null : activityId);
+  const { data: fetchedItems, loading } = useItemStats(data ? null : activityId, period);
   const items = data ?? fetchedItems;
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
 
@@ -89,6 +90,7 @@ export default function ItemAnalyticsTable({ activityId, data, questionsByItem }
                         <td colSpan={8} style={{ padding: 0 }}>
                           <QuestionBreakdown
                             activityId={activityId}
+                            period={period}
                             itemIndex={item.itemIndex}
                             data={questionsByItem?.[item.itemIndex]}
                           />
@@ -141,6 +143,7 @@ export default function ItemAnalyticsTable({ activityId, data, questionsByItem }
               {expandedItem === item.itemIndex && (
                 <QuestionBreakdown
                   activityId={activityId}
+                  period={period}
                   itemIndex={item.itemIndex}
                   data={questionsByItem?.[item.itemIndex]}
                 />
@@ -157,15 +160,17 @@ export default function ItemAnalyticsTable({ activityId, data, questionsByItem }
 
 function QuestionBreakdown({
   activityId,
+  period,
   itemIndex,
   data,
 }: {
   activityId: string | null;
+  period?: ActivityPeriod;
   itemIndex: number;
   data?: QuestionStats[];
 }) {
   const t = useTranslations(texts);
-  const { data: fetchedQuestions, loading } = useQuestionStats(data ? null : activityId, itemIndex);
+  const { data: fetchedQuestions, loading } = useQuestionStats(data ? null : activityId, itemIndex, period);
   const questions = data ?? fetchedQuestions;
 
   if (loading) {

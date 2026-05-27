@@ -19,6 +19,7 @@ import {
 import { texts } from './AdminStatisticsTab.i18n';
 import type {
   ActivityAnalyticsData,
+  ActivityPeriod,
   ActivitySubTab,
   AnomalyAlert,
   GroupStats,
@@ -26,7 +27,6 @@ import type {
   ParticipantInsight,
 } from './types';
 import {
-  ActionButton,
   AlertBanner,
   AlertIcon,
   AnalyticsHeader,
@@ -36,6 +36,9 @@ import {
   HeaderActionGroup,
   HeaderEyebrow,
   HeaderMeta,
+  PeriodButton,
+  PeriodControl,
+  PeriodLabel,
   InsightItem,
   InsightList,
   InsightMain,
@@ -192,15 +195,16 @@ function buildRecommendations(
   return recommendations.slice(0, 4);
 }
 
-export default function ActivityAnalytics({ activityId, onBack }: Props) {
+export default function ActivityAnalytics({ activityId }: Props) {
   const t = useTranslations(texts);
   const [subTab, setSubTab] = useState<ActivitySubTab>('overview');
+  const [period, setPeriod] = useState<ActivityPeriod>('year');
 
-  const analyticsQuery = useActivityAnalytics(activityId);
-  const anomaliesQuery = useAnomalies(activityId);
-  const funnelQuery = useFunnel(activityId);
-  const itemsQuery = useItemStats(activityId);
-  const groupsQuery = useGroupStats(activityId);
+  const analyticsQuery = useActivityAnalytics(activityId, period);
+  const anomaliesQuery = useAnomalies(activityId, period);
+  const funnelQuery = useFunnel(activityId, period);
+  const itemsQuery = useItemStats(activityId, period);
+  const groupsQuery = useGroupStats(activityId, period);
 
   const analytics = analyticsQuery.data;
   const anomalies = anomaliesQuery.data ?? [];
@@ -224,14 +228,12 @@ export default function ActivityAnalytics({ activityId, onBack }: Props) {
     { key: 'groups', label: t.groupsTab },
     { key: 'export', label: t.exportTab },
   ];
-
-  const refetchAll = () => {
-    analyticsQuery.refetch();
-    anomaliesQuery.refetch();
-    funnelQuery.refetch();
-    itemsQuery.refetch();
-    groupsQuery.refetch();
-  };
+  const periodOptions: { key: ActivityPeriod; label: string }[] = [
+    { key: 'day', label: t.periodDay },
+    { key: 'week', label: t.periodWeek },
+    { key: 'month', label: t.periodMonth },
+    { key: 'year', label: t.periodYear },
+  ];
 
   if (loading) {
     return <EmptyState>{t.loading}</EmptyState>;
@@ -286,12 +288,19 @@ export default function ActivityAnalytics({ activityId, onBack }: Props) {
           </HeaderMeta>
         </div>
         <HeaderActionGroup>
-          <ActionButton type="button" onClick={refetchAll} disabled={loading}>
-            {t.refresh}
-          </ActionButton>
-          <ActionButton type="button" onClick={onBack}>
-            {t.back}
-          </ActionButton>
+          <PeriodControl aria-label={t.periodFilter}>
+            <PeriodLabel>{t.periodFilter}</PeriodLabel>
+            {periodOptions.map((option) => (
+              <PeriodButton
+                key={option.key}
+                type="button"
+                active={period === option.key}
+                onClick={() => setPeriod(option.key)}
+              >
+                {option.label}
+              </PeriodButton>
+            ))}
+          </PeriodControl>
         </HeaderActionGroup>
       </AnalyticsHeader>
 
@@ -325,6 +334,13 @@ export default function ActivityAnalytics({ activityId, onBack }: Props) {
                 <MetricValue>{analytics.totalParticipants.toLocaleString()}</MetricValue>
                 <MetricSubtext>
                   {status.completed} {t.completedLabel} / {status.inProgress} {t.inProgress}
+                </MetricSubtext>
+              </MetricCard>
+              <MetricCard tone={percentTone(100 - (analytics.abandonmentRate ?? 0))}>
+                <MetricLabel>{t.abandonments}</MetricLabel>
+                <MetricValue>{analytics.abandonmentCount ?? (status.inProgress + status.joined)}</MetricValue>
+                <MetricSubtext>
+                  {Math.round(analytics.abandonmentRate ?? percent(status.inProgress + status.joined, statusTotal))}% {t.abandonmentRate}
                 </MetricSubtext>
               </MetricCard>
               <MetricCard tone={percentTone(analytics.completionRate)}>
@@ -571,18 +587,18 @@ export default function ActivityAnalytics({ activityId, onBack }: Props) {
       )}
 
       {subTab === 'funnel' && (
-        <FunnelChart activityId={activityId} />
+        <FunnelChart activityId={activityId} period={period} />
       )}
 
       {subTab === 'items' && (
-        <ItemAnalyticsTable activityId={activityId} />
+        <ItemAnalyticsTable activityId={activityId} period={period} />
       )}
 
       {subTab === 'groups' && (
-        <GroupComparison activityId={activityId} />
+        <GroupComparison activityId={activityId} period={period} />
       )}
 
-      {subTab === 'export' && <ExportSection activityId={activityId} />}
+      {subTab === 'export' && <ExportSection activityId={activityId} period={period} />}
     </>
   );
 }

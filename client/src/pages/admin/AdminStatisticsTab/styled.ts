@@ -260,10 +260,47 @@ export const HeaderActionGroup = styled('div')({
   gap: 8,
   justifyContent: 'flex-end',
   flexWrap: 'wrap',
+  alignItems: 'center',
   '@media (max-width: 760px)': {
     justifyContent: 'flex-start',
   },
 });
+
+export const PeriodControl = styled('div')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  direction: 'rtl',
+  gap: 4,
+  padding: 3,
+  border: `1px solid ${BORDER}`,
+  borderRadius: 8,
+  background: '#f7f8fa',
+  flexWrap: 'wrap',
+});
+
+export const PeriodLabel = styled('span')({
+  padding: '0 8px',
+  fontSize: 12,
+  fontWeight: 800,
+  color: '#5f6b7a',
+});
+
+export const PeriodButton = styled('button')<{ active?: boolean }>(({ active }) => ({
+  border: 'none',
+  borderRadius: 7,
+  minHeight: 30,
+  padding: '0 10px',
+  fontSize: 12,
+  fontWeight: 800,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+  color: active ? '#fff' : '#425466',
+  background: active ? PRIMARY : 'transparent',
+  boxShadow: active ? '0 1px 3px rgba(39, 43, 58, 0.16)' : 'none',
+  '&:hover': {
+    background: active ? PRIMARY : '#fff',
+  },
+}));
 
 export const ActionButton = styled('button')<{ variant?: 'primary' | 'neutral' }>(({ variant = 'neutral' }) => ({
   border: variant === 'primary' ? `1px solid ${PRIMARY}` : `1px solid ${BORDER}`,
@@ -331,13 +368,13 @@ export const PanelTitle = styled('h3')({
 
 export const MetricGrid = styled('div')({
   display: 'grid',
-  gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
   gap: 12,
-  '@media (max-width: 1180px)': {
-    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-  },
   '@media (max-width: 620px)': {
     gridTemplateColumns: '1fr 1fr',
+  },
+  '@media (max-width: 440px)': {
+    gridTemplateColumns: '1fr',
   },
 });
 

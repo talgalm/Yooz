@@ -12,10 +12,11 @@ import {
   StatsMobileValue,
 } from './styled';
 import { DesktopOnly, HideOnDesktop } from '../../../components/styled';
-import type { GroupStats } from './types';
+import type { ActivityPeriod, GroupStats } from './types';
 
 interface Props {
   activityId: string | null;
+  period?: ActivityPeriod;
   data?: GroupStats[];
 }
 
@@ -26,9 +27,9 @@ function formatDuration(ms: number) {
   return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
-export default function GroupComparison({ activityId, data }: Props) {
+export default function GroupComparison({ activityId, period, data }: Props) {
   const t = useTranslations(texts);
-  const { data: fetchedGroups, loading } = useGroupStats(data ? null : activityId);
+  const { data: fetchedGroups, loading } = useGroupStats(data ? null : activityId, period);
   const groups = data ?? fetchedGroups;
 
   if (loading) {

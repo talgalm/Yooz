@@ -3,12 +3,14 @@ import { useTranslations } from '../../../context/LanguageContext';
 import { downloadExport, type AnalyticsExportType } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
 import { ExportGrid, ExportCard, ExportIcon, ExportLabel, ExportDescription } from './styled';
+import type { ActivityPeriod } from './types';
 
 interface Props {
   activityId: string | null;
+  period?: ActivityPeriod;
 }
 
-export default function ExportSection({ activityId }: Props) {
+export default function ExportSection({ activityId, period }: Props) {
   const t = useTranslations(texts);
   const [downloading, setDownloading] = useState<AnalyticsExportType | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +20,7 @@ export default function ExportSection({ activityId }: Props) {
     setDownloading(type);
     setError(null);
     try {
-      await downloadExport(activityId, type);
+      await downloadExport(activityId, type, period);
     } catch {
       setError(t.exportFailed);
     } finally {

@@ -39,6 +39,44 @@ async function reportMatchForRequest(req: Request, extraMatch: Record<string, un
 
 // ─── Helper: compute median of sorted number array ───
 
+type AnalyticsPeriod = 'day' | 'week' | 'month' | 'year';
+
+function analyticsPeriod(req: Request): AnalyticsPeriod {
+  const period = req.query.period;
+  return period === 'day' || period === 'week' || period === 'month' || period === 'year'
+    ? period
+    : 'year';
+}
+
+function periodStart(period: AnalyticsPeriod): Date {
+  const now = new Date();
+  if (period === 'day') {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+  if (period === 'week') {
+    const start = new Date(now);
+    start.setDate(start.getDate() - 7);
+    return start;
+  }
+  if (period === 'month') {
+    const start = new Date(now);
+    start.setMonth(start.getMonth() - 1);
+    return start;
+  }
+  return new Date(now.getFullYear(), 0, 1);
+}
+
+function activityPeriodMatch(req: Request): Record<string, unknown> {
+  return { joinedAt: { $gte: periodStart(analyticsPeriod(req)) } };
+}
+
+function activityReportMatch(activityId: string, req: Request): Record<string, unknown> {
+  return {
+    activityId: new Types.ObjectId(activityId),
+    ...activityPeriodMatch(req),
+  };
+}
+
 function median(arr: number[]): number {
   if (arr.length === 0) return 0;
   const sorted = [...arr].sort((a, b) => a - b);
@@ -150,7 +188,7 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
   const isMission = activity.module?.type === 'mission';
 
   const reports = await Report.find(
-    { activityId: new Types.ObjectId(activityId) },
+    activityReportMatch(activityId, req),
     {
       participantName: 1, email: 1, phoneNumber: 1, group: 1,
       joinedAt: 1, 'data.totalScore': 1, 'data.itemResults': 1, completionStatus: 1,
@@ -169,6 +207,7 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
   const completedCount = reports.filter((r) => r.completionStatus === 'completed').length;
   const inProgressCount = reports.filter((r) => r.completionStatus === 'in_progress').length;
   const joinedOnlyCount = reports.filter((r) => r.completionStatus === 'joined' || !r.completionStatus).length;
+  const abandonmentCount = inProgressCount + joinedOnlyCount;
   const totalItemsInModule = Math.max(
     activity.module?.items?.length ?? 0,
     ...reports.map((r) => r.totalItemsInModule ?? 0),
@@ -250,7 +289,10 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
 
   res.json({
     activity: { _id: activity._id, name: activity.name, code: activity.code, status: activity.status, moduleType: activity.module?.type },
+    period: analyticsPeriod(req),
     totalParticipants,
+    abandonmentCount,
+    abandonmentRate: totalParticipants > 0 ? Math.round((abandonmentCount / totalParticipants) * 100) : 0,
     completionRate: totalParticipants > 0 ? Math.round((completedCount / totalParticipants) * 100) : 0,
     avgScore: scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0,
     medianScore: Math.round(median(scores)),
@@ -290,7 +332,7 @@ router.get('/activities/:id/funnel', async (req: Request<{ id: string }>, res: R
   }
 
   const reports = await Report.find(
-    { activityId: new Types.ObjectId(activityId) },
+    activityReportMatch(activityId, req),
     { completionStatus: 1, totalItemsCompleted: 1, totalItemsInModule: 1 },
   ).lean();
 
@@ -328,7 +370,7 @@ router.get('/activities/:id/items', async (req: Request<{ id: string }>, res: Re
   }
 
   const pipeline = await Report.aggregate([
-    { $match: { activityId: new Types.ObjectId(activityId), 'data.itemResults': { $exists: true } } },
+    { $match: { ...activityReportMatch(activityId, req), 'data.itemResults': { $exists: true } } },
     { $unwind: '$data.itemResults' },
     {
       $group: {
@@ -385,7 +427,7 @@ router.get('/activities/:id/items/:index/questions', async (req: Request<{ id: s
   }
 
   const pipeline = await Report.aggregate([
-    { $match: { activityId: new Types.ObjectId(activityId), 'data.itemResults': { $exists: true } } },
+    { $match: { ...activityReportMatch(activityId, req), 'data.itemResults': { $exists: true } } },
     { $unwind: '$data.itemResults' },
     { $match: { 'data.itemResults.itemIndex': itemIndex } },
     { $unwind: '$data.itemResults.questionAnswers' },
@@ -433,7 +475,7 @@ router.get('/activities/:id/groups', async (req: Request<{ id: string }>, res: R
   }
 
   const pipeline = await Report.aggregate([
-    { $match: { activityId: new Types.ObjectId(activityId), group: { $exists: true, $ne: null } } },
+    { $match: { ...activityReportMatch(activityId, req), group: { $exists: true, $ne: null } } },
     {
       $group: {
         _id: '$group',
@@ -476,7 +518,7 @@ router.get('/activities/:id/anomalies', async (req: Request<{ id: string }>, res
 
   // Get per-item stats
   const itemStats = await Report.aggregate([
-    { $match: { activityId: new Types.ObjectId(activityId), 'data.itemResults': { $exists: true } } },
+    { $match: { ...activityReportMatch(activityId, req), 'data.itemResults': { $exists: true } } },
     { $unwind: '$data.itemResults' },
     {
       $group: {
@@ -561,9 +603,9 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
     return;
   }
 
-  const reportFilter = await reportMatchForRequest(req, { activityId: new Types.ObjectId(activityId) });
+  const reportFilter = await reportMatchForRequest(req, activityReportMatch(activityId, req));
   const reports = await Report.find(reportFilter).lean();
-  await sendWorkbook(activity as ExportActivity, reports as ExportReport[]);
+  await sendWorkbook(activity as ExportActivity, reports as ExportReport[], `${exportType}_${analyticsPeriod(req)}`);
 });
 
 // ════════════════════════════════════════════

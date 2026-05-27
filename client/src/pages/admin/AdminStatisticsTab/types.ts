@@ -43,6 +43,8 @@ export interface DurationSummary {
   completedWithDuration: number;
 }
 
+export type ActivityPeriod = 'day' | 'week' | 'month' | 'year';
+
 export interface ParticipantInsight {
   name: string;
   group?: string;
@@ -55,7 +57,10 @@ export interface ParticipantInsight {
 
 export interface ActivityAnalyticsData {
   activity: { _id: string; name: string; code: string; status: string; moduleType?: string };
+  period?: ActivityPeriod;
   totalParticipants: number;
+  abandonmentCount?: number;
+  abandonmentRate?: number;
   completionRate: number;
   avgScore: number;
   medianScore: number;
