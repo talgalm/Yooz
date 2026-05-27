@@ -20,6 +20,7 @@ import {
   StatsMobileRow,
   StatsMobileLabel,
   StatsMobileValue,
+  ActionButton,
 } from './styled';
 import { DesktopOnly, HideOnDesktop } from '../../../components/styled';
 
@@ -34,6 +35,7 @@ interface Props {
   activities: Activity[];
   onSelectActivity: (id: string) => void;
   onViewAuditLog: () => void;
+  onViewShowcase: () => void;
 }
 
 function formatDuration(ms: number) {
@@ -45,7 +47,7 @@ function formatDuration(ms: number) {
   return rest ? `${m}m ${rest}s` : `${m}m`;
 }
 
-export default function OverviewSection({ activities, onSelectActivity, onViewAuditLog }: Props) {
+export default function OverviewSection({ activities, onSelectActivity, onViewAuditLog, onViewShowcase }: Props) {
   const t = useTranslations(texts);
   const { data: overview, loading: overviewLoading } = useOverview();
   const { data: timeline } = useTimeline(30);
@@ -64,7 +66,14 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
   }
 
   if (!overview) {
-    return <div style={{ textAlign: 'center', padding: 40, color: '#888' }}>{t.noData}</div>;
+    return (
+      <div style={{ textAlign: 'center', padding: 40, color: '#888' }}>
+        <div style={{ marginBottom: 14 }}>{t.noData}</div>
+        <ActionButton type="button" onClick={onViewShowcase} variant="primary">
+          {t.viewShowcase}
+        </ActionButton>
+      </div>
+    );
   }
 
   return (
@@ -132,22 +141,14 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
       {/* ── Activities Table ── */}
       <SectionHeader>
         <SectionTitle>{t.activitiesTable}</SectionTitle>
-        <button
-          onClick={onViewAuditLog}
-          style={{
-            background: 'none',
-            border: '1px solid #ececf3',
-            borderRadius: 8,
-            padding: '6px 16px',
-            fontSize: 13,
-            fontWeight: 600,
-            color: '#6c5ce7',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-          }}
-        >
-          📋 {t.viewAuditLog}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <ActionButton type="button" onClick={onViewShowcase} variant="primary">
+            {t.viewShowcase}
+          </ActionButton>
+          <ActionButton type="button" onClick={onViewAuditLog}>
+            {t.viewAuditLog}
+          </ActionButton>
+        </div>
       </SectionHeader>
 
       {activities.length === 0 ? (

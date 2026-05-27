@@ -124,7 +124,9 @@ export function useAuditLog(page = 1, limit = 20) {
 
 // ── Export helper (triggers download) ──
 
-export async function downloadExport(activityId: string, type: 'participants' | 'scores' | 'progress') {
+export type AnalyticsExportType = 'executive' | 'participants' | 'scores' | 'progress';
+
+export async function downloadExport(activityId: string, type: AnalyticsExportType) {
   const token = localStorage.getItem('yooz_admin_token');
   const res = await fetch(`/api/admin/analytics/activities/${activityId}/export?type=${type}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},

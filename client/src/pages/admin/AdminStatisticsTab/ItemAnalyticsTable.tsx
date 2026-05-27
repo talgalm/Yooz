@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useTranslations } from '../../../context/LanguageContext';
 import { useItemStats, useQuestionStats } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
@@ -13,9 +13,12 @@ import {
   StatsMobileValue,
 } from './styled';
 import { DesktopOnly, HideOnDesktop } from '../../../components/styled';
+import type { ItemStats, QuestionStats } from './types';
 
 interface Props {
-  activityId: string;
+  activityId: string | null;
+  data?: ItemStats[];
+  questionsByItem?: Record<number, QuestionStats[]>;
 }
 
 function formatDuration(ms: number) {
@@ -25,9 +28,10 @@ function formatDuration(ms: number) {
   return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
-export default function ItemAnalyticsTable({ activityId }: Props) {
+export default function ItemAnalyticsTable({ activityId, data, questionsByItem }: Props) {
   const t = useTranslations(texts);
-  const { data: items, loading } = useItemStats(activityId);
+  const { data: fetchedItems, loading } = useItemStats(data ? null : activityId);
+  const items = data ?? fetchedItems;
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
 
   if (loading) {
@@ -59,9 +63,8 @@ export default function ItemAnalyticsTable({ activityId }: Props) {
               {items.map((item) => {
                 const needsImprovement = item.completionPct < 70 || item.avgScore < item.avgMaxScore * 0.3;
                 return (
-                  <>
+                  <Fragment key={item.itemIndex}>
                     <tr
-                      key={item.itemIndex}
                       onClick={() =>
                         setExpandedItem(expandedItem === item.itemIndex ? null : item.itemIndex)
                       }
@@ -82,13 +85,17 @@ export default function ItemAnalyticsTable({ activityId }: Props) {
                       </td>
                     </tr>
                     {expandedItem === item.itemIndex && (
-                      <tr key={`${item.itemIndex}-questions`}>
+                      <tr>
                         <td colSpan={8} style={{ padding: 0 }}>
-                          <QuestionBreakdown activityId={activityId} itemIndex={item.itemIndex} />
+                          <QuestionBreakdown
+                            activityId={activityId}
+                            itemIndex={item.itemIndex}
+                            data={questionsByItem?.[item.itemIndex]}
+                          />
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -132,7 +139,11 @@ export default function ItemAnalyticsTable({ activityId }: Props) {
                 </StatsMobileRow>
               </StatsMobileCard>
               {expandedItem === item.itemIndex && (
-                <QuestionBreakdown activityId={activityId} itemIndex={item.itemIndex} />
+                <QuestionBreakdown
+                  activityId={activityId}
+                  itemIndex={item.itemIndex}
+                  data={questionsByItem?.[item.itemIndex]}
+                />
               )}
             </div>
           );
@@ -144,9 +155,18 @@ export default function ItemAnalyticsTable({ activityId }: Props) {
 
 // ── Question Breakdown (nested table) ──
 
-function QuestionBreakdown({ activityId, itemIndex }: { activityId: string; itemIndex: number }) {
+function QuestionBreakdown({
+  activityId,
+  itemIndex,
+  data,
+}: {
+  activityId: string | null;
+  itemIndex: number;
+  data?: QuestionStats[];
+}) {
   const t = useTranslations(texts);
-  const { data: questions, loading } = useQuestionStats(activityId, itemIndex);
+  const { data: fetchedQuestions, loading } = useQuestionStats(data ? null : activityId, itemIndex);
+  const questions = data ?? fetchedQuestions;
 
   if (loading) {
     return <div style={{ padding: 16, textAlign: 'center', color: '#888' }}>{t.loading}</div>;

@@ -12,9 +12,11 @@ import {
   StatsMobileValue,
 } from './styled';
 import { DesktopOnly, HideOnDesktop } from '../../../components/styled';
+import type { GroupStats } from './types';
 
 interface Props {
-  activityId: string;
+  activityId: string | null;
+  data?: GroupStats[];
 }
 
 function formatDuration(ms: number) {
@@ -24,9 +26,10 @@ function formatDuration(ms: number) {
   return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
-export default function GroupComparison({ activityId }: Props) {
+export default function GroupComparison({ activityId, data }: Props) {
   const t = useTranslations(texts);
-  const { data: groups, loading } = useGroupStats(activityId);
+  const { data: fetchedGroups, loading } = useGroupStats(data ? null : activityId);
+  const groups = data ?? fetchedGroups;
 
   if (loading) {
     return <div style={{ textAlign: 'center', padding: 24, color: '#888' }}>{t.loading}</div>;

@@ -1,25 +1,27 @@
 import { useState } from 'react';
 import { useTranslations } from '../../../context/LanguageContext';
-import { downloadExport } from '../../../hooks/useAnalytics';
+import { downloadExport, type AnalyticsExportType } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
 import { ExportGrid, ExportCard, ExportIcon, ExportLabel, ExportDescription } from './styled';
 
 interface Props {
-  activityId: string;
+  activityId: string | null;
+  previewOnly?: boolean;
+  showcase?: boolean;
 }
 
-type ExportType = 'participants' | 'scores' | 'progress';
-
-export default function ExportSection({ activityId }: Props) {
+export default function ExportSection({ activityId, previewOnly = false, showcase = false }: Props) {
   const t = useTranslations(texts);
-  const [downloading, setDownloading] = useState<ExportType | null>(null);
+  const [downloading, setDownloading] = useState<AnalyticsExportType | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const exportActivityId = showcase ? 'showcase' : activityId;
 
-  const handleExport = async (type: ExportType) => {
+  const handleExport = async (type: AnalyticsExportType) => {
+    if (!exportActivityId || previewOnly) return;
     setDownloading(type);
     setError(null);
     try {
-      await downloadExport(activityId, type);
+      await downloadExport(exportActivityId, type);
     } catch {
       setError(t.exportFailed);
     } finally {
@@ -27,24 +29,30 @@ export default function ExportSection({ activityId }: Props) {
     }
   };
 
-  const exports: { type: ExportType; icon: string; label: string; description: string }[] = [
+  const exports: { type: AnalyticsExportType; icon: string; label: string; description: string }[] = [
+    {
+      type: 'executive',
+      icon: 'XL',
+      label: t.exportExecutive,
+      description: showcase ? t.exportMockDescription : t.exportExecutiveDescription,
+    },
     {
       type: 'participants',
-      icon: '👥',
+      icon: 'P',
       label: t.exportParticipants,
-      description: 'Excel',
+      description: showcase ? t.exportMockDescription : t.exportParticipantsDescription,
     },
     {
       type: 'scores',
-      icon: '🏆',
+      icon: 'S',
       label: t.exportScores,
-      description: 'Excel',
+      description: showcase ? t.exportMockDescription : t.exportScoresDescription,
     },
     {
       type: 'progress',
-      icon: '📊',
+      icon: '%',
       label: t.exportProgress,
-      description: 'Excel',
+      description: showcase ? t.exportMockDescription : t.exportProgressDescription,
     },
   ];
 
@@ -60,14 +68,14 @@ export default function ExportSection({ activityId }: Props) {
           <ExportCard
             key={exp.type}
             onClick={() => handleExport(exp.type)}
-            disabled={downloading !== null}
-            style={{ opacity: downloading && downloading !== exp.type ? 0.5 : 1 }}
+            disabled={downloading !== null || previewOnly || !exportActivityId}
+            style={{ opacity: (downloading && downloading !== exp.type) || previewOnly ? 0.5 : 1 }}
           >
             <ExportIcon>{exp.icon}</ExportIcon>
             <ExportLabel>
               {downloading === exp.type ? t.downloading : exp.label}
             </ExportLabel>
-            <ExportDescription>{exp.description}</ExportDescription>
+            <ExportDescription>{previewOnly ? t.previewOnly : exp.description}</ExportDescription>
           </ExportCard>
         ))}
       </ExportGrid>
