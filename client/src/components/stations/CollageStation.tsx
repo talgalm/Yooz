@@ -494,7 +494,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
           {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: 13, marginBottom: 8 }}>{error}</p>}
 
           <ButtonRow>
-            <HalfBtn onClick={() => quickCaptureRef.current?.click()} disabled={remaining === 0}>📷 צילום ברגע</HalfBtn>
+            <HalfBtn onClick={() => quickCaptureRef.current?.click()} disabled={remaining === 0}>📷 פתח מצלמה</HalfBtn>
             <HalfBtn onClick={() => fileInputRef.current?.click()} disabled={remaining === 0}>🖼 מהגלריה</HalfBtn>
           </ButtonRow>
 
@@ -540,7 +540,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
           {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: 13, marginBottom: 8 }}>{error}</p>}
 
           <ButtonRow>
-            <HalfBtn onClick={() => quickCaptureRef.current?.click()}>📷 צילום ברגע</HalfBtn>
+            <HalfBtn onClick={() => quickCaptureRef.current?.click()}>📷 פתח מצלמה</HalfBtn>
             <HalfBtn onClick={() => fileInputRef.current?.click()}>🖼 מהגלריה</HalfBtn>
           </ButtonRow>
 

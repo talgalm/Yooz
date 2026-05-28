@@ -6,6 +6,7 @@ const SOUNDS = {
   correct: '/sounds/mission/puzzle-correct.wav',
   complete: '/sounds/complete.wav',
   trashBg: '/sounds/backgroundMusicTrash.mp3',
+  wrong: '/sounds/wrong-bin-sound.mp3',
 } as const;
 
 export function useMissionSounds() {
@@ -13,6 +14,7 @@ export function useMissionSounds() {
   const trashBgRef = useRef<HTMLAudioElement | null>(null);
   const clickRef = useRef<HTMLAudioElement | null>(null);
   const correctRef = useRef<HTMLAudioElement | null>(null);
+  const wrongRef = useRef<HTMLAudioElement | null>(null);
   const completeRef = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState(false);
 
@@ -31,6 +33,10 @@ export function useMissionSounds() {
     correct.volume = 0.7;
     correctRef.current = correct;
 
+    const wrong = new Audio(SOUNDS.wrong);
+    wrong.volume = 0.7;
+    wrongRef.current = wrong;
+
     const complete = new Audio(SOUNDS.complete);
     complete.volume = 0.8;
     completeRef.current = complete;
@@ -47,6 +53,7 @@ export function useMissionSounds() {
       trashBg.src = '';
       click.src = '';
       correct.src = '';
+      wrong.src = '';
       complete.src = '';
     };
   }, []);
@@ -68,6 +75,12 @@ export function useMissionSounds() {
     if (muted || !correctRef.current) return;
     correctRef.current.currentTime = 0;
     correctRef.current.play().catch(() => {});
+  }, [muted]);
+
+  const playWrong = useCallback(() => {
+    if (muted || !wrongRef.current) return;
+    wrongRef.current.currentTime = 0;
+    wrongRef.current.play().catch(() => {});
   }, [muted]);
 
   const stopBg = useCallback(() => {
@@ -114,5 +127,5 @@ export function useMissionSounds() {
     });
   }, []);
 
-  return { muted, toggleMute, startBg, stopBg, playClick, playCorrect, playComplete, startTrashBg, stopTrashBg };
+  return { muted, toggleMute, startBg, stopBg, playClick, playCorrect, playWrong, playComplete, startTrashBg, stopTrashBg };
 }

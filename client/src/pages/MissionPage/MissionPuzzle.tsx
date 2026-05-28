@@ -304,6 +304,7 @@ interface MissionPuzzleProps {
   onComplete: () => void;
   backgroundImage?: string;
   playCorrect?: () => void;
+  playWrong?: () => void;
   playClick?: () => void;
   playComplete?: () => void;
   muted?: boolean;
@@ -338,7 +339,7 @@ function savePuzzleSession(code: string, queue: number[], placed: number[]) {
 
 // ─── Component ───
 
-export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect, playClick, playComplete, muted, toggleMute, code, completeHeader = 'כל הכבוד!', completeButton = 'לשלב הבא', onLogout, onHelp }: MissionPuzzleProps) {
+export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect, playWrong, playClick, playComplete, muted, toggleMute, code, completeHeader = 'כל הכבוד!', completeButton = 'לשלב הבא', onLogout, onHelp }: MissionPuzzleProps) {
   const savedPuzzle = useRef(loadPuzzleSession(code));
 
   const [queue, setQueue] = useState<number[]>(() => {
@@ -408,8 +409,10 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
       playCorrect?.();
       setPlaced((prev) => new Set(prev).add(currentPiece));
       setQueue((prev) => prev.slice(1));
+    } else if (cell !== null) {
+      playWrong?.();
     }
-  }, [dragging, currentPiece, coordToCell, playCorrect]);
+  }, [dragging, currentPiece, coordToCell, playCorrect, playWrong]);
 
   // ─── Mouse ───
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -430,10 +433,13 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
       setGhostPos(null);
       setHighlightCell(null);
       if (!currentPiece) return;
-      if (coordToCell(e.clientX, e.clientY) === currentPiece) {
+      const cell = coordToCell(e.clientX, e.clientY);
+      if (cell === currentPiece) {
         playCorrect?.();
         setPlaced((prev) => new Set(prev).add(currentPiece));
         setQueue((prev) => prev.slice(1));
+      } else if (cell !== null) {
+        playWrong?.();
       }
     };
     window.addEventListener('mousemove', onMove);
@@ -442,7 +448,7 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-  }, [dragging, currentPiece, coordToCell, playCorrect]);
+  }, [dragging, currentPiece, coordToCell, playCorrect, playWrong]);
 
   // Persist puzzle state
   useEffect(() => {

@@ -339,6 +339,7 @@ export default function MissionPage() {
         onComplete={handlePuzzleComplete}
         backgroundImage={PUZZLE_BG}
         playCorrect={sounds.playCorrect}
+        playWrong={sounds.playWrong}
         playClick={sounds.playClick}
         playComplete={sounds.playComplete}
         muted={sounds.muted}

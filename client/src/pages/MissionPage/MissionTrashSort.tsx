@@ -961,7 +961,7 @@ export default function MissionTrashSort({
       setOpenBinId(null);
       setSortedItemsCount((prev) => {
         const next = prev + 1;
-        if (next >= TOTAL_TRASH_ITEMS) {
+        if (prev < TOTAL_TRASH_ITEMS && next >= TOTAL_TRASH_ITEMS) {
           setIsFinalizing(true);
           finalizingTimerRef.current = window.setTimeout(() => {
             setPhase('complete');
@@ -1058,13 +1058,29 @@ export default function MissionTrashSort({
       }
     }, 1000);
 
-    // 50ms tick: move falling items down the screen in viewport pixels
+    // 50ms tick: move falling items down the screen in viewport pixels.
+    // Items past the bottom are removed (no points) and counted toward
+    // sortedItemsCount — otherwise the finish screen never triggers when an
+    // item is missed, since only correct bin clicks bump that counter.
     const fallingTick = window.setInterval(() => {
       setFallingScreenItems((prev) => {
         if (prev.length === 0) return prev;
-        return prev
-          .map((item) => ({ ...item, y: item.y + FALL_PX_PER_TICK }))
-          .filter((item) => item.y < window.innerHeight + 80);
+        const advanced = prev.map((item) => ({ ...item, y: item.y + FALL_PX_PER_TICK }));
+        const remaining = advanced.filter((item) => item.y < window.innerHeight + 80);
+        const missedCount = advanced.length - remaining.length;
+        if (missedCount > 0) {
+          setSortedItemsCount((prevCount) => {
+            const next = prevCount + missedCount;
+            if (prevCount < TOTAL_TRASH_ITEMS && next >= TOTAL_TRASH_ITEMS) {
+              setIsFinalizing(true);
+              finalizingTimerRef.current = window.setTimeout(() => {
+                setPhase('complete');
+              }, 5000);
+            }
+            return next;
+          });
+        }
+        return remaining;
       });
     }, 50);
 
