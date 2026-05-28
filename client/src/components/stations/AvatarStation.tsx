@@ -552,17 +552,37 @@ const ChatBar = styled('form')({
 });
 
 const ChatIconButton = styled('button')({
-  background: 'transparent',
+  background: '#6c5ce7',
   border: 'none',
-  color: '#8b94a8',
-  padding: 8,
+  color: '#ffffff',
+  padding: '8px 12px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  gap: 6,
   cursor: 'pointer',
-  borderRadius: '50%',
-  '&:hover': { color: '#6c5ce7' },
-  '&:disabled': { opacity: 0.4, cursor: 'default' },
+  borderRadius: 999,
+  direction: 'rtl',
+  fontSize: 14,
+  fontWeight: 800,
+  fontFamily: 'inherit',
+  flexShrink: 0,
+  boxShadow: '0 2px 0 #4c3cc7',
+  transition: 'background 0.15s, box-shadow 0.15s, transform 0.15s',
+  '&:hover': { background: '#5a4ad1' },
+  '&:active': {
+    transform: 'translateY(2px)',
+    boxShadow: '0 0 0 #4c3cc7',
+  },
+  '&:disabled': {
+    background: '#c4c9d6',
+    boxShadow: 'none',
+    opacity: 0.75,
+    cursor: 'default',
+  },
+  '&:disabled:active': {
+    transform: 'none',
+  },
 });
 
 const ChatInput = styled('input')({
@@ -592,6 +612,18 @@ const FixedContinue = styled(StationContinueButton)({
   '&:active': {
     transform: 'translateX(-50%) translateY(3px)',
     boxShadow: '0 0 0 #000',
+  },
+  '&:disabled': {
+    background: '#d7dbe5',
+    color: '#7b8190',
+    borderColor: '#9ca3af',
+    boxShadow: '0 3px 0 #8b93a1',
+    cursor: 'not-allowed',
+    opacity: 0.85,
+  },
+  '&:disabled:active': {
+    transform: 'translateX(-50%)',
+    boxShadow: '0 3px 0 #8b93a1',
   },
 });
 
@@ -761,6 +793,7 @@ export default function AvatarStation({
   };
 
   const placeholder = `שאל את ${settings.characterName || ''}`.trim();
+  const hasAskedQuestion = messages.some((m) => m.role === 'user');
 
   const chatInput = (
     <ChatBar onSubmit={handleSubmit}>
@@ -770,6 +803,7 @@ export default function AvatarStation({
         onChange={(e) => setMessage(e.target.value)}
       />
       <ChatIconButton type="submit" aria-label="send" disabled={!message.trim()}>
+        <span>שלח</span>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="22" y1="2" x2="11" y2="13" />
           <polygon points="22 2 15 22 11 13 2 9 22 2" />
@@ -863,7 +897,7 @@ export default function AvatarStation({
         </>
       )}
 
-      <FixedContinue onClick={onContinue}>{continueLabel}</FixedContinue>
+      <FixedContinue onClick={onContinue} disabled={!hasAskedQuestion}>{continueLabel}</FixedContinue>
 
       {descriptionAsPopup && descriptionPopupOpen && station.description && (
         <StationDescriptionPopup
