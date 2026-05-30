@@ -64,20 +64,18 @@ export const MissionWrapper = styled('div')<{ bg?: string, step?: number, ready?
 }));
 
 // The frame container — overlays the SVG frame on top of the background.
-// Locked to the SVG's native 9:16 aspect ratio so the button slot at the bottom
-// of the frame always lines up with the CTA button, regardless of device
-// aspect ratio. On phones taller than 9:16 (most Android + recent iPhones) the
-// frame is centered and the MissionWrapper background fills the remaining
-// vertical space.
+// `backgroundSize: cover` + `100dvh` keeps the SVG's bottom edge (where the
+// button slot lives) anchored to the bottom of the viewport on every device,
+// regardless of aspect ratio — wider phones just crop more on the sides.
 export const FrameContainer = styled('div')({
   position: 'relative',
   zIndex: 2,
-  width: 'min(100%, calc(100dvh * 9 / 16), 480px)',
-  aspectRatio: '9 / 16',
-  maxHeight: '100dvh',
+  width: '100%',
+  maxWidth: 480,
+  height: '100dvh',
   backgroundImage: 'url(/images/mission-frame.svg)',
-  backgroundSize: '100% 100%',
-  backgroundPosition: 'center',
+  backgroundSize: 'cover',
+  backgroundPosition: 'bottom center',
   backgroundRepeat: 'no-repeat',
   display: 'flex',
   flexDirection: 'column',
@@ -175,7 +173,11 @@ export const ScreenImage = styled('img')({
   animation: `${fadeIn} 0.6s ease-out 0.3s both`,
 });
 
-// Teal CTA button at bottom
+// Teal CTA button at bottom.
+// Anchored to the bottom of the FrameContainer with `position: absolute` so it
+// lands in the SVG button slot on every device. The slot in mission-frame.svg
+// sits ~7% above the SVG bottom — `cover` on a 9:16 SVG keeps that anchored to
+// the viewport bottom on all phone aspect ratios, so this offset is stable.
 export const MissionButton = styled('button', {
   shouldForwardProp: (prop) => prop !== 'step',
 })<{ step?: number }>(({ step }) => ({
@@ -199,18 +201,19 @@ export const MissionButton = styled('button', {
   WebkitAppearance: 'none',
   appearance: 'none',
   direction: 'rtl',
-  marginBottom: '3%',
   boxSizing: 'border-box',
+  position: 'absolute',
+  bottom: 'calc(3.5% + env(safe-area-inset-bottom, 0px))',
+  left: '50%',
+  transform: 'translateX(-50%)',
+  zIndex: 5,
+  transition: 'transform 0.15s, box-shadow 0.15s',
   // currentScreen is 0-based: screens 0–2 keep large size; from index 3 onward use compact size.
   ...((step ?? 0) >= 3 ? {
     height: 'clamp(50px, 12vw, 64px)',
-    marginBottom: 0,
     fontSize: 'clamp(18px, 10vw, 24px)',
+    bottom: 'env(safe-area-inset-bottom, 0px)',
   } : {}),
-  position: 'relative',
-  zIndex: 5,
-  transition: 'transform 0.15s, box-shadow 0.15s',
-
 }));
 
 // ─── Top action row (logout + help + mute) ───
