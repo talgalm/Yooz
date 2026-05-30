@@ -20,6 +20,28 @@ const MISSION_FONT = "'Rubik', sans-serif";
 const MISSION_TEXT = '#F2F7FF';
 const MISSION_TEAL = '#39CABC';
 
+const SHARE_MESSAGE_PREFIX = 'אני נהנתי בפעילות בגני יהושע - זה הזמן שלכם! היכנסו לקישור';
+
+function buildSharePlainText(activityUrl: string): string {
+  return `${SHARE_MESSAGE_PREFIX} הזה ${activityUrl}`;
+}
+
+function buildShareHtml(activityUrl: string): string {
+  return `${SHARE_MESSAGE_PREFIX} <a href="${activityUrl}">הזה</a>`;
+}
+
+function buildFacebookShareUrl(activityUrl: string): string {
+  const u = encodeURIComponent(activityUrl);
+  // Only `u` is supported; extra params are ignored and can break mobile deep links.
+  return `https://www.facebook.com/sharer/sharer.php?u=${u}`;
+}
+
+function openFacebookShare(activityUrl: string): void {
+  const url = buildFacebookShareUrl(activityUrl);
+  const w = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!w) window.location.assign(url);
+}
+
 /** SVG textPath ignores bidi on Safari; reverse + bidi-override renders RTL correctly everywhere. */
 function textForSvgTextPath(text: string): string {
   return [...text].reverse().join('');
@@ -667,27 +689,38 @@ export default function MissionTrashSort({
   const handleShareClick = useCallback(async () => {
     trackShareEvent('click');
     const blob = await getBadgeBlob();
+    const shareText = SHARE_MESSAGE_PREFIX + ' הזה';
+    const shareTextWithUrl = buildSharePlainText(shareUrl);
 
-    // Try native share with image file + url
     if (navigator.share) {
-      const shareData: ShareData = { url: shareUrl };
-      if (blob && navigator.canShare) {
-        const file = new File([blob], 'badge.png', { type: 'image/png' });
-        const withFile = { files: [file], url: shareUrl };
-        if (navigator.canShare(withFile)) {
-          shareData.files = [file];
+      const file = blob
+        ? new File([blob], 'ganei-yehoshua.png', { type: 'image/png' })
+        : undefined;
+      const candidates: ShareData[] = [
+        ...(file
+          ? [
+              { files: [file], text: shareText, url: shareUrl },
+              { files: [file], text: shareTextWithUrl },
+              { files: [file], text: shareText },
+            ]
+          : []),
+        { text: shareText, url: shareUrl },
+        { text: shareTextWithUrl },
+        { url: shareUrl },
+      ];
+
+      for (const data of candidates) {
+        if (navigator.canShare && !navigator.canShare(data)) continue;
+        try {
+          await navigator.share(data);
+          trackShareEvent('completed');
+          return;
+        } catch (err) {
+          if (err instanceof DOMException && err.name === 'AbortError') return;
         }
-      }
-      try {
-        await navigator.share(shareData);
-        trackShareEvent('completed');
-        return;
-      } catch {
-        // cancelled or failed — fall through to modal
       }
     }
 
-    // Set preview URL for modal
     if (blob) {
       const url = URL.createObjectURL(blob);
       setBadgePreviewUrl(url);
@@ -696,11 +729,17 @@ export default function MissionTrashSort({
   }, [trackShareEvent, getBadgeBlob, shareUrl]);
 
   const handleSocialShare = useCallback((platform: 'whatsapp' | 'facebook' | 'twitter') => {
-    const encodedUrl = encodeURIComponent(shareUrl);
+    const plainText = buildSharePlainText(shareUrl);
+    const encodedText = encodeURIComponent(plainText);
     let url = '';
-    if (platform === 'whatsapp') url = `https://wa.me/?text=${encodedUrl}`;
-    else if (platform === 'facebook') url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
-    else if (platform === 'twitter') url = `https://twitter.com/intent/tweet?url=${encodedUrl}`;
+    if (platform === 'whatsapp') url = `https://wa.me/?text=${encodedText}`;
+    else if (platform === 'facebook') {
+      openFacebookShare(shareUrl);
+      trackShareEvent('completed');
+      return;
+    } else if (platform === 'twitter') {
+      url = `https://twitter.com/intent/tweet?text=${encodedText}`;
+    }
     window.open(url, '_blank', 'noopener,noreferrer');
     trackShareEvent('completed');
   }, [shareUrl, trackShareEvent]);
@@ -718,13 +757,31 @@ export default function MissionTrashSort({
   }, [getBadgeBlob, trackShareEvent]);
 
   const handleCopyLink = useCallback(async () => {
+    const plainText = buildSharePlainText(shareUrl);
+    const html = buildShareHtml(shareUrl);
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      if (typeof ClipboardItem !== 'undefined') {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/plain': new Blob([plainText], { type: 'text/plain' }),
+            'text/html': new Blob([html], { type: 'text/html' }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(plainText);
+      }
       setCopiedLink(true);
       trackShareEvent('completed');
       setTimeout(() => setCopiedLink(false), 2000);
     } catch {
-      // clipboard not available
+      try {
+        await navigator.clipboard.writeText(plainText);
+        setCopiedLink(true);
+        trackShareEvent('completed');
+        setTimeout(() => setCopiedLink(false), 2000);
+      } catch {
+        // clipboard not available
+      }
     }
   }, [shareUrl, trackShareEvent]);
 
@@ -1452,6 +1509,27 @@ export default function MissionTrashSort({
               {shareButton}
             </div>
 
+            <p
+              style={{
+                fontSize: 14,
+                lineHeight: 1.6,
+                textAlign: 'center',
+                direction: 'rtl',
+                color: MISSION_TEXT,
+                margin: 0,
+              }}
+            >
+              {SHARE_MESSAGE_PREFIX}{' '}
+              <a
+                href={shareUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: MISSION_TEAL, textDecoration: 'underline' }}
+              >
+                הזה
+              </a>
+            </p>
+
             {/* Badge image preview */}
             {badgePreviewUrl && (
               <img
@@ -1469,9 +1547,8 @@ export default function MissionTrashSort({
               ⬇ שמור תמונה
             </ShareCopyBtn>
 
-            {/* Social share (URL) */}
             <div style={{ fontSize: 11, color: 'rgba(242,247,255,0.5)', textAlign: 'center' }}>
-              שתף לינק לפעילות
+              שתפו את ההודעה והתמונה
             </div>
             <ShareOptionRow>
               <ShareOption onClick={() => handleSocialShare('whatsapp')}>
@@ -1497,7 +1574,7 @@ export default function MissionTrashSort({
               </ShareOption>
             </ShareOptionRow>
             <ShareCopyRow>
-              <ShareLinkInput readOnly value={shareUrl} />
+              <ShareLinkInput readOnly value={buildSharePlainText(shareUrl)} />
               <ShareCopyBtn onClick={handleCopyLink}>
                 {copiedLink ? '✓ הועתק' : 'העתק'}
               </ShareCopyBtn>

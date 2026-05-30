@@ -160,6 +160,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         settings: data.settings || {},
         spiderSvg: item.spiderSvg,
         ...(item.isFinal && { isFinal: true }),
+        ...(item.collageSplit && { collageSplit: item.collageSplit }),
       };
     }
   }).filter(Boolean);

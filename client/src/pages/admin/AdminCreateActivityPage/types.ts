@@ -39,6 +39,16 @@ export interface StationOption {
   settings: Record<string, unknown>;
 }
 
+export interface CollageSplit {
+  splitGroupId: string; // shared between all parts of the same split
+  partIndex: number; // 0-based
+  // Canonical per-part image counts. Length = number of parts in the group.
+  // Sum = total image limit on the underlying station. Each entry is the
+  // number of images that part of the split is responsible for.
+  partSizes: number[];
+  totalParts?: number; // legacy fallback, retained for older saved data
+}
+
 export interface ModuleItem {
   itemType: 'game' | 'station' | 'mission';
   ref: string;
@@ -51,6 +61,7 @@ export interface ModuleItem {
   groups?: string[]; // when set, only these groups see this item
   spiderSvg?: string; // optional SVG URL for spiders module display
   isFinal?: boolean; // spiders only: locked until all others are completed
+  collageSplit?: CollageSplit; // collage stations only: split into N parts across the activity
 }
 
 export interface CustomInstructions {
@@ -76,7 +87,7 @@ export interface Activity {
     backgroundImage?: string;
     missionRef?: string;
     showStationNumbers?: boolean;
-    items: { type: 'game' | 'station'; ref: string; groups?: string[]; data?: { _id: string; name: string; type?: string; settings?: Record<string, unknown>; description?: string; customer?: string; theme?: string } }[];
+    items: { type: 'game' | 'station'; ref: string; groups?: string[]; collageSplit?: CollageSplit; data?: { _id: string; name: string; type?: string; settings?: Record<string, unknown>; description?: string; customer?: string; theme?: string } }[];
     popups?: {
       _id?: string;
       title: string;

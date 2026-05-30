@@ -5,12 +5,20 @@ export interface IPopupTrigger {
   itemIndex?: number; // required when point is beforeItem/afterItem
 }
 
+export interface ICollageSplit {
+  splitGroupId: string;
+  partIndex: number;
+  partSizes: number[];
+  totalParts?: number; // legacy fallback
+}
+
 export interface IModuleItem {
   type: 'game' | 'station' | 'mission';
   ref: Types.ObjectId;
   groups?: string[]; // when set, only these groups see this item (empty/undefined = all groups)
   spiderSvg?: string; // optional SVG URL for spiders module display
   isFinal?: boolean; // spiders only: this item is locked until all others are completed
+  collageSplit?: ICollageSplit; // collage stations only: split into N parts across the activity
 }
 
 export interface IPopupCondition {
@@ -125,12 +133,20 @@ const popupMessageSchema = new Schema({
   enabled: { type: Boolean, default: true },
 });
 
+const collageSplitSchema = new Schema<ICollageSplit>({
+  splitGroupId: { type: String, required: true },
+  partIndex: { type: Number, required: true },
+  partSizes: { type: [Number], default: undefined },
+  totalParts: { type: Number },
+}, { _id: false });
+
 const moduleItemSchema = new Schema<IModuleItem>({
   type: { type: String, required: true, enum: ['game', 'station', 'mission'] },
   ref: { type: Schema.Types.ObjectId, required: true },
   groups: { type: [String], default: undefined },
   spiderSvg: { type: String },
   isFinal: { type: Boolean },
+  collageSplit: { type: collageSplitSchema },
 }, { _id: false });
 
 const moduleConfigSchema = new Schema<IModuleConfig>({

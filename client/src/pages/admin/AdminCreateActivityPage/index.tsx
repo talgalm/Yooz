@@ -398,6 +398,7 @@ export default function AdminCreateActivityPage() {
                 groups: item.groups,
                 spiderSvg: (item as { spiderSvg?: string }).spiderSvg,
                 isFinal: (item as { isFinal?: boolean }).isFinal || undefined,
+                collageSplit: (item as { collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number } }).collageSplit as ModuleItem['collageSplit'],
               }))
             );
           }
@@ -531,7 +532,138 @@ export default function AdminCreateActivityPage() {
   };
 
   const addItem = (item: ModuleItem) => setSelectedItems((prev) => [...prev, item]);
-  const removeItem = (index: number) => setSelectedItems((prev) => prev.filter((_, i) => i !== index));
+
+  // Compute the total image limit for a collage station from its settings.
+  const getCollageLimit = (settings: Record<string, unknown> | undefined): number => {
+    if (!settings) return 1;
+    const raw = settings.multiSelectCount;
+    const parsedCount = typeof raw === 'number'
+      ? raw
+      : (typeof raw === 'string' ? parseInt(raw, 10) : NaN);
+    const countLimit = Number.isFinite(parsedCount) && parsedCount > 0 ? parsedCount : 0;
+    const missions = settings.missions;
+    const missionsLimit = Array.isArray(missions) ? missions.length : 0;
+    return Math.max(1, countLimit, missionsLimit);
+  };
+
+  // Even distribution helper for legacy entries that only stored totalParts.
+  const derivePartSizesEvenly = (total: number, parts: number): number[] => {
+    const base = Math.floor(total / parts);
+    const extras = total % parts;
+    return Array.from({ length: parts }, (_, i) => Math.max(1, base + (i < extras ? 1 : 0)));
+  };
+
+  // Get the part-sizes array for a group member, falling back to even
+  // distribution if the legacy totalParts shape is present.
+  const getPartSizes = (item: ModuleItem, limit: number): number[] => {
+    const split = item.collageSplit;
+    if (!split) return [limit];
+    if (split.partSizes && split.partSizes.length > 0) return split.partSizes;
+    if (split.totalParts && split.totalParts > 0) return derivePartSizesEvenly(limit, split.totalParts);
+    return [limit];
+  };
+
+  // Walk items in order; for every item in `groupId`, overwrite collageSplit
+  // with the new partSizes array and re-assign partIndex sequentially.
+  const applyGroupPartSizes = (
+    items: ModuleItem[],
+    groupId: string,
+    partSizes: number[],
+  ): ModuleItem[] => {
+    let partIdx = 0;
+    return items.map((it) => {
+      if (it.collageSplit?.splitGroupId !== groupId) return it;
+      return {
+        ...it,
+        collageSplit: {
+          splitGroupId: groupId,
+          partIndex: partIdx++,
+          partSizes,
+        },
+      };
+    });
+  };
+
+  // After a split part is removed: merge its allocation into a neighbor so the
+  // total image count is preserved. If only one part remains, clear the split.
+  const handleSplitPartRemoved = (items: ModuleItem[], removed: ModuleItem): ModuleItem[] => {
+    const split = removed.collageSplit;
+    if (!split) return items;
+    const groupId = split.splitGroupId;
+    const remainingCount = items.filter((it) => it.collageSplit?.splitGroupId === groupId).length;
+    if (remainingCount === 0) return items;
+    if (remainingCount === 1) {
+      return items.map((it) =>
+        it.collageSplit?.splitGroupId === groupId ? { ...it, collageSplit: undefined } : it,
+      );
+    }
+    const limit = getCollageLimit(removed.settings);
+    const oldSizes = getPartSizes(removed, limit);
+    const removedIdx = split.partIndex;
+    const removedSize = oldSizes[removedIdx] ?? 1;
+    const sizesAfter = oldSizes.filter((_, i) => i !== removedIdx);
+    if (sizesAfter.length === 0) return items;
+    // Merge removed's images into the previous part (or the new first if it was first).
+    const mergeInto = removedIdx === 0 ? 0 : removedIdx - 1;
+    sizesAfter[mergeInto] = (sizesAfter[mergeInto] ?? 0) + removedSize;
+    return applyGroupPartSizes(items, groupId, sizesAfter);
+  };
+
+  const removeItem = (index: number) => setSelectedItems((prev) => {
+    const removed = prev[index];
+    const next = prev.filter((_, i) => i !== index);
+    if (removed?.collageSplit) return handleSplitPartRemoved(next, removed);
+    return next;
+  });
+
+  // Split: subdivide the clicked part into two. Sizes are split as ceil/floor
+  // (e.g. a part of 3 becomes 2 + 1). Disabled when the clicked part has size 1.
+  const splitCollageItem = (index: number) => {
+    setSelectedItems((prev) => {
+      const target = prev[index];
+      if (!target || target.itemType !== 'station' || target.subType !== 'collage') return prev;
+      const limit = getCollageLimit(target.settings);
+      if (limit <= 1) return prev;
+
+      // Initialize the group on first split.
+      let groupId = target.collageSplit?.splitGroupId;
+      let working = prev;
+      if (!groupId) {
+        groupId = `csg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+        working = prev.map((it, i) => i === index
+          ? { ...it, collageSplit: { splitGroupId: groupId!, partIndex: 0, partSizes: [limit] } }
+          : it);
+      }
+
+      const targetNow = working[index];
+      const partSizes = getPartSizes(targetNow, limit);
+      const targetPartIdx = targetNow.collageSplit?.partIndex ?? 0;
+      const cur = partSizes[targetPartIdx] ?? 1;
+      if (cur <= 1) return prev; // can't subdivide a single-image part
+
+      const firstHalf = Math.ceil(cur / 2);
+      const secondHalf = cur - firstHalf;
+      const newSizes = [
+        ...partSizes.slice(0, targetPartIdx),
+        firstHalf,
+        secondHalf,
+        ...partSizes.slice(targetPartIdx + 1),
+      ];
+
+      // Insert a new entry immediately after the row the user clicked.
+      const newPart: ModuleItem = {
+        ...target,
+        collageSplit: { splitGroupId: groupId, partIndex: 0, partSizes: newSizes },
+      };
+      const inserted = [
+        ...working.slice(0, index + 1),
+        newPart,
+        ...working.slice(index + 1),
+      ];
+
+      return applyGroupPartSizes(inserted, groupId, newSizes);
+    });
+  };
   const updateItemSvg = (index: number, svgUrl: string) => {
     setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, spiderSvg: svgUrl || undefined } : item));
   };
@@ -596,6 +728,7 @@ export default function AdminCreateActivityPage() {
             ...(i.groups && i.groups.length > 0 && { groups: i.groups }),
             ...(moduleType === 'spiders' && i.spiderSvg && { spiderSvg: i.spiderSvg }),
             ...(moduleType === 'spiders' && i.isFinal && { isFinal: true }),
+            ...(i.collageSplit && { collageSplit: i.collageSplit }),
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
         };
@@ -1032,6 +1165,7 @@ export default function AdminCreateActivityPage() {
                     onUpdateItemGroups={(index, groups) => setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, groups } : item))}
                     onUpdateItemSvg={updateItemSvg}
                     onToggleItemFinal={toggleItemFinal}
+                    onSplitCollageItem={splitCollageItem}
                     moduleType={moduleType}
                     connectionType={connectionType}
                     groupNames={groupNames}

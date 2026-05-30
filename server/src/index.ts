@@ -4,6 +4,13 @@ import cors from 'cors';
 import path from 'path';
 import { PORT, CLIENT_BUILD_PATH } from './config';
 import { connectDB } from './db/connection';
+import { Activity } from './models';
+import {
+  buildPlayOgHtml,
+  isSocialCrawler,
+  requestOrigin,
+  SHARE_OG_DESCRIPTION,
+} from './utils/shareOgPage';
 import { migrateActivities, seedSuperAdmin, seedBuiltInMission } from './db/seed';
 import authRouter from './routes/auth';
 import adminRouter from './routes/admin';
@@ -73,6 +80,36 @@ app.use('/api/admin/tutorials', tutorialsRouter);
 app.use('/api/admin/themes', themesRouter);
 app.use('/api/check-answer', checkAnswerRouter);
 app.use('/api/tts', ttsRouter);
+
+// Open Graph HTML for Facebook / social crawlers (SPA has no OG tags)
+app.get('/play/:code', async (req, res, next) => {
+  if (!isSocialCrawler(req)) {
+    next();
+    return;
+  }
+  try {
+    const activity = await Activity.findOne({ code: req.params.code }).lean();
+    if (!activity) {
+      res.status(404).send('Activity not found');
+      return;
+    }
+    const origin = requestOrigin(req);
+    const pageUrl = `${origin}/play/${activity.code}`;
+    const imageUrl = `${origin}/images/logo-purple.png`;
+    const title = activity.name ? `${activity.name} | גני יהושע` : 'גני יהושע';
+    res.type('html').send(
+      buildPlayOgHtml({
+        pageUrl,
+        title,
+        description: SHARE_OG_DESCRIPTION,
+        imageUrl,
+      }),
+    );
+  } catch (err) {
+    console.error('OG share page error:', err);
+    next();
+  }
+});
 
 // Serve static client build in production
 app.use(express.static(CLIENT_BUILD_PATH));

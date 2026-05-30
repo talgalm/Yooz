@@ -16,6 +16,13 @@ export interface GameItemData {
   isFinal?: boolean;
 }
 
+export interface CollageSplitData {
+  splitGroupId: string;
+  partIndex: number;
+  partSizes: number[];
+  totalParts?: number; // legacy fallback
+}
+
 export interface StationItemData {
   type: 'station';
   _id: string;
@@ -25,6 +32,7 @@ export interface StationItemData {
   settings?: Record<string, unknown>;
   spiderSvg?: string;
   isFinal?: boolean;
+  collageSplit?: CollageSplitData;
 }
 
 export interface MissionScreen {

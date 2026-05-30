@@ -224,7 +224,15 @@ async function populateActivityItems(activities: any[]): Promise<any[]> {
         if (item.type === 'game') data = gameMap.get(item.ref.toString());
         else if (item.type === 'station') data = stationMap.get(item.ref.toString());
         else if (item.type === 'mission') data = missionMap.get(item.ref.toString());
-        return { type: item.type, ref: item.ref, data, groups: item.groups, spiderSvg: item.spiderSvg };
+        return {
+          type: item.type,
+          ref: item.ref,
+          data,
+          groups: item.groups,
+          spiderSvg: item.spiderSvg,
+          isFinal: item.isFinal,
+          collageSplit: item.collageSplit,
+        };
       });
     }
     return obj;

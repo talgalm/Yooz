@@ -72,6 +72,30 @@ const FilterInput = styled(Input)({
   marginBottom: 12,
 });
 
+const SubFilterRow = styled('div')({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 6,
+  marginBottom: 10,
+});
+
+const SubFilterChip = styled('button')<{ active?: boolean }>(({ active }) => ({
+  background: active ? '#6c5ce7' : '#fff',
+  color: active ? '#fff' : '#666',
+  border: `1px solid ${active ? '#6c5ce7' : '#e0e0e0'}`,
+  borderRadius: 999,
+  padding: '4px 10px',
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 4,
+  transition: 'all 0.12s',
+  '&:hover': { borderColor: '#6c5ce7', color: active ? '#fff' : '#6c5ce7' },
+}));
+
 const Grid = styled('div')({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
@@ -262,6 +286,57 @@ const GroupButton = styled('button')<{ hasGroups?: boolean }>(({ hasGroups }) =>
   '&:hover': { background: '#f5f0ff', borderColor: '#6c5ce7', color: '#6c5ce7' },
 }));
 
+const SplitButton = styled('button')<{ disabled?: boolean }>(({ disabled }) => ({
+  background: 'none',
+  border: `1px solid ${disabled ? '#e0e0e0' : '#6c5ce7'}`,
+  color: disabled ? '#bbb' : '#6c5ce7',
+  borderRadius: 6,
+  padding: '2px 8px',
+  fontSize: 12,
+  cursor: disabled ? 'not-allowed' : 'pointer',
+  fontWeight: 500,
+  flexShrink: 0,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+  fontFamily: 'inherit',
+  '&:hover': disabled ? {} : { background: '#f5f0ff' },
+}));
+
+const PartBadge = styled('span')({
+  background: '#ede9fe',
+  color: '#6c5ce7',
+  borderRadius: 6,
+  padding: '2px 8px',
+  fontSize: 11,
+  fontWeight: 700,
+  flexShrink: 0,
+});
+
+function getCollageImageLimit(settings: Record<string, unknown> | undefined): number {
+  if (!settings) return 1;
+  // Take the max of both signals so an inconsistent settings object still gives
+  // a usable limit. multiSelectCount can be a number or a numeric string.
+  const rawCount = settings.multiSelectCount;
+  const parsedCount = typeof rawCount === 'number'
+    ? rawCount
+    : (typeof rawCount === 'string' ? parseInt(rawCount, 10) : NaN);
+  const countLimit = Number.isFinite(parsedCount) && parsedCount > 0 ? parsedCount : 0;
+  const missions = settings.missions;
+  const missionsLimit = Array.isArray(missions) ? missions.length : 0;
+  return Math.max(1, countLimit, missionsLimit);
+}
+
+function effectivePartSizes(item: ModuleItem, limit: number): number[] {
+  const split = item.collageSplit;
+  if (!split) return [limit];
+  if (split.partSizes && split.partSizes.length > 0) return split.partSizes;
+  const n = split.totalParts && split.totalParts > 0 ? split.totalParts : 1;
+  const base = Math.floor(limit / n);
+  const extras = limit % n;
+  return Array.from({ length: n }, (_, i) => Math.max(1, base + (i < extras ? 1 : 0)));
+}
+
 const FinalButton = styled('button')<{ isFinal?: boolean }>(({ isFinal }) => ({
   background: isFinal ? '#f59e0b' : 'none',
   border: `1px solid ${isFinal ? '#f59e0b' : '#d0d0d0'}`,
@@ -402,6 +477,7 @@ interface ModuleItemsSectionProps {
   onUpdateItemGroups: (index: number, groups: string[]) => void;
   onUpdateItemSvg?: (index: number, svgUrl: string) => void;
   onToggleItemFinal?: (index: number) => void;
+  onSplitCollageItem?: (index: number) => void;
   moduleType?: string;
   connectionType: string;
   groupNames: string[];
@@ -418,6 +494,7 @@ export default function ModuleItemsSection({
   onUpdateItemGroups,
   onUpdateItemSvg,
   onToggleItemFinal,
+  onSplitCollageItem,
   moduleType,
   connectionType,
   groupNames,
@@ -432,6 +509,10 @@ export default function ModuleItemsSection({
   const [loadingItems, setLoadingItems] = useState(true);
   const [previewItem, setPreviewItem] = useState<ModuleItem | null>(null);
   const [groupPopupIndex, setGroupPopupIndex] = useState<number | null>(null);
+
+  // Multi-select sub-filters per tab. Empty set = show all.
+  const [selectedGameTypes, setSelectedGameTypes] = useState<Set<string>>(new Set());
+  const [selectedStationTypes, setSelectedStationTypes] = useState<Set<string>>(new Set());
 
   // Drag state
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -474,9 +555,32 @@ export default function ModuleItemsSection({
     );
   };
 
-  const filteredGames = allGames.filter((g) => matchesFilter(g.name, g.description, g.customer, g.theme));
-  const filteredStations = allStations.filter((s) => matchesFilter(s.name, s.description, s.customer, s.theme));
+  const filteredGames = allGames
+    .filter((g) => selectedGameTypes.size === 0 || selectedGameTypes.has(g.type))
+    .filter((g) => matchesFilter(g.name, g.description, g.customer, g.theme));
+  const filteredStations = allStations
+    .filter((s) => selectedStationTypes.size === 0 || selectedStationTypes.has(s.type))
+    .filter((s) => matchesFilter(s.name, s.description, s.customer, s.theme));
   const filteredMissions = allMissions.filter((m) => matchesFilter(m.name, m.description, m.customer));
+
+  // Unique types present in the loaded data — keeps the chip row in sync with
+  // whichever game/station types actually exist for this user.
+  const gameTypeCounts = (() => {
+    const m = new Map<string, number>();
+    for (const g of allGames) m.set(g.type, (m.get(g.type) ?? 0) + 1);
+    return m;
+  })();
+  const stationTypeCounts = (() => {
+    const m = new Map<string, number>();
+    for (const s of allStations) m.set(s.type, (m.get(s.type) ?? 0) + 1);
+    return m;
+  })();
+
+  const toggleSet = (set: Set<string>, value: string): Set<string> => {
+    const next = new Set(set);
+    if (next.has(value)) next.delete(value); else next.add(value);
+    return next;
+  };
 
   const handleCardClick = (itemType: 'game' | 'station', item: GameOption | StationOption) => {
     if (isSelected(itemType, item._id)) {
@@ -586,6 +690,60 @@ export default function ModuleItemsSection({
             {t.tabMissions || 'Missions'} ({filteredMissions.length})
           </Tab>
         </TabsRow>
+
+        {activeTab === 'games' && gameTypeCounts.size > 1 && (
+          <SubFilterRow>
+            {Array.from(gameTypeCounts.entries())
+              .sort((a, b) => a[0].localeCompare(b[0]))
+              .map(([type, count]) => {
+                const active = selectedGameTypes.has(type);
+                return (
+                  <SubFilterChip
+                    key={type}
+                    type="button"
+                    active={active}
+                    onClick={() => setSelectedGameTypes((prev) => toggleSet(prev, type))}
+                  >
+                    <span style={{ fontSize: 13 }}>{GAME_ICONS[type] || '🎮'}</span>
+                    {type}
+                    <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span>
+                  </SubFilterChip>
+                );
+              })}
+            {selectedGameTypes.size > 0 && (
+              <SubFilterChip type="button" onClick={() => setSelectedGameTypes(new Set())}>
+                ✕ {t.filterAll || 'All'}
+              </SubFilterChip>
+            )}
+          </SubFilterRow>
+        )}
+
+        {activeTab === 'stations' && stationTypeCounts.size > 1 && (
+          <SubFilterRow>
+            {Array.from(stationTypeCounts.entries())
+              .sort((a, b) => a[0].localeCompare(b[0]))
+              .map(([type, count]) => {
+                const active = selectedStationTypes.has(type);
+                return (
+                  <SubFilterChip
+                    key={type}
+                    type="button"
+                    active={active}
+                    onClick={() => setSelectedStationTypes((prev) => toggleSet(prev, type))}
+                  >
+                    <span style={{ fontSize: 13 }}>{STATION_ICONS[type] || '📍'}</span>
+                    {type}
+                    <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span>
+                  </SubFilterChip>
+                );
+              })}
+            {selectedStationTypes.size > 0 && (
+              <SubFilterChip type="button" onClick={() => setSelectedStationTypes(new Set())}>
+                ✕ {t.filterAll || 'All'}
+              </SubFilterChip>
+            )}
+          </SubFilterRow>
+        )}
 
         <FilterInput
           placeholder={t.filterPlaceholder || t.searchPlaceholder}
@@ -758,6 +916,34 @@ export default function ModuleItemsSection({
                     🏁 {item.isFinal ? (t.spidersFinal || 'Final') : (t.spidersSetFinal || 'Set Final')}
                   </FinalButton>
                 )}
+                {item.itemType === 'station' && item.subType === 'collage' && onSplitCollageItem && (() => {
+                  const limit = getCollageImageLimit(item.settings);
+                  const split = item.collageSplit;
+                  const partSizes = effectivePartSizes(item, limit);
+                  const partIdx = split?.partIndex ?? 0;
+                  const partSize = partSizes[partIdx] ?? 1;
+                  const totalParts = partSizes.length;
+                  const cantSubdivide = partSize <= 1;
+                  return (
+                    <>
+                      {split && (
+                        <PartBadge title={t.collageSplitPartLabel || 'Part of split collage'}>
+                          {(t.collageSplitPart || 'חלק')} {partIdx + 1}/{totalParts} · {partSize}📷
+                        </PartBadge>
+                      )}
+                      <SplitButton
+                        type="button"
+                        disabled={cantSubdivide}
+                        onClick={(e) => { e.stopPropagation(); if (!cantSubdivide) onSplitCollageItem(index); }}
+                        title={cantSubdivide
+                          ? (t.collageSplitMinSize || 'This part has only 1 image — can\'t split further')
+                          : (t.collageSplitAdd || 'Split this part')}
+                      >
+                        ✂️ {t.collageSplit || 'Split'}
+                      </SplitButton>
+                    </>
+                  );
+                })()}
                 <PreviewButton type="button" onClick={(e) => { e.stopPropagation(); setPreviewItem(item); }}>
                   {t.preview}
                 </PreviewButton>
