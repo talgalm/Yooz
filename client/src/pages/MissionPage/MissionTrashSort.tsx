@@ -20,6 +20,11 @@ const MISSION_FONT = "'Rubik', sans-serif";
 const MISSION_TEXT = '#F2F7FF';
 const MISSION_TEAL = '#39CABC';
 
+/** SVG textPath ignores bidi on Safari; reverse + bidi-override renders RTL correctly everywhere. */
+function textForSvgTextPath(text: string): string {
+  return [...text].reverse().join('');
+}
+
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -591,6 +596,7 @@ export default function MissionTrashSort({
       ctx.font = 'bold 46px Rubik, Arial, sans-serif';
       ctx.fillStyle = '#ffffff';
       ctx.textAlign = 'center';
+      ctx.direction = 'rtl';
       ctx.shadowColor = 'rgba(0,0,0,0.8)';
       ctx.shadowBlur = 12;
       ctx.fillText(badgeCurveText, W / 2, 130);
@@ -626,6 +632,7 @@ export default function MissionTrashSort({
 
       ctx.save();
       ctx.textAlign = 'center';
+      ctx.direction = 'rtl';
       ctx.shadowColor = 'rgba(0,0,0,0.6)';
       ctx.shadowBlur = 6;
       ctx.font = '22px Rubik, Arial, sans-serif';
@@ -1324,6 +1331,9 @@ export default function MissionTrashSort({
       <>
       <MissionWrapper bg="/images/mission-bg-1.svg" step={0}>
         <FrameContainer>
+          <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
+          <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
+
           <TopActionRow>
             {onLogout && (
               <TopIconButton onClick={onLogout} aria-label="Logout">
@@ -1380,10 +1390,12 @@ export default function MissionTrashSort({
                 fontWeight="900"
                 fontFamily={MISSION_FONT}
                 letterSpacing="2"
+                direction="ltr"
+                unicodeBidi="bidi-override"
                 style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.7))' }}
               >
                 <textPath href="#badge-curve" startOffset="50%" textAnchor="middle">
-                  {badgeCurveText}
+                  {textForSvgTextPath(badgeCurveText)}
                 </textPath>
               </text>
             </svg>
@@ -1413,8 +1425,8 @@ export default function MissionTrashSort({
             </div>
           </MissionContent>
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: -24 }}>
-            <MissionButton step={0} onClick={handleShareClick}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 70 }}>
+            <MissionButton step={3} onClick={handleShareClick}>
               <ShareButtonLabel>
                 {shareButton}
                 <svg width="20" height="20" viewBox="0 0 75 75" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">

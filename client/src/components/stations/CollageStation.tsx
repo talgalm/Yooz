@@ -564,7 +564,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         <Content>
           <TopLabel>תחנת קולאז׳</TopLabel>
           <BigTitle>יש לנו {photos.length} תמונות 🎉</BigTitle>
-          <SubText>אפשר להוסיף כותרת לסרטון, וללחוץ על יצירת סרטון קולאז׳.</SubText>
+          <SubText>תוכלו ליצור סרטון מהתמונות בהמשך הפעילות!</SubText>
 
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.48)', marginBottom: 6 }}>כותרת לסרטון (אופציונלי)</p>
           <TitleInput value={collageTitle} onChange={(e) => setCollageTitle(e.target.value)} placeholder="הרגעים שלנו יחד" dir="rtl" />
