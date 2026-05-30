@@ -63,15 +63,20 @@ export const MissionWrapper = styled('div')<{ bg?: string, step?: number, ready?
   } : {}),
 }));
 
-// The frame container — overlays the SVG frame on top of the background
+// The frame container — overlays the SVG frame on top of the background.
+// Locked to the SVG's native 9:16 aspect ratio so the button slot at the bottom
+// of the frame always lines up with the CTA button, regardless of device
+// aspect ratio. On phones taller than 9:16 (most Android + recent iPhones) the
+// frame is centered and the MissionWrapper background fills the remaining
+// vertical space.
 export const FrameContainer = styled('div')({
   position: 'relative',
   zIndex: 2,
-  width: '100%',
-  maxWidth: 480,
-  height: '100dvh',
+  width: 'min(100%, calc(100dvh * 9 / 16), 480px)',
+  aspectRatio: '9 / 16',
+  maxHeight: '100dvh',
   backgroundImage: 'url(/images/mission-frame.svg)',
-  backgroundSize: 'cover',
+  backgroundSize: '100% 100%',
   backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',
   display: 'flex',

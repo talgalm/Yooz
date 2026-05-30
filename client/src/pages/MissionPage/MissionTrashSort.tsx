@@ -306,7 +306,8 @@ const ContentArea = styled('div')({
 const TitleText = styled('h2')({
   fontFamily: MISSION_FONT,
   color: MISSION_TEXT,
-  fontSize: 'clamp(22px, 6vw, 30px)',
+  fontSize: 'clamp(28px, 8vw, 40px)',
+  fontWeight: 700,
   textAlign: 'center',
   direction: 'rtl',
   margin: 0,
