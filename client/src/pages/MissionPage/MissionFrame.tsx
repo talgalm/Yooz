@@ -174,10 +174,15 @@ export const ScreenImage = styled('img')({
 });
 
 // Teal CTA button at bottom.
-// Anchored to the bottom of the FrameContainer with `position: absolute` so it
-// lands in the SVG button slot on every device. The slot in mission-frame.svg
-// sits ~7% above the SVG bottom — `cover` on a 9:16 SVG keeps that anchored to
-// the viewport bottom on all phone aspect ratios, so this offset is stable.
+// Anchored to the bottom of FrameContainer with `position: absolute` so it lands
+// in the SVG button slot on every device:
+//   • Screens 0–2 use mission-frame.svg (1080×1920, full background, `cover` +
+//     bottom-anchored). The slot sits ~3.5% above the SVG's bottom edge, which
+//     equals 3.5% of FrameContainer height regardless of phone aspect ratio.
+//   • Screens 3+ overlay mission-footer.svg (1080×568, rendered with width:100%
+//     auto-height, so its height scales with viewport WIDTH). The slot sits
+//     roughly mid-way up that footer, so the offset has to be derived from vw,
+//     not dvh.
 export const MissionButton = styled('button', {
   shouldForwardProp: (prop) => prop !== 'step',
 })<{ step?: number }>(({ step }) => ({
@@ -212,7 +217,9 @@ export const MissionButton = styled('button', {
   ...((step ?? 0) >= 3 ? {
     height: 'clamp(50px, 12vw, 64px)',
     fontSize: 'clamp(18px, 10vw, 24px)',
-    bottom: 'env(safe-area-inset-bottom, 0px)',
+    // Footer SVG height ≈ 100vw * 568/1080 ≈ 52.6vw. Slot center sits roughly
+    // 35% up from the footer's bottom edge, so bottom ≈ 52.6vw * 0.35 ≈ 18vw.
+    bottom: 'calc(min(18vw, 86px) + env(safe-area-inset-bottom, 0px))',
   } : {}),
 }));
 

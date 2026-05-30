@@ -369,6 +369,27 @@ const BinsRow = styled('div')({
   animation: `${fadeIn} 0.5s ease-out 0.25s both`,
 });
 
+// Intro-only CTA — sits centered in the ContentArea, directly under the
+// description box, replacing the bins+box that appear once the game starts.
+const StartGameButton = styled('button')({
+  background: '#39CABC',
+  color: '#F2F7FF',
+  border: 'none',
+  borderRadius: 16,
+  padding: '18px 64px',
+  marginTop: 24,
+  fontFamily: "'Rubik', sans-serif",
+  fontSize: 'clamp(20px, 6vw, 28px)',
+  fontWeight: 700,
+  cursor: 'pointer',
+  boxShadow: '0 4px 14px rgba(57, 202, 188, 0.35)',
+  transition: 'transform 0.15s, box-shadow 0.15s',
+  WebkitTapHighlightColor: 'transparent',
+  alignSelf: 'center',
+  animation: `${fadeIn} 0.5s ease-out 0.25s both`,
+  '&:active': { transform: 'scale(0.96)' },
+});
+
 const BinWrapper = styled('div')({
   width: '28%',
   maxWidth: 110,
@@ -428,6 +449,7 @@ interface MissionTrashSortProps {
   badgeAchievementText?: string;
   shareButton?: string;
   continueButton?: string;
+  startButton?: string;
   onContinue?: () => void;
   participantName?: string;
   activityCode?: string;
@@ -527,6 +549,7 @@ export default function MissionTrashSort({
   badgeAchievementText = 'על מציאת המזוודה והצלת הפארק!',
   shareButton = 'שתפו עם חברים',
   continueButton,
+  startButton = 'קדימה!',
   onContinue,
   participantName,
   activityCode,
@@ -927,6 +950,14 @@ export default function MissionTrashSort({
       JSON.stringify({ phase }),
     );
   }, [activityCode, phase]);
+
+  // Intro CTA — bins and the small box are hidden on intro now; clicking
+  // "קדימה!" skips the throwing animation and jumps straight to the countdown.
+  const handleStartGame = useCallback(() => {
+    if (phase !== 'intro') return;
+    setPhase('countdown');
+    setCountdownStep(0);
+  }, [phase]);
 
   const handleBlueBinClick = useCallback(() => {
     if (phase !== 'intro') return;
@@ -1663,28 +1694,33 @@ export default function MissionTrashSort({
 
       <ContentArea>
         <DescBox>{description}</DescBox>
+        {phase === 'intro' && (
+          <StartGameButton onClick={handleStartGame}>{startButton}</StartGameButton>
+        )}
         <BinIconStatic
           ref={binIconRef}
           src="/images/bin-icon.svg"
           alt=""
-          style={{ visibility: showStaticBin && phase === 'intro' ? 'visible' : 'hidden' }}
+          style={{ visibility: showStaticBin && phase === 'throwing' ? 'visible' : 'hidden' }}
         />
       </ContentArea>
 
-      <BinsRow>
-        <BinWrapper>
-          <BinImg src="/images/bin-orange.svg" alt="אריזות" />
-        </BinWrapper>
-        <BinWrapper ref={blueBinRef} onClick={handleBlueBinClick}>
-          <BinImg
-            src={blueBinOpen ? '/images/bin-blue-open.svg' : '/images/bin-blue.svg'}
-            alt="נייר"
-          />
-        </BinWrapper>
-        <BinWrapper>
-          <BinImg src="/images/bin-brown.svg" alt="אורגני" />
-        </BinWrapper>
-      </BinsRow>
+      {phase !== 'intro' && (
+        <BinsRow>
+          <BinWrapper>
+            <BinImg src="/images/bin-orange.svg" alt="אריזות" />
+          </BinWrapper>
+          <BinWrapper ref={blueBinRef} onClick={handleBlueBinClick}>
+            <BinImg
+              src={blueBinOpen ? '/images/bin-blue-open.svg' : '/images/bin-blue.svg'}
+              alt="נייר"
+            />
+          </BinWrapper>
+          <BinWrapper>
+            <BinImg src="/images/bin-brown.svg" alt="אורגני" />
+          </BinWrapper>
+        </BinsRow>
+      )}
     </PageWrapper>
   );
 }
