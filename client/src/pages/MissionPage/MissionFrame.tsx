@@ -109,8 +109,8 @@ export const FrameFooterOverlay = styled('img')({
 // band into the scene; on tall desktop viewports the same padding sat inside.
 export const MissionHeader = styled('div')({
   width: '93%',
-  margin: '2dvh auto 0',
-  padding: '1.5dvh 16px',
+  margin: '3.5dvh auto 0',
+  padding: '2.5dvh 16px',
   minHeight: '5dvh',
   display: 'flex',
   alignItems: 'center',
