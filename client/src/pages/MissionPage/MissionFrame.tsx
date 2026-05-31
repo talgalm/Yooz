@@ -102,12 +102,16 @@ export const FrameFooterOverlay = styled('img')({
   pointerEvents: 'none',
 });
 
-// Header area — positioned at top to match the SVG header rectangle
+// Header area — positioned at top to match the SVG header rectangle.
+// Padding/minHeight use dvh so the text Y-position scales with viewport HEIGHT,
+// not just width. Without this, on short viewports (iPhone Safari with browser
+// chrome visible) the fixed 50px padding pushed the text below the SVG header
+// band into the scene; on tall desktop viewports the same padding sat inside.
 export const MissionHeader = styled('div')({
   width: '93%',
-  margin: '4% auto 0',
-  padding: '50px 16px',
-  minHeight: '10%',
+  margin: '2dvh auto 0',
+  padding: '1.5dvh 16px',
+  minHeight: '5dvh',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -128,7 +132,6 @@ export const HeaderText = styled('h1')({
   direction: 'rtl',
   textAlign: 'center',
   width: '100%',
-  marginTop: -20,
 });
 
 // Content area (middle section)
