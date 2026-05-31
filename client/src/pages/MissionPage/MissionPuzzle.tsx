@@ -437,7 +437,7 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
   // ─── Complete state: show full image, header, footer button ───
   if (complete) {
     return (
-      <MissionWrapper bg={backgroundImage} step={3}>
+      <MissionWrapper bg={backgroundImage} step={0}>
         <FrameContainer>
           <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
           <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
