@@ -50,7 +50,7 @@ export const texts = {
 
     contactHeader: '11. Contact',
     contactBody: 'Questions about this policy can be sent to:',
-    contactEmail: 'talg@kodigital.io',
+    contactEmail: 'eran@out4in.com',
   },
   he: {
     title: 'מדיניות פרטיות',
@@ -103,6 +103,6 @@ export const texts = {
 
     contactHeader: '11. יצירת קשר',
     contactBody: 'שאלות בנוגע למדיניות זו ניתן להפנות אל:',
-    contactEmail: 'talg@kodigital.io',
+    contactEmail: 'eran@out4in.com',
   },
 };
