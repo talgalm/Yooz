@@ -10,6 +10,7 @@ import type {
   GroupStats,
   AnomalyAlert,
   AuditLogEntry,
+  ActivityPeriod,
 } from '../pages/admin/AdminStatisticsTab/types';
 
 const selectTimeline = (response: { timeline: TimelinePoint[] }) => response.timeline;
@@ -24,6 +25,10 @@ const selectAuditLog = (response: { logs: AuditLogEntry[]; total: number; page: 
   page: response.page,
   pages: response.totalPages,
 });
+
+function periodQuery(period?: ActivityPeriod) {
+  return period ? `?period=${period}` : '';
+}
 
 // ── Generic fetcher with loading / error ──
 
@@ -69,45 +74,45 @@ export function useTimeline(days = 30) {
   );
 }
 
-export function useActivityAnalytics(activityId: string | null) {
+export function useActivityAnalytics(activityId: string | null, period?: ActivityPeriod) {
   return useApiFetch<ActivityAnalyticsData>(
-    activityId ? `/api/admin/analytics/activities/${activityId}` : null,
+    activityId ? `/api/admin/analytics/activities/${activityId}${periodQuery(period)}` : null,
   );
 }
 
-export function useFunnel(activityId: string | null) {
+export function useFunnel(activityId: string | null, period?: ActivityPeriod) {
   return useApiFetch<{ funnel: FunnelStep[] }, FunnelStep[]>(
-    activityId ? `/api/admin/analytics/activities/${activityId}/funnel` : null,
+    activityId ? `/api/admin/analytics/activities/${activityId}/funnel${periodQuery(period)}` : null,
     selectFunnel,
   );
 }
 
-export function useItemStats(activityId: string | null) {
+export function useItemStats(activityId: string | null, period?: ActivityPeriod) {
   return useApiFetch<{ items: ItemStats[] }, ItemStats[]>(
-    activityId ? `/api/admin/analytics/activities/${activityId}/items` : null,
+    activityId ? `/api/admin/analytics/activities/${activityId}/items${periodQuery(period)}` : null,
     selectItems,
   );
 }
 
-export function useQuestionStats(activityId: string | null, itemIndex: number | null) {
+export function useQuestionStats(activityId: string | null, itemIndex: number | null, period?: ActivityPeriod) {
   return useApiFetch<{ questions: QuestionStats[] }, QuestionStats[]>(
     activityId && itemIndex !== null
-      ? `/api/admin/analytics/activities/${activityId}/items/${itemIndex}/questions`
+      ? `/api/admin/analytics/activities/${activityId}/items/${itemIndex}/questions${periodQuery(period)}`
       : null,
     selectQuestions,
   );
 }
 
-export function useGroupStats(activityId: string | null) {
+export function useGroupStats(activityId: string | null, period?: ActivityPeriod) {
   return useApiFetch<{ groups: GroupStats[] }, GroupStats[]>(
-    activityId ? `/api/admin/analytics/activities/${activityId}/groups` : null,
+    activityId ? `/api/admin/analytics/activities/${activityId}/groups${periodQuery(period)}` : null,
     selectGroups,
   );
 }
 
-export function useAnomalies(activityId: string | null) {
+export function useAnomalies(activityId: string | null, period?: ActivityPeriod) {
   return useApiFetch<{ alerts: AnomalyAlert[] }, AnomalyAlert[]>(
-    activityId ? `/api/admin/analytics/activities/${activityId}/anomalies` : null,
+    activityId ? `/api/admin/analytics/activities/${activityId}/anomalies${periodQuery(period)}` : null,
     selectAlerts,
   );
 }
@@ -124,9 +129,13 @@ export function useAuditLog(page = 1, limit = 20) {
 
 // ── Export helper (triggers download) ──
 
-export async function downloadExport(activityId: string, type: 'participants' | 'scores' | 'progress') {
+export type AnalyticsExportType = 'executive' | 'participants' | 'scores' | 'progress';
+
+export async function downloadExport(activityId: string, type: AnalyticsExportType, period?: ActivityPeriod) {
   const token = localStorage.getItem('yooz_admin_token');
-  const res = await fetch(`/api/admin/analytics/activities/${activityId}/export?type=${type}`, {
+  const params = new URLSearchParams({ type });
+  if (period) params.set('period', period);
+  const res = await fetch(`/api/admin/analytics/activities/${activityId}/export?${params.toString()}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) throw new Error('Export failed');

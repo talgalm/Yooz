@@ -3,7 +3,12 @@ import { Types } from 'mongoose';
 import { authenticateAdmin, requireRole } from '../middleware/adminAuth';
 import { customerMongoFilter, customerOwnsDoc, isCustomerRole } from '../middleware/customerScope';
 import { Activity, Report, AdminAuditLog } from '../models';
-import * as XLSX from 'xlsx';
+import {
+  buildAnalyticsWorkbookBuffer,
+  type AnalyticsExportType,
+  type ExportActivity,
+  type ExportReport,
+} from '../utils/analyticsExcelExport';
 
 const router = Router();
 
@@ -33,6 +38,44 @@ async function reportMatchForRequest(req: Request, extraMatch: Record<string, un
 }
 
 // ─── Helper: compute median of sorted number array ───
+
+type AnalyticsPeriod = 'day' | 'week' | 'month' | 'year';
+
+function analyticsPeriod(req: Request): AnalyticsPeriod {
+  const period = req.query.period;
+  return period === 'day' || period === 'week' || period === 'month' || period === 'year'
+    ? period
+    : 'year';
+}
+
+function periodStart(period: AnalyticsPeriod): Date {
+  const now = new Date();
+  if (period === 'day') {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+  if (period === 'week') {
+    const start = new Date(now);
+    start.setDate(start.getDate() - 7);
+    return start;
+  }
+  if (period === 'month') {
+    const start = new Date(now);
+    start.setMonth(start.getMonth() - 1);
+    return start;
+  }
+  return new Date(now.getFullYear(), 0, 1);
+}
+
+function activityPeriodMatch(req: Request): Record<string, unknown> {
+  return { joinedAt: { $gte: periodStart(analyticsPeriod(req)) } };
+}
+
+function activityReportMatch(activityId: string, req: Request): Record<string, unknown> {
+  return {
+    activityId: new Types.ObjectId(activityId),
+    ...activityPeriodMatch(req),
+  };
+}
 
 function median(arr: number[]): number {
   if (arr.length === 0) return 0;
@@ -145,11 +188,12 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
   const isMission = activity.module?.type === 'mission';
 
   const reports = await Report.find(
-    { activityId: new Types.ObjectId(activityId) },
+    activityReportMatch(activityId, req),
     {
       participantName: 1, email: 1, phoneNumber: 1, group: 1,
       joinedAt: 1, 'data.totalScore': 1, 'data.itemResults': 1, completionStatus: 1,
       sessionDurationMs: 1, totalItemsCompleted: 1, totalItemsInModule: 1,
+      lastActiveItemIndex: 1,
     },
   ).lean();
 
@@ -161,6 +205,20 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
     .map((r) => r.sessionDurationMs)
     .filter((d): d is number => typeof d === 'number' && d > 0);
   const completedCount = reports.filter((r) => r.completionStatus === 'completed').length;
+  const inProgressCount = reports.filter((r) => r.completionStatus === 'in_progress').length;
+  const joinedOnlyCount = reports.filter((r) => r.completionStatus === 'joined' || !r.completionStatus).length;
+  const abandonmentCount = inProgressCount + joinedOnlyCount;
+  const totalItemsInModule = Math.max(
+    activity.module?.items?.length ?? 0,
+    ...reports.map((r) => r.totalItemsInModule ?? 0),
+  );
+  const progressValues = reports.map((r) => {
+    if (totalItemsInModule <= 0) return r.completionStatus === 'completed' ? 100 : 0;
+    return Math.min(100, Math.round(((r.totalItemsCompleted ?? 0) / totalItemsInModule) * 100));
+  });
+  const avgProgressPct = progressValues.length > 0
+    ? Math.round(progressValues.reduce((sum, value) => sum + value, 0) / progressValues.length)
+    : 0;
 
   // Score distribution histogram (buckets of 10)
   const buckets = Array.from({ length: 11 }, (_, i) => ({ min: i * 10, max: i * 10 + 10, count: 0 }));
@@ -185,13 +243,56 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
       trashSortCompletions,
       avgTrashSortScore: trashSortCompletions > 0
         ? Math.round(trashSortScoreSum / trashSortCompletions)
-        : 0,
+      : 0,
     };
   }
 
+  const scoreSummary = {
+    highest: scores.length > 0 ? Math.max(...scores) : 0,
+    lowest: scores.length > 0 ? Math.min(...scores) : 0,
+    passRate: scores.length > 0 ? Math.round((scores.filter((s) => s >= 70).length / scores.length) * 100) : 0,
+    scoredParticipants: scores.length,
+  };
+
+  const durationSummary = {
+    fastestMs: durations.length > 0 ? Math.min(...durations) : 0,
+    slowestMs: durations.length > 0 ? Math.max(...durations) : 0,
+    completedWithDuration: durations.length,
+  };
+
+  const participantInsights = reports.map((r) => {
+    const score = (r.data as { totalScore?: number })?.totalScore ?? 0;
+    const progressPct = totalItemsInModule > 0
+      ? Math.min(100, Math.round(((r.totalItemsCompleted ?? 0) / totalItemsInModule) * 100))
+      : r.completionStatus === 'completed' ? 100 : 0;
+    return {
+      name: r.participantName,
+      group: r.group,
+      status: r.completionStatus ?? 'joined',
+      score,
+      durationMs: r.sessionDurationMs,
+      progressPct,
+      joinedAt: r.joinedAt ? new Date(r.joinedAt).toISOString() : '',
+    };
+  });
+
+  const topParticipants = [...participantInsights]
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return (a.durationMs ?? Number.MAX_SAFE_INTEGER) - (b.durationMs ?? Number.MAX_SAFE_INTEGER);
+    })
+    .slice(0, 5);
+
+  const recentParticipants = [...participantInsights]
+    .sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime())
+    .slice(0, 6);
+
   res.json({
     activity: { _id: activity._id, name: activity.name, code: activity.code, status: activity.status, moduleType: activity.module?.type },
+    period: analyticsPeriod(req),
     totalParticipants,
+    abandonmentCount,
+    abandonmentRate: totalParticipants > 0 ? Math.round((abandonmentCount / totalParticipants) * 100) : 0,
     completionRate: totalParticipants > 0 ? Math.round((completedCount / totalParticipants) * 100) : 0,
     avgScore: scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0,
     medianScore: Math.round(median(scores)),
@@ -200,6 +301,17 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
     scoreDistribution: buckets,
     shareClicks: activity.shareClicks ?? 0,
     shareCompleted: activity.shareCompleted ?? 0,
+    statusBreakdown: {
+      joined: joinedOnlyCount,
+      inProgress: inProgressCount,
+      completed: completedCount,
+    },
+    scoreSummary,
+    durationSummary,
+    topParticipants,
+    recentParticipants,
+    totalItemsInModule,
+    avgProgressPct,
     ...(missionStats && { missionStats }),
   });
 });
@@ -220,7 +332,7 @@ router.get('/activities/:id/funnel', async (req: Request<{ id: string }>, res: R
   }
 
   const reports = await Report.find(
-    { activityId: new Types.ObjectId(activityId) },
+    activityReportMatch(activityId, req),
     { completionStatus: 1, totalItemsCompleted: 1, totalItemsInModule: 1 },
   ).lean();
 
@@ -258,7 +370,7 @@ router.get('/activities/:id/items', async (req: Request<{ id: string }>, res: Re
   }
 
   const pipeline = await Report.aggregate([
-    { $match: { activityId: new Types.ObjectId(activityId), 'data.itemResults': { $exists: true } } },
+    { $match: { ...activityReportMatch(activityId, req), 'data.itemResults': { $exists: true } } },
     { $unwind: '$data.itemResults' },
     {
       $group: {
@@ -315,7 +427,7 @@ router.get('/activities/:id/items/:index/questions', async (req: Request<{ id: s
   }
 
   const pipeline = await Report.aggregate([
-    { $match: { activityId: new Types.ObjectId(activityId), 'data.itemResults': { $exists: true } } },
+    { $match: { ...activityReportMatch(activityId, req), 'data.itemResults': { $exists: true } } },
     { $unwind: '$data.itemResults' },
     { $match: { 'data.itemResults.itemIndex': itemIndex } },
     { $unwind: '$data.itemResults.questionAnswers' },
@@ -363,7 +475,7 @@ router.get('/activities/:id/groups', async (req: Request<{ id: string }>, res: R
   }
 
   const pipeline = await Report.aggregate([
-    { $match: { activityId: new Types.ObjectId(activityId), group: { $exists: true, $ne: null } } },
+    { $match: { ...activityReportMatch(activityId, req), group: { $exists: true, $ne: null } } },
     {
       $group: {
         _id: '$group',
@@ -406,7 +518,7 @@ router.get('/activities/:id/anomalies', async (req: Request<{ id: string }>, res
 
   // Get per-item stats
   const itemStats = await Report.aggregate([
-    { $match: { activityId: new Types.ObjectId(activityId), 'data.itemResults': { $exists: true } } },
+    { $match: { ...activityReportMatch(activityId, req), 'data.itemResults': { $exists: true } } },
     { $unwind: '$data.itemResults' },
     {
       $group: {
@@ -461,13 +573,24 @@ router.get('/activities/:id/anomalies', async (req: Request<{ id: string }>, res
 
 router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
-  const exportType = (req.query.type as string) || 'participants';
+  const exportType = ((req.query.type as string) || 'participants') as AnalyticsExportType;
 
-  const validExportTypes = ['participants', 'scores', 'progress'];
+  const validExportTypes: AnalyticsExportType[] = ['executive', 'participants', 'scores', 'progress'];
   if (!validExportTypes.includes(exportType)) {
-    res.status(400).json({ error: 'Invalid export type. Must be one of: participants, scores, progress' });
+    res.status(400).json({ error: 'Invalid export type. Must be one of: executive, participants, scores, progress' });
     return;
   }
+
+  const sendWorkbook = async (activity: ExportActivity, reports: ExportReport[], suffix: string = exportType) => {
+    const buffer = await buildAnalyticsWorkbookBuffer(activity, reports, exportType);
+    const safeName = activity.name.replace(/[^a-zA-Z0-9\u0590-\u05FF]/g, '_');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const fileName = `${safeName}_${suffix}_${dateStr}.xlsx`;
+    const asciiName = `${safeName.replace(/[^\x20-\x7E]/g, '_')}_${suffix}_${dateStr}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
+    res.send(buffer);
+  };
 
   if (!Types.ObjectId.isValid(activityId)) {
     res.status(400).json({ error: 'Invalid activity ID' });
@@ -480,72 +603,9 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
     return;
   }
 
-  const reportFilter = await reportMatchForRequest(req, { activityId: new Types.ObjectId(activityId) });
+  const reportFilter = await reportMatchForRequest(req, activityReportMatch(activityId, req));
   const reports = await Report.find(reportFilter).lean();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let rows: Record<string, any>[] = [];
-  let sheetName = 'Data';
-
-  if (exportType === 'participants') {
-    sheetName = 'Participants';
-    rows = reports.map((r, i) => ({
-      '#': i + 1,
-      Name: r.participantName,
-      Email: r.email || '',
-      Phone: r.phoneNumber || '',
-      Group: r.group || '',
-      'Joined At': r.joinedAt ? new Date(r.joinedAt).toISOString() : '',
-      Status: r.completionStatus || 'joined',
-      'Total Score': (r.data as { totalScore?: number })?.totalScore ?? 0,
-    }));
-  } else if (exportType === 'scores') {
-    sheetName = 'Scores';
-    rows = reports.map((r, i) => {
-      const data = (r.data || {}) as { totalScore?: number; scores?: { gameName: string; score: number }[] };
-      const row: Record<string, unknown> = {
-        '#': i + 1,
-        Name: r.participantName,
-        Group: r.group || '',
-        'Total Score': data.totalScore ?? 0,
-        'Completion': r.completionStatus || 'joined',
-        'Duration (s)': r.sessionDurationMs ? Math.round(r.sessionDurationMs / 1000) : '',
-      };
-      // Add per-game columns
-      (data.scores || []).forEach((s, j) => {
-        row[`Game ${j + 1}: ${s.gameName ?? ''}`] = s?.score ?? 0;
-      });
-      return row;
-    });
-  } else if (exportType === 'progress') {
-    sheetName = 'Progress';
-    rows = reports.map((r, i) => ({
-      '#': i + 1,
-      Name: r.participantName,
-      Group: r.group || '',
-      Status: r.completionStatus || 'joined',
-      'Items Completed': r.totalItemsCompleted ?? 0,
-      'Total Items': r.totalItemsInModule ?? '',
-      'Last Active Item': r.lastActiveItemIndex ?? 0,
-      'Session Duration (s)': r.sessionDurationMs ? Math.round(r.sessionDurationMs / 1000) : '',
-      'Joined At': r.joinedAt ? new Date(r.joinedAt).toISOString() : '',
-      'Completed At': r.sessionCompletedAt ? new Date(r.sessionCompletedAt).toISOString() : '',
-    }));
-  }
-
-  // Generate Excel workbook
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-
-  const safeName = activity.name.replace(/[^a-zA-Z0-9\u0590-\u05FF]/g, '_');
-  const dateStr = new Date().toISOString().slice(0, 10);
-  const fileName = `${safeName}_${exportType}_${dateStr}.xlsx`;
-  const asciiName = `${safeName.replace(/[^\x20-\x7E]/g, '_')}_${exportType}_${dateStr}.xlsx`;
-  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.setHeader('Content-Disposition', `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
-  res.send(buffer);
+  await sendWorkbook(activity as ExportActivity, reports as ExportReport[], `${exportType}_${analyticsPeriod(req)}`);
 });
 
 // ════════════════════════════════════════════

@@ -20,6 +20,7 @@ import {
   StatsMobileRow,
   StatsMobileLabel,
   StatsMobileValue,
+  ActionButton,
 } from './styled';
 import { DesktopOnly, HideOnDesktop } from '../../../components/styled';
 
@@ -64,7 +65,11 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
   }
 
   if (!overview) {
-    return <div style={{ textAlign: 'center', padding: 40, color: '#888' }}>{t.noData}</div>;
+    return (
+      <div style={{ textAlign: 'center', padding: 40, color: '#888' }}>
+        {t.noData}
+      </div>
+    );
   }
 
   return (
@@ -132,22 +137,11 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
       {/* ── Activities Table ── */}
       <SectionHeader>
         <SectionTitle>{t.activitiesTable}</SectionTitle>
-        <button
-          onClick={onViewAuditLog}
-          style={{
-            background: 'none',
-            border: '1px solid #ececf3',
-            borderRadius: 8,
-            padding: '6px 16px',
-            fontSize: 13,
-            fontWeight: 600,
-            color: '#6c5ce7',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-          }}
-        >
-          📋 {t.viewAuditLog}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <ActionButton type="button" onClick={onViewAuditLog}>
+            {t.viewAuditLog}
+          </ActionButton>
+        </div>
       </SectionHeader>
 
       {activities.length === 0 ? (

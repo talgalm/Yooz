@@ -2,14 +2,18 @@ import { useTranslations } from '../../../context/LanguageContext';
 import { useFunnel } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
 import { ChartCard, ChartTitle, FunnelContainer, FunnelStep, FunnelCount } from './styled';
+import type { ActivityPeriod, FunnelStep as FunnelStepData } from './types';
 
 interface Props {
-  activityId: string;
+  activityId: string | null;
+  period?: ActivityPeriod;
+  data?: FunnelStepData[];
 }
 
-export default function FunnelChart({ activityId }: Props) {
+export default function FunnelChart({ activityId, period, data }: Props) {
   const t = useTranslations(texts);
-  const { data: funnel, loading } = useFunnel(activityId);
+  const { data: fetchedFunnel, loading } = useFunnel(data ? null : activityId, period);
+  const funnel = data ?? fetchedFunnel;
 
   const stepLabels: Record<string, string> = {
     joined: t.joined,

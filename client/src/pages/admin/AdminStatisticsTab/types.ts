@@ -24,9 +24,43 @@ export interface MissionStats {
   avgTrashSortScore: number;
 }
 
+export interface StatusBreakdown {
+  joined: number;
+  inProgress: number;
+  completed: number;
+}
+
+export interface ScoreSummary {
+  highest: number;
+  lowest: number;
+  passRate: number;
+  scoredParticipants: number;
+}
+
+export interface DurationSummary {
+  fastestMs: number;
+  slowestMs: number;
+  completedWithDuration: number;
+}
+
+export type ActivityPeriod = 'day' | 'week' | 'month' | 'year';
+
+export interface ParticipantInsight {
+  name: string;
+  group?: string;
+  status: 'joined' | 'in_progress' | 'completed';
+  score: number;
+  durationMs?: number;
+  progressPct: number;
+  joinedAt: string;
+}
+
 export interface ActivityAnalyticsData {
   activity: { _id: string; name: string; code: string; status: string; moduleType?: string };
+  period?: ActivityPeriod;
   totalParticipants: number;
+  abandonmentCount?: number;
+  abandonmentRate?: number;
   completionRate: number;
   avgScore: number;
   medianScore: number;
@@ -36,6 +70,13 @@ export interface ActivityAnalyticsData {
   shareClicks: number;
   shareCompleted: number;
   missionStats?: MissionStats;
+  statusBreakdown?: StatusBreakdown;
+  scoreSummary?: ScoreSummary;
+  durationSummary?: DurationSummary;
+  topParticipants?: ParticipantInsight[];
+  recentParticipants?: ParticipantInsight[];
+  totalItemsInModule?: number;
+  avgProgressPct?: number;
 }
 
 export interface FunnelStep {
