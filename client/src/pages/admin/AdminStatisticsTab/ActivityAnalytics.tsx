@@ -79,6 +79,7 @@ import FunnelChart from './FunnelChart';
 import ItemAnalyticsTable from './ItemAnalyticsTable';
 import GroupComparison from './GroupComparison';
 import ExportSection from './ExportSection';
+import AdminReportChat from '../../../components/AdminReportChat';
 
 interface Props {
   activityId: string | null;
@@ -602,6 +603,10 @@ export default function ActivityAnalytics({ activityId }: Props) {
       )}
 
       {subTab === 'export' && <ExportSection activityId={activityId} period={period} />}
+
+      {activityId && (
+        <AdminReportChat activityId={activityId} onSwitchSubTab={setSubTab} />
+      )}
     </>
   );
 }

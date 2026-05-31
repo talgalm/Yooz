@@ -224,6 +224,7 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 - Group comparison table
 - Export button: `button:has-text("Export"), button:has-text("ייצוא")`
 - Back button to overview
+- **AI report assistant FAB** (bottom-end): floating circular "AI" button (`button[aria-label*="AI"], button:has-text("AI")`). Opens a chat panel asking "האם חסר לך איזה דוח?"; user types a free-form request. Server first tries to map it to a built-in export (Executive / Participants / Scores / Progress) or analytics view (Funnel / Items / Groups) and offers an "Open report" button. Otherwise calls Gemini with the activity's aggregated data context and returns a markdown report plus optional table; user can download as XLSX or CSV.
 
 ---
 
