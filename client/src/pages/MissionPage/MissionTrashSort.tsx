@@ -1325,9 +1325,39 @@ export default function MissionTrashSort({
   if (phase === 'complete') {
     return (
       <MissionWrapper bg={undefined} step={1}>
-        <FrameContainer style={{ background: '#1a0a2e' }}>
-          <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
-          <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
+        <FrameContainer style={{ background: 'transparent', backgroundImage: 'none' }}>
+          {/* Background video — fills the whole frame, mission-frame.svg sits on top */}
+          <video
+            src="/videos/env-finish-video.mp4"
+            autoPlay
+            loop
+            playsInline
+            muted
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              zIndex: 0,
+            }}
+          />
+          <img
+            src="/images/mission-frame.svg"
+            alt=""
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'bottom center',
+              zIndex: 1,
+              pointerEvents: 'none',
+            }}
+          />
+          <FrameHeaderOverlay src="/images/mission-header.svg" alt="" style={{ zIndex: 2 }} />
+          <FrameFooterOverlay src="/images/mission-footer.svg" alt="" style={{ zIndex: 2 }} />
 
           <TopActionRow>
             {onLogout && (
@@ -1371,34 +1401,7 @@ export default function MissionTrashSort({
             <HeaderText>{completeHeader}</HeaderText>
           </MissionHeader>
 
-          <MissionContent style={{ padding: '16px 12px 0', gap: 0, justifyContent: 'flex-start', minHeight: 0, overflow: 'hidden' }}>
-            <div
-              style={{
-                width: '85vw',
-                maxWidth: 380,
-                aspectRatio: '1 / 1',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-                borderRadius: 4,
-              }}
-            >
-              <video
-                src="/videos/env-finish-video.mp4"
-                autoPlay
-                loop
-                playsInline
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  objectPosition: 'center 30%',
-                  display: 'block',
-                }}
-              />
-            </div>
-          </MissionContent>
+          <MissionContent />
 
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <MissionButton step={3} onClick={() => setPhase('badge')}>
@@ -1518,11 +1521,6 @@ export default function MissionTrashSort({
                 </svg>
               </ShareButtonLabel>
             </MissionButton>
-            {continueButton && onContinue && (
-              <MissionButton step={0} onClick={onContinue}>
-                {continueButton}
-              </MissionButton>
-            )}
           </div>
         </FrameContainer>
       </MissionWrapper>
