@@ -211,19 +211,12 @@ const PlacedPieceWrapper = styled('div')({
   animation: `${snapIn} 0.35s ease-out`,
 });
 
-// Drag zone is absolutely positioned inside the bottom blue panel slot of
-// mission-footer.svg — same vertical anchor logic as MissionButton step={3}
-// so the live puzzle piece sits centered in the panel.
 const DragZone = styled('div')({
-  position: 'absolute',
-  left: '50%',
-  transform: 'translateX(-50%)',
-  bottom: 'calc(min(16vw, 76px) + env(safe-area-inset-bottom, 0px))',
-  zIndex: 5,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   gap: 10,
+  marginTop: '10%',
   padding: '12px 0',
 });
 
@@ -244,6 +237,15 @@ const GhostContainer = styled('div')({
   pointerEvents: 'none',
   zIndex: 100,
   opacity: 0.85,
+});
+
+const CompleteImage = styled('img')({
+  width: '85vw',
+  maxWidth: 380,
+  aspectRatio: '1 / 1',
+  objectFit: 'cover',
+  borderRadius: 4,
+  animation: `${fadeIn} 0.6s ease-out`,
 });
 
 // ─── Helpers ───
@@ -432,48 +434,23 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
 
   const gs = ghostSize.current || getCellSize() * 1.2;
 
-  // ─── Complete state: full puzzle image fills the frame as background;
-  // mission-frame.svg + header overlay + footer overlay + button sit on top. ───
+  // ─── Complete state: show full image, header, footer button ───
   if (complete) {
     return (
       <MissionWrapper bg={backgroundImage} step={3}>
-        <FrameContainer style={{ background: 'transparent', backgroundImage: 'none' }}>
-          {/* Solved puzzle image — fills the frame, behind everything */}
-          <img
-            src={PUZZLE_IMAGE}
-            alt=""
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              zIndex: 0,
-              animation: `${fadeIn} 0.6s ease-out`,
-            }}
-          />
-          <img
-            src="/images/mission-frame.svg"
-            alt=""
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'bottom center',
-              zIndex: 1,
-              pointerEvents: 'none',
-            }}
-          />
-          <FrameHeaderOverlay src="/images/mission-header.svg" alt="" style={{ zIndex: 2 }} />
-          <FrameFooterOverlay src="/images/mission-footer.svg" alt="" style={{ zIndex: 2 }} />
+        <FrameContainer>
+          <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
+          <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
 
           <MissionTopMenu onLogout={onLogout} toggleMute={toggleMute} muted={muted} onHelp={onHelp} />
 
           <MissionHeader>
             <HeaderText>{completeHeader}</HeaderText>
           </MissionHeader>
+
+          <PuzzleContent style={{ justifyContent: 'flex-start', paddingTop: 10 }}>
+            <CompleteImage src={PUZZLE_IMAGE} alt="" />
+          </PuzzleContent>
 
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <MissionButton step={3} onClick={() => { playClick?.(); onComplete(); }}>
