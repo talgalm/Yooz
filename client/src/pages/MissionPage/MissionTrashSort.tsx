@@ -85,7 +85,7 @@ const TopBar = styled('div')({
   display: 'flex',
   background: '#BA5640',
   alignItems: 'center',
-  justifyContent: 'space-between',
+  justifyContent: 'center',
   padding: '0px 16px 0',
   direction: 'rtl',
   position: 'relative',
