@@ -30,7 +30,8 @@ import ffmpegPath from 'ffmpeg-static';
 import sharp from 'sharp';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from '../config';
 import { Activity } from '../models';
-import motionData from '../data/collage-template-motion.json';
+import motionDataDefault from '../data/collage-template-motion.json';
+import motionDataGanYehoshua from '../data/collage-template-gan-yehoshua-motion.json';
 
 const router = Router();
 
@@ -42,15 +43,15 @@ cloudinary.config({
 
 // ─── Template config ──────────────────────────────────────────────────────────
 //
-// The template video has N green panels filmed across multiple scene cuts and
-// camera moves. Per-scene keyframes (sampled at 10fps via a Python detector)
+// Each template video has N green panels filmed across multiple scene cuts and
+// camera moves. Per-scene keyframes (sampled at 10fps via a detector script)
 // drive the FFmpeg overlay position so each image stays glued to its panel.
 //
-// To re-derive these numbers for a different template:
-//   1. Replace server/assets/collage-template.mp4
-//   2. Run /tmp/yooz-collage-inspect/extract_motion.py against the new video
-//   3. Copy the produced JSON over server/src/data/collage-template-motion.json
-//   4. Update TEMPLATE_META below if the resolution / duration / fps changed
+// To add a new template:
+//   1. Drop the source video into server/assets/<file>.mp4
+//   2. Derive motion JSON via the detector (see /tmp/yooz-gani-detect/detect2.js)
+//   3. Add an entry to TEMPLATES below, keyed by a stable id
+//   4. Expose the id in the admin UI's Content select
 
 interface MotionScene {
   index: number;
@@ -62,38 +63,69 @@ interface MotionScene {
   keyframes: number[][];
 }
 
-const SCENES = motionData as MotionScene[];
+interface TemplateMeta {
+  videoFile: string;
+  width: number;
+  height: number;
+  duration: number;
+  fps: number;
+  startPad: number;
+  chroma: { color: string; similarity: number; blend: number };
+  buffer: number;
+  // Logo placeholder is optional — some templates have no yellow logo region.
+  logo: { color: string; similarity: number; blend: number; x: number; y: number; w: number; h: number } | null;
+  scenes: MotionScene[];
+}
 
-const TEMPLATE_META = {
-  videoFile: 'collage-template.mp4',
-  width: 1080,
-  height: 1350,
-  duration: 32.733,
-  fps: 30,
-  // tpad clones the template's first frame backwards so the first ~80ms
-  // (before the source's first PTS) doesn't render as a black gap.
-  startPad: 0.1,
-  // Sampled hex of the panel green (BGR 105,222,79 → RGB 0x4FDE69). The
-  // panels are uniform across all scenes (std < 3 per channel) and the
-  // panel is rendered as a solid block (no anti-aliased edge, no fade),
-  // so we use a tight similarity with NO blend. A wider blend would give
-  // grass partial alpha (its dark green is in the YUV blend zone), which
-  // makes the lingering image visible as a ghost after the panel ends.
-  chroma: { color: '0x4FDE69', similarity: 0.10, blend: 0.0 },
-  // Each image is rendered larger than its panel and shifted -BUFFER on both
-  // axes, so it over-covers the green region by BUFFER px on every side.
-  // Without this margin the chromakey edge transition reveals the BG at
-  // panel borders (showing as a black/green halo around the photo).
-  buffer: 30,
-  // Static yellow logo placeholder in the template — same position throughout.
-  // Sampled at #F9F532 (uniform). The logo image is overlaid here, and the
-  // foreground template is also chromakey'd against this color so the photo
-  // sits behind the template without yellow showing through.
-  logo: { color: '0xF9F532', similarity: 0.10, blend: 0.0, x: 160, y: 0, w: 130, h: 134 },
+const TEMPLATES: Record<string, TemplateMeta> = {
+  default: {
+    videoFile: 'collage-template.mp4',
+    width: 1080,
+    height: 1350,
+    duration: 32.733,
+    fps: 30,
+    // tpad clones the template's first frame backwards so the first ~80ms
+    // (before the source's first PTS) doesn't render as a black gap.
+    startPad: 0.1,
+    // Sampled hex of the panel green (BGR 105,222,79 → RGB 0x4FDE69). The
+    // panels are uniform across all scenes (std < 3 per channel) and the
+    // panel is rendered as a solid block (no anti-aliased edge, no fade),
+    // so we use a tight similarity with NO blend. A wider blend would give
+    // grass partial alpha (its dark green is in the YUV blend zone), which
+    // makes the lingering image visible as a ghost after the panel ends.
+    chroma: { color: '0x4FDE69', similarity: 0.10, blend: 0.0 },
+    // Each image is rendered larger than its panel and shifted -BUFFER on both
+    // axes, so it over-covers the green region by BUFFER px on every side.
+    // Without this margin the chromakey edge transition reveals the BG at
+    // panel borders (showing as a black/green halo around the photo).
+    buffer: 30,
+    // Static yellow logo placeholder in the template — same position throughout.
+    // Sampled at #F9F532 (uniform). The logo image is overlaid here, and the
+    // foreground template is also chromakey'd against this color so the photo
+    // sits behind the template without yellow showing through.
+    logo: { color: '0xF9F532', similarity: 0.10, blend: 0.0, x: 160, y: 0, w: 130, h: 134 },
+    scenes: motionDataDefault as MotionScene[],
+  },
+  'gan-yehoshua': {
+    videoFile: 'collage-template-gan-yehoshua.mp4',
+    width: 1080,
+    height: 1920,
+    duration: 31.992,
+    fps: 30,
+    startPad: 0.1,
+    // Sampled across multiple panel frames: center 0x4FDC6B, range 0x45D164–0x5CEB6F.
+    // Same target + tolerance as default works cleanly here.
+    chroma: { color: '0x4FDE69', similarity: 0.10, blend: 0.0 },
+    buffer: 30,
+    // No yellow logo placeholder in this template.
+    logo: null,
+    scenes: motionDataGanYehoshua as MotionScene[],
+  },
 };
 
+const DEFAULT_TEMPLATE_ID = 'default';
+
 const FFMPEG_BIN = process.env.FFMPEG_PATH || ffmpegPath || 'ffmpeg';
-const REQUIRED_IMAGES = SCENES.length;
 
 function piecewiseLinearExpr(keyframes: number[][], axis: 'x' | 'y'): string {
   // Build a nested if() FFmpeg expression that linearly interpolates between
@@ -116,8 +148,11 @@ function piecewiseLinearExpr(keyframes: number[][], axis: 'x' | 'y'): string {
   return s;
 }
 
-function buildFilterComplex(opts: { logoIdx: number | null; titleIdx: number | null }): string {
-  const { width, height, chroma, startPad, buffer, logo } = TEMPLATE_META;
+function buildFilterComplex(
+  template: TemplateMeta,
+  opts: { logoIdx: number | null; titleIdx: number | null },
+): string {
+  const { width, height, chroma, startPad, buffer, logo, scenes } = template;
   const { logoIdx, titleIdx } = opts;
   const parts: string[] = [];
 
@@ -129,7 +164,7 @@ function buildFilterComplex(opts: { logoIdx: number | null; titleIdx: number | n
   parts.push(`[tmpl_bg]format=yuv420p[bg]`);
 
   // Each image input (1..N) is scaled to its scene's panel size + buffer.
-  SCENES.forEach((sc, i) => {
+  scenes.forEach((sc, i) => {
     const w = sc.panelW + buffer * 2;
     const h = sc.panelH + buffer * 2;
     parts.push(`[${i + 1}:v]scale=${w}:${h},setsar=1[i${i}]`);
@@ -138,7 +173,7 @@ function buildFilterComplex(opts: { logoIdx: number | null; titleIdx: number | n
   // Stack photo overlays time-gated by scene window. Each image is positioned
   // at (panelX - buffer, panelY - buffer) so its center sits on the panel.
   let prev = 'bg';
-  SCENES.forEach((sc, i) => {
+  scenes.forEach((sc, i) => {
     const xExpr = `(${piecewiseLinearExpr(sc.keyframes, 'x')})-${buffer}`;
     const yExpr = `(${piecewiseLinearExpr(sc.keyframes, 'y')})-${buffer}`;
     const out = `b${i}`;
@@ -152,7 +187,7 @@ function buildFilterComplex(opts: { logoIdx: number | null; titleIdx: number | n
   // Logo: scale to the yellow panel size and overlay at its top-left, behind
   // the template foreground. The yellow color is also added to the chromakey
   // chain below so the template no longer occludes the logo.
-  if (logoIdx !== null) {
+  if (logoIdx !== null && logo) {
     parts.push(`[${logoIdx}:v]scale=${logo.w}:${logo.h}:force_original_aspect_ratio=decrease,pad=${logo.w}:${logo.h}:(ow-iw)/2:(oh-ih)/2:color=0x00000000,setsar=1[logo]`);
     parts.push(`[${prev}][logo]overlay=x=${logo.x}:y=${logo.y}[bgL]`);
     prev = 'bgL';
@@ -165,7 +200,7 @@ function buildFilterComplex(opts: { logoIdx: number | null; titleIdx: number | n
   // Chained chromakey filters can't be used because each one overwrites the
   // alpha channel — so we generate two alpha masks separately and combine
   // them with `blend=darken` (pixel is opaque only if both masks are opaque).
-  if (logoIdx !== null) {
+  if (logoIdx !== null && logo) {
     parts.push(
       `[tmpl_fg]format=yuva420p,split=3[fgRGB][fgG][fgY];` +
       `[fgG]chromakey=color=${chroma.color}:similarity=${chroma.similarity}:blend=${chroma.blend},alphaextract[mg];` +
@@ -199,6 +234,7 @@ function buildFilterComplex(opts: { logoIdx: number | null; titleIdx: number | n
 }
 
 function runFfmpeg(
+  template: TemplateMeta,
   templatePath: string,
   imagePaths: string[],
   outputPath: string,
@@ -206,26 +242,29 @@ function runFfmpeg(
 ): Promise<void> {
   const args: string[] = ['-y', '-i', templatePath];
   for (const p of imagePaths) {
-    args.push('-loop', '1', '-t', String(TEMPLATE_META.duration), '-i', p);
+    args.push('-loop', '1', '-t', String(template.duration), '-i', p);
   }
 
   let nextIdx = 1 + imagePaths.length;
   let logoIdx: number | null = null;
   let titleIdx: number | null = null;
-  if (extras.logoPath) {
-    args.push('-loop', '1', '-t', String(TEMPLATE_META.duration), '-i', extras.logoPath);
+  // Only feed the logo input when the template supports a logo placeholder;
+  // otherwise the chromakey-yellow chain would never key it out and the logo
+  // would sit on top of the photos as a stray rectangle.
+  if (extras.logoPath && template.logo) {
+    args.push('-loop', '1', '-t', String(template.duration), '-i', extras.logoPath);
     logoIdx = nextIdx++;
   }
   if (extras.titlePath) {
-    args.push('-loop', '1', '-t', String(TEMPLATE_META.duration), '-i', extras.titlePath);
+    args.push('-loop', '1', '-t', String(template.duration), '-i', extras.titlePath);
     titleIdx = nextIdx++;
   }
 
   args.push(
-    '-filter_complex', buildFilterComplex({ logoIdx, titleIdx }),
+    '-filter_complex', buildFilterComplex(template, { logoIdx, titleIdx }),
     '-map', '[vout]',
     '-map', '0:a?',  // pass through original soundtrack if present
-    '-t', String(TEMPLATE_META.duration),
+    '-t', String(template.duration),
     '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'fast', '-crf', '23',
     '-c:a', 'aac', '-b:a', '192k',
     '-movflags', '+faststart',
@@ -251,9 +290,13 @@ function runFfmpeg(
   });
 }
 
+// Max images across all templates — multer needs a static limit. All current
+// templates have 6 panels; the +2 leaves room for title + logo.
+const MAX_FILES = Math.max(...Object.values(TEMPLATES).map((t) => t.scenes.length)) + 2;
+
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024, files: REQUIRED_IMAGES + 1 },
+  limits: { fileSize: 50 * 1024 * 1024, files: MAX_FILES },
 });
 
 async function downloadToFile(url: string, destPath: string): Promise<void> {
@@ -268,11 +311,15 @@ async function downloadToFile(url: string, destPath: string): Promise<void> {
 router.post(
   '/generate',
   upload.fields([
-    { name: 'images', maxCount: REQUIRED_IMAGES },
+    { name: 'images', maxCount: MAX_FILES },
     { name: 'titleImage', maxCount: 1 },
   ]),
   async (req: Request, res: Response) => {
-    const { activityCode, logoUrl } = req.body as { activityCode?: string; logoUrl?: string };
+    const { activityCode, logoUrl, template: templateId } = req.body as {
+      activityCode?: string;
+      logoUrl?: string;
+      template?: string;
+    };
 
     if (!activityCode) {
       res.status(400).json({ error: 'activityCode is required' });
@@ -285,12 +332,16 @@ router.post(
       return;
     }
 
+    const resolvedTemplateId = templateId && TEMPLATES[templateId] ? templateId : DEFAULT_TEMPLATE_ID;
+    const template = TEMPLATES[resolvedTemplateId];
+    const requiredImages = template.scenes.length;
+
     const fileMap = (req.files as Record<string, Express.Multer.File[]> | undefined) ?? {};
     const files = fileMap.images ?? [];
     const titleFiles = fileMap.titleImage ?? [];
-    if (files.length !== REQUIRED_IMAGES) {
+    if (files.length !== requiredImages) {
       res.status(400).json({
-        error: `Exactly ${REQUIRED_IMAGES} images are required (got ${files.length})`,
+        error: `Exactly ${requiredImages} images are required (got ${files.length})`,
       });
       return;
     }
@@ -300,7 +351,7 @@ router.post(
       return;
     }
 
-    const templatePath = path.join(process.cwd(), 'assets', TEMPLATE_META.videoFile);
+    const templatePath = path.join(process.cwd(), 'assets', template.videoFile);
     if (!fs.existsSync(templatePath)) {
       res.status(500).json({ error: `Template video not found at ${templatePath}` });
       return;
@@ -359,7 +410,7 @@ router.post(
         fs.writeFileSync(titlePath, titleFiles[0].buffer);
       }
 
-      await runFfmpeg(templatePath, imagePaths, outputPath, { logoPath, titlePath });
+      await runFfmpeg(template, templatePath, imagePaths, outputPath, { logoPath, titlePath });
 
       const cloudResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(

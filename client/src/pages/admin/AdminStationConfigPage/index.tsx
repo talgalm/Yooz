@@ -152,6 +152,7 @@ export default function AdminStationConfigPage() {
   ]);
   const [collageMultiSelect, setCollageMultiSelect] = useState(false);
   const [collageMultiSelectCount, setCollageMultiSelectCount] = useState('6');
+  const [collageTemplate, setCollageTemplate] = useState<'default' | 'gan-yehoshua'>('default');
   // Feedback station
   const [feedbackTitle, setFeedbackTitle] = useState('');
   const [feedbackIntroText, setFeedbackIntroText] = useState('');
@@ -239,6 +240,9 @@ export default function AdminStationConfigPage() {
           setCollageMultiSelect(!!settings.multiSelect);
           if (typeof settings.multiSelectCount === 'number') {
             setCollageMultiSelectCount(String(settings.multiSelectCount));
+          }
+          if (settings.template === 'gan-yehoshua' || settings.template === 'default') {
+            setCollageTemplate(settings.template);
           }
         }
         if (s.type === 'feedback') {
@@ -348,6 +352,9 @@ export default function AdminStationConfigPage() {
       if (typeof settings.multiSelectCount === 'number') {
         setCollageMultiSelectCount(String(settings.multiSelectCount));
       }
+      if (settings.template === 'gan-yehoshua' || settings.template === 'default') {
+        setCollageTemplate(settings.template);
+      }
     }
     if (lib.type === 'feedback') {
       if (settings.title) setFeedbackTitle(settings.title as string);
@@ -451,6 +458,7 @@ export default function AdminStationConfigPage() {
           const n = parseInt(collageMultiSelectCount, 10);
           settings.multiSelectCount = Number.isFinite(n) && n > 0 ? n : 1;
         }
+        settings.template = collageTemplate;
       }
       if (stationType === 'feedback') {
         settings.title = feedbackTitle.trim();
@@ -580,6 +588,7 @@ export default function AdminStationConfigPage() {
     setCollageMissions([{ title: '', description: '' }]);
     setCollageMultiSelect(false);
     setCollageMultiSelectCount('6');
+    setCollageTemplate('default');
     setFeedbackTitle('');
     setFeedbackIntroText('');
     setFeedbackQuestions([{ text: '' }]);
@@ -943,6 +952,24 @@ export default function AdminStationConfigPage() {
                     value={collageDescription}
                     onChange={(e) => setCollageDescription(e.target.value)}
                   />
+
+                  <SectionLabelNoMargin>{t.collageTemplate}</SectionLabelNoMargin>
+                  <SelectionGroup>
+                    <SelectionButton
+                      type="button"
+                      selected={collageTemplate === 'default'}
+                      onClick={() => setCollageTemplate('default')}
+                    >
+                      {t.collageTemplateDefault}
+                    </SelectionButton>
+                    <SelectionButton
+                      type="button"
+                      selected={collageTemplate === 'gan-yehoshua'}
+                      onClick={() => setCollageTemplate('gan-yehoshua')}
+                    >
+                      {t.collageTemplateGanYehoshua}
+                    </SelectionButton>
+                  </SelectionGroup>
 
                   <SectionLabelNoMargin>{t.collageLogo}</SectionLabelNoMargin>
                   <div style={{ fontSize: 12, color: '#888', marginTop: -4, marginBottom: 4 }}>{t.collageLogoDesc}</div>

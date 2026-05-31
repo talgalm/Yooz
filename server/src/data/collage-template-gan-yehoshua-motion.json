@@ -1,0 +1,50 @@
+[
+  {
+    "index": 0,
+    "startSec": 3.1,
+    "endSec": 5.4,
+    "panelW": 752,
+    "panelH": 1008,
+    "keyframes": [[3.1, 164, 456]]
+  },
+  {
+    "index": 1,
+    "startSec": 7.3,
+    "endSec": 9.9,
+    "panelW": 752,
+    "panelH": 1008,
+    "keyframes": [[7.3, 164, 456]]
+  },
+  {
+    "index": 2,
+    "startSec": 13.1,
+    "endSec": 15.6,
+    "panelW": 752,
+    "panelH": 1008,
+    "keyframes": [[13.1, 164, 456]]
+  },
+  {
+    "index": 3,
+    "startSec": 17.8,
+    "endSec": 20.4,
+    "panelW": 752,
+    "panelH": 1008,
+    "keyframes": [[17.8, 164, 456]]
+  },
+  {
+    "index": 4,
+    "startSec": 23.1,
+    "endSec": 25.7,
+    "panelW": 752,
+    "panelH": 1008,
+    "keyframes": [[23.1, 164, 456]]
+  },
+  {
+    "index": 5,
+    "startSec": 29.1,
+    "endSec": 31.9,
+    "panelW": 752,
+    "panelH": 1008,
+    "keyframes": [[29.1, 164, 456]]
+  }
+]

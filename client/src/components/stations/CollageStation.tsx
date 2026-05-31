@@ -220,12 +220,14 @@ function uploadCollageParts(
   title: string,
   logoUrl: string,
   activityCode: string,
+  template: string,
   onUploadProgress: (pct: number) => void, // 0-60
 ): Promise<{ url: string; isVideo: boolean }> {
   return new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append('activityCode', activityCode);
     formData.append('title', title);
+    formData.append('template', template);
     if (logoUrl) formData.append('logoUrl', logoUrl);
     const titlePng = renderTitlePng(title);
     if (titlePng) formData.append('titleImage', titlePng, 'title.png');
@@ -266,6 +268,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const header = (settings.header as string) || station.name || 'תחנת צילום';
   const description = (settings.description as string) || station.description || '';
   const logoUrl = (settings.logoUrl as string) || '';
+  const template = (settings.template as string) || 'default';
   const multiSelect = !!settings.multiSelect;
   const multiSelectCount = typeof settings.multiSelectCount === 'number' && settings.multiSelectCount > 0
     ? (settings.multiSelectCount as number)
@@ -463,6 +466,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         collageTitle,
         logoUrl,
         activityCode,
+        template,
         (uploadPct) => {
           setProgress(uploadPct);
           if (uploadPct >= 60) {

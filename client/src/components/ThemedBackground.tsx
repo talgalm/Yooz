@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import NatureBackground from './NatureBackground';
 import OceanBackground from './OceanBackground';
 import DesertBackground from './DesertBackground';
 import OfficeBackground from './OfficeBackground';
+import { ThemedSceneOverlayContext } from '../context/themedSceneOverlayContext';
 import type { CustomThemeData } from '../pages/StoryModulePage/types';
 
 interface ThemedBackgroundProps {
@@ -13,24 +14,7 @@ interface ThemedBackgroundProps {
 
 export default function ThemedBackground({ theme, customTheme, children }: ThemedBackgroundProps) {
   if (customTheme?.stationsImage) {
-    return (
-      <div style={{
-        position: 'relative',
-        minHeight: '100dvh',
-        height: '100dvh',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        backgroundImage: `url(${customTheme.stationsImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      }}>
-        <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          {children}
-        </div>
-      </div>
-    );
+    return <CustomThemeBackground stationsImage={customTheme.stationsImage}>{children}</CustomThemeBackground>;
   }
 
   switch (theme) {
@@ -45,6 +29,37 @@ export default function ThemedBackground({ theme, customTheme, children }: Theme
     default:
       return <NatureBackground>{children}</NatureBackground>;
   }
+}
+
+/**
+ * Custom-theme wrapper. Provides ThemedSceneOverlayContext so games render
+ * their full-screen backdrop at this outer level — outside the animated
+ * stage whose `transform` would otherwise confine a `position: fixed`
+ * backdrop and leave the sticky header unpainted.
+ */
+function CustomThemeBackground({ stationsImage, children }: { stationsImage: string; children: React.ReactNode }) {
+  const [sceneOverlay, setSceneOverlay] = useState<React.ReactNode | null>(null);
+  return (
+    <ThemedSceneOverlayContext.Provider value={setSceneOverlay}>
+      <div style={{
+        position: 'relative',
+        minHeight: '100dvh',
+        height: '100dvh',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        backgroundImage: `url(${stationsImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}>
+        {sceneOverlay}
+        <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          {children}
+        </div>
+      </div>
+    </ThemedSceneOverlayContext.Provider>
+  );
 }
 
 export function getThemeShellColor(theme?: string): string {
