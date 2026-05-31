@@ -11,9 +11,8 @@ import {
   HeaderText,
   MissionContent,
   MissionButton,
-  TopIconButton,
-  TopActionRow,
 } from './MissionFrame';
+import MissionTopMenu from './MissionTopMenu';
 
 // ─── Design tokens ───
 const MISSION_FONT = "'Rubik', sans-serif";
@@ -211,37 +210,6 @@ const ShareButtonLabel = styled('span')({
   letterSpacing: 0,
   textAlign: 'right',
   direction: 'rtl',
-});
-
-const MuteBtn = styled('button')({
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  padding: 6,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  opacity: 0.85,
-  transition: 'opacity 0.2s',
-  position: 'relative',
-  '&:hover': { opacity: 1 },
-});
-
-const MuteIcon = styled('img')<{ $muted: boolean }>(({ $muted }) => ({
-  width: 28,
-  height: 28,
-  filter: $muted ? 'grayscale(1) brightness(0.5)' : 'brightness(1)',
-  transition: 'filter 0.2s',
-}));
-
-const MuteSlash = styled('div')({
-  position: 'absolute',
-  width: 3,
-  height: 32,
-  background: '#ff4444',
-  borderRadius: 2,
-  transform: 'rotate(45deg)',
-  pointerEvents: 'none',
 });
 
 // ─── Funnel ───
@@ -1200,44 +1168,8 @@ export default function MissionTrashSort({
             <span>{scoreLabel}</span>
             <span>{gameScore}</span>
           </ScoreBox>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {onLogout && (
-              <TopIconButton onClick={onLogout} aria-label="Logout">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </TopIconButton>
-            )}
-            {toggleMute && (
-              <TopIconButton onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
-                {muted ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
-                    <line x1="23" y1="9" x2="17" y2="15" />
-                    <line x1="17" y1="9" x2="23" y2="15" />
-                  </svg>
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
-                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-                  </svg>
-                )}
-              </TopIconButton>
-            )}
-            {onHelp && (
-              <TopIconButton onClick={onHelp} aria-label="Help">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-              </TopIconButton>
-            )}
-          </div>
         </TopBar>
+        <MissionTopMenu onLogout={onLogout} toggleMute={toggleMute} muted={muted} onHelp={onHelp} />
 
         <FunnelArea ref={funnelAreaRef}>
           <FunnelImg src="/images/mission-funnel.svg" alt="" />
@@ -1359,43 +1291,7 @@ export default function MissionTrashSort({
           <FrameHeaderOverlay src="/images/mission-header.svg" alt="" style={{ zIndex: 2 }} />
           <FrameFooterOverlay src="/images/mission-footer.svg" alt="" style={{ zIndex: 2 }} />
 
-          <TopActionRow>
-            {onLogout && (
-              <TopIconButton onClick={onLogout} aria-label="Logout">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </TopIconButton>
-            )}
-            {toggleMute && (
-              <TopIconButton onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
-                {muted ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
-                    <line x1="23" y1="9" x2="17" y2="15" />
-                    <line x1="17" y1="9" x2="23" y2="15" />
-                  </svg>
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
-                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-                  </svg>
-                )}
-              </TopIconButton>
-            )}
-            {onHelp && (
-              <TopIconButton onClick={onHelp} aria-label="Help">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-              </TopIconButton>
-            )}
-          </TopActionRow>
+          <MissionTopMenu onLogout={onLogout} toggleMute={toggleMute} muted={muted} onHelp={onHelp} />
 
           <MissionHeader>
             <HeaderText>{completeHeader}</HeaderText>
@@ -1420,43 +1316,7 @@ export default function MissionTrashSort({
       <>
       <MissionWrapper bg="/images/mission-bg-1.svg" step={0}>
         <FrameContainer>
-          <TopActionRow>
-            {onLogout && (
-              <TopIconButton onClick={onLogout} aria-label="Logout">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </TopIconButton>
-            )}
-            {toggleMute && (
-              <TopIconButton onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
-                {muted ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
-                    <line x1="23" y1="9" x2="17" y2="15" />
-                    <line x1="17" y1="9" x2="23" y2="15" />
-                  </svg>
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
-                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-                  </svg>
-                )}
-              </TopIconButton>
-            )}
-            {onHelp && (
-              <TopIconButton onClick={onHelp} aria-label="Help">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-              </TopIconButton>
-            )}
-          </TopActionRow>
+          <MissionTopMenu onLogout={onLogout} toggleMute={toggleMute} muted={muted} onHelp={onHelp} />
 
           <MissionHeader>
             <HeaderText>{badgeHeader}</HeaderText>
@@ -1634,50 +1494,14 @@ export default function MissionTrashSort({
         </CountdownOverlay>
       )}
 
-      {/* Top bar: score + mute */}
+      {/* Top bar: score only — info menu floats top-right via MissionTopMenu */}
       <TopBar>
         <ScoreBox $flash={scoreFlash}>
           <span>{scoreLabel}</span>
           <span>{gameScore}</span>
         </ScoreBox>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {onLogout && (
-            <TopIconButton onClick={onLogout} aria-label="Logout">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-            </TopIconButton>
-          )}
-          {toggleMute && (
-            <TopIconButton onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
-              {muted ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
-                  <line x1="23" y1="9" x2="17" y2="15" />
-                  <line x1="17" y1="9" x2="23" y2="15" />
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
-                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-                </svg>
-              )}
-            </TopIconButton>
-          )}
-          {onHelp && (
-            <TopIconButton onClick={onHelp} aria-label="Help">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-            </TopIconButton>
-          )}
-        </div>
       </TopBar>
+      <MissionTopMenu onLogout={onLogout} toggleMute={toggleMute} muted={muted} onHelp={onHelp} />
 
       <FunnelArea>
         <FunnelImg src="/images/mission-funnel.svg" alt="" />

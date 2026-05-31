@@ -8,9 +8,8 @@ import {
   MissionHeader,
   HeaderText,
   MissionButton,
-  TopActionRow,
-  TopIconButton,
 } from './MissionFrame';
+import MissionTopMenu from './MissionTopMenu';
 
 // ─── Config ───
 const GRID = 4;
@@ -249,43 +248,6 @@ const CompleteImage = styled('img')({
   animation: `${fadeIn} 0.6s ease-out`,
 });
 
-// ─── Mute button (puzzle) ───
-
-const MuteBtn = styled('button')({
-  position: 'absolute',
-  top: 18,
-  left: 16,
-  right: 'auto',
-  zIndex: 10,
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  padding: 6,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  opacity: 0.85,
-  transition: 'opacity 0.2s',
-  '&:hover': { opacity: 1 },
-});
-
-const MuteBtnIcon = styled('img')<{ $muted: boolean }>(({ $muted }) => ({
-  width: 32,
-  height: 32,
-  filter: $muted ? 'grayscale(1) brightness(0.5)' : 'brightness(1)',
-  transition: 'filter 0.2s',
-}));
-
-const MuteBtnSlash = styled('div')({
-  position: 'absolute',
-  width: 3,
-  height: 36,
-  background: '#ff4444',
-  borderRadius: 2,
-  transform: 'rotate(45deg)',
-  pointerEvents: 'none',
-});
-
 // ─── Helpers ───
 
 function shuffle<T>(arr: T[]): T[] {
@@ -480,43 +442,7 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
           <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
           <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
 
-          <TopActionRow>
-            {onLogout && (
-              <TopIconButton onClick={onLogout} aria-label="Logout">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-              </TopIconButton>
-            )}
-            {toggleMute && (
-              <TopIconButton onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
-                {muted ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
-                    <line x1="23" y1="9" x2="17" y2="15" />
-                    <line x1="17" y1="9" x2="23" y2="15" />
-                  </svg>
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
-                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-                  </svg>
-                )}
-              </TopIconButton>
-            )}
-            {onHelp && (
-              <TopIconButton onClick={onHelp} aria-label="Help">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-              </TopIconButton>
-            )}
-          </TopActionRow>
+          <MissionTopMenu onLogout={onLogout} toggleMute={toggleMute} muted={muted} onHelp={onHelp} />
 
           <MissionHeader>
             <HeaderText>{completeHeader}</HeaderText>
@@ -543,43 +469,7 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
         <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
         <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
 
-        <TopActionRow>
-          {onLogout && (
-            <TopIconButton onClick={onLogout} aria-label="Logout">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-            </TopIconButton>
-          )}
-          {toggleMute && (
-            <TopIconButton onClick={toggleMute} aria-label={muted ? 'Unmute' : 'Mute'}>
-              {muted ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
-                  <line x1="23" y1="9" x2="17" y2="15" />
-                  <line x1="17" y1="9" x2="23" y2="15" />
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 5L6 9H2v6h4l5 4V5z" fill="currentColor" stroke="none" />
-                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-                </svg>
-              )}
-            </TopIconButton>
-          )}
-          {onHelp && (
-            <TopIconButton onClick={onHelp} aria-label="Help">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-            </TopIconButton>
-          )}
-        </TopActionRow>
+        <MissionTopMenu onLogout={onLogout} toggleMute={toggleMute} muted={muted} onHelp={onHelp} />
 
         <PuzzleInstruction>
           גררו את החלק אל תוך התמונה<br />כאשר זה יהיה במקום הנכון יתקבל צליל

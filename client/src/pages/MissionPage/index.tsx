@@ -15,12 +15,10 @@ import {
   DescriptionText,
   ScreenImage,
   MissionButton,
-  MuteButton,
-  MuteIcon,
-  MutedSlash,
 } from './MissionFrame';
 import MissionPuzzle from './MissionPuzzle';
 import MissionTrashSort from './MissionTrashSort';
+import MissionTopMenu from './MissionTopMenu';
 import { useMissionSounds } from './useMissionSounds';
 import { styled, keyframes } from '@mui/material/styles';
 
@@ -405,12 +403,8 @@ export default function MissionPage() {
           </>
         )}
 
-        {/* Mic / mute button */}
-          <MuteButton onClick={sounds.toggleMute} aria-label={sounds.muted ? 'Unmute' : 'Mute'}>
-            <MuteIcon src="/images/mic.svg" alt="" muted={sounds.muted} />
-            {sounds.muted && <MutedSlash />}
-          </MuteButton>
-     
+        {/* Info menu (top-right): tap to open menu with mute/help/logout rows */}
+        <MissionTopMenu toggleMute={sounds.toggleMute} muted={sounds.muted} />
 
         {/* Header - only shown if has content */}
         {hasHeader && (
