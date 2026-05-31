@@ -448,9 +448,7 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
             <HeaderText>{completeHeader}</HeaderText>
           </MissionHeader>
 
-          <PuzzleContent style={{ justifyContent: 'flex-start', paddingTop: 10 }}>
-            <CompleteImage src={PUZZLE_IMAGE} alt="" />
-          </PuzzleContent>
+          <PuzzleContent style={{ justifyContent: 'flex-start', paddingTop: 10 }} />
 
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <MissionButton step={3} onClick={() => { playClick?.(); onComplete(); }}>
