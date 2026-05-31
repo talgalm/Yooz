@@ -534,16 +534,19 @@ export default function AdminCreateActivityPage() {
   const addItem = (item: ModuleItem) => setSelectedItems((prev) => [...prev, item]);
 
   // Compute the total image limit for a collage station from its settings.
+  // Mode-aware: multiSelect mode uses `multiSelectCount`; otherwise the mission
+  // count. (Taking the max of both can over-count when both fields are set.)
   const getCollageLimit = (settings: Record<string, unknown> | undefined): number => {
     if (!settings) return 1;
-    const raw = settings.multiSelectCount;
-    const parsedCount = typeof raw === 'number'
-      ? raw
-      : (typeof raw === 'string' ? parseInt(raw, 10) : NaN);
-    const countLimit = Number.isFinite(parsedCount) && parsedCount > 0 ? parsedCount : 0;
+    if (settings.multiSelect) {
+      const raw = settings.multiSelectCount;
+      const parsed = typeof raw === 'number'
+        ? raw
+        : (typeof raw === 'string' ? parseInt(raw, 10) : NaN);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+    }
     const missions = settings.missions;
-    const missionsLimit = Array.isArray(missions) ? missions.length : 0;
-    return Math.max(1, countLimit, missionsLimit);
+    return Array.isArray(missions) && missions.length > 0 ? missions.length : 1;
   };
 
   // Even distribution helper for legacy entries that only stored totalParts.
@@ -554,11 +557,19 @@ export default function AdminCreateActivityPage() {
   };
 
   // Get the part-sizes array for a group member, falling back to even
-  // distribution if the legacy totalParts shape is present.
+  // distribution if the legacy totalParts shape is present. Also self-heals
+  // when the stored partSizes don't sum to the current limit (e.g. limit was
+  // reduced after the split was saved, or older buggy data) by redistributing
+  // evenly across the same number of parts.
   const getPartSizes = (item: ModuleItem, limit: number): number[] => {
     const split = item.collageSplit;
     if (!split) return [limit];
-    if (split.partSizes && split.partSizes.length > 0) return split.partSizes;
+    if (split.partSizes && split.partSizes.length > 0) {
+      const sum = split.partSizes.reduce((a, b) => a + b, 0);
+      if (sum === limit) return split.partSizes;
+      // Stale — redistribute over the same number of parts to match the limit.
+      return derivePartSizesEvenly(limit, split.partSizes.length);
+    }
     if (split.totalParts && split.totalParts > 0) return derivePartSizesEvenly(limit, split.totalParts);
     return [limit];
   };

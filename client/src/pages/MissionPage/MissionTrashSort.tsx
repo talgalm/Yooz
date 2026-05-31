@@ -1371,20 +1371,17 @@ export default function MissionTrashSort({
             <HeaderText>{completeHeader}</HeaderText>
           </MissionHeader>
 
-          <MissionContent style={{ padding: 0, gap: 0, justifyContent: 'center', minHeight: 0, overflow: 'hidden' }}>
+          <MissionContent style={{ padding: '16px 12px 0', gap: 0, justifyContent: 'flex-start', minHeight: 0, overflow: 'hidden' }}>
             <div
               style={{
-                flex: 1,
-                minHeight: 0,
-                width: '100%',
-                maxHeight: '52dvh',
-                aspectRatio: '3 / 4',
+                width: '85vw',
+                maxWidth: 380,
+                aspectRatio: '1 / 1',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 overflow: 'hidden',
-                borderRadius: 8,
-                transform: 'translateY(-23px)',
+                borderRadius: 4,
               }}
             >
               <video
@@ -1403,7 +1400,7 @@ export default function MissionTrashSort({
             </div>
           </MissionContent>
 
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 70 }}>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
             <MissionButton step={3} onClick={() => setPhase('badge')}>
               {completeButton}
             </MissionButton>
@@ -1420,9 +1417,6 @@ export default function MissionTrashSort({
       <>
       <MissionWrapper bg="/images/mission-bg-1.svg" step={0}>
         <FrameContainer>
-          <FrameHeaderOverlay src="/images/mission-header.svg" alt="" />
-          <FrameFooterOverlay src="/images/mission-footer.svg" alt="" />
-
           <TopActionRow>
             {onLogout && (
               <TopIconButton onClick={onLogout} aria-label="Logout">
@@ -1514,8 +1508,8 @@ export default function MissionTrashSort({
             </div>
           </MissionContent>
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 70 }}>
-            <MissionButton step={3} onClick={handleShareClick}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <MissionButton step={0} onClick={handleShareClick}>
               <ShareButtonLabel>
                 {shareButton}
                 <svg width="20" height="20" viewBox="0 0 75 75" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -1525,7 +1519,7 @@ export default function MissionTrashSort({
               </ShareButtonLabel>
             </MissionButton>
             {continueButton && onContinue && (
-              <MissionButton step={3} onClick={onContinue}>
+              <MissionButton step={0} onClick={onContinue}>
                 {continueButton}
               </MissionButton>
             )}

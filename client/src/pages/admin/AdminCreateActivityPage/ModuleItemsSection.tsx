@@ -315,26 +315,34 @@ const PartBadge = styled('span')({
 
 function getCollageImageLimit(settings: Record<string, unknown> | undefined): number {
   if (!settings) return 1;
-  // Take the max of both signals so an inconsistent settings object still gives
-  // a usable limit. multiSelectCount can be a number or a numeric string.
-  const rawCount = settings.multiSelectCount;
-  const parsedCount = typeof rawCount === 'number'
-    ? rawCount
-    : (typeof rawCount === 'string' ? parseInt(rawCount, 10) : NaN);
-  const countLimit = Number.isFinite(parsedCount) && parsedCount > 0 ? parsedCount : 0;
+  // Mode-aware: multiSelect mode uses multiSelectCount; otherwise mission count.
+  if (settings.multiSelect) {
+    const raw = settings.multiSelectCount;
+    const parsed = typeof raw === 'number'
+      ? raw
+      : (typeof raw === 'string' ? parseInt(raw, 10) : NaN);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  }
   const missions = settings.missions;
-  const missionsLimit = Array.isArray(missions) ? missions.length : 0;
-  return Math.max(1, countLimit, missionsLimit);
+  return Array.isArray(missions) && missions.length > 0 ? missions.length : 1;
 }
 
 function effectivePartSizes(item: ModuleItem, limit: number): number[] {
   const split = item.collageSplit;
   if (!split) return [limit];
-  if (split.partSizes && split.partSizes.length > 0) return split.partSizes;
+  const distributeEvenly = (total: number, parts: number) => {
+    const base = Math.floor(total / parts);
+    const extras = total % parts;
+    return Array.from({ length: parts }, (_, i) => Math.max(1, base + (i < extras ? 1 : 0)));
+  };
+  if (split.partSizes && split.partSizes.length > 0) {
+    const sum = split.partSizes.reduce((a, b) => a + b, 0);
+    if (sum === limit) return split.partSizes;
+    // Stale partSizes (limit changed or older buggy data) — redistribute.
+    return distributeEvenly(limit, split.partSizes.length);
+  }
   const n = split.totalParts && split.totalParts > 0 ? split.totalParts : 1;
-  const base = Math.floor(limit / n);
-  const extras = limit % n;
-  return Array.from({ length: n }, (_, i) => Math.max(1, base + (i < extras ? 1 : 0)));
+  return distributeEvenly(limit, n);
 }
 
 const FinalButton = styled('button')<{ isFinal?: boolean }>(({ isFinal }) => ({

@@ -246,7 +246,6 @@ const CompleteImage = styled('img')({
   aspectRatio: '1 / 1',
   objectFit: 'cover',
   borderRadius: 4,
-  marginTop: '-18%',
   animation: `${fadeIn} 0.6s ease-out`,
 });
 
@@ -523,11 +522,11 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
             <HeaderText>{completeHeader}</HeaderText>
           </MissionHeader>
 
-          <PuzzleContent>
+          <PuzzleContent style={{ justifyContent: 'flex-start', paddingTop: 10 }}>
             <CompleteImage src={PUZZLE_IMAGE} alt="" />
           </PuzzleContent>
 
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 70 }}>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
             <MissionButton step={3} onClick={() => { playClick?.(); onComplete(); }}>
               {completeButton}
             </MissionButton>

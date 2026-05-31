@@ -217,9 +217,7 @@ export const MissionButton = styled('button', {
   ...((step ?? 0) >= 3 ? {
     height: 'clamp(50px, 12vw, 64px)',
     fontSize: 'clamp(18px, 10vw, 24px)',
-    // Footer SVG height ≈ 100vw * 568/1080 ≈ 52.6vw. Slot center sits roughly
-    // 35% up from the footer's bottom edge, so bottom ≈ 52.6vw * 0.35 ≈ 18vw.
-    bottom: 'calc(min(18vw, 86px) + env(safe-area-inset-bottom, 0px))',
+    bottom: 'calc(min(22vw, 105px) + env(safe-area-inset-bottom, 0px))',
   } : {}),
 }));
 

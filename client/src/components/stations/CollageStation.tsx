@@ -284,11 +284,20 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const splitMeta = station.collageSplit;
   const totalImages = fullMissions.length;
   const partSizes: number[] = (() => {
-    if (splitMeta?.partSizes && splitMeta.partSizes.length > 0) return splitMeta.partSizes;
+    const distributeEvenly = (total: number, parts: number) => {
+      const base = Math.floor(total / parts);
+      const extras = total % parts;
+      return Array.from({ length: parts }, (_, i) => Math.max(1, base + (i < extras ? 1 : 0)));
+    };
+    if (splitMeta?.partSizes && splitMeta.partSizes.length > 0) {
+      const sum = splitMeta.partSizes.reduce((a, b) => a + b, 0);
+      // Self-heal stale partSizes whose sum no longer matches the station's
+      // total image count — redistribute evenly across the same parts count.
+      if (sum === totalImages) return splitMeta.partSizes;
+      return distributeEvenly(totalImages, splitMeta.partSizes.length);
+    }
     const n = splitMeta?.totalParts && splitMeta.totalParts > 0 ? splitMeta.totalParts : 1;
-    const base = Math.floor(totalImages / n);
-    const extras = totalImages % n;
-    return Array.from({ length: n }, (_, i) => Math.max(1, base + (i < extras ? 1 : 0)));
+    return distributeEvenly(totalImages, n);
   })();
   const totalParts = partSizes.length;
   const partIndex = Math.min(splitMeta?.partIndex ?? 0, totalParts - 1);
