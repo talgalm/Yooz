@@ -164,6 +164,7 @@ export const DescriptionText = styled('p')<{ step?: number }>(({ step }) => ({
   border: '2px solid #39CABC',
   ...(step && step === 3 && {
     border: 'transparent',
+    marginTop: '25%',
   }),
   boxSizing: 'border-box',
 }));
