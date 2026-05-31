@@ -302,6 +302,12 @@ export default function LandingPage() {
             <CTATitle>{t.ctaTitle}</CTATitle>
             <CTADesc>{t.ctaDesc}</CTADesc>
           </CTASection>
+
+          <FooterLinks>
+            <FooterLink onClick={() => { window.location.href = '/privacy'; }}>
+              {t.privacyLink}
+            </FooterLink>
+          </FooterLinks>
         </Content>
       </Page>
     </NatureBackground>

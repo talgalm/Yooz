@@ -27,6 +27,7 @@ export function buildPlayOgHtml(opts: {
   imageUrl: string;
 }): string {
   const { pageUrl, title, description, imageUrl } = opts;
+  const fbAppId = process.env.FACEBOOK_APP_ID || '';
   const esc = (s: string) =>
     s
       .replace(/&/g, '&amp;')
@@ -44,6 +45,7 @@ export function buildPlayOgHtml(opts: {
   <meta property="og:description" content="${esc(description)}" />
   <meta property="og:image" content="${esc(imageUrl)}" />
   <meta property="og:locale" content="he_IL" />
+  ${fbAppId ? `<meta property="fb:app_id" content="${esc(fbAppId)}" />` : ''}
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${esc(title)}" />
   <meta name="twitter:description" content="${esc(description)}" />

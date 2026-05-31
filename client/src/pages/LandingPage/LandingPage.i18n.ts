@@ -13,6 +13,7 @@ export const texts = {
     ctaDesc: 'Ask your organizer for an activity code to join the fun!',
     adminLink: 'Admin Login',
     managerLink: 'Manager Login',
+    privacyLink: 'Privacy Policy',
   },
   he: {
     heroTitle: 'YOOZ',
@@ -28,5 +29,6 @@ export const texts = {
     ctaDesc: 'בקשו מהמארגן קוד פעילות כדי להצטרף לכיף!',
     adminLink: 'כניסת מנהל',
     managerLink: 'כניסת מדריך',
+    privacyLink: 'מדיניות פרטיות',
   },
 };

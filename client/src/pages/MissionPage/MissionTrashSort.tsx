@@ -13,6 +13,7 @@ import {
   MissionButton,
 } from './MissionFrame';
 import MissionTopMenu from './MissionTopMenu';
+import { shareViaFacebookDialog } from '../../utils/facebookSdk';
 
 // ─── Design tokens ───
 const MISSION_FONT = "'Rubik', sans-serif";
@@ -720,18 +721,23 @@ export default function MissionTrashSort({
     setShowShareModal(true);
   }, [trackShareEvent, getBadgeBlob, shareUrl]);
 
-  const handleSocialShare = useCallback((platform: 'whatsapp' | 'facebook' | 'twitter') => {
+  const handleSocialShare = useCallback(async (platform: 'whatsapp' | 'facebook' | 'twitter') => {
     const plainText = buildSharePlainText(shareUrl);
     const encodedText = encodeURIComponent(plainText);
+    if (platform === 'facebook') {
+      try {
+        await shareViaFacebookDialog(shareUrl);
+        trackShareEvent('completed');
+      } catch {
+        // SDK unavailable, user cancelled, or app not configured — fall back to sharer.php
+        openFacebookShare(shareUrl);
+        trackShareEvent('completed');
+      }
+      return;
+    }
     let url = '';
     if (platform === 'whatsapp') url = `https://wa.me/?text=${encodedText}`;
-    else if (platform === 'facebook') {
-      openFacebookShare(shareUrl);
-      trackShareEvent('completed');
-      return;
-    } else if (platform === 'twitter') {
-      url = `https://twitter.com/intent/tweet?text=${encodedText}`;
-    }
+    else if (platform === 'twitter') url = `https://twitter.com/intent/tweet?text=${encodedText}`;
     window.open(url, '_blank', 'noopener,noreferrer');
     trackShareEvent('completed');
   }, [shareUrl, trackShareEvent]);

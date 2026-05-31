@@ -19,6 +19,7 @@ import PortalPage from './pages/portal/PortalPage';
 import ManagerLoginPage from './pages/manager/ManagerLoginPage';
 import ManagerDashboardPage from './pages/manager/ManagerDashboardPage';
 import LandingPage from './pages/LandingPage';
+import PrivacyPage from './pages/PrivacyPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpChatProvider, HelpChatFab } from './components/HelpChat';
 import { MobileContainer } from './components/MobileContainer';
@@ -87,6 +88,9 @@ export default function App() {
 
                 {/* Portal route — public */}
                 <Route path="/portal/:code" element={<PortalPage />} />
+
+                {/* Privacy policy — public, responsive */}
+                <Route path="/privacy" element={<PrivacyPage />} />
 
                 {/* Default: YOOZ landing page — responsive (mobile + desktop) */}
                 <Route path="/" element={<LandingPage />} />
