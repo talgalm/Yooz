@@ -1325,7 +1325,7 @@ export default function MissionTrashSort({
           <MissionContent style={{ paddingTop: 40 }}>
             <svg
               viewBox="0 0 300 80"
-              style={{ width: '80%', maxWidth: 300, overflow: 'visible', marginBottom: -50 }}
+              style={{ width: '80%', maxWidth: 300, overflow: 'visible', marginTop: 50, marginBottom: -50 }}
             >
               <defs>
                 <path id="badge-curve" d="M 15,75 A 150,150 0 0,1 285,75" fill="none" />
