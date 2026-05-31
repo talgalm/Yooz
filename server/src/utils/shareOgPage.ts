@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 
 export const SHARE_OG_DESCRIPTION =
-  'אני נהנתי בפעילות בגני יהושע - זה הזמן שלכם! היכנסו לקישור הזה';
+  'עמדתי באתגר המזוודה הסודית של גני יהושוע. המשימה הושלמה. התג שלי ביד 🏆';
 
 const CRAWLER_UA =
   /facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|Slackbot|Discordbot|TelegramBot|Googlebot|bingbot/i;

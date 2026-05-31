@@ -22,7 +22,7 @@ export const texts = {
 
     shareHeader: '4. Sharing',
     shareBody:
-      'We do not sell your information. We do not share it with third parties for advertising. We share data only with: (a) the activity organizer who configured the activity, and (b) infrastructure providers we rely on to run the service (such as cloud hosting and our database provider), under standard data-processing terms.',
+      'We do not sell your information, and we do not share it with third parties for advertising purposes. We share information only with: (a) the activity organizer who configured the activity—limited to what is specified in sections 2 and 3—and (b) infrastructure providers we rely on to operate the service (for example, cloud storage and databases), subject to standard data-processing terms.',
 
     socialHeader: '5. Social sharing',
     socialBody:
@@ -75,7 +75,7 @@ export const texts = {
 
     shareHeader: '4. שיתוף מידע',
     shareBody:
-      'איננו מוכרים את המידע שלכם, ואיננו משתפים אותו עם צדדים שלישיים לצורכי פרסום. אנו משתפים מידע אך ורק עם: (א) מארגן הפעילות שהגדיר את הפעילות, ו‑(ב) ספקי תשתית עליהם אנו מסתמכים להפעלת השירות (לדוגמה אחסון ענן ומסד נתונים), בכפוף לתנאי עיבוד נתונים סטנדרטיים.',
+      'איננו מוכרים את המידע שלכם, ואיננו משתפים אותו עם צדדים שלישיים לצורכי פרסום. אנו משתפים מידע אך ורק עם: (א) מארגן הפעילות שהגדיר את הפעילות — מוגבל למה שמצוין בסעיפים 2 ו‑3 — ו‑(ב) ספקי תשתית עליהם אנו מסתמכים להפעלת השירות (לדוגמה אחסון ענן ומסד נתונים), בכפוף לתנאי עיבוד נתונים סטנדרטיים.',
 
     socialHeader: '5. שיתוף ברשתות חברתיות',
     socialBody:

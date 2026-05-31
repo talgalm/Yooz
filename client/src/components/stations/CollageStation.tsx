@@ -9,9 +9,13 @@
  *   result     → play the finished MP4 collage video, download or continue
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
+import {
+  buildVideoSharePlainText,
+  buildVideoShareTextBody,
+} from '../../utils/ganeiYehoshuaShareText';
 import {
   saveCollagePart,
   loadCollageParts,
@@ -317,6 +321,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('מעלה תמונות...');
   const [resultUrl, setResultUrl] = useState('');
+  const [shareCopied, setShareCopied] = useState(false);
   const [resultIsVideo, setResultIsVideo] = useState(false);
   const [error, setError] = useState('');
 
@@ -488,6 +493,59 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       setPhase('review');
     }
   };
+
+  const shareUrl = code ? `${window.location.origin}/play/${code}` : undefined;
+
+  const getResultVideoFile = useCallback(async (): Promise<File | null> => {
+    if (!resultIsVideo || !resultUrl) return null;
+    try {
+      const res = await fetch(resultUrl);
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      const type = blob.type.startsWith('video/') ? blob.type : 'video/mp4';
+      return new File([blob], 'ganei-yehoshua-highlights.mp4', { type });
+    } catch {
+      return null;
+    }
+  }, [resultIsVideo, resultUrl]);
+
+  const handleShare = useCallback(async () => {
+    const shareText = buildVideoShareTextBody();
+    const shareTextWithUrl = buildVideoSharePlainText(shareUrl);
+    const file = await getResultVideoFile();
+
+    if (navigator.share) {
+      const candidates: ShareData[] = [
+        ...(file
+          ? [
+              { files: [file], text: shareText },
+              { files: [file], text: shareTextWithUrl },
+              ...(shareUrl ? [{ files: [file], text: shareText, url: shareUrl }] : []),
+            ]
+          : []),
+        { text: shareTextWithUrl },
+        ...(shareUrl ? [{ text: shareText, url: shareUrl }] : []),
+      ];
+
+      for (const data of candidates) {
+        if (navigator.canShare && !navigator.canShare(data)) continue;
+        try {
+          await navigator.share(data);
+          return;
+        } catch (err) {
+          if (err instanceof DOMException && err.name === 'AbortError') return;
+        }
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareTextWithUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    } catch {
+      /* clipboard unavailable */
+    }
+  }, [getResultVideoFile, shareUrl]);
 
   // ── Download ────────────────────────────────────────────────────────────────
   const handleDownload = async () => {
@@ -746,7 +804,19 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             }
           </VideoWrap>
 
-          <PrimaryBtn onClick={handleDownload}>הורידו את הסרטון ⬇️</PrimaryBtn>
+          {resultIsVideo && (
+            <>
+              <SubText style={{ marginBottom: 12, whiteSpace: 'pre-line' }}>
+                {buildVideoShareTextBody()}
+              </SubText>
+              <PrimaryBtn onClick={() => void handleShare()}>
+                {shareCopied ? 'הטקסט הועתק — שתפו את הסרטון שהורדתם' : 'שתפו את הסרטון'}
+              </PrimaryBtn>
+            </>
+          )}
+          <PrimaryBtn onClick={handleDownload} style={resultIsVideo ? { marginTop: 8 } : undefined}>
+            הורידו את הסרטון ⬇️
+          </PrimaryBtn>
           <OutlineBtn onClick={onContinue} style={{ color: '#f87171', marginTop: 8 }}>חזרה לפעילות</OutlineBtn>
         </Content>
       </Wrap>

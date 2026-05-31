@@ -14,21 +14,18 @@ import {
 } from './MissionFrame';
 import MissionTopMenu from './MissionTopMenu';
 import { shareViaFacebookDialog } from '../../utils/facebookSdk';
+import {
+  BADGE_SHARE_LINE2,
+  SHARE_CHALLENGE_LINE1,
+  buildBadgeShareHtml,
+  buildBadgeSharePlainText,
+  buildBadgeShareTextBody,
+} from '../../utils/ganeiYehoshuaShareText';
 
 // ─── Design tokens ───
 const MISSION_FONT = "'Rubik', sans-serif";
 const MISSION_TEXT = '#F2F7FF';
 const MISSION_TEAL = '#39CABC';
-
-const SHARE_MESSAGE_PREFIX = 'אני נהנתי בפעילות בגני יהושע - זה הזמן שלכם! היכנסו לקישור';
-
-function buildSharePlainText(activityUrl: string): string {
-  return `${SHARE_MESSAGE_PREFIX} הזה ${activityUrl}`;
-}
-
-function buildShareHtml(activityUrl: string): string {
-  return `${SHARE_MESSAGE_PREFIX} <a href="${activityUrl}">הזה</a>`;
-}
 
 function buildFacebookShareUrl(activityUrl: string): string {
   const u = encodeURIComponent(activityUrl);
@@ -661,6 +658,19 @@ export default function MissionTrashSort({
       ctx.fillText(badgeAchievementText, W / 2, boxY + 104);
       ctx.restore();
 
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.direction = 'rtl';
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 6;
+      ctx.font = 'bold 24px Rubik, Arial, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(SHARE_CHALLENGE_LINE1, W / 2, 720);
+      ctx.font = '22px Rubik, Arial, sans-serif';
+      ctx.fillStyle = '#F2F7FF';
+      ctx.fillText(BADGE_SHARE_LINE2, W / 2, 758);
+      ctx.restore();
+
       // Bottom URL hint
       ctx.save();
       ctx.font = '16px Rubik, Arial, sans-serif';
@@ -682,8 +692,8 @@ export default function MissionTrashSort({
   const handleShareClick = useCallback(async () => {
     trackShareEvent('click');
     const blob = await getBadgeBlob();
-    const shareText = SHARE_MESSAGE_PREFIX + ' הזה';
-    const shareTextWithUrl = buildSharePlainText(shareUrl);
+    const shareText = buildBadgeShareTextBody();
+    const shareTextWithUrl = buildBadgeSharePlainText(shareUrl);
 
     if (navigator.share) {
       const file = blob
@@ -722,7 +732,7 @@ export default function MissionTrashSort({
   }, [trackShareEvent, getBadgeBlob, shareUrl]);
 
   const handleSocialShare = useCallback(async (platform: 'whatsapp' | 'facebook' | 'twitter') => {
-    const plainText = buildSharePlainText(shareUrl);
+    const plainText = buildBadgeSharePlainText(shareUrl);
     const encodedText = encodeURIComponent(plainText);
     if (platform === 'facebook') {
       try {
@@ -755,8 +765,8 @@ export default function MissionTrashSort({
   }, [getBadgeBlob, trackShareEvent]);
 
   const handleCopyLink = useCallback(async () => {
-    const plainText = buildSharePlainText(shareUrl);
-    const html = buildShareHtml(shareUrl);
+    const plainText = buildBadgeSharePlainText(shareUrl);
+    const html = buildBadgeShareHtml(shareUrl);
     try {
       if (typeof ClipboardItem !== 'undefined') {
         await navigator.clipboard.write([
@@ -1407,16 +1417,20 @@ export default function MissionTrashSort({
                 direction: 'rtl',
                 color: MISSION_TEXT,
                 margin: 0,
+                whiteSpace: 'pre-line',
               }}
             >
-              {SHARE_MESSAGE_PREFIX}{' '}
+              {SHARE_CHALLENGE_LINE1}
+              {'\n'}
+              {BADGE_SHARE_LINE2}
+              {'\n'}
               <a
                 href={shareUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: MISSION_TEAL, textDecoration: 'underline' }}
+                style={{ color: MISSION_TEAL, textDecoration: 'underline', wordBreak: 'break-all' }}
               >
-                הזה
+                {shareUrl}
               </a>
             </p>
 
@@ -1464,7 +1478,7 @@ export default function MissionTrashSort({
               </ShareOption>
             </ShareOptionRow>
             <ShareCopyRow>
-              <ShareLinkInput readOnly value={buildSharePlainText(shareUrl)} />
+              <ShareLinkInput readOnly value={buildBadgeSharePlainText(shareUrl)} />
               <ShareCopyBtn onClick={handleCopyLink}>
                 {copiedLink ? '✓ הועתק' : 'העתק'}
               </ShareCopyBtn>
