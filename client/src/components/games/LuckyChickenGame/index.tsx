@@ -19,13 +19,16 @@ import {
   HudComboSection,
   HudComboValue,
   LivesRow,
+  HeartEl,
   GameField,
   FallingItemWrapper,
   FallingItemImg,
+  CaughtItemWrapper,
+  ScorePopupEl,
   BucketEl,
   HotStreakOverlay,
   HotStreakImg,
-  CatchFlash,
+  ScreenFlashEl,
   StartOverlay,
   FailOverlay,
   ResultOverlay,
@@ -41,7 +44,7 @@ import {
   GoldButtonText,
 } from './styled';
 
-// ── Asset paths ───────────────────────────────────────────────────────────────
+// ── Assets ────────────────────────────────────────────────────────────────────
 
 const LC = (f: string) => `/images/lucky-chicken/${f}`;
 
@@ -70,16 +73,30 @@ interface FallingItem {
   id: string;
   src: string;
   isGood: boolean;
-  x: number;           // center X as % of game field width (8–84)
-  fallDuration: number; // ms for full fall (-15% → 112%)
+  x: number;
+  fallDuration: number;
   rotation: number;
   spawnedAt: number;
 }
 
-interface CatchFlashEl {
+interface CaughtAnim {
+  id: string;
+  src: string;
+  x: number;
+  y: number; // % from top of GameField at moment of catch
+}
+
+interface ScorePopup {
   id: string;
   x: number;
+  y: number;
+  text: string;
   good: boolean;
+}
+
+interface Flash {
+  id: string;
+  color: string;
 }
 
 interface LuckyChickenSettings {
@@ -102,21 +119,22 @@ const DEFAULT_FALL_MIN   = 2800;
 const DEFAULT_FALL_MAX   = 5200;
 const DEFAULT_MAX_LIVES  = 3;
 const HOT_STREAK_AT      = 5;
-const FLASH_DURATION_MS  = 600;
 
-// Collision zone calibration.
-// fallAnim goes top: -15% → top: 112% (range 127pp).
-// Bucket bottom is -8% below GameField, so bucket opening is ≈ 66% from top.
-// progress = (topPct + 15) / 127 → for 66%: (66+15)/127 ≈ 0.638
-const CATCH_PROGRESS_START = 0.60;
-const CATCH_PROGRESS_END   = 0.73; // past here = missed
-const CATCH_X_RADIUS       = 20;   // ± percentage points around bucket center
+// fallAnim: top goes from -15% to 112% → range = 127pp
+// Bucket (bottom: -8%) opening is at roughly 68% from top of GameField.
+// Give a generous window so the catch feels responsive.
+const CATCH_PROGRESS_START = 0.55;
+const CATCH_PROGRESS_END   = 0.80;
+const CATCH_X_RADIUS       = 22; // ± percentage points
 
 function formatTime(s: number) {
   const m = Math.floor(s / 60);
   const sec = s % 60;
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 }
+
+// progress → visual top% in GameField
+function progressToTopPct(p: number) { return -15 + p * 127; }
 
 let uid = 0;
 const nextId = () => `lc_${++uid}`;
@@ -137,46 +155,49 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
   const sounds = useGameSounds();
 
   // ── State ──────────────────────────────────────────────────────────────────
-  const [phase,      setPhase]      = useState<Phase>('start');
-  const [score,      setScore]      = useState(0);
-  const [combo,      setCombo]      = useState(0);
-  const [bestCombo,  setBestCombo]  = useState(0);
-  const [lives,      setLives]      = useState(maxLives);
-  const [timeLeft,   setTimeLeft]   = useState(duration);
-  const [items,      setItems]      = useState<FallingItem[]>([]);
-  const [showStreak, setShowStreak] = useState(false);
-  const [flashes,    setFlashes]    = useState<CatchFlashEl[]>([]);
+  const [phase,       setPhase]       = useState<Phase>('start');
+  const [score,       setScore]       = useState(0);
+  const [combo,       setCombo]       = useState(0);
+  const [bestCombo,   setBestCombo]   = useState(0);
+  const [lives,       setLives]       = useState(maxLives);
+  const [timeLeft,    setTimeLeft]    = useState(duration);
+  const [items,       setItems]       = useState<FallingItem[]>([]);
+  const [caughtAnims, setCaughtAnims] = useState<CaughtAnim[]>([]);
+  const [scorePopups, setScorePopups] = useState<ScorePopup[]>([]);
+  const [flashes,     setFlashes]     = useState<Flash[]>([]);
+  const [streakKey,   setStreakKey]   = useState(0);
+  const [comboKey,    setComboKey]    = useState(0);
+  const [showStreak,  setShowStreak]  = useState(false);
+  // Per-heart animation keys (increment when that heart is lost)
+  const [heartKeys,   setHeartKeys]   = useState<number[]>(() => Array(DEFAULT_MAX_LIVES).fill(0));
 
-  // ── Refs (stable values used in intervals / direct DOM) ───────────────────
-  const phaseRef      = useRef<Phase>('start');
-  const bucketXRef    = useRef(50);           // collision detection
-  const livesRef      = useRef(maxLives);
-  const comboRef      = useRef(0);
-  const scoreRef      = useRef(0);
-  const bestComboRef  = useRef(0);
-  const itemsRef      = useRef<FallingItem[]>([]);
-  const startTimeRef  = useRef(0);
+  // ── Refs ───────────────────────────────────────────────────────────────────
+  const phaseRef       = useRef<Phase>('start');
+  const bucketXRef     = useRef(50);
+  const livesRef       = useRef(maxLives);
+  const comboRef       = useRef(0);
+  const scoreRef       = useRef(0);
+  const bestComboRef   = useRef(0);
+  const itemsRef       = useRef<FallingItem[]>([]);
+  const startTimeRef   = useRef(0);
+  const gameRootRef    = useRef<HTMLDivElement | null>(null);
+  const bucketRef      = useRef<HTMLImageElement | null>(null);
+  const lastPtrXRef    = useRef(50);
+  const tiltResetRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const streakTimeout  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const spawnTimer     = useRef<number | null>(null);
+  const timerInterval  = useRef<number | null>(null);
+  const collInterval   = useRef<number | null>(null);
 
-  // Direct DOM ref for zero-lag bucket movement
-  const bucketRef     = useRef<HTMLImageElement | null>(null);
-  const lastPtrXRef   = useRef(50);           // previous pointer X % for tilt delta
-  const tiltResetRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const spawnTimer    = useRef<number | null>(null);
-  const timerInterval = useRef<number | null>(null);
-  const collInterval  = useRef<number | null>(null);
-  const streakTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Keep phase ref in sync
   useEffect(() => { phaseRef.current = phase; }, [phase]);
 
-  // ── Activity header registration ───────────────────────────────────────────
+  // ── Activity header ────────────────────────────────────────────────────────
   const activityHeaderAudio = useActivityPlayingHeaderHostActive();
   const headerPhase: ActivityGameHeaderPhase =
     phase === 'result' ? 'finish' : phase === 'start' ? 'intro' : 'playing';
   useRegisterActivityGameHeader(activityHeaderAudio, headerPhase, sounds.isMuted, sounds.toggleMute);
 
-  // ── Interval cleanup ───────────────────────────────────────────────────────
+  // ── Cleanup ────────────────────────────────────────────────────────────────
   const clearAll = useCallback(() => {
     if (spawnTimer.current)    { clearInterval(spawnTimer.current);    spawnTimer.current    = null; }
     if (timerInterval.current) { clearInterval(timerInterval.current); timerInterval.current = null; }
@@ -185,63 +206,88 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
     if (tiltResetRef.current)  { clearTimeout(tiltResetRef.current);   tiltResetRef.current  = null; }
   }, []);
 
-  // ── Game start / restart ───────────────────────────────────────────────────
+  // ── Shake helper ───────────────────────────────────────────────────────────
+  const triggerShake = useCallback(() => {
+    const el = gameRootRef.current;
+    if (!el) return;
+    el.classList.remove('shaking');
+    void el.offsetWidth; // reflow to re-trigger
+    el.classList.add('shaking');
+    setTimeout(() => el.classList.remove('shaking'), 450);
+  }, []);
+
+  // ── Flash helper ───────────────────────────────────────────────────────────
+  const triggerFlash = useCallback((color: string) => {
+    const id = nextId();
+    setFlashes(prev => [...prev, { id, color }]);
+    setTimeout(() => setFlashes(prev => prev.filter(f => f.id !== id)), 500);
+  }, []);
+
+  // ── Score popup helper ─────────────────────────────────────────────────────
+  const addPopup = useCallback((x: number, y: number, text: string, good: boolean) => {
+    const id = nextId();
+    setScorePopups(prev => [...prev, { id, x, y, text, good }]);
+    setTimeout(() => setScorePopups(prev => prev.filter(p => p.id !== id)), 850);
+  }, []);
+
+  // ── Start / restart ────────────────────────────────────────────────────────
   const startGame = useCallback(() => {
     clearAll();
-    phaseRef.current  = 'playing';
+    phaseRef.current   = 'playing';
     bucketXRef.current = 50;
-    livesRef.current  = maxLives;
-    comboRef.current  = 0;
-    scoreRef.current  = 0;
+    livesRef.current   = maxLives;
+    comboRef.current   = 0;
+    scoreRef.current   = 0;
     bestComboRef.current = 0;
-    itemsRef.current  = [];
+    itemsRef.current   = [];
+    lastPtrXRef.current = 50;
 
     setPhase('playing');
     setScore(0);
     setCombo(0);
     setBestCombo(0);
     setLives(maxLives);
+    setHeartKeys(Array(maxLives).fill(0));
     setTimeLeft(duration);
     setItems([]);
+    setCaughtAnims([]);
+    setScorePopups([]);
+    setFlashes([]);
     setShowStreak(false);
-    // Reset bucket to center
-    lastPtrXRef.current = 50;
+    startTimeRef.current = Date.now();
+    sounds.startBgMusic();
+
     if (bucketRef.current) {
       bucketRef.current.style.transition = 'none';
       bucketRef.current.style.left = '50%';
       bucketRef.current.style.transform = 'translateX(-50%) rotate(0deg)';
     }
-    setFlashes([]);
-    startTimeRef.current = Date.now();
-    sounds.startBgMusic();
   }, [clearAll, duration, maxLives, sounds]);
 
-  // ── Spawn helper ───────────────────────────────────────────────────────────
+  // ── Spawn ──────────────────────────────────────────────────────────────────
   const spawnItem = useCallback(() => {
     if (phaseRef.current !== 'playing') return;
     const isGood = Math.random() > badChance;
-    const newItem: FallingItem = {
+    const item: FallingItem = {
       id:           nextId(),
       src:          isGood ? GOOD_ITEMS[Math.floor(Math.random() * GOOD_ITEMS.length)] : BAD_ITEM,
       isGood,
-      x:            8 + Math.random() * 76,
+      x:            10 + Math.random() * 72,
       fallDuration: fallMin + Math.random() * (fallMax - fallMin),
       rotation:     -20 + Math.random() * 40,
       spawnedAt:    Date.now(),
     };
-    itemsRef.current = [...itemsRef.current, newItem];
+    itemsRef.current = [...itemsRef.current, item];
     setItems([...itemsRef.current]);
   }, [badChance, fallMin, fallMax]);
 
-  // ── Playing phase effects ──────────────────────────────────────────────────
+  // ── Playing effects ────────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== 'playing') return;
 
-    // Spawn first item immediately, then on interval
     spawnItem();
     spawnTimer.current = window.setInterval(spawnItem, spawnMs);
 
-    // Countdown
     timerInterval.current = window.setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
@@ -256,29 +302,31 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
       });
     }, 1000);
 
-    // Collision detection loop
+    // Collision detection
     collInterval.current = window.setInterval(() => {
       if (phaseRef.current !== 'playing') return;
-      const now   = Date.now();
-      const bx    = bucketXRef.current;
-      const cur   = itemsRef.current;
+      const now = Date.now();
+      const bx  = bucketXRef.current;
+      const cur = itemsRef.current;
 
       let goodCaught = 0;
       let badCaught  = 0;
-      const caughtXs: { x: number; good: boolean }[] = [];
+      const newCaughtAnims: CaughtAnim[] = [];
+      const newPopups: { x: number; y: number; text: string; good: boolean }[] = [];
 
       const survived = cur.filter(item => {
         const progress = (now - item.spawnedAt) / item.fallDuration;
 
-        // In catch zone AND within bucket width
         if (progress >= CATCH_PROGRESS_START && progress < CATCH_PROGRESS_END) {
           if (Math.abs(item.x - bx) <= CATCH_X_RADIUS) {
-            caughtXs.push({ x: item.x, good: item.isGood });
+            const catchY = progressToTopPct(progress);
+            newCaughtAnims.push({ id: nextId(), src: item.src, x: item.x, y: catchY });
+            newPopups.push({ x: item.x, y: catchY - 8, text: item.isGood ? `+${points}` : '✗', good: item.isGood });
             if (item.isGood) goodCaught++; else badCaught++;
             return false;
           }
         }
-        // Fell past catch zone → remove (missed)
+
         if (progress >= CATCH_PROGRESS_END + 0.05) return false;
         return true;
       });
@@ -288,13 +336,22 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
         setItems([...survived]);
       }
 
-      // Flash feedback
-      if (caughtXs.length > 0) {
-        const newFlashes = caughtXs.map(({ x, good }) => ({ id: nextId(), x, good }));
-        setFlashes(prev => [...prev, ...newFlashes]);
-        setTimeout(() => {
-          setFlashes(prev => prev.filter(f => !newFlashes.some(nf => nf.id === f.id)));
-        }, FLASH_DURATION_MS);
+      // Catch animations
+      if (newCaughtAnims.length > 0) {
+        setCaughtAnims(prev => [...prev, ...newCaughtAnims]);
+        const ids = newCaughtAnims.map(a => a.id);
+        setTimeout(() => setCaughtAnims(prev => prev.filter(a => !ids.includes(a.id))), 380);
+      }
+
+      // Score popups
+      if (newPopups.length > 0) {
+        const ids: string[] = [];
+        setScorePopups(prev => {
+          const added = newPopups.map(p => ({ ...p, id: nextId() }));
+          ids.push(...added.map(a => a.id));
+          return [...prev, ...added];
+        });
+        setTimeout(() => setScorePopups(prev => prev.filter(p => !ids.includes(p.id))), 860);
       }
 
       // Good catch effects
@@ -308,11 +365,15 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
         setScore(newScore);
         setCombo(newCombo);
         setBestCombo(newBest);
+        setComboKey(k => k + 1);
         sounds.playCorrect();
+
         if (newCombo >= HOT_STREAK_AT && newCombo % HOT_STREAK_AT === 0) {
+          triggerFlash('rgba(255,200,0,0.2)');
           setShowStreak(true);
+          setStreakKey(k => k + 1);
           if (streakTimeout.current) clearTimeout(streakTimeout.current);
-          streakTimeout.current = setTimeout(() => setShowStreak(false), 1700);
+          streakTimeout.current = setTimeout(() => setShowStreak(false), 1900);
         }
       }
 
@@ -320,10 +381,21 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
       if (badCaught > 0) {
         comboRef.current = 0;
         setCombo(0);
+        setComboKey(k => k + 1);
         const newLives = Math.max(0, livesRef.current - badCaught);
         livesRef.current = newLives;
         setLives(newLives);
+        // Animate the heart that was just lost
+        setHeartKeys(prev => {
+          const next = [...prev];
+          const lostIdx = newLives; // 0-indexed: newLives is the new count, so index newLives was lost
+          if (lostIdx < next.length) next[lostIdx] = next[lostIdx] + 1;
+          return next;
+        });
         sounds.playWrong();
+        triggerShake();
+        triggerFlash('rgba(220,40,40,0.45)');
+
         if (newLives <= 0) {
           clearAll();
           phaseRef.current = 'fail';
@@ -344,25 +416,20 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
     if (phase === 'result') sounds.playGameOver();
   }, [phase, sounds]);
 
-  // ── Bucket movement — direct DOM update, zero lag ─────────────────────────
-
+  // ── Bucket movement (direct DOM — zero lag) ────────────────────────────────
   const moveBucket = useCallback((clientX: number, rect: DOMRect) => {
-    const x = Math.max(12, Math.min(88, ((clientX - rect.left) / rect.width) * 100));
-    const dx = x - lastPtrXRef.current;
+    const x   = Math.max(12, Math.min(88, ((clientX - rect.left) / rect.width) * 100));
+    const dx  = x - lastPtrXRef.current;
     lastPtrXRef.current = x;
-    bucketXRef.current  = x; // for collision
+    bucketXRef.current  = x;
 
-    // Tilt: proportional to movement speed, clamped to ±16°
     const tilt = Math.max(-16, Math.min(16, dx * 3));
-
-    const el = bucketRef.current;
+    const el   = bucketRef.current;
     if (el) {
       el.style.transition = 'none';
-      el.style.left = `${x}%`;
-      el.style.transform = `translateX(-50%) rotate(${tilt}deg)`;
+      el.style.left       = `${x}%`;
+      el.style.transform  = `translateX(-50%) rotate(${tilt}deg)`;
     }
-
-    // Spring back to upright after 90ms of no movement
     if (tiltResetRef.current) clearTimeout(tiltResetRef.current);
     tiltResetRef.current = setTimeout(() => {
       if (bucketRef.current) {
@@ -384,16 +451,11 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
   }, [moveBucket]);
 
   // ── Finish ─────────────────────────────────────────────────────────────────
-
   const handleFinish = useCallback(() => {
-    const estMaxGoodPerSecond = (1 / (spawnMs / 1000)) * (1 - badChance);
-    const maxPossible = Math.max(
-      Math.floor(duration * estMaxGoodPerSecond) * points,
-      scoreRef.current,
-    );
+    const est = Math.floor(duration * (1 / (spawnMs / 1000)) * (1 - badChance)) * points;
     onComplete({
       score: scoreRef.current,
-      maxPossibleScore: maxPossible,
+      maxPossibleScore: Math.max(est, scoreRef.current),
       durationMs: Date.now() - startTimeRef.current,
       hintUsed: false,
     });
@@ -401,12 +463,26 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  const heartsList = Array.from({ length: maxLives }, (_, i) => (
+    <HeartEl
+      key={i}
+      $lost={i >= lives}
+      $animKey={heartKeys[i] ?? 0}
+    >
+      ❤️
+    </HeartEl>
+  ));
+
   return (
     <GameRoot
+      ref={gameRootRef}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
     >
       <GameBg src={BG_IMG} alt="" />
+
+      {/* Screen flashes */}
+      {flashes.map(f => <ScreenFlashEl key={f.id} $color={f.color} />)}
 
       {/* HUD */}
       {phase === 'playing' && (
@@ -418,23 +494,16 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
           </HudSection>
           <HudComboSection>
             <HudLabel>{t.combo}</HudLabel>
-            <HudComboValue>×{combo}</HudComboValue>
+            <HudComboValue key={comboKey} $key={comboKey}>×{combo}</HudComboValue>
           </HudComboSection>
           <HudSection>
             <HudLabel>{t.score}</HudLabel>
             <HudValue>{score}</HudValue>
           </HudSection>
-          <LivesRow>
-            {Array.from({ length: maxLives }, (_, i) => (
-              <span key={i} style={{ fontSize: 20, lineHeight: 1, filter: i >= lives ? 'grayscale(1) opacity(0.4)' : 'none' }}>
-                ❤️
-              </span>
-            ))}
-          </LivesRow>
+          <LivesRow>{heartsList}</LivesRow>
         </HudBar>
       )}
 
-      {/* Game field */}
       <GameField>
         {/* Falling items */}
         {phase === 'playing' && items.map(item => (
@@ -448,38 +517,45 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
           </FallingItemWrapper>
         ))}
 
-        {/* Catch flash feedback */}
-        {flashes.map(f => (
-          <CatchFlash key={f.id} $x={f.x} $good={f.good}>
-            {f.good ? '✓' : '✗'}
-          </CatchFlash>
+        {/* Caught item fly-to-bucket animations */}
+        {caughtAnims.map(anim => (
+          <CaughtItemWrapper key={anim.id} $x={anim.x} $y={anim.y}>
+            <FallingItemImg src={anim.src} alt="" />
+          </CaughtItemWrapper>
         ))}
 
-        {/* Hot streak banner */}
+        {/* Score popups */}
+        {scorePopups.map(p => (
+          <ScorePopupEl key={p.id} $x={p.x} $y={p.y} $good={p.good}>
+            {p.text}
+          </ScorePopupEl>
+        ))}
+
+        {/* HOT STREAK — key forces re-animation every trigger */}
         {showStreak && (
-          <HotStreakOverlay>
+          <HotStreakOverlay key={streakKey}>
             <HotStreakImg src={HOT_STREAK_IMG} alt="" />
           </HotStreakOverlay>
         )}
 
-        {/* Bucket — position driven by direct DOM ref, zero lag */}
+        {/* Bucket */}
         {phase === 'playing' && (
           <BucketEl ref={bucketRef} src={BUCKET_IMG} alt="" />
         )}
       </GameField>
 
-      {/* START overlay */}
+      {/* START */}
       {phase === 'start' && (
         <StartOverlay onPointerDown={startGame}>
-          <MascotImg src={MASCOT_IMG} alt="Lucky Chicken" />
-          <GoldButton type="button" onPointerDown={startGame}>
+          <MascotImg src={MASCOT_IMG} alt="Lucky Chicken" style={{ animationDelay: '0ms' }} />
+          <GoldButton type="button" onPointerDown={e => { e.stopPropagation(); startGame(); }}>
             <GoldButtonBg src={GOLD_BUTTON_IMG} alt="" />
             <GoldButtonText>{t.tapToStart}</GoldButtonText>
           </GoldButton>
         </StartOverlay>
       )}
 
-      {/* FAIL overlay */}
+      {/* FAIL */}
       {phase === 'fail' && (
         <FailOverlay>
           <OverlayTitle src={OOPS_IMG} alt="" />
@@ -495,11 +571,11 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
         </FailOverlay>
       )}
 
-      {/* RESULT overlay */}
+      {/* RESULT */}
       {phase === 'result' && (
         <ResultOverlay>
           <OverlayTitle src={WELL_DONE_IMG} alt="" />
-          <MascotImg src={MASCOT_IMG} alt="" style={{ animationDuration: '1.1s' }} />
+          <MascotImg src={MASCOT_IMG} alt="" />
           <ScorePanel>
             <ScorePanelLabel>{t.yourScore}</ScorePanelLabel>
             <ScorePanelValue>{score}</ScorePanelValue>
