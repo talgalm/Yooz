@@ -12,7 +12,8 @@ import {
   GameRoot,
   GameBg,
   HudBar,
-  HudBgImg,
+  HudBarSvg,
+  HudOverlay,
   HudSection,
   HudLabel,
   HudValue,
@@ -53,7 +54,6 @@ import {
 const LC = (f: string) => `/images/lucky-chicken/${f}`;
 
 const BG_IMG          = LC('3f194707-08f4-4524-8bb6-f6ae6b68f7cd.svg');
-const HUD_IMG         = LC('Untitled-1.svg');
 const MASCOT_IMG      = LC('b95d2929-be1f-4bf3-82de-9adcc5fe482b.svg');
 const BUCKET_IMG      = LC('817a72bf-5e18-4a8e-9e41-05cc60664d73.svg');
 const HOT_STREAK_IMG  = LC('bbd77ff3-5ecc-4a4b-9007-7cb1ae35a29e.svg');
@@ -481,23 +481,127 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
       {/* Red vignette on bad catch */}
       {vignetteKey > 0 && <VignetteFlash key={vignetteKey} />}
 
-      {/* HUD */}
+      {/* HUD — self-drawn vector recreation of the designed bar.
+          viewBox matches the original 1023x204 artwork so slots line up. */}
       {phase === 'playing' && (
         <HudBar>
-          <HudBgImg src={HUD_IMG} alt="" />
-          <HudSection>
-            <HudLabel>{t.timeLeft}</HudLabel>
-            <HudValue>{formatTime(timeLeft)}</HudValue>
-          </HudSection>
-          <HudComboSection>
-            <HudLabel>{t.combo}</HudLabel>
-            <HudComboValue key={comboKey} $key={comboKey}>×{combo}</HudComboValue>
-          </HudComboSection>
-          <HudSection>
-            <HudLabel>{t.score}</HudLabel>
-            <HudValue>{score}</HudValue>
-          </HudSection>
-          <LivesRow>{heartsList}</LivesRow>
+          <HudBarSvg viewBox="0 0 1023 250" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <radialGradient id="lcBody" cx="42%" cy="12%" r="95%">
+                <stop offset="0%" stopColor="#5e3a1c" />
+                <stop offset="38%" stopColor="#3a200f" />
+                <stop offset="74%" stopColor="#22120a" />
+                <stop offset="100%" stopColor="#0e0602" />
+              </radialGradient>
+              <radialGradient id="lcTopGlow" cx="42%" cy="0%" r="75%">
+                <stop offset="0%" stopColor="#ff9a3c" stopOpacity="0.40" />
+                <stop offset="55%" stopColor="#ff7a1e" stopOpacity="0.06" />
+                <stop offset="100%" stopColor="#ff7a1e" stopOpacity="0" />
+              </radialGradient>
+              <linearGradient id="lcSlot" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#080402" />
+                <stop offset="55%" stopColor="#1b0d05" />
+                <stop offset="100%" stopColor="#301a0a" />
+              </linearGradient>
+              <radialGradient id="lcCombo" cx="50%" cy="30%" r="82%">
+                <stop offset="0%" stopColor="#8e3219" />
+                <stop offset="52%" stopColor="#591d0d" />
+                <stop offset="100%" stopColor="#2c0f05" />
+              </radialGradient>
+              <linearGradient id="lcRim" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#ffdc86" />
+                <stop offset="32%" stopColor="#e4a23c" />
+                <stop offset="68%" stopColor="#a9651f" />
+                <stop offset="100%" stopColor="#6e3d12" />
+              </linearGradient>
+              <filter id="lcGrain">
+                <feTurbulence type="fractalNoise" baseFrequency="0.011 0.05" numOctaves="3" seed="5" result="n" />
+                <feColorMatrix in="n" type="saturate" values="0" />
+                <feComponentTransfer><feFuncA type="linear" slope="0.07" /></feComponentTransfer>
+              </filter>
+            </defs>
+
+            {/* bar body — bottom is a wide arch: LOW at the sides, RISES in the center */}
+            <path
+              d="M0,0 H1023 V204 C 730,176 590,170 511,170 C 432,170 293,176 0,204 Z"
+              fill="url(#lcBody)"
+            />
+            {/* wood grain */}
+            <path
+              d="M0,0 H1023 V204 C 730,176 590,170 511,170 C 432,170 293,176 0,204 Z"
+              filter="url(#lcGrain)"
+              opacity="0.5"
+            />
+            {/* warm top glow + top highlight line */}
+            <rect x="0" y="0" width="1023" height="150" fill="url(#lcTopGlow)" />
+            <rect x="0" y="0" width="1023" height="4" fill="rgba(255,190,95,0.28)" />
+            {/* thick orange/gold border running ALONG the arch */}
+            <path
+              d="M0,204 C 293,176 432,170 511,170 C 590,170 730,176 1023,204"
+              fill="none"
+              stroke="#5a2c0c"
+              strokeWidth="18"
+              strokeLinecap="round"
+            />
+            <path
+              d="M0,204 C 293,176 432,170 511,170 C 590,170 730,176 1023,204"
+              fill="none"
+              stroke="url(#lcRim)"
+              strokeWidth="10"
+              strokeLinecap="round"
+            />
+
+            {/* LUCKY CHICKEN logo (stylized text) */}
+            <g fontFamily="Arial, sans-serif" fontWeight="900" fontStyle="italic" textAnchor="middle">
+              <text x="104" y="62" fontSize="42" fill="#ffce3a" stroke="#7a3a08" strokeWidth="2" paintOrder="stroke">LUCKY</text>
+              <text x="104" y="106" fontSize="36" fill="#e8401b" stroke="#5a1606" strokeWidth="2" paintOrder="stroke">CHICKEN</text>
+            </g>
+
+            {/* score slot (left of combo) */}
+            <g>
+              <rect x="230" y="26" width="196" height="108" rx="30" fill="#0a0502" />
+              <rect x="234" y="30" width="188" height="100" rx="27" fill="url(#lcSlot)" stroke="rgba(120,62,22,0.85)" strokeWidth="2.5" />
+              <rect x="244" y="118" width="168" height="8" rx="4" fill="rgba(255,150,60,0.12)" />
+            </g>
+            {/* time slot (right of combo) */}
+            <g>
+              <rect x="596" y="26" width="196" height="108" rx="30" fill="#0a0502" />
+              <rect x="600" y="30" width="188" height="100" rx="27" fill="url(#lcSlot)" stroke="rgba(120,62,22,0.85)" strokeWidth="2.5" />
+              <rect x="610" y="118" width="168" height="8" rx="4" fill="rgba(255,150,60,0.12)" />
+            </g>
+
+            {/* center combo squircle badge — dead center */}
+            <g>
+              <rect x="449" y="14" width="124" height="124" rx="42" fill="#150a04" />
+              <rect x="454" y="19" width="114" height="114" rx="38" fill="url(#lcRim)" />
+              <rect x="467" y="32" width="88" height="88" rx="29" fill="url(#lcCombo)" stroke="#2a0f06" strokeWidth="2.5" />
+              <path d="M475,46 Q491,32 515,31" fill="none" stroke="rgba(255,235,180,0.45)" strokeWidth="3.5" strokeLinecap="round" />
+            </g>
+
+            {/* pause button — right side, vertically centered */}
+            <g>
+              <circle cx="952" cy="100" r="48" fill="#150a04" />
+              <circle cx="952" cy="100" r="45" fill="url(#lcRim)" />
+              <circle cx="952" cy="100" r="37" fill="#1c0e06" />
+              <rect x="937" y="82" width="11" height="36" rx="5" fill="#ffcf5a" />
+              <rect x="956" y="82" width="11" height="36" rx="5" fill="#ffcf5a" />
+            </g>
+          </HudBarSvg>
+          <HudOverlay>
+            <HudSection $left={32}>
+              <HudLabel>{t.score}</HudLabel>
+              <HudValue>{score}</HudValue>
+            </HudSection>
+            <HudComboSection>
+              <HudLabel>{t.combo}</HudLabel>
+              <HudComboValue key={comboKey} $key={comboKey}>×{combo}</HudComboValue>
+            </HudComboSection>
+            <HudSection $left={68}>
+              <HudLabel>{t.timeLeft}</HudLabel>
+              <HudValue>{formatTime(timeLeft)}</HudValue>
+            </HudSection>
+            <LivesRow>{heartsList}</LivesRow>
+          </HudOverlay>
         </HudBar>
       )}
 

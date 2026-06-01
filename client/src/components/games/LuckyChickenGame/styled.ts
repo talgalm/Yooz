@@ -129,83 +129,106 @@ export const GameBg = styled('img')({
 });
 
 // ── HUD ───────────────────────────────────────────────────────────────────────
+// The HUD bar IS the SVG image (Untitled-1.svg) — it carries all the textures,
+// the half-circle combo dip and the slot frames. The SVG sets the bar height
+// (width:100% + height:auto) so there is never a gap. Dynamic values are
+// overlaid on top, positioned over the SVG's slots.
 
 export const HudBar = styled('div')({
   position: 'relative',
   zIndex: 10,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '6px 10px',
+  width: '100%',
   flexShrink: 0,
-  background: 'linear-gradient(180deg,rgba(18,6,0,0.97) 0%,rgba(28,10,0,0.90) 100%)',
-  borderBottom: '2px solid rgba(255,160,0,0.3)',
-  gap: 6,
-  minHeight: 62,
+  lineHeight: 0, // kill inline-img whitespace under the SVG
 });
 
-export const HudBgImg = styled('img')({
+// Self-drawn vector recreation of the designed bar. width:100% + height:auto
+// keeps the 1023x204 aspect ratio with no gap, and drives the bar height.
+export const HudBarSvg = styled('svg')({
+  display: 'block',
+  width: '100%',
+  height: 'auto',
+  pointerEvents: 'none',
+});
+
+// Overlay layer sitting exactly on top of the SVG
+export const HudOverlay = styled('div')({
   position: 'absolute',
   inset: 0,
-  width: '100%',
-  height: '100%',
-  objectFit: 'fill',
-  pointerEvents: 'none',
-  zIndex: 0,
-  opacity: 0.88,
-});
-
-export const HudSection = styled('div')({
-  position: 'relative',
   zIndex: 1,
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  minWidth: 52,
-  gap: 1,
-});
-
-export const HudLabel = styled('div')({
-  fontSize: 8,
-  fontWeight: 800,
-  color: 'rgba(255,205,70,0.9)',
-  letterSpacing: '0.06em',
-  textTransform: 'uppercase',
+  pointerEvents: 'none',
   lineHeight: 1,
 });
 
+// A stat block positioned over a specific SVG slot (by % of bar width)
+export const HudSection = styled('div')<{ $left: number }>(({ $left }) => ({
+  position: 'absolute',
+  top: '32%',
+  left: `${$left}%`,
+  transform: 'translate(-50%, -50%)',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 1,
+}));
+
+export const HudLabel = styled('div')({
+  fontSize: 'clamp(9px, 2.3vw, 14px)',
+  fontWeight: 800,
+  color: 'rgba(255,205,90,0.92)',
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase',
+  lineHeight: 1,
+  whiteSpace: 'nowrap',
+  textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+});
+
 export const HudValue = styled('div')({
-  fontSize: 19,
+  fontSize: 'clamp(19px, 5.8vw, 33px)',
   fontWeight: 900,
   color: '#fff',
-  lineHeight: 1.1,
-  textShadow: '0 1px 4px rgba(0,0,0,0.7)',
+  lineHeight: 1.05,
+  textShadow: '0 1px 5px rgba(0,0,0,0.9)',
+  whiteSpace: 'nowrap',
 });
 
-export const HudComboSection = styled(HudSection)({
-  background: 'rgba(150,60,0,0.75)',
-  borderRadius: 8,
-  padding: '4px 10px',
-  border: '1.5px solid rgba(255,160,0,0.5)',
+// Combo sits inside the central squircle badge (~x40% of the artwork)
+export const HudComboSection = styled('div')({
+  position: 'absolute',
+  top: '30%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 0,
 });
 
-export const HudComboValue = styled(HudValue)<{ $key: number }>(({ $key: _k }) => ({
-  fontSize: 24,
+export const HudComboValue = styled('div')<{ $key: number }>(({ $key: _k }) => ({
+  fontSize: 'clamp(18px, 5.4vw, 30px)',
+  fontWeight: 900,
   color: '#ffd040',
+  lineHeight: 1,
+  textShadow: '0 0 8px rgba(255,200,0,0.8), 0 1px 4px rgba(0,0,0,0.9)',
   animation: `${comboBump} 350ms ease-out`,
 }));
 
+// Hearts sit dead-center, just below the combo badge
 export const LivesRow = styled('div')({
-  position: 'relative',
-  zIndex: 1,
+  position: 'absolute',
+  top: '68%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
   display: 'flex',
-  gap: 2,
+  gap: 5,
   alignItems: 'center',
 });
 
 export const HeartEl = styled('span')<{ $lost: boolean; $animKey: number }>(
   ({ $lost, $animKey: _k }) => ({
-    fontSize: 20,
+    fontSize: 'clamp(23px, 6.4vw, 39px)',
     lineHeight: 1,
     display: 'inline-block',
     filter: $lost ? 'grayscale(1) opacity(0.35)' : 'none',
