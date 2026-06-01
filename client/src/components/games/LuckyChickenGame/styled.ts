@@ -196,7 +196,7 @@ export const HudValue = styled('div')({
 // Combo sits inside the central squircle badge (~x40% of the artwork)
 export const HudComboSection = styled('div')({
   position: 'absolute',
-  top: '30%',
+  top: '35%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
   display: 'flex',
@@ -211,6 +211,7 @@ export const HudComboValue = styled('div')<{ $key: number }>(({ $key: _k }) => (
   fontWeight: 900,
   color: '#ffd040',
   lineHeight: 1,
+  whiteSpace: 'nowrap',
   textShadow: '0 0 8px rgba(255,200,0,0.8), 0 1px 4px rgba(0,0,0,0.9)',
   animation: `${comboBump} 350ms ease-out`,
 }));

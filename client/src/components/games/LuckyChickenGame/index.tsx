@@ -570,12 +570,12 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
               <rect x="610" y="118" width="168" height="8" rx="4" fill="rgba(255,150,60,0.12)" />
             </g>
 
-            {/* center combo squircle badge — dead center */}
+            {/* center combo squircle badge — dead center, wide enough for 2 digits */}
             <g>
-              <rect x="449" y="14" width="124" height="124" rx="42" fill="#150a04" />
-              <rect x="454" y="19" width="114" height="114" rx="38" fill="url(#lcRim)" />
-              <rect x="467" y="32" width="88" height="88" rx="29" fill="url(#lcCombo)" stroke="#2a0f06" strokeWidth="2.5" />
-              <path d="M475,46 Q491,32 515,31" fill="none" stroke="rgba(255,235,180,0.45)" strokeWidth="3.5" strokeLinecap="round" />
+              <rect x="434" y="12" width="154" height="150" rx="48" fill="#150a04" />
+              <rect x="439" y="17" width="144" height="140" rx="44" fill="url(#lcRim)" />
+              <rect x="453" y="31" width="116" height="112" rx="37" fill="url(#lcCombo)" stroke="#2a0f06" strokeWidth="2.5" />
+              <path d="M461,46 Q479,30 507,29" fill="none" stroke="rgba(255,235,180,0.45)" strokeWidth="3.5" strokeLinecap="round" />
             </g>
 
             {/* pause button — right side, vertically centered */}
