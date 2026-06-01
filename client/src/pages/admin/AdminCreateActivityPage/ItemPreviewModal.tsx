@@ -152,6 +152,7 @@ export default function ItemPreviewModal({ item, onClose }: ItemPreviewModalProp
     type: 'station' as const,
     stationType: stationType as 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle',
     settings: settings!,
+    ...(item.collageSplit && { collageSplit: item.collageSplit }),
   });
 
   const renderContent = () => {

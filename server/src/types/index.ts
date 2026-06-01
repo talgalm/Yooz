@@ -70,10 +70,20 @@ export interface PopupMessageConfig {
 }
 
 // Module item config (sent from client)
+export interface CollageSplitRequest {
+  splitGroupId: string;
+  partIndex: number;
+  partSizes?: number[];
+  totalParts?: number; // legacy fallback
+}
+
 export interface ModuleItemRequest {
-  type: 'game' | 'station';
+  type: 'game' | 'station' | 'mission';
   ref: string; // ObjectId string
   groups?: string[]; // when set, only these groups see this item
+  spiderSvg?: string;
+  isFinal?: boolean;
+  collageSplit?: CollageSplitRequest;
 }
 
 // Module config (sent from client)

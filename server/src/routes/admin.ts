@@ -104,11 +104,20 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
         items: Array.isArray(mod.items)
           ? mod.items
               .filter((item: { type: string; ref: string }) => item.type && item.ref && ['game', 'station', 'mission'].includes(item.type))
-              .map((item: { type: string; ref: string; groups?: string[]; spiderSvg?: string }) => ({
+              .map((item: {
+                type: string;
+                ref: string;
+                groups?: string[];
+                spiderSvg?: string;
+                isFinal?: boolean;
+                collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number };
+              }) => ({
                 type: item.type,
                 ref: item.ref,
                 ...(Array.isArray(item.groups) && item.groups.length > 0 && { groups: item.groups }),
                 ...(item.spiderSvg && { spiderSvg: item.spiderSvg }),
+                ...(item.isFinal && { isFinal: true }),
+                ...(item.collageSplit && { collageSplit: item.collageSplit }),
               }))
           : [],
         popups: Array.isArray(mod.popups) ? mod.popups.map((p: Record<string, unknown>) => {

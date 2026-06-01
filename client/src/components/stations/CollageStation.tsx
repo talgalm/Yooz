@@ -415,6 +415,14 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       for (const ph of localPhotos) {
         merged.push({ ...ph, missionIndex: globalIdx++ });
       }
+      if (merged.length < totalImages) {
+        setError(
+          `נדרשות ${totalImages} תמונות לסרטון. השלימו את החלקים הקודמים בפעילות (${merged.length}/${totalImages}).`,
+        );
+        setPhotos(merged);
+        setPhase('capture');
+        return;
+      }
       setPhotos(merged);
     }
     setPhase('review');
@@ -442,6 +450,15 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
   // ── Collage generation ──────────────────────────────────────────────────────
   const generateCollage = async () => {
+    if (photos.length !== totalImages) {
+      setError(
+        isSplit
+          ? `נדרשות ${totalImages} תמונות לסרטון. השלימו את כל חלקי התחנה לפני יצירת הסרטון (${photos.length}/${totalImages}).`
+          : `נדרשות ${totalImages} תמונות לסרטון (נבחרו ${photos.length}).`,
+      );
+      return;
+    }
+
     setPhase('generating');
     setProgress(0);
     setProgressLabel('מעלה תמונות...');
@@ -665,7 +682,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
           <PrimaryBtn
             onClick={() => void finishLocalPart(photos)}
-            disabled={photos.length === 0}
+            disabled={photos.length < partMultiSelectCount}
           >
             {isSplit && !isLastPart ? 'שמור והמשך לתחנה הבאה' : 'אישור והמשך'}
           </PrimaryBtn>
