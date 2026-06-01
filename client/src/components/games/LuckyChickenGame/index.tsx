@@ -28,7 +28,9 @@ import {
   BucketEl,
   HotStreakOverlay,
   SunburstRays,
+  ShootingBeams,
   SunburstGlow,
+  Sparkle,
   HotStreakImg,
   VignetteFlash,
   StartOverlay,
@@ -530,8 +532,15 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
         {showStreak && (
           <HotStreakOverlay key={streakKey}>
             <SunburstRays />
+            <ShootingBeams />
             <SunburstGlow />
             <HotStreakImg src={HOT_STREAK_IMG} alt="" />
+            <Sparkle $top={20} $left={12} $delay={150} $size={22}>✦</Sparkle>
+            <Sparkle $top={26} $left={80} $delay={280} $size={18}>✦</Sparkle>
+            <Sparkle $top={58} $left={8}  $delay={200} $size={20}>✦</Sparkle>
+            <Sparkle $top={62} $left={86} $delay={320} $size={16}>✦</Sparkle>
+            <Sparkle $top={14} $left={48} $delay={100} $size={14}>✦</Sparkle>
+            <Sparkle $top={68} $left={55} $delay={240} $size={18}>✦</Sparkle>
           </HotStreakOverlay>
         )}
 

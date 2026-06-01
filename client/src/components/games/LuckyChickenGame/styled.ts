@@ -311,55 +311,94 @@ export const HotStreakOverlay = styled('div')({
   animation: `${streakOverlayAnim} 2.4s ease forwards`,
 });
 
-// Spinning sunburst rays — fade out radially so they don't blast to edges
+// Broad soft background rays — very subtle, just a hint
 export const SunburstRays = styled('div')({
   position: 'absolute',
-  width: '160vw',
-  height: '160vw',
-  top: '44%',
+  width: '150vw',
+  height: '150vw',
+  top: '36%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
   background: `repeating-conic-gradient(
-    rgba(255,185,0,0.38) 0deg 9deg,
-    transparent          9deg 18deg
+    rgba(255,185,0,0.22) 0deg 10deg,
+    transparent          10deg 20deg
   )`,
   borderRadius: '50%',
-  // Fade rays to transparent toward the edges
-  WebkitMaskImage: 'radial-gradient(circle, black 28%, transparent 68%)',
-  maskImage:        'radial-gradient(circle, black 28%, transparent 68%)',
-  animation: `${spinRays} 4.5s linear infinite`,
+  WebkitMaskImage: 'radial-gradient(circle, black 20%, transparent 60%)',
+  maskImage:        'radial-gradient(circle, black 20%, transparent 60%)',
+  animation: `${spinRays} 5s linear infinite`,
   zIndex: 0,
 });
 
-// Inner bright glow
+// Sharp glowing shooting beams — bright lines flying outward
+export const ShootingBeams = styled('div')({
+  position: 'absolute',
+  width: '170vw',
+  height: '170vw',
+  top: '36%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  background: `repeating-conic-gradient(
+    rgba(255,230,60,0.75) 0deg 5deg,
+    transparent           5deg 45deg
+  )`,
+  borderRadius: '50%',
+  WebkitMaskImage: 'radial-gradient(circle, black 8%, transparent 58%)',
+  maskImage:        'radial-gradient(circle, black 8%, transparent 58%)',
+  filter: 'blur(2px)',
+  animation: `${spinRays} 8s linear infinite reverse`,
+  zIndex: 1,
+});
+
+// Central glow bloom
 export const SunburstGlow = styled('div')({
   position: 'absolute',
-  width: '80%',
+  width: '70%',
   aspectRatio: '1',
-  top: '42%',
+  top: '34%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
   background: `radial-gradient(circle,
-    rgba(255,240,80,0.50) 0%,
-    rgba(255,140,0,0.30)  38%,
-    rgba(255,60,0,0.10)   58%,
-    transparent           72%
+    rgba(255,250,100,0.65) 0%,
+    rgba(255,160,0,0.40)   30%,
+    rgba(255,60,0,0.12)    55%,
+    transparent            70%
   )`,
   borderRadius: '50%',
-  zIndex: 1,
-  filter: 'blur(6px)',
+  filter: 'blur(10px)',
+  zIndex: 2,
 });
 
-// The HOT STREAK! image itself — bigger, centred, bounces in
+// Sparkle star
+export const Sparkle = styled('span')<{
+  $top: number; $left: number; $delay: number; $size: number;
+}>(({ $top, $left, $delay, $size }) => ({
+  position: 'absolute',
+  top:  `${$top}%`,
+  left: `${$left}%`,
+  fontSize: $size,
+  lineHeight: 1,
+  color: 'rgba(255,245,100,0.95)',
+  textShadow: `0 0 6px #fff, 0 0 14px rgba(255,220,0,1), 0 0 30px rgba(255,140,0,0.9)`,
+  pointerEvents: 'none',
+  zIndex: 4,
+  animation: `${popIn} 350ms ease ${$delay}ms both, ${pulse} 600ms ease-in-out ${$delay + 350}ms 2`,
+}));
+
+// The HOT STREAK! image itself — slightly smaller than before
 export const HotStreakImg = styled('img')({
   position: 'absolute',
-  top: '42%',
+  top: '34%',
   left: '50%',
-  width: '105%',
-  maxWidth: 460,
+  width: '90%',
+  maxWidth: 400,
   objectFit: 'contain',
-  zIndex: 3,
-  filter: 'drop-shadow(0 0 18px rgba(255,180,0,0.9)) drop-shadow(0 0 40px rgba(255,80,0,0.6))',
+  zIndex: 5,
+  filter: `
+    drop-shadow(0 0 12px rgba(255,220,60,1))
+    drop-shadow(0 0 28px rgba(255,140,0,0.9))
+    drop-shadow(0 0 52px rgba(255,60,0,0.6))
+  `,
   animation: `${streakImgAnim} 2.4s cubic-bezier(.34,1.56,.64,1) forwards`,
 });
 
