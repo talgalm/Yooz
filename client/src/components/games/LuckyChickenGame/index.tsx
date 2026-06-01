@@ -27,6 +27,8 @@ import {
   ScorePopupEl,
   BucketEl,
   HotStreakOverlay,
+  SunburstRays,
+  SunburstGlow,
   HotStreakImg,
   VignetteFlash,
   StartOverlay,
@@ -527,6 +529,8 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
         {/* HOT STREAK — key forces re-animation every trigger */}
         {showStreak && (
           <HotStreakOverlay key={streakKey}>
+            <SunburstRays />
+            <SunburstGlow />
             <HotStreakImg src={HOT_STREAK_IMG} alt="" />
           </HotStreakOverlay>
         )}

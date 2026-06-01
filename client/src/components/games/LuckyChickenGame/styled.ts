@@ -281,22 +281,86 @@ export const ScorePopupEl = styled('div')<{ $x: number; $y: number; $good: boole
 
 // ── Hot streak ────────────────────────────────────────────────────────────────
 
+const spinRays = keyframes`
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+`;
+
+const streakOverlayAnim = keyframes`
+  0%   { opacity: 0; }
+  12%  { opacity: 1; }
+  75%  { opacity: 1; }
+  100% { opacity: 0; }
+`;
+
+const streakImgAnim = keyframes`
+  0%   { transform: translate(-50%,-50%) scale(0.15) rotate(-14deg); opacity: 0; }
+  35%  { transform: translate(-50%,-50%) scale(1.18) rotate(4deg);   opacity: 1; }
+  55%  { transform: translate(-50%,-50%) scale(0.96) rotate(-2deg);  opacity: 1; }
+  75%  { transform: translate(-50%,-50%) scale(1.02) rotate(0deg);   opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(1.08) rotate(0deg);   opacity: 0; }
+`;
+
+// Full-screen container — fades in then fades out over 2.4s
 export const HotStreakOverlay = styled('div')({
   position: 'absolute',
-  top: '36%',
-  left: '50%',
-  transform: 'translate(-50%,-50%)',
+  inset: 0,
   zIndex: 22,
-  width: '82%',
-  maxWidth: 310,
   pointerEvents: 'none',
-  animation: `${hotStreakIn} 0.5s cubic-bezier(.34,1.56,.64,1) forwards,
-               ${hotStreakOut} 0.4s ease-in 1.4s forwards`,
+  overflow: 'hidden',
+  animation: `${streakOverlayAnim} 2.4s ease forwards`,
 });
 
+// Spinning sunburst rays — fade out radially so they don't blast to edges
+export const SunburstRays = styled('div')({
+  position: 'absolute',
+  width: '160vw',
+  height: '160vw',
+  top: '44%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  background: `repeating-conic-gradient(
+    rgba(255,185,0,0.38) 0deg 9deg,
+    transparent          9deg 18deg
+  )`,
+  borderRadius: '50%',
+  // Fade rays to transparent toward the edges
+  WebkitMaskImage: 'radial-gradient(circle, black 28%, transparent 68%)',
+  maskImage:        'radial-gradient(circle, black 28%, transparent 68%)',
+  animation: `${spinRays} 4.5s linear infinite`,
+  zIndex: 0,
+});
+
+// Inner bright glow
+export const SunburstGlow = styled('div')({
+  position: 'absolute',
+  width: '80%',
+  aspectRatio: '1',
+  top: '42%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  background: `radial-gradient(circle,
+    rgba(255,240,80,0.50) 0%,
+    rgba(255,140,0,0.30)  38%,
+    rgba(255,60,0,0.10)   58%,
+    transparent           72%
+  )`,
+  borderRadius: '50%',
+  zIndex: 1,
+  filter: 'blur(6px)',
+});
+
+// The HOT STREAK! image itself — bigger, centred, bounces in
 export const HotStreakImg = styled('img')({
-  width: '100%',
+  position: 'absolute',
+  top: '42%',
+  left: '50%',
+  width: '105%',
+  maxWidth: 460,
   objectFit: 'contain',
+  zIndex: 3,
+  filter: 'drop-shadow(0 0 18px rgba(255,180,0,0.9)) drop-shadow(0 0 40px rgba(255,80,0,0.6))',
+  animation: `${streakImgAnim} 2.4s cubic-bezier(.34,1.56,.64,1) forwards`,
 });
 
 // ── Screen flash / vignette ───────────────────────────────────────────────────
