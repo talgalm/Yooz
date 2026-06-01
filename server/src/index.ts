@@ -9,7 +9,6 @@ import {
   buildPlayOgHtml,
   isSocialCrawler,
   requestOrigin,
-  SHARE_OG_DESCRIPTION,
 } from './utils/shareOgPage';
 import { migrateActivities, seedSuperAdmin, seedBuiltInMission } from './db/seed';
 import authRouter from './routes/auth';
@@ -99,11 +98,12 @@ app.get('/play/:code', async (req, res, next) => {
     const pageUrl = `${origin}/play/${activity.code}`;
     const imageUrl = `${origin}/images/logo-purple.png`;
     const title = activity.name ? `${activity.name} | גני יהושע` : 'גני יהושע';
+    const description = activity.name?.trim() || 'גני יהושע';
     res.type('html').send(
       buildPlayOgHtml({
         pageUrl,
         title,
-        description: SHARE_OG_DESCRIPTION,
+        description,
         imageUrl,
       }),
     );
