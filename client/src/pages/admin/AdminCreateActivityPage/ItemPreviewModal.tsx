@@ -30,8 +30,8 @@ const Overlay = styled('div')({
 const Container = styled('div')({
   background: '#fff',
   borderRadius: 20,
-  width: 300,
-  height: 500,
+  width: 'min(300px, calc(100vw - 24px))',
+  height: 'min(500px, calc(100vh - 24px))',
   overflow: 'hidden',
   position: 'relative',
   boxShadow: '0 6px 24px rgba(0,0,0,0.18)',

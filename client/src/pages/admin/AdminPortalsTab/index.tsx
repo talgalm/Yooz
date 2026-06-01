@@ -34,10 +34,13 @@ import { styled } from '@mui/material/styles';
 
 const SearchInput = styled(Input)({
   flex: 1,
-  minWidth: 200,
+  minWidth: 0,
   padding: '10px 14px',
   fontSize: 14,
   marginBottom: 16,
+  '@media (min-width: 601px)': {
+    minWidth: 200,
+  },
 });
 
 const CodeChip = styled(Chip)({

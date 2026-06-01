@@ -58,8 +58,12 @@ const SectionCard = styled('section')({
   border: '1px solid #ececf4',
   background: '#fff',
   transition: 'box-shadow 0.2s',
+  minWidth: 0,
   '&:hover': {
     boxShadow: '0 2px 12px rgba(108,92,231,0.06)',
+  },
+  '@media (max-width: 600px)': {
+    padding: '16px 14px',
   },
 });
 
@@ -127,6 +131,7 @@ const StepBar = styled('div')({
   justifyContent: 'center',
   gap: 0,
   marginBottom: 28,
+  flexWrap: 'wrap',
 });
 
 const StepPill = styled('button')<{ active?: boolean; completed?: boolean; position: 'start' | 'end' }>(({ active, completed, position }) => ({
@@ -146,6 +151,10 @@ const StepPill = styled('button')<{ active?: boolean; completed?: boolean; posit
   borderEndStartRadius: position === 'start' ? 24 : 0,
   borderStartEndRadius: position === 'end' ? 24 : 0,
   borderEndEndRadius: position === 'end' ? 24 : 0,
+  '@media (max-width: 600px)': {
+    padding: '10px 16px',
+    fontSize: 13,
+  },
 }));
 
 const StepNumber = styled('span')<{ active?: boolean }>(({ active }) => ({
@@ -166,6 +175,7 @@ const StepNav = styled('div')({
   justifyContent: 'space-between',
   gap: 12,
   marginTop: 8,
+  flexWrap: 'wrap',
 });
 
 const NameInput = styled(Input)({
@@ -207,6 +217,9 @@ const ThemeGrid = styled('div')({
   display: 'grid',
   gridTemplateColumns: 'repeat(3, 1fr)',
   gap: 8,
+  '@media (max-width: 480px)': {
+    gridTemplateColumns: 'repeat(2, 1fr)',
+  },
 });
 
 const ThemeBtn = styled(SelectionButton)({

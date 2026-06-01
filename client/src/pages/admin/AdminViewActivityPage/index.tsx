@@ -27,6 +27,7 @@ const PageBg = styled('div')({
   minHeight: '100vh',
   direction: 'rtl',
   background: 'linear-gradient(160deg, #f5edf4 0%, #eee8f8 40%, #f5f5f7 100%)',
+  overflowX: 'hidden',
 });
 
 const ContentWrapper = styled('div')({
@@ -45,6 +46,10 @@ const PageTitleText = styled('h1')({
   color: '#222',
   textAlign: 'center',
   letterSpacing: -0.3,
+  wordBreak: 'break-word',
+  '@media (max-width: 600px)': {
+    fontSize: 22,
+  },
 });
 
 const PageDateText = styled('div')({
@@ -180,6 +185,7 @@ const ReviewRow = styled('div')({
   alignItems: 'center',
   gap: 10,
   padding: '12px 0',
+  flexWrap: 'wrap',
   '&:not(:last-child)': {
     borderBottom: '1px solid #f0f0f4',
   },
@@ -279,16 +285,27 @@ const ButtonsRow = styled('div')({
   justifyContent: 'space-between',
   alignItems: 'center',
   gap: 12,
+  flexWrap: 'wrap',
+  '@media (max-width: 600px)': {
+    flexDirection: 'column-reverse',
+    alignItems: 'stretch',
+  },
 });
 
 const ActionGroup = styled('div')({
   display: 'flex',
   gap: 10,
+  flexWrap: 'wrap',
+  '@media (max-width: 600px)': {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
 });
 
 const StatsBtn = styled('button')({
   display: 'inline-flex',
   alignItems: 'center',
+  justifyContent: 'center',
   gap: 8,
   padding: '12px 24px',
   fontSize: 15,
@@ -307,6 +324,7 @@ const StatsBtn = styled('button')({
 const EditBtn = styled('button')({
   display: 'inline-flex',
   alignItems: 'center',
+  justifyContent: 'center',
   gap: 8,
   padding: '12px 28px',
   fontSize: 15,
@@ -326,6 +344,7 @@ const DeleteBtn = styled('button', {
 })<{ confirm?: boolean }>(({ confirm }) => ({
   display: 'inline-flex',
   alignItems: 'center',
+  justifyContent: 'center',
   gap: 8,
   padding: '12px 24px',
   fontSize: 15,
@@ -343,6 +362,7 @@ const DeleteBtn = styled('button', {
 const LockBtn = styled('button')({
   display: 'inline-flex',
   alignItems: 'center',
+  justifyContent: 'center',
   gap: 8,
   padding: '12px 20px',
   fontSize: 14,

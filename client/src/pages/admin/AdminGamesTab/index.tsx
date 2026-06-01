@@ -161,9 +161,12 @@ const TagDrawerDoneButton = styled('button')({
 
 const SearchInput = styled(Input)({
   flex: 1,
-  minWidth: 200,
+  minWidth: 0,
   padding: '10px 14px',
   fontSize: 14,
+  '@media (min-width: 601px)': {
+    minWidth: 200,
+  },
 });
 
 const FilterRow = styled('div')({

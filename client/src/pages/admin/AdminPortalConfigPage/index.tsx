@@ -29,6 +29,7 @@ const PageBg = styled('div')({
   minHeight: '100vh',
   direction: 'rtl',
   background: 'linear-gradient(160deg, #f5edf4 0%, #eee8f8 40%, #f5f5f7 100%)',
+  overflowX: 'hidden',
 });
 
 const Content = styled('main')({
@@ -36,6 +37,9 @@ const Content = styled('main')({
   margin: '0 auto',
   padding: '32px clamp(20px, 3vw, 40px) 48px',
   boxSizing: 'border-box',
+  '@media (max-width: 600px)': {
+    padding: '16px 12px 28px',
+  },
 });
 
 const UserRow = styled('div')({

@@ -52,6 +52,10 @@ const TabsRow = styled('div')({
   gap: 0,
   marginBottom: 12,
   borderBottom: '2px solid #e8e8ec',
+  overflowX: 'auto',
+  WebkitOverflowScrolling: 'touch',
+  scrollbarWidth: 'none',
+  '&::-webkit-scrollbar': { display: 'none' },
 });
 
 const Tab = styled('button')<{ active?: boolean }>(({ active }) => ({
@@ -65,7 +69,13 @@ const Tab = styled('button')<{ active?: boolean }>(({ active }) => ({
   borderBottom: active ? '2px solid #6c5ce7' : '2px solid transparent',
   marginBottom: -2,
   transition: 'all 0.15s',
+  whiteSpace: 'nowrap',
+  flexShrink: 0,
   '&:hover': { color: '#6c5ce7' },
+  '@media (max-width: 600px)': {
+    padding: '8px 14px',
+    fontSize: 13,
+  },
 }));
 
 const FilterInput = styled(Input)({
@@ -103,6 +113,10 @@ const Grid = styled('div')({
   maxHeight: 260,
   overflowY: 'auto',
   padding: 2,
+  '@media (max-width: 600px)': {
+    gridTemplateColumns: '1fr',
+    maxHeight: 320,
+  },
 });
 
 const Card = styled('div')<{ selected?: boolean }>(({ selected }) => ({
@@ -231,6 +245,8 @@ const DragItem = styled('div')<{ isDragging?: boolean }>(({ isDragging }) => ({
   opacity: isDragging ? 0.8 : 1,
   transition: 'background 0.15s, border 0.15s',
   userSelect: 'none',
+  flexWrap: 'wrap',
+  rowGap: 6,
   '&:hover': {
     background: '#f0eef8',
   },
@@ -244,7 +260,8 @@ const DragHandle = styled('span')({
 });
 
 const DragItemName = styled('span')({
-  flex: 1,
+  flex: '1 1 120px',
+  minWidth: 0,
   fontWeight: 500,
   fontSize: 14,
   overflow: 'hidden',
@@ -376,12 +393,15 @@ const GroupPopupCard = styled('div')({
   background: '#fff',
   borderRadius: 16,
   padding: '24px 28px',
-  minWidth: 320,
-  maxWidth: 420,
+  width: 'min(420px, calc(100vw - 32px))',
   boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
   display: 'flex',
   flexDirection: 'column',
   gap: 16,
+  boxSizing: 'border-box',
+  '@media (max-width: 600px)': {
+    padding: '20px 18px',
+  },
 });
 
 const GroupPopupTitle = styled('h3')({

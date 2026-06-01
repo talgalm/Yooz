@@ -115,6 +115,10 @@ export const ItemPanel = styled('div')({
   padding: 16,
   marginBottom: 12,
   background: '#fafafa',
+  minWidth: 0,
+  '@media (max-width: 600px)': {
+    padding: 12,
+  },
 });
 
 export const ItemPanelHeader = styled('div')({
@@ -396,6 +400,9 @@ export const DesktopFormGrid = styled('div')({
   '@media (max-width: 1100px)': {
     gridTemplateColumns: '1fr',
   },
+  '@media (max-width: 600px)': {
+    gap: 16,
+  },
 });
 
 export const FormSectionCard = styled('section')({
@@ -406,6 +413,10 @@ export const FormSectionCard = styled('section')({
   borderRadius: 18,
   border: '1px solid #ececf4',
   background: '#fafafe',
+  minWidth: 0,
+  '@media (max-width: 600px)': {
+    padding: 14,
+  },
 });
 
 export const FormSectionCardWide = styled(FormSectionCard)({

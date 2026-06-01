@@ -334,6 +334,7 @@ export const AccentText = styled('span')({
 export const AdminPage = styled('div')({
   minHeight: '100vh',
   background: '#f5f5f7',
+  overflowX: 'hidden',
 });
 
 export const AdminHeader = styled('header')({
@@ -355,11 +356,12 @@ export const AdminContent = styled('main')({
   margin: '0 auto',
   padding: '40px clamp(20px, 3vw, 40px) 48px',
   boxSizing: 'border-box',
+  minWidth: 0,
   '@media (max-width: 960px)': {
     padding: '28px 20px 36px',
   },
   '@media (max-width: 600px)': {
-    padding: 16,
+    padding: '16px 12px',
   },
 });
 
@@ -371,9 +373,10 @@ export const AdminCard = styled('div')({
   padding: 28,
   boxShadow: '0 14px 40px rgba(108,92,231,0.08)',
   boxSizing: 'border-box',
+  minWidth: 0,
   '@media (max-width: 600px)': {
     borderRadius: 14,
-    padding: 20,
+    padding: 16,
   },
 });
 

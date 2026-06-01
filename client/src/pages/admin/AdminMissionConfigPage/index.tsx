@@ -132,6 +132,7 @@ const ActionRow = styled('div')({
   gap: 12,
   justifyContent: 'flex-end',
   marginTop: 24,
+  flexWrap: 'wrap',
 });
 
 const ImageRow = styled('div')({

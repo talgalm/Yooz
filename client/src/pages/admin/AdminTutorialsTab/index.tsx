@@ -60,7 +60,10 @@ const FormField = styled('div')({
   flexDirection: 'column',
   gap: 6,
   flex: 1,
-  minWidth: 200,
+  minWidth: 0,
+  '@media (min-width: 601px)': {
+    minWidth: 200,
+  },
 });
 
 const TextArea = styled('textarea')({
@@ -85,6 +88,9 @@ const VideoGrid = styled('div')({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
   gap: 16,
+  '@media (max-width: 600px)': {
+    gridTemplateColumns: '1fr',
+  },
 });
 
 const VideoCard = styled('div')({
