@@ -47,6 +47,11 @@ export interface CollageSplit {
   // number of images that part of the split is responsible for.
   partSizes: number[];
   totalParts?: number; // legacy fallback, retained for older saved data
+  /** Index of the part dedicated to video creation/sharing only (no photo capture).
+   *  When set, partSizes[videoPartIndex] === 0. */
+  videoPartIndex?: number | null;
+  /** Optional permutation of station.settings.missions before slicing. */
+  photoOrder?: number[];
 }
 
 export interface ModuleItem {

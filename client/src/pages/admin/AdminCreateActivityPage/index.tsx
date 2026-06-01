@@ -45,6 +45,7 @@ import type {
 import ModuleItemsSection from './ModuleItemsSection';
 import PopupMessagesSection from './PopupMessagesSection';
 import ThemeFormModal, { type CustomTheme } from './ThemeFormModal';
+import CollageSplitEditor, { type SplitEditorResult } from './CollageSplitEditor';
 
 // ─── Clean section card with icon ───
 
@@ -329,6 +330,9 @@ export default function AdminCreateActivityPage() {
 
   const [step, setStep] = useState<1 | 2>(1);
 
+  // Split-editor popup state: index into selectedItems of the collage being edited.
+  const [splitEditorIndex, setSplitEditorIndex] = useState<number | null>(null);
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEditMode);
@@ -575,11 +579,14 @@ export default function AdminCreateActivityPage() {
   };
 
   // Walk items in order; for every item in `groupId`, overwrite collageSplit
-  // with the new partSizes array and re-assign partIndex sequentially.
+  // with the new partSizes array and re-assign partIndex sequentially. When
+  // videoPartIndex / photoOrder are provided they are stamped on every member.
   const applyGroupPartSizes = (
     items: ModuleItem[],
     groupId: string,
     partSizes: number[],
+    videoPartIndex: number | null = null,
+    photoOrder: number[] | null = null,
   ): ModuleItem[] => {
     let partIdx = 0;
     return items.map((it) => {
@@ -590,6 +597,8 @@ export default function AdminCreateActivityPage() {
           splitGroupId: groupId,
           partIndex: partIdx++,
           partSizes,
+          ...(videoPartIndex !== null && { videoPartIndex }),
+          ...(photoOrder !== null && { photoOrder }),
         },
       };
     });
@@ -627,53 +636,62 @@ export default function AdminCreateActivityPage() {
     return next;
   });
 
-  // Split: subdivide the clicked part into two. Sizes are split as ceil/floor
-  // (e.g. a part of 3 becomes 2 + 1). Disabled when the clicked part has size 1.
-  const splitCollageItem = (index: number) => {
+  // Open the split-editor popup for the collage station at `index`. The editor
+  // shows every part in the same group at once and rebuilds the module items
+  // array on Save (see applySplitEditorResult).
+  const openSplitEditor = (index: number) => {
+    const target = selectedItems[index];
+    if (!target || target.itemType !== 'station' || target.subType !== 'collage') return;
+    setSplitEditorIndex(index);
+  };
+
+  // Save handler: rebuild the group's module items to match the editor result.
+  // - Adjusts item count to match result.partSizes.length (insert/remove).
+  // - Stamps partSizes / videoPartIndex / photoOrder on every member.
+  const applySplitEditorResult = (
+    index: number,
+    result: { partSizes: number[]; videoPartIndex: number | null; photoOrder: number[] },
+  ) => {
     setSelectedItems((prev) => {
       const target = prev[index];
       if (!target || target.itemType !== 'station' || target.subType !== 'collage') return prev;
-      const limit = getCollageLimit(target.settings);
-      if (limit <= 1) return prev;
 
-      // Initialize the group on first split.
-      let groupId = target.collageSplit?.splitGroupId;
-      let working = prev;
-      if (!groupId) {
-        groupId = `csg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-        working = prev.map((it, i) => i === index
-          ? { ...it, collageSplit: { splitGroupId: groupId!, partIndex: 0, partSizes: [limit] } }
-          : it);
-      }
+      // Ensure the group has an id (first time any split is saved on this item).
+      const groupId = target.collageSplit?.splitGroupId
+        ?? `csg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
-      const targetNow = working[index];
-      const partSizes = getPartSizes(targetNow, limit);
-      const targetPartIdx = targetNow.collageSplit?.partIndex ?? 0;
-      const cur = partSizes[targetPartIdx] ?? 1;
-      if (cur <= 1) return prev; // can't subdivide a single-image part
+      const groupIndices = prev
+        .map((it, i) => (it.collageSplit?.splitGroupId === groupId || i === index ? i : -1))
+        .filter((i) => i >= 0);
+      // Anchor: where the group starts in the items array. If the item isn't
+      // yet in the group (first split), use its own position as the anchor.
+      const anchor = groupIndices[0] ?? index;
+      const oldGroupLen = groupIndices.length || 1;
+      const newGroupLen = result.partSizes.length;
 
-      const firstHalf = Math.ceil(cur / 2);
-      const secondHalf = cur - firstHalf;
-      const newSizes = [
-        ...partSizes.slice(0, targetPartIdx),
-        firstHalf,
-        secondHalf,
-        ...partSizes.slice(targetPartIdx + 1),
-      ];
+      // Template item used for any newly-inserted parts — clone the clicked
+      // item (same ref / settings / etc.) and let applyGroupPartSizes assign
+      // a partIndex.
+      const template: ModuleItem = { ...target, collageSplit: undefined };
 
-      // Insert a new entry immediately after the row the user clicked.
-      const newPart: ModuleItem = {
-        ...target,
-        collageSplit: { splitGroupId: groupId, partIndex: 0, partSizes: newSizes },
-      };
-      const inserted = [
-        ...working.slice(0, index + 1),
-        newPart,
-        ...working.slice(index + 1),
-      ];
+      // Splice in `newGroupLen` clones starting at `anchor`, replacing the
+      // existing `oldGroupLen` group members.
+      const before = prev.slice(0, anchor);
+      const after = prev.slice(anchor + oldGroupLen);
+      const fresh: ModuleItem[] = Array.from({ length: newGroupLen }, () => ({
+        ...template,
+        collageSplit: { splitGroupId: groupId, partIndex: 0, partSizes: result.partSizes },
+      }));
+      const next = [...before, ...fresh, ...after];
 
-      return applyGroupPartSizes(inserted, groupId, newSizes);
+      // photoOrder identity check — store only if it's an actual permutation
+      // (not the trivial 0..N-1). Saves bytes on the wire for the common case.
+      const isIdentity = result.photoOrder.every((v, i) => v === i);
+      const photoOrder = isIdentity ? null : result.photoOrder;
+
+      return applyGroupPartSizes(next, groupId, result.partSizes, result.videoPartIndex, photoOrder);
     });
+    setSplitEditorIndex(null);
   };
   const updateItemSvg = (index: number, svgUrl: string) => {
     setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, spiderSvg: svgUrl || undefined } : item));
@@ -1176,7 +1194,7 @@ export default function AdminCreateActivityPage() {
                     onUpdateItemGroups={(index, groups) => setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, groups } : item))}
                     onUpdateItemSvg={updateItemSvg}
                     onToggleItemFinal={toggleItemFinal}
-                    onSplitCollageItem={splitCollageItem}
+                    onConfigureCollageSplit={openSplitEditor}
                     moduleType={moduleType}
                     connectionType={connectionType}
                     groupNames={groupNames}
@@ -1390,6 +1408,45 @@ export default function AdminCreateActivityPage() {
           </Form>
         </AdminCardForm>
       </AdminContent>
+
+      {splitEditorIndex !== null && (() => {
+        const target = selectedItems[splitEditorIndex];
+        if (!target || target.itemType !== 'station' || target.subType !== 'collage') return null;
+        const limit = getCollageLimit(target.settings);
+        // Source photo labels — prefer the missions array, else generic names.
+        const settings = target.settings ?? {};
+        const rawMissions = (settings as { missions?: { title?: string; description?: string }[] }).missions;
+        const photoLabels = Array.isArray(rawMissions) && rawMissions.length > 0
+          ? rawMissions.map((m, i) => ({ title: m?.title?.trim() || `${t.collageSplitEditorSubPart || 'תמונה'} ${i + 1}`, description: m?.description }))
+          : Array.from({ length: limit }, (_, i) => ({ title: `תמונה ${i + 1}` }));
+        // Reorder by existing photoOrder if set, so the popup shows current order.
+        const existingOrder = target.collageSplit?.photoOrder;
+        const orderedLabels = existingOrder && existingOrder.length === photoLabels.length
+          ? existingOrder.map((idx) => photoLabels[idx] ?? { title: `תמונה ${idx + 1}` })
+          : photoLabels;
+        const initialPartSizes = target.collageSplit?.partSizes && target.collageSplit.partSizes.length > 0
+          ? target.collageSplit.partSizes
+          : [limit];
+        const initialVideoPartIndex = target.collageSplit?.videoPartIndex ?? null;
+        return (
+          <CollageSplitEditor
+            stationName={target.name}
+            photos={orderedLabels}
+            initialPartSizes={initialPartSizes}
+            initialVideoPartIndex={initialVideoPartIndex}
+            onCancel={() => setSplitEditorIndex(null)}
+            onSave={(res: SplitEditorResult) => {
+              // Map the editor's "ordered-index" result back to original mission indices.
+              const baseOrder = existingOrder && existingOrder.length === photoLabels.length
+                ? existingOrder
+                : photoLabels.map((_, i) => i);
+              const remappedOrder = res.photoOrder.map((orderedIdx) => baseOrder[orderedIdx] ?? orderedIdx);
+              applySplitEditorResult(splitEditorIndex, { ...res, photoOrder: remappedOrder });
+            }}
+            t={t}
+          />
+        );
+      })()}
 
       {themeModalOpen && (
         <ThemeFormModal

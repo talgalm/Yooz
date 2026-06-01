@@ -110,7 +110,7 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
                 groups?: string[];
                 spiderSvg?: string;
                 isFinal?: boolean;
-                collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number };
+                collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number; videoPartIndex?: number | null; photoOrder?: number[] };
               }) => ({
                 type: item.type,
                 ref: item.ref,

@@ -9,7 +9,7 @@
  *   result     → play the finished MP4 collage video, download or continue
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 import {
@@ -310,7 +310,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     ? (settings.multiSelectCount as number)
     : 1;
   const rawMissions = settings.missions as CollageMission[] | undefined;
-  const fullMissions: CollageMission[] = multiSelect
+  const baseMissions: CollageMission[] = multiSelect
     ? Array.from({ length: multiSelectCount }, (_, i) => ({ title: `פריט ${i + 1}`, description: '' }))
     : (Array.isArray(rawMissions) && rawMissions.length > 0
         ? rawMissions
@@ -325,7 +325,16 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   // part is responsible for. We fall back to even distribution for legacy data
   // that only saved `totalParts`.
   const splitMeta = station.collageSplit;
+  // Apply optional per-activity photo reorder before slicing.
+  const fullMissions: CollageMission[] =
+    splitMeta?.photoOrder && splitMeta.photoOrder.length === baseMissions.length
+      ? splitMeta.photoOrder.map((i) => baseMissions[i] ?? baseMissions[0])
+      : baseMissions;
   const totalImages = fullMissions.length;
+  // When a dedicated video-only part exists, partSizes[videoPartIndex] === 0
+  // and the sum of photo parts still equals totalImages.
+  const videoPartIndex = splitMeta?.videoPartIndex ?? null;
+  const hasVideoPart = typeof videoPartIndex === 'number' && videoPartIndex >= 0;
   const partSizes: number[] = (() => {
     const distributeEvenly = (total: number, parts: number) => {
       const base = Math.floor(total / parts);
@@ -335,8 +344,20 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     if (splitMeta?.partSizes && splitMeta.partSizes.length > 0) {
       const sum = splitMeta.partSizes.reduce((a, b) => a + b, 0);
       // Self-heal stale partSizes whose sum no longer matches the station's
-      // total image count — redistribute evenly across the same parts count.
+      // total image count — redistribute evenly across the photo parts only
+      // (preserving the video-only zero entry if present).
       if (sum === totalImages) return splitMeta.partSizes;
+      if (hasVideoPart) {
+        const photoParts = splitMeta.partSizes.length - 1;
+        const photoSizes = distributeEvenly(totalImages, Math.max(1, photoParts));
+        const repaired = [...splitMeta.partSizes];
+        let pi = 0;
+        for (let i = 0; i < repaired.length; i++) {
+          if (i === videoPartIndex) { repaired[i] = 0; continue; }
+          repaired[i] = photoSizes[pi++] ?? 1;
+        }
+        return repaired;
+      }
       return distributeEvenly(totalImages, splitMeta.partSizes.length);
     }
     const n = splitMeta?.totalParts && splitMeta.totalParts > 0 ? splitMeta.totalParts : 1;
@@ -347,13 +368,22 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const isSplit = totalParts > 1;
   const isFirstPart = partIndex === 0;
   const isLastPart = partIndex === totalParts - 1;
-  const partSize = Math.max(1, partSizes[partIndex] ?? 1);
+  const isVideoPart = hasVideoPart && partIndex === videoPartIndex;
+  // The participant only finalizes (review + generate) on a non-video terminal part.
+  // When a dedicated video part exists, photo parts always save & continue.
+  const finalizesCollage = isVideoPart || (isLastPart && !hasVideoPart);
+  const partSize = isVideoPart ? 0 : Math.max(1, partSizes[partIndex] ?? 1);
   const partStartIndex = partSizes.slice(0, partIndex).reduce((a, b) => a + b, 0);
   // The list of missions this part is responsible for (local-index 0..partSize-1).
-  const missions: CollageMission[] = fullMissions.slice(partStartIndex, partStartIndex + partSize);
-  const partMultiSelectCount = multiSelect ? partSize : multiSelectCount;
+  const missions: CollageMission[] = isVideoPart
+    ? []
+    : fullMissions.slice(partStartIndex, partStartIndex + partSize);
+  const partMultiSelectCount = multiSelect ? Math.max(1, partSize) : multiSelectCount;
 
-  const [phase, setPhase] = useState<Phase>(isSplit && !isFirstPart ? 'capture' : 'intro');
+  const initialPhase: Phase = isVideoPart
+    ? 'generating'
+    : (isSplit && !isFirstPart ? 'capture' : 'intro');
+  const [phase, setPhase] = useState<Phase>(initialPhase);
   const [currentMission, setCurrentMission] = useState(0);
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [collageTitle, setCollageTitle] = useState('');
@@ -448,7 +478,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   //  - the last part loads prior parts, merges them with the local capture, and
   //    moves to the review/generate flow with the full set.
   const finishLocalPart = async (localPhotos: CapturedPhoto[]) => {
-    if (isSplit && !isLastPart) {
+    if (isSplit && !finalizesCollage) {
       const activityCode = code ?? '';
       if (activityCode && splitMeta) {
         try {
@@ -462,7 +492,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       return;
     }
 
-    if (isSplit && isLastPart) {
+    if (isSplit && finalizesCollage) {
       const activityCode = code ?? '';
       let merged: CapturedPhoto[] = [];
       if (activityCode && splitMeta) {
@@ -509,13 +539,15 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   };
 
   // ── Collage generation ──────────────────────────────────────────────────────
-  const generateCollage = async () => {
-    if (photos.length !== totalImages) {
+  const generateCollage = async (photosOverride?: CapturedPhoto[]) => {
+    const source = photosOverride ?? photos;
+    if (source.length !== totalImages) {
       setError(
         isSplit
-          ? `נדרשות ${totalImages} תמונות לסרטון. השלימו את כל חלקי התחנה לפני יצירת הסרטון (${photos.length}/${totalImages}).`
-          : `נדרשות ${totalImages} תמונות לסרטון (נבחרו ${photos.length}).`,
+          ? `נדרשות ${totalImages} תמונות לסרטון. השלימו את כל חלקי התחנה לפני יצירת הסרטון (${source.length}/${totalImages}).`
+          : `נדרשות ${totalImages} תמונות לסרטון (נבחרו ${source.length}).`,
       );
+      setPhase('review');
       return;
     }
 
@@ -538,7 +570,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
     try {
       const activityCode = code ?? '';
-      const orderedPhotos = [...photos].sort((a, b) => a.missionIndex - b.missionIndex);
+      const orderedPhotos = [...source].sort((a, b) => a.missionIndex - b.missionIndex);
       const result = await uploadCollageParts(
         orderedPhotos,
         collageTitle,
@@ -643,6 +675,40 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       a.click();
     } catch { /* user can long-press to save */ }
   };
+
+  // ── Video-only part bootstrap ───────────────────────────────────────────────
+  // When this station is a dedicated video-creation sub-station, load all prior
+  // parts from IndexedDB on mount and trigger generation immediately. The
+  // participant lands directly on the progress screen → result page.
+  const bootstrappedRef = useRef(false);
+  useEffect(() => {
+    if (!isVideoPart || bootstrappedRef.current) return;
+    bootstrappedRef.current = true;
+    (async () => {
+      const activityCode = code ?? '';
+      if (!activityCode || !splitMeta) {
+        setError('לא נמצאו תמונות שמורות מהחלקים הקודמים');
+        setPhase('review');
+        return;
+      }
+      try {
+        const prior = await loadCollageParts(activityCode, splitMeta.splitGroupId);
+        const merged = mergeSplitPhotos(prior, []);
+        if (merged.length < totalImages) {
+          setError(`נדרשות ${totalImages} תמונות לסרטון. השלימו את החלקים הקודמים בפעילות (${merged.length}/${totalImages}).`);
+          setPhotos(merged);
+          setPhase('review');
+          return;
+        }
+        setPhotos(merged);
+        await generateCollage(merged);
+      } catch {
+        setError('שגיאה בטעינת התמונות');
+        setPhase('review');
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const currentPhotoForMission = photos.find((p) => p.missionIndex === currentMission);
@@ -755,11 +821,12 @@ export default function CollageStation({ station, onContinue, code }: Props) {
               onClick={() => void finishLocalPart(photos)}
               disabled={photos.length < partMultiSelectCount}
             >
-              {isSplit && !isLastPart ? 'שמור והמשך לתחנה הבאה' : 'אישור והמשך'}
+              {isSplit && !finalizesCollage ? 'שמור והמשך לתחנה הבאה' : 'אישור והמשך'}
             </PrimaryBtn>
           </CaptureActions>
 
-          <input ref={quickCaptureRef} type="file" accept="image/*,video/*" capture="environment" style={{ display: 'none' }} onChange={handleMultiFilesSelected} />
+          {/* Camera input: image-only + capture so Android opens the camera directly instead of the picker. */}
+          <input ref={quickCaptureRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleMultiFilesSelected} />
           <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={handleMultiFilesSelected} />
         </CaptureLayout>
       </Wrap>
@@ -827,13 +894,14 @@ export default function CollageStation({ station, onContinue, code }: Props) {
               </OutlineBtn>
             )}
             <PrimaryBtn onClick={confirmPhoto} disabled={!hasCapture} style={{ marginTop: 4 }}>
-              {currentMission === missions.length - 1 && isSplit && !isLastPart
+              {currentMission === missions.length - 1 && isSplit && !finalizesCollage
                 ? 'שמור והמשך לתחנה הבאה'
                 : 'אישור תמונה והמשך'}
             </PrimaryBtn>
           </CaptureActions>
 
-          <input ref={quickCaptureRef} type="file" accept="image/*,video/*" capture="environment" style={{ display: 'none' }} onChange={handleFileSelected} />
+          {/* Camera input: image-only + capture so Android opens the camera directly instead of the picker. */}
+          <input ref={quickCaptureRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFileSelected} />
           <input ref={fileInputRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFileSelected} />
         </CaptureLayout>
       </Wrap>

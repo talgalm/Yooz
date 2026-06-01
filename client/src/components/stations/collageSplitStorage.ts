@@ -86,3 +86,38 @@ export async function clearCollageParts(
   });
   db.close();
 }
+
+/**
+ * Returns true when at least one stored part with at least one photo exists
+ * for the given activity (across any splitGroupId). Used by the mission
+ * completion screen to choose between the collage-video CTA and the regular
+ * share modal.
+ */
+export async function hasAnyCollagePhotos(activityCode: string): Promise<boolean> {
+  try {
+    const db = await openDb();
+    const prefix = `${activityCode}::`;
+    const result = await new Promise<boolean>((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readonly');
+      const req = tx.objectStore(STORE).openCursor();
+      req.onsuccess = () => {
+        const cursor = req.result;
+        if (!cursor) { resolve(false); return; }
+        const key = String(cursor.key);
+        if (key.startsWith(prefix)) {
+          const parts = cursor.value as StoredCollagePart[] | undefined;
+          if (parts && parts.some((p) => p.photos && p.photos.length > 0)) {
+            resolve(true);
+            return;
+          }
+        }
+        cursor.continue();
+      };
+      req.onerror = () => reject(req.error);
+    });
+    db.close();
+    return result;
+  } catch {
+    return false;
+  }
+}

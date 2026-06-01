@@ -485,7 +485,7 @@ interface ModuleItemsSectionProps {
   onUpdateItemGroups: (index: number, groups: string[]) => void;
   onUpdateItemSvg?: (index: number, svgUrl: string) => void;
   onToggleItemFinal?: (index: number) => void;
-  onSplitCollageItem?: (index: number) => void;
+  onConfigureCollageSplit?: (index: number) => void;
   moduleType?: string;
   connectionType: string;
   groupNames: string[];
@@ -502,7 +502,7 @@ export default function ModuleItemsSection({
   onUpdateItemGroups,
   onUpdateItemSvg,
   onToggleItemFinal,
-  onSplitCollageItem,
+  onConfigureCollageSplit,
   moduleType,
   connectionType,
   groupNames,
@@ -924,30 +924,27 @@ export default function ModuleItemsSection({
                     🏁 {item.isFinal ? (t.spidersFinal || 'Final') : (t.spidersSetFinal || 'Set Final')}
                   </FinalButton>
                 )}
-                {item.itemType === 'station' && item.subType === 'collage' && onSplitCollageItem && (() => {
+                {item.itemType === 'station' && item.subType === 'collage' && onConfigureCollageSplit && (() => {
                   const limit = getCollageImageLimit(item.settings);
                   const split = item.collageSplit;
                   const partSizes = effectivePartSizes(item, limit);
                   const partIdx = split?.partIndex ?? 0;
-                  const partSize = partSizes[partIdx] ?? 1;
                   const totalParts = partSizes.length;
-                  const cantSubdivide = partSize <= 1;
+                  const isVideoPart = split?.videoPartIndex === partIdx;
+                  const partSize = isVideoPart ? 0 : (partSizes[partIdx] ?? 1);
                   return (
                     <>
                       {split && (
                         <PartBadge title={t.collageSplitPartLabel || 'Part of split collage'}>
-                          {(t.collageSplitPart || 'חלק')} {partIdx + 1}/{totalParts} · {partSize}📷
+                          {(t.collageSplitPart || 'חלק')} {partIdx + 1}/{totalParts} · {isVideoPart ? '🎬' : `${partSize}📷`}
                         </PartBadge>
                       )}
                       <SplitButton
                         type="button"
-                        disabled={cantSubdivide}
-                        onClick={(e) => { e.stopPropagation(); if (!cantSubdivide) onSplitCollageItem(index); }}
-                        title={cantSubdivide
-                          ? (t.collageSplitMinSize || 'This part has only 1 image — can\'t split further')
-                          : (t.collageSplitAdd || 'Split this part')}
+                        onClick={(e) => { e.stopPropagation(); onConfigureCollageSplit(index); }}
+                        title={t.collageSplitConfigure || 'Configure split'}
                       >
-                        ✂️ {t.collageSplit || 'Split'}
+                        ⚙️ {t.collageSplitConfigure || 'פיצול תחנה'}
                       </SplitButton>
                     </>
                   );

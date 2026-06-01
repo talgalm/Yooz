@@ -21,6 +21,10 @@ export interface CollageSplitData {
   partIndex: number;
   partSizes: number[];
   totalParts?: number; // legacy fallback
+  /** Index of the part dedicated to video creation only (no photo capture). */
+  videoPartIndex?: number | null;
+  /** Optional permutation of station.settings.missions before slicing. */
+  photoOrder?: number[];
 }
 
 export interface StationItemData {

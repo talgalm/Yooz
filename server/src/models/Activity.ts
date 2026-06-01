@@ -10,6 +10,14 @@ export interface ICollageSplit {
   partIndex: number;
   partSizes: number[];
   totalParts?: number; // legacy fallback
+  /** Optional: index of the part dedicated to video creation/sharing only.
+   *  When set, that part has partSizes[videoPartIndex] === 0 and the participant
+   *  jumps straight to the result/share flow instead of capturing photos. */
+  videoPartIndex?: number | null;
+  /** Optional permutation of the underlying station.settings.missions indices.
+   *  When set, the participant reorders the mission list before slicing into
+   *  per-part chunks. Length = sum(partSizes excluding the video part). */
+  photoOrder?: number[];
 }
 
 export interface IModuleItem {
@@ -138,6 +146,8 @@ const collageSplitSchema = new Schema<ICollageSplit>({
   partIndex: { type: Number, required: true },
   partSizes: { type: [Number], default: undefined },
   totalParts: { type: Number },
+  videoPartIndex: { type: Number, default: null },
+  photoOrder: { type: [Number], default: undefined },
 }, { _id: false });
 
 const moduleItemSchema = new Schema<IModuleItem>({
