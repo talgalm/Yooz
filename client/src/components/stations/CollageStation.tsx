@@ -59,11 +59,38 @@ const Wrap = styled('div')({
   background: 'linear-gradient(160deg,#12122a 0%,#1e1640 60%,#2a1045 100%)',
   color: '#fff',
   fontFamily: 'inherit',
-  overflowY: 'auto',
+  overflow: 'hidden',
+  height: '100dvh',
+  maxHeight: '100dvh',
   animation: `${fadeIn} 400ms ease both`,
 });
 
-const Content = styled('div')({ padding: '32px 20px 48px', display: 'flex', flexDirection: 'column' });
+/** Scrollable body for intro / review (many list items). */
+const Content = styled('div')({
+  flex: 1,
+  minHeight: 0,
+  overflowY: 'auto',
+  padding: '24px 20px calc(24px + env(safe-area-inset-bottom, 0px))',
+  display: 'flex',
+  flexDirection: 'column',
+  WebkitOverflowScrolling: 'touch',
+});
+
+/** Capture fits one screen: compact header, small preview, actions pinned at bottom. */
+const CaptureLayout = styled('div')({
+  flex: 1,
+  minHeight: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  padding: '10px 16px calc(12px + env(safe-area-inset-bottom, 0px))',
+  maxWidth: 480,
+  width: '100%',
+  margin: '0 auto',
+  boxSizing: 'border-box',
+});
+
+const CaptureHeader = styled('div')({ flexShrink: 0, textAlign: 'center' });
+const CaptureActions = styled('div')({ flexShrink: 0, marginTop: 'auto', paddingTop: 8 });
 
 const TopLabel = styled('p')({ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 4, marginTop: 0, letterSpacing: 1 });
 const BigTitle = styled('h1')({ textAlign: 'center', fontSize: 26, fontWeight: 800, margin: '0 0 10px', lineHeight: 1.25 });
@@ -90,10 +117,10 @@ const MissionTitle = styled('div')({ fontWeight: 700, fontSize: 15 });
 const MissionDesc = styled('div')({ fontSize: 13, color: 'rgba(255,255,255,0.58)', marginTop: 2 });
 
 const PrimaryBtn = styled('button')({
-  width: '100%', padding: 16, borderRadius: 14, border: 'none',
+  width: '100%', padding: 14, borderRadius: 14, border: 'none',
   background: 'linear-gradient(135deg,#f59e0b,#ec4899)',
-  color: '#fff', fontSize: 17, fontWeight: 800, cursor: 'pointer',
-  fontFamily: 'inherit', marginTop: 8,
+  color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer',
+  fontFamily: 'inherit', marginTop: 6,
   '&:disabled': { opacity: 0.45, cursor: 'not-allowed' },
 });
 const OutlineBtn = styled('button')({
@@ -103,27 +130,36 @@ const OutlineBtn = styled('button')({
 });
 
 // Capture phase
-const ProgressDots = styled('div')({ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 20 });
+const ProgressDots = styled('div')({ display: 'flex', gap: 6, justifyContent: 'center', margin: '6px 0 8px' });
 const Dot = styled('div')<{ active?: boolean; done?: boolean }>(({ active, done }) => ({
-  width: 10, height: 10, borderRadius: '50%',
+  width: 8, height: 8, borderRadius: '50%',
   background: done ? '#10b981' : active ? '#ec4899' : 'rgba(255,255,255,0.22)',
   transition: 'background 0.3s',
 }));
 
 const CaptureArea = styled('div')({
-  width: '100%', aspectRatio: '3/4',
+  width: '100%',
+  flex: '1 1 auto',
+  minHeight: 0,
+  maxHeight: 'min(36dvh, 200px)',
   background: 'rgba(0,0,0,0.45)',
   border: '2px dashed rgba(255,255,255,0.18)',
-  borderRadius: 16, overflow: 'hidden', position: 'relative', marginBottom: 16,
-  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+  borderRadius: 14,
+  overflow: 'hidden',
+  position: 'relative',
+  margin: '0 auto 8px',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
 });
 const CapturePreviewImg = styled('img')({ width: '100%', height: '100%', objectFit: 'cover' });
 const PlaceholderIcon = styled('div')({ fontSize: 48, marginBottom: 8, opacity: 0.38 });
 const PlaceholderText = styled('div')({ fontSize: 13, color: 'rgba(255,255,255,0.38)' });
 
-const ButtonRow = styled('div')({ display: 'flex', gap: 10, marginBottom: 10 });
+const ButtonRow = styled('div')({ display: 'flex', gap: 8, marginBottom: 6 });
 const HalfBtn = styled('button')({
-  flex: 1, padding: '13px 8px', borderRadius: 12, border: 'none',
+  flex: 1, padding: '11px 8px', borderRadius: 12, border: 'none',
   background: 'rgba(255,255,255,0.09)', color: '#fff', fontSize: 13, fontWeight: 600,
   cursor: 'pointer', fontFamily: 'inherit',
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
@@ -370,6 +406,41 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     );
   };
 
+  /** Map split parts to global mission indices 0..N-1 (part 1 → 0,1,2; part 2 → 3,4,5). */
+  const mergeSplitPhotos = (
+    prior: { partIndex: number; photos: { blob: Blob; isVideo?: boolean }[] }[],
+    local: CapturedPhoto[],
+  ): CapturedPhoto[] => {
+    const merged: CapturedPhoto[] = [];
+    for (const stored of prior) {
+      if (stored.partIndex >= partIndex) continue;
+      const globalStart = partSizes.slice(0, stored.partIndex).reduce((a, b) => a + b, 0);
+      stored.photos.forEach((ph, i) => {
+        merged.push({
+          missionIndex: globalStart + i,
+          blob: ph.blob,
+          previewUrl: URL.createObjectURL(ph.blob),
+          isVideo: ph.isVideo,
+        });
+      });
+    }
+    const localStart = partStartIndex;
+    [...local]
+      .sort((a, b) => a.missionIndex - b.missionIndex)
+      .forEach((ph) => {
+        merged.push({
+          ...ph,
+          missionIndex: localStart + ph.missionIndex,
+        });
+      });
+    return merged.sort((a, b) => a.missionIndex - b.missionIndex);
+  };
+
+  const photosForStorage = (list: CapturedPhoto[]) =>
+    [...list]
+      .sort((a, b) => a.missionIndex - b.missionIndex)
+      .map((p) => ({ blob: p.blob, isVideo: p.isVideo }));
+
   // ── Split-part completion ──────────────────────────────────────────────────
   // When the user finishes capturing this part's slice:
   //  - non-last parts save photos to IndexedDB and call onContinue (advance to
@@ -383,7 +454,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         try {
           await saveCollagePart(activityCode, splitMeta.splitGroupId, {
             partIndex,
-            photos: localPhotos.map((p) => ({ blob: p.blob, isVideo: p.isVideo })),
+            photos: photosForStorage(localPhotos),
           });
         } catch { /* swallow — onContinue still advances */ }
       }
@@ -393,27 +464,16 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
     if (isSplit && isLastPart) {
       const activityCode = code ?? '';
-      const merged: CapturedPhoto[] = [];
-      let globalIdx = 0;
+      let merged: CapturedPhoto[] = [];
       if (activityCode && splitMeta) {
         try {
           const prior = await loadCollageParts(activityCode, splitMeta.splitGroupId);
-          for (const p of prior) {
-            if (p.partIndex >= partIndex) continue;
-            for (const ph of p.photos) {
-              merged.push({
-                missionIndex: globalIdx++,
-                blob: ph.blob,
-                previewUrl: URL.createObjectURL(ph.blob),
-                isVideo: ph.isVideo,
-              });
-            }
-          }
-        } catch { /* fall through with whatever we have */ }
-      }
-      // Append this (last) part's photos with re-based global indices.
-      for (const ph of localPhotos) {
-        merged.push({ ...ph, missionIndex: globalIdx++ });
+          merged = mergeSplitPhotos(prior, localPhotos);
+        } catch {
+          merged = mergeSplitPhotos([], localPhotos);
+        }
+      } else {
+        merged = mergeSplitPhotos([], localPhotos);
       }
       if (merged.length < totalImages) {
         setError(
@@ -478,8 +538,9 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
     try {
       const activityCode = code ?? '';
+      const orderedPhotos = [...photos].sort((a, b) => a.missionIndex - b.missionIndex);
       const result = await uploadCollageParts(
-        photos,
+        orderedPhotos,
         collageTitle,
         logoUrl,
         activityCode,
@@ -643,17 +704,28 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     const remaining = Math.max(0, partMultiSelectCount - photos.length);
     return (
       <Wrap>
-        <Content>
-          <TopLabel>תחנת צילום{isSplit ? ` — חלק ${partIndex + 1}/${totalParts}` : ''}</TopLabel>
-          <BigTitle style={{ fontSize: 22 }}>בחרו {partMultiSelectCount} תמונות או סרטונים</BigTitle>
-          <SubText style={{ marginBottom: 14 }}>
-            נבחרו {photos.length} מתוך {partMultiSelectCount}
-          </SubText>
+        <CaptureLayout>
+          <CaptureHeader>
+            <TopLabel style={{ marginBottom: 2 }}>תחנת צילום{isSplit ? ` — חלק ${partIndex + 1}/${totalParts}` : ''}</TopLabel>
+            <BigTitle style={{ fontSize: 20, marginBottom: 4 }}>בחרו {partMultiSelectCount} תמונות או סרטונים</BigTitle>
+            <SubText style={{ margin: '0 0 8px', fontSize: 14 }}>
+              נבחרו {photos.length} מתוך {partMultiSelectCount}
+            </SubText>
+          </CaptureHeader>
 
           {photos.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 6,
+              flex: '1 1 auto',
+              minHeight: 0,
+              maxHeight: 'min(32dvh, 180px)',
+              overflow: 'hidden',
+              alignContent: 'start',
+            }}>
               {photos.map((p, i) => (
-                <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: 10, overflow: 'hidden', background: 'rgba(0,0,0,0.4)' }}>
+                <div key={i} style={{ position: 'relative', aspectRatio: '1', borderRadius: 8, overflow: 'hidden', background: 'rgba(0,0,0,0.4)' }}>
                   {p.isVideo
                     ? <video src={p.previewUrl} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     : <img src={p.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -662,9 +734,9 @@ export default function CollageStation({ station, onContinue, code }: Props) {
                     onClick={() => removeMultiPhoto(i)}
                     style={{
                       position: 'absolute', top: 4, left: 4,
-                      width: 24, height: 24, borderRadius: '50%', border: 'none',
+                      width: 22, height: 22, borderRadius: '50%', border: 'none',
                       background: 'rgba(0,0,0,0.65)', color: '#fff', cursor: 'pointer',
-                      fontSize: 14, lineHeight: 1, padding: 0, fontFamily: 'inherit',
+                      fontSize: 13, lineHeight: 1, padding: 0, fontFamily: 'inherit',
                     }}
                     aria-label="הסר"
                   >×</button>
@@ -673,23 +745,23 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             </div>
           )}
 
-          {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: 13, marginBottom: 8 }}>{error}</p>}
-
-          <ButtonRow>
-            <HalfBtn onClick={() => quickCaptureRef.current?.click()} disabled={remaining === 0}>📷 פתח מצלמה</HalfBtn>
-            <HalfBtn onClick={() => fileInputRef.current?.click()} disabled={remaining === 0}>🖼 מהגלריה</HalfBtn>
-          </ButtonRow>
-
-          <PrimaryBtn
-            onClick={() => void finishLocalPart(photos)}
-            disabled={photos.length < partMultiSelectCount}
-          >
-            {isSplit && !isLastPart ? 'שמור והמשך לתחנה הבאה' : 'אישור והמשך'}
-          </PrimaryBtn>
+          <CaptureActions>
+            {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: 12, margin: '0 0 6px' }}>{error}</p>}
+            <ButtonRow>
+              <HalfBtn onClick={() => quickCaptureRef.current?.click()} disabled={remaining === 0}>📷 פתח מצלמה</HalfBtn>
+              <HalfBtn onClick={() => fileInputRef.current?.click()} disabled={remaining === 0}>🖼 מהגלריה</HalfBtn>
+            </ButtonRow>
+            <PrimaryBtn
+              onClick={() => void finishLocalPart(photos)}
+              disabled={photos.length < partMultiSelectCount}
+            >
+              {isSplit && !isLastPart ? 'שמור והמשך לתחנה הבאה' : 'אישור והמשך'}
+            </PrimaryBtn>
+          </CaptureActions>
 
           <input ref={quickCaptureRef} type="file" accept="image/*,video/*" capture="environment" style={{ display: 'none' }} onChange={handleMultiFilesSelected} />
           <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={handleMultiFilesSelected} />
-        </Content>
+        </CaptureLayout>
       </Wrap>
     );
   }
@@ -701,50 +773,69 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     const mission = missions[currentMission];
     return (
       <Wrap>
-        <Content>
-          <TopLabel>
-            צילום {currentMission + 1} מתוך {missions.length}
-            {isSplit ? ` — חלק ${partIndex + 1}/${totalParts}` : ''}
-          </TopLabel>
-          <BigTitle style={{ fontSize: 22 }}>{mission.title}</BigTitle>
-          {mission.description && <SubText style={{ marginBottom: 14 }}>{mission.description}</SubText>}
-
-          <ProgressDots>
-            {missions.map((_, i) => (
-              <Dot key={i}
-                active={i === currentMission}
-                done={i < currentMission || !!photos.find((p) => p.missionIndex === i)}
-              />
-            ))}
-          </ProgressDots>
+        <CaptureLayout>
+          <CaptureHeader>
+            <TopLabel style={{ marginBottom: 2 }}>
+              צילום {currentMission + 1} מתוך {missions.length}
+              {isSplit ? ` — חלק ${partIndex + 1}/${totalParts}` : ''}
+            </TopLabel>
+            <BigTitle style={{ fontSize: 20, marginBottom: 4 }}>{mission.title}</BigTitle>
+            {mission.description && (
+              <SubText style={{
+                margin: '0 0 4px',
+                fontSize: 13,
+                lineHeight: 1.4,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}>
+                {mission.description}
+              </SubText>
+            )}
+            <ProgressDots>
+              {missions.map((_, i) => (
+                <Dot key={i}
+                  active={i === currentMission}
+                  done={i < currentMission || !!photos.find((p) => p.missionIndex === i)}
+                />
+              ))}
+            </ProgressDots>
+          </CaptureHeader>
 
           <CaptureArea>
             {displayUrl
               ? (previewIsVideo || currentPhotoForMission?.isVideo)
                 ? <video src={displayUrl} autoPlay muted playsInline loop style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <CapturePreviewImg src={displayUrl} alt="preview" />
-              : <><PlaceholderIcon>🖼</PlaceholderIcon><PlaceholderText>צלמו או העלו תמונה / סרטון</PlaceholderText></>
+              : <><PlaceholderIcon style={{ fontSize: 36 }}>🖼</PlaceholderIcon><PlaceholderText>צלמו או העלו תמונה / סרטון</PlaceholderText></>
             }
           </CaptureArea>
 
-          {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: 13, marginBottom: 8 }}>{error}</p>}
-
-          <ButtonRow>
-            <HalfBtn onClick={() => quickCaptureRef.current?.click()}>📷 פתח מצלמה</HalfBtn>
-            <HalfBtn onClick={() => fileInputRef.current?.click()}>🖼 מהגלריה</HalfBtn>
-          </ButtonRow>
-
-          {previewUrl && <OutlineBtn onClick={() => { setPreviewUrl(''); setPreviewBlob(null); setPreviewIsVideo(false); }} style={{ marginBottom: 8 }}>בחר מחדש</OutlineBtn>}
-
-          <PrimaryBtn onClick={confirmPhoto} disabled={!hasCapture}>
-            {currentMission === missions.length - 1 && isSplit && !isLastPart
-              ? 'שמור והמשך לתחנה הבאה'
-              : 'אישור תמונה והמשך'}
-          </PrimaryBtn>
+          <CaptureActions>
+            {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: 12, margin: '0 0 6px' }}>{error}</p>}
+            <ButtonRow>
+              <HalfBtn onClick={() => quickCaptureRef.current?.click()}>📷 פתח מצלמה</HalfBtn>
+              <HalfBtn onClick={() => fileInputRef.current?.click()}>🖼 מהגלריה</HalfBtn>
+            </ButtonRow>
+            {previewUrl && (
+              <OutlineBtn
+                onClick={() => { setPreviewUrl(''); setPreviewBlob(null); setPreviewIsVideo(false); }}
+                style={{ marginBottom: 4, padding: '4px 0' }}
+              >
+                בחר מחדש
+              </OutlineBtn>
+            )}
+            <PrimaryBtn onClick={confirmPhoto} disabled={!hasCapture} style={{ marginTop: 4 }}>
+              {currentMission === missions.length - 1 && isSplit && !isLastPart
+                ? 'שמור והמשך לתחנה הבאה'
+                : 'אישור תמונה והמשך'}
+            </PrimaryBtn>
+          </CaptureActions>
 
           <input ref={quickCaptureRef} type="file" accept="image/*,video/*" capture="environment" style={{ display: 'none' }} onChange={handleFileSelected} />
           <input ref={fileInputRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFileSelected} />
-        </Content>
+        </CaptureLayout>
       </Wrap>
     );
   }
@@ -763,16 +854,17 @@ export default function CollageStation({ station, onContinue, code }: Props) {
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.48)', marginBottom: 6 }}>כותרת לסרטון (אופציונלי)</p>
           <TitleInput value={collageTitle} onChange={(e) => setCollageTitle(e.target.value)} placeholder="הרגעים שלנו יחד" dir="rtl" />
 
-          {photos.map((photo, i) => {
-            const mission = missions[photo.missionIndex];
+          {[...photos].sort((a, b) => a.missionIndex - b.missionIndex).map((photo) => {
+            // Merged split photos use global indices (0..totalImages-1); use fullMissions, not this part's slice.
+            const mission = fullMissions[photo.missionIndex];
             return (
-              <ReviewItem key={i}>
+              <ReviewItem key={photo.missionIndex}>
                 {photo.isVideo
                   ? <video src={photo.previewUrl} muted playsInline style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />
                   : <ReviewThumb src={photo.previewUrl} alt="" />
                 }
                 <ReviewInfo>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{mission?.title ?? `תמונה ${i + 1}`}</div>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{mission?.title ?? `תמונה ${photo.missionIndex + 1}`}</div>
                   {mission?.description && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>{mission.description}</div>}
                 </ReviewInfo>
                 <span style={{ fontSize: 20 }}>📷</span>

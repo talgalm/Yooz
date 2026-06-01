@@ -70,7 +70,7 @@ export async function loadCollageParts(
     req.onerror = () => reject(req.error);
   });
   db.close();
-  return result;
+  return result.sort((a, b) => a.partIndex - b.partIndex);
 }
 
 export async function clearCollageParts(
