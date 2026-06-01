@@ -316,7 +316,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
           if (Math.abs(item.x - bx) <= CATCH_X_RADIUS) {
             const catchY = progressToTopPct(progress);
             newCaughtAnims.push({ id: nextId(), src: item.src, x: item.x, y: catchY });
-            newPopups.push({ x: item.x, y: catchY - 8, text: item.isGood ? `+${points}` : '✗', good: item.isGood });
+            newPopups.push({ x: item.x, y: catchY + 2, text: item.isGood ? `+${points}` : '✗', good: item.isGood });
             if (item.isGood) goodCaught++; else badCaught++;
             return false;
           }
