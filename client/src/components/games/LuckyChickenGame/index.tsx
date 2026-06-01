@@ -555,15 +555,15 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
 
             {/* score slot (left of combo) */}
             <g>
-              <rect x="230" y="26" width="196" height="108" rx="30" fill="#0a0502" />
-              <rect x="234" y="30" width="188" height="100" rx="27" fill="url(#lcSlot)" stroke="rgba(120,62,22,0.85)" strokeWidth="2.5" />
-              <rect x="244" y="118" width="168" height="8" rx="4" fill="rgba(255,150,60,0.12)" />
+              <rect x="223" y="26" width="196" height="108" rx="30" fill="#0a0502" />
+              <rect x="227" y="30" width="188" height="100" rx="27" fill="url(#lcSlot)" stroke="rgba(120,62,22,0.85)" strokeWidth="2.5" />
+              <rect x="237" y="118" width="168" height="8" rx="4" fill="rgba(255,150,60,0.12)" />
             </g>
             {/* time slot (right of combo) */}
             <g>
-              <rect x="596" y="26" width="196" height="108" rx="30" fill="#0a0502" />
-              <rect x="600" y="30" width="188" height="100" rx="27" fill="url(#lcSlot)" stroke="rgba(120,62,22,0.85)" strokeWidth="2.5" />
-              <rect x="610" y="118" width="168" height="8" rx="4" fill="rgba(255,150,60,0.12)" />
+              <rect x="603" y="26" width="196" height="108" rx="30" fill="#0a0502" />
+              <rect x="607" y="30" width="188" height="100" rx="27" fill="url(#lcSlot)" stroke="rgba(120,62,22,0.85)" strokeWidth="2.5" />
+              <rect x="617" y="118" width="168" height="8" rx="4" fill="rgba(255,150,60,0.12)" />
             </g>
 
             {/* center combo squircle badge — dead center, wide enough for 2 digits */}
@@ -585,7 +585,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
           </HudBarSvg>
           <LogoImg src={LOGO_IMG} alt="Lucky Chicken" />
           <HudOverlay>
-            <HudSection $left={32}>
+            <HudSection $left={31}>
               <HudLabel>{t.score}</HudLabel>
               <HudValue>{score}</HudValue>
             </HudSection>
@@ -593,7 +593,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
               <HudLabel>{t.combo}</HudLabel>
               <HudComboValue key={comboKey} $key={comboKey}>×{combo}</HudComboValue>
             </HudComboSection>
-            <HudSection $left={68}>
+            <HudSection $left={69}>
               <HudLabel>{t.timeLeft}</HudLabel>
               <HudValue>{formatTime(timeLeft)}</HudValue>
             </HudSection>
