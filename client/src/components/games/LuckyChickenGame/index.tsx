@@ -52,7 +52,27 @@ import {
   PauseOverlay,
   PauseTitle,
   QuitButton,
+  StartLogo,
+  StartTitle,
+  StartDesc,
+  InstructionsOverlay,
+  InstrBlock,
+  InstrHeading,
+  InstrItems,
+  InstrItemImg,
+  InstrHint,
+  RankBadge,
+  RankLabel,
+  RankValue,
 } from './styled';
+
+type RankKey = 'rankRookie' | 'rankHunter' | 'rankMaster' | 'rankLegend';
+function rankKey(score: number): RankKey {
+  if (score < 1000) return 'rankRookie';
+  if (score < 3000) return 'rankHunter';
+  if (score < 6000) return 'rankMaster';
+  return 'rankLegend';
+}
 
 // ── Assets ────────────────────────────────────────────────────────────────────
 
@@ -68,21 +88,58 @@ const WELL_DONE_IMG   = LC('cd259949-f86e-4929-a31e-0294b3d2c345.svg');
 const BURNT_FAIL_IMG  = LC('bdedfe51-0c86-4634-923a-a1b6195a2f90.svg');
 const GOLD_BUTTON_IMG = LC('bde31a22-79d3-4db8-a6b4-0bef18d7d164.svg');
 
-const GOOD_ITEMS = [
-  LC('70c36d88-b6d7-48ef-aeaa-ce060cec82b8.svg'),
-  LC('83487a97-92a9-4f85-8ad8-1a3a4210e5c8.svg'),
-  LC('8a7fcd66-0f22-4743-ae02-fe78ec740ca9.svg'),
+type ItemEffect = 'combo' | 'slow';
+interface ItemDef {
+  kind: string;
+  src: string;
+  good: boolean;
+  points: number;   // good: awarded; bad: shown as penalty in instructions
+  effect?: ItemEffect;
+  weight: number;   // spawn likelihood within its (good/bad) pool
+}
+
+const ITEM_DEFS: ItemDef[] = [
+  { kind: 'crispy', src: LC('70c36d88-b6d7-48ef-aeaa-ce060cec82b8.svg'), good: true,  points: 100, weight: 5 },
+  { kind: 'crispy', src: LC('8a7fcd66-0f22-4743-ae02-fe78ec740ca9.svg'), good: true,  points: 100, weight: 5 },
+  { kind: 'spicy',  src: LC('83487a97-92a9-4f85-8ad8-1a3a4210e5c8.svg'), good: true,  points: 150, weight: 4 },
+  { kind: 'corn',   src: LC('item-corn.svg'),                            good: true,  points: 80,  weight: 3 },
+  { kind: 'lemon',  src: LC('item-lemon.svg'),  good: true,  points: 50, effect: 'combo', weight: 2 },
+  { kind: 'celery', src: LC('item-celery.svg'), good: true,  points: 50, effect: 'slow',  weight: 1.6 },
+  { kind: 'burnt',  src: LC('64b12ccc-c8e0-49aa-97fe-d0a1ed8fdca3.svg'), good: false, points: 150, weight: 5 },
+  { kind: 'bone',   src: LC('item-bone.svg'),  good: false, points: 100, weight: 3 },
+  { kind: 'chili',  src: LC('item-chili.svg'), good: false, points: 0,   weight: 2 },
 ];
-const BAD_ITEM = LC('64b12ccc-c8e0-49aa-97fe-d0a1ed8fdca3.svg');
+const GOOD_DEFS = ITEM_DEFS.filter(d => d.good);
+const BAD_DEFS  = ITEM_DEFS.filter(d => !d.good);
+
+function pickWeighted(defs: ItemDef[]): ItemDef {
+  const total = defs.reduce((s, d) => s + d.weight, 0);
+  let r = Math.random() * total;
+  for (const d of defs) { r -= d.weight; if (r <= 0) return d; }
+  return defs[defs.length - 1];
+}
+
+// Distinct items for the instructions screen
+const CATCH_ITEMS = [
+  ITEM_DEFS.find(d => d.kind === 'crispy')!,
+  ITEM_DEFS.find(d => d.kind === 'spicy')!,
+  ITEM_DEFS.find(d => d.kind === 'corn')!,
+  ITEM_DEFS.find(d => d.kind === 'lemon')!,
+  ITEM_DEFS.find(d => d.kind === 'celery')!,
+];
+const AVOID_ITEMS = BAD_DEFS;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Phase = 'start' | 'playing' | 'fail' | 'result';
+type Phase = 'start' | 'instructions' | 'playing' | 'fail' | 'result';
 
 interface FallingItem {
   id: string;
   src: string;
   isGood: boolean;
+  kind: string;
+  points: number;
+  effect?: ItemEffect;
   x: number;
   fallDuration: number;
   rotation: number;
@@ -189,6 +246,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
   const phaseRef       = useRef<Phase>('start');
   const pausedRef      = useRef(false);
   const pauseStartRef  = useRef(0);
+  const slowUntilRef   = useRef(0);
   const bucketXRef     = useRef(50);
   const livesRef       = useRef(maxLives);
   const comboRef       = useRef(0);
@@ -211,7 +269,9 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
   // ── Activity header ────────────────────────────────────────────────────────
   const activityHeaderAudio = useActivityPlayingHeaderHostActive();
   const headerPhase: ActivityGameHeaderPhase =
-    phase === 'result' ? 'finish' : phase === 'start' ? 'intro' : 'playing';
+    phase === 'result' ? 'finish'
+      : (phase === 'start' || phase === 'instructions') ? 'intro'
+      : 'playing';
   useRegisterActivityGameHeader(activityHeaderAudio, headerPhase, sounds.isMuted, sounds.toggleMute);
 
   // ── Cleanup ────────────────────────────────────────────────────────────────
@@ -244,6 +304,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
     phaseRef.current   = 'playing';
     pausedRef.current  = false;
     setPaused(false);
+    slowUntilRef.current = 0;
     bucketXRef.current = 50;
     livesRef.current   = maxLives;
     comboRef.current   = 0;
@@ -309,29 +370,51 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
     });
   }, [clearAll, onComplete]);
 
+  // ── Difficulty (ramps every 30s) ───────────────────────────────────────────
+  // level 0,1,2... → faster falls, faster spawns, more bad items
+  const difficultyLevel = useCallback(
+    () => Math.min(4, Math.floor((Date.now() - startTimeRef.current) / 30000)),
+    [],
+  );
+
   // ── Spawn ──────────────────────────────────────────────────────────────────
   const spawnItem = useCallback(() => {
     if (phaseRef.current !== 'playing' || pausedRef.current) return;
-    const isGood = Math.random() > badChance;
+    const level   = difficultyLevel();
+    const badNow  = Math.min(0.5, badChance + level * 0.05);
+    const isGood  = Math.random() > badNow;
+    const def     = pickWeighted(isGood ? GOOD_DEFS : BAD_DEFS);
+    const slowing = Date.now() < slowUntilRef.current ? 1.8 : 1;
+    const speed   = Math.pow(0.85, level); // higher level → shorter (faster) fall
     const item: FallingItem = {
       id:           nextId(),
-      src:          isGood ? GOOD_ITEMS[Math.floor(Math.random() * GOOD_ITEMS.length)] : BAD_ITEM,
-      isGood,
+      src:          def.src,
+      isGood:       def.good,
+      kind:         def.kind,
+      points:       def.points,
+      effect:       def.effect,
       x:            10 + Math.random() * 72,
-      fallDuration: fallMin + Math.random() * (fallMax - fallMin),
+      fallDuration: (fallMin + Math.random() * (fallMax - fallMin)) * speed * slowing,
       rotation:     -20 + Math.random() * 40,
       spawnedAt:    Date.now(),
     };
     itemsRef.current = [...itemsRef.current, item];
     setItems([...itemsRef.current]);
-  }, [badChance, fallMin, fallMax]);
+  }, [badChance, fallMin, fallMax, difficultyLevel]);
 
   // ── Playing effects ────────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== 'playing') return;
 
-    spawnItem();
-    spawnTimer.current = window.setInterval(spawnItem, spawnMs);
+    // Spawn loop — self-rescheduling so the rate can ramp with difficulty + slow-mo
+    const spawnLoop = () => {
+      spawnItem();
+      const level = difficultyLevel();
+      const slow  = Date.now() < slowUntilRef.current;
+      const delay = Math.max(300, spawnMs * Math.pow(0.9, level) * (slow ? 1.6 : 1));
+      spawnTimer.current = window.setTimeout(spawnLoop, delay);
+    };
+    spawnLoop();
 
     timerInterval.current = window.setInterval(() => {
       if (pausedRef.current) return;
@@ -357,6 +440,9 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
 
       let goodCaught = 0;
       let badCaught  = 0;
+      let scoreGain  = 0;
+      let comboGain  = 0;
+      let gotCelery  = false;
       const newCaughtAnims: CaughtAnim[] = [];
       const newPopups: { x: number; y: number; text: string; good: boolean }[] = [];
 
@@ -367,8 +453,15 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
           if (Math.abs(item.x - bx) <= CATCH_X_RADIUS) {
             const catchY = progressToTopPct(progress);
             newCaughtAnims.push({ id: nextId(), src: item.src, x: item.x, y: catchY });
-            newPopups.push({ x: item.x, y: catchY + 2, text: item.isGood ? `+${points}` : '✗', good: item.isGood });
-            if (item.isGood) goodCaught++; else badCaught++;
+            newPopups.push({ x: item.x, y: catchY + 2, text: item.isGood ? `+${item.points}` : '✗', good: item.isGood });
+            if (item.isGood) {
+              goodCaught++;
+              scoreGain += item.points;
+              comboGain += item.effect === 'combo' ? 2 : 1; // lemon → bonus combo
+              if (item.effect === 'slow') gotCelery = true;
+            } else {
+              badCaught++;
+            }
             return false;
           }
         }
@@ -402,8 +495,8 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
 
       // Good catch effects
       if (goodCaught > 0) {
-        const newCombo = comboRef.current + goodCaught;
-        const newScore = scoreRef.current + goodCaught * points;
+        const newCombo = comboRef.current + comboGain;
+        const newScore = scoreRef.current + scoreGain;
         const newBest  = Math.max(bestComboRef.current, newCombo);
         comboRef.current     = newCombo;
         scoreRef.current     = newScore;
@@ -413,6 +506,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
         setBestCombo(newBest);
         setComboKey(k => k + 1);
         sounds.playCorrect();
+        if (gotCelery) slowUntilRef.current = Date.now() + 5000; // celery → 5s slow-mo
 
         if (newCombo >= HOT_STREAK_AT && newCombo % HOT_STREAK_AT === 0) {
           setShowStreak(true);
@@ -722,13 +816,47 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
 
       {/* START */}
       {phase === 'start' && (
-        <StartOverlay onPointerDown={startGame}>
-          <MascotImg src={MASCOT_IMG} alt="Lucky Chicken" style={{ animationDelay: '0ms' }} />
-          <GoldButton type="button" onPointerDown={e => { e.stopPropagation(); startGame(); }}>
+        <StartOverlay onPointerDown={() => setPhase('instructions')}>
+          <StartLogo src={LOGO_IMG} alt="Lucky Chicken" />
+          <MascotImg src={MASCOT_IMG} alt="" style={{ animationDelay: '0ms' }} />
+          <StartTitle>{t.gameTitle}</StartTitle>
+          <StartDesc>{t.startDesc}</StartDesc>
+          <GoldButton type="button" onPointerDown={e => { e.stopPropagation(); setPhase('instructions'); }}>
             <GoldButtonBg src={GOLD_BUTTON_IMG} alt="" />
-            <GoldButtonText>{t.tapToStart}</GoldButtonText>
+            <GoldButtonText>{t.start}</GoldButtonText>
           </GoldButton>
         </StartOverlay>
+      )}
+
+      {/* INSTRUCTIONS */}
+      {phase === 'instructions' && (
+        <InstructionsOverlay>
+          <InstrBlock $delay={60}>
+            <InstrHeading $good>✅ {t.catchThese}</InstrHeading>
+            <InstrItems>
+              {CATCH_ITEMS.map(d => (
+                <InstrItemImg key={d.kind + d.src} src={d.src} alt={d.kind} />
+              ))}
+            </InstrItems>
+          </InstrBlock>
+          <InstrBlock $delay={180}>
+            <InstrHeading>❌ {t.avoidThese}</InstrHeading>
+            <InstrItems>
+              {AVOID_ITEMS.map(d => (
+                <InstrItemImg key={d.kind + d.src} src={d.src} alt={d.kind} />
+              ))}
+            </InstrItems>
+          </InstrBlock>
+          <InstrHint>{t.instructionsHint}</InstrHint>
+          <GoldButton
+            type="button"
+            style={{ animationDelay: '60ms', animationDuration: '240ms' }}
+            onPointerDown={e => { e.stopPropagation(); startGame(); }}
+          >
+            <GoldButtonBg src={GOLD_BUTTON_IMG} alt="" />
+            <GoldButtonText>{t.letsPlay}</GoldButtonText>
+          </GoldButton>
+        </InstructionsOverlay>
       )}
 
       {/* FAIL */}
@@ -757,7 +885,19 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
             <ScorePanelValue>{score}</ScorePanelValue>
             <ScorePanelSub>{t.bestCombo}: ×{bestCombo}</ScorePanelSub>
           </ScorePanel>
-          <GoldButton type="button" onPointerDown={handleFinish}>
+          <RankBadge>
+            <RankLabel>{t.rankTitle}</RankLabel>
+            <RankValue>{t[rankKey(score)]}</RankValue>
+          </RankBadge>
+          <GoldButton type="button" onPointerDown={startGame}>
+            <GoldButtonBg src={GOLD_BUTTON_IMG} alt="" />
+            <GoldButtonText>{t.playAgain}</GoldButtonText>
+          </GoldButton>
+          <GoldButton
+            type="button"
+            style={{ animationDelay: '850ms' }}
+            onPointerDown={handleFinish}
+          >
             <GoldButtonBg src={GOLD_BUTTON_IMG} alt="" />
             <GoldButtonText>{t.nextGame}</GoldButtonText>
           </GoldButton>

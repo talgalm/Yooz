@@ -666,4 +666,126 @@ export const QuitButton = styled('button')({
   '&:active': { filter: 'brightness(0.85)', transform: 'scale(0.96)' },
 });
 
+// ── Start / Instructions extras ─────────────────────────────────────────────
+
+export const StartLogo = styled('img')({
+  width: '78%',
+  maxWidth: 320,
+  objectFit: 'contain',
+  pointerEvents: 'none',
+  filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.5)) drop-shadow(0 0 10px rgba(255,180,60,0.4))',
+  animation: `${slamIn} 480ms cubic-bezier(.34,1.56,.64,1) both`,
+});
+
+export const StartTitle = styled('div')({
+  fontSize: 'clamp(26px, 7vw, 44px)',
+  fontWeight: 900,
+  color: '#ffce3a',
+  letterSpacing: '0.04em',
+  textAlign: 'center',
+  textShadow: '0 3px 0 #7a3a08, 0 0 18px rgba(255,180,60,0.5)',
+  animation: `${dropIn} 520ms cubic-bezier(.34,1.56,.64,1) 150ms both`,
+});
+
+export const StartDesc = styled('div')({
+  fontSize: 'clamp(13px, 3.6vw, 17px)',
+  fontWeight: 700,
+  color: 'rgba(255,240,220,0.92)',
+  textAlign: 'center',
+  maxWidth: 360,
+  lineHeight: 1.4,
+  padding: '0 18px',
+  textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+  animation: `${dropIn} 520ms ease-out 280ms both`,
+});
+
+export const InstructionsOverlay = styled('div')({
+  position: 'absolute',
+  inset: 0,
+  zIndex: 30,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 18,
+  padding: '0 16px',
+  background: 'rgba(16,7,0,0.92)',
+  backdropFilter: 'blur(3px)',
+  animation: `${overlayFadeIn} 200ms ease-out forwards`,
+});
+
+export const InstrBlock = styled('div')<{ $delay?: number }>(({ $delay = 0 }) => ({
+  width: '100%',
+  maxWidth: 470,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 12,
+  background: 'rgba(0,0,0,0.45)',
+  border: '2px solid rgba(255,160,0,0.3)',
+  borderRadius: 18,
+  padding: '14px 12px',
+  animation: `${bounceIn} 440ms cubic-bezier(.34,1.56,.64,1) ${$delay}ms both`,
+}));
+
+export const InstrHeading = styled('div')<{ $good?: boolean }>(({ $good }) => ({
+  fontSize: 'clamp(14px, 4vw, 20px)',
+  fontWeight: 900,
+  color: $good ? '#5bd97a' : '#ff7a6a',
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+}));
+
+export const InstrItems = styled('div')({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 'clamp(8px, 2.6vw, 16px)',
+  justifyContent: 'center',
+  alignItems: 'center',
+});
+
+export const InstrItemImg = styled('img')({
+  width: 'clamp(42px, 12vw, 66px)',
+  height: 'clamp(42px, 12vw, 66px)',
+  objectFit: 'contain',
+  filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.6))',
+});
+
+export const InstrHint = styled('div')({
+  fontSize: 'clamp(13px, 3.8vw, 18px)',
+  fontWeight: 800,
+  color: 'rgba(255,230,180,0.95)',
+  textAlign: 'center',
+  padding: '0 10px',
+  textShadow: '0 1px 4px rgba(0,0,0,0.8)',
+  animation: `${dropIn} 480ms ease-out 200ms both`,
+});
+
+// Player rank on the result screen
+export const RankBadge = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 2,
+  animation: `${bounceIn} 450ms cubic-bezier(.34,1.56,.64,1) 650ms both`,
+});
+
+export const RankLabel = styled('div')({
+  fontSize: 11,
+  fontWeight: 800,
+  color: 'rgba(255,205,70,0.9)',
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+});
+
+export const RankValue = styled('div')({
+  fontSize: 'clamp(20px, 5.6vw, 30px)',
+  fontWeight: 900,
+  color: '#ffce3a',
+  textShadow: '0 2px 0 #7a3a08, 0 0 14px rgba(255,180,60,0.5)',
+});
+
 export { popIn };
