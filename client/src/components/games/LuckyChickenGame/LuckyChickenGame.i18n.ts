@@ -1,0 +1,28 @@
+export const texts = {
+  en: {
+    tapToStart: 'TAP TO START',
+    timeLeft: 'TIME LEFT',
+    combo: 'COMBO',
+    score: 'SCORE',
+    oopsBurnt: 'OOPS! BURNT!',
+    tryAgain: 'TRY AGAIN',
+    wellDone: 'WELL DONE!',
+    yourScore: 'SCORE',
+    bestCombo: 'BEST COMBO',
+    nextGame: 'NEXT GAME',
+    getReady: 'Get Ready!',
+  },
+  he: {
+    tapToStart: 'לחץ להתחלה',
+    timeLeft: 'זמן נותר',
+    combo: 'קומבו',
+    score: 'ניקוד',
+    oopsBurnt: '!אוי! נשרף',
+    tryAgain: 'נסה שוב',
+    wellDone: '!כל הכבוד',
+    yourScore: 'ניקוד',
+    bestCombo: 'קומבו מקסימלי',
+    nextGame: 'המשך',
+    getReady: '!!התכוננו',
+  },
+};

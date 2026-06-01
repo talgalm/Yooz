@@ -35,6 +35,7 @@ import PuzzleGameConfig from './PuzzleGameConfig';
 import TrueFalseGameConfig from './TrueFalseGameConfig';
 import BallGameConfig from './BallGameConfig';
 import TrashSortGameConfig from './TrashSortGameConfig';
+import LuckyChickenGameConfig from './LuckyChickenGameConfig';
 
 const HintToggleRow = styled(InlineRowGap12)({
   marginBottom: 8,
@@ -62,7 +63,7 @@ export default function AdminGameConfigPage() {
   const location = useLocation();
   const t = useTranslations(texts);
 
-  const validTypes = ['order', 'trivia', 'puzzle', 'trueFalse', 'ballGame'];
+  const validTypes = ['order', 'trivia', 'puzzle', 'trueFalse', 'ballGame', 'trashSort', 'luckyChicken'];
   const typeFromUrl = searchParams.get('type');
   const defaultType = typeFromUrl && validTypes.includes(typeFromUrl) ? typeFromUrl : 'order';
 
@@ -93,6 +94,7 @@ export default function AdminGameConfigPage() {
   const trueFalseRef = useRef<GameConfigHandle>(null);
   const ballRef = useRef<GameConfigHandle>(null);
   const trashSortRef = useRef<GameConfigHandle>(null);
+  const luckyChickenRef = useRef<GameConfigHandle>(null);
   // Fetch existing game data
   useEffect(() => {
     if (!id) return;
@@ -151,6 +153,7 @@ export default function AdminGameConfigPage() {
       case 'trueFalse': return trueFalseRef;
       case 'ballGame': return ballRef;
       case 'trashSort': return trashSortRef;
+      case 'luckyChicken': return luckyChickenRef;
       default: return null;
     }
   };
@@ -219,6 +222,7 @@ export default function AdminGameConfigPage() {
     trueFalse: 'נכון או לא - טסט',
     ballGame: 'כדור לסל - טסט',
     trashSort: 'מיון אשפה - טסט',
+    luckyChicken: 'לאקי צ\'יקן - טסט',
   };
 
   const handleFillRandom = () => {
@@ -274,6 +278,9 @@ export default function AdminGameConfigPage() {
                     </SelectionButton>
                     <SelectionButton type="button" selected={type === 'ballGame'} onClick={() => setType('ballGame')}>
                       Ball Game
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={type === 'luckyChicken'} onClick={() => setType('luckyChicken')}>
+                      Lucky Chicken
                     </SelectionButton>
                   </SelectionGroup>
                 </div>
@@ -384,6 +391,9 @@ export default function AdminGameConfigPage() {
               )}
               {type === 'trashSort' && (
                 <TrashSortGameConfig ref={trashSortRef} t={t} initialSettings={initialSettings} />
+              )}
+              {type === 'luckyChicken' && (
+                <LuckyChickenGameConfig ref={luckyChickenRef} t={t} initialSettings={initialSettings} />
               )}
             </FormSectionCardWide>
 

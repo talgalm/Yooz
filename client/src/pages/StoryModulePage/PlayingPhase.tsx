@@ -8,6 +8,7 @@ import PuzzleGame from '../../components/games/PuzzleGame';
 import TrueFalseGame from '../../components/games/TrueFalseGame';
 import BallGame from '../../components/games/BallGame';
 import TrashSortGame from '../../components/games/TrashSortGame';
+import LuckyChickenGame from '../../components/games/LuckyChickenGame';
 import NarrativeStation from '../../components/stations/NarrativeStation';
 import BadgeStation from '../../components/stations/BadgeStation';
 import CollageStation from '../../components/stations/CollageStation';
@@ -479,6 +480,10 @@ export default function PlayingPhase({
       );
     }
 
+    if (gameData.type === 'luckyChicken') {
+      return <LuckyChickenGame game={gameData} onComplete={onGameComplete} />;
+    }
+
     if (gameData.type === 'trashSort') {
       const tsSettings = gameData.settings as { items?: Array<{ imageUrl?: string }>; bins?: Array<{ iconUrl?: string }> };
       const tsMedia = [
@@ -571,6 +576,16 @@ export default function PlayingPhase({
   // Missions and collage stations render their own full-screen layout
   if (currentItem.type === 'mission') {
     return renderContent();
+  }
+
+  // Lucky Chicken renders its own full-screen fixed layout
+  if (currentItem.type === 'game' && (currentItem as GameItemData).gameType === 'luckyChicken') {
+    return (
+      <>
+        {renderContent()}
+        {hintModals}
+      </>
+    );
   }
 
   // Ball game renders its own full-screen fixed layout with a custom 3D room background

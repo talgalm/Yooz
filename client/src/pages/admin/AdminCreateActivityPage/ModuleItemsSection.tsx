@@ -23,6 +23,7 @@ const GAME_ICONS: Record<string, string> = {
   trueFalse: '✅',
   ballGame: '🏀',
   trashSort: '♻️',
+  luckyChicken: '🍗',
 };
 
 /** Game `type` values omitted from the activity module picker (still editable in library). */

@@ -543,7 +543,7 @@ const TypeTileEmoji = styled('span')({
 
 type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'users' | 'portals' | 'tutorials';
 type StationsSection = 'stations' | 'games' | 'missions';
-type GameSubTab = 'all' | 'order' | 'trivia' | 'puzzle' | 'trueFalse' | 'ballGame';
+type GameSubTab = 'all' | 'order' | 'trivia' | 'puzzle' | 'trueFalse' | 'ballGame' | 'luckyChicken';
 type CreateStep = 'main' | 'game' | 'station';
 
 interface Activity {
@@ -844,6 +844,9 @@ export default function AdminDashboardPage() {
                     <GameTab active={gameSubTab === 'ballGame'} onClick={() => setGameSubTab('ballGame')}>
                       {t.subTabBallGame}
                     </GameTab>
+                    <GameTab active={gameSubTab === 'luckyChicken'} onClick={() => setGameSubTab('luckyChicken')}>
+                      {t.subTabLuckyChicken}
+                    </GameTab>
                   </GameTabGroup>
                 </GameTabBar>
 
@@ -857,6 +860,7 @@ export default function AdminDashboardPage() {
                     puzzle: t.subTabPuzzle,
                     trueFalse: t.subTabTrueFalse,
                     ballGame: t.subTabBallGame,
+                    luckyChicken: t.subTabLuckyChicken,
                   } as Record<string, string>)[gameSubTab] ?? t.subTabAll}
                   onRefresh={refreshGames}
                   hideCreateButton
@@ -944,6 +948,7 @@ export default function AdminDashboardPage() {
                   { type: 'puzzle', emoji: '🧩', label: t.createTypePuzzle },
                   { type: 'trueFalse', emoji: '✅', label: t.createTypeTrueFalse },
                   { type: 'ballGame', emoji: '🏀', label: t.createTypeBallGame },
+                  { type: 'luckyChicken', emoji: '🍗', label: t.createTypeLuckyChicken },
                 ].map(({ type, emoji, label }) => (
                   <TypeTile
                     key={type}
