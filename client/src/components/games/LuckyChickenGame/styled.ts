@@ -233,17 +233,17 @@ export const HudComboValue = styled('div')<{ $key: number }>(({ $key: _k }) => (
 // Hearts sit dead-center, just below the combo badge
 export const LivesRow = styled('div')({
   position: 'absolute',
-  top: '68%',
+  top: '76%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
   display: 'flex',
-  gap: 5,
+  gap: 6,
   alignItems: 'center',
 });
 
 export const HeartEl = styled('span')<{ $lost: boolean; $animKey: number }>(
   ({ $lost, $animKey: _k }) => ({
-    fontSize: 'clamp(23px, 6.4vw, 39px)',
+    fontSize: 'clamp(28px, 7.6vw, 46px)',
     lineHeight: 1,
     display: 'inline-block',
     filter: $lost ? 'grayscale(1) opacity(0.35)' : 'none',

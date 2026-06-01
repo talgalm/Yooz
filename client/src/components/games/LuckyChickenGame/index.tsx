@@ -706,7 +706,11 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
       {phase === 'playing' && paused && (
         <PauseOverlay onPointerDown={e => e.stopPropagation()}>
           <PauseTitle>{t.paused}</PauseTitle>
-          <GoldButton type="button" onPointerDown={e => { e.stopPropagation(); resumeGame(); }}>
+          <GoldButton
+            type="button"
+            style={{ animationDelay: '40ms', animationDuration: '220ms' }}
+            onPointerDown={e => { e.stopPropagation(); resumeGame(); }}
+          >
             <GoldButtonBg src={GOLD_BUTTON_IMG} alt="" />
             <GoldButtonText>{t.resume}</GoldButtonText>
           </GoldButton>
