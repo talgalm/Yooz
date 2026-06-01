@@ -151,6 +151,20 @@ export const HudBarSvg = styled('svg')({
   pointerEvents: 'none',
 });
 
+// LUCKY CHICKEN logo artwork (metallic gold), overlaid on the far left
+export const LogoImg = styled('img')({
+  position: 'absolute',
+  top: '34%',
+  left: '1.5%',
+  transform: 'translateY(-50%)',
+  width: '18%',
+  height: 'auto',
+  zIndex: 2,
+  pointerEvents: 'none',
+  filter:
+    'drop-shadow(0 1px 1px rgba(0,0,0,0.6)) drop-shadow(0 0 6px rgba(255,180,60,0.45))',
+});
+
 // Overlay layer sitting exactly on top of the SVG
 export const HudOverlay = styled('div')({
   position: 'absolute',

@@ -13,6 +13,7 @@ import {
   GameBg,
   HudBar,
   HudBarSvg,
+  LogoImg,
   HudOverlay,
   HudSection,
   HudLabel,
@@ -54,6 +55,7 @@ import {
 const LC = (f: string) => `/images/lucky-chicken/${f}`;
 
 const BG_IMG          = LC('3f194707-08f4-4524-8bb6-f6ae6b68f7cd.svg');
+const LOGO_IMG        = LC('luckychicken-logo-gold.png');
 const MASCOT_IMG      = LC('b95d2929-be1f-4bf3-82de-9adcc5fe482b.svg');
 const BUCKET_IMG      = LC('817a72bf-5e18-4a8e-9e41-05cc60664d73.svg');
 const HOT_STREAK_IMG  = LC('bbd77ff3-5ecc-4a4b-9007-7cb1ae35a29e.svg');
@@ -551,12 +553,6 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
               strokeLinecap="round"
             />
 
-            {/* LUCKY CHICKEN logo (stylized text) */}
-            <g fontFamily="Arial, sans-serif" fontWeight="900" fontStyle="italic" textAnchor="middle">
-              <text x="104" y="62" fontSize="42" fill="#ffce3a" stroke="#7a3a08" strokeWidth="2" paintOrder="stroke">LUCKY</text>
-              <text x="104" y="106" fontSize="36" fill="#e8401b" stroke="#5a1606" strokeWidth="2" paintOrder="stroke">CHICKEN</text>
-            </g>
-
             {/* score slot (left of combo) */}
             <g>
               <rect x="230" y="26" width="196" height="108" rx="30" fill="#0a0502" />
@@ -587,6 +583,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
               <rect x="956" y="82" width="11" height="36" rx="5" fill="#ffcf5a" />
             </g>
           </HudBarSvg>
+          <LogoImg src={LOGO_IMG} alt="Lucky Chicken" />
           <HudOverlay>
             <HudSection $left={32}>
               <HudLabel>{t.score}</HudLabel>
