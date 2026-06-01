@@ -215,16 +215,21 @@ function buildFilterComplex(
   }
 
   // Composite the chromakey'd template over the photo + logo stack.
-  let outLabel = 'vout';
+  // The composite is built at the template's native resolution (1080×1350
+  // or 1080×1920) for keyframe-pixel precision, then downscaled at the end.
   if (titleIdx !== null) {
     parts.push(`[comp][fg]overlay=0:0:format=auto[withFg]`);
     // Title image is rendered client-side at native resolution. Center it
     // horizontally; place near top with a small margin.
     parts.push(`[${titleIdx}:v]format=rgba,setsar=1[title]`);
-    parts.push(`[withFg][title]overlay=x=(W-w)/2:y=40:format=auto[${outLabel}]`);
+    parts.push(`[withFg][title]overlay=x=(W-w)/2:y=40:format=auto[vraw]`);
   } else {
-    parts.push(`[comp][fg]overlay=0:0:format=auto[${outLabel}]`);
+    parts.push(`[comp][fg]overlay=0:0:format=auto[vraw]`);
   }
+
+  // Final downscale to 720px wide. Phones are the primary delivery target;
+  // 1080→720 cuts pixel count by ~56% and shaves a third off encode time.
+  parts.push(`[vraw]scale=720:-2[vout]`);
 
   // Quiet the unused dimension lints
   void width;
@@ -265,8 +270,9 @@ function runFfmpeg(
     '-map', '[vout]',
     '-map', '0:a?',  // pass through original soundtrack if present
     '-t', String(template.duration),
-    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'fast', '-crf', '23',
-    '-c:a', 'aac', '-b:a', '192k',
+    '-r', '24',      // drop output framerate 30→24 (~20% fewer encoded frames)
+    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'superfast', '-crf', '23',
+    '-c:a', 'aac', '-b:a', '128k',
     '-movflags', '+faststart',
     outputPath,
   );
@@ -375,23 +381,30 @@ router.post(
       // render upright. failOn:'none' tolerates slightly malformed JPEGs.
       // On any sharp failure (e.g. an unexpected video upload), we fall back
       // to writing the original buffer so ffmpeg can still try.
-      for (let i = 0; i < files.length; i++) {
-        const filePath = path.join(tmpDir, `image_${i}.jpg`);
-        const origBytes = files[i].buffer.length;
-        try {
-          const resized = await sharp(files[i].buffer, { failOn: 'none' })
-            .rotate()
-            .resize({ width: 1080, height: 1080, fit: 'inside', withoutEnlargement: true })
-            .jpeg({ quality: 85, mozjpeg: true })
-            .toBuffer();
-          fs.writeFileSync(filePath, resized);
-          console.log(`[collage] image_${i}: ${(origBytes / 1024).toFixed(0)}KB → ${(resized.length / 1024).toFixed(0)}KB`);
-        } catch (err) {
-          console.warn(`[collage] sharp resize failed for image ${i}, using original:`, err);
-          fs.writeFileSync(filePath, files[i].buffer);
-        }
-        imagePaths.push(filePath);
-      }
+      const sharpStart = Date.now();
+      // Parallelize sharp resize across all 6 inputs — independent work, no
+      // contention. Sequential `for await` left CPUs idle.
+      const resizedPaths = await Promise.all(
+        files.map(async (file, i) => {
+          const filePath = path.join(tmpDir, `image_${i}.jpg`);
+          const origBytes = file.buffer.length;
+          try {
+            const resized = await sharp(file.buffer, { failOn: 'none' })
+              .rotate()
+              .resize({ width: 1080, height: 1080, fit: 'inside', withoutEnlargement: true })
+              .jpeg({ quality: 85, mozjpeg: true })
+              .toBuffer();
+            fs.writeFileSync(filePath, resized);
+            console.log(`[collage] image_${i}: ${(origBytes / 1024).toFixed(0)}KB → ${(resized.length / 1024).toFixed(0)}KB`);
+          } catch (err) {
+            console.warn(`[collage] sharp resize failed for image ${i}, using original:`, err);
+            fs.writeFileSync(filePath, file.buffer);
+          }
+          return filePath;
+        }),
+      );
+      imagePaths.push(...resizedPaths);
+      console.log(`[collage] sharp resize x${files.length} took ${Date.now() - sharpStart}ms`);
 
       let logoPath: string | undefined;
       if (logoUrl && /^https?:\/\//i.test(logoUrl)) {
@@ -410,11 +423,16 @@ router.post(
         fs.writeFileSync(titlePath, titleFiles[0].buffer);
       }
 
+      const ffStart = Date.now();
       await runFfmpeg(template, templatePath, imagePaths, outputPath, { logoPath, titlePath });
+      const outSize = fs.statSync(outputPath).size;
+      console.log(`[collage] ffmpeg took ${Date.now() - ffStart}ms → ${(outSize / 1024 / 1024).toFixed(1)}MB`);
 
+      const upStart = Date.now();
       const cloudResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { resource_type: 'video', folder: 'yooz/collages' },
+          // Skip Cloudinary's eager transformations — output is already H.264/MP4.
+          { resource_type: 'video', folder: 'yooz/collages', eager: [], eager_async: true },
           (error, result) => {
             if (error) reject(error);
             else resolve(result as { secure_url: string });
@@ -422,6 +440,7 @@ router.post(
         );
         fs.createReadStream(outputPath).pipe(stream);
       });
+      console.log(`[collage] cloudinary upload took ${Date.now() - upStart}ms`);
 
       res.json({ url: cloudResult.secure_url, isVideo: true });
     } catch (err) {
