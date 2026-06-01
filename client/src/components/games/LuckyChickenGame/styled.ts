@@ -116,9 +116,6 @@ export const GameRoot = styled('div')({
   WebkitUserSelect: 'none',
   touchAction: 'none',
   cursor: 'none',
-  '&.shaking': {
-    animation: `${shake} 420ms ease-out`,
-  },
 });
 
 export const GameBg = styled('img')({
@@ -238,7 +235,7 @@ export const FallingItemWrapper = styled('div')<{
   transform: `translateX(-50%) rotate(${$rotation}deg)`,
   width: 92,
   height: 92,
-  zIndex: 5,
+  zIndex: 10, // always in front of bucket (z-index 8)
   animation: `${fallAnim} ${$duration}ms linear forwards`,
   pointerEvents: 'none',
   willChange: 'top',
@@ -258,7 +255,7 @@ export const CaughtItemWrapper = styled('div')<{ $x: number; $y: number }>(({ $x
   top: `${$y}%`,
   width: 92,
   height: 92,
-  zIndex: 12,
+  zIndex: 10,
   pointerEvents: 'none',
   animation: `${flyToBucket} 320ms ease-in forwards`,
   willChange: 'transform, opacity',
@@ -302,7 +299,7 @@ export const HotStreakImg = styled('img')({
   objectFit: 'contain',
 });
 
-// ── Screen flash ──────────────────────────────────────────────────────────────
+// ── Screen flash / vignette ───────────────────────────────────────────────────
 
 export const ScreenFlashEl = styled('div')<{ $color: string }>(({ $color }) => ({
   position: 'absolute',
@@ -312,6 +309,16 @@ export const ScreenFlashEl = styled('div')<{ $color: string }>(({ $color }) => (
   zIndex: 24,
   animation: `${flashFade} 450ms ease-out forwards`,
 }));
+
+// Red vignette on bad catch — edges glow red, centre stays clear
+export const VignetteFlash = styled('div')({
+  position: 'absolute',
+  inset: 0,
+  background: 'radial-gradient(ellipse at 50% 60%, transparent 35%, rgba(200,20,20,0.85) 100%)',
+  pointerEvents: 'none',
+  zIndex: 24,
+  animation: `${flashFade} 550ms ease-out forwards`,
+});
 
 // ── Bucket ────────────────────────────────────────────────────────────────────
 

@@ -28,7 +28,7 @@ import {
   BucketEl,
   HotStreakOverlay,
   HotStreakImg,
-  ScreenFlashEl,
+  VignetteFlash,
   StartOverlay,
   FailOverlay,
   ResultOverlay,
@@ -120,12 +120,14 @@ const DEFAULT_FALL_MAX   = 5200;
 const DEFAULT_MAX_LIVES  = 3;
 const HOT_STREAK_AT      = 5;
 
-// fallAnim: top goes from -15% to 112% → range = 127pp
-// Bucket (bottom: -8%) opening is at roughly 68% from top of GameField.
-// Give a generous window so the catch feels responsive.
-const CATCH_PROGRESS_START = 0.55;
-const CATCH_PROGRESS_END   = 0.80;
-const CATCH_X_RADIUS       = 22; // ± percentage points
+// fallAnim: top goes -15% → 112% (127pp range).
+// Bucket (bottom:-8%) rim is ~68% from GameField top.
+// Item is 92px; center = top + 46px.  For center@68%: itemTop = 68 - 46/H*100.
+// On a ~750px GameField: 68 - 6.1 = 61.9% → progress = (61.9+15)/127 ≈ 0.605
+// We catch slightly before the visual rim so items look like they enter the bucket.
+const CATCH_PROGRESS_START = 0.67;
+const CATCH_PROGRESS_END   = 0.78;
+const CATCH_X_RADIUS       = 22;
 
 function formatTime(s: number) {
   const m = Math.floor(s / 60);
@@ -165,6 +167,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
   const [caughtAnims, setCaughtAnims] = useState<CaughtAnim[]>([]);
   const [scorePopups, setScorePopups] = useState<ScorePopup[]>([]);
   const [flashes,     setFlashes]     = useState<Flash[]>([]);
+  const [vignetteKey, setVignetteKey] = useState(0);
   const [streakKey,   setStreakKey]   = useState(0);
   const [comboKey,    setComboKey]    = useState(0);
   const [showStreak,  setShowStreak]  = useState(false);
@@ -181,6 +184,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
   const itemsRef       = useRef<FallingItem[]>([]);
   const startTimeRef   = useRef(0);
   const gameRootRef    = useRef<HTMLDivElement | null>(null);
+  const gameFieldRef   = useRef<HTMLDivElement | null>(null);
   const bucketRef      = useRef<HTMLImageElement | null>(null);
   const lastPtrXRef    = useRef(50);
   const tiltResetRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -206,15 +210,6 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
     if (tiltResetRef.current)  { clearTimeout(tiltResetRef.current);   tiltResetRef.current  = null; }
   }, []);
 
-  // ── Shake helper ───────────────────────────────────────────────────────────
-  const triggerShake = useCallback(() => {
-    const el = gameRootRef.current;
-    if (!el) return;
-    el.classList.remove('shaking');
-    void el.offsetWidth; // reflow to re-trigger
-    el.classList.add('shaking');
-    setTimeout(() => el.classList.remove('shaking'), 450);
-  }, []);
 
   // ── Flash helper ───────────────────────────────────────────────────────────
   const triggerFlash = useCallback((color: string) => {
@@ -317,7 +312,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
       const survived = cur.filter(item => {
         const progress = (now - item.spawnedAt) / item.fallDuration;
 
-        if (progress >= CATCH_PROGRESS_START && progress < CATCH_PROGRESS_END) {
+          if (progress >= CATCH_PROGRESS_START && progress < CATCH_PROGRESS_END) {
           if (Math.abs(item.x - bx) <= CATCH_X_RADIUS) {
             const catchY = progressToTopPct(progress);
             newCaughtAnims.push({ id: nextId(), src: item.src, x: item.x, y: catchY });
@@ -369,7 +364,6 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
         sounds.playCorrect();
 
         if (newCombo >= HOT_STREAK_AT && newCombo % HOT_STREAK_AT === 0) {
-          triggerFlash('rgba(255,200,0,0.2)');
           setShowStreak(true);
           setStreakKey(k => k + 1);
           if (streakTimeout.current) clearTimeout(streakTimeout.current);
@@ -393,8 +387,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
           return next;
         });
         sounds.playWrong();
-        triggerShake();
-        triggerFlash('rgba(220,40,40,0.45)');
+        setVignetteKey(k => k + 1); // red vignette around edges
 
         if (newLives <= 0) {
           clearAll();
@@ -481,8 +474,8 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
     >
       <GameBg src={BG_IMG} alt="" />
 
-      {/* Screen flashes */}
-      {flashes.map(f => <ScreenFlashEl key={f.id} $color={f.color} />)}
+      {/* Red vignette on bad catch */}
+      {vignetteKey > 0 && <VignetteFlash key={vignetteKey} />}
 
       {/* HUD */}
       {phase === 'playing' && (
@@ -504,7 +497,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
         </HudBar>
       )}
 
-      <GameField>
+      <GameField ref={gameFieldRef}>
         {/* Falling items */}
         {phase === 'playing' && items.map(item => (
           <FallingItemWrapper
