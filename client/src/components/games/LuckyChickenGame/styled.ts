@@ -30,6 +30,14 @@ const pulse = keyframes`
   50%       { transform: scale(1.08); }
 `;
 
+// Soft wispy smoke drifting up off the burnt wing
+const smokeRise = keyframes`
+  0%   { transform: translate(-50%, 0)            scale(0.35) rotate(0deg);   opacity: 0; }
+  18%  { opacity: 0.32; }
+  55%  { transform: translate(calc(-50% - 14px), -70px)  scale(1.05) rotate(8deg);  opacity: 0.22; }
+  100% { transform: translate(calc(-50% + 10px), -150px) scale(1.9)  rotate(-6deg); opacity: 0; }
+`;
+
 // Score popup floats up
 const floatScore = keyframes`
   0%   { transform: translateX(-50%) translateY(0)    scale(1.1); opacity: 1; }
@@ -502,6 +510,7 @@ export const StartOverlay = styled('div')({
 
 export const FailOverlay = styled('div')({
   ...baseOverlay,
+  gap: 18,
   background: 'rgba(8,3,0,0.92)',
 });
 
@@ -529,13 +538,47 @@ export const MascotImg = styled('img')({
   pointerEvents: 'none',
 });
 
-export const BurntFailImg = styled('img')({
-  width: '44%',
-  maxWidth: 180,
+// Big "OOPS! BURNT!" title for the fail screen
+export const BurntFailTitle = styled('img')({
+  width: '96%',
+  maxWidth: 460,
   objectFit: 'contain',
   pointerEvents: 'none',
-  animation: `${dropIn} 600ms cubic-bezier(.34,1.56,.64,1) 300ms both`,
+  filter: 'drop-shadow(0 8px 26px rgba(255,120,0,0.55))',
+  animation: `${slamIn} 500ms cubic-bezier(.34,1.56,.64,1) 80ms both`,
 });
+
+// Relative wrapper so smoke puffs can sit above the wing
+export const BurntFailWrap = styled('div')({
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
+
+export const BurntFailImg = styled('img')({
+  width: '74%',
+  maxWidth: 300,
+  objectFit: 'contain',
+  pointerEvents: 'none',
+  animation: `${dropIn} 600ms cubic-bezier(.34,1.56,.64,1) 280ms both`,
+});
+
+export const SmokePuff = styled('span')<{ $i: number }>(({ $i }) => ({
+  position: 'absolute',
+  top: '4%',
+  left: `${48 + ($i - 1) * 5}%`,
+  width: 'clamp(34px,12vw,60px)',
+  height: 'clamp(34px,12vw,60px)',
+  borderRadius: '50%',
+  background:
+    'radial-gradient(circle at 50% 45%, rgba(235,235,235,0.55), rgba(190,190,190,0.22) 45%, rgba(170,170,170,0) 70%)',
+  pointerEvents: 'none',
+  filter: 'blur(7px)',
+  willChange: 'transform, opacity',
+  transformOrigin: 'center bottom',
+  animation: `${smokeRise} ${3 + $i * 0.6}s ease-out ${$i * 0.8}s infinite`,
+}));
 
 export const ScorePanel = styled('div')({
   display: 'flex',

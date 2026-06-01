@@ -40,6 +40,9 @@ import {
   ResultOverlay,
   MascotImg,
   BurntFailImg,
+  BurntFailTitle,
+  BurntFailWrap,
+  SmokePuff,
   OverlayTitle,
   ScorePanel,
   ScorePanelLabel,
@@ -862,8 +865,13 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
       {/* FAIL */}
       {phase === 'fail' && (
         <FailOverlay>
-          <OverlayTitle src={OOPS_IMG} alt="" />
-          <BurntFailImg src={BURNT_FAIL_IMG} alt="" />
+          <BurntFailTitle src={OOPS_IMG} alt="" />
+          <BurntFailWrap>
+            <SmokePuff $i={0} />
+            <SmokePuff $i={1} />
+            <SmokePuff $i={2} />
+            <BurntFailImg src={BURNT_FAIL_IMG} alt="" />
+          </BurntFailWrap>
           <ScorePanel>
             <ScorePanelLabel>{t.yourScore}</ScorePanelLabel>
             <ScorePanelValue>{score}</ScorePanelValue>
