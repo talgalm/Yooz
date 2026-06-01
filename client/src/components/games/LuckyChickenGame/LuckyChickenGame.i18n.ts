@@ -11,6 +11,9 @@ export const texts = {
     bestCombo: 'BEST COMBO',
     nextGame: 'NEXT GAME',
     getReady: 'Get Ready!',
+    paused: 'PAUSED',
+    resume: 'RESUME',
+    quit: 'QUIT',
   },
   he: {
     tapToStart: 'לחץ להתחלה',
@@ -24,5 +27,8 @@ export const texts = {
     bestCombo: 'קומבו מקסימלי',
     nextGame: 'המשך',
     getReady: '!!התכוננו',
+    paused: 'מושהה',
+    resume: 'המשך',
+    quit: 'יציאה',
   },
 };

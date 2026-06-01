@@ -266,7 +266,8 @@ export const FallingItemWrapper = styled('div')<{
   $x: number;
   $duration: number;
   $rotation: number;
-}>(({ $x, $duration, $rotation }) => ({
+  $paused?: boolean;
+}>(({ $x, $duration, $rotation, $paused }) => ({
   position: 'absolute',
   left: `${$x}%`,
   top: '-15%',
@@ -275,6 +276,7 @@ export const FallingItemWrapper = styled('div')<{
   height: 92,
   zIndex: 10, // always in front of bucket (z-index 8)
   animation: `${fallAnim} ${$duration}ms linear forwards`,
+  animationPlayState: $paused ? 'paused' : 'running',
   pointerEvents: 'none',
   willChange: 'top',
 }));
@@ -604,6 +606,64 @@ export const GoldButtonText = styled('span')({
   textTransform: 'uppercase',
   letterSpacing: '0.06em',
   textShadow: '0 1px 0 rgba(255,255,255,0.25)',
+});
+
+// ── Pause ─────────────────────────────────────────────────────────────────────
+
+// Transparent circular hit-area sitting exactly over the drawn pause button
+export const PauseHit = styled('button')({
+  position: 'absolute',
+  top: '33%',
+  left: '93%',
+  transform: 'translate(-50%, -50%)',
+  width: '11%',
+  aspectRatio: '1 / 1',
+  borderRadius: '50%',
+  border: 'none',
+  background: 'transparent',
+  cursor: 'pointer',
+  padding: 0,
+  zIndex: 6,
+  WebkitTapHighlightColor: 'transparent',
+  '&:active': { filter: 'brightness(0.8)' },
+});
+
+export const PauseOverlay = styled('div')({
+  position: 'absolute',
+  inset: 0,
+  zIndex: 32,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 24,
+  background: 'rgba(12,5,0,0.74)',
+  backdropFilter: 'blur(4px)',
+  animation: `${overlayFadeIn} 180ms ease-out forwards`,
+});
+
+export const PauseTitle = styled('div')({
+  fontSize: 'clamp(34px, 9vw, 66px)',
+  fontWeight: 900,
+  color: '#ffce3a',
+  letterSpacing: '0.08em',
+  textShadow: '0 3px 0 #7a3a08, 0 0 20px rgba(255,180,60,0.5)',
+  animation: `${slamIn} 420ms cubic-bezier(.34,1.56,.64,1) both`,
+});
+
+export const QuitButton = styled('button')({
+  background: 'transparent',
+  border: '2px solid rgba(255,160,0,0.45)',
+  borderRadius: 14,
+  color: 'rgba(255,205,90,0.9)',
+  fontSize: 15,
+  fontWeight: 800,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  padding: '10px 30px',
+  cursor: 'pointer',
+  animation: `${slideUp} 400ms ease-out 120ms both`,
+  '&:active': { filter: 'brightness(0.85)', transform: 'scale(0.96)' },
 });
 
 export { popIn };

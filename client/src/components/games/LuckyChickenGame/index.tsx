@@ -48,6 +48,10 @@ import {
   GoldButton,
   GoldButtonBg,
   GoldButtonText,
+  PauseHit,
+  PauseOverlay,
+  PauseTitle,
+  QuitButton,
 } from './styled';
 
 // ── Assets ────────────────────────────────────────────────────────────────────
@@ -177,11 +181,14 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
   const [streakKey,   setStreakKey]   = useState(0);
   const [comboKey,    setComboKey]    = useState(0);
   const [showStreak,  setShowStreak]  = useState(false);
+  const [paused,      setPaused]      = useState(false);
   // Per-heart animation keys (increment when that heart is lost)
   const [heartKeys,   setHeartKeys]   = useState<number[]>(() => Array(DEFAULT_MAX_LIVES).fill(0));
 
   // ── Refs ───────────────────────────────────────────────────────────────────
   const phaseRef       = useRef<Phase>('start');
+  const pausedRef      = useRef(false);
+  const pauseStartRef  = useRef(0);
   const bucketXRef     = useRef(50);
   const livesRef       = useRef(maxLives);
   const comboRef       = useRef(0);
@@ -235,6 +242,8 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
   const startGame = useCallback(() => {
     clearAll();
     phaseRef.current   = 'playing';
+    pausedRef.current  = false;
+    setPaused(false);
     bucketXRef.current = 50;
     livesRef.current   = maxLives;
     comboRef.current   = 0;
@@ -265,9 +274,44 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
     }
   }, [clearAll, duration, maxLives, sounds]);
 
+  // ── Pause / resume ─────────────────────────────────────────────────────────
+  const pauseGame = useCallback(() => {
+    if (phaseRef.current !== 'playing' || pausedRef.current) return;
+    pausedRef.current  = true;
+    pauseStartRef.current = Date.now();
+    setPaused(true);
+    sounds.stopBgMusic?.();
+  }, [sounds]);
+
+  const resumeGame = useCallback(() => {
+    if (!pausedRef.current) return;
+    // Shift every timing reference forward by the paused duration so the
+    // collision loop stays in sync with the (frozen) CSS fall animations.
+    const delta = Date.now() - pauseStartRef.current;
+    itemsRef.current = itemsRef.current.map(it => ({ ...it, spawnedAt: it.spawnedAt + delta }));
+    setItems([...itemsRef.current]);
+    startTimeRef.current += delta;
+    pausedRef.current = false;
+    setPaused(false);
+    sounds.startBgMusic();
+  }, [sounds]);
+
+  const quitGame = useCallback(() => {
+    clearAll();
+    pausedRef.current = false;
+    setPaused(false);
+    phaseRef.current = 'result';
+    onComplete({
+      score: scoreRef.current,
+      maxPossibleScore: Math.max(scoreRef.current, 1),
+      durationMs: Date.now() - startTimeRef.current,
+      hintUsed: false,
+    });
+  }, [clearAll, onComplete]);
+
   // ── Spawn ──────────────────────────────────────────────────────────────────
   const spawnItem = useCallback(() => {
-    if (phaseRef.current !== 'playing') return;
+    if (phaseRef.current !== 'playing' || pausedRef.current) return;
     const isGood = Math.random() > badChance;
     const item: FallingItem = {
       id:           nextId(),
@@ -290,6 +334,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
     spawnTimer.current = window.setInterval(spawnItem, spawnMs);
 
     timerInterval.current = window.setInterval(() => {
+      if (pausedRef.current) return;
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearAll();
@@ -305,7 +350,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
 
     // Collision detection
     collInterval.current = window.setInterval(() => {
-      if (phaseRef.current !== 'playing') return;
+      if (phaseRef.current !== 'playing' || pausedRef.current) return;
       const now = Date.now();
       const bx  = bucketXRef.current;
       const cur = itemsRef.current;
@@ -439,13 +484,13 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
   }, []);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (phaseRef.current !== 'playing') return;
+    if (phaseRef.current !== 'playing' || pausedRef.current) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     moveBucket(e.clientX, e.currentTarget.getBoundingClientRect());
   }, [moveBucket]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (phaseRef.current !== 'playing') return;
+    if (phaseRef.current !== 'playing' || pausedRef.current) return;
     moveBucket(e.clientX, e.currentTarget.getBoundingClientRect());
   }, [moveBucket]);
 
@@ -574,13 +619,13 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
               <path d="M461,46 Q479,30 507,29" fill="none" stroke="rgba(255,235,180,0.45)" strokeWidth="3.5" strokeLinecap="round" />
             </g>
 
-            {/* pause button — right side, vertically centered */}
+            {/* pause button — right side */}
             <g>
-              <circle cx="952" cy="100" r="48" fill="#150a04" />
-              <circle cx="952" cy="100" r="45" fill="url(#lcRim)" />
-              <circle cx="952" cy="100" r="37" fill="#1c0e06" />
-              <rect x="937" y="82" width="11" height="36" rx="5" fill="#ffcf5a" />
-              <rect x="956" y="82" width="11" height="36" rx="5" fill="#ffcf5a" />
+              <circle cx="952" cy="82" r="48" fill="#150a04" />
+              <circle cx="952" cy="82" r="45" fill="url(#lcRim)" />
+              <circle cx="952" cy="82" r="37" fill="#1c0e06" />
+              <rect x="937" y="64" width="11" height="36" rx="5" fill="#ffcf5a" />
+              <rect x="956" y="64" width="11" height="36" rx="5" fill="#ffcf5a" />
             </g>
           </HudBarSvg>
           <LogoImg src={LOGO_IMG} alt="Lucky Chicken" />
@@ -599,6 +644,11 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
             </HudSection>
             <LivesRow>{heartsList}</LivesRow>
           </HudOverlay>
+          <PauseHit
+            type="button"
+            aria-label="Pause"
+            onPointerDown={e => { e.stopPropagation(); pauseGame(); }}
+          />
         </HudBar>
       )}
 
@@ -610,6 +660,7 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
             $x={item.x}
             $duration={item.fallDuration}
             $rotation={item.rotation}
+            $paused={paused}
           >
             <FallingItemImg src={item.src} alt="" />
           </FallingItemWrapper>
@@ -650,6 +701,20 @@ export default function LuckyChickenGame({ game, onComplete }: GameProps) {
           <BucketEl ref={bucketRef} src={BUCKET_IMG} alt="" />
         )}
       </GameField>
+
+      {/* PAUSE MENU */}
+      {phase === 'playing' && paused && (
+        <PauseOverlay onPointerDown={e => e.stopPropagation()}>
+          <PauseTitle>{t.paused}</PauseTitle>
+          <GoldButton type="button" onPointerDown={e => { e.stopPropagation(); resumeGame(); }}>
+            <GoldButtonBg src={GOLD_BUTTON_IMG} alt="" />
+            <GoldButtonText>{t.resume}</GoldButtonText>
+          </GoldButton>
+          <QuitButton type="button" onPointerDown={e => { e.stopPropagation(); quitGame(); }}>
+            {t.quit}
+          </QuitButton>
+        </PauseOverlay>
+      )}
 
       {/* START */}
       {phase === 'start' && (
