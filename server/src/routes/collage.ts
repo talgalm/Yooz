@@ -243,9 +243,12 @@ function runFfmpeg(
   templatePath: string,
   imagePaths: string[],
   outputPath: string,
-  extras: { logoPath?: string; titlePath?: string },
+  extras: { logoPath?: string; titlePath?: string; onProgress?: (frame: number) => void },
 ): Promise<void> {
-  const args: string[] = ['-y', '-i', templatePath];
+  // -progress pipe:1 emits machine-readable key=value lines (frame=, fps=,
+  // out_time_us=, progress=continue|end) to stdout periodically. -nostats
+  // silences the human-readable status lines so stderr stays useful for errors.
+  const args: string[] = ['-y', '-progress', 'pipe:1', '-nostats', '-i', templatePath];
   for (const p of imagePaths) {
     args.push('-loop', '1', '-t', String(template.duration), '-i', p);
   }
@@ -280,7 +283,22 @@ function runFfmpeg(
   return new Promise<void>((resolve, reject) => {
     const proc = spawn(FFMPEG_BIN, args);
     let stderrBuf = '';
+    let progressBuf = '';
     proc.stderr.on('data', (chunk: Buffer) => { stderrBuf += chunk.toString(); });
+    proc.stdout.on('data', (chunk: Buffer) => {
+      // -progress writes blocks of `key=value\n` lines ending in `progress=continue`
+      // or `progress=end`. We just need the most recent `frame=N` to estimate %.
+      progressBuf += chunk.toString();
+      const lines = progressBuf.split('\n');
+      progressBuf = lines.pop() ?? '';
+      for (const line of lines) {
+        const m = /^frame=(\d+)/.exec(line.trim());
+        if (m && extras.onProgress) {
+          const n = parseInt(m[1], 10);
+          if (Number.isFinite(n)) extras.onProgress(n);
+        }
+      }
+    });
     proc.on('close', (code, signal) => {
       if (code === 0) resolve();
       else {
@@ -295,6 +313,74 @@ function runFfmpeg(
     );
   });
 }
+
+// ─── Progress tracking ────────────────────────────────────────────────────────
+//
+// Generation is a long-running blocking POST (sharp → ffmpeg → cloudinary, ~2-3
+// min on t3.medium). The client passes a `jobId` with the upload and polls
+// /progress/:jobId to render a real progress bar + ETA. Entries are kept in
+// memory only and GC'd after 10 min of inactivity — they don't survive process
+// restarts, which is fine: a restart kills the in-flight request anyway.
+
+type JobPhase = 'preparing' | 'encoding' | 'uploading' | 'done' | 'error';
+interface CollageJob {
+  startedAt: number;
+  updatedAt: number;
+  phase: JobPhase;
+  percent: number; // 0-100, monotonically non-decreasing while in-flight
+  message: string;
+  error?: string;
+}
+
+const jobs = new Map<string, CollageJob>();
+
+function setJobProgress(jobId: string | undefined, patch: Partial<CollageJob>): void {
+  if (!jobId) return;
+  const now = Date.now();
+  const prev: CollageJob = jobs.get(jobId) ?? {
+    startedAt: now,
+    updatedAt: now,
+    phase: 'preparing',
+    percent: 0,
+    message: '',
+  };
+  // Never let percent move backwards — onProgress samples from ffmpeg can be
+  // noisy and a regression would visibly stutter the client bar.
+  const next: CollageJob = {
+    ...prev,
+    ...patch,
+    percent: Math.max(prev.percent, patch.percent ?? prev.percent),
+    updatedAt: now,
+  };
+  jobs.set(jobId, next);
+}
+
+setInterval(() => {
+  const cutoff = Date.now() - 10 * 60 * 1000;
+  for (const [id, job] of jobs) {
+    if (job.updatedAt < cutoff) jobs.delete(id);
+  }
+}, 5 * 60 * 1000).unref();
+
+router.get('/progress/:jobId', (req: Request<{ jobId: string }>, res: Response) => {
+  const job = jobs.get(req.params.jobId);
+  if (!job) {
+    res.status(404).json({ error: 'unknown job' });
+    return;
+  }
+  const elapsedSec = (Date.now() - job.startedAt) / 1000;
+  const etaSeconds =
+    job.phase === 'done' || job.phase === 'error' || job.percent <= 0 || job.percent >= 100
+      ? null
+      : Math.max(0, Math.round((elapsedSec * (100 - job.percent)) / job.percent));
+  res.json({
+    phase: job.phase,
+    percent: job.percent,
+    message: job.message,
+    etaSeconds,
+    error: job.error,
+  });
+});
 
 // Max images across all templates — multer needs a static limit. All current
 // templates have 6 panels; the +2 leaves room for title + logo.
@@ -321,16 +407,25 @@ router.post(
     { name: 'titleImage', maxCount: 1 },
   ]),
   async (req: Request, res: Response) => {
-    const { activityCode, logoUrl, template: templateId } = req.body as {
+    const { activityCode, logoUrl, template: templateId, jobId } = req.body as {
       activityCode?: string;
       logoUrl?: string;
       template?: string;
+      jobId?: string;
     };
 
     if (!activityCode) {
       res.status(400).json({ error: 'activityCode is required' });
       return;
     }
+
+    // Register the job immediately so the client's first poll (which fires as
+    // soon as the upload completes) doesn't race the server.
+    setJobProgress(jobId, {
+      phase: 'preparing',
+      percent: 2,
+      message: 'מכין תמונות...',
+    });
 
     const activity = await Activity.findOne({ code: activityCode });
     if (!activity) {
@@ -406,6 +501,8 @@ router.post(
       imagePaths.push(...resizedPaths);
       console.log(`[collage] sharp resize x${files.length} took ${Date.now() - sharpStart}ms`);
 
+      setJobProgress(jobId, { percent: 15, message: 'מתחיל קידוד וידאו...' });
+
       let logoPath: string | undefined;
       if (logoUrl && /^https?:\/\//i.test(logoUrl)) {
         logoPath = path.join(tmpDir, 'logo.png');
@@ -424,9 +521,28 @@ router.post(
       }
 
       const ffStart = Date.now();
-      await runFfmpeg(template, templatePath, imagePaths, outputPath, { logoPath, titlePath });
+      // Output framerate is forced to 24fps (-r 24) — see runFfmpeg's args.
+      const totalFrames = Math.max(1, Math.round(template.duration * 24));
+      await runFfmpeg(template, templatePath, imagePaths, outputPath, {
+        logoPath,
+        titlePath,
+        onProgress: (frame) => {
+          const ratio = Math.min(1, frame / totalFrames);
+          setJobProgress(jobId, {
+            phase: 'encoding',
+            percent: 15 + ratio * 75, // 15 → 90
+            message: `מקודד וידאו (${Math.round(ratio * 100)}%)...`,
+          });
+        },
+      });
       const outSize = fs.statSync(outputPath).size;
       console.log(`[collage] ffmpeg took ${Date.now() - ffStart}ms → ${(outSize / 1024 / 1024).toFixed(1)}MB`);
+
+      setJobProgress(jobId, {
+        phase: 'uploading',
+        percent: 92,
+        message: 'מעלה לענן...',
+      });
 
       const upStart = Date.now();
       const cloudResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
@@ -442,10 +558,18 @@ router.post(
       });
       console.log(`[collage] cloudinary upload took ${Date.now() - upStart}ms`);
 
+      setJobProgress(jobId, {
+        phase: 'done',
+        percent: 100,
+        message: 'הסרטון מוכן!',
+      });
+
       res.json({ url: cloudResult.secure_url, isVideo: true });
     } catch (err) {
       console.error('[collage] generation error:', err);
-      res.status(500).json({ error: err instanceof Error ? err.message : 'Collage generation failed' });
+      const msg = err instanceof Error ? err.message : 'Collage generation failed';
+      setJobProgress(jobId, { phase: 'error', error: msg, message: 'שגיאה ביצירת הסרטון' });
+      res.status(500).json({ error: msg });
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

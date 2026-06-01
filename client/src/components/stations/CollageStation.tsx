@@ -186,7 +186,12 @@ const TitleInput = styled('input')({
 const GeneratingWrap = styled('div')({ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, minHeight: '100%' });
 const GeneratingCard = styled('div')({
   width: '100%', background: 'rgba(255,255,255,0.06)',
-  border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '32px 24px', textAlign: 'center',
+  border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '28px 24px 32px', textAlign: 'center',
+});
+const LoadingGif = styled('img')({
+  width: 180, height: 180, objectFit: 'contain',
+  margin: '0 auto 18px', display: 'block',
+  // The gif already animates; no CSS animation needed.
 });
 const ProgressTrack = styled('div')({
   width: '100%', height: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 999, overflow: 'hidden', marginBottom: 16,
@@ -198,6 +203,7 @@ const ProgressFill = styled('div')<{ pct: number }>(({ pct }) => ({
 }));
 const ProgressLabel = styled('p')({ fontSize: 16, fontWeight: 700, color: '#fff', margin: 0 });
 const ProgressSub = styled('p')({ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: '6px 0 0' });
+const ProgressEta = styled('p')({ fontSize: 12, color: 'rgba(255,255,255,0.42)', margin: '4px 0 0', fontVariantNumeric: 'tabular-nums' });
 
 // Result phase
 const VideoWrap = styled('div')({ borderRadius: 16, overflow: 'hidden', width: '100%', marginBottom: 20, background: '#000' });
@@ -257,6 +263,7 @@ function uploadCollageParts(
   logoUrl: string,
   activityCode: string,
   template: string,
+  jobId: string,
   onUploadProgress: (pct: number) => void, // 0-60
 ): Promise<{ url: string; isVideo: boolean }> {
   return new Promise((resolve, reject) => {
@@ -264,6 +271,7 @@ function uploadCollageParts(
     formData.append('activityCode', activityCode);
     formData.append('title', title);
     formData.append('template', template);
+    formData.append('jobId', jobId);
     if (logoUrl) formData.append('logoUrl', logoUrl);
     const titlePng = renderTitlePng(title);
     if (titlePng) formData.append('titleImage', titlePng, 'title.png');
@@ -389,6 +397,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const [collageTitle, setCollageTitle] = useState('');
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('מעלה תמונות...');
+  const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
   const [resultUrl, setResultUrl] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
   const [resultIsVideo, setResultIsVideo] = useState(false);
@@ -401,7 +410,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const quickCaptureRef = useRef<HTMLInputElement>(null);
-  const serverTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const serverPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -554,18 +563,35 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     setPhase('generating');
     setProgress(0);
     setProgressLabel('מעלה תמונות...');
+    setEtaSeconds(null);
     setError('');
 
-    // Simulate server-side processing progress (60→95%) while waiting for ffmpeg
-    const startServerTick = () => {
-      let cur = 60;
-      serverTickRef.current = setInterval(() => {
-        cur = Math.min(cur + Math.random() * 3, 94);
-        setProgress(Math.round(cur));
-        if (cur < 70) setProgressLabel('מעבד תמונות...');
-        else if (cur < 82) setProgressLabel('יוצר סרטון...');
-        else setProgressLabel('מוסיף מוזיקה...');
-      }, 800);
+    // Poll the server's job entry every 1s for real progress + ETA. Server
+    // progress (0-100%) is rescaled to the client's 60-99% range — 0-60 is
+    // already used by the XHR upload-progress events, and 100 is reserved for
+    // the final HTTP response. We tolerate transient 404s while the server is
+    // still spinning up the job record.
+    const jobId = `j_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    const startServerPoll = () => {
+      if (serverPollRef.current) clearInterval(serverPollRef.current);
+      serverPollRef.current = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/collage/progress/${jobId}`);
+          if (!res.ok) return;
+          const data = (await res.json()) as {
+            phase: string;
+            percent: number;
+            message: string;
+            etaSeconds: number | null;
+          };
+          const mapped = Math.min(99, Math.round(60 + (data.percent ?? 0) * 0.4));
+          setProgress((cur) => Math.max(cur, mapped));
+          if (data.message) setProgressLabel(data.message);
+          setEtaSeconds(typeof data.etaSeconds === 'number' ? data.etaSeconds : null);
+        } catch {
+          /* network hiccup — next tick will retry */
+        }
+      }, 1000);
     };
 
     try {
@@ -577,19 +603,19 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         logoUrl,
         activityCode,
         template,
+        jobId,
         (uploadPct) => {
-          setProgress(uploadPct);
-          if (uploadPct >= 60) {
-            // Upload done — start fake server progress tick
-            clearInterval(serverTickRef.current!);
-            startServerTick();
+          setProgress((cur) => Math.max(cur, uploadPct));
+          if (uploadPct >= 60 && !serverPollRef.current) {
+            startServerPoll();
           }
         },
       );
 
-      clearInterval(serverTickRef.current!);
+      if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
       setProgress(100);
       setProgressLabel('הסרטון מוכן!');
+      setEtaSeconds(0);
 
       await new Promise((r) => setTimeout(r, 500));
 
@@ -602,10 +628,23 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       setResultIsVideo(result.isVideo ?? false);
       setPhase('result');
     } catch (err) {
-      clearInterval(serverTickRef.current!);
+      if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
       setError(err instanceof Error ? err.message : 'שגיאה ביצירת הסרטון');
       setPhase('review');
     }
+  };
+
+  // Stop polling on unmount.
+  useEffect(() => () => {
+    if (serverPollRef.current) clearInterval(serverPollRef.current);
+  }, []);
+
+  const formatEta = (secs: number): string => {
+    if (secs <= 0) return 'כמעט סיימנו...';
+    if (secs < 60) return `נותרו כ-${secs} שניות`;
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return s === 0 ? `נותרו כ-${m} דקות` : `נותרו כ-${m}:${String(s).padStart(2, '0')} דקות`;
   };
 
   const shareUrl = code ? `${window.location.origin}/play/${code}` : undefined;
@@ -959,9 +998,13 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       <Wrap>
         <GeneratingWrap>
           <GeneratingCard>
+            <LoadingGif src="/images/camera-loading.gif" alt="" />
             <ProgressTrack><ProgressFill pct={progress} /></ProgressTrack>
             <ProgressLabel>יוצר קולאז׳... {progress}%</ProgressLabel>
             <ProgressSub>{progressLabel}</ProgressSub>
+            {etaSeconds !== null && progress < 100 && (
+              <ProgressEta>{formatEta(etaSeconds)}</ProgressEta>
+            )}
           </GeneratingCard>
         </GeneratingWrap>
       </Wrap>
