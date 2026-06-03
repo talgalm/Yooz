@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Apply high-concurrency nginx tuning on EC2. Safe to re-run (idempotent-ish).
-set -euo pipefail
+set -eu
 
 UPSTREAM_CONF="/etc/nginx/conf.d/yooz-upstream.conf"
 SITE_CONF="/etc/nginx/sites-available/yooz"
