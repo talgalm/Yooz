@@ -1,0 +1,17 @@
+[
+  {
+    "id": 5,
+    "name": "Stress",
+    "description": "1000 users — target resilience test",
+    "vus": 1000,
+    "rampUp": "3m",
+    "hold": "5m",
+    "cooldownSec": 90,
+    "passCriteria": {
+      "httpReqFailedRate": 0.05,
+      "endpointMaxFailRate": 0.02,
+      "p95Ms": 8000,
+      "loginP95Ms": 5000
+    }
+  }
+]
