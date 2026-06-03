@@ -126,38 +126,10 @@ jobs:
             set -a; source /etc/yooz/prod.env; set +a
             npm run build
 
-            echo "=== Updating PM2 ecosystem ==="
-            python3 -c "
-          import json
-          env = dict(l.strip().split('=',1) for l in open('/etc/yooz/prod.env') if '=' in l)
-          cfg = {'apps':[{'name':'yooz','script':'dist/index.js','cwd':'/opt/yooz/server',
-                 'instances':1,'autorestart':True,'watch':False,'max_memory_restart':'800M',
-                 'error_file':'/var/log/yooz/error.log','out_file':'/var/log/yooz/out.log',
-                 'merge_logs':True,'time':True,'env':env}]}
-          open('/opt/yooz/deploy/ecosystem.config.js','w').write('module.exports = '+json.dumps(cfg,indent=2)+';\n')
-          print('  ecosystem.config.js updated')
-          "
+            echo "=== Nginx + PM2 (use repo deploy config) ==="
+            chmod +x /opt/yooz/deploy/patch-nginx.sh
+            bash /opt/yooz/deploy/patch-nginx.sh || echo "  nginx patch skipped"
 
-            echo "=== Updating Nginx limits ==="
-            # - client_max_body_size 200M: 6 iPhone 4K photos can total ~30-60MB.
-            # - proxy_read_timeout 900s: collage ffmpeg can take 5-10 min on t3.medium.
-            # sed in-place so the certbot-managed SSL block stays untouched.
-            if [ -f /etc/nginx/sites-available/yooz ]; then
-              sudo sed -i 's/client_max_body_size [0-9]\+M;/client_max_body_size 200M;/g' /etc/nginx/sites-available/yooz
-              sudo sed -i 's/proxy_read_timeout [0-9]\+s;/proxy_read_timeout 900s;/g' /etc/nginx/sites-available/yooz
-              # Add proxy_send_timeout if missing, otherwise update it
-              if grep -q 'proxy_send_timeout' /etc/nginx/sites-available/yooz; then
-                sudo sed -i 's/proxy_send_timeout [0-9]\+s;/proxy_send_timeout 900s;/g' /etc/nginx/sites-available/yooz
-              else
-                sudo sed -i '/proxy_read_timeout 900s;/a\        proxy_send_timeout 900s;' /etc/nginx/sites-available/yooz
-              fi
-              sudo nginx -t && sudo systemctl reload nginx
-              echo "  Nginx reloaded"
-            else
-              echo "  /etc/nginx/sites-available/yooz not found, skipping"
-            fi
-
-            echo "=== Restarting PM2 ==="
             pm2 delete yooz 2>/dev/null || true
             pm2 start /opt/yooz/deploy/ecosystem.config.js
             pm2 save

@@ -5,7 +5,7 @@ import { HelpChatHeaderButton } from '../../components/HelpChat';
 import { useAuth } from '../../context/AuthContext';
 import { ActivityPlayingHeaderProvider } from '../../context/activityPlayingHeaderContext';
 import { useTranslations } from '../../context/LanguageContext';
-import { apiFetch } from '../../utils/api';
+import { apiFetch, apiFetchWithRetry } from '../../utils/api';
 import { preloadActivityMedia } from '../../utils/mediaPreloader';
 import { texts } from './StoryModulePage.i18n';
 import { GAME_CONSTANTS, type GameResult } from '../../components/games/types';
@@ -805,7 +805,7 @@ export default function StoryModulePage() {
 
     // Save incrementally (fire & forget)
     if (code) {
-      apiFetch(`/api/activities/${code}/progress`, {
+      apiFetchWithRetry(`/api/activities/${code}/progress`, {
         method: 'PATCH',
         body: JSON.stringify({
           itemResult,
@@ -813,7 +813,7 @@ export default function StoryModulePage() {
           lastActiveItemIndex: currentItemIndex,
           runningTotal,
         }),
-      }).catch(() => { /* best effort */ });
+      }).catch(() => { /* best effort after retries */ });
     }
 
     advanceToNextItem();
@@ -866,7 +866,7 @@ export default function StoryModulePage() {
     const runningTotal = scores.reduce((sum, s) => sum + s.score, 0);
 
     if (code) {
-      apiFetch(`/api/activities/${code}/progress`, {
+      apiFetchWithRetry(`/api/activities/${code}/progress`, {
         method: 'PATCH',
         body: JSON.stringify({
           itemResult,
@@ -874,7 +874,7 @@ export default function StoryModulePage() {
           lastActiveItemIndex: currentItemIndex,
           runningTotal,
         }),
-      }).catch(() => { /* best effort */ });
+      }).catch(() => { /* best effort after retries */ });
     }
 
     advanceToNextItem();

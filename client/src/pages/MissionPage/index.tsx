@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslations } from '../../context/LanguageContext';
-import { apiFetch } from '../../utils/api';
+import { apiFetch, apiFetchWithRetry } from '../../utils/api';
 import { texts } from './MissionPage.i18n';
 import {
   MissionWrapper,
@@ -264,7 +264,7 @@ export default function MissionPage() {
 
     // Update Report: puzzle completed (item 0)
     const now = new Date();
-    apiFetch(`${API}/api/activities/${code}/progress`, {
+    apiFetchWithRetry(`${API}/api/activities/${code}/progress`, {
       method: 'PATCH',
       body: JSON.stringify({
         itemResult: {

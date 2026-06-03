@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from '../config';
 import { LoginRequest, LoginResponse } from '../types';
 import { Activity, Portal, Report } from '../models';
+import { bumpParticipantCount } from '../utils/participantCountCache';
 
 const router = Router();
 
@@ -106,6 +107,7 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
       connectionType,
       group,
     });
+    bumpParticipantCount(activity._id);
   }
 
   const token = jwt.sign(

@@ -128,16 +128,17 @@ server {
 
     client_max_body_size 200M;
 
+    include /etc/nginx/conf.d/yooz-upstream.conf;
+
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://yooz_backend;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
+        proxy_set_header Connection "";
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_cache_bypass \$http_upgrade;
+        proxy_connect_timeout 75s;
         proxy_read_timeout 900s;
         proxy_send_timeout 900s;
     }

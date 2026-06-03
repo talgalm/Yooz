@@ -4,6 +4,7 @@ import { authenticateToken } from '../middleware/auth';
 import { Activity, Report, Game, Station, Mission, CustomTheme } from '../models';
 import mongoose from 'mongoose';
 import { subscribe, sendLockEvent } from '../utils/lockBroadcaster';
+import { getParticipantCount } from '../utils/participantCountCache';
 
 const router = Router();
 
@@ -168,7 +169,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   // Filter popups by conditions (e.g. participant count threshold)
   let filteredPopups: typeof activity.module.popups = [];
   if (activity.module.popups && activity.module.popups.length > 0) {
-    const reportCount = await Report.countDocuments({ activityId: activity._id });
+    const reportCount = await getParticipantCount(activity._id);
     filteredPopups = activity.module.popups.filter((p) => {
       if (!p.enabled) return false;
       if (p.condition && p.condition.type === 'participantCount') {

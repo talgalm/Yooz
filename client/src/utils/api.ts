@@ -17,3 +17,23 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
 
   return res.json();
 }
+
+/** Retry transient network failures (load tests showed EOF on progress PATCH under burst). */
+export async function apiFetchWithRetry<T>(
+  url: string,
+  options: RequestInit = {},
+  retries = 3,
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await apiFetch<T>(url, options);
+    } catch (err) {
+      lastError = err;
+      if (attempt < retries - 1) {
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      }
+    }
+  }
+  throw lastError;
+}

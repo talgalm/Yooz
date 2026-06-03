@@ -127,5 +127,7 @@ reportSchema.index({ activityCode: 1 });
 reportSchema.index({ activityId: 1, completionStatus: 1 });
 reportSchema.index({ activityId: 1, group: 1 });
 reportSchema.index({ activityId: 1, joinedAt: -1 });
+reportSchema.index({ activityId: 1, 'data.totalScore': -1 });
+reportSchema.index({ activityId: 1, completionStatus: 1, sessionDurationMs: 1 });
 
 export const Report = model<IReport>('Report', reportSchema, 'reports');
