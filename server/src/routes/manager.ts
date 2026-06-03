@@ -106,7 +106,10 @@ router.get('/reports', authenticateManager, async (req: Request, res: Response) 
     return;
   }
 
-  const reports = await Report.find({ activityCode }).sort({ joinedAt: -1 });
+  const reports = await Report.find(
+    { activityCode },
+    { participantName: 1, email: 1, phoneNumber: 1, group: 1, joinedAt: 1, 'data.scores': 1, 'data.totalScore': 1 },
+  ).sort({ joinedAt: -1 }).lean();
 
   const participants = reports.map((r) => ({
     _id: r._id,
