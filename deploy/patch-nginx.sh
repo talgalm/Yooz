@@ -39,5 +39,28 @@ if [ -f /etc/nginx/nginx.conf ] && grep -q 'worker_connections' /etc/nginx/nginx
   sudo sed -i 's/worker_connections [0-9]\+;/worker_connections 4096;/g' /etc/nginx/nginx.conf
 fi
 
+# Enable multi_accept so each worker grabs all pending connections at once
+if [ -f /etc/nginx/nginx.conf ] && ! grep -q 'multi_accept' /etc/nginx/nginx.conf; then
+  sudo sed -i '/worker_connections [0-9]\+;/a\        multi_accept on;' /etc/nginx/nginx.conf
+fi
+
+# Raise TCP backlog on listen directives so the kernel queues more SYNs
+# Matches: listen 443 ssl; or listen 80; (with or without extra params, no backlog yet)
+if [ -f "$SITE_CONF" ] && ! grep -q 'backlog' "$SITE_CONF"; then
+  sudo sed -i 's/listen \([0-9]\+\)\(.*\);/listen \1\2 backlog=4096;/g' "$SITE_CONF"
+fi
+
+# Kernel TCP tuning — persist across reboots via sysctl.d
+sudo tee /etc/sysctl.d/99-yooz.conf > /dev/null <<'SYSCTL'
+# Accept queue depth — allows kernel to buffer 1000+ simultaneous SYNs
+net.core.somaxconn = 4096
+net.ipv4.tcp_max_syn_backlog = 4096
+# Keep-alive tuning for long-lived participant connections
+net.ipv4.tcp_keepalive_time = 60
+net.ipv4.tcp_keepalive_intvl = 10
+net.ipv4.tcp_keepalive_probes = 6
+SYSCTL
+sudo sysctl -p /etc/sysctl.d/99-yooz.conf
+
 sudo nginx -t && sudo systemctl reload nginx
 echo "  nginx patched and reloaded"
