@@ -8,9 +8,19 @@ import { getParticipantCount } from '../utils/participantCountCache';
 
 const router = Router();
 
+const activityConfigCache = new Map<string, { data: ActivityConfigResponse; expiresAt: number }>();
+const ACTIVITY_CONFIG_TTL_MS = 30_000;
+
 // Public: get activity config by code (for /play/:code)
 router.get('/:code', async (req: Request<{ code: string }>, res: Response<ActivityConfigResponse | { error: string }>) => {
-  const activity = await Activity.findOne({ code: req.params.code });
+  const { code } = req.params;
+  const cached = activityConfigCache.get(code);
+  if (cached && cached.expiresAt > Date.now()) {
+    res.json(cached.data);
+    return;
+  }
+
+  const activity = await Activity.findOne({ code });
   if (!activity) {
     res.status(404).json({ error: 'Activity not found' });
     return;
@@ -31,7 +41,7 @@ router.get('/:code', async (req: Request<{ code: string }>, res: Response<Activi
     connectionType = 'single';
   }
 
-  res.json({
+  const data: ActivityConfigResponse = {
     code: activity.code,
     name: activity.name,
     loginFields: loginFields as ActivityConfigResponse['loginFields'],
@@ -43,7 +53,10 @@ router.get('/:code', async (req: Request<{ code: string }>, res: Response<Activi
     ...(activity.scheduledEnd && { scheduledEnd: activity.scheduledEnd.toISOString() }),
     ...(activity.module && { moduleType: activity.module.type }),
     ...(activity.isContinuous && { isContinuous: true }),
-  });
+  };
+
+  activityConfigCache.set(code, { data, expiresAt: Date.now() + ACTIVITY_CONFIG_TTL_MS });
+  res.json(data);
 });
 
 // Public: get full activity module config by code (for participant game flow)
