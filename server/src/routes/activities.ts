@@ -326,13 +326,8 @@ router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: s
     updateOps['data.totalScore'] = runningTotal;
   }
 
-  // Prevent duplicate itemResults for the same itemIndex
   const report = await Report.findOneAndUpdate(
-    {
-      activityCode,
-      participantName,
-      'data.itemResults.itemIndex': { $ne: itemResult.itemIndex },
-    },
+    { activityCode, participantName },
     {
       $push: { 'data.itemResults': itemResult },
       $set: updateOps,
@@ -340,17 +335,9 @@ router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: s
     { new: true, sort: { joinedAt: -1 } },
   );
 
-  // If no doc matched, it may be a duplicate — still update progress fields
   if (!report) {
-    const fallback = await Report.findOneAndUpdate(
-      { activityCode, participantName },
-      { $set: updateOps },
-      { new: true, sort: { joinedAt: -1 } },
-    );
-    if (!fallback) {
-      res.status(404).json({ error: 'Report not found' });
-      return;
-    }
+    res.status(404).json({ error: 'Report not found' });
+    return;
   }
 
   res.json({ success: true });
