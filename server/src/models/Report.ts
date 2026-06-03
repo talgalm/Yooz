@@ -124,6 +124,10 @@ const reportSchema = new Schema<IReport>({
 
 reportSchema.index({ activityId: 1 });
 reportSchema.index({ activityCode: 1 });
+reportSchema.index({ activityCode: 1, joinedAt: -1 });
+reportSchema.index({ activityCode: 1, participantName: 1, joinedAt: -1 });
+reportSchema.index({ activityCode: 1, email: 1, joinedAt: -1 }, { sparse: true });
+reportSchema.index({ activityCode: 1, phoneNumber: 1, joinedAt: -1 }, { sparse: true });
 reportSchema.index({ activityId: 1, completionStatus: 1 });
 reportSchema.index({ activityId: 1, group: 1 });
 reportSchema.index({ activityId: 1, joinedAt: -1 });

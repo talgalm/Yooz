@@ -1,0 +1,80 @@
+[
+  {
+    "id": "spike-login",
+    "name": "Spike login",
+    "description": "1000 users log in within ~30 seconds",
+    "script": "participant-spike-login.js",
+    "vus": 1000,
+    "maxDuration": "3m",
+    "passCriteria": {
+      "httpReqFailedRate": 0.05,
+      "endpointMaxFailRate": 0.02,
+      "loginP95Ms": 10000
+    }
+  },
+  {
+    "id": "wave-progress",
+    "name": "Wave progress",
+    "description": "1000 users save progress at the same moment",
+    "script": "participant-wave-progress.js",
+    "vus": 1000,
+    "maxDuration": "5m",
+    "passCriteria": {
+      "httpReqFailedRate": 0.05,
+      "endpointMaxFailRate": 0.02,
+      "progressP95Ms": 10000
+    }
+  },
+  {
+    "id": "realistic-session",
+    "name": "Realistic session",
+    "description": "1000 users, 45–90s per station + module reload",
+    "script": "participant-realistic.js",
+    "vus": 500,
+    "rampUp": "2m",
+    "hold": "8m",
+    "passCriteria": {
+      "httpReqFailedRate": 0.03,
+      "endpointMaxFailRate": 0.01,
+      "p95Ms": 15000
+    }
+  },
+  {
+    "id": "wave-scores",
+    "name": "Wave scores",
+    "description": "1000 users submit final scores at the same moment",
+    "script": "participant-wave-scores.js",
+    "vus": 1000,
+    "maxDuration": "5m",
+    "passCriteria": {
+      "httpReqFailedRate": 0.05,
+      "endpointMaxFailRate": 0.02,
+      "scoresP95Ms": 10000
+    }
+  },
+  {
+    "id": "manager-polling",
+    "name": "Manager polling",
+    "description": "Manager polls /manager/reports every 5s while 500 participants play (requires MANAGER_TOKEN env)",
+    "script": "participant-manager-polling.js",
+    "vus": 500,
+    "rampUp": "1m",
+    "hold": "4m",
+    "passCriteria": {
+      "httpReqFailedRate": 0.05,
+      "endpointMaxFailRate": 0.02,
+      "p95Ms": 5000
+    }
+  },
+  {
+    "id": "find-breaking-point",
+    "name": "Breaking point ramp",
+    "description": "Ramp VUs until errors spike (VUS_MAX env, default 2000)",
+    "script": "participant-breaking-ramp.js",
+    "vus": 500,
+    "passCriteria": {
+      "httpReqFailedRate": 0.05,
+      "endpointMaxFailRate": 0.05
+    }
+  }
+]
