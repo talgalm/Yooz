@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useMediaPreload } from '../../hooks/useMediaPreload';
 import { resolveVideoSource } from '../../utils/videoSource';
 import ThemedBackground from '../../components/ThemedBackground';
@@ -116,6 +117,10 @@ const StationTitleText = styled('h2')({
   top: 0,
   zIndex: 10,
   paddingTop: 8,
+  '@media (min-width: 768px)': {
+    fontSize: 34,
+    marginBottom: 24,
+  },
 });
 
 const StationDescriptionText = styled(StationHeadline)({
@@ -131,6 +136,15 @@ const StationTopLayout = styled('div')({
   alignItems: 'center',
   padding: '24px 24px 100px',
   textAlign: 'center',
+  // Desktop: pin content to a centered column and vertically center it within
+  // the available space. Stretching the full width left the small mobile-sized
+  // text/image bubble floating in the middle of an empty page (QA Jun 2026).
+  '@media (min-width: 768px)': {
+    width: 'min(960px, 92vw)',
+    marginInline: 'auto',
+    justifyContent: 'center',
+    padding: '48px 24px 140px',
+  },
 });
 
 /** Same as StationTopLayout but for video/image stations */
@@ -657,7 +671,12 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
       <FixedContinueButton onClick={onContinue} disabled={!mediaReady}>
         {t.continueButton}
       </FixedContinueButton>
-      {fullscreen && mediaUrl && (
+      {fullscreen && mediaUrl && createPortal(
+        // Portaled to body so the dark backdrop covers the session header
+        // bar (exit/help/mute/score) at the top of the page. Previously the
+        // overlay rendered inside MediaStationLayout, which sits below an
+        // animated/sticky stacking-context parent — z-index 2000 alone wasn't
+        // enough to escape it (QA Jun 2026 page 7).
         <ImageFullscreenOverlay onClick={() => setFullscreen(false)} role="dialog" aria-modal="true">
           <ImageFullscreenClose
             type="button"
@@ -667,7 +686,8 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
             ×
           </ImageFullscreenClose>
           <ImageFullscreenImg src={mediaUrl} alt="" onClick={(e) => e.stopPropagation()} />
-        </ImageFullscreenOverlay>
+        </ImageFullscreenOverlay>,
+        document.body
       )}
     </MediaStationLayout>
   );
@@ -680,7 +700,10 @@ const ImageFullscreenOverlay = styled('div')({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  zIndex: 2000,
+  // Above the sticky session header (z-index 30) and any popup modal layers.
+  // Combined with the createPortal(...) target=document.body the backdrop
+  // now reliably blacks out the entire viewport including the top icon row.
+  zIndex: 99999,
   cursor: 'zoom-out',
   padding: 16,
 });

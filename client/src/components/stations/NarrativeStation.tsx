@@ -37,6 +37,13 @@ const ContentOverlay = styled('div')({
   gap: 20,
   maxWidth: 400,
   width: '100%',
+  // Desktop: grow the narrative column so the text bubble + image aren't
+  // tiny dots in the middle of a green field (QA Jun 2026 page 1, text
+  // station #3782).
+  '@media (min-width: 768px)': {
+    maxWidth: 'min(720px, 80vw)',
+    gap: 28,
+  },
 });
 
 const NarrativeTitle = styled(StationHeadline)({
@@ -48,6 +55,10 @@ const NarrativeImage = styled('img')({
   maxWidth: 360,
   borderRadius: 12,
   objectFit: 'contain',
+  '@media (min-width: 768px)': {
+    maxWidth: 560,
+    maxHeight: '55vh',
+  },
 });
 
 interface NarrativeStationProps {

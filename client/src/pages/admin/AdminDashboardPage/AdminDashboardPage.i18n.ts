@@ -133,7 +133,7 @@ export const texts = {
     createTypeVideo: 'וידאו',
     createTypeImage: 'תמונה',
     createTypeRiddle: 'חידה',
-    createTypeAvatar: 'אוואטר',
+    createTypeAvatar: 'אוואטאר',
     createTypeEnteringText: 'מילוי טקסט',
     actions: 'פעולות',
     duplicate: 'שכפול',

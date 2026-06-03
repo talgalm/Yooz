@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { styled } from '@mui/material/styles';
 import { useLang, useTranslations } from '../../../context/LanguageContext';
 import type { GameProps, GameResult, QuestionAnswerRecord } from '../types';
 import { useRegisterActivityGameHeader } from '../../../context/activityPlayingHeaderContext';
@@ -19,6 +20,31 @@ import {
   ROOM_SIDE_WALL_COLOR,
   ROOM_FLOOR_COLOR,
 } from './styled';
+
+// The phaser game inside the iframe scales to whatever box it gets. On phones
+// that's the full viewport; on desktop we shrink the box to a portrait stage
+// so balls/buckets/question card stay readable instead of stretching wide
+// across a monitor (QA Jun 2026 page 10).
+const BallGameIframe = styled('iframe')({
+  position: 'absolute',
+  top: 100,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  zIndex: 2,
+  width: '100%',
+  height: 'calc(100dvh - 52px)',
+  border: 'none',
+  background: 'transparent',
+  '@media (min-width: 768px)': {
+    left: '50%',
+    right: 'auto',
+    transform: 'translateX(-50%)',
+    width: 'min(560px, 80vw)',
+    height: 'calc(100dvh - 120px)',
+    maxHeight: 920,
+  },
+});
 
 function RoomCornersSvg() {
   // L/R = side wall width, T = ceiling height, B = floor top — all in %
@@ -328,6 +354,14 @@ export default function BallGame({
       <BallGameRoomBackground>
         <RoomCornersSvg />
       </BallGameRoomBackground>
+      {/*
+        Desktop frame: on screens >= 768px we cap the phaser iframe to a
+        portrait stage centered in the viewport so the question card,
+        answer pods, balls and buckets stay proportional. Without this,
+        stretching the iframe to full-width makes the question text look
+        small and the buckets line up off-screen on wide monitors
+        (QA Jun 2026 page 10).
+      */}
       {!embeddedInActivity && (
         <div
           ref={(el) => {
@@ -383,23 +417,11 @@ export default function BallGame({
           />
         </div>
       )}
-      <iframe
+      <BallGameIframe
         ref={iframeRef}
         src={src}
         title="Ball Game"
         tabIndex={-1}
-        style={{
-          position: 'absolute',
-          top: 100,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 2,
-          width: '100%',
-          height: 'calc(100dvh - 52px)',
-          border: 'none',
-          background: 'transparent',
-        }}
         allow="autoplay"
       />
     </div>

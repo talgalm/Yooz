@@ -204,6 +204,18 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
 
   // Timer per question
   const [timeLeft, setTimeLeft] = useState<number>(scoring.timeLimitSeconds);
+  // QA Jun 2026 page 11: image in TF was a tiny thumbnail and not clickable.
+  // Click-to-zoom mirrors the same UX used by image / riddle stations.
+  const [zoomedImageUrl, setZoomedImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!zoomedImageUrl) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setZoomedImageUrl(null);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [zoomedImageUrl]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -567,8 +579,62 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
       {/* Statement media */}
       {statement.media && (
         <NatureMediaContainer>
-          <NatureMediaImage src={statement.media} alt="" />
+          <NatureMediaImage
+            src={statement.media}
+            alt=""
+            onClick={() => setZoomedImageUrl(statement.media!)}
+          />
         </NatureMediaContainer>
+      )}
+
+      {/* Image zoom modal — portaled so it covers the session header */}
+      {zoomedImageUrl && createPortal(
+        <div
+          onClick={() => setZoomedImageUrl(null)}
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.92)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99999,
+            cursor: 'zoom-out',
+            padding: 16,
+          }}
+        >
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={(e) => { e.stopPropagation(); setZoomedImageUrl(null); }}
+            style={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              border: 'none',
+              background: 'rgba(255,255,255,0.15)',
+              color: '#fff',
+              fontSize: 28,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+            }}
+          >×</button>
+          <img
+            src={zoomedImageUrl}
+            alt=""
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 8, cursor: 'default' }}
+          />
+        </div>,
+        document.body
       )}
 
       {/* Hint: keep mounted when answered so flex layout (timer position) does not jump */}

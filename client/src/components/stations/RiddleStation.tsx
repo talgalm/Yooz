@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'; // useEffect kept for initial focus
+import { createPortal } from 'react-dom';
 import { styled, keyframes } from '@mui/material/styles';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 import type { GameResult } from '../games/types';
@@ -65,6 +66,14 @@ const Container = styled('div')({
   padding: '32px 20px 160px',
   gap: 18,
   overflowY: 'auto',
+  // Desktop: cap to a centered column so clue + image + letter boxes don't
+  // stretch edge to edge of a wide monitor (QA Jun 2026 page 15 #17).
+  '@media (min-width: 768px)': {
+    width: 'min(840px, 90vw)',
+    marginInline: 'auto',
+    padding: '48px 24px 180px',
+    gap: 24,
+  },
 });
 
 const StationTitle = styled('h2')({
@@ -80,6 +89,10 @@ const StationTitle = styled('h2')({
   top: 0,
   zIndex: 10,
   paddingTop: 8,
+  '@media (min-width: 768px)': {
+    fontSize: 34,
+    marginBottom: 24,
+  },
 });
 
 const ClueText = styled('p')({
@@ -89,15 +102,39 @@ const ClueText = styled('p')({
   textAlign: 'center',
   margin: 0,
   lineHeight: 1.4,
+  '@media (min-width: 768px)': {
+    fontSize: 28,
+    maxWidth: 'min(640px, 80vw)',
+  },
 });
 
 const MediaWrapper = styled('div')({
-  width: '100%',
-  maxWidth: 380,
+  // Inline-block so the shadowed card shrinks to its image's intrinsic size.
+  // Previously this was width:100%/maxWidth:380 — when the image's aspect
+  // ratio didn't match the card, the shadow rectangle stuck out behind a
+  // small image (QA Jun 2026 page 15 "shadow doesn't match image ratio").
+  display: 'inline-block',
+  maxWidth: '100%',
   borderRadius: 14,
   overflow: 'hidden',
   boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
   flexShrink: 0,
+  lineHeight: 0,
+  '@media (min-width: 768px)': {
+    // Desktop: allow the image to grow into a real focal point.
+    maxWidth: 'min(560px, 60vw)',
+  },
+});
+
+const RiddleMediaImage = styled('img')({
+  display: 'block',
+  maxWidth: '100%',
+  maxHeight: 260,
+  objectFit: 'contain',
+  cursor: 'zoom-in',
+  '@media (min-width: 768px)': {
+    maxHeight: 'min(60vh, 480px)',
+  },
 });
 
 const ImageFullscreenOverlay = styled('div')({
@@ -107,7 +144,10 @@ const ImageFullscreenOverlay = styled('div')({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  zIndex: 2000,
+  // Sits above sticky session header (z 30) and the riddle's own success
+  // overlay. Used together with createPortal so the backdrop reliably covers
+  // the top icon row (QA Jun 2026 page 7).
+  zIndex: 99999,
   cursor: 'zoom-out',
   padding: 16,
 });
@@ -468,10 +508,9 @@ export default function RiddleStation({
 
         {settings.mediaUrl && settings.mediaType === 'image' && (
           <MediaWrapper>
-            <img
+            <RiddleMediaImage
               src={settings.mediaUrl}
               alt=""
-              style={{ width: '100%', display: 'block', maxHeight: 260, objectFit: 'contain', cursor: 'zoom-in' }}
               onClick={() => setImageFullscreen(true)}
               onTouchStart={(e) => { if (e.touches.length >= 2) setImageFullscreen(true); }}
             />
@@ -546,7 +585,7 @@ export default function RiddleStation({
         ) : null}
       </Container>
 
-      {imageFullscreen && settings.mediaUrl && settings.mediaType === 'image' && (
+      {imageFullscreen && settings.mediaUrl && settings.mediaType === 'image' && createPortal(
         <ImageFullscreenOverlay onClick={() => setImageFullscreen(false)} role="dialog" aria-modal="true">
           <ImageFullscreenClose
             type="button"
@@ -556,7 +595,8 @@ export default function RiddleStation({
             ×
           </ImageFullscreenClose>
           <ImageFullscreenImg src={settings.mediaUrl} alt="" onClick={(e) => e.stopPropagation()} />
-        </ImageFullscreenOverlay>
+        </ImageFullscreenOverlay>,
+        document.body
       )}
 
       {phase !== 'success' && (

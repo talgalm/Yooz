@@ -758,16 +758,22 @@ export const StationSubtitle = styled('div')({
 });
 
 // ─── StoryModule: Media Station ───
+// Desktop sizing notes (QA Jun 2026):
+//  - Mobile target stays 400px wide for phone column.
+//  - At ≥768px the media (video/image/iframe) should fill a larger, centered
+//    stage so it doesn't feel "lost in the middle." Width grows to ~min(820px,
+//    70vw) and image height is unleashed to 70vh.
 
 export const MediaStationWrapper = styled('div')({
   marginBottom: 24,
   width: '100%',
   maxWidth: 400,
+  marginInline: 'auto',
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: 'min(820px, 70vw)',
   },
   '@media (min-width: 1200px)': {
-    maxWidth: 880,
+    maxWidth: 'min(960px, 60vw)',
   },
 });
 
@@ -775,6 +781,11 @@ export const MediaStationVideo = styled('video')({
   width: '100%',
   border: '2px solid #fff',
   borderRadius: 12,
+  '@media (min-width: 768px)': {
+    // Keep video framed but more present on big screens.
+    maxHeight: '70vh',
+    background: '#000',
+  },
 });
 
 export const MediaStationIframeWrapper = styled('div')({
@@ -805,6 +816,9 @@ export const MediaStationImage = styled('img')({
   border: '2px solid #fff',
   borderRadius: 12,
   objectFit: 'contain',
+  '@media (min-width: 768px)': {
+    maxHeight: '70vh',
+  },
 });
 
 // ─── Station Design (unified: purple window, white headline, white btn + purple text) ───
@@ -821,6 +835,14 @@ export const StationWindow = styled('div', {
   padding: isDynamic ? '24px 0px' : '20px 24px',
   width: '100%',
   maxWidth: 400,
+  marginInline: 'auto',
+  // Desktop: the purple text panel grows so the message doesn't look stranded
+  // on big screens. `isDynamic` (used by video/image wrappers) gets even more
+  // room because its child is a media frame, not a paragraph.
+  '@media (min-width: 768px)': {
+    maxWidth: isDynamic ? 'min(820px, 70vw)' : 'min(640px, 70vw)',
+    padding: isDynamic ? '32px 0px' : '28px 36px',
+  },
 }));
 
 export const StationHeadline = styled('h2')({
@@ -829,6 +851,9 @@ export const StationHeadline = styled('h2')({
   fontSize: 22,
   margin: '0 0 16px',
   textAlign: 'center',
+  '@media (min-width: 768px)': {
+    fontSize: 28,
+  },
 });
 
 export const StationBodyText = styled('p')({
@@ -837,6 +862,10 @@ export const StationBodyText = styled('p')({
   lineHeight: 1.7,
   margin: 0,
   whiteSpace: 'pre-wrap',
+  '@media (min-width: 768px)': {
+    fontSize: 19,
+    lineHeight: 1.75,
+  },
 });
 
 export const StationContinueButton = styled('button')({

@@ -426,6 +426,13 @@ export const NatureMediaImage = styled('img')({
   borderRadius: 12,
   objectFit: 'contain',
   border: '3px solid rgba(255,255,255,0.3)',
+  cursor: 'zoom-in',
+  // Desktop: photo of the statement should be a real image, not a thumbnail.
+  // QA Jun 2026 page 11: "image is too small, can't be enlarged."
+  '@media (min-width: 768px)': {
+    maxWidth: 'min(420px, 40vw)',
+    maxHeight: 'min(36vh, 320px)',
+  },
 });
 
 // ─── Yooz logo ───

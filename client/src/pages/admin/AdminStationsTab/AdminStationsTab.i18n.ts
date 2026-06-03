@@ -103,7 +103,7 @@ export const texts = {
     typeCollage: 'קולאז׳',
     typeFeedback: 'משוב',
     typeRiddle: 'חידה',
-    typeAvatar: 'אוואטר',
+    typeAvatar: 'אוואטאר',
     typeEnteringText: 'מילוי טקסט',
     searchPlaceholder: 'חיפוש לפי שם, תג או מילת מפתח...',
     tags: 'תגיות',

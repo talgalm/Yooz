@@ -262,7 +262,7 @@ export const texts = {
     riddleContinueBtnTextPlaceholder: 'ברירת מחדל: "המשך" / "Continue" לפי שפת התוכן',
     riddleSuccessImage: 'תמונת פופאפ הצלחה (אופציונלי)',
     riddleSuccessImagePlaceholder: 'כתובת תמונה — מחליפה את גביע ברירת המחדל',
-    typeAvatar: 'אוואטר',
+    typeAvatar: 'אוואטאר',
     typeAvatarDesc: 'שיחה עם דמות — חידה בלשית',
     typeEnteringText: 'מילוי טקסט',
     typeEnteringTextDesc: 'המשתתפים ממלאים שדות טקסט דינמיים',

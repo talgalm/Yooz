@@ -74,6 +74,14 @@ const Content = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   WebkitOverflowScrolling: 'touch',
+  // Desktop: center the intro/review column at a comfortable reading width.
+  // Previously stretched the full viewport on big screens (QA Jun 2026 pages
+  // 2-3) which made the panel look stranded.
+  '@media (min-width: 768px)': {
+    width: 'min(720px, 90vw)',
+    marginInline: 'auto',
+    padding: '40px 24px calc(40px + env(safe-area-inset-bottom, 0px))',
+  },
 });
 
 /** Capture fits one screen: compact header, small preview, actions pinned at bottom. */
@@ -87,6 +95,13 @@ const CaptureLayout = styled('div')({
   width: '100%',
   margin: '0 auto',
   boxSizing: 'border-box',
+  // Desktop: a bit wider for the camera preview, but capped so the preview
+  // area below (CaptureArea) doesn't blow up to viewport height (QA #5).
+  '@media (min-width: 768px)': {
+    maxWidth: 'min(640px, 80vw)',
+    padding: '24px 24px calc(24px + env(safe-area-inset-bottom, 0px))',
+    justifyContent: 'center',
+  },
 });
 
 const CaptureHeader = styled('div')({ flexShrink: 0, textAlign: 'center' });
@@ -107,10 +122,13 @@ const MissionCard = styled('div')({
   gap: 14,
 });
 const MissionNum = styled('div')({
-  width: 36, height: 36, borderRadius: 10,
+  width: 36, height: 36, borderRadius: '50%',
   background: 'linear-gradient(135deg,#8b5cf6,#ec4899)',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   fontWeight: 800, fontSize: 16, flexShrink: 0,
+  // Numbered badges are explicit circles (QA Jun 2026 page 2 flagged them
+  // as visually broken). 36px square gave a rounded-square look that read
+  // as a glitch on desktop where everything else got crisper.
 });
 const MissionInfo = styled('div')({ flex: 1 });
 const MissionTitle = styled('div')({ fontWeight: 700, fontSize: 15 });
@@ -152,6 +170,16 @@ const CaptureArea = styled('div')({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
+  // Desktop: stop the preview area from filling the entire viewport (QA
+  // Jun 2026 page 4 — "way too big"). Fix it to a portrait photo frame
+  // and let CaptureLayout center it vertically.
+  '@media (min-width: 768px)': {
+    flex: '0 0 auto',
+    aspectRatio: '3 / 4',
+    width: 'min(380px, 60vw)',
+    maxHeight: 'min(60vh, 480px)',
+    margin: '12px auto 16px',
+  },
 });
 const CapturePreviewImg = styled('img')({ width: '100%', height: '100%', objectFit: 'cover' });
 const PlaceholderIcon = styled('div')({ fontSize: 48, marginBottom: 8, opacity: 0.38 });
@@ -187,6 +215,10 @@ const GeneratingWrap = styled('div')({ flex: 1, display: 'flex', alignItems: 'ce
 const GeneratingCard = styled('div')({
   width: '100%', background: 'rgba(255,255,255,0.06)',
   border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: '28px 24px 32px', textAlign: 'center',
+});
+const GeneratingIntro = styled('p')({
+  fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.88)',
+  margin: '0 0 16px', lineHeight: 1.45, textAlign: 'center',
 });
 const LoadingGif = styled('img')({
   width: 180, height: 180, objectFit: 'contain',
@@ -998,6 +1030,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       <Wrap>
         <GeneratingWrap>
           <GeneratingCard>
+            <GeneratingIntro>הופכים את התמונות שלכם לסרטון מדהים... זה יקח כמה דקות</GeneratingIntro>
             <LoadingGif src="/images/camera-loading.gif" alt="" />
             <ProgressTrack><ProgressFill pct={progress} /></ProgressTrack>
             <ProgressLabel>יוצר קולאז׳... {progress}%</ProgressLabel>

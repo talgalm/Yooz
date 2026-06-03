@@ -1,0 +1,42 @@
+[
+  {
+    "key": "video",
+    "label": "QA #1 video station",
+    "code": "upjgkw"
+  },
+  {
+    "key": "text",
+    "label": "QA #2 text station",
+    "code": "aigttv"
+  },
+  {
+    "key": "collage",
+    "label": "QA #3-#5 collage station",
+    "code": "3t5ih6"
+  },
+  {
+    "key": "image",
+    "label": "QA #7-#8 image station + modal",
+    "code": "zvq9ki"
+  },
+  {
+    "key": "ballGame",
+    "label": "QA #11 ball-drop game",
+    "code": "tuodtl"
+  },
+  {
+    "key": "trueFalse",
+    "label": "QA #12 TrueFalse w/ image",
+    "code": "kanp24"
+  },
+  {
+    "key": "riddle",
+    "label": "QA #16-#17 riddle station",
+    "code": "m3n0cj"
+  },
+  {
+    "key": "avatar",
+    "label": "QA #20 avatar station",
+    "code": "d3y183"
+  }
+]
