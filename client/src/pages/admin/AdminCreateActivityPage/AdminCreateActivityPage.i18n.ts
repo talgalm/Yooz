@@ -187,6 +187,7 @@ export const texts = {
     groupAssignHint: 'Select which groups will see this item. If none are selected, all groups will see it.',
     groupAssignClear: 'Clear (all groups)',
     groupAssignDone: 'Done',
+    includeOnRoadmap: 'Include activity on roadmap',
   },
   he: {
     title: 'יצירת פעילות',
@@ -376,5 +377,6 @@ export const texts = {
     groupAssignHint: 'בחרו אילו קבוצות יראו פריט זה. אם לא נבחרה אף קבוצה, כל הקבוצות יראו אותו.',
     groupAssignClear: 'נקה (כל הקבוצות)',
     groupAssignDone: 'סיום',
+    includeOnRoadmap: 'הצג את הפעילות במפת הדרכים',
   },
 };

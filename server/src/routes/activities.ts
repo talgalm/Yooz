@@ -231,6 +231,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     leaderboardMode: activity.leaderboardMode || 'points',
     ...(activity.activityDurationMinutes && { activityDurationMinutes: activity.activityDurationMinutes }),
     lockedFromIndex: typeof activity.lockedFromIndex === 'number' ? activity.lockedFromIndex : null,
+    ...(activity.includeOnRoadmap && { includeOnRoadmap: true }),
   });
 });
 

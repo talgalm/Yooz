@@ -112,4 +112,5 @@ export interface Activity {
   managerEmail?: string;
   isContinuous?: boolean;
   portalId?: string;
+  includeOnRoadmap?: boolean;
 }

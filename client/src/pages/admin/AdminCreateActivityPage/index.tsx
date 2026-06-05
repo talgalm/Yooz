@@ -293,6 +293,7 @@ export default function AdminCreateActivityPage() {
   const defaultGroupName = (i: number) => `${t.groupDefault} ${i}`;
 
   const [name, setName] = useState('');
+  const [includeOnRoadmap, setIncludeOnRoadmap] = useState(false);
   const [loginFields, setLoginFields] = useState<Set<LoginField>>(new Set(['name']));
   const [emailGoogle, setEmailGoogle] = useState(false);
   const [connectionType, setConnectionType] = useState<ConnectionType>('single');
@@ -458,6 +459,7 @@ export default function AdminCreateActivityPage() {
         }
         if (a.leaderboardMode) setLeaderboardMode(a.leaderboardMode as 'points' | 'time');
         if (a.activityDurationMinutes) setActivityDurationMinutes(String(a.activityDurationMinutes));
+        if (a.includeOnRoadmap) setIncludeOnRoadmap(true);
         setInitialLoading(false);
       })
       .catch(() => navigate('/admin/dashboard'));
@@ -824,6 +826,7 @@ export default function AdminCreateActivityPage() {
         payload.isContinuous = true;
         if (portalId) payload.portalId = portalId;
       }
+      if (includeOnRoadmap) payload.includeOnRoadmap = true;
       if (managerEmail.trim()) {
         payload.managerEmail = managerEmail.trim();
         if (managerPassword) payload.managerPassword = managerPassword;
@@ -895,6 +898,18 @@ export default function AdminCreateActivityPage() {
                   onChange={(e) => setName(e.target.value)}
                   required
                 />
+
+                {moduleType === 'story' && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: -8 }}>
+                    <input
+                      type="checkbox"
+                      checked={includeOnRoadmap}
+                      onChange={(e) => setIncludeOnRoadmap(e.target.checked)}
+                      style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                    />
+                    {t.includeOnRoadmap}
+                  </label>
+                )}
 
                 <FormGrid>
                   {/* LEFT COLUMN */}

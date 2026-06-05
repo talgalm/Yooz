@@ -132,6 +132,7 @@ export interface ActivityModuleResponse {
   leaderboardMode?: 'points' | 'time';
   activityDurationMinutes?: number;
   lockedFromIndex?: number | null;
+  includeOnRoadmap?: boolean;
 }
 
 export interface LeaderboardEntry {

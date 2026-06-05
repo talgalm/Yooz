@@ -234,6 +234,7 @@ export interface CreateActivityRequest {
   portalId?: string;
   leaderboardMode?: 'points' | 'time';
   activityDurationMinutes?: number;
+  includeOnRoadmap?: boolean;
 }
 
 export interface ActivityConfigResponse {

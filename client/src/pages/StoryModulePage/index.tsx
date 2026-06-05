@@ -1245,6 +1245,7 @@ export default function StoryModulePage() {
           elapsedSeconds={elapsedSeconds}
           activityDurationMinutes={data.activityDurationMinutes}
           lockedFromIndex={lockedFromIndex}
+          activityNameOnRoadmap={data.includeOnRoadmap ? data.name : undefined}
         />
         {showGuidelines && !currentPopup && (
           <GuidelinesPopup

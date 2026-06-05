@@ -52,7 +52,7 @@ function validateActivityPayload(body: CreateActivityRequest): string | null {
 }
 
 async function buildActivityData(body: CreateActivityRequest, existingPasswordHash?: string): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, activityDurationMinutes } = body;
+  const { name, loginFields, emailGoogle, connectionType, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, activityDurationMinutes, includeOnRoadmap } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -170,6 +170,8 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
   // Handle continuous activity
   data.isContinuous = isContinuous === true;
   data.portalId = isContinuous && portalId ? portalId : undefined;
+
+  data.includeOnRoadmap = includeOnRoadmap === true;
 
   // Handle manager credentials
   if (managerEmail && managerEmail.trim()) {

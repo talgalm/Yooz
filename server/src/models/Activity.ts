@@ -113,6 +113,8 @@ export interface IActivity {
   /** Manager-controlled progress lock — items with index >= this are blocked.
    *  null/undefined = nothing locked. */
   lockedFromIndex?: number | null;
+  /** When true, show activity name on the story roadmap between header and path. */
+  includeOnRoadmap?: boolean;
 }
 
 function generateCode(): string {
@@ -213,6 +215,7 @@ const activitySchema = new Schema<IActivity>({
   missionTrashSortCompletions: { type: Number, default: 0 },
   missionTrashSortScoreSum: { type: Number, default: 0 },
   lockedFromIndex: { type: Number, default: null },
+  includeOnRoadmap: { type: Boolean, default: false },
 });
 
 export const Activity = model<IActivity>('Activity', activitySchema, 'activities');

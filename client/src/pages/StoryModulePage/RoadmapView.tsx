@@ -90,6 +90,17 @@ const RoadmapContainer = styled('div')({
   overflow: 'hidden',
 });
 
+const RoadmapActivityName = styled('div')({
+  flexShrink: 0,
+  padding: '0 16px 8px',
+  fontSize: 14,
+  fontWeight: 700,
+  lineHeight: 1.35,
+  color: '#1a1a1a',
+  textAlign: 'center',
+  userSelect: 'none',
+});
+
 const ScrollArea = styled('div')({
   flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden',
   position: 'relative', WebkitOverflowScrolling: 'touch',
@@ -684,12 +695,14 @@ interface RoadmapViewProps {
   activityDurationMinutes?: number;
   /** Manager-controlled progress lock: items with index >= this are blocked. */
   lockedFromIndex?: number | null;
+  /** When set, show activity name between header and path. */
+  activityNameOnRoadmap?: string;
 }
 
 export default function RoadmapView({
   items, currentItemIndex, completedCount, currentPoints, pointsRoll, onPointsRollComplete,
   showFootsteps, onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, popupModal, t, theme, customTheme,
-  leaderboardMode, elapsedSeconds, activityDurationMinutes, lockedFromIndex,
+  leaderboardMode, elapsedSeconds, activityDurationMinutes, lockedFromIndex, activityNameOnRoadmap,
 }: RoadmapViewProps) {
   const kit = useMemo(() => getThemeKit(theme), [theme]);
   const activeNodeColor = customTheme?.roadmapActiveNodeColor || NATURE_THEME.nodeActiveBg;
@@ -1335,6 +1348,9 @@ export default function RoadmapView({
     return (
       <RoadmapContainer style={{ ...containerBg, ...themeVars }}>
         {header}
+        {activityNameOnRoadmap ? (
+          <RoadmapActivityName>{activityNameOnRoadmap}</RoadmapActivityName>
+        ) : null}
         <ScrollArea ref={scrollRef}>
           <div ref={canvasRef} style={{ width: '100%', minHeight: '100dvh' }} />
         </ScrollArea>
@@ -1345,6 +1361,9 @@ export default function RoadmapView({
   return (
     <RoadmapContainer style={{ ...containerBg, ...themeVars }}>
       {header}
+      {activityNameOnRoadmap ? (
+        <RoadmapActivityName>{activityNameOnRoadmap}</RoadmapActivityName>
+      ) : null}
 
       <ScrollArea ref={scrollRef}>
         <PathCanvas
