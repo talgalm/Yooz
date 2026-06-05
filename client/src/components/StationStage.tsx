@@ -23,19 +23,19 @@
 import { styled } from '@mui/material/styles';
 import type { CSSProperties, ReactNode } from 'react';
 
-const DESKTOP = '@media (min-width: 768px)';
+import { DESKTOP_BREAKPOINT, DESKTOP_STATION_WIDTH } from './games/styled';
 
 const Stage = styled('div')({
   // Mobile: pass-through. The station's existing flex/scroll behavior wins.
   display: 'contents',
-  [DESKTOP]: {
+  [DESKTOP_BREAKPOINT]: {
     // Desktop: become a real flex column that centers a capped-width content
     // block. `display:flex` overrides `display:contents`.
     display: 'flex',
     flex: 1,
     minHeight: 0,
     flexDirection: 'column',
-    width: 'min(900px, 92vw)',
+    width: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
   },
 });

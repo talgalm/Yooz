@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { styled } from '@mui/material/styles';
+import { DESKTOP_BREAKPOINT, DESKTOP_STATION_WIDTH } from '../games/styled';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 
 // ─── Types ───
@@ -44,6 +45,11 @@ const FeedbackContainer = styled('div')({
   margin: '0 auto',
   overflowY: 'auto',
   gap: 12,
+  [DESKTOP_BREAKPOINT]: {
+    maxWidth: DESKTOP_STATION_WIDTH,
+    padding: '32px 24px 48px',
+    gap: 16,
+  },
 });
 
 const Title = styled('h2')({
@@ -52,6 +58,10 @@ const Title = styled('h2')({
   color: '#fff',
   textAlign: 'center',
   margin: '0 0 4px',
+  [DESKTOP_BREAKPOINT]: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
 });
 
 const IntroText = styled('p')({

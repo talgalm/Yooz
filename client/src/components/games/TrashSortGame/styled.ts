@@ -1,4 +1,5 @@
 import { styled, keyframes } from '@mui/material/styles';
+import { DESKTOP_STATION_WIDTH } from '../styled';
 
 const correctFlash = keyframes`
   0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.6); }
@@ -29,7 +30,7 @@ export const SortContainer = styled('div')({
   background: '#0f1923',
   width: '100%',
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
   },
 });

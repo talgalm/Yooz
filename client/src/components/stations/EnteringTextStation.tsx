@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
-import { StationContinueButton } from '../games/styled';
+import { StationContinueButton, DESKTOP_BREAKPOINT, DESKTOP_STATION_WIDTH, DesktopStationHeaderBand } from '../games/styled';
 import { ModalOverlay, ModalCard } from '../styled';
 
 const confettiFall = keyframes`
@@ -64,6 +64,10 @@ const Wrap = styled('div')({
   boxSizing: 'border-box',
   overflowY: 'auto',
   direction: 'rtl',
+  [DESKTOP_BREAKPOINT]: {
+    width: '100%',
+    padding: '32px 24px 180px',
+  },
 });
 
 const Card = styled('div')({
@@ -75,6 +79,11 @@ const Card = styled('div')({
   padding: '18px 20px 22px',
   boxSizing: 'border-box',
   position: 'relative',
+  [DESKTOP_BREAKPOINT]: {
+    maxWidth: DESKTOP_STATION_WIDTH,
+    borderRadius: 32,
+    padding: '32px 48px 40px',
+  },
 });
 
 const ConfirmModalActions = styled('div')({
@@ -119,6 +128,14 @@ const Title = styled('h2')({
   paintOrder: 'stroke fill',
   textAlign: 'center',
   paddingTop: 8,
+  [DESKTOP_BREAKPOINT]: {
+    margin: 0,
+    paddingTop: 0,
+    fontSize: 42,
+    fontWeight: 700,
+    color: '#111',
+    WebkitTextStroke: '0',
+  },
 });
 
 const FieldWrap = styled('div')({
@@ -134,6 +151,10 @@ const Statement = styled('div')({
   color: '#111',
   marginBottom: 8,
   textAlign: 'right',
+  [DESKTOP_BREAKPOINT]: {
+    fontSize: 28,
+    marginBottom: 12,
+  },
 });
 
 const Input = styled('input')({
@@ -153,6 +174,10 @@ const Input = styled('input')({
     color: '#888',
     opacity: 1,
   },
+  [DESKTOP_BREAKPOINT]: {
+    fontSize: 22,
+    padding: '4px 2px 12px',
+  },
 });
 
 const Row = styled('div')({
@@ -167,6 +192,11 @@ const Row = styled('div')({
   gap: 10,
   width: '100%',
   maxWidth: 280,
+  [DESKTOP_BREAKPOINT]: {
+    maxWidth: 427,
+    bottom: 32,
+    gap: 14,
+  },
 });
 
 const PrimaryActionButton = styled(StationContinueButton)({
@@ -199,6 +229,10 @@ const BelowCardRow = styled('div')({
   justifyContent: 'space-between',
   gap: 12,
   direction: 'rtl',
+  [DESKTOP_BREAKPOINT]: {
+    maxWidth: DESKTOP_STATION_WIDTH,
+    marginTop: 20,
+  },
 });
 
 const BelowAttemptsRow = styled('div')({
@@ -577,7 +611,9 @@ export default function EnteringTextStation({
   const showBackButton = station.settings?.showBackButton !== false;
   return (
     <Wrap>
-      <Title style={textColor ? { color: textColor } : undefined}>{title}</Title>
+      <DesktopStationHeaderBand>
+        <Title style={textColor ? { color: textColor } : undefined}>{title}</Title>
+      </DesktopStationHeaderBand>
       <Card>
         {fields.map((field, index) => (
           <FieldWrap key={index}>

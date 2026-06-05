@@ -1,5 +1,5 @@
 import { styled, keyframes } from '@mui/material/styles';
-import { GameHeaderMuteButton } from '../styled';
+import { GameHeaderMuteButton, DESKTOP_STATION_WIDTH } from '../styled';
 
 // ─── Colors ───
 
@@ -184,7 +184,7 @@ export const IntroContainer = styled('div', {
   '& > *': { position: 'relative', zIndex: 1 },
   fontFamily: INTRO_FONT_FAMILY,
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
     alignItems: 'center',
   },
@@ -373,7 +373,7 @@ export const PuzzleContainer = styled('div')({
   boxSizing: 'border-box',
   gap: 6,
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
   },
 });
@@ -888,7 +888,7 @@ export const DragPhaseContainer = styled('div')({
   padding: '8px 12px',
   boxSizing: 'border-box',
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
   },
   minHeight: 0,
@@ -1017,7 +1017,7 @@ export const FinishContainer = styled('div')({
   minHeight: '100%',
   height: '100%',
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
     width: '100%',
     alignItems: 'center',

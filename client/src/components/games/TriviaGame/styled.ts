@@ -1,4 +1,5 @@
 import { styled, keyframes } from '@mui/material/styles';
+import { DESKTOP_STATION_WIDTH } from '../styled';
 
 // ─── Colors ───
 
@@ -60,7 +61,7 @@ export const IntroContainer = styled('div')({
   minHeight: 0,
   width: '100%',
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
     alignItems: 'center',
   },
@@ -241,7 +242,7 @@ export const TriviaContainer = styled('div')({
   boxSizing: 'border-box',
   gap: 6,
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
   },
 });
@@ -728,7 +729,7 @@ export const FinishContainer = styled('div')({
   minHeight: 0,
   width: '100%',
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
     alignItems: 'center',
   },

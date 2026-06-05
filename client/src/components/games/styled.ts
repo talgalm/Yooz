@@ -1,6 +1,11 @@
 import { styled, keyframes } from '@mui/material/styles';
 import { PRIMARY, PRIMARY_LIGHT, ERROR, BORDER, TEXT_LIGHT, TEXT } from '../styled';
 
+/** Shared breakpoint for participant desktop layout (Figma laptop frames). */
+export const DESKTOP_BREAKPOINT = '@media (min-width: 768px)';
+/** Canonical content column width on desktop — matches Figma ~960px panels. */
+export const DESKTOP_STATION_WIDTH = 'min(960px, 72vw)';
+
 // ─── Colors (game-specific) ───
 export const GREEN = '#28a745';
 export const RED = '#e74c3c';
@@ -29,9 +34,9 @@ export const GameCenteredLayout = styled('div')({
   justifyContent: 'center',
   padding: 24,
   textAlign: 'center',
-  '@media (min-width: 768px)': {
+  [DESKTOP_BREAKPOINT]: {
     width: '100%',
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
   },
 });
@@ -749,6 +754,10 @@ export const PlayingContent = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   padding: '0 16px 16px',
+  [DESKTOP_BREAKPOINT]: {
+    padding: '0 24px 24px',
+    alignItems: 'center',
+  },
 });
 
 export const StationSubtitle = styled('div')({
@@ -769,11 +778,8 @@ export const MediaStationWrapper = styled('div')({
   width: '100%',
   maxWidth: 400,
   marginInline: 'auto',
-  '@media (min-width: 768px)': {
-    maxWidth: 'min(820px, 70vw)',
-  },
-  '@media (min-width: 1200px)': {
-    maxWidth: 'min(960px, 60vw)',
+  [DESKTOP_BREAKPOINT]: {
+    maxWidth: DESKTOP_STATION_WIDTH,
   },
 });
 
@@ -839,8 +845,8 @@ export const StationWindow = styled('div', {
   // Desktop: the purple text panel grows so the message doesn't look stranded
   // on big screens. `isDynamic` (used by video/image wrappers) gets even more
   // room because its child is a media frame, not a paragraph.
-  '@media (min-width: 768px)': {
-    maxWidth: isDynamic ? 'min(820px, 70vw)' : 'min(640px, 70vw)',
+  [DESKTOP_BREAKPOINT]: {
+    maxWidth: DESKTOP_STATION_WIDTH,
     padding: isDynamic ? '32px 0px' : '28px 36px',
   },
 }));
@@ -887,6 +893,31 @@ export const StationContinueButton = styled('button')({
   '&:active': {
     transform: 'translateY(3px)',
     boxShadow: '0 1px 0 #0f3d18',
+  },
+  [DESKTOP_BREAKPOINT]: {
+    maxWidth: 427,
+    padding: '18px 32px',
+    fontSize: 22,
+    borderRadius: 16,
+    borderWidth: 4,
+  },
+});
+
+/** Figma laptop header band — title + description grouped on desktop. */
+export const DesktopStationHeaderBand = styled('div')({
+  display: 'contents',
+  [DESKTOP_BREAKPOINT]: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 12,
+    width: DESKTOP_STATION_WIDTH,
+    marginInline: 'auto',
+    marginBottom: 20,
+    padding: '20px 40px 24px',
+    background: 'rgba(217, 217, 217, 0.61)',
+    borderRadius: 21,
+    boxSizing: 'border-box',
   },
 });
 

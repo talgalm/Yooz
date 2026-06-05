@@ -15,7 +15,7 @@ const GameHeader = styled('div')({
   padding: '10px 16px',
   backdropFilter: 'blur(8px)',
   '@media (min-width: 768px)': {
-    padding: '10px max(16px, calc((100% - 760px) / 2))',
+    padding: '10px max(16px, calc((100% - 960px) / 2))',
   },
 });
 

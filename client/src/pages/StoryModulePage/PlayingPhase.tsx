@@ -45,7 +45,10 @@ import {
   StationBodyText,
   StationContinueButton,
   GameLoadingSpinner,
+  DesktopStationHeaderBand,
+  DESKTOP_BREAKPOINT,
 } from '../../components/games/styled';
+import { StationStage } from '../../components/StationStage';
 import MissionInlinePlayer from './MissionInlinePlayer';
 import ActivitySessionHeader, {
   SessionHeaderIconPlaceholder,
@@ -117,9 +120,14 @@ const StationTitleText = styled('h2')({
   top: 0,
   zIndex: 10,
   paddingTop: 8,
-  '@media (min-width: 768px)': {
-    fontSize: 34,
-    marginBottom: 24,
+  [DESKTOP_BREAKPOINT]: {
+    position: 'static',
+    fontSize: 42,
+    fontWeight: 600,
+    color: '#111',
+    WebkitTextStroke: '0',
+    margin: 0,
+    paddingTop: 0,
   },
 });
 
@@ -127,6 +135,13 @@ const StationDescriptionText = styled(StationHeadline)({
   color: '#111',
   marginBottom: 0,
   marginTop: 8,
+  [DESKTOP_BREAKPOINT]: {
+    color: '#111',
+    fontSize: 22,
+    fontWeight: 400,
+    margin: 0,
+    WebkitTextStroke: '0',
+  },
 });
 
 const StationTopLayout = styled('div')({
@@ -136,14 +151,10 @@ const StationTopLayout = styled('div')({
   alignItems: 'center',
   padding: '24px 24px 100px',
   textAlign: 'center',
-  // Desktop: pin content to a centered column and vertically center it within
-  // the available space. Stretching the full width left the small mobile-sized
-  // text/image bubble floating in the middle of an empty page (QA Jun 2026).
-  '@media (min-width: 768px)': {
-    width: 'min(960px, 92vw)',
-    marginInline: 'auto',
-    justifyContent: 'center',
-    padding: '48px 24px 140px',
+  [DESKTOP_BREAKPOINT]: {
+    width: '100%',
+    justifyContent: 'flex-start',
+    padding: '32px 24px 160px',
   },
 });
 
@@ -159,7 +170,44 @@ const FixedContinueButton = styled(StationContinueButton)({
   '&:active': {
     transform: 'translateX(-50%) translateY(3px)',
   },
+  [DESKTOP_BREAKPOINT]: {
+    bottom: 32,
+  },
 });
+
+function StationHeaderBlock({
+  title,
+  description,
+  textColor,
+  descAfter,
+  children,
+}: {
+  title: string;
+  description?: string | null;
+  textColor?: string;
+  descAfter?: boolean;
+  children?: React.ReactNode;
+}) {
+  const titleEl = (
+    <StationTitleText style={textColor ? { color: textColor } : undefined}>{title}</StationTitleText>
+  );
+  const descEl = description ? (
+    <StationDescriptionText style={textColor ? { color: textColor } : undefined}>
+      {description}
+    </StationDescriptionText>
+  ) : null;
+
+  return (
+    <>
+      <DesktopStationHeaderBand>
+        {titleEl}
+        {!descAfter && descEl}
+      </DesktopStationHeaderBand>
+      {children}
+      {descAfter && descEl}
+    </>
+  );
+}
 
 const SkipButton = styled(PrimaryButton)({
   maxWidth: 200,
@@ -291,10 +339,11 @@ export default function PlayingPhase({
       if (station.stationType === 'text') {
         return (
           <StationTopLayout>
-            <StationTitleText style={customTheme?.textColor ? { color: customTheme.textColor } : undefined}>{station.name}</StationTitleText>
-            {station.description && (
-              <StationDescriptionText style={customTheme?.textColor ? { color: customTheme.textColor } : undefined}>{station.description}</StationDescriptionText>
-            )}
+            <StationHeaderBlock
+              title={station.name}
+              description={station.description}
+              textColor={customTheme?.textColor}
+            />
             <StationWindow style={{ marginTop: 16 }}>
               <StationBodyText>
                 {(station.settings?.content as string) || ''}
@@ -617,7 +666,9 @@ export default function PlayingPhase({
         </AnimatedHeader>
         <AnimatedContent>
           <PlayingContent>
-            {renderContent()}
+            <StationStage>
+              {renderContent()}
+            </StationStage>
           </PlayingContent>
         </AnimatedContent>
       </AnimatedStage>
@@ -648,7 +699,6 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
     return () => window.removeEventListener('keydown', handleKey);
   }, [fullscreen]);
 
-  const descEl = station.description ? <StationDescriptionText style={textColor ? { color: textColor } : undefined}>{station.description}</StationDescriptionText> : null;
   const mediaEl = mediaReady ? (
     <StationWindow style={{ marginTop: 16 }} isDynamic>
       <MediaStationImageWrapper style={{ marginBottom: 0 }}>
@@ -666,8 +716,13 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
 
   return (
     <MediaStationLayout>
-      <StationTitleText style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitleText>
-      {descAfter ? <>{mediaEl}{descEl}</> : <>{descEl}{mediaEl}</>}
+      <StationHeaderBlock
+        title={station.name}
+        description={station.description}
+        textColor={textColor}
+        descAfter={descAfter}
+      />
+      {mediaEl}
       <FixedContinueButton onClick={onContinue} disabled={!mediaReady}>
         {t.continueButton}
       </FixedContinueButton>
@@ -789,7 +844,6 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
   }, []);
 
   const descAfter = station.settings?.descPosition === 'after';
-  const descEl = station.description ? <StationDescriptionText style={textColor ? { color: textColor } : undefined}>{station.description}</StationDescriptionText> : null;
   const mediaEl = (
     <StationWindow isDynamic style={{ marginTop: 16 }}>
       <MediaStationWrapper style={{ position: 'relative', marginBottom: 0 }}>
@@ -828,8 +882,13 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
 
   return (
     <MediaStationLayout>
-      <StationTitleText style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitleText>
-      {descAfter ? <>{mediaEl}{descEl}</> : <>{descEl}{mediaEl}</>}
+      <StationHeaderBlock
+        title={station.name}
+        description={station.description}
+        textColor={textColor}
+        descAfter={descAfter}
+      />
+      {mediaEl}
       <FixedContinueButton onClick={onContinue}>
         {t.continueButton}
       </FixedContinueButton>

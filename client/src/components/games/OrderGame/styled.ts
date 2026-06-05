@@ -1,4 +1,5 @@
 import { styled, keyframes } from '@mui/material/styles';
+import { DESKTOP_STATION_WIDTH } from '../styled';
 
 // ─── Colors ───
 
@@ -149,7 +150,7 @@ export const OrderContainer = styled('div')({
   padding: '8px 12px 10px',
   boxSizing: 'border-box',
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
   },
 });
@@ -428,7 +429,7 @@ export const IntroContainer = styled('div')({
   minHeight: 0,
   width: '100%',
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
     alignItems: 'center',
   },
@@ -603,7 +604,7 @@ export const FinishContainer = styled('div')({
   minHeight: 0,
   width: '100%',
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
     alignItems: 'center',
   },

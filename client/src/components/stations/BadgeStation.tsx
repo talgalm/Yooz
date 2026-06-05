@@ -1,6 +1,6 @@
 import { styled, keyframes } from '@mui/material/styles';
 import { useEffect, useRef } from 'react';
-import { StationHeadline, StationWindow, StationBodyText, StationContinueButton } from '../games/styled';
+import { StationHeadline, StationWindow, StationBodyText, StationContinueButton, DESKTOP_BREAKPOINT, DESKTOP_STATION_WIDTH } from '../games/styled';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 
 const badgeAppear = keyframes`
@@ -23,6 +23,12 @@ const BadgeContainer = styled('div')({
   padding: '24px 20px',
   gap: 20,
   textAlign: 'center',
+  [DESKTOP_BREAKPOINT]: {
+    width: DESKTOP_STATION_WIDTH,
+    marginInline: 'auto',
+    padding: '48px 24px',
+    gap: 28,
+  },
 });
 
 const BadgeTitle = styled(StationHeadline)({
@@ -40,6 +46,10 @@ const BadgeImage = styled('img')({
   height: 200,
   objectFit: 'contain',
   filter: 'drop-shadow(0 6px 20px rgba(0,0,0,0.5))',
+  [DESKTOP_BREAKPOINT]: {
+    width: 280,
+    height: 280,
+  },
 });
 
 const ShareButton = styled('button')({

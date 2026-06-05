@@ -40,7 +40,7 @@ const BallGameIframe = styled('iframe')({
     left: '50%',
     right: 'auto',
     transform: 'translateX(-50%)',
-    width: 'min(560px, 80vw)',
+    width: 'min(960px, 75vw)',
     height: 'calc(100dvh - 120px)',
     maxHeight: 920,
   },

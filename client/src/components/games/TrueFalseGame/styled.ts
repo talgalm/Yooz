@@ -1,4 +1,5 @@
 import { styled, keyframes } from '@mui/material/styles';
+import { DESKTOP_STATION_WIDTH } from '../styled';
 
 // ─── Colors ───
 
@@ -63,7 +64,7 @@ export const NatureContainer = styled('div')({
   gap: 4,
   fontFamily: TF_FONT_FAMILY,
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
   },
 });
@@ -588,7 +589,7 @@ export const IntroContainer = styled('div', {
   },
   fontFamily: TF_FONT_FAMILY,
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
     alignItems: 'center',
   },
@@ -787,7 +788,7 @@ export const FinishContainer = styled('div')({
   minHeight: '100%',
   height: '100%',
   '@media (min-width: 768px)': {
-    maxWidth: 720,
+    maxWidth: DESKTOP_STATION_WIDTH,
     marginInline: 'auto',
     width: '100%',
     alignItems: 'center',
