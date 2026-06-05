@@ -18,7 +18,6 @@ import { golfTexts } from './GolfChallenge.i18n';
 import { GameIntroHeaderBar, GameHeaderMuteButton } from '../styled';
 import {
   OrderFullScreenSceneBackdrop,
-  OrderIntroFullScreenSceneBackdrop,
   GolfFullScreenSceneBackdrop,
   OrderPhaseRoot,
   OrderContainer,
@@ -55,7 +54,10 @@ import {
   FinishContainer,
   FinishContent,
   FinishStumpStage,
-  FinishStump,
+  OrderWoodBlocksImage,
+  OrderWoodBlocksMidVisual,
+  FinishScoreOverlay,
+  ORDER_WOOD_BLOCKS_URL,
   FinishScoreNumber,
   FinishScoreLabel,
 } from './styled';
@@ -201,10 +203,7 @@ export default function OrderGame({ game, onComplete }: GameProps) {
       setThemedSceneOverlay(<GolfFullScreenSceneBackdrop aria-hidden />);
       return () => setThemedSceneOverlay(null);
     }
-    const Backdrop = showInstructions && settings.instructions
-      ? OrderIntroFullScreenSceneBackdrop
-      : OrderFullScreenSceneBackdrop;
-    setThemedSceneOverlay(<Backdrop aria-hidden />);
+    setThemedSceneOverlay(<OrderFullScreenSceneBackdrop aria-hidden />);
     return () => setThemedSceneOverlay(null);
   }, [setThemedSceneOverlay, showInstructions, showGolf]);
 
@@ -363,7 +362,7 @@ export default function OrderGame({ game, onComplete }: GameProps) {
   // Instructions screen — matches Trivia intro design
   if (showInstructions && settings.instructions) {
     return (
-      <OrderPhaseRoot $inlineBackdrop={inlineBackdrop} $introBg>
+      <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
         {!activityHeaderAudio && (
           <div style={{ position: 'relative', zIndex: 1 }}>
             <GameIntroHeaderBar>
@@ -377,7 +376,9 @@ export default function OrderGame({ game, onComplete }: GameProps) {
           <IntroContent>
             <IntroTitle>{game.name}</IntroTitle>
 
-            <IntroWelcomeMidSpacer aria-hidden />
+            <IntroWelcomeMidSpacer aria-hidden>
+              <OrderWoodBlocksImage src={ORDER_WOOD_BLOCKS_URL} alt="" />
+            </IntroWelcomeMidSpacer>
 
             <IntroDescStack>
               <IntroDescCard>
@@ -434,10 +435,13 @@ export default function OrderGame({ game, onComplete }: GameProps) {
             <IntroTitle style={{ marginBottom: 0 }}>{t.gameComplete}</IntroTitle>
 
             <FinishStumpStage aria-hidden>
-              <FinishStump>
-                <FinishScoreNumber>{finalScore}</FinishScoreNumber>
-                <FinishScoreLabel>{t.points}</FinishScoreLabel>
-              </FinishStump>
+              <OrderWoodBlocksMidVisual>
+                <OrderWoodBlocksImage src={ORDER_WOOD_BLOCKS_URL} alt="" />
+                <FinishScoreOverlay>
+                  <FinishScoreNumber>{finalScore}</FinishScoreNumber>
+                  <FinishScoreLabel>{t.points}</FinishScoreLabel>
+                </FinishScoreOverlay>
+              </OrderWoodBlocksMidVisual>
             </FinishStumpStage>
 
             <IntroStartButton style={{ marginTop: 'auto', marginBottom: 'clamp(8px, 2vh, 20px)' }} onClick={handleFinish}>

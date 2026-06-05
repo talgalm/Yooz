@@ -56,34 +56,20 @@ const floatIn = keyframes`
 // ─── Background Image ───
 // ═══════════════════════════════════════════
 
-export const ORDER_BG_URL = '/images/order-bg.png';
-export const ORDER_INTRO_BG_URL = '/images/golf-intro-bg.jpeg';
+export const ORDER_BG_COLOR = '#5e7f4a';
+export const ORDER_WOOD_BLOCKS_URL = '/images/order-wood-blocks.png';
 
-/** Full viewport backdrop — orange sunburst */
+/** Full viewport backdrop — solid green (welcome, playing, summary) */
 export const OrderFullScreenSceneBackdrop = styled('div')({
   position: 'fixed',
   inset: 0,
   zIndex: 0,
   pointerEvents: 'none',
-  backgroundColor: '#e8a050',
-  backgroundImage: `url(${ORDER_BG_URL})`,
-  backgroundSize: 'cover',
-  backgroundPosition: 'center center',
-  backgroundRepeat: 'no-repeat',
+  backgroundColor: ORDER_BG_COLOR,
 });
 
-/** Full viewport backdrop — golf illustration for intro screen */
-export const OrderIntroFullScreenSceneBackdrop = styled('div')({
-  position: 'fixed',
-  inset: 0,
-  zIndex: 0,
-  pointerEvents: 'none',
-  backgroundColor: '#e8a050',
-  backgroundImage: `url(${ORDER_INTRO_BG_URL})`,
-  backgroundSize: 'cover',
-  backgroundPosition: 'center center',
-  backgroundRepeat: 'no-repeat',
-});
+/** @deprecated alias — same as OrderFullScreenSceneBackdrop */
+export const OrderIntroFullScreenSceneBackdrop = OrderFullScreenSceneBackdrop;
 
 /** Full viewport backdrop — green grass for golf challenge */
 export const GolfFullScreenSceneBackdrop = styled('div')({
@@ -104,8 +90,8 @@ export const GolfFullScreenSceneBackdrop = styled('div')({
  * inline via ::before pseudo-element.
  */
 export const OrderPhaseRoot = styled('div', {
-  shouldForwardProp: (prop) => prop !== '$inlineBackdrop' && prop !== '$introBg',
-})<{ $inlineBackdrop?: boolean; $introBg?: boolean }>(({ $inlineBackdrop, $introBg }) => ({
+  shouldForwardProp: (prop) => prop !== '$inlineBackdrop',
+})<{ $inlineBackdrop?: boolean }>(({ $inlineBackdrop }) => ({
   position: 'relative',
   flex: 1,
   minHeight: 0,
@@ -122,11 +108,7 @@ export const OrderPhaseRoot = styled('div', {
           inset: 0,
           zIndex: 0,
           pointerEvents: 'none',
-          backgroundColor: '#e8a050',
-          backgroundImage: `url(${$introBg ? ORDER_INTRO_BG_URL : ORDER_BG_URL})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center center',
-          backgroundRepeat: 'no-repeat',
+          backgroundColor: ORDER_BG_COLOR,
         },
         '& > *': { position: 'relative', zIndex: 1 },
       }
@@ -473,6 +455,39 @@ export const IntroWelcomeMidSpacer = styled('div')({
   flex: '1 1 0',
   minHeight: 0,
   width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  position: 'relative',
+  pointerEvents: 'none',
+});
+
+export const OrderWoodBlocksImage = styled('img')({
+  width: 'min(100%, 320px)',
+  height: 'auto',
+  maxHeight: '100%',
+  objectFit: 'contain',
+  animation: `${floatIn} 0.5s ease-out 0.1s both`,
+  filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.22))',
+});
+
+export const OrderWoodBlocksMidVisual = styled('div')({
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 'min(100%, 320px)',
+  maxHeight: '100%',
+});
+
+export const FinishScoreOverlay = styled('div')({
+  position: 'absolute',
+  inset: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  pointerEvents: 'none',
 });
 
 // ─── Intro Description (matches TrueFalse white card + overlapping button) ───
