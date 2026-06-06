@@ -23,6 +23,9 @@ const COURSE_W = 340;
 const COURSE_H = 520;
 
 const BALL_START = { x: 170, y: 460 };
+/** Desktop: tee higher so the ball + swipe room stay above the skip button. */
+const BALL_START_DESKTOP = { x: 170, y: 400 };
+const DESKTOP_MQ = '(min-width: 768px)';
 
 // ─── Hills layout (2x size) ───
 // Flag hill: top-right area — hole lives on this hill
@@ -74,9 +77,13 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
   const [hits, setHits] = useState(0);
   const [gameState, setGameState] = useState<'playing' | 'success' | 'failed'>('playing');
   const [aimLine, setAimLine] = useState<{ x: number; y: number; strength: number } | null>(null);
-  const [scaleXY, setScaleXY] = useState({ sx: 1, sy: 1 });
+  const [scaleXY, setScaleXY] = useState({ sx: 1, sy: 1, offsetX: 0 });
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia(DESKTOP_MQ).matches
+  );
 
-  const ballPos = useRef({ ...BALL_START });
+  const ballStart = isDesktop ? BALL_START_DESKTOP : BALL_START;
+  const ballPos = useRef({ ...ballStart });
   const ballVel = useRef({ vx: 0, vy: 0 });
   const ballRef = useRef<HTMLDivElement>(null);
   const courseRef = useRef<HTMLDivElement>(null);
@@ -86,21 +93,48 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const hitsRef = useRef(0);
 
+  useEffect(() => {
+    const mq = window.matchMedia(DESKTOP_MQ);
+    const onChange = () => setIsDesktop(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
   // ─── Measure available space and compute scale to fill 100% ───
   useEffect(() => {
     const el = scalerRef.current;
     if (!el) return;
     const update = () => {
-      const { width, height } = el.getBoundingClientRect();
+      const computed = getComputedStyle(el);
+      const padX =
+        (parseFloat(computed.paddingLeft) || 0) + (parseFloat(computed.paddingRight) || 0);
+      const padY =
+        (parseFloat(computed.paddingTop) || 0) + (parseFloat(computed.paddingBottom) || 0);
+      const width = el.clientWidth - padX;
+      const height = el.clientHeight - padY;
       if (width > 0 && height > 0) {
-        setScaleXY({ sx: width / COURSE_W, sy: height / COURSE_H });
+        const desktop = window.matchMedia(DESKTOP_MQ).matches;
+        if (desktop) {
+          // Uniform scale + horizontal centering keeps the full course (and ball)
+          // visible on wide screens; non-uniform stretch was clipping the tee.
+          const sx = width / COURSE_W;
+          const sy = height / COURSE_H;
+          const s = Math.min(sx, sy);
+          setScaleXY({
+            sx: s,
+            sy: s,
+            offsetX: (width - COURSE_W * s) / 2,
+          });
+        } else {
+          setScaleXY({ sx: width / COURSE_W, sy: height / COURSE_H, offsetX: 0 });
+        }
       }
     };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [isDesktop]);
 
   // ─── Ball DOM update (no React re-render) ───
   const updateBallDOM = useCallback(() => {
@@ -204,11 +238,19 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
     animRef.current = requestAnimationFrame(physicsLoop);
   }, [inHole, getHillEffect, updateBallDOM]);
 
-  // Initial ball position
+  // Initial ball position (re-seat when switching mobile ↔ desktop)
   useEffect(() => {
+    const start = isDesktop ? BALL_START_DESKTOP : BALL_START;
+    ballPos.current = { ...start };
+    ballVel.current = { vx: 0, vy: 0 };
+    isMoving.current = false;
+    if (ballRef.current) {
+      ballRef.current.style.transition = '';
+      ballRef.current.style.opacity = '1';
+    }
     updateBallDOM();
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
-  }, []);
+  }, [isDesktop, updateBallDOM]);
 
   // ─── Shared hit calculation ───
   const calcHit = (startPos: { x: number; y: number }, endPos: { x: number; y: number }) => {
@@ -352,7 +394,10 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
       <CourseScaler ref={scalerRef}>
         <CourseWrapper
           ref={courseRef}
-          style={{ transform: `scale(${scaleXY.sx}, ${scaleXY.sy})`, transformOrigin: 'top left' }}
+          style={{
+            transform: `translate(${scaleXY.offsetX}px, 0) scale(${scaleXY.sx}, ${scaleXY.sy})`,
+            transformOrigin: 'top left',
+          }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -477,6 +522,10 @@ const GolfContainer = styled('div')({
   padding: '8px 12px 10px',
   boxSizing: 'border-box',
   position: 'relative',
+  '@media (min-width: 768px)': {
+    alignSelf: 'stretch',
+    paddingBottom: 4,
+  },
 });
 
 const GolfHeader = styled('div')({
@@ -540,6 +589,11 @@ const CourseScaler = styled('div')({
   minHeight: 0,
   position: 'relative',
   overflow: 'hidden',
+  '@media (min-width: 768px)': {
+    // Keep the tee above the skip button on laptop viewports.
+    paddingBottom: 12,
+    boxSizing: 'border-box',
+  },
 });
 
 const CourseWrapper = styled('div')({
