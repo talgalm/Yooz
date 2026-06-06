@@ -5,6 +5,8 @@ import { PRIMARY, PRIMARY_LIGHT, ERROR, BORDER, TEXT_LIGHT, TEXT } from '../styl
 export const DESKTOP_BREAKPOINT = '@media (min-width: 768px)';
 /** Canonical content column width on desktop — matches Figma ~960px panels. */
 export const DESKTOP_STATION_WIDTH = 'min(960px, 72vw)';
+/** Video/image stations on desktop — 70% of canonical width so header + media fit one screen. */
+export const DESKTOP_MEDIA_STATION_WIDTH = 'min(672px, 50.4vw)';
 
 // ─── Colors (game-specific) ───
 export const GREEN = '#28a745';
@@ -769,9 +771,9 @@ export const StationSubtitle = styled('div')({
 // ─── StoryModule: Media Station ───
 // Desktop sizing notes (QA Jun 2026):
 //  - Mobile target stays 400px wide for phone column.
-//  - At ≥768px the media (video/image/iframe) should fill a larger, centered
-//    stage so it doesn't feel "lost in the middle." Width grows to ~min(820px,
-//    70vw) and image height is unleashed to 70vh.
+//  - At ≥768px video/image use DESKTOP_MEDIA_STATION_WIDTH (70% of the
+//    canonical column) and max-height 49vh so header + media + Continue fit
+//    on one screen.
 
 export const MediaStationWrapper = styled('div')({
   marginBottom: 24,
@@ -779,7 +781,7 @@ export const MediaStationWrapper = styled('div')({
   maxWidth: 400,
   marginInline: 'auto',
   [DESKTOP_BREAKPOINT]: {
-    maxWidth: DESKTOP_STATION_WIDTH,
+    maxWidth: DESKTOP_MEDIA_STATION_WIDTH,
   },
 });
 
@@ -788,8 +790,7 @@ export const MediaStationVideo = styled('video')({
   border: '2px solid #fff',
   borderRadius: 12,
   '@media (min-width: 768px)': {
-    // Keep video framed but more present on big screens.
-    maxHeight: '70vh',
+    maxHeight: '49vh',
     background: '#000',
   },
 });
@@ -814,6 +815,10 @@ export const MediaStationIframe = styled('iframe')({
 export const MediaStationImageWrapper = styled('div')({
   marginBottom: 24,
   textAlign: 'center',
+  [DESKTOP_BREAKPOINT]: {
+    maxWidth: DESKTOP_MEDIA_STATION_WIDTH,
+    marginInline: 'auto',
+  },
 });
 
 export const MediaStationImage = styled('img')({
@@ -823,7 +828,7 @@ export const MediaStationImage = styled('img')({
   borderRadius: 12,
   objectFit: 'contain',
   '@media (min-width: 768px)': {
-    maxHeight: '70vh',
+    maxHeight: '49vh',
   },
 });
 

@@ -47,6 +47,7 @@ import {
   GameLoadingSpinner,
   DesktopStationHeaderBand,
   DESKTOP_BREAKPOINT,
+  DESKTOP_MEDIA_STATION_WIDTH,
 } from '../../components/games/styled';
 import { StationStage } from '../../components/StationStage';
 import MissionInlinePlayer from './MissionInlinePlayer';
@@ -158,8 +159,41 @@ const StationTopLayout = styled('div')({
   },
 });
 
-/** Same as StationTopLayout but for video/image stations */
-const MediaStationLayout = styled(StationTopLayout)({});
+/** Video/image stations — compact header + media on desktop so content fits one screen. */
+const MediaStationLayout = styled(StationTopLayout)({
+  [DESKTOP_BREAKPOINT]: {
+    padding: '22px 24px 160px',
+  },
+});
+
+const MediaStationHeaderBand = styled(DesktopStationHeaderBand)({
+  [DESKTOP_BREAKPOINT]: {
+    width: DESKTOP_MEDIA_STATION_WIDTH,
+    gap: 8,
+    marginBottom: 14,
+    padding: '14px 28px 17px',
+    borderRadius: 15,
+  },
+});
+
+const MediaStationTitleText = styled(StationTitleText)({
+  [DESKTOP_BREAKPOINT]: {
+    fontSize: 29,
+  },
+});
+
+const MediaStationDescriptionText = styled(StationDescriptionText)({
+  [DESKTOP_BREAKPOINT]: {
+    fontSize: 15,
+  },
+});
+
+const MediaStationWindow = styled(StationWindow)({
+  [DESKTOP_BREAKPOINT]: {
+    maxWidth: DESKTOP_MEDIA_STATION_WIDTH,
+    padding: '22px 0px',
+  },
+});
 
 const FixedContinueButton = styled(StationContinueButton)({
   position: 'fixed',
@@ -181,28 +215,34 @@ function StationHeaderBlock({
   textColor,
   descAfter,
   children,
+  compactDesktop,
 }: {
   title: string;
   description?: string | null;
   textColor?: string;
   descAfter?: boolean;
   children?: React.ReactNode;
+  compactDesktop?: boolean;
 }) {
+  const HeaderBand = compactDesktop ? MediaStationHeaderBand : DesktopStationHeaderBand;
+  const TitleText = compactDesktop ? MediaStationTitleText : StationTitleText;
+  const DescriptionText = compactDesktop ? MediaStationDescriptionText : StationDescriptionText;
+
   const titleEl = (
-    <StationTitleText style={textColor ? { color: textColor } : undefined}>{title}</StationTitleText>
+    <TitleText style={textColor ? { color: textColor } : undefined}>{title}</TitleText>
   );
   const descEl = description ? (
-    <StationDescriptionText style={textColor ? { color: textColor } : undefined}>
+    <DescriptionText style={textColor ? { color: textColor } : undefined}>
       {description}
-    </StationDescriptionText>
+    </DescriptionText>
   ) : null;
 
   return (
     <>
-      <DesktopStationHeaderBand>
+      <HeaderBand>
         {titleEl}
         {!descAfter && descEl}
-      </DesktopStationHeaderBand>
+      </HeaderBand>
       {children}
       {descAfter && descEl}
     </>
@@ -700,7 +740,7 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
   }, [fullscreen]);
 
   const mediaEl = mediaReady ? (
-    <StationWindow style={{ marginTop: 16 }} isDynamic>
+    <MediaStationWindow style={{ marginTop: 16 }} isDynamic>
       <MediaStationImageWrapper style={{ marginBottom: 0 }}>
         <MediaStationImage
           src={mediaUrl}
@@ -709,7 +749,7 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
           onClick={() => setFullscreen(true)}
         />
       </MediaStationImageWrapper>
-    </StationWindow>
+    </MediaStationWindow>
   ) : (
     <GameLoadingSpinner style={{ minHeight: 200, flex: 'none' }} />
   );
@@ -721,6 +761,7 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
         description={station.description}
         textColor={textColor}
         descAfter={descAfter}
+        compactDesktop
       />
       {mediaEl}
       <FixedContinueButton onClick={onContinue} disabled={!mediaReady}>
@@ -845,7 +886,7 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
 
   const descAfter = station.settings?.descPosition === 'after';
   const mediaEl = (
-    <StationWindow isDynamic style={{ marginTop: 16 }}>
+    <MediaStationWindow isDynamic style={{ marginTop: 16 }}>
       <MediaStationWrapper style={{ position: 'relative', marginBottom: 0 }}>
         {source.kind === 'iframe' ? (
           <MediaStationIframeWrapper>
@@ -877,7 +918,7 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
           </>
         )}
       </MediaStationWrapper>
-    </StationWindow>
+    </MediaStationWindow>
   );
 
   return (
@@ -887,6 +928,7 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
         description={station.description}
         textColor={textColor}
         descAfter={descAfter}
+        compactDesktop
       />
       {mediaEl}
       <FixedContinueButton onClick={onContinue}>
