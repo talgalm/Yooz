@@ -649,7 +649,10 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
       {/* Question box */}
       <QuestionBox key={currentQuestion}>
         <QuestionContent>{question.text}</QuestionContent>
-        {question.hint && <QuestionHintText>{question.hint}</QuestionHintText>}
+        {question.hint && (
+          <QuestionHintText style={{ color: 'black' }}>{question.hint}</QuestionHintText>
+        )}
+   
       </QuestionBox>
 
       {/* Question media */}
@@ -672,13 +675,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
             onClick={gameHint.handleHintClick}
           />
         )
-      )}
-
-      {/* Multi-choice caption */}
-      {isMultiChoice && !checked && (
-        <QuestionHintText style={{ textAlign: 'center', marginBottom: 4 }}>
-          {t.selectAnswers}
-        </QuestionHintText>
       )}
 
       {/* Answer grid (2×2 for 4 answers, single column for 3) */}
