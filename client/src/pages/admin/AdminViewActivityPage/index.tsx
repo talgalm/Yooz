@@ -10,6 +10,7 @@ import {
   AdminHeader,
   OutlineButton,
   Badge,
+  StatusBadge,
   ModalOverlay,
   ModalCard,
   ConfirmButton,
@@ -58,6 +59,30 @@ const PageDateText = styled('div')({
   color: '#999',
   marginTop: 6,
   marginBottom: 28,
+});
+
+const StatusRow = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  marginTop: 10,
+  marginBottom: 4,
+  flexWrap: 'wrap',
+});
+
+const StatusToggle = styled('button')({
+  padding: '4px 14px',
+  fontSize: 12,
+  fontWeight: 600,
+  border: '1px solid #ddd',
+  borderRadius: 6,
+  background: 'none',
+  color: '#888',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  '&:hover:not(:disabled)': { background: '#f5f5f7' },
+  '&:disabled': { opacity: 0.55, cursor: 'not-allowed' },
 });
 
 const TopGrid = styled('div')({
@@ -454,6 +479,7 @@ export default function AdminViewActivityPage() {
   const [copiedInline, setCopiedInline] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showGoLiveModal, setShowGoLiveModal] = useState(false);
+  const [togglingStatus, setTogglingStatus] = useState(false);
   const [lockSaving, setLockSaving] = useState(false);
   const [managerLoginOpen, setManagerLoginOpen] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
@@ -523,14 +549,33 @@ export default function AdminViewActivityPage() {
     }
   };
 
+  const handleStatusToggle = async () => {
+    if (!activity || (admin?.role === 'customer' && activity.customerEditLocked)) return;
+    const newStatus = activity.status === 'preview' ? 'live' : 'preview';
+    if (newStatus === 'live') {
+      setShowGoLiveModal(true);
+      return;
+    }
+    setTogglingStatus(true);
+    try {
+      const data = await adminApiFetch<{ activity: Activity }>(`/api/admin/activities/${id}/status`, {
+        method: 'PATCH', body: JSON.stringify({ status: newStatus }),
+      });
+      setActivity(data.activity);
+    } catch { /* ignore */ }
+    setTogglingStatus(false);
+  };
+
   const confirmGoLive = async () => {
     setShowGoLiveModal(false);
+    setTogglingStatus(true);
     try {
       const data = await adminApiFetch<{ activity: Activity }>(`/api/admin/activities/${id}/status`, {
         method: 'PATCH', body: JSON.stringify({ status: 'live' }),
       });
       setActivity(data.activity);
     } catch { /* ignore */ }
+    setTogglingStatus(false);
   };
 
   if (!activity) return null;
@@ -564,6 +609,17 @@ export default function AdminViewActivityPage() {
       <ContentWrapper>
         {/* Page title */}
         <PageTitleText>{activity.name}</PageTitleText>
+        <StatusRow>
+          <StatusBadge status={activity.status}>
+            {activity.status === 'live' ? t.live : t.preview}
+          </StatusBadge>
+          <StatusToggle
+            onClick={handleStatusToggle}
+            disabled={togglingStatus || customerBlockedByLock}
+          >
+            {activity.status === 'preview' ? t.goLive : t.goPreview}
+          </StatusToggle>
+        </StatusRow>
         <PageDateText>{new Date(activity.createdAt).toLocaleDateString()}</PageDateText>
 
         {/* Two-column cards */}
