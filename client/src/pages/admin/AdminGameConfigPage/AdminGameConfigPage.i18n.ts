@@ -104,6 +104,11 @@ export const texts = {
     feedbackDurationMs: 'Feedback duration (ms)',
     noStatements: 'Add at least one statement.',
     golfChallenge: 'Golf mini-game bonus',
+    orderMode: 'Game mode',
+    orderModeQuiz: 'Quiz — correct order + scoring',
+    orderModeSurvey: 'Survey — class ranking (no scoring)',
+    surveyItemsLabel: 'Items to rank (order here is display only)',
+    noSurveyRound: 'Survey mode requires exactly one round with at least 2 items.',
     // Ball game
     ballGameInstructionsPlaceholder: 'Answer questions and throw the ball into the basket!',
     ballGameTimeLimitSeconds: 'Time limit per question (seconds)',
@@ -234,6 +239,11 @@ export const texts = {
     feedbackDurationMs: 'משך הצגת פידבק (מילישניות)',
     noStatements: 'הוסיפו לפחות טענה אחת.',
     golfChallenge: 'משחק גולף בונוס',
+    orderMode: 'מצב משחק',
+    orderModeQuiz: 'חידון — סדר נכון + ניקוד',
+    orderModeSurvey: 'סקר — דירוג כיתתי (ללא ניקוד)',
+    surveyItemsLabel: 'פריטים לדירוג (הסדר כאן הוא לתצוגה בלבד)',
+    noSurveyRound: 'מצב סקר דורש סבב אחד עם לפחות 2 פריטים.',
     // Ball game
     ballGameInstructionsPlaceholder: 'ענו על שאלות וזרקו את הכדור לסל!',
     ballGameTimeLimitSeconds: 'מגבלת זמן לשאלה (שניות)',

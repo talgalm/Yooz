@@ -23,7 +23,10 @@ import {
   CardInput,
   IndexNumberSmall,
 } from '../styled';
+import { SelectionButton } from '../../../components/styled';
 import type { OrderRound, OrderScoring, GameConfigHandle } from './types';
+
+type OrderMode = 'quiz' | 'survey';
 
 interface OrderGameConfigProps {
   t: Record<string, string>;
@@ -32,6 +35,7 @@ interface OrderGameConfigProps {
 
 export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
   function OrderGameConfig({ t, initialSettings }, ref) {
+    const [mode, setMode] = useState<OrderMode>('quiz');
     const [rounds, setRounds] = useState<OrderRound[]>([{ title: '', cards: ['', ''] }]);
     const [orderScoring, setOrderScoring] = useState<OrderScoring>({
       firstAttemptPoints: 100,
@@ -41,10 +45,11 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
     });
     const [golfChallenge, setGolfChallenge] = useState(true);
 
-    // Load initial settings
     useEffect(() => {
       if (!initialSettings) return;
       const s = initialSettings;
+      if (s.mode === 'survey') setMode('survey');
+      else setMode('quiz');
       if (Array.isArray(s.rounds)) {
         setRounds(
           (s.rounds as { title?: string; cards: string[] }[]).map((r) => ({
@@ -65,20 +70,41 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
       if (typeof s.golfChallenge === 'boolean') setGolfChallenge(s.golfChallenge);
     }, [initialSettings]);
 
+    const handleModeChange = (next: OrderMode) => {
+      setMode(next);
+      if (next === 'survey' && rounds.length > 1) {
+        setRounds([rounds[0]]);
+      }
+    };
+
     useImperativeHandle(ref, () => ({
       validate() {
+        if (mode === 'survey') {
+          const validRounds = rounds.filter((r) => r.cards.filter((c) => c.trim()).length >= 2);
+          if (validRounds.length !== 1) return t.noSurveyRound;
+          return null;
+        }
         const validRounds = rounds.filter((r) => r.cards.filter((c) => c.trim()).length >= 2);
         if (validRounds.length === 0) return t.noRounds;
         return null;
       },
       getSettings() {
+        const filteredRounds = rounds
+          .filter((r) => r.cards.filter((c) => c.trim()).length >= 2)
+          .map((r) => ({
+            title: r.title.trim() || undefined,
+            cards: r.cards.filter((c) => c.trim()),
+          }));
+
+        const base = {
+          mode,
+          rounds: mode === 'survey' ? filteredRounds.slice(0, 1) : filteredRounds,
+        };
+
+        if (mode === 'survey') return base;
+
         return {
-          rounds: rounds
-            .filter((r) => r.cards.filter((c) => c.trim()).length >= 2)
-            .map((r) => ({
-              title: r.title.trim() || undefined,
-              cards: r.cards.filter((c) => c.trim()),
-            })),
+          ...base,
           scoring: {
             firstAttemptPoints: orderScoring.firstAttemptPoints,
             retryPoints: orderScoring.retryPoints,
@@ -89,6 +115,12 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
         };
       },
       fillRandom() {
+        if (mode === 'survey') {
+          setRounds([
+            { title: 'מה הכי חשוב לכם?', cards: ['חדשנות', 'שיתוף פעולה', 'יציבות', 'גמישות', 'איכות', 'מהירות'] },
+          ]);
+          return;
+        }
         setRounds([
           { title: 'מספרים 1-5', cards: ['אחד', 'שתיים', 'שלוש', 'ארבע', 'חמש'] },
           { title: 'ימות השבוע', cards: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי'] },
@@ -99,8 +131,8 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
       },
     }));
 
-    // ─── Round management ───
     const addRound = () => {
+      if (mode === 'survey') return;
       setRounds((prev) => [...prev, { title: '', cards: ['', ''] }]);
     };
 
@@ -149,28 +181,40 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
       );
     };
 
+    const visibleRounds = mode === 'survey' ? rounds.slice(0, 1) : rounds;
+
     return (
       <>
-        {/* Rounds */}
+        <div>
+          <SectionLabel>{t.orderMode}</SectionLabel>
+          <VerticalStackGap10 style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+            <SelectionButton type="button" selected={mode === 'quiz'} onClick={() => handleModeChange('quiz')}>
+              {t.orderModeQuiz}
+            </SelectionButton>
+            <SelectionButton type="button" selected={mode === 'survey'} onClick={() => handleModeChange('survey')}>
+              {t.orderModeSurvey}
+            </SelectionButton>
+          </VerticalStackGap10>
+        </div>
+
         <div>
           <SectionSubHeaderRow>
             <SectionLabelNoMargin>{t.rounds}</SectionLabelNoMargin>
-            <SmallOutlineButton type="button" onClick={addRound}>
-              + {t.addRound}
-            </SmallOutlineButton>
+            {mode === 'quiz' && (
+              <SmallOutlineButton type="button" onClick={addRound}>
+                + {t.addRound}
+              </SmallOutlineButton>
+            )}
           </SectionSubHeaderRow>
 
-          {rounds.map((round, ri) => (
+          {visibleRounds.map((round, ri) => (
             <ItemPanel key={ri}>
               <ItemPanelHeader>
                 <ItemPanelTitle>
                   {t.round} {ri + 1}
                 </ItemPanelTitle>
-                {rounds.length > 1 && (
-                  <TinyDangerButton
-                    type="button"
-                    onClick={() => removeRound(ri)}
-                  >
+                {mode === 'quiz' && rounds.length > 1 && (
+                  <TinyDangerButton type="button" onClick={() => removeRound(ri)}>
                     {t.removeRound}
                   </TinyDangerButton>
                 )}
@@ -182,9 +226,7 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
                 onChange={(e) => updateRoundTitle(ri, e.target.value)}
               />
 
-              <SubLabel>
-                {t.cards}
-              </SubLabel>
+              <SubLabel>{mode === 'survey' ? t.surveyItemsLabel : t.cards}</SubLabel>
 
               {round.cards.map((card, ci) => (
                 <CardItemRow key={ci}>
@@ -211,76 +253,71 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
                     </TinyOutlineButton>
                   </MoveButtonGroup>
                   {round.cards.length > 2 && (
-                    <RemoveOutlineButton
-                      type="button"
-                      onClick={() => removeCard(ri, ci)}
-                    >
+                    <RemoveOutlineButton type="button" onClick={() => removeCard(ri, ci)}>
                       {t.removeCard}
                     </RemoveOutlineButton>
                   )}
                 </CardItemRow>
               ))}
-              <AddButton
-                type="button"
-                onClick={() => addCard(ri)}
-              >
+              <AddButton type="button" onClick={() => addCard(ri)}>
                 + {t.addCard}
               </AddButton>
             </ItemPanel>
           ))}
         </div>
 
-        {/* Scoring */}
-        <div>
-          <SectionLabel>{t.scoring}</SectionLabel>
-          <VerticalStackGap10>
-            <ScoringRow>
-              <ScoringLabel>{t.firstAttemptPoints}</ScoringLabel>
-              <ScoringInput
-                type="number"
-                value={orderScoring.firstAttemptPoints}
-                onChange={(e) => setOrderScoring((s) => ({ ...s, firstAttemptPoints: Number(e.target.value) }))}
-              />
-            </ScoringRow>
-            <ScoringRow>
-              <ScoringLabel>{t.retryPoints}</ScoringLabel>
-              <ScoringInput
-                type="number"
-                value={orderScoring.retryPoints}
-                onChange={(e) => setOrderScoring((s) => ({ ...s, retryPoints: Number(e.target.value) }))}
-              />
-            </ScoringRow>
-            <ScoringRow>
-              <ScoringLabel>{t.speedBonus}</ScoringLabel>
-              <ScoringToggleButton
-                type="button"
-                selected={orderScoring.speedBonus}
-                onClick={() => setOrderScoring((s) => ({ ...s, speedBonus: !s.speedBonus }))}
-              >
-                {orderScoring.speedBonus ? 'ON' : 'OFF'}
-              </ScoringToggleButton>
-            </ScoringRow>
-            <ScoringRow>
-              <ScoringLabel>{t.timeLimitSeconds}</ScoringLabel>
-              <ScoringInput
-                type="number"
-                value={orderScoring.timeLimitSeconds}
-                onChange={(e) => setOrderScoring((s) => ({ ...s, timeLimitSeconds: Number(e.target.value) }))}
-                min={0}
-              />
-            </ScoringRow>
-            <ScoringRow>
-              <ScoringLabel>{t.golfChallenge}</ScoringLabel>
-              <ScoringToggleButton
-                type="button"
-                selected={golfChallenge}
-                onClick={() => setGolfChallenge((v) => !v)}
-              >
-                {golfChallenge ? 'ON' : 'OFF'}
-              </ScoringToggleButton>
-            </ScoringRow>
-          </VerticalStackGap10>
-        </div>
+        {mode === 'quiz' && (
+          <div>
+            <SectionLabel>{t.scoring}</SectionLabel>
+            <VerticalStackGap10>
+              <ScoringRow>
+                <ScoringLabel>{t.firstAttemptPoints}</ScoringLabel>
+                <ScoringInput
+                  type="number"
+                  value={orderScoring.firstAttemptPoints}
+                  onChange={(e) => setOrderScoring((s) => ({ ...s, firstAttemptPoints: Number(e.target.value) }))}
+                />
+              </ScoringRow>
+              <ScoringRow>
+                <ScoringLabel>{t.retryPoints}</ScoringLabel>
+                <ScoringInput
+                  type="number"
+                  value={orderScoring.retryPoints}
+                  onChange={(e) => setOrderScoring((s) => ({ ...s, retryPoints: Number(e.target.value) }))}
+                />
+              </ScoringRow>
+              <ScoringRow>
+                <ScoringLabel>{t.speedBonus}</ScoringLabel>
+                <ScoringToggleButton
+                  type="button"
+                  selected={orderScoring.speedBonus}
+                  onClick={() => setOrderScoring((s) => ({ ...s, speedBonus: !s.speedBonus }))}
+                >
+                  {orderScoring.speedBonus ? 'ON' : 'OFF'}
+                </ScoringToggleButton>
+              </ScoringRow>
+              <ScoringRow>
+                <ScoringLabel>{t.timeLimitSeconds}</ScoringLabel>
+                <ScoringInput
+                  type="number"
+                  value={orderScoring.timeLimitSeconds}
+                  onChange={(e) => setOrderScoring((s) => ({ ...s, timeLimitSeconds: Number(e.target.value) }))}
+                  min={0}
+                />
+              </ScoringRow>
+              <ScoringRow>
+                <ScoringLabel>{t.golfChallenge}</ScoringLabel>
+                <ScoringToggleButton
+                  type="button"
+                  selected={golfChallenge}
+                  onClick={() => setGolfChallenge((v) => !v)}
+                >
+                  {golfChallenge ? 'ON' : 'OFF'}
+                </ScoringToggleButton>
+              </ScoringRow>
+            </VerticalStackGap10>
+          </div>
+        )}
       </>
     );
   }

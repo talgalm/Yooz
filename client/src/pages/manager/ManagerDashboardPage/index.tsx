@@ -398,7 +398,16 @@ export default function ManagerDashboardPage() {
         <HeroCard>
           <HeroTopRow>
             <HeroTitle>{data?.activityName || manager?.activityName}</HeroTitle>
-            {manager?.activityCode && <HeroBadge>#{manager.activityCode}</HeroBadge>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              {manager?.activityCode && <HeroBadge>#{manager.activityCode}</HeroBadge>}
+              <OutlineButton
+                type="button"
+                onClick={() => navigate('/manager/present')}
+                style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.12)' }}
+              >
+                {t.openPresenter}
+              </OutlineButton>
+            </div>
           </HeroTopRow>
           <HeroMeta>{manager?.email}</HeroMeta>
         </HeroCard>

@@ -5,6 +5,7 @@ import { Activity, Report, Game, Station, Mission, CustomTheme } from '../models
 import mongoose from 'mongoose';
 import { subscribe, sendLockEvent } from '../utils/lockBroadcaster';
 import { getParticipantCount } from '../utils/participantCountCache';
+import { getOrderSurveyLiveState } from '../utils/orderSurveySession';
 
 const router = Router();
 
@@ -316,7 +317,7 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
 
 // Save incremental progress after each game/station
 router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
-  const { itemResult, totalItemsCompleted, lastActiveItemIndex, runningTotal } = req.body;
+  const { itemResult, totalItemsCompleted, lastActiveItemIndex, runningTotal, progressOnly } = req.body;
   const { activityCode, participantName } = req.participant!;
 
   if (req.params.code !== activityCode) {
@@ -324,14 +325,16 @@ router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: s
     return;
   }
 
-  if (!itemResult || typeof itemResult.itemIndex !== 'number') {
-    res.status(400).json({ error: 'itemResult with itemIndex is required' });
-    return;
+  if (!progressOnly) {
+    if (!itemResult || typeof itemResult.itemIndex !== 'number') {
+      res.status(400).json({ error: 'itemResult with itemIndex is required' });
+      return;
+    }
   }
 
   const updateOps: Record<string, unknown> = {
     completionStatus: 'in_progress',
-    lastActiveItemIndex: lastActiveItemIndex ?? itemResult.itemIndex,
+    lastActiveItemIndex: lastActiveItemIndex ?? itemResult?.itemIndex,
   };
   if (typeof totalItemsCompleted === 'number') {
     updateOps.totalItemsCompleted = totalItemsCompleted;
@@ -340,12 +343,14 @@ router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: s
     updateOps['data.totalScore'] = runningTotal;
   }
 
+  const updatePayload: Record<string, unknown> = { $set: updateOps };
+  if (!progressOnly && itemResult) {
+    updatePayload.$push = { 'data.itemResults': itemResult };
+  }
+
   const report = await Report.findOneAndUpdate(
     { activityCode, participantName },
-    {
-      $push: { 'data.itemResults': itemResult },
-      $set: updateOps,
-    },
+    updatePayload,
     { new: true, sort: { joinedAt: -1 } },
   );
 
@@ -402,6 +407,24 @@ router.get('/:code/my-progress', authenticateToken, async (req: Request<{ code: 
     scores: data?.scores,
     itemResults: data?.itemResults,
   });
+});
+
+// Order survey session status (for participants waiting after submit)
+router.get('/:code/order-survey/status', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
+  const { activityCode } = req.participant!;
+  if (req.params.code !== activityCode) {
+    res.status(403).json({ error: 'Forbidden' });
+    return;
+  }
+
+  const activity = await Activity.findOne({ code: activityCode });
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  const live = await getOrderSurveyLiveState(activity);
+  res.json(live);
 });
 
 // Save scores for participant (final save — also marks session complete)

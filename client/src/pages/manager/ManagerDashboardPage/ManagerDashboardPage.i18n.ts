@@ -10,6 +10,7 @@ export const texts = {
     tabParticipants: 'Participants',
     tabGroups: 'Groups',
     tabControlFlow: 'Control Flow',
+    openPresenter: 'Open survey screen',
     live: 'Live',
 
     // Control Flow
@@ -75,6 +76,7 @@ export const texts = {
     tabParticipants: 'משתתפים',
     tabGroups: 'קבוצות',
     tabControlFlow: 'שליטה',
+    openPresenter: 'פתח מסך סקר',
     live: 'בשידור חי',
 
     // Control Flow

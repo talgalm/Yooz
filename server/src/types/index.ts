@@ -110,9 +110,27 @@ export interface OrderGameScoringConfig {
 }
 
 export interface OrderGameSettings {
+  /** 'quiz' = correct order + scoring (default). 'survey' = class ranking poll, no scoring. */
+  mode?: 'quiz' | 'survey';
   instructions?: string;         // opening instructions text
   rounds: OrderGameRound[];      // list of rounds
   scoring: OrderGameScoringConfig;
+}
+
+export interface OrderSurveyAggregatedItem {
+  item: string;
+  bordaScore: number;
+  rank: number;
+}
+
+export interface OrderSurveySession {
+  itemIndex: number;
+  gameId: string;
+  roundIndex: number;
+  phase: 'voting' | 'results';
+  resultsRevealed: boolean;
+  aggregatedRanking?: OrderSurveyAggregatedItem[];
+  updatedAt: Date;
 }
 
 // ─── Trivia Game Settings ───

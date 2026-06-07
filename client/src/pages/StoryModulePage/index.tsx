@@ -9,6 +9,7 @@ import { apiFetch, apiFetchWithRetry } from '../../utils/api';
 import { preloadActivityMedia } from '../../utils/mediaPreloader';
 import { texts } from './StoryModulePage.i18n';
 import { GAME_CONSTANTS, type GameResult } from '../../components/games/types';
+import type { OrderSurveySubmitPayload } from '../../components/games/OrderGame';
 import LangDrawer from '../../components/LangDrawer';
 import ThemedBackground, { getThemeShellColor, getThemeTransitionBackground, getThemeSkyColor, getThemeGroundColor } from '../../components/ThemedBackground';
 import { styled, keyframes } from '@mui/material/styles';
@@ -819,6 +820,75 @@ export default function StoryModulePage() {
     advanceToNextItem();
   };
 
+  const handleOrderSurveySubmit = async (payload: OrderSurveySubmitPayload) => {
+    if (!data || !code) return;
+    const currentItem = data.module.items[currentItemIndex];
+    const now = new Date();
+    const runningTotal = Math.max(
+      0,
+      scores.reduce((sum, s) => sum + s.score, 0) - stationHintUsed.size * stationHintPenalty,
+    );
+    const itemResult = {
+      itemIndex: currentItemIndex,
+      itemId: currentItem._id,
+      itemType: 'game' as const,
+      itemName: currentItem.name,
+      gameType: 'order',
+      score: 0,
+      maxPossibleScore: 0,
+      startedAt: new Date(itemStartTime.current),
+      completedAt: now,
+      durationMs: payload.durationMs,
+      hintUsed: false,
+      hintPenalty: 0,
+      metadata: {
+        orderSurvey: true,
+        ranking: payload.ranking,
+        items: payload.items,
+        roundIndex: payload.roundIndex,
+      },
+    };
+
+    await apiFetchWithRetry(`/api/activities/${code}/progress`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        itemResult,
+        totalItemsCompleted: currentItemIndex,
+        lastActiveItemIndex: currentItemIndex,
+        runningTotal,
+      }),
+    });
+  };
+
+  const handleOrderSurveyComplete = (result: GameResult) => {
+    if (!data) return;
+    const currentItem = data.module.items[currentItemIndex];
+    const completedCount = currentItemIndex + 1;
+    const runningTotal = Math.max(
+      0,
+      scores.reduce((sum, s) => sum + s.score, 0) - stationHintUsed.size * stationHintPenalty,
+    );
+
+    setScores((prev) => [
+      ...prev,
+      { itemIndex: currentItemIndex, gameName: currentItem.name, score: result.score },
+    ]);
+
+    if (code) {
+      apiFetchWithRetry(`/api/activities/${code}/progress`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          progressOnly: true,
+          totalItemsCompleted: completedCount,
+          lastActiveItemIndex: currentItemIndex,
+          runningTotal,
+        }),
+      }).catch(() => { /* best effort */ });
+    }
+
+    advanceToNextItem();
+  };
+
   const handleStationContinue = () => {
     advanceToNextItem();
   };
@@ -1419,6 +1489,7 @@ export default function StoryModulePage() {
       <ActivityPlayingHeaderProvider>
       <PlayingPhase
         currentItem={currentItem}
+        currentItemIndex={currentItemIndex}
         stationHintText={currentItemHintText}
         stationHintUsed={stationHintUsed.has(currentItemIndex)}
         bgStyle={bgStyle}
@@ -1426,6 +1497,8 @@ export default function StoryModulePage() {
         customTheme={data.module.customTheme}
         code={code}
         onGameComplete={handleGameComplete}
+        onOrderSurveySubmit={handleOrderSurveySubmit}
+        onOrderSurveyComplete={handleOrderSurveyComplete}
         onLogout={handleExit}
         onViewLeaderboard={handleViewLeaderboard}
         currentPoints={playingTotalPoints}

@@ -115,6 +115,16 @@ export interface IActivity {
   lockedFromIndex?: number | null;
   /** When true, show activity name on the story roadmap between header and path. */
   includeOnRoadmap?: boolean;
+  /** Live order-game survey session (presenter + Borda aggregation). */
+  orderSurveySession?: {
+    itemIndex: number;
+    gameId: string;
+    roundIndex: number;
+    phase: 'voting' | 'results';
+    resultsRevealed: boolean;
+    aggregatedRanking?: { item: string; bordaScore: number; rank: number }[];
+    updatedAt: Date;
+  };
 }
 
 function generateCode(): string {
@@ -216,6 +226,7 @@ const activitySchema = new Schema<IActivity>({
   missionTrashSortScoreSum: { type: Number, default: 0 },
   lockedFromIndex: { type: Number, default: null },
   includeOnRoadmap: { type: Boolean, default: false },
+  orderSurveySession: { type: Schema.Types.Mixed, default: undefined },
 });
 
 export const Activity = model<IActivity>('Activity', activitySchema, 'activities');

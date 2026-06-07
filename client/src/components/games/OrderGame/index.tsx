@@ -14,6 +14,7 @@ import HintModals from '../HintModals';
 import HintButton from '../HintButton';
 import { GameProps, HintConfig, GAME_CONSTANTS } from '../types';
 import GolfChallenge from './GolfChallenge';
+import OrderSurveyGame, { type OrderSurveySubmitPayload } from './OrderSurveyGame';
 import { golfTexts } from './GolfChallenge.i18n';
 import { GameIntroHeaderBar, GameHeaderMuteButton } from '../styled';
 import {
@@ -75,11 +76,14 @@ interface OrderScoring {
 }
 
 interface OrderSettings {
+  mode?: 'quiz' | 'survey';
   instructions?: string;
   hint?: HintConfig;
   rounds: OrderRound[];
   scoring: OrderScoring;
 }
+
+export type { OrderSurveySubmitPayload };
 
 type CardStatus = 'neutral' | 'correct' | 'incorrect';
 
@@ -143,7 +147,13 @@ const CARD_COLORS = {
 
 // ─── Component ───
 
-export default function OrderGame({ game, onComplete }: GameProps) {
+interface OrderGameProps extends GameProps {
+  activityCode?: string;
+  itemIndex?: number;
+  onSurveySubmit?: (payload: OrderSurveySubmitPayload) => void | Promise<void>;
+}
+
+function OrderQuizGame({ game, onComplete }: GameProps) {
   const settings = game.settings as unknown as OrderSettings;
   const t = useTranslations(texts);
   const hint = useGameHint(settings.hint);
@@ -685,4 +695,20 @@ export default function OrderGame({ game, onComplete }: GameProps) {
     </OrderContainer>
     </OrderPhaseRoot>
   );
+}
+
+export default function OrderGame({ game, onComplete, activityCode, itemIndex, onSurveySubmit }: OrderGameProps) {
+  const mode = (game.settings as unknown as OrderSettings).mode;
+  if (mode === 'survey') {
+    return (
+      <OrderSurveyGame
+        game={game}
+        onComplete={onComplete}
+        activityCode={activityCode}
+        itemIndex={itemIndex}
+        onSurveySubmit={onSurveySubmit}
+      />
+    );
+  }
+  return <OrderQuizGame game={game} onComplete={onComplete} />;
 }

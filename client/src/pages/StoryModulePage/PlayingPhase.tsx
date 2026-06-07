@@ -4,6 +4,7 @@ import { useMediaPreload } from '../../hooks/useMediaPreload';
 import { resolveVideoSource } from '../../utils/videoSource';
 import ThemedBackground from '../../components/ThemedBackground';
 import OrderGame from '../../components/games/OrderGame';
+import type { OrderSurveySubmitPayload } from '../../components/games/OrderGame';
 import TriviaGame from '../../components/games/TriviaGame';
 import PuzzleGame from '../../components/games/PuzzleGame';
 import TrueFalseGame from '../../components/games/TrueFalseGame';
@@ -278,6 +279,7 @@ function MediaGateWrapper({ urls, children }: { urls: (string | undefined | null
 
 interface PlayingPhaseProps {
   currentItem: ModuleItemData;
+  currentItemIndex: number;
   stationHintText: string | null;
   stationHintUsed: boolean;
   bgStyle: React.CSSProperties;
@@ -285,6 +287,8 @@ interface PlayingPhaseProps {
   customTheme?: CustomThemeData;
   code?: string;
   onGameComplete: (result: GameResult) => void;
+  onOrderSurveySubmit?: (payload: OrderSurveySubmitPayload) => void | Promise<void>;
+  onOrderSurveyComplete?: (result: GameResult) => void;
   onLogout: () => void;
   onViewLeaderboard?: () => void;
   onStationContinue: () => void;
@@ -312,6 +316,7 @@ interface PlayingPhaseProps {
 
 export default function PlayingPhase({
   currentItem,
+  currentItemIndex,
   stationHintText,
   stationHintUsed,
   bgStyle: _bgStyle,
@@ -319,6 +324,8 @@ export default function PlayingPhase({
   customTheme,
   code,
   onGameComplete,
+  onOrderSurveySubmit,
+  onOrderSurveyComplete,
   onLogout,
   onViewLeaderboard,
   onStationContinue,
@@ -532,10 +539,15 @@ export default function PlayingPhase({
     };
 
     if (gameData.type === 'order') {
+      const orderSettings = gameData.settings as { mode?: string };
+      const isSurvey = orderSettings.mode === 'survey';
       return (
         <OrderGame
           game={gameData}
-          onComplete={onGameComplete}
+          onComplete={isSurvey && onOrderSurveyComplete ? onOrderSurveyComplete : onGameComplete}
+          activityCode={code}
+          itemIndex={currentItemIndex}
+          onSurveySubmit={isSurvey ? onOrderSurveySubmit : undefined}
         />
       );
     }

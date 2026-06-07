@@ -47,6 +47,7 @@ export interface ExportItemResult {
   hintPenalty?: number;
   questionAnswers?: ExportQuestionAnswer[];
   attempts?: number;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ExportReport {
@@ -1114,6 +1115,71 @@ function addGroupsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
   configureWorksheet(worksheet);
 }
 
+function addOrderSurveySheet(workbook: ExcelJS.Workbook, reports: ExportReport[]) {
+  const surveyRows: {
+    itemIndex: number;
+    itemName: string;
+    participant: string;
+    ranking: string[];
+    items: string[];
+  }[] = [];
+
+  reports.forEach((report) => {
+    (report.data?.itemResults ?? []).forEach((item) => {
+      const meta = item.metadata;
+      if (!meta || meta.orderSurvey !== true || !Array.isArray(meta.ranking)) return;
+      surveyRows.push({
+        itemIndex: item.itemIndex ?? 0,
+        itemName: item.itemName || `תחנה ${(item.itemIndex ?? 0) + 1}`,
+        participant: report.participantName,
+        ranking: meta.ranking as string[],
+        items: Array.isArray(meta.items) ? (meta.items as string[]) : (meta.ranking as string[]),
+      });
+    });
+  });
+
+  if (surveyRows.length === 0) return;
+
+  const worksheet = workbook.addWorksheet(safeSheetName('סקר דירוג'));
+  addTitle(worksheet, 'סקר דירוג — דירוגים אישיים', 'טבלת דירוג אישית לכל משתתף במשחקי סדר במצב סקר.', 12);
+
+  const itemGroups = new Map<number, typeof surveyRows>();
+  surveyRows.forEach((row) => {
+    const list = itemGroups.get(row.itemIndex) ?? [];
+    list.push(row);
+    itemGroups.set(row.itemIndex, list);
+  });
+
+  let rowPtr = 4;
+  [...itemGroups.entries()].sort((a, b) => a[0] - b[0]).forEach(([itemIndex, rows]) => {
+    const itemName = rows[0]?.itemName || `תחנה ${itemIndex + 1}`;
+    const maxRanks = Math.max(...rows.map((r) => r.ranking.length), 0);
+    worksheet.getCell(rowPtr, 1).value = `${itemIndex + 1}. ${itemName}`;
+    worksheet.getCell(rowPtr, 1).font = { bold: true, size: 13 };
+    rowPtr += 1;
+
+    const headers = ['שם', ...Array.from({ length: maxRanks }, (_, i) => `דירוג ${i + 1}`)];
+    headers.forEach((h, col) => {
+      const cell = worksheet.getCell(rowPtr, col + 1);
+      cell.value = h;
+      cell.font = { bold: true };
+      cell.border = THIN_BORDER;
+    });
+    rowPtr += 1;
+
+    rows.forEach((r) => {
+      worksheet.getCell(rowPtr, 1).value = r.participant;
+      r.ranking.forEach((val, i) => {
+        worksheet.getCell(rowPtr, i + 2).value = val;
+      });
+      rowPtr += 1;
+    });
+    rowPtr += 2;
+  });
+
+  configureWorksheet(worksheet);
+}
+
 function addRecommendationsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
   const worksheet = workbook.addWorksheet(safeSheetName('המלצות'));
   addTitle(worksheet, 'המלצות ותובנות ללקוח', 'שורות שמוכנות כמעט כמו סיכום מנהלים: מה קרה, למה זה חשוב ומה עושים.', 9);
@@ -1188,6 +1254,8 @@ export async function buildAnalyticsWorkbookBuffer(
     addScoreDistributionSheet(workbook, stats);
     addRecommendationsSheet(workbook, stats);
   }
+
+  addOrderSurveySheet(workbook, reports);
 
   workbook.eachSheet((worksheet) => {
     worksheet.pageSetup = {

@@ -18,6 +18,7 @@ import AdminPortalConfigPage from './pages/admin/AdminPortalConfigPage';
 import PortalPage from './pages/portal/PortalPage';
 import ManagerLoginPage from './pages/manager/ManagerLoginPage';
 import ManagerDashboardPage from './pages/manager/ManagerDashboardPage';
+import OrderSurveyPresentPage from './pages/manager/OrderSurveyPresentPage';
 import LandingPage from './pages/LandingPage';
 import PrivacyPage from './pages/PrivacyPage';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -79,6 +80,7 @@ export default function App() {
                 {/* Manager routes — full width desktop */}
                 <Route path="/manager" element={<ManagerPublicRoute><ManagerLoginPage /></ManagerPublicRoute>} />
                 <Route path="/manager/dashboard" element={<ManagerProtectedRoute><ManagerDashboardPage /></ManagerProtectedRoute>} />
+                <Route path="/manager/present" element={<ManagerProtectedRoute><OrderSurveyPresentPage /></ManagerProtectedRoute>} />
 
                 {/* Participant routes — mobile layout */}
                 <Route path="/play/:code" element={<MobileContainer><HelpChatProvider variant="fab"><PlayPage /><HelpChatFab /></HelpChatProvider></MobileContainer>} />
