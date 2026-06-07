@@ -23,6 +23,7 @@ import LandingPage from './pages/LandingPage';
 import PrivacyPage from './pages/PrivacyPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpChatProvider, HelpChatFab } from './components/HelpChat';
+import AdminHelpChat from './components/AdminHelpChat';
 import { MobileContainer } from './components/MobileContainer';
 import './App.css';
 
@@ -35,7 +36,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AdminProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAdminAuthenticated } = useAdminAuth();
-  return isAdminAuthenticated ? <>{children}</> : <Navigate to="/admin/login" replace />;
+  return isAdminAuthenticated ? (
+    <>
+      {children}
+      <AdminHelpChat />
+    </>
+  ) : (
+    <Navigate to="/admin/login" replace />
+  );
 }
 
 function AdminPublicRoute({ children }: { children: React.ReactNode }) {

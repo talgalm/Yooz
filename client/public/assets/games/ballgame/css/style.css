@@ -285,3 +285,20 @@ canvas {
 .message h3 {
   color: darkcyan;
 }
+
+/* Answer/question HTML overlays — shrink via JS; clip any residual overflow */
+.option-text-html,
+.question-text-html,
+#question-text-html {
+  overflow: hidden !important;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.option-text-html .fit-text-inner,
+.question-text-html .fit-text-inner,
+#question-text-html .fit-text-inner {
+  display: block;
+  width: 100%;
+  line-height: 1.25;
+}

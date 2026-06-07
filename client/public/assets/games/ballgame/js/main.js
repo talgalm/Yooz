@@ -577,6 +577,61 @@ function normalizeLabelText(rawText, isQuestion) {
   return text;
 }
 
+/** Shrink font until text fits inside a fixed-size answer/question box. */
+function fitTextToContainer(el, maxFontPx, minFontPx) {
+  if (!el) return;
+  var max = typeof maxFontPx === "number" ? maxFontPx : 18;
+  var min = typeof minFontPx === "number" ? minFontPx : 10;
+  el.style.overflow = "hidden";
+  el.style.wordBreak = "break-word";
+  el.style.hyphens = "auto";
+
+  var inner = el.querySelector(".fit-text-inner");
+  if (!inner) {
+    var raw = el.textContent || "";
+    el.textContent = "";
+    inner = document.createElement("span");
+    inner.className = "fit-text-inner";
+    inner.style.display = "block";
+    inner.style.width = "100%";
+    inner.style.textAlign = "inherit";
+    inner.textContent = raw;
+    el.appendChild(inner);
+  }
+
+  el.style.display = "flex";
+  el.style.alignItems = "center";
+  el.style.justifyContent = "center";
+
+  var size = max;
+  inner.style.fontSize = size + "px";
+  inner.style.lineHeight = "1.25";
+
+  function overflows() {
+    return (
+      inner.scrollHeight > el.clientHeight + 1 ||
+      inner.scrollWidth > el.clientWidth + 1
+    );
+  }
+
+  var guard = 0;
+  while (size > min && guard < 32 && overflows()) {
+    size -= 1;
+    inner.style.fontSize = size + "px";
+    guard += 1;
+  }
+}
+
+function scheduleFitText(el, maxFontPx, minFontPx) {
+  fitTextToContainer(el, maxFontPx, minFontPx);
+  requestAnimationFrame(function () {
+    fitTextToContainer(el, maxFontPx, minFontPx);
+    requestAnimationFrame(function () {
+      fitTextToContainer(el, maxFontPx, minFontPx);
+    });
+  });
+}
+
 function drawWoodPlank(ctx, x, y, w, h, r, woodStops, borderColor) {
   var wood = ctx.createLinearGradient(x, y, x, y + h);
   for (var i = 0; i < woodStops.length; i++) {
@@ -1183,9 +1238,11 @@ function addQuestion() {
   if (textLayer) {
     var qEl = document.createElement('div');
     qEl.id = 'question-text-html';
-    qEl.style.cssText = 'position:absolute;left:' + questionBox.x + 'px;top:' + questionBox.y + 'px;width:' + questionBox.width + 'px;height:' + questionBox.height + 'px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:"Encode Sans Expanded",Arial,sans-serif;color:' + NATURE.QUESTION_TEXT + ';text-align:center;padding:0 12px;box-sizing:border-box;line-height:1.3;direction:rtl;pointer-events:none;';
-    qEl.textContent = arrQuestions[currentQuestionIndex];
+    qEl.className = 'question-text-html';
+    qEl.style.cssText = 'position:absolute;left:' + questionBox.x + 'px;top:' + questionBox.y + 'px;width:' + questionBox.width + 'px;height:' + questionBox.height + 'px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:"Encode Sans Expanded",Arial,sans-serif;color:' + NATURE.QUESTION_TEXT + ';text-align:center;padding:0 10px;box-sizing:border-box;line-height:1.25;direction:rtl;pointer-events:none;overflow:hidden;';
+    qEl.textContent = normalizeLabelText(arrQuestions[currentQuestionIndex], true);
     textLayer.appendChild(qEl);
+    scheduleFitText(qEl, 22, 10);
   }
 }
 
@@ -1372,9 +1429,10 @@ function addOptions() {
     if (textLayer) {
       var oEl = document.createElement('div');
       oEl.className = 'option-text-html';
-      oEl.style.cssText = 'position:absolute;left:' + optionBox.x + 'px;top:' + optionBox.y + 'px;width:' + optionBox.width + 'px;height:' + optionBox.height + 'px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;font-family:"Encode Sans Expanded",Arial,sans-serif;color:#222;text-align:center;padding:0 8px;box-sizing:border-box;line-height:1.3;direction:rtl;pointer-events:none;';
+      oEl.style.cssText = 'position:absolute;left:' + optionBox.x + 'px;top:' + optionBox.y + 'px;width:' + optionBox.width + 'px;height:' + optionBox.height + 'px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;font-family:"Encode Sans Expanded",Arial,sans-serif;color:#222;text-align:center;padding:0 8px;box-sizing:border-box;line-height:1.25;direction:rtl;pointer-events:none;overflow:hidden;';
       oEl.textContent = normalizeLabelText(arrOptions[currentQuestionIndex][i].text, false);
       textLayer.appendChild(oEl);
+      scheduleFitText(oEl, 18, 10);
       optionBox.htmlEl = oEl;
     }
 

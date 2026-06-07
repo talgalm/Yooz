@@ -287,10 +287,41 @@ const ResultOverlay = styled('div')({
 });
 
 const SuccessBanner = styled('div')({
+  position: 'relative',
   width: '100%',
   maxWidth: 520,
   animation: `${popIn} 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)`,
   '& svg': { display: 'block', width: '100%', height: 'auto' },
+});
+
+const SuccessBannerText = styled('div')({
+  position: 'absolute',
+  top: '22%',
+  bottom: '22%',
+  left: '32%',
+  right: '6%',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  textAlign: 'center',
+  fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+  fontWeight: 900,
+  color: '#EAD787',
+  pointerEvents: 'none',
+});
+
+const SuccessBannerTitle = styled('div')({
+  fontSize: 'clamp(22px, 6vw, 40px)',
+  letterSpacing: '1.5px',
+  lineHeight: 1.1,
+});
+
+const SuccessBannerSubtitle = styled('div')({
+  fontSize: 'clamp(16px, 4.5vw, 28px)',
+  letterSpacing: '1px',
+  lineHeight: 1.2,
+  marginTop: 6,
 });
 
 const SuccessContinueBtn = styled('button')({
@@ -618,6 +649,7 @@ export default function RiddleStation({
                 style={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block', borderRadius: 14 }}
               />
             ) : (
+            <>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 260">
               <defs>
                 <linearGradient id="riddle-cupGrad" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -632,11 +664,6 @@ export default function RiddleStation({
               <rect width="800" height="260" fill="none" />
               <rect x="30" y="30" width="740" height="200" rx="100" ry="100" fill="#D7AA3C" />
               <rect x="42" y="42" width="716" height="176" rx="88" ry="88" fill="#2A4384" />
-
-              <g fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" fontWeight="900" fill="#EAD787" textAnchor="middle">
-                <text x="460" y="128" fontSize="64" letterSpacing="1.5">{isHebrew ? 'כל הכבוד' : 'Well done!'}</text>
-                <text x="460" y="190" fontSize="46" letterSpacing="1">{isHebrew ? `קיבלת ${earnedScore} נקודות` : `You got ${earnedScore} points`}</text>
-              </g>
 
               <g transform="translate(-15, 10)">
                 {/* Left handle */}
@@ -679,6 +706,13 @@ export default function RiddleStation({
                 <path d="M230,185 Q235,185 235,180 Q235,185 240,185 Q235,185 235,190 Q235,185 230,185 Z" fill="#FCE082" />
               </g>
             </svg>
+              <SuccessBannerText dir={isHebrew ? 'rtl' : 'ltr'}>
+                <SuccessBannerTitle>{isHebrew ? 'כל הכבוד' : 'Well done!'}</SuccessBannerTitle>
+                <SuccessBannerSubtitle>
+                  {isHebrew ? `קיבלת ${earnedScore} נקודות` : `You got ${earnedScore} points`}
+                </SuccessBannerSubtitle>
+              </SuccessBannerText>
+            </>
             )}
           </SuccessBanner>
           <SuccessContinueBtn

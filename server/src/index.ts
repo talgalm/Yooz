@@ -32,6 +32,7 @@ import themesRouter from './routes/themes';
 import checkAnswerRouter from './routes/checkAnswer';
 import ttsRouter from './routes/tts';
 import reportAssistantRouter from './routes/reportAssistant';
+import adminHelpAssistantRouter from './routes/adminHelpAssistant';
 
 const app = express();
 
@@ -71,6 +72,7 @@ app.use('/api/help', helpRouter);
 app.use('/api/avatar-chat', avatarChatRouter);
 app.use('/api/admin/analytics', analyticsRouter);
 app.use('/api/admin/report-assistant', reportAssistantRouter);
+app.use('/api/admin/help-assistant', adminHelpAssistantRouter);
 app.use('/api/admin/users', usersRouter);
 app.use('/api/admin/missions', missionsRouter);
 app.use('/api/collage', collageRouter);
