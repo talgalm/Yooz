@@ -54,6 +54,7 @@ export interface IModuleConfig {
   popups?: IPopupMessage[];
   missionRef?: Types.ObjectId; // reference to Mission document (when type='mission')
   showStationNumbers?: boolean; // spiders only: show station number in top-right of each node
+  showItemTitleNumbers?: boolean; // show item index in in-station/game title (e.g. "3. ...")
 }
 
 export type ActivityStatus = 'preview' | 'live';
@@ -177,6 +178,8 @@ const moduleConfigSchema = new Schema<IModuleConfig>({
   type: { type: String, required: true, enum: ['story', 'mission', 'spiders'], default: 'story' },
   theme: { type: String },
   backgroundImage: { type: String },
+  showStationNumbers: { type: Boolean, default: false },
+  showItemTitleNumbers: { type: Boolean, default: false },
   items: { type: [moduleItemSchema], default: [] },
   popups: { type: [popupMessageSchema], default: [] },
   missionRef: { type: Schema.Types.ObjectId, ref: 'Mission' },

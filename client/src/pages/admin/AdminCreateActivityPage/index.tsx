@@ -330,6 +330,7 @@ export default function AdminCreateActivityPage() {
   });
 
   const [showStationNumbers, setShowStationNumbers] = useState(false);
+  const [showItemTitleNumbers, setShowItemTitleNumbers] = useState(false);
 
   const [leaderboardMode, setLeaderboardMode] = useState<'points' | 'time'>('points');
   const [displayLeaderboardInHeader, setDisplayLeaderboardInHeader] = useState(false);
@@ -403,6 +404,7 @@ export default function AdminCreateActivityPage() {
           setModuleTheme(a.module.theme || '');
           setBackgroundImage(a.module.backgroundImage || '');
           if (a.module.showStationNumbers) setShowStationNumbers(true);
+          if (a.module.showItemTitleNumbers) setShowItemTitleNumbers(true);
           if (a.module.items && a.module.items.length > 0) {
             setSelectedItems(
               a.module.items.map((item) => ({
@@ -777,6 +779,7 @@ export default function AdminCreateActivityPage() {
             ...(i.collageSplit && { collageSplit: i.collageSplit }),
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
+          ...(showItemTitleNumbers && { showItemTitleNumbers: true }),
         };
         if (popups.length > 0) {
           modulePayload.popups = popups
@@ -1240,6 +1243,17 @@ export default function AdminCreateActivityPage() {
                         style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
                       />
                       {t.showStationNumbers}
+                    </label>
+                  )}
+                  {(moduleType === 'story' || moduleType === 'spiders') && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 12 }}>
+                      <input
+                        type="checkbox"
+                        checked={showItemTitleNumbers}
+                        onChange={(e) => setShowItemTitleNumbers(e.target.checked)}
+                        style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                      />
+                      {t.showItemTitleNumbers}
                     </label>
                   )}
                 </SectionCardWide>

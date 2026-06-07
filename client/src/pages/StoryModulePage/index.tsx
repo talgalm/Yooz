@@ -1479,7 +1479,9 @@ export default function StoryModulePage() {
 
   // ─── Playing phase ───
 
-  const currentItem = data.module.items[currentItemIndex];
+  const currentItem = data.module.showItemTitleNumbers
+    ? { ...data.module.items[currentItemIndex], name: `${currentItemIndex + 1}. ${data.module.items[currentItemIndex].name}` }
+    : data.module.items[currentItemIndex];
   const currentItemHintText = getStationHint(currentItem);
   const playingTotalPoints = Math.max(
     0,

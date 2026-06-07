@@ -112,6 +112,7 @@ export interface ModuleData {
   items: ModuleItemData[];
   popups?: PopupData[];
   showStationNumbers?: boolean;
+  showItemTitleNumbers?: boolean;
 }
 
 export interface CustomInstructionsData {

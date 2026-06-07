@@ -92,6 +92,7 @@ export interface Activity {
     backgroundImage?: string;
     missionRef?: string;
     showStationNumbers?: boolean;
+    showItemTitleNumbers?: boolean;
     items: { type: 'game' | 'station'; ref: string; groups?: string[]; collageSplit?: CollageSplit; data?: { _id: string; name: string; type?: string; settings?: Record<string, unknown>; description?: string; customer?: string; theme?: string } }[];
     popups?: {
       _id?: string;
