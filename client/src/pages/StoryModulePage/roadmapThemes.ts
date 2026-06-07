@@ -4,6 +4,8 @@ export interface RoadmapThemeKit {
   containerBg: string;
   headerGradient: string;
   headerBorder: string;
+  /** Exit / help / trophy / points icons on the session header (default chrome). */
+  headerIconColor: string;
   sceneBgTop: string;
   sceneBgMid: string;
   sceneBgBottom: string;
@@ -40,6 +42,7 @@ export const NATURE_THEME: RoadmapThemeKit = {
   containerBg: '#8fb247',
   headerGradient: 'linear-gradient(135deg, rgba(45,80,22,0.92) 0%, rgba(56,100,30,0.88) 100%)',
   headerBorder: 'rgba(255,255,255,0.08)',
+  headerIconColor: '#ffffff',
   sceneBgTop: '#8fb248',
   sceneBgMid: '#8fb248',
   sceneBgBottom: '#8fb248',
@@ -79,6 +82,7 @@ export const OCEAN_THEME: RoadmapThemeKit = {
   containerBg: '#428bad',
   headerGradient: 'linear-gradient(135deg, rgba(34,72,98,0.94) 0%, rgba(50,105,140,0.90) 100%)',
   headerBorder: 'rgba(255,255,255,0.10)',
+  headerIconColor: '#ffffff',
   sceneBgTop: '#428bad',
   sceneBgMid: '#428bad',
   sceneBgBottom: '#428bad',
@@ -109,6 +113,7 @@ export const DESERT_THEME: RoadmapThemeKit = {
   containerBg: '#c9983a',
   headerGradient: 'linear-gradient(135deg, rgba(120,70,20,0.94) 0%, rgba(150,90,30,0.90) 100%)',
   headerBorder: 'rgba(255,255,255,0.08)',
+  headerIconColor: '#ffffff',
   sceneBgTop: '#c9983a',
   sceneBgMid: '#c9983a',
   sceneBgBottom: '#c9983a',
@@ -139,6 +144,7 @@ export const OFFICE_THEME: RoadmapThemeKit = {
   containerBg: '#8a7c6a',
   headerGradient: 'linear-gradient(135deg, rgba(101,82,59,0.94) 0%, rgba(120,98,72,0.90) 100%)',
   headerBorder: 'rgba(255,255,255,0.10)',
+  headerIconColor: '#ffffff',
   sceneBgTop: '#ECE4D2',
   sceneBgMid: '#E8E0CC',
   sceneBgBottom: '#E4DBC6',
@@ -175,6 +181,14 @@ export function getThemeKit(theme?: string): RoadmapThemeKit {
     case 'ganei-yehoshua': return GANEI_YEHOSHUA_THEME;
     default:               return NATURE_THEME;
   }
+}
+
+/** Custom theme override, else built-in kit default. Puzzle chrome keeps its own contrast colors. */
+export function getHeaderIconColor(
+  theme?: string,
+  customTheme?: { headerIconColor?: string },
+): string {
+  return customTheme?.headerIconColor || getThemeKit(theme).headerIconColor;
 }
 
 // ─── Ocean decorations ───

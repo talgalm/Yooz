@@ -101,6 +101,7 @@ export interface CustomThemeData {
   bgColor?: string;
   roadmapActiveNodeColor?: string;
   roadmapPathColor?: string;
+  headerIconColor?: string;
 }
 
 export interface ModuleData {
@@ -130,6 +131,7 @@ export interface ActivityModuleResponse {
   customInstructions?: CustomInstructionsData;
   isContinuous?: boolean;
   leaderboardMode?: 'points' | 'time';
+  hideLeaderboardInHeader?: boolean;
   activityDurationMinutes?: number;
   lockedFromIndex?: number | null;
   includeOnRoadmap?: boolean;

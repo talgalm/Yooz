@@ -7,7 +7,7 @@ import storySideWave from '../../assets/story-side-wave.svg';
 import storySideWaveBlue from '../../assets/story-side-wave-blue.svg';
 import storySideWaveDesert from '../../assets/story-side-wave-desert.svg';
 import { ROADMAP_DECORATIONS } from './roadmapTrees';
-import { getThemeKit, OCEAN_DECORATIONS, DESERT_DECORATIONS, type RoadmapThemeKit } from './roadmapThemes';
+import { getThemeKit, getHeaderIconColor, OCEAN_DECORATIONS, DESERT_DECORATIONS, type RoadmapThemeKit } from './roadmapThemes';
 
 // ─── Constants ───
 
@@ -439,6 +439,7 @@ interface SpidersViewProps {
   onNodeTap: (index: number) => void;
   onLogout: () => void;
   onViewLeaderboard: () => void;
+  hideLeaderboardInHeader?: boolean;
   popupModal: React.ReactNode;
   t: Record<string, string>;
   theme?: string;
@@ -459,6 +460,7 @@ export default function SpidersView({
   onNodeTap,
   onLogout,
   onViewLeaderboard,
+  hideLeaderboardInHeader,
   popupModal,
   t,
   theme,
@@ -517,6 +519,7 @@ export default function SpidersView({
 
   const seed = useMemo(() => items.map((it) => it._id).join(''), [items]);
   const kit = useMemo(() => getThemeKit(theme), [theme]);
+  const headerIconColor = useMemo(() => getHeaderIconColor(theme, customTheme), [theme, customTheme]);
 
   const positions = useMemo(() => {
     if (!canvasSize) return [];
@@ -736,14 +739,16 @@ export default function SpidersView({
         onPointsRollComplete={() => {}}
         onLogout={onLogout}
         t={t}
+        headerIconColor={headerIconColor}
         leaderboardMode={leaderboardMode}
         elapsedSeconds={elapsedSeconds}
         activityDurationMinutes={activityDurationMinutes}
-        thirdSlot={
-          <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
+        omitThirdSlot={hideLeaderboardInHeader}
+        thirdSlot={!hideLeaderboardInHeader ? (
+          <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'} iconColor={headerIconColor}>
             <SessionHeaderTrophyIcon />
           </DarkHeaderActionIconButton>
-        }
+        ) : null}
       />
 
       <CanvasArea>

@@ -10,3 +10,4 @@ export { LibraryItem, type ILibraryItem } from './LibraryItem';
 export { Portal, type IPortal, type IPortalUser, type PortalUserStatus } from './Portal';
 export { Tutorial, type ITutorial } from './Tutorial';
 export { CustomTheme, type ICustomTheme } from './CustomTheme';
+export { DevTask, type IDevTask, type DevTaskType, type DevTaskStatus } from './DevTask';

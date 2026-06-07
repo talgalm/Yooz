@@ -191,8 +191,10 @@ export const HeaderActionIconButton = styled('button')({
 });
 
 /** Single dark-header style: same border, fill, and hover for help / exit / mute / trophy / hint. */
-export const DarkHeaderActionIconButton = styled(HeaderActionIconButton)({
-  color: '#fff',
+export const DarkHeaderActionIconButton = styled(HeaderActionIconButton, {
+  shouldForwardProp: (prop) => prop !== 'iconColor',
+})<{ iconColor?: string }>(({ iconColor }) => ({
+  color: iconColor ?? '#fff',
   border: '1px solid rgba(255,255,255,0.45)',
   background: 'rgba(255,255,255,0.08)',
   fontSize: 18,
@@ -204,7 +206,7 @@ export const DarkHeaderActionIconButton = styled(HeaderActionIconButton)({
   '&:active': {
     background: 'rgba(255,255,255,0.2)',
   },
-});
+}));
 
 /** Puzzle session header: **dark icons** on light pill, black outline (mint/light bg). */
 export const PuzzleDarkHeaderActionIconButton = styled(HeaderActionIconButton)({

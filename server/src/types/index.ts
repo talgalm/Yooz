@@ -251,6 +251,7 @@ export interface CreateActivityRequest {
   isContinuous?: boolean;
   portalId?: string;
   leaderboardMode?: 'points' | 'time';
+  hideLeaderboardInHeader?: boolean;
   activityDurationMinutes?: number;
   includeOnRoadmap?: boolean;
 }

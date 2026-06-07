@@ -5,12 +5,13 @@ interface ActivityLogoutButtonProps {
   ariaLabel: string;
   /** Black borders instead of white (puzzle game session header). */
   variant?: 'default' | 'puzzle';
+  iconColor?: string;
 }
 
-export default function ActivityLogoutButton({ onClick, ariaLabel, variant = 'default' }: ActivityLogoutButtonProps) {
+export default function ActivityLogoutButton({ onClick, ariaLabel, variant = 'default', iconColor }: ActivityLogoutButtonProps) {
   const Btn = variant === 'puzzle' ? PuzzleDarkHeaderActionIconButton : DarkHeaderActionIconButton;
   return (
-    <Btn type="button" onClick={onClick} aria-label={ariaLabel} title={ariaLabel}>
+    <Btn type="button" onClick={onClick} aria-label={ariaLabel} title={ariaLabel} iconColor={iconColor}>
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
           d="M14 7l5 5-5 5"

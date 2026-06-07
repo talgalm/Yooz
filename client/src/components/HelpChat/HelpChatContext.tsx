@@ -307,12 +307,12 @@ export function HelpChatFab() {
   );
 }
 
-export function HelpChatHeaderButton({ tone = 'dark' }: { tone?: 'dark' | 'light' | 'puzzle' }) {
+export function HelpChatHeaderButton({ tone = 'dark', iconColor }: { tone?: 'dark' | 'light' | 'puzzle'; iconColor?: string }) {
   const t = useTranslations(texts);
   const { toggle } = useHelpChat();
   const Btn = tone === 'light' ? HelpHeaderIconButtonLight : tone === 'puzzle' ? HelpHeaderIconButtonPuzzle : HelpHeaderIconButton;
   return (
-    <Btn type="button" onClick={toggle} aria-label={t.helpAria} title={t.helpAria}>
+    <Btn type="button" onClick={toggle} aria-label={t.helpAria} title={t.helpAria} iconColor={iconColor}>
       ?
     </Btn>
   );

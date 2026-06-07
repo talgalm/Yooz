@@ -194,11 +194,29 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   }
 
   // If theme is a custom theme ID, fetch and embed it so the client doesn't need a second request
-  let customThemeData: { mainColor: string; roadmapImage?: string; stationsImage?: string; textColor?: string; bgColor?: string } | undefined;
+  let customThemeData: {
+    mainColor: string;
+    roadmapImage?: string;
+    stationsImage?: string;
+    textColor?: string;
+    bgColor?: string;
+    roadmapActiveNodeColor?: string;
+    roadmapPathColor?: string;
+    headerIconColor?: string;
+  } | undefined;
   if (activity.module.theme && mongoose.isValidObjectId(activity.module.theme)) {
     const ct = await CustomTheme.findById(activity.module.theme).lean();
     if (ct) {
-      customThemeData = { mainColor: ct.mainColor, roadmapImage: ct.roadmapImage, stationsImage: ct.stationsImage, textColor: ct.textColor, bgColor: ct.bgColor };
+      customThemeData = {
+        mainColor: ct.mainColor,
+        roadmapImage: ct.roadmapImage,
+        stationsImage: ct.stationsImage,
+        textColor: ct.textColor,
+        bgColor: ct.bgColor,
+        roadmapActiveNodeColor: ct.roadmapActiveNodeColor,
+        roadmapPathColor: ct.roadmapPathColor,
+        headerIconColor: ct.headerIconColor,
+      };
     }
   }
 
@@ -230,6 +248,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     customInstructions: activity.customInstructions || undefined,
     ...(activity.isContinuous && { isContinuous: true }),
     leaderboardMode: activity.leaderboardMode || 'points',
+    ...(activity.hideLeaderboardInHeader && { hideLeaderboardInHeader: true }),
     ...(activity.activityDurationMinutes && { activityDurationMinutes: activity.activityDurationMinutes }),
     lockedFromIndex: typeof activity.lockedFromIndex === 'number' ? activity.lockedFromIndex : null,
     ...(activity.includeOnRoadmap && { includeOnRoadmap: true }),

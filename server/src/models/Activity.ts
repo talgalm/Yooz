@@ -101,6 +101,8 @@ export interface IActivity {
   loginComponent?: string; // legacy
   /** Leaderboard scoring mode */
   leaderboardMode?: 'points' | 'time';
+  /** When true, hide the leaderboard trophy button from the session header */
+  hideLeaderboardInHeader?: boolean;
   /** Optional time limit in minutes (only relevant when leaderboardMode is 'time') */
   activityDurationMinutes?: number;
   /** Share button analytics */
@@ -218,6 +220,7 @@ const activitySchema = new Schema<IActivity>({
   isContinuous: { type: Boolean, default: false },
   loginComponent: { type: String }, // legacy
   leaderboardMode: { type: String, enum: ['points', 'time'], default: 'points' },
+  hideLeaderboardInHeader: { type: Boolean, default: false },
   activityDurationMinutes: { type: Number },
   shareClicks: { type: Number, default: 0 },
   shareCompleted: { type: Number, default: 0 },

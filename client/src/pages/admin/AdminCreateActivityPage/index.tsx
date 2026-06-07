@@ -332,6 +332,7 @@ export default function AdminCreateActivityPage() {
   const [showStationNumbers, setShowStationNumbers] = useState(false);
 
   const [leaderboardMode, setLeaderboardMode] = useState<'points' | 'time'>('points');
+  const [displayLeaderboardInHeader, setDisplayLeaderboardInHeader] = useState(false);
   const [activityDurationMinutes, setActivityDurationMinutes] = useState('');
   const [isContinuous, setIsContinuous] = useState(false);
   const [portalId, setPortalId] = useState('');
@@ -458,6 +459,7 @@ export default function AdminCreateActivityPage() {
           if (a.portalId) setPortalId(a.portalId);
         }
         if (a.leaderboardMode) setLeaderboardMode(a.leaderboardMode as 'points' | 'time');
+        setDisplayLeaderboardInHeader(!a.hideLeaderboardInHeader);
         if (a.activityDurationMinutes) setActivityDurationMinutes(String(a.activityDurationMinutes));
         if (a.includeOnRoadmap) setIncludeOnRoadmap(true);
         setInitialLoading(false);
@@ -818,6 +820,7 @@ export default function AdminCreateActivityPage() {
         if (scheduledEnd) payload.scheduledEnd = new Date(scheduledEnd).toISOString();
       }
       payload.leaderboardMode = leaderboardMode;
+      payload.hideLeaderboardInHeader = !displayLeaderboardInHeader;
       if (leaderboardMode === 'time' && activityDurationMinutes.trim()) {
         const parsed = parseInt(activityDurationMinutes, 10);
         if (!isNaN(parsed) && parsed > 0) payload.activityDurationMinutes = parsed;
@@ -1274,6 +1277,15 @@ export default function AdminCreateActivityPage() {
                       )}
                     </>
                   )}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, cursor: 'pointer', fontSize: 14, color: '#444' }}>
+                    <input
+                      type="checkbox"
+                      checked={displayLeaderboardInHeader}
+                      onChange={(e) => setDisplayLeaderboardInHeader(e.target.checked)}
+                      style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                    />
+                    {t.displayLeaderboardInHeader}
+                  </label>
                 </SectionCardWide>
 
                 <SectionCardWide>

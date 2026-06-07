@@ -292,3 +292,319 @@ export const Footnote = styled('div')({
   textAlign: 'center',
   padding: '6px 14px 10px',
 });
+
+export const TypeChip = styled('button')<{ $variant: 'feature' | 'bug' | 'change' }>(
+  ({ $variant }) => ({
+    fontSize: 13,
+    padding: '8px 14px',
+    borderRadius: 16,
+    border: 'none',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    fontWeight: 700,
+    transition: 'all 0.15s',
+    color: $variant === 'change' ? '#713f12' : '#fff',
+    background:
+      $variant === 'feature'
+        ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)'
+        : $variant === 'bug'
+          ? 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)'
+          : 'linear-gradient(135deg, #facc15 0%, #eab308 100%)',
+    boxShadow:
+      $variant === 'feature'
+        ? '0 2px 8px rgba(37, 99, 235, 0.35)'
+        : $variant === 'bug'
+          ? '0 2px 8px rgba(220, 38, 38, 0.35)'
+          : '0 2px 8px rgba(234, 179, 8, 0.35)',
+    '&:hover': { transform: 'translateY(-1px)', filter: 'brightness(1.05)' },
+    '&:active': { transform: 'scale(0.96)' },
+  }),
+);
+
+export const DevPanelBackdrop = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0,0,0,0.45)',
+  zIndex: 980,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 16,
+  animation: `${fadeIn} 0.2s ease`,
+});
+
+export const DevPanelCard = styled('div')({
+  background: '#fff',
+  borderRadius: 16,
+  width: '100%',
+  maxWidth: 720,
+  maxHeight: '85dvh',
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  boxShadow: '0 16px 48px rgba(0,0,0,0.22)',
+  animation: `${slideUp} 0.25s ease`,
+});
+
+export const DevPanelHeader = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '16px 20px',
+  background: '#1e293b',
+  color: '#fff',
+  fontWeight: 700,
+  fontSize: 16,
+});
+
+export const DevPanelClose = styled('button')({
+  background: 'rgba(255,255,255,0.15)',
+  border: 'none',
+  color: '#fff',
+  width: 32,
+  height: 32,
+  borderRadius: '50%',
+  cursor: 'pointer',
+  fontSize: 20,
+  fontFamily: 'inherit',
+  '&:hover': { background: 'rgba(255,255,255,0.25)' },
+});
+
+export const DevFilterRow = styled('div')({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 6,
+  padding: '12px 16px',
+  borderBottom: `1px solid ${BORDER}`,
+});
+
+export const DevFilterBtn = styled('button')<{ $active?: boolean }>(({ $active }) => ({
+  fontSize: 12,
+  padding: '6px 12px',
+  borderRadius: 14,
+  border: `1px solid ${$active ? PRIMARY : BORDER}`,
+  background: $active ? PRIMARY_LIGHT : '#fff',
+  color: $active ? PRIMARY : TEXT,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  fontWeight: 600,
+}));
+
+export const DevPanelBody = styled('div')({
+  flex: 1,
+  overflowY: 'auto',
+  padding: '12px 16px 16px',
+});
+
+export const DevPanelLoading = styled('div')({
+  textAlign: 'center',
+  padding: 40,
+  color: TEXT_LIGHT,
+  fontSize: 14,
+});
+
+export const DevEmptyState = styled('div')({
+  textAlign: 'center',
+  padding: 40,
+  color: TEXT_LIGHT,
+  fontSize: 14,
+});
+
+export const DevTaskList = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
+});
+
+export const DevTaskRow = styled('div')({
+  border: `1px solid ${BORDER}`,
+  borderRadius: 12,
+  padding: '12px 14px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+  background: '#fafafa',
+});
+
+export const DevTypeBadge = styled('span')<{ $type: 'feature' | 'bug' | 'change' }>(
+  ({ $type }) => ({
+    alignSelf: 'flex-start',
+    fontSize: 11,
+    fontWeight: 700,
+    padding: '3px 10px',
+    borderRadius: 10,
+    color: $type === 'change' ? '#713f12' : '#fff',
+    background:
+      $type === 'feature' ? '#2563eb' : $type === 'bug' ? '#dc2626' : '#eab308',
+  }),
+);
+
+export const DevTaskDescription = styled('div')({
+  fontSize: 14,
+  color: TEXT,
+  lineHeight: 1.5,
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+});
+
+export const DevTaskMeta = styled('div')({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '4px 12px',
+  fontSize: 11,
+  color: TEXT_LIGHT,
+});
+
+export const DevStatusSelect = styled('select')({
+  alignSelf: 'flex-start',
+  fontSize: 12,
+  padding: '6px 10px',
+  borderRadius: 8,
+  border: `1px solid ${BORDER}`,
+  background: '#fff',
+  fontFamily: 'inherit',
+  fontWeight: 600,
+  color: TEXT,
+  cursor: 'pointer',
+});
+
+export const DevTaskDocLink = styled('button')({
+  alignSelf: 'flex-start',
+  fontSize: 12,
+  fontWeight: 600,
+  padding: '6px 12px',
+  borderRadius: 8,
+  border: `1px solid ${PRIMARY}`,
+  background: PRIMARY_LIGHT,
+  color: PRIMARY,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  '&:hover': { background: '#ebe8ff' },
+});
+
+export const DevDocViewerBackdrop = styled('div')({
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0,0,0,0.55)',
+  zIndex: 990,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 16,
+  animation: `${fadeIn} 0.2s ease`,
+});
+
+export const DevDocViewerCard = styled('div')({
+  background: '#fff',
+  borderRadius: 14,
+  width: '100%',
+  maxWidth: 900,
+  maxHeight: '90dvh',
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  boxShadow: '0 16px 48px rgba(0,0,0,0.25)',
+});
+
+export const DevDocViewerHeader = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  padding: '12px 16px',
+  borderBottom: `1px solid ${BORDER}`,
+  fontWeight: 700,
+  fontSize: 14,
+  color: TEXT,
+});
+
+export const DevDocViewerActions = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+});
+
+export const DevDocOpenLink = styled('a')({
+  fontSize: 12,
+  fontWeight: 600,
+  color: PRIMARY,
+  textDecoration: 'none',
+  '&:hover': { textDecoration: 'underline' },
+});
+
+export const DevDocViewerBody = styled('div')({
+  flex: 1,
+  minHeight: 360,
+  background: '#f4f4f6',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  overflow: 'auto',
+});
+
+export const DevDocFrame = styled('iframe')({
+  width: '100%',
+  height: 'min(70dvh, 720px)',
+  border: 'none',
+  background: '#fff',
+});
+
+export const DevDocImage = styled('img')({
+  maxWidth: '100%',
+  maxHeight: 'min(70dvh, 720px)',
+  objectFit: 'contain',
+});
+
+export const DevTaskUploadRow = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '0 14px 8px',
+  flexWrap: 'wrap',
+});
+
+export const DevUploadBtn = styled('button')({
+  fontSize: 12,
+  fontWeight: 600,
+  padding: '7px 12px',
+  borderRadius: 14,
+  border: `1px dashed ${PRIMARY}`,
+  background: '#fff',
+  color: PRIMARY,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  '&:hover': { background: PRIMARY_LIGHT },
+  '&:disabled': { opacity: 0.6, cursor: 'not-allowed' },
+});
+
+export const DevAttachedFile = styled('span')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  fontSize: 12,
+  fontWeight: 600,
+  padding: '6px 10px',
+  borderRadius: 14,
+  background: PRIMARY_LIGHT,
+  color: PRIMARY,
+  maxWidth: '100%',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+});
+
+export const DevRemoveDocBtn = styled('button')({
+  border: 'none',
+  background: 'transparent',
+  color: '#888',
+  cursor: 'pointer',
+  fontSize: 14,
+  lineHeight: 1,
+  padding: 0,
+  fontFamily: 'inherit',
+  '&:hover': { color: '#c0392b' },
+});
+
+export const DevHiddenFileInput = styled('input')({
+  display: 'none',
+});

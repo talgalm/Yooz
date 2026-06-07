@@ -139,10 +139,13 @@ const pointsDepositPulse = keyframes`
 `;
 
 /** Gold star — score icon (distinct from leaderboard trophy). */
-export function SessionHeaderPointsIcon({ variant = 'default' }: { variant?: 'default' | 'puzzle' } = {}) {
+export function SessionHeaderPointsIcon({
+  variant = 'default',
+  iconColor,
+}: { variant?: 'default' | 'puzzle'; iconColor?: string } = {}) {
   const puzzle = variant === 'puzzle';
-  const fill = puzzle ? '#1a1a1a' : '#ffffff';
-  const stroke = puzzle ? 'rgba(0,0,0,0.22)' : 'rgba(255,255,255,0.6)';
+  const fill = puzzle ? '#1a1a1a' : (iconColor ?? '#ffffff');
+  const stroke = puzzle ? 'rgba(0,0,0,0.22)' : (iconColor ? iconColor : 'rgba(255,255,255,0.6)');
   return (
     <svg viewBox="0 0 24 24" width={ROADMAP_HEADER_ICON_PX} height={ROADMAP_HEADER_ICON_PX} aria-hidden>
       <path
@@ -170,13 +173,17 @@ export function SessionHeaderTrophyIcon() {
   );
 }
 
-function TimerDots({ puzzleChrome, RoadmapPoints }: { puzzleChrome: boolean; RoadmapPoints: React.ElementType }) {
+function TimerDots({
+  puzzleChrome,
+  RoadmapPoints,
+  iconColor,
+}: { puzzleChrome: boolean; RoadmapPoints: React.ElementType; iconColor?: string }) {
   const [dots, setDots] = useState(1);
   useEffect(() => {
     const id = setInterval(() => setDots(d => (d % 4) + 1), 400);
     return () => clearInterval(id);
   }, []);
-  const color = puzzleChrome ? '#1a1a1a' : '#fff';
+  const color = puzzleChrome ? '#1a1a1a' : (iconColor ?? '#fff');
   return (
     <RoadmapPoints role="status" aria-label="loading" style={{ color, fontSize: 16, letterSpacing: 2 }}>
       <RoadmapHeaderPointsValue>{'·'.repeat(dots)}</RoadmapHeaderPointsValue>
@@ -208,12 +215,16 @@ export interface ActivitySessionHeaderProps {
   chromeVariant?: 'default' | 'puzzle';
   /** Remove backdrop blur and border — floats over content (text/video/image stations). */
   transparentChrome?: boolean;
+  /** When true, skip the third header cell (leaderboard/music) and use a 3-column layout. */
+  omitThirdSlot?: boolean;
   /** When 'time', show elapsed timer instead of points. */
   leaderboardMode?: 'points' | 'time';
   /** Elapsed seconds since activity start (used in time mode). */
   elapsedSeconds?: number;
   /** Optional time limit in minutes — timer turns red when exceeded. */
   activityDurationMinutes?: number;
+  /** Theme kit icon color — applied on default chrome only. */
+  headerIconColor?: string;
 }
 
 /**
@@ -230,11 +241,14 @@ export default function ActivitySessionHeader({
   onPointsRollComplete,
   chromeVariant = 'default',
   transparentChrome = false,
+  omitThirdSlot = false,
   leaderboardMode = 'points',
   elapsedSeconds = 0,
   activityDurationMinutes,
+  headerIconColor,
 }: ActivitySessionHeaderProps) {
   const puzzleChrome = chromeVariant === 'puzzle';
+  const iconColor = puzzleChrome ? undefined : headerIconColor;
   const RoadmapItem = puzzleChrome ? RoadmapHeaderItemPuzzle : RoadmapHeaderItem;
   const RoadmapPoints = puzzleChrome ? RoadmapHeaderPointsPuzzle : RoadmapHeaderPoints;
   const [displayedPoints, setDisplayedPoints] = useState(() => (
@@ -307,22 +321,29 @@ export default function ActivitySessionHeader({
         {topRow ? <SessionHeaderTopRow>{topRow}</SessionHeaderTopRow> : null}
         <RoadmapHeaderButtonRow>
           <RoadmapItem>
-            <ActivityLogoutButton onClick={onLogout} ariaLabel={t.exitActivity} variant={puzzleChrome ? 'puzzle' : 'default'} />
+            <ActivityLogoutButton
+              onClick={onLogout}
+              ariaLabel={t.exitActivity}
+              variant={puzzleChrome ? 'puzzle' : 'default'}
+              iconColor={iconColor}
+            />
           </RoadmapItem>
           <RoadmapItem>
-            <HelpChatHeaderButton tone={puzzleChrome ? 'puzzle' : 'dark'} />
+            <HelpChatHeaderButton tone={puzzleChrome ? 'puzzle' : 'dark'} iconColor={iconColor} />
           </RoadmapItem>
-          <RoadmapItem>
-            {thirdSlot}
-          </RoadmapItem>
+          {!omitThirdSlot ? (
+            <RoadmapItem>
+              {thirdSlot}
+            </RoadmapItem>
+          ) : null}
           <RoadmapItem>
             {leaderboardMode === 'time' ? (() => {
-              if (elapsedSeconds === 0) return <TimerDots puzzleChrome={puzzleChrome} RoadmapPoints={RoadmapPoints} />;
+              if (elapsedSeconds === 0) return <TimerDots puzzleChrome={puzzleChrome} RoadmapPoints={RoadmapPoints} iconColor={iconColor} />;
               const mins = Math.floor(elapsedSeconds / 60);
               const secs = elapsedSeconds % 60;
               const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
               const isOver = activityDurationMinutes != null && elapsedSeconds >= activityDurationMinutes * 60;
-              const timeColor = isOver ? '#e74c3c' : (puzzleChrome ? '#1a1a1a' : '#fff');
+              const timeColor = isOver ? '#e74c3c' : (puzzleChrome ? '#1a1a1a' : (iconColor ?? '#fff'));
               return (
                 <RoadmapPoints
                   role="status"
@@ -339,10 +360,13 @@ export default function ActivitySessionHeader({
               <RoadmapPoints
                 role="status"
                 aria-label={`${displayedPoints} ${t.points}`}
-                style={isRolling ? { animation: `${pointsDepositPulse} 0.85s ease-in-out infinite` } : undefined}
+                style={{
+                  ...(iconColor ? { color: iconColor } : {}),
+                  ...(isRolling ? { animation: `${pointsDepositPulse} 0.85s ease-in-out infinite` } : {}),
+                }}
               >
                 <RoadmapHeaderPointsValue>{displayedPoints}</RoadmapHeaderPointsValue>
-                <SessionHeaderPointsIcon variant={puzzleChrome ? 'puzzle' : 'default'} />
+                <SessionHeaderPointsIcon variant={puzzleChrome ? 'puzzle' : 'default'} iconColor={iconColor} />
               </RoadmapPoints>
             )}
           </RoadmapItem>

@@ -113,4 +113,5 @@ export interface Activity {
   isContinuous?: boolean;
   portalId?: string;
   includeOnRoadmap?: boolean;
+  hideLeaderboardInHeader?: boolean;
 }

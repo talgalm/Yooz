@@ -13,6 +13,7 @@ export interface CustomTheme {
   bgColor?: string;
   roadmapActiveNodeColor?: string;
   roadmapPathColor?: string;
+  headerIconColor?: string;
 }
 
 // ─── Styled ───
@@ -181,6 +182,7 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
   const [bgColor, setBgColor] = useState(existing?.bgColor ?? '#8fb248');
   const [roadmapActiveNodeColor, setRoadmapActiveNodeColor] = useState(existing?.roadmapActiveNodeColor ?? '');
   const [roadmapPathColor, setRoadmapPathColor] = useState(existing?.roadmapPathColor ?? '');
+  const [headerIconColor, setHeaderIconColor] = useState(existing?.headerIconColor ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -195,6 +197,8 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
   useEffect(() => { setRoadmapActiveNodeHexInput(roadmapActiveNodeColor); }, [roadmapActiveNodeColor]);
   const [roadmapPathHexInput, setRoadmapPathHexInput] = useState(existing?.roadmapPathColor ?? '');
   useEffect(() => { setRoadmapPathHexInput(roadmapPathColor); }, [roadmapPathColor]);
+  const [headerIconHexInput, setHeaderIconHexInput] = useState(existing?.headerIconColor ?? '');
+  useEffect(() => { setHeaderIconHexInput(headerIconColor); }, [headerIconColor]);
 
   const handleHexInput = (val: string) => {
     setHexInput(val);
@@ -224,6 +228,14 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
     }
     if (/^#[0-9a-fA-F]{6}$/.test(val)) setRoadmapPathColor(val);
   };
+  const handleHeaderIconHexInput = (val: string) => {
+    setHeaderIconHexInput(val);
+    if (!val) {
+      setHeaderIconColor('');
+      return;
+    }
+    if (/^#[0-9a-fA-F]{6}$/.test(val)) setHeaderIconColor(val);
+  };
 
   const handleSave = async () => {
     if (!name.trim()) { setError('שם הערכה הוא שדה חובה'); return; }
@@ -240,6 +252,7 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
         bgColor,
         roadmapActiveNodeColor: roadmapActiveNodeColor || undefined,
         roadmapPathColor: roadmapPathColor || undefined,
+        headerIconColor: headerIconColor || undefined,
       };
       let result: { theme: CustomTheme };
       if (isEdit && existing) {
@@ -353,6 +366,26 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
               style={{ width: 160 }}
             />
             {roadmapPathColor && <ClearBtn type="button" title="נקה צבע" onClick={() => setRoadmapPathColor('')}>×</ClearBtn>}
+          </ColorRow>
+        </Field>
+
+        <Field>
+          <FieldLabel>צבע אייקונים בכותרת (אופציונלי)</FieldLabel>
+          <ColorRow>
+            <ColorSwatch color={headerIconColor || '#ffffff'}>
+              <ColorInput
+                type="color"
+                value={headerIconColor || '#ffffff'}
+                onChange={(e) => setHeaderIconColor(e.target.value)}
+              />
+            </ColorSwatch>
+            <TextInput
+              value={headerIconHexInput}
+              onChange={(e) => handleHeaderIconHexInput(e.target.value)}
+              placeholder="default: white"
+              style={{ width: 160 }}
+            />
+            {headerIconColor && <ClearBtn type="button" title="נקה צבע" onClick={() => setHeaderIconColor('')}>×</ClearBtn>}
           </ColorRow>
         </Field>
 

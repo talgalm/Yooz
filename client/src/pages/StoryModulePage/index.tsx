@@ -1265,6 +1265,7 @@ export default function StoryModulePage() {
             onNodeTap={handleSpidersNodeTap}
             onLogout={doExit}
             onViewLeaderboard={handleViewLeaderboard}
+            hideLeaderboardInHeader={data.hideLeaderboardInHeader}
             popupModal={popupModal}
             t={t}
             theme={data.module.theme}
@@ -1307,6 +1308,7 @@ export default function StoryModulePage() {
           onNodeTap={handleNodeTap}
           onLogout={handleExit}
           onViewLeaderboard={handleViewLeaderboard}
+          hideLeaderboardInHeader={data.hideLeaderboardInHeader}
           popupModal={popupModal}
           t={t}
           theme={data.module.theme}
@@ -1501,6 +1503,7 @@ export default function StoryModulePage() {
         onOrderSurveyComplete={handleOrderSurveyComplete}
         onLogout={handleExit}
         onViewLeaderboard={handleViewLeaderboard}
+        hideLeaderboardInHeader={data.hideLeaderboardInHeader}
         currentPoints={playingTotalPoints}
         onStationContinue={handleStationContinue}
         onStationBackToRoadmap={handleStationBackToRoadmap}

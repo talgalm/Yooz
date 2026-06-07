@@ -21,6 +21,7 @@ router.post('/', authenticateAdmin, async (req: Request, res: Response) => {
     bgColor,
     roadmapActiveNodeColor,
     roadmapPathColor,
+    headerIconColor,
   } = req.body;
   if (!name || !mainColor) {
     res.status(400).json({ error: 'name and mainColor are required' });
@@ -35,6 +36,7 @@ router.post('/', authenticateAdmin, async (req: Request, res: Response) => {
     bgColor,
     roadmapActiveNodeColor,
     roadmapPathColor,
+    headerIconColor,
   });
   res.status(201).json({ theme });
 });
@@ -50,6 +52,7 @@ router.patch('/:id', authenticateAdmin, async (req: Request, res: Response) => {
     bgColor,
     roadmapActiveNodeColor,
     roadmapPathColor,
+    headerIconColor,
   } = req.body;
   const theme = await CustomTheme.findByIdAndUpdate(
     req.params.id,
@@ -63,6 +66,7 @@ router.patch('/:id', authenticateAdmin, async (req: Request, res: Response) => {
         bgColor,
         roadmapActiveNodeColor,
         roadmapPathColor,
+        headerIconColor,
       },
     },
     { new: true, runValidators: true },

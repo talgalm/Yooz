@@ -63,6 +63,7 @@ import {
 import { useHelpChat } from '../../components/HelpChat/HelpChatContext';
 import type { GameResult } from '../../components/games/types';
 import type { ModuleItemData, GameItemData, StationItemData, MissionItemData, GameData, CustomThemeData } from './types';
+import { getHeaderIconColor } from './roadmapThemes';
 
 // ─── Local styled components ───
 
@@ -291,6 +292,7 @@ interface PlayingPhaseProps {
   onOrderSurveyComplete?: (result: GameResult) => void;
   onLogout: () => void;
   onViewLeaderboard?: () => void;
+  hideLeaderboardInHeader?: boolean;
   onStationContinue: () => void;
   onStationBackToRoadmap: () => void;
   onStationFinishActivity: () => void;
@@ -328,6 +330,7 @@ export default function PlayingPhase({
   onOrderSurveyComplete,
   onLogout,
   onViewLeaderboard,
+  hideLeaderboardInHeader,
   onStationContinue,
   onStationBackToRoadmap,
   onStationFinishActivity,
@@ -357,12 +360,13 @@ export default function PlayingPhase({
   const isTextVideoImageStation = currentItem.type === 'station' && ['text', 'video', 'image', 'riddle', 'avatar', 'enteringText'].includes((currentItem as StationItemData).stationType);
   const puzzleSessionChrome = (isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation) ? 'puzzle' : 'default';
   const useDarkChrome = isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation;
+  const headerIconColor = getHeaderIconColor(theme, customTheme);
   const SessionHeaderIconButton = useDarkChrome ? PuzzleDarkHeaderActionIconButton : DarkHeaderActionIconButton;
   const SessionHintButton = useDarkChrome ? PuzzleDarkHeaderTextButton : DarkHeaderTextButton;
   useActivityGameHeaderFallbackWhenNeeded(isGameStep, currentItem._id);
   const showMusicInGameSlot = isGameStep && activityHeaderSlot != null;
   const showStandaloneLeaderboard =
-    !isGameStep && Boolean(onViewLeaderboard);
+    !isGameStep && Boolean(onViewLeaderboard) && !hideLeaderboardInHeader;
   const isRiddleStation = currentItem.type === 'station' && (currentItem as StationItemData).stationType === 'riddle';
   const isEnteringTextStation = currentItem.type === 'station' && (currentItem as StationItemData).stationType === 'enteringText';
 
@@ -618,20 +622,22 @@ export default function PlayingPhase({
     );
   };
 
+  const themedIconProps = useDarkChrome ? {} : { iconColor: headerIconColor };
   const headerThirdSlot = showMusicInGameSlot && activityHeaderSlot ? (
     <SessionHeaderIconButton
       type="button"
       onClick={activityHeaderSlot.toggleMute}
       aria-label={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
       title={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
+      {...themedIconProps}
     >
       {activityHeaderSlot.isMuted ? <MutedIcon /> : <SpeakerIcon />}
     </SessionHeaderIconButton>
   ) : showStandaloneLeaderboard && onViewLeaderboard ? (
-    <SessionHeaderIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
+    <SessionHeaderIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'} {...themedIconProps}>
       <SessionHeaderTrophyIcon />
     </SessionHeaderIconButton>
-  ) : (
+  ) : hideLeaderboardInHeader ? null : (
     <SessionHeaderIconPlaceholder aria-hidden />
   );
 
@@ -640,6 +646,8 @@ export default function PlayingPhase({
       onLogout={onLogout}
       currentPoints={currentPoints}
       t={t}
+      headerIconColor={headerIconColor}
+      omitThirdSlot={hideLeaderboardInHeader && !showMusicInGameSlot}
       thirdSlot={headerThirdSlot}
       chromeVariant={puzzleSessionChrome}
       leaderboardMode={leaderboardMode}

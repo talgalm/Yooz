@@ -36,6 +36,14 @@ router.post('/', authenticateAdmin, upload.single('file'), async (req: Request, 
     'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
     'video/mp4', 'video/webm', 'video/quicktime',
     'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/plain',
   ]);
   if (!ALLOWED_MIMETYPES.has(req.file.mimetype)) {
     res.status(400).json({ error: `File type not allowed: ${req.file.mimetype}` });
@@ -43,10 +51,14 @@ router.post('/', authenticateAdmin, upload.single('file'), async (req: Request, 
   }
 
   try {
-    // Determine resource type from mimetype
+    const isDocument =
+      req.file.mimetype === 'application/pdf' ||
+      req.file.mimetype.startsWith('application/vnd.') ||
+      req.file.mimetype === 'application/msword' ||
+      req.file.mimetype === 'text/plain';
     const isVideo = req.file.mimetype.startsWith('video/');
     const isAudio = req.file.mimetype.startsWith('audio/');
-    const resourceType = isVideo ? 'video' : isAudio ? 'video' : 'image';
+    const resourceType = isDocument ? 'raw' : isVideo || isAudio ? 'video' : 'image';
 
     // Upload buffer to Cloudinary
     const result = await new Promise<{ secure_url: string; public_id: string; resource_type: string; format: string; bytes: number }>((resolve, reject) => {
@@ -69,6 +81,7 @@ router.post('/', authenticateAdmin, upload.single('file'), async (req: Request, 
       resourceType: result.resource_type,
       format: result.format,
       size: result.bytes,
+      fileName: req.file.originalname,
     });
   } catch (err) {
     console.error('Cloudinary upload error:', err);

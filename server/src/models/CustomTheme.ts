@@ -10,6 +10,7 @@ export interface ICustomTheme {
   bgColor?: string;        // hex — browser theme-color (meta tag) for roadmap + stations
   roadmapActiveNodeColor?: string; // hex — optional active roadmap node color
   roadmapPathColor?: string; // hex — optional roadmap path color
+  headerIconColor?: string; // hex — optional session header icon color
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,6 +25,7 @@ const customThemeSchema = new Schema<ICustomTheme>(
     bgColor: { type: String },
     roadmapActiveNodeColor: { type: String },
     roadmapPathColor: { type: String },
+    headerIconColor: { type: String },
   },
   { timestamps: true },
 );

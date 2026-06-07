@@ -7,7 +7,7 @@ import storySideWave from '../../assets/story-side-wave.svg';
 import storySideWaveBlue from '../../assets/story-side-wave-blue.svg';
 import storySideWaveDesert from '../../assets/story-side-wave-desert.svg';
 import { ROADMAP_DECORATIONS } from './roadmapTrees';
-import { getThemeKit, NATURE_THEME, OCEAN_DECORATIONS, DESERT_DECORATIONS, type RoadmapThemeKit } from './roadmapThemes';
+import { getThemeKit, getHeaderIconColor, NATURE_THEME, OCEAN_DECORATIONS, DESERT_DECORATIONS, type RoadmapThemeKit } from './roadmapThemes';
 
 // ─── Constants ───
 
@@ -92,13 +92,19 @@ const RoadmapContainer = styled('div')({
 
 const RoadmapActivityName = styled('div')({
   flexShrink: 0,
-  padding: '0 16px 8px',
-  fontSize: 14,
-  fontWeight: 700,
-  lineHeight: 1.35,
+  padding: '0 16px 10px',
+  fontSize: 18,
+  fontWeight: 800,
+  lineHeight: 1.3,
   color: '#1a1a1a',
   textAlign: 'center',
   userSelect: 'none',
+  '@media (min-width: 768px)': {
+    padding: '0 max(16px, calc((100% - 960px) / 2)) 14px',
+    fontSize: 32,
+    lineHeight: 1.2,
+    letterSpacing: '-0.02em',
+  },
 });
 
 const ScrollArea = styled('div')({
@@ -686,6 +692,7 @@ interface RoadmapViewProps {
   onNodeTap: (index: number) => void;
   onLogout: () => void;
   onViewLeaderboard?: () => void;
+  hideLeaderboardInHeader?: boolean;
   popupModal: React.ReactNode;
   t: Record<string, string>;
   theme?: string;
@@ -701,10 +708,11 @@ interface RoadmapViewProps {
 
 export default function RoadmapView({
   items, currentItemIndex, completedCount, currentPoints, pointsRoll, onPointsRollComplete,
-  showFootsteps, onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, popupModal, t, theme, customTheme,
+  showFootsteps, onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, hideLeaderboardInHeader, popupModal, t, theme, customTheme,
   leaderboardMode, elapsedSeconds, activityDurationMinutes, lockedFromIndex, activityNameOnRoadmap,
 }: RoadmapViewProps) {
   const kit = useMemo(() => getThemeKit(theme), [theme]);
+  const headerIconColor = useMemo(() => getHeaderIconColor(theme, customTheme), [theme, customTheme]);
   const activeNodeColor = customTheme?.roadmapActiveNodeColor || NATURE_THEME.nodeActiveBg;
   const pathColor = customTheme?.roadmapPathColor || NATURE_THEME.roadSurface;
   const containerBg: React.CSSProperties = customTheme?.roadmapImage
@@ -1334,8 +1342,10 @@ export default function RoadmapView({
       elapsedSeconds={elapsedSeconds}
       activityDurationMinutes={activityDurationMinutes}
       t={t}
-      thirdSlot={onViewLeaderboard ? (
-        <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
+      headerIconColor={headerIconColor}
+      omitThirdSlot={hideLeaderboardInHeader}
+      thirdSlot={!hideLeaderboardInHeader && onViewLeaderboard ? (
+        <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'} iconColor={headerIconColor}>
           <SessionHeaderTrophyIcon />
         </DarkHeaderActionIconButton>
       ) : (
