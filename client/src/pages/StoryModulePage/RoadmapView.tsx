@@ -280,7 +280,7 @@ const BalloonSvg = ({ size }: { size: number }) => (
     style={{
       display: 'block',
       width: size,
-      height: size * (1000 / 600),
+      height: size * (5 / 3),
       filter: 'drop-shadow(0 4px 8px rgba(0,0,0,.18))',
     }}
   />
@@ -1040,12 +1040,12 @@ export default function RoadmapView({
     const ropesTop = PADDING_TOP + 15;
     const ropesLeft = W * 0.28;
 
-    // Lake: between the row-1 and row-2 horizontal paths on the right side
-    // Falls back to bottom of canvas for very short activities (< 4 stations)
-    const hasRow2 = items.length >= 4;
-    const lakeTop = hasRow2
-      ? getRowY(1) + (VERTICAL_SPACING - lakeH) / 2
-      : totalHeight - PADDING_BOTTOM - lakeH - 40;
+    // Lake: keep it near the lower part of the map so it appears
+    // toward the final stations, while staying above bottom trees.
+    const lakeTop = Math.max(
+      getRowY(1) + (VERTICAL_SPACING - lakeH) / 2,
+      totalHeight - PADDING_BOTTOM - lakeH - 12,
+    );
 
     return [
       {
@@ -1209,21 +1209,21 @@ export default function RoadmapView({
     const vh = window.innerHeight || 600;
     const interval = setInterval(() => {
       setBalloons((prev) => {
-        if (prev.length >= 1) return prev;
+        if (prev.length >= 2) return prev;
         balloonIdRef.current += 1;
         const newBalloon = {
           id: balloonIdRef.current,
           top: 40 + Math.random() * Math.min(vh * 0.45, 320),
-          duration: 14 + Math.random() * 8,
+          duration: 12 + Math.random() * 7,
           wobbleDuration: 2.2 + Math.random() * 1.4,
-          size: 60 + Math.random() * 36,
+          size: 62 + Math.random() * 34,
         };
         setTimeout(() => {
           setBalloons((cur) => cur.filter((b) => b.id !== newBalloon.id));
         }, (newBalloon.duration + 1) * 1000);
         return [...prev, newBalloon];
       });
-    }, 5200);
+    }, 4200);
 
     return () => clearInterval(interval);
   }, [kit.showBalloon]);
