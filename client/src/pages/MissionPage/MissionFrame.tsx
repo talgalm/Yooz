@@ -63,22 +63,24 @@ export const MissionWrapper = styled('div')<{ bg?: string, step?: number, ready?
   } : {}),
 }));
 
-// The frame container — overlays the SVG frame on top of the background.
-// `backgroundSize: cover` + `100dvh` keeps the SVG's bottom edge (where the
-// button slot lives) anchored to the bottom of the viewport on every device,
-// regardless of aspect ratio — wider phones just crop more on the sides.
+// The frame container — locks its aspect ratio to the SVG (1080×1920 = 9:16)
+// so the painted SVG slots (title bar, timer band, button cradle) always map
+// to the same percentage positions of the container height. Without this lock,
+// `cover` cropped the SVG's TOP on phones shorter than 9:16 (older Androids),
+// sliding the painted timer band UP into the DOM description box. Tall phones
+// (iPhone 19.5:9 etc.) now show small dark bars top/bottom but proportions hold.
+// `vh` fallback covers older browsers without dvh support.
 export const FrameContainer = styled('div')({
   position: 'relative',
   zIndex: 2,
-  width: '100%',
-  maxWidth: 480,
-  height: '100dvh',
+  width: 'min(100%, 480px)',
+  aspectRatio: '1080 / 1920',
+  maxHeight: '100vh',
+  '@supports (height: 100dvh)': { maxHeight: '100dvh' },
   backgroundImage: 'url(/images/mission-frame.svg)',
-  backgroundSize: 'cover',
-  backgroundPosition: 'bottom center',
+  backgroundSize: '100% 100%',
+  backgroundPosition: 'center',
   backgroundRepeat: 'no-repeat',
-  display: 'flex',
-  flexDirection: 'column',
   boxSizing: 'border-box',
   overflow: 'hidden',
 });
@@ -102,23 +104,22 @@ export const FrameFooterOverlay = styled('img')({
   pointerEvents: 'none',
 });
 
-// Header area — positioned at top to match the SVG header rectangle.
-// Padding/minHeight use dvh so the text Y-position scales with viewport HEIGHT,
-// not just width. Without this, on short viewports (iPhone Safari with browser
-// chrome visible) the fixed 50px padding pushed the text below the SVG header
-// band into the scene; on tall desktop viewports the same padding sat inside.
+// Header area — absolutely positioned over the SVG's title rectangle.
+// Percentages are of FrameContainer height (now aspect-locked to the SVG),
+// so this slot always maps to the same painted band, regardless of device.
 export const MissionHeader = styled('div')({
-  width: '93%',
-  margin: '0.5dvh auto 0',
-  padding: '0.5dvh 16px',
-  minHeight: '5dvh',
+  position: 'absolute',
+  top: '3.5%',
+  left: '3.5%',
+  right: '3.5%',
+  height: '9%',
+  padding: '0 16px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   textAlign: 'center',
   boxSizing: 'border-box',
   animation: `${fadeIn} 0.6s ease-out`,
-  position: 'relative',
   zIndex: 5,
 });
 
@@ -134,22 +135,29 @@ export const HeaderText = styled('h1')({
   width: '100%',
 });
 
-// Content area (middle section)
+// Content area (middle section) — absolutely positioned below the SVG's
+// painted timer band (~14–22% of container height) and above the button
+// cradle (~14% from bottom).
 export const MissionContent = styled('div')({
-  flex: 1,
+  position: 'absolute',
+  top: '23%',
+  bottom: '14%',
+  left: 0,
+  right: 0,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'flex-start',
-  padding: '0px 11px',
+  padding: '0 11px',
   gap: 20,
   animation: `${fadeIn} 0.6s ease-out 0.2s both`,
-  position: 'relative',
   zIndex: 5,
+  boxSizing: 'border-box',
+  overflow: 'hidden',
 });
 
 export const DescriptionText = styled('p')<{ step?: number }>(({ step }) => ({
-  fontSize: 'clamp(15px, 24vw, 18px)',
+  fontSize: 'clamp(15px, 4vw, 18px)',
   fontWeight: 400,
   fontFamily: MISSION_FONT,
   color: MISSION_TEXT,
@@ -159,12 +167,11 @@ export const DescriptionText = styled('p')<{ step?: number }>(({ step }) => ({
   direction: 'rtl',
   whiteSpace: 'pre-line',
   width: '100%',
-  marginTop: '10%',
   padding: '16px 16px',
   border: '2px solid #39CABC',
   ...(step && step === 3 && {
     border: 'transparent',
-    marginTop: '25%',
+    marginTop: '15%',
   }),
   boxSizing: 'border-box',
 }));
