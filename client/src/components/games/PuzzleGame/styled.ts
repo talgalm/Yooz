@@ -884,7 +884,7 @@ export const DragPhaseContainer = styled('div')({
   alignItems: 'center',
   justifyContent: 'center',
   width: '100%',
-  gap: 12,
+  gap: 'clamp(18px, 3.2vh, 28px)',
   padding: '8px 12px',
   boxSizing: 'border-box',
   '@media (min-width: 768px)': {
@@ -909,6 +909,9 @@ export const DragInstruction = styled('div')({
   padding: '8px 12px',
   background: 'transparent',
   maxWidth: 'min(100%, 360px)',
+  flexShrink: 0,
+  position: 'relative',
+  zIndex: 2,
   animation: `${slideUp} 0.3s ease-out`,
 });
 
@@ -917,6 +920,7 @@ export const DragGridWrapper = styled('div')({
   position: 'relative',
   width: '85%',
   maxWidth: 320,
+  marginTop: 'clamp(8px, 1.8vh, 18px)',
   borderRadius: 14,
   overflow: 'visible',
   border: `3px solid rgba(74,101,114,0.4)`,
