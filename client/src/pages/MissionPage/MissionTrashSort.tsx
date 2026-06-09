@@ -1293,7 +1293,7 @@ export default function MissionTrashSort({
             autoPlay
             loop
             playsInline
-            muted
+            muted={muted}
             style={{
               position: 'absolute',
               inset: 0,
