@@ -163,7 +163,7 @@ const PuzzleInstruction = styled('p')({
   padding: '0 16px',
   lineHeight: 1.5,
   position: 'absolute',
-  top: '7%',
+  top: '2%',
   left: 0,
   right: 0,
   zIndex: 4,
