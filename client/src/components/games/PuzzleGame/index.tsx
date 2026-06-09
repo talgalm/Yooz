@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } from 'react';
 import { useLang, useTranslations } from '../../../context/LanguageContext';
 import { texts } from './PuzzleGame.i18n';
 import { shuffleArray } from '../../../utils/shuffleArray';
@@ -226,6 +226,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
   const dragStartOffset = useRef({ x: 0, y: 0 });
   const pieceRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const [dragGridWidth, setDragGridWidth] = useState<number | undefined>(undefined);
   const cellRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // Timer — overall game timer for speed bonus
@@ -269,6 +270,25 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
   useEffect(() => {
     revealedPiecesRef.current = revealedPieces;
   }, [revealedPieces]);
+
+  useLayoutEffect(() => {
+    if (!dragPhase) {
+      setDragGridWidth(undefined);
+      return;
+    }
+
+    const gridEl = gridRef.current;
+    if (!gridEl) return;
+
+    const updateGridWidth = () => {
+      setDragGridWidth(gridEl.clientWidth);
+    };
+
+    updateGridWidth();
+    const resizeObserver = new ResizeObserver(updateGridWidth);
+    resizeObserver.observe(gridEl);
+    return () => resizeObserver.disconnect();
+  }, [dragPhase, dragPieceIndex]);
 
   useEffect(() => {
     elapsedSecondsRef.current = elapsedSeconds;
@@ -767,6 +787,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
                 cols={cols}
                 rows={rows}
                 pieceIndex={dragPieceIndex}
+                gridWidth={dragGridWidth}
                 style={{
                   visibility: isDragging || dragFeedback === 'correct' ? 'hidden' : 'visible',
                   backgroundImage: `url(${settings.puzzleImage})`,
@@ -783,6 +804,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
                   cols={cols}
                   rows={rows}
                   pieceIndex={dragPieceIndex}
+                  gridWidth={dragGridWidth}
                   isDragging
                   style={{
                     backgroundImage: `url(${settings.puzzleImage})`,

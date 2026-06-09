@@ -951,7 +951,7 @@ export default function SpidersView({
               src="/images/baloon.svg"
               alt=""
               aria-hidden
-              style={{ width: b.size, height: b.size * (1000 / 600) }}
+              style={{ width: b.size, height: 'auto' }}
             />
           </BalloonWobbleWrap>
         </BalloonOuter>

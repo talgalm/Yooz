@@ -947,7 +947,7 @@ export const DragGridCell = styled('div', {
 export const DraggablePiece = styled('div', {
   shouldForwardProp: (prop) => !['cols', 'rows', 'pieceIndex', 'isDragging', 'gridWidth'].includes(prop as string),
 })<{ cols: number; rows: number; pieceIndex: number; isDragging?: boolean; gridWidth?: number }>(
-  ({ cols, rows, pieceIndex, isDragging }) => {
+  ({ cols, rows, pieceIndex, isDragging, gridWidth }) => {
     const col = pieceIndex % cols;
     const row = Math.floor(pieceIndex / cols);
     // With backgroundSize: (cols*100%) x (rows*100%), CSS background-position
@@ -957,7 +957,7 @@ export const DraggablePiece = styled('div', {
     const pctY = rows > 1 ? (row / (rows - 1)) * 100 : 0;
 
     return {
-      width: `calc(85vw / ${cols})`,
+      width: gridWidth ? `${gridWidth / cols}px` : `calc(85vw / ${cols})`,
       maxWidth: `calc(320px / ${cols})`,
       aspectRatio: '1',
       borderRadius: 8,

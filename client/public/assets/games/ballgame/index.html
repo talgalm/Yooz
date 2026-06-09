@@ -101,6 +101,10 @@
               const titleEl = document.getElementById('bonusTitle');
               if (titleEl) titleEl.textContent = payload.gameName;
             }
+            if (typeof payload.instructions === 'string' && payload.instructions.trim()) {
+              const contentEl = document.getElementById('bonusContent');
+              if (contentEl) contentEl.textContent = payload.instructions.trim();
+            }
             return;
           }
 

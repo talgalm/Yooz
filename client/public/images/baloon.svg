@@ -1,50 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="600" height="1000" viewBox="0 0 600 1000" xmlns="http://www.w3.org/2000/svg">
+<svg width="107" height="150" viewBox="0 0 107 150" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity="0.2"/>
-    </filter>
     <clipPath id="balloonClip">
-      <ellipse cx="300" cy="300" rx="230" ry="230"/>
+      <path d="M100.5 50.5C100.5 77.3 79.4 101 53.5 101C27.6 101 6.5 77.3 6.5 50.5C6.5 22.7 26.9 2.5 53.5 2.5C80.1 2.5 100.5 22.7 100.5 50.5Z"/>
     </clipPath>
-    <linearGradient id="ropeGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f7f8fb"/>
-      <stop offset="100%" stop-color="#d7dbe4"/>
-    </linearGradient>
-    <linearGradient id="basketGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f8f9fc"/>
-      <stop offset="100%" stop-color="#c2c8d6"/>
+    <linearGradient id="basketGrad" x1="53.5" y1="130" x2="53.5" y2="149" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F6F8FC"/>
+      <stop offset="1" stop-color="#AEB7C9"/>
     </linearGradient>
   </defs>
 
-  <g filter="url(#shadow)">
-    <ellipse cx="300" cy="300" rx="230" ry="230" fill="#183e6b"/>
-    <g clip-path="url(#balloonClip)">
-      <rect x="40" y="102" width="520" height="66" fill="#f7fbff"/>
-      <rect x="40" y="184" width="520" height="22" fill="#dce5f1"/>
-      <rect x="40" y="255" width="520" height="84" fill="#ffffff"/>
-      <rect x="40" y="394" width="520" height="58" fill="#f7fbff"/>
-    </g>
-    <ellipse cx="300" cy="300" rx="230" ry="230" fill="none" stroke="#0f3155" stroke-width="10"/>
+  <path d="M100.5 50.5C100.5 77.3 79.4 101 53.5 101C27.6 101 6.5 77.3 6.5 50.5C6.5 22.7 26.9 2.5 53.5 2.5C80.1 2.5 100.5 22.7 100.5 50.5Z" fill="#163B68"/>
+  <g clip-path="url(#balloonClip)">
+    <rect x="1" y="21" width="105" height="9" fill="#F7FAFF"/>
+    <rect x="1" y="34" width="105" height="6" fill="#DFE8F4"/>
+    <rect x="1" y="49" width="105" height="16" fill="#FFFFFF"/>
+    <rect x="1" y="78" width="105" height="10" fill="#F7FAFF"/>
   </g>
+  <path d="M100.5 50.5C100.5 77.3 79.4 101 53.5 101C27.6 101 6.5 77.3 6.5 50.5C6.5 22.7 26.9 2.5 53.5 2.5C80.1 2.5 100.5 22.7 100.5 50.5Z" stroke="#0E2F53" stroke-width="3"/>
 
   <g font-family="Arial, Helvetica, sans-serif" font-weight="700" text-anchor="middle">
-    <text x="300" y="278" font-size="70" fill="#ffffff">Balloon</text>
-    <text x="300" y="344" font-size="76" fill="#cde5e6">&amp;MORE</text>
-    <text x="214" y="229" font-size="32" fill="#dbe8f8" opacity="0.95">TLV</text>
+    <text x="34.5" y="44" font-size="8" fill="#DDEAF8">TLV</text>
+    <text x="53.5" y="52" font-size="18" fill="#FFFFFF">Balloon</text>
+    <text x="53.5" y="68" font-size="18" fill="#D9EEF0">&amp;MORE</text>
   </g>
 
-  <g stroke="url(#ropeGrad)" stroke-width="8" stroke-linecap="round">
-    <line x1="236" y1="500" x2="254" y2="684"/>
-    <line x1="270" y1="510" x2="276" y2="692"/>
-    <line x1="300" y1="514" x2="300" y2="697"/>
-    <line x1="330" y1="510" x2="324" y2="692"/>
-    <line x1="364" y1="500" x2="346" y2="684"/>
+  <g stroke="#E8EDF5" stroke-width="2" stroke-linecap="round">
+    <path d="M33.5 101L43 132"/>
+    <path d="M43.5 104L48 134"/>
+    <path d="M53.5 105V136"/>
+    <path d="M63.5 104L59 134"/>
+    <path d="M73.5 101L64 132"/>
   </g>
 
-  <g filter="url(#shadow)">
-    <path d="M244 716 Q300 680 356 716 L344 766 Q300 794 256 766 Z" fill="url(#basketGrad)" stroke="#9ca6b9" stroke-width="5"/>
-    <ellipse cx="300" cy="716" rx="60" ry="14" fill="#edf0f6" opacity="0.82"/>
-    <ellipse cx="300" cy="767" rx="46" ry="11" fill="#8f98aa" opacity="0.45"/>
-  </g>
+  <path d="M36.5 132C43.2 127.5 63.8 127.5 70.5 132L67.5 145C60.1 149.2 46.9 149.2 39.5 145L36.5 132Z" fill="url(#basketGrad)" stroke="#909AAF" stroke-width="2"/>
+  <ellipse cx="53.5" cy="132" rx="17" ry="4.5" fill="#F1F3F8"/>
+  <ellipse cx="53.5" cy="145" rx="13" ry="3" fill="#7E879A" opacity=".45"/>
 </svg>

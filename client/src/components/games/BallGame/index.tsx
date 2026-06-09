@@ -142,13 +142,14 @@ export default function BallGame({
   const initPayload = useMemo(
     () => ({
       configurations: filteredQuestions.map(mapQuestionToLegacyConfig),
+      instructions: settings.instructions?.trim() || '',
       timeLimitSeconds: settings.scoring?.timeLimitSeconds ?? 30,
       gameId: game._id,
       gameName: game.name,
       lang,
       dir,
     }),
-    [filteredQuestions, settings.scoring?.timeLimitSeconds, game._id, lang, dir]
+    [filteredQuestions, settings.instructions, settings.scoring?.timeLimitSeconds, game._id, game.name, lang, dir]
   );
 
   useEffect(() => {
@@ -297,7 +298,7 @@ export default function BallGame({
     }
   );
 
-  const src = `/assets/games/ballgame/index.html?v=5&embedded=1&lang=${encodeURIComponent(lang)}&dir=${encodeURIComponent(dir)}&gameId=${encodeURIComponent(game._id)}&timeLimit=${encodeURIComponent(String(settings.scoring?.timeLimitSeconds ?? 30))}`;
+  const src = `/assets/games/ballgame/index.html?v=6&embedded=1&lang=${encodeURIComponent(lang)}&dir=${encodeURIComponent(dir)}&gameId=${encodeURIComponent(game._id)}&timeLimit=${encodeURIComponent(String(settings.scoring?.timeLimitSeconds ?? 30))}`;
   if (pendingResult) {
     return (
       <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}>

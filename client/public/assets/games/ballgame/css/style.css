@@ -185,6 +185,7 @@ canvas {
   margin: 0;
   text-shadow: none;
   display: block;
+  white-space: pre-line;
 }
 
 #iMute {

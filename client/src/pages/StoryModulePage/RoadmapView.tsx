@@ -280,7 +280,7 @@ const BalloonSvg = ({ size }: { size: number }) => (
     style={{
       display: 'block',
       width: size,
-      height: size * (5 / 3),
+      height: 'auto',
       filter: 'drop-shadow(0 4px 8px rgba(0,0,0,.18))',
     }}
   />
