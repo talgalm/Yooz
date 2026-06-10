@@ -173,7 +173,7 @@ const GridArea = styled('div')({
   position: 'relative',
   width: '85vw',
   maxWidth: 380,
-  marginTop: '30%',
+  marginTop: '24%',
   aspectRatio: '1 / 1',
   borderRadius: 4,
   overflow: 'hidden',
