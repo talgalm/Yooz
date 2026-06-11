@@ -79,6 +79,7 @@ import FunnelChart from './FunnelChart';
 import ItemAnalyticsTable from './ItemAnalyticsTable';
 import GroupComparison from './GroupComparison';
 import ExportSection from './ExportSection';
+import { formatDuration } from './formatters';
 
 interface Props {
   activityId: string | null;
@@ -86,15 +87,6 @@ interface Props {
 }
 
 type Tone = 'green' | 'blue' | 'amber' | 'red';
-
-function formatDuration(ms?: number | null) {
-  if (!ms) return '-';
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  const rest = s % 60;
-  return rest ? `${m}m ${rest}s` : `${m}m`;
-}
 
 function formatDateTime(value: string) {
   if (!value) return '-';
@@ -140,6 +132,36 @@ function template(text: string, values: Record<string, string | number>) {
   );
 }
 
+function formatAnomalyMessage(alert: AnomalyAlert, t: Record<string, string>) {
+  const itemName = alert.itemName
+    || (typeof alert.itemIndex === 'number' ? `${t.itemName} ${alert.itemIndex + 1}` : t.itemName);
+
+  if (alert.type === 'high_dropout') {
+    if (typeof alert.dropoutRatePct === 'number') {
+      return template(t.highDropoutAlert, {
+        itemName,
+        dropoutRate: alert.dropoutRatePct,
+      });
+    }
+
+    return template(t.highDropoutAlertFallback, { itemName });
+  }
+
+  if (alert.type === 'unusual_time') {
+    if (typeof alert.avgDurationMs === 'number' && typeof alert.durationRatio === 'number') {
+      return template(t.unusualTimeAlert, {
+        itemName,
+        duration: formatDuration(alert.avgDurationMs, t),
+        ratio: alert.durationRatio,
+      });
+    }
+
+    return template(t.unusualTimeAlertFallback, { itemName });
+  }
+
+  return alert.message;
+}
+
 function buildRecommendations(
   analytics: ActivityAnalyticsData,
   anomalies: AnomalyAlert[],
@@ -156,7 +178,7 @@ function buildRecommendations(
   if (anomalies.length > 0) {
     recommendations.push({
       title: t.reviewBottlenecks,
-      body: anomalies[0].message,
+      body: formatAnomalyMessage(anomalies[0], t),
       tone: anomalies[0].severity === 'error' ? 'red' : 'amber',
     });
   }
@@ -321,7 +343,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
                 <AlertBanner key={`${a.type}-${a.itemIndex ?? a.message}`} severity={a.severity}>
                   <AlertIcon>!</AlertIcon>
                   <span style={{ flex: '1 1 220px', minWidth: 0, overflowWrap: 'anywhere' }}>
-                    {a.message}
+                    {formatAnomalyMessage(a, t)}
                   </span>
                 </AlertBanner>
               ))}
@@ -358,9 +380,9 @@ export default function ActivityAnalytics({ activityId }: Props) {
               </MetricCard>
               <MetricCard tone="amber">
                 <MetricLabel>{t.avgDuration}</MetricLabel>
-                <MetricValue>{formatDuration(analytics.avgDurationMs)}</MetricValue>
+                <MetricValue>{formatDuration(analytics.avgDurationMs, t)}</MetricValue>
                 <MetricSubtext>
-                  {t.fastest}: {formatDuration(analytics.durationSummary?.fastestMs)}
+                  {t.fastest}: {formatDuration(analytics.durationSummary?.fastestMs, t)}
                 </MetricSubtext>
               </MetricCard>
             </MetricGrid>
@@ -499,7 +521,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
                       <td style={{ fontWeight: 800 }}>{participant.name}</td>
                       <td>{participant.group || '-'}</td>
                       <td>{Math.round(participant.score)}</td>
-                      <td>{formatDuration(participant.durationMs)}</td>
+                      <td>{formatDuration(participant.durationMs, t)}</td>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <ProgressTrack>
@@ -549,7 +571,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
                     <InsightMain>
                       <InsightTitle>{group.group || '-'}</InsightTitle>
                       <InsightMeta>
-                        {group.memberCount} {t.members} / {t.avgDuration}: {formatDuration(group.avgDurationMs)}
+                        {group.memberCount} {t.members} / {t.avgDuration}: {formatDuration(group.avgDurationMs, t)}
                       </InsightMeta>
                       <ProgressTrack>
                         <ProgressFill pct={group.avgScore} tone={percentTone(group.avgScore)} />

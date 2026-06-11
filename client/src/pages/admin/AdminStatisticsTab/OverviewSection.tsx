@@ -5,6 +5,7 @@ import { useOverview, useTimeline } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
 import Pagination from '../../../components/Pagination';
 import { usePagination } from '../../../hooks/usePagination';
+import { formatDuration } from './formatters';
 import {
   KpiRow,
   KpiCard,
@@ -35,15 +36,6 @@ interface Props {
   activities: Activity[];
   onSelectActivity: (id: string) => void;
   onViewAuditLog: () => void;
-}
-
-function formatDuration(ms: number) {
-  if (!ms) return '—';
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  const rest = s % 60;
-  return rest ? `${m}m ${rest}s` : `${m}m`;
 }
 
 export default function OverviewSection({ activities, onSelectActivity, onViewAuditLog }: Props) {
@@ -91,10 +83,10 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
           </KpiSub>
         </KpiCard>
         <KpiCard>
-          <KpiValue>{formatDuration(overview.avgDurationMs)}</KpiValue>
+          <KpiValue>{formatDuration(overview.avgDurationMs, t)}</KpiValue>
           <KpiLabel>{t.avgDuration}</KpiLabel>
           <KpiSub>
-            {t.median}: {formatDuration(overview.medianDurationMs)}
+            {t.median}: {formatDuration(overview.medianDurationMs, t)}
           </KpiSub>
         </KpiCard>
         <KpiCard>

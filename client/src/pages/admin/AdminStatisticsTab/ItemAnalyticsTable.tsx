@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react';
 import { useTranslations } from '../../../context/LanguageContext';
 import { useItemStats, useQuestionStats } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
+import { formatDuration } from './formatters';
 import {
   ChartCard,
   ChartTitle,
@@ -20,13 +21,6 @@ interface Props {
   period?: ActivityPeriod;
   data?: ItemStats[];
   questionsByItem?: Record<number, QuestionStats[]>;
-}
-
-function formatDuration(ms: number) {
-  if (!ms) return '—';
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
 export default function ItemAnalyticsTable({ activityId, period, data, questionsByItem }: Props) {
@@ -63,6 +57,7 @@ export default function ItemAnalyticsTable({ activityId, period, data, questions
             <tbody>
               {items.map((item) => {
                 const needsImprovement = item.completionPct < 70 || item.avgScore < item.avgMaxScore * 0.3;
+                const itemLabel = item.itemName || `${t.itemName} ${item.itemIndex + 1}`;
                 return (
                   <Fragment key={item.itemIndex}>
                     <tr
@@ -71,12 +66,12 @@ export default function ItemAnalyticsTable({ activityId, period, data, questions
                       }
                     >
                       <td>{item.itemIndex + 1}</td>
-                      <td style={{ fontWeight: 600 }}>{item.itemName || `Item ${item.itemIndex + 1}`}</td>
+                      <td style={{ fontWeight: 600 }}>{itemLabel}</td>
                       <td>{item.gameType || item.itemType}</td>
                       <td>
                         {Math.round(item.avgScore)}/{Math.round(item.avgMaxScore)}
                       </td>
-                      <td>{formatDuration(item.avgDurationMs)}</td>
+                      <td>{formatDuration(item.avgDurationMs, t)}</td>
                       <td>{Math.round(item.hintUsagePct)}%</td>
                       <td>{Math.round(item.completionPct)}%</td>
                       <td>
@@ -108,6 +103,7 @@ export default function ItemAnalyticsTable({ activityId, period, data, questions
       <HideOnDesktop>
         {items.map((item) => {
           const needsImprovement = item.completionPct < 70 || item.avgScore < item.avgMaxScore * 0.3;
+          const itemLabel = item.itemName || `${t.itemName} ${item.itemIndex + 1}`;
           return (
             <div key={item.itemIndex}>
               <StatsMobileCard
@@ -117,7 +113,7 @@ export default function ItemAnalyticsTable({ activityId, period, data, questions
               >
                 <StatsMobileRow>
                   <StatsMobileValue>
-                    {item.itemIndex + 1}. {item.itemName || `Item ${item.itemIndex + 1}`}
+                    {item.itemIndex + 1}. {itemLabel}
                   </StatsMobileValue>
                   {needsImprovement && <ImprovementBadge>{t.needsImprovement}</ImprovementBadge>}
                 </StatsMobileRow>
@@ -129,7 +125,7 @@ export default function ItemAnalyticsTable({ activityId, period, data, questions
                 </StatsMobileRow>
                 <StatsMobileRow>
                   <StatsMobileLabel>{t.avgItemDuration}</StatsMobileLabel>
-                  <StatsMobileValue>{formatDuration(item.avgDurationMs)}</StatsMobileValue>
+                  <StatsMobileValue>{formatDuration(item.avgDurationMs, t)}</StatsMobileValue>
                 </StatsMobileRow>
                 <StatsMobileRow>
                   <StatsMobileLabel>{t.hintUsage}</StatsMobileLabel>
@@ -205,7 +201,7 @@ function QuestionBreakdown({
           {questions.map((q) => (
             <tr key={q.questionIndex}>
               <td style={{ padding: '6px 10px' }}>{q.questionIndex + 1}</td>
-              <td style={{ padding: '6px 10px' }}>{q.questionText || `Q${q.questionIndex + 1}`}</td>
+              <td style={{ padding: '6px 10px' }}>{q.questionText || `${t.question} ${q.questionIndex + 1}`}</td>
               <td style={{ padding: '6px 10px' }}>
                 <span
                   style={{
@@ -216,7 +212,7 @@ function QuestionBreakdown({
                   {Math.round(q.successRate)}%
                 </span>
               </td>
-              <td style={{ padding: '6px 10px' }}>{Math.round(q.avgTimeMs / 1000)}s</td>
+              <td style={{ padding: '6px 10px' }}>{formatDuration(q.avgTimeMs, t)}</td>
             </tr>
           ))}
         </tbody>

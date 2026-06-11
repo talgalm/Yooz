@@ -537,29 +537,45 @@ router.get('/activities/:id/anomalies', async (req: Request<{ id: string }>, res
     ? itemStats.reduce((s, i) => s + (i.avgDurationMs ?? 0), 0) / itemStats.length
     : 0;
 
-  const alerts: { type: string; severity: 'warning' | 'error'; message: string; itemIndex?: number; itemName?: string }[] = [];
+  const alerts: {
+    type: string;
+    severity: 'warning' | 'error';
+    message: string;
+    itemIndex?: number;
+    itemName?: string;
+    dropoutRatePct?: number;
+    completionRatePct?: number;
+    avgDurationMs?: number;
+    durationRatio?: number;
+  }[] = [];
 
   for (const item of itemStats) {
     const completionRate = item.participantCount > 0 ? item.completionCount / item.participantCount : 1;
     const avgDur = item.avgDurationMs ?? 0;
 
     if (completionRate < 0.7) {
+      const dropoutRatePct = Math.round((1 - completionRate) * 100);
       alerts.push({
         type: 'high_dropout',
         severity: completionRate < 0.5 ? 'error' : 'warning',
-        message: `"${item.itemName}" has ${Math.round((1 - completionRate) * 100)}% dropout rate`,
+        message: `"${item.itemName}" has ${dropoutRatePct}% dropout rate`,
         itemIndex: item._id,
         itemName: item.itemName,
+        dropoutRatePct,
+        completionRatePct: Math.round(completionRate * 100),
       });
     }
 
     if (overallAvgDuration > 0 && avgDur > overallAvgDuration * 2) {
+      const durationRatio = Math.round(avgDur / overallAvgDuration);
       alerts.push({
         type: 'unusual_time',
         severity: 'warning',
-        message: `"${item.itemName}" takes ${Math.round(avgDur / 1000)}s avg — ${Math.round(avgDur / overallAvgDuration)}x the average`,
+        message: `"${item.itemName}" takes ${Math.round(avgDur / 1000)}s avg - ${durationRatio}x the average`,
         itemIndex: item._id,
         itemName: item.itemName,
+        avgDurationMs: Math.round(avgDur),
+        durationRatio,
       });
     }
   }

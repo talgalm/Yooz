@@ -2,6 +2,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useTranslations } from '../../../context/LanguageContext';
 import { useGroupStats } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
+import { formatDuration } from './formatters';
 import {
   ChartCard,
   ChartTitle,
@@ -18,13 +19,6 @@ interface Props {
   activityId: string | null;
   period?: ActivityPeriod;
   data?: GroupStats[];
-}
-
-function formatDuration(ms: number) {
-  if (!ms) return '—';
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
 export default function GroupComparison({ activityId, period, data }: Props) {
@@ -83,7 +77,7 @@ export default function GroupComparison({ activityId, period, data }: Props) {
                   <td>{g.memberCount}</td>
                   <td>{Math.round(g.avgScore)}</td>
                   <td>{Math.round(g.completionRate)}%</td>
-                  <td>{formatDuration(g.avgDurationMs)}</td>
+                  <td>{formatDuration(g.avgDurationMs, t)}</td>
                 </tr>
               ))}
             </tbody>
@@ -108,7 +102,7 @@ export default function GroupComparison({ activityId, period, data }: Props) {
             </StatsMobileRow>
             <StatsMobileRow>
               <StatsMobileLabel>{t.avgDuration}</StatsMobileLabel>
-              <StatsMobileValue>{formatDuration(g.avgDurationMs)}</StatsMobileValue>
+              <StatsMobileValue>{formatDuration(g.avgDurationMs, t)}</StatsMobileValue>
             </StatsMobileRow>
           </StatsMobileCard>
         ))}

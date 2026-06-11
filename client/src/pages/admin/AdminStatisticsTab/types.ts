@@ -122,6 +122,10 @@ export interface AnomalyAlert {
   message: string;
   itemIndex?: number;
   itemName?: string;
+  dropoutRatePct?: number;
+  completionRatePct?: number;
+  avgDurationMs?: number;
+  durationRatio?: number;
 }
 
 export interface AuditLogEntry {

@@ -53,6 +53,10 @@ export const texts = {
     noPlayerData: 'No player data yet',
     noItemData: 'No item data yet',
     reviewBottlenecks: 'Review bottlenecks',
+    highDropoutAlert: '"{itemName}" has a {dropoutRate}% drop-off rate',
+    highDropoutAlertFallback: '"{itemName}" has a high drop-off rate',
+    unusualTimeAlert: '"{itemName}" takes {duration} on average - {ratio}x the average',
+    unusualTimeAlertFallback: '"{itemName}" takes much longer than average',
     nudgeParticipants: 'Nudge unfinished players',
     nudgeParticipantsBody: '{count} players are still in progress. Send a reminder or let the manager restart the room flow.',
     groupGap: 'Group performance gap',
@@ -135,8 +139,8 @@ export const texts = {
     avgTrashSortScore: 'Avg Trash Sort Score',
 
     // Duration formatting
-    seconds: 's',
-    minutes: 'm',
+    seconds: 'sec',
+    minutes: 'min',
   },
   he: {
     // Overview
@@ -192,6 +196,10 @@ export const texts = {
     noPlayerData: 'אין עדיין נתוני שחקנים',
     noItemData: 'אין עדיין נתוני תחנות',
     reviewBottlenecks: 'בדוק צווארי בקבוק',
+    highDropoutAlert: '"{itemName}" עם שיעור נטישה של {dropoutRate}%',
+    highDropoutAlertFallback: '"{itemName}" עם שיעור נטישה גבוה',
+    unusualTimeAlert: '"{itemName}" לוקח בממוצע {duration} - פי {ratio} מהממוצע',
+    unusualTimeAlertFallback: '"{itemName}" לוקח הרבה יותר זמן מהממוצע',
     nudgeParticipants: 'תזכורת לשחקנים שלא סיימו',
     nudgeParticipantsBody: '{count} שחקנים עדיין בתהליך. כדאי לשלוח תזכורת או לאפשר למנהל להחזיר את הזרימה למסלול.',
     groupGap: 'פער בין קבוצות',
