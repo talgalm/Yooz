@@ -948,7 +948,7 @@ export default function SpidersView({
         <BalloonOuter key={`balloon-${b.id}`} duration={b.duration} top={b.top}>
           <BalloonWobbleWrap wobbleDuration={b.wobbleDuration}>
             <BalloonImg
-              src="/images/baloon.png"
+              src="/images/baloon.svg"
               alt=""
               aria-hidden
               style={{ width: b.size, height: 'auto' }}

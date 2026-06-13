@@ -1289,6 +1289,7 @@ export default function MissionTrashSort({
         <FrameContainer style={{ background: 'transparent', backgroundImage: 'none' }}>
           {/* Background video — fills the whole frame, mission-frame.svg sits on top */}
           <video
+            ref={(el) => { if (el) el.volume = 0.3; }}
             src="/videos/env-finish-video.mp4"
             autoPlay
             loop
