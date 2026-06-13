@@ -153,6 +153,7 @@ export default function AdminStationConfigPage() {
   const [collageMultiSelect, setCollageMultiSelect] = useState(false);
   const [collageMultiSelectCount, setCollageMultiSelectCount] = useState('6');
   const [collageTemplate, setCollageTemplate] = useState<'default' | 'gan-yehoshua'>('default');
+  const [collageDisclaimer, setCollageDisclaimer] = useState('');
   // Feedback station
   const [feedbackTitle, setFeedbackTitle] = useState('');
   const [feedbackIntroText, setFeedbackIntroText] = useState('');
@@ -244,6 +245,7 @@ export default function AdminStationConfigPage() {
           if (settings.template === 'gan-yehoshua' || settings.template === 'default') {
             setCollageTemplate(settings.template);
           }
+          if (settings.disclaimer) setCollageDisclaimer(settings.disclaimer as string);
         }
         if (s.type === 'feedback') {
           if (settings.title) setFeedbackTitle(settings.title as string);
@@ -355,6 +357,7 @@ export default function AdminStationConfigPage() {
       if (settings.template === 'gan-yehoshua' || settings.template === 'default') {
         setCollageTemplate(settings.template);
       }
+      if (settings.disclaimer) setCollageDisclaimer(settings.disclaimer as string);
     }
     if (lib.type === 'feedback') {
       if (settings.title) setFeedbackTitle(settings.title as string);
@@ -459,6 +462,8 @@ export default function AdminStationConfigPage() {
           settings.multiSelectCount = Number.isFinite(n) && n > 0 ? n : 1;
         }
         settings.template = collageTemplate;
+        const disc = collageDisclaimer.trim();
+        if (disc) settings.disclaimer = disc;
       }
       if (stationType === 'feedback') {
         settings.title = feedbackTitle.trim();
@@ -951,6 +956,13 @@ export default function AdminStationConfigPage() {
                     placeholder={t.collageDescriptionPlaceholder}
                     value={collageDescription}
                     onChange={(e) => setCollageDescription(e.target.value)}
+                  />
+
+                  <SectionLabelNoMargin>{t.collageDisclaimer}</SectionLabelNoMargin>
+                  <Input
+                    placeholder={t.collageDisclaimerPlaceholder}
+                    value={collageDisclaimer}
+                    onChange={(e) => setCollageDisclaimer(e.target.value)}
                   />
 
                   <SectionLabelNoMargin>{t.collageTemplate}</SectionLabelNoMargin>

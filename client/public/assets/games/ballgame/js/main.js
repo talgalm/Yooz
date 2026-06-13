@@ -1020,7 +1020,6 @@ function onSkipButtonClick() {
   objCustomizedTimer.destoryTimer();
   if (spritesArr[ballIndex]) spritesArr[ballIndex].destroy();
   balls.destroy();
-  if (!bIsMuted) audio_wrong.play();
 
   removeItemsFromStage();
   bucket.destroy();

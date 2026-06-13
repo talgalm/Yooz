@@ -1351,10 +1351,17 @@ export default function MissionTrashSort({
             <HeaderText>{badgeHeader}</HeaderText>
           </MissionHeader>
 
-          <MissionContent style={{ paddingTop: 40 }}>
+          <MissionContent style={{ paddingTop: 0, gap: 8 }}>
+            {/*
+              Original badge-first order — curve → image → award box, tightened
+              vertically so all three blocks sit higher in the MissionContent
+              box (top:23%, bottom:14%, overflow:hidden). The SVG's marginTop
+              reserves room for the curved text's glyphs that extend above the
+              viewBox; without it, Galaxy S23 clips the top of "תג סוכן הפארק".
+            */}
             <svg
               viewBox="0 0 300 80"
-              style={{ width: '80%', maxWidth: 300, overflow: 'visible', marginTop: 50, marginBottom: -50 }}
+              style={{ width: '80%', maxWidth: 300, overflow: 'visible', marginTop: 32, marginBottom: -50 }}
             >
               <defs>
                 <path id="badge-curve" d="M 15,75 A 150,150 0 0,1 285,75" fill="none" />

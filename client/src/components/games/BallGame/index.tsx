@@ -139,17 +139,19 @@ export default function BallGame({
     return Array.isArray(settings.questions) ? settings.questions : [];
   }, [settings.questions]);
 
+  const startButtonText = ((game.settings as unknown as Record<string, unknown>).startButtonText as string)?.trim() || '';
   const initPayload = useMemo(
     () => ({
       configurations: filteredQuestions.map(mapQuestionToLegacyConfig),
       instructions: settings.instructions?.trim() || '',
+      startButtonText,
       timeLimitSeconds: settings.scoring?.timeLimitSeconds ?? 30,
       gameId: game._id,
       gameName: game.name,
       lang,
       dir,
     }),
-    [filteredQuestions, settings.instructions, settings.scoring?.timeLimitSeconds, game._id, game.name, lang, dir]
+    [filteredQuestions, settings.instructions, startButtonText, settings.scoring?.timeLimitSeconds, game._id, game.name, lang, dir]
   );
 
   useEffect(() => {

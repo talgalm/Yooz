@@ -131,7 +131,7 @@ export interface ActivityModuleResponse {
   guidelines?: string;
   customInstructions?: CustomInstructionsData;
   isContinuous?: boolean;
-  leaderboardMode?: 'points' | 'time';
+  leaderboardMode?: 'points' | 'time' | 'both';
   hideLeaderboardInHeader?: boolean;
   activityDurationMinutes?: number;
   lockedFromIndex?: number | null;

@@ -105,6 +105,10 @@
               const contentEl = document.getElementById('bonusContent');
               if (contentEl) contentEl.textContent = payload.instructions.trim();
             }
+            if (typeof payload.startButtonText === 'string' && payload.startButtonText.trim()) {
+              const btnEl = document.getElementById('iStart');
+              if (btnEl) btnEl.textContent = payload.startButtonText.trim();
+            }
             return;
           }
 

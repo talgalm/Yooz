@@ -343,6 +343,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const settings = (station.settings ?? {}) as Record<string, unknown>;
   const header = (settings.header as string) || station.name || 'תחנת צילום';
   const description = (settings.description as string) || station.description || '';
+  const disclaimer = (settings.disclaimer as string) || '';
   const logoUrl = (settings.logoUrl as string) || '';
   const template = (settings.template as string) || 'default';
   const multiSelect = !!settings.multiSelect;
@@ -823,6 +824,22 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             ))
           )}
 
+          {disclaimer && (
+            <div style={{
+              marginTop: 16,
+              padding: '12px 14px',
+              borderRadius: 12,
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              fontSize: 12,
+              lineHeight: 1.55,
+              color: 'rgba(255,255,255,0.72)',
+              whiteSpace: 'pre-line',
+            }}>
+              {disclaimer}
+            </div>
+          )}
+
           <div style={{ marginTop: 16 }}>
             <PrimaryBtn onClick={() => { setCurrentMission(0); setPhotos([]); setPreviewUrl(''); setPreviewBlob(null); setPhase('capture'); }}>
               מתחילים לצלם 📷
@@ -894,6 +911,9 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             >
               {isSplit && !finalizesCollage ? 'שמור והמשך לתחנה הבאה' : 'אישור והמשך'}
             </PrimaryBtn>
+            {isSplit && !isFirstPart && (
+              <OutlineBtn onClick={onContinue}>דלג על התחנה הזו</OutlineBtn>
+            )}
           </CaptureActions>
 
           {/* Camera input: image-only + capture so Android opens the camera directly instead of the picker. */}
@@ -969,6 +989,9 @@ export default function CollageStation({ station, onContinue, code }: Props) {
                 ? 'שמור והמשך לתחנה הבאה'
                 : 'אישור תמונה והמשך'}
             </PrimaryBtn>
+            {isSplit && !isFirstPart && (
+              <OutlineBtn onClick={onContinue}>דלג על התחנה הזו</OutlineBtn>
+            )}
           </CaptureActions>
 
           {/* Camera input: image-only + capture so Android opens the camera directly instead of the picker. */}
@@ -1037,6 +1060,9 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             <ProgressSub>{progressLabel}</ProgressSub>
             {etaSeconds !== null && progress < 100 && (
               <ProgressEta>{formatEta(etaSeconds)}</ProgressEta>
+            )}
+            {isSplit && isVideoPart && (
+              <OutlineBtn onClick={onContinue} style={{ marginTop: 12 }}>דלג על התחנה הזו</OutlineBtn>
             )}
           </GeneratingCard>
         </GeneratingWrap>

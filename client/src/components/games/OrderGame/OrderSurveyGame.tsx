@@ -294,7 +294,7 @@ export default function OrderSurveyGame({
                 <IntroDescText>{settings.instructions}</IntroDescText>
               </IntroDescCard>
               <IntroStartButton onClick={() => setShowInstructions(false)}>
-                {t.continue}
+                {((game.settings as Record<string, unknown>).startButtonText as string)?.trim() || t.continue}
               </IntroStartButton>
             </IntroDescStack>
           </IntroContent>

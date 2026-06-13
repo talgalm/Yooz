@@ -332,7 +332,7 @@ export default function AdminCreateActivityPage() {
   const [showStationNumbers, setShowStationNumbers] = useState(false);
   const [showItemTitleNumbers, setShowItemTitleNumbers] = useState(false);
 
-  const [leaderboardMode, setLeaderboardMode] = useState<'points' | 'time'>('points');
+  const [leaderboardMode, setLeaderboardMode] = useState<'points' | 'time' | 'both'>('points');
   const [displayLeaderboardInHeader, setDisplayLeaderboardInHeader] = useState(false);
   const [activityDurationMinutes, setActivityDurationMinutes] = useState('');
   const [isContinuous, setIsContinuous] = useState(false);
@@ -460,7 +460,7 @@ export default function AdminCreateActivityPage() {
           setIsContinuous(true);
           if (a.portalId) setPortalId(a.portalId);
         }
-        if (a.leaderboardMode) setLeaderboardMode(a.leaderboardMode as 'points' | 'time');
+        if (a.leaderboardMode) setLeaderboardMode(a.leaderboardMode as 'points' | 'time' | 'both');
         setDisplayLeaderboardInHeader(!a.hideLeaderboardInHeader);
         if (a.activityDurationMinutes) setActivityDurationMinutes(String(a.activityDurationMinutes));
         if (a.includeOnRoadmap) setIncludeOnRoadmap(true);
@@ -824,7 +824,9 @@ export default function AdminCreateActivityPage() {
       }
       payload.leaderboardMode = leaderboardMode;
       payload.hideLeaderboardInHeader = !displayLeaderboardInHeader;
-      if (leaderboardMode === 'time' && activityDurationMinutes.trim()) {
+      // Time limit field is shown for both 'time' and 'both' modes — it drives
+      // the live timer + warning popup in either case.
+      if ((leaderboardMode === 'time' || leaderboardMode === 'both') && activityDurationMinutes.trim()) {
         const parsed = parseInt(activityDurationMinutes, 10);
         if (!isNaN(parsed) && parsed > 0) payload.activityDurationMinutes = parsed;
       }
@@ -1270,11 +1272,14 @@ export default function AdminCreateActivityPage() {
                     <SelectionButton type="button" selected={leaderboardMode === 'time'} onClick={() => setLeaderboardMode('time')}>
                       {t.leaderboardModeTime}
                     </SelectionButton>
+                    <SelectionButton type="button" selected={leaderboardMode === 'both'} onClick={() => setLeaderboardMode('both')}>
+                      {t.leaderboardModeBoth}
+                    </SelectionButton>
                   </SelectionGroup>
-                  {leaderboardMode === 'time' && (
+                  {(leaderboardMode === 'time' || leaderboardMode === 'both') && (
                     <>
                       <SectionDescription style={{ margin: '4px 0 0', color: '#6c5ce7', fontSize: 13 }}>
-                        {t.leaderboardModeTimeDesc}
+                        {leaderboardMode === 'both' ? t.leaderboardModeBothDesc : t.leaderboardModeTimeDesc}
                       </SectionDescription>
                       <SectionLabelSmall style={{ marginTop: 12 }}>{t.activityDurationLabel}</SectionLabelSmall>
                       <Input

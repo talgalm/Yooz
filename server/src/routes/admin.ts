@@ -163,9 +163,14 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
   }
 
   // Handle leaderboard mode
-  data.leaderboardMode = leaderboardMode === 'time' ? 'time' : 'points';
+  data.leaderboardMode = leaderboardMode === 'time'
+    ? 'time'
+    : leaderboardMode === 'both'
+      ? 'both'
+      : 'points';
   data.hideLeaderboardInHeader = hideLeaderboardInHeader === true;
-  data.activityDurationMinutes = (leaderboardMode === 'time' && activityDurationMinutes && activityDurationMinutes > 0)
+  // Time limit is only meaningful in modes that show the timer (time/both).
+  data.activityDurationMinutes = ((data.leaderboardMode === 'time' || data.leaderboardMode === 'both') && activityDurationMinutes && activityDurationMinutes > 0)
     ? activityDurationMinutes
     : undefined;
 

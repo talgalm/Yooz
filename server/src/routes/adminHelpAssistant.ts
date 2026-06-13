@@ -103,7 +103,7 @@ ACTIVITY ENTITY — every field
 - customInstructions: alternative to default guidelines — { title, missionTitle, missionItems[], guidelinesTitle, guidelineItems[], buttonText }.
 - scheduledStart / scheduledEnd: optional ISO datetimes. "Always open" checkbox disables both.
 - managerEmail / managerPassword (bcrypt hash): optional per-activity manager.
-- leaderboardMode: 'points' | 'time'. Time mode requires activityDurationMinutes.
+- leaderboardMode: 'points' | 'time' | 'both'. Time and Both modes accept activityDurationMinutes (drives the live timer + 1-min-warning popup). Both ranks by points but also shows the timer alongside the score in the header / leaderboard / finish stats.
 - hideLeaderboardInHeader: hides the trophy button from the session header.
 - isContinuous + portalId: marks the activity as portal-bound (participants login via portal username instead of anonymously).
 - includeOnRoadmap: show the activity name on the story roadmap between header and path.
@@ -131,7 +131,7 @@ Step 2 (only for story / spiders module — gated until name + login field + mod
 - Module Items: see MODULE ITEMS section.
 - "Show station numbers in spiders" checkbox (spiders only).
 - "Show item title numbers" checkbox.
-- Leaderboard mode: Points / Time. Time mode → activityDurationMinutes input. "Display leaderboard in header" toggle.
+- Leaderboard mode: Points / Time / Both. Time + Both reveal the activityDurationMinutes input. "Display leaderboard in header" toggle.
 - Guidelines text (free-form) — shown on welcome unless customInstructions is set.
 - Custom Instructions section: toggle "Use default" off to set title, missionTitle, missionItems[], guidelinesTitle, guidelineItems[], buttonText.
 - Popup Messages section: see POPUPS.

@@ -250,7 +250,7 @@ export interface CreateActivityRequest {
   managerPassword?: string;
   isContinuous?: boolean;
   portalId?: string;
-  leaderboardMode?: 'points' | 'time';
+  leaderboardMode?: 'points' | 'time' | 'both';
   hideLeaderboardInHeader?: boolean;
   activityDurationMinutes?: number;
   includeOnRoadmap?: boolean;

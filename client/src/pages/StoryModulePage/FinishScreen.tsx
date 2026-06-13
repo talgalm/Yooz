@@ -404,7 +404,7 @@ interface FinishScreenProps {
   countdown: number | null;
   countdownSeconds: number;
   bgStyle: React.CSSProperties;
-  leaderboardMode?: 'points' | 'time';
+  leaderboardMode?: 'points' | 'time' | 'both';
   finalDurationMs?: number | null;
   onStay: () => void;
   onViewLeaderboard: () => void;
@@ -437,7 +437,11 @@ export default function FinishScreen({
   t,
 }: FinishScreenProps) {
   const isTimeMode = leaderboardMode === 'time';
-  const timeDisplay = isTimeMode && finalDurationMs != null ? formatDuration(finalDurationMs) : null;
+  const isBothMode = leaderboardMode === 'both';
+  const timeDisplay = (isTimeMode || isBothMode) && finalDurationMs != null ? formatDuration(finalDurationMs) : null;
+  // In 'both' mode the badge shows points (matches the leaderboard's primary
+  // sort); the time card still appears in the row of stat cards.
+  const badgeShowsTime = isTimeMode && timeDisplay !== null;
   return (
     <PageRoot>
       <SparklesBg />
@@ -453,7 +457,7 @@ export default function FinishScreen({
       <Content>
         <RibbonTitle>{t.finishTitle}</RibbonTitle>
 
-        {timeDisplay !== null ? (
+        {badgeShowsTime ? (
           <Badge>
             <ScoreInBadge>
               <ScoreNumber>{timeDisplay}</ScoreNumber>
@@ -484,7 +488,32 @@ export default function FinishScreen({
             <StatLabel>{t.finishItems}</StatLabel>
           </StatCard>
 
-          {timeDisplay !== null ? (
+          {isBothMode ? (
+            <>
+              {hasScores && (
+                <StatCard delay={1}>
+                  <StatIcon>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill={C_YELLOW_STAR}>
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                  </StatIcon>
+                  <StatValue>{totalScore}</StatValue>
+                  <StatLabel>{t.finishStars}</StatLabel>
+                </StatCard>
+              )}
+              {timeDisplay !== null && (
+                <StatCard delay={hasScores ? 2 : 1}>
+                  <StatIcon>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill={C_PURPLE_MAIN}>
+                      <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 18a8 8 0 110-16 8 8 0 010 16zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z" />
+                    </svg>
+                  </StatIcon>
+                  <StatValue>{timeDisplay}</StatValue>
+                  <StatLabel>{t.finishTime || 'Time'}</StatLabel>
+                </StatCard>
+              )}
+            </>
+          ) : badgeShowsTime ? (
             <StatCard delay={1}>
               <StatIcon>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill={C_PURPLE_MAIN}>

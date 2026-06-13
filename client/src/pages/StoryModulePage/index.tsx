@@ -324,9 +324,12 @@ export default function StoryModulePage() {
   );
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const timeWarningShown = useRef(false);
+  // 'time' AND 'both' modes show a live timer in the header — both need the
+  // setInterval driving elapsedSeconds. ('both' also shows points alongside.)
   const isTimeMode = data?.leaderboardMode === 'time';
+  const showsTimer = isTimeMode || data?.leaderboardMode === 'both';
   useEffect(() => {
-    if (!isTimeMode) return;
+    if (!showsTimer) return;
     if (phase === 'finish') return; // lock final time once activity ends
     const id = setInterval(() => {
       const secs = Math.floor((Date.now() - sessionStartedAt.current) / 1000);
@@ -343,7 +346,7 @@ export default function StoryModulePage() {
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [isTimeMode, data?.activityDurationMinutes, phase]);
+  }, [showsTimer, data?.activityDurationMinutes, phase]);
   const [ballGameMuted, setBallGameMuted] = useState(false);
 
   /** Roadmap header: animate points from → to after a game (ATM-style tally). */

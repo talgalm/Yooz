@@ -11,6 +11,8 @@ export const texts = {
     addTag: 'Add tag...',
     // Shared
     instructions: 'Instructions for participants',
+    startButtonText: 'Start button text (optional)',
+    startButtonTextPlaceholder: 'Override default start button label',
     hintLabel: 'Include hint in game',
     hintPlaceholder: 'Enter hint text for participants',
     scoring: 'Scoring',
@@ -146,6 +148,8 @@ export const texts = {
     addTag: 'הוסף תג...',
     // Shared
     instructions: 'הוראות למשתתפים',
+    startButtonText: 'טקסט כפתור התחלה (אופציונלי)',
+    startButtonTextPlaceholder: 'מחליף את ברירת המחדל של כפתור ההתחלה',
     hintLabel: 'כלול רמז במשחק',
     hintPlaceholder: 'הכניסו טקסט רמז למשתתפים',
     scoring: 'ניקוד',

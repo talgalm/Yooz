@@ -159,16 +159,13 @@ export function SessionHeaderPointsIcon({
   );
 }
 
-/** Stroke trophy — same paths as roadmap. */
+/** Leaderboard podium — three rounded bars (center tallest). */
 export function SessionHeaderTrophyIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.65} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-      <path d="M4 22h16" />
-      <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-2.34" />
-      <path d="M14 14.66V17c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-2.34" />
-      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <rect x="2.5" y="9" width="5" height="12" rx="2.5" />
+      <rect x="9.5" y="5" width="5" height="16" rx="2.5" />
+      <rect x="16.5" y="13" width="5" height="8" rx="2.5" />
     </svg>
   );
 }
@@ -217,8 +214,8 @@ export interface ActivitySessionHeaderProps {
   transparentChrome?: boolean;
   /** When true, skip the third header cell (leaderboard/music) and use a 3-column layout. */
   omitThirdSlot?: boolean;
-  /** When 'time', show elapsed timer instead of points. */
-  leaderboardMode?: 'points' | 'time';
+  /** 'time' = timer only, 'both' = points + timer stacked, default = points only. */
+  leaderboardMode?: 'points' | 'time' | 'both';
   /** Elapsed seconds since activity start (used in time mode). */
   elapsedSeconds?: number;
   /** Optional time limit in minutes — timer turns red when exceeded. */
@@ -251,6 +248,19 @@ export default function ActivitySessionHeader({
   const iconColor = puzzleChrome ? undefined : headerIconColor;
   const RoadmapItem = puzzleChrome ? RoadmapHeaderItemPuzzle : RoadmapHeaderItem;
   const RoadmapPoints = puzzleChrome ? RoadmapHeaderPointsPuzzle : RoadmapHeaderPoints;
+  // 'both' mode adds a 5th cell — let cells shrink so they fit narrow phones.
+  const compact = leaderboardMode === 'both';
+  const compactCellStyle: React.CSSProperties = {
+    flex: '1 1 0',
+    width: 'auto',
+    minWidth: 0,
+    maxWidth: ROADMAP_HEADER_CELL_W,
+  };
+  const compactPointsStyle: React.CSSProperties = {
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
+  };
   const [displayedPoints, setDisplayedPoints] = useState(() => (
     pointsRoll && pointsRoll.to > pointsRoll.from ? pointsRoll.from : currentPoints
   ));
@@ -319,8 +329,8 @@ export default function ActivitySessionHeader({
     >
       <RoadmapHeaderTop>
         {topRow ? <SessionHeaderTopRow>{topRow}</SessionHeaderTopRow> : null}
-        <RoadmapHeaderButtonRow>
-          <RoadmapItem>
+        <RoadmapHeaderButtonRow style={leaderboardMode === 'both' ? { gap: 8 } : undefined}>
+          <RoadmapItem style={compact ? compactCellStyle : undefined}>
             <ActivityLogoutButton
               onClick={onLogout}
               ariaLabel={t.exitActivity}
@@ -328,48 +338,69 @@ export default function ActivitySessionHeader({
               iconColor={iconColor}
             />
           </RoadmapItem>
-          <RoadmapItem>
+          <RoadmapItem style={compact ? compactCellStyle : undefined}>
             <HelpChatHeaderButton tone={puzzleChrome ? 'puzzle' : 'dark'} iconColor={iconColor} />
           </RoadmapItem>
           {!omitThirdSlot ? (
-            <RoadmapItem>
+            <RoadmapItem style={compact ? compactCellStyle : undefined}>
               {thirdSlot}
             </RoadmapItem>
           ) : null}
-          <RoadmapItem>
-            {leaderboardMode === 'time' ? (() => {
-              if (elapsedSeconds === 0) return <TimerDots puzzleChrome={puzzleChrome} RoadmapPoints={RoadmapPoints} iconColor={iconColor} />;
-              const mins = Math.floor(elapsedSeconds / 60);
-              const secs = elapsedSeconds % 60;
-              const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-              const isOver = activityDurationMinutes != null && elapsedSeconds >= activityDurationMinutes * 60;
-              const timeColor = isOver ? '#e74c3c' : (puzzleChrome ? '#1a1a1a' : (iconColor ?? '#fff'));
-              return (
+          {(() => {
+            const mins = Math.floor(elapsedSeconds / 60);
+            const secs = elapsedSeconds % 60;
+            const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            const isOver = activityDurationMinutes != null && elapsedSeconds >= activityDurationMinutes * 60;
+            const timeColor = isOver ? '#e74c3c' : (puzzleChrome ? '#1a1a1a' : (iconColor ?? '#fff'));
+            const ClockSvg = (size: number) => (
+              <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+            );
+
+            const pointsCell = (
+              <RoadmapItem style={compact ? compactCellStyle : undefined}>
                 <RoadmapPoints
                   role="status"
-                  aria-label={timeStr}
-                  style={{ color: timeColor, borderColor: isOver ? 'rgba(231,76,60,0.5)' : undefined, fontSize: 13 }}
+                  aria-label={`${displayedPoints} ${t.points}`}
+                  style={{
+                    ...(compact ? compactPointsStyle : {}),
+                    ...(iconColor ? { color: iconColor } : {}),
+                    ...(isRolling ? { animation: `${pointsDepositPulse} 0.85s ease-in-out infinite` } : {}),
+                  }}
                 >
-                  <RoadmapHeaderPointsValue>{timeStr}</RoadmapHeaderPointsValue>
-                  <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
-                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                  </svg>
+                  <RoadmapHeaderPointsValue>{displayedPoints}</RoadmapHeaderPointsValue>
+                  <SessionHeaderPointsIcon variant={puzzleChrome ? 'puzzle' : 'default'} iconColor={iconColor} />
                 </RoadmapPoints>
-              );
-            })() : (
-              <RoadmapPoints
-                role="status"
-                aria-label={`${displayedPoints} ${t.points}`}
-                style={{
-                  ...(iconColor ? { color: iconColor } : {}),
-                  ...(isRolling ? { animation: `${pointsDepositPulse} 0.85s ease-in-out infinite` } : {}),
-                }}
-              >
-                <RoadmapHeaderPointsValue>{displayedPoints}</RoadmapHeaderPointsValue>
-                <SessionHeaderPointsIcon variant={puzzleChrome ? 'puzzle' : 'default'} iconColor={iconColor} />
-              </RoadmapPoints>
-            )}
-          </RoadmapItem>
+              </RoadmapItem>
+            );
+
+            const timerCell = (
+              <RoadmapItem style={compact ? compactCellStyle : undefined}>
+                {elapsedSeconds === 0 ? (
+                  <TimerDots puzzleChrome={puzzleChrome} RoadmapPoints={RoadmapPoints} iconColor={iconColor} />
+                ) : (
+                  <RoadmapPoints
+                    role="status"
+                    aria-label={timeStr}
+                    style={{
+                      ...(compact ? compactPointsStyle : {}),
+                      color: timeColor,
+                      borderColor: isOver ? 'rgba(231,76,60,0.5)' : undefined,
+                      fontSize: 13,
+                    }}
+                  >
+                    <RoadmapHeaderPointsValue>{timeStr}</RoadmapHeaderPointsValue>
+                    {compact ? null : ClockSvg(16)}
+                  </RoadmapPoints>
+                )}
+              </RoadmapItem>
+            );
+
+            if (leaderboardMode === 'time') return timerCell;
+            if (leaderboardMode === 'both') return <>{pointsCell}{timerCell}</>;
+            return pointsCell;
+          })()}
         </RoadmapHeaderButtonRow>
       </RoadmapHeaderTop>
     </GameHeader>

@@ -55,9 +55,8 @@ import {
   FinishContainer,
   FinishContent,
   FinishStumpStage,
+  FinishStump,
   OrderWoodBlocksImage,
-  OrderWoodBlocksMidVisual,
-  FinishScoreOverlay,
   ORDER_WOOD_BLOCKS_URL,
   FinishScoreNumber,
   FinishScoreLabel,
@@ -404,7 +403,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
                   textShadow: '0 1px 0 rgba(0,0,0,0.2)',
                 }}
               >
-                {t.continue}
+                {((game.settings as Record<string, unknown>).startButtonText as string)?.trim() || t.continue}
               </IntroStartButton>
             </IntroDescStack>
           </IntroContent>
@@ -445,13 +444,11 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
             <IntroTitle style={{ marginBottom: 0 }}>{t.gameComplete}</IntroTitle>
 
             <FinishStumpStage aria-hidden>
-              <OrderWoodBlocksMidVisual>
-                <OrderWoodBlocksImage src={ORDER_WOOD_BLOCKS_URL} alt="" />
-                <FinishScoreOverlay>
-                  <FinishScoreNumber>{finalScore}</FinishScoreNumber>
-                  <FinishScoreLabel>{t.points}</FinishScoreLabel>
-                </FinishScoreOverlay>
-              </OrderWoodBlocksMidVisual>
+              <FinishStump>
+                <StumpRingsSvg />
+                <FinishScoreNumber>{finalScore}</FinishScoreNumber>
+                <FinishScoreLabel>{t.points}</FinishScoreLabel>
+              </FinishStump>
             </FinishStumpStage>
 
             <IntroStartButton style={{ marginTop: 'auto', marginBottom: 'clamp(8px, 2vh, 20px)' }} onClick={handleFinish}>

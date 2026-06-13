@@ -274,7 +274,7 @@ const BalloonWobbleWrap = styled('div')<{ wobbleDuration: number }>(({ wobbleDur
 
 const BalloonSvg = ({ size }: { size: number }) => (
   <img
-    src="/images/baloon.svg"
+    src="/images/baloon.png"
     alt=""
     aria-hidden
     style={{
@@ -697,7 +697,7 @@ interface RoadmapViewProps {
   t: Record<string, string>;
   theme?: string;
   customTheme?: CustomThemeData;
-  leaderboardMode?: 'points' | 'time';
+  leaderboardMode?: 'points' | 'time' | 'both';
   elapsedSeconds?: number;
   activityDurationMinutes?: number;
   /** Manager-controlled progress lock: items with index >= this are blocked. */

@@ -698,7 +698,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
               </IntroInfoText>
             </IntroInfoBox>
             <IntroStartButton $overlap onClick={startGame}>
-              {isResuming ? t.continue : t.startPuzzle}
+              {isResuming ? t.continue : ((game.settings as Record<string, unknown>).startButtonText as string)?.trim() || t.startPuzzle}
             </IntroStartButton>
           </IntroDescStack>
 

@@ -253,7 +253,7 @@ interface LeaderboardViewProps {
   currentParticipantName?: string;
   isLoading: boolean;
   bgStyle: React.CSSProperties;
-  leaderboardMode?: 'points' | 'time';
+  leaderboardMode?: 'points' | 'time' | 'both';
   onBack: () => void;
   onLogout: () => void;
   t: Record<string, string>;
@@ -318,7 +318,16 @@ export default function LeaderboardView({
 
                     {/* Score / time — left side in RTL */}
                     <ScoreValue>
-                      {leaderboardMode === 'time' && entry.durationMs != null
+                      {leaderboardMode === 'both' ? (
+                        <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.15, gap: 2 }}>
+                          <span>{formatLeaderboardScore(entry.score)}</span>
+                          {entry.durationMs != null && (
+                            <span style={{ fontSize: '0.72em', opacity: 0.78, fontWeight: 600 }}>
+                              {formatDuration(entry.durationMs)}
+                            </span>
+                          )}
+                        </span>
+                      ) : leaderboardMode === 'time' && entry.durationMs != null
                         ? formatDuration(entry.durationMs)
                         : formatLeaderboardScore(entry.score)}
                     </ScoreValue>

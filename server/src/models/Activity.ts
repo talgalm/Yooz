@@ -101,7 +101,7 @@ export interface IActivity {
   isContinuous?: boolean;
   loginComponent?: string; // legacy
   /** Leaderboard scoring mode */
-  leaderboardMode?: 'points' | 'time';
+  leaderboardMode?: 'points' | 'time' | 'both';
   /** When true, hide the leaderboard trophy button from the session header */
   hideLeaderboardInHeader?: boolean;
   /** Optional time limit in minutes (only relevant when leaderboardMode is 'time') */
@@ -222,7 +222,7 @@ const activitySchema = new Schema<IActivity>({
   portalId: { type: Schema.Types.ObjectId, ref: 'Portal' },
   isContinuous: { type: Boolean, default: false },
   loginComponent: { type: String }, // legacy
-  leaderboardMode: { type: String, enum: ['points', 'time'], default: 'points' },
+  leaderboardMode: { type: String, enum: ['points', 'time', 'both'], default: 'points' },
   hideLeaderboardInHeader: { type: Boolean, default: false },
   activityDurationMinutes: { type: Number },
   shareClicks: { type: Number, default: 0 },

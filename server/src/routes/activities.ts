@@ -297,6 +297,7 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
   }
 
   const isTimeMode = activity.leaderboardMode === 'time';
+  const isBothMode = activity.leaderboardMode === 'both';
 
   let leaderboard;
   if (isTimeMode) {
@@ -314,6 +315,25 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
       group: r.group,
       score: 0,
       durationMs: r.sessionDurationMs as number,
+    }));
+  } else if (isBothMode) {
+    // Rank primarily by points (desc); duration is shown alongside but not a
+    // tiebreaker (kept simple — most natural reading is "leaderboard by score,
+    // with how long it took").
+    const reports = await Report.find(
+      { activityId: activity._id, 'data.totalScore': { $exists: true } },
+      { participantName: 1, group: 1, data: 1, sessionDurationMs: 1 }
+    )
+      .sort({ 'data.totalScore': -1 })
+      .limit(50)
+      .lean();
+
+    leaderboard = reports.map((r, i) => ({
+      rank: i + 1,
+      name: r.participantName,
+      group: r.group,
+      score: (r.data as { totalScore?: number }).totalScore ?? 0,
+      durationMs: typeof r.sessionDurationMs === 'number' ? r.sessionDurationMs : undefined,
     }));
   } else {
     const reports = await Report.find(

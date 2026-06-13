@@ -311,7 +311,7 @@ interface PlayingPhaseProps {
   currentPoints: number;
   popupModal: React.ReactNode;
   t: Record<string, string>;
-  leaderboardMode?: 'points' | 'time';
+  leaderboardMode?: 'points' | 'time' | 'both';
   elapsedSeconds?: number;
   activityDurationMinutes?: number;
 }

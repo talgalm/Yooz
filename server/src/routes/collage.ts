@@ -75,6 +75,14 @@ interface TemplateMeta {
   buffer: number;
   // Logo placeholder is optional — some templates have no yellow logo region.
   logo: { color: string; similarity: number; blend: number; x: number; y: number; w: number; h: number } | null;
+  // Optional post-composite color-swap inside a bounding box. Used to recolor
+  // a baked-in branded element in the source MP4 (e.g. yellow "SKY PARK TLV"
+  // text in the gan-yehoshua template) without having to re-encode the source.
+  iconRecolor?: {
+    x: number; y: number; w: number; h: number;
+    fromColor: string; toColor: string;
+    similarity: number; blend: number;
+  } | null;
   scenes: MotionScene[];
 }
 
@@ -120,6 +128,15 @@ export const TEMPLATES: Record<string, TemplateMeta> = {
     buffer: 30,
     // No yellow logo placeholder in this template.
     logo: null,
+    // Source video has a baked-in "SKY PARK TLV" yellow text under the icon
+    // in the top-left. Customer asked for white text; we colorkey the yellow
+    // out of the top-left corner and composite white through it so the icon
+    // shape stays visible while the text reads white.
+    iconRecolor: {
+      x: 0, y: 0, w: 300, h: 270,
+      fromColor: '0xFFE51F', toColor: 'white',
+      similarity: 0.30, blend: 0.05,
+    },
     scenes: motionDataGanYehoshua as MotionScene[],
   },
 };
@@ -228,9 +245,26 @@ export function buildFilterComplex(
     parts.push(`[comp][fg]overlay=0:0:format=auto[vraw]`);
   }
 
+  // Optional baked-icon recolor (e.g. yellow "SKY PARK TLV" text → white in
+  // the gan-yehoshua template). Crop the bbox, colorkey the source color to
+  // transparent, composite over a solid target-color block, then overlay back.
+  let scaleIn = 'vraw';
+  if (template.iconRecolor) {
+    const r = template.iconRecolor;
+    parts.push(`[vraw]split=2[vrMain][vrCorner]`);
+    parts.push(
+      `[vrCorner]crop=${r.w}:${r.h}:${r.x}:${r.y},` +
+        `colorkey=color=${r.fromColor}:similarity=${r.similarity}:blend=${r.blend}[crnKeyed]`,
+    );
+    parts.push(`color=color=${r.toColor}:size=${r.w}x${r.h}:rate=${template.fps},format=yuv420p[crnFill]`);
+    parts.push(`[crnFill][crnKeyed]overlay=0:0:format=auto[crnOut]`);
+    parts.push(`[vrMain][crnOut]overlay=${r.x}:${r.y}:format=auto[vrawFixed]`);
+    scaleIn = 'vrawFixed';
+  }
+
   // Final downscale to 720px wide. Phones are the primary delivery target;
   // 1080→720 cuts pixel count by ~56% and shaves a third off encode time.
-  parts.push(`[vraw]scale=720:-2[vout]`);
+  parts.push(`[${scaleIn}]scale=720:-2[vout]`);
 
   // Quiet the unused dimension lints
   void width;

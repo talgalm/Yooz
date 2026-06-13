@@ -331,7 +331,7 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
             setCountdownValue(countdownSeconds);
             setPhase('countdown');
           }}>
-            {t.gotIt}
+            {(game.settings.startButtonText as string)?.trim() || t.gotIt}
           </TutorialButton>
         </TutorialScreen>
       </SortContainer>

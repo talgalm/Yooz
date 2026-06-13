@@ -76,6 +76,7 @@ export default function AdminGameConfigPage() {
 
   // Shared
   const [instructions, setInstructions] = useState('');
+  const [startButtonText, setStartButtonText] = useState('');
   const [hintEnabled, setHintEnabled] = useState(false);
   const [hintText, setHintText] = useState('');
 
@@ -107,6 +108,7 @@ export default function AdminGameConfigPage() {
         setTags(g.tags || []);
         const s = g.settings as Record<string, unknown>;
         setInstructions((s.instructions as string) || '');
+        setStartButtonText((s.startButtonText as string) || '');
         if (s.hint && typeof s.hint === 'object') {
           const h = s.hint as Record<string, unknown>;
           setHintEnabled(!!h.enabled);
@@ -134,6 +136,7 @@ export default function AdminGameConfigPage() {
 
     const s = lib.settings || {};
     setInstructions((s.instructions as string) || '');
+    setStartButtonText((s.startButtonText as string) || '');
     if (s.hint && typeof s.hint === 'object') {
       const h = s.hint as Record<string, unknown>;
       setHintEnabled(!!h.enabled);
@@ -179,6 +182,7 @@ export default function AdminGameConfigPage() {
 
       const settings: Record<string, unknown> = {
         instructions: instructions.trim() || undefined,
+        startButtonText: startButtonText.trim() || undefined,
         ...hintConfig,
         ...gameTypeSettings,
       };
@@ -340,6 +344,15 @@ export default function AdminGameConfigPage() {
                     }
                     value={instructions}
                     onChange={(e) => setInstructions(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <SectionLabel>{t.startButtonText}</SectionLabel>
+                  <Input
+                    placeholder={t.startButtonTextPlaceholder}
+                    value={startButtonText}
+                    onChange={(e) => setStartButtonText(e.target.value)}
                   />
                 </div>
 

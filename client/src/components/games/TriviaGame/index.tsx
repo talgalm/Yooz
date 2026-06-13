@@ -563,7 +563,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
                   savedProgress.current = null;
                 }
               }}>
-                {isResuming ? t.continue : t.start}
+                {isResuming ? t.continue : ((game.settings as Record<string, unknown>).startButtonText as string)?.trim() || t.start}
               </IntroStartButton>
             </IntroDescStack>
 
