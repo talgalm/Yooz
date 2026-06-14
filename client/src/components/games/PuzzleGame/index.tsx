@@ -727,7 +727,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
             </FinishSummaryMiddle>
 
             <IntroStartButton type="button" $pinBottom onClick={handleFinish}>
-              {t.continue}
+              {((game.settings as Record<string, unknown>).endButtonText as string)?.trim() || t.continue}
             </IntroStartButton>
           </FinishContent>
         </FinishContainer>

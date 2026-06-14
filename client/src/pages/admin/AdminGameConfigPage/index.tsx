@@ -77,6 +77,7 @@ export default function AdminGameConfigPage() {
   // Shared
   const [instructions, setInstructions] = useState('');
   const [startButtonText, setStartButtonText] = useState('');
+  const [endButtonText, setEndButtonText] = useState('');
   const [hintEnabled, setHintEnabled] = useState(false);
   const [hintText, setHintText] = useState('');
 
@@ -109,6 +110,7 @@ export default function AdminGameConfigPage() {
         const s = g.settings as Record<string, unknown>;
         setInstructions((s.instructions as string) || '');
         setStartButtonText((s.startButtonText as string) || '');
+        setEndButtonText((s.endButtonText as string) || '');
         if (s.hint && typeof s.hint === 'object') {
           const h = s.hint as Record<string, unknown>;
           setHintEnabled(!!h.enabled);
@@ -137,6 +139,7 @@ export default function AdminGameConfigPage() {
     const s = lib.settings || {};
     setInstructions((s.instructions as string) || '');
     setStartButtonText((s.startButtonText as string) || '');
+    setEndButtonText((s.endButtonText as string) || '');
     if (s.hint && typeof s.hint === 'object') {
       const h = s.hint as Record<string, unknown>;
       setHintEnabled(!!h.enabled);
@@ -183,6 +186,7 @@ export default function AdminGameConfigPage() {
       const settings: Record<string, unknown> = {
         instructions: instructions.trim() || undefined,
         startButtonText: startButtonText.trim() || undefined,
+        endButtonText: endButtonText.trim() || undefined,
         ...hintConfig,
         ...gameTypeSettings,
       };
@@ -353,6 +357,15 @@ export default function AdminGameConfigPage() {
                     placeholder={t.startButtonTextPlaceholder}
                     value={startButtonText}
                     onChange={(e) => setStartButtonText(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <SectionLabel>{t.endButtonText}</SectionLabel>
+                  <Input
+                    placeholder={t.endButtonTextPlaceholder}
+                    value={endButtonText}
+                    onChange={(e) => setEndButtonText(e.target.value)}
                   />
                 </div>
 

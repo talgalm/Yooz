@@ -369,7 +369,7 @@ export default function OrderSurveyGame({
               {t.submitRanking}
             </NatureCheckButton>
           ) : resultsRevealed ? (
-            <NatureCheckButton onClick={handleContinue}>{t.continueAfterResults}</NatureCheckButton>
+            <NatureCheckButton onClick={handleContinue}>{((game.settings as Record<string, unknown>).endButtonText as string)?.trim() || t.continueAfterResults}</NatureCheckButton>
           ) : null}
         </OrderActionBar>
       </OrderContainer>

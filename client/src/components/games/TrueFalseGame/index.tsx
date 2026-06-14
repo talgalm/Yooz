@@ -539,7 +539,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
           </FinishStumpStage>
 
           <IntroStartButton type="button" $pinBottom onClick={handleFinish}>
-            {t.continue}
+            {((game.settings as Record<string, unknown>).endButtonText as string)?.trim() || t.continue}
           </IntroStartButton>
         </FinishContent>
         </FinishContainer>

@@ -452,7 +452,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
             </FinishStumpStage>
 
             <IntroStartButton style={{ marginTop: 'auto', marginBottom: 'clamp(8px, 2vh, 20px)' }} onClick={handleFinish}>
-              {t.continue}
+              {((game.settings as Record<string, unknown>).endButtonText as string)?.trim() || t.continue}
             </IntroStartButton>
           </FinishContent>
         </FinishContainer>

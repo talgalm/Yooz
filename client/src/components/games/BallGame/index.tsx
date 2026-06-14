@@ -334,7 +334,7 @@ export default function BallGame({
                 paddingRight: 'clamp(22px, 6vw, 36px)',
               }}
             >
-              {t.continueBtn ?? t.backToRoadmap}
+              {((game.settings as unknown as Record<string, unknown>).endButtonText as string)?.trim() || t.continueBtn || t.backToRoadmap}
             </IntroStartButton>
           </FinishContent>
         </FinishContainer>

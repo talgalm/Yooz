@@ -599,7 +599,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
           </FinishStumpStage>
 
           <FinishContinueButton onClick={handleFinish}>
-            {t.continue}
+            {((game.settings as Record<string, unknown>).endButtonText as string)?.trim() || t.continue}
           </FinishContinueButton>
         </FinishContent>
       </FinishContainer>
