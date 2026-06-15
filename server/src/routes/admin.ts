@@ -424,9 +424,15 @@ router.patch('/activities/:id/status', authenticateAdmin, async (req: Request<{ 
     return;
   }
 
-  // When going live, wipe all dynamic data (reports/participants/scores)
+  // When going live, wipe all dynamic data (reports/participants/scores/session state)
   if (status === 'live') {
     await Report.deleteMany({ activityId: activity._id });
+    activity.orderSurveySession = undefined;
+    activity.shareClicks = undefined;
+    activity.shareCompleted = undefined;
+    activity.missionPuzzleCompletions = undefined;
+    activity.missionTrashSortCompletions = undefined;
+    activity.missionTrashSortScoreSum = undefined;
   }
 
   activity.status = status;
