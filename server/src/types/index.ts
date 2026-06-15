@@ -254,6 +254,7 @@ export interface CreateActivityRequest {
   hideLeaderboardInHeader?: boolean;
   activityDurationMinutes?: number;
   includeOnRoadmap?: boolean;
+  passThreshold?: number | null;
 }
 
 export interface ActivityConfigResponse {

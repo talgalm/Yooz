@@ -60,6 +60,14 @@ export const texts = {
     readyForClient: 'Ready for client reporting',
     readyForClientBody: 'Completion, score, and player activity are all in a presentable range for a client or boss summary.',
 
+    // Anomaly messages (built client-side from structured data)
+    anomalyDropout: '"{item}" has {pct}% drop-off rate',
+    anomalySlow: '"{item}" takes {sec}s avg — {mult}x the average',
+
+    // Generic labels
+    statusHeader: 'Status',
+    station: 'Station',
+
     // Activity drill-down
     activityAnalytics: 'Activity Analytics',
     overviewTab: 'Overview',
@@ -104,6 +112,20 @@ export const texts = {
     exportProgressDescription: 'Progress, bottlenecks, and follow-up report',
     downloading: 'Downloading...',
     exportFailed: 'Export failed. Please try again.',
+
+    // Pass grade
+    passGrade: 'Pass grade',
+    passGradeDesc: 'Participants whose normalized score (0-100) is at or above this value count as passing in reports and statistics. Choose None to skip pass/fail entirely.',
+    passGradeNone: 'None',
+
+    // Share link
+    shareTitle: 'Share statistics page',
+    shareDesc: 'Anyone with this link can view this activity\'s statistics and download the reports (including participant names, emails and phone numbers) — with no access to the admin panel.',
+    shareCreate: 'Create share link',
+    shareCopy: 'Copy',
+    shareCopied: 'Copied',
+    shareRegenerate: 'Regenerate',
+    shareRevoke: 'Revoke',
 
     // Alerts
     alerts: 'Alerts',
@@ -199,6 +221,14 @@ export const texts = {
     readyForClient: 'מוכן לדוח לקוח',
     readyForClientBody: 'ההשלמה, הציונים ופעילות השחקנים נמצאים בטווח שניתן להציג ללקוח או מנהל.',
 
+    // Anomaly messages (built client-side from structured data)
+    anomalyDropout: '"{item}" עם {pct}% נשירה',
+    anomalySlow: '"{item}" אורכת {sec} שניות בממוצע — פי {mult} מהממוצע',
+
+    // Generic labels
+    statusHeader: 'סטטוס',
+    station: 'תחנה',
+
     // Activity drill-down
     activityAnalytics: 'ניתוח פעילות',
     overviewTab: 'סקירה',
@@ -243,6 +273,20 @@ export const texts = {
     exportProgressDescription: 'התקדמות, צווארי בקבוק ומי דורש טיפול',
     downloading: 'מוריד...',
     exportFailed: 'הייצוא נכשל. נסה שוב.',
+
+    // Pass grade
+    passGrade: 'ציון מעבר',
+    passGradeDesc: 'משתתפים שהציון המנורמל שלהם (0-100) שווה לערך הזה או גבוה ממנו ייחשבו כעוברים בדוחות ובסטטיסטיקות. בחירה ב"ללא" מבטלת את חישוב העובר/נכשל.',
+    passGradeNone: 'ללא',
+
+    // Share link
+    shareTitle: 'שיתוף דף הסטטיסטיקה',
+    shareDesc: 'כל מי שיש לו את הקישור יכול לצפות בסטטיסטיקה של הפעילות ולהוריד את הדוחות (כולל שמות, אימיילים וטלפונים של המשתתפים) — ללא גישה לפאנל הניהול.',
+    shareCreate: 'צור קישור שיתוף',
+    shareCopy: 'העתק',
+    shareCopied: 'הועתק',
+    shareRegenerate: 'צור מחדש',
+    shareRevoke: 'בטל קישור',
 
     // Alerts
     alerts: 'התראות',

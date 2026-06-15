@@ -106,6 +106,13 @@ export interface IActivity {
   hideLeaderboardInHeader?: boolean;
   /** Optional time limit in minutes (only relevant when leaderboardMode is 'time') */
   activityDurationMinutes?: number;
+  /** Normalized (0-100) score at/above which a participant is considered to have
+   *  passed, used in statistics and exported reports. Defaults to 70.
+   *  null = no pass grade (pass/fail is not applied). */
+  passThreshold?: number | null;
+  /** Unguessable token for a public, read-only statistics share link.
+   *  null/undefined = no active share link. */
+  statsShareToken?: string | null;
   /** Share button analytics */
   shareClicks?: number;
   shareCompleted?: number;
@@ -225,6 +232,8 @@ const activitySchema = new Schema<IActivity>({
   leaderboardMode: { type: String, enum: ['points', 'time', 'both'], default: 'points' },
   hideLeaderboardInHeader: { type: Boolean, default: false },
   activityDurationMinutes: { type: Number },
+  passThreshold: { type: Number, default: 70 }, // null = no pass grade; range validated in code
+  statsShareToken: { type: String, default: null, index: true, sparse: true },
   shareClicks: { type: Number, default: 0 },
   shareCompleted: { type: Number, default: 0 },
   missionPuzzleCompletions: { type: Number, default: 0 },

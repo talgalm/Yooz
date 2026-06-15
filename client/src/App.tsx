@@ -21,6 +21,7 @@ import ManagerDashboardPage from './pages/manager/ManagerDashboardPage';
 import OrderSurveyPresentPage from './pages/manager/OrderSurveyPresentPage';
 import LandingPage from './pages/LandingPage';
 import PrivacyPage from './pages/PrivacyPage';
+import SharedStatsPage from './pages/shared/SharedStatsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpChatProvider, HelpChatFab } from './components/HelpChat';
 import AdminHelpChat from './components/AdminHelpChat';
@@ -101,6 +102,9 @@ export default function App() {
 
                 {/* Privacy policy — public, responsive */}
                 <Route path="/privacy" element={<PrivacyPage />} />
+
+                {/* Public read-only statistics share link */}
+                <Route path="/stats/:token" element={<SharedStatsPage />} />
 
                 {/* Default: YOOZ landing page — responsive (mobile + desktop) */}
                 <Route path="/" element={<LandingPage />} />

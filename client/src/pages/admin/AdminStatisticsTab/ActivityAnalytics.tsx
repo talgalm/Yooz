@@ -8,7 +8,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { useTranslations } from '../../../context/LanguageContext';
+import { useTranslations, useLang } from '../../../context/LanguageContext';
+import { formatDuration as formatDurationLoc } from '../../../utils/formatDuration';
 import {
   useActivityAnalytics,
   useAnomalies,
@@ -17,6 +18,7 @@ import {
   useItemStats,
 } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
+import { useAnalyticsSource } from './analyticsSource';
 import type {
   ActivityAnalyticsData,
   ActivityPeriod,
@@ -88,15 +90,6 @@ interface Props {
 
 type Tone = 'green' | 'blue' | 'amber' | 'red';
 
-function formatDuration(ms?: number | null) {
-  if (!ms) return '-';
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  const rest = s % 60;
-  return rest ? `${m}m ${rest}s` : `${m}m`;
-}
-
 function formatDateTime(value: string) {
   if (!value) return '-';
   const date = new Date(value);
@@ -141,6 +134,20 @@ function template(text: string, values: Record<string, string | number>) {
   );
 }
 
+function anomalyMessage(alert: AnomalyAlert, t: Record<string, string>): string {
+  if (alert.type === 'high_dropout' && alert.dropoutPct !== undefined) {
+    return template(t.anomalyDropout, { item: alert.itemName ?? '', pct: alert.dropoutPct });
+  }
+  if (alert.type === 'unusual_time' && alert.avgSeconds !== undefined) {
+    return template(t.anomalySlow, {
+      item: alert.itemName ?? '',
+      sec: alert.avgSeconds,
+      mult: alert.multiplier ?? 0,
+    });
+  }
+  return alert.message ?? '';
+}
+
 function buildRecommendations(
   analytics: ActivityAnalyticsData,
   anomalies: AnomalyAlert[],
@@ -157,7 +164,7 @@ function buildRecommendations(
   if (anomalies.length > 0) {
     recommendations.push({
       title: t.reviewBottlenecks,
-      body: anomalies[0].message,
+      body: anomalyMessage(anomalies[0], t),
       tone: anomalies[0].severity === 'error' ? 'red' : 'amber',
     });
   }
@@ -199,6 +206,9 @@ function buildRecommendations(
 
 export default function ActivityAnalytics({ activityId }: Props) {
   const t = useTranslations(texts);
+  const { lang } = useLang();
+  const { shared } = useAnalyticsSource();
+  const formatDuration = (ms?: number | null) => formatDurationLoc(ms, lang);
   const [subTab, setSubTab] = useState<ActivitySubTab>('overview');
   const [period, setPeriod] = useState<ActivityPeriod>('year');
 
@@ -251,7 +261,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
     completed: Math.round((analytics.completionRate / 100) * analytics.totalParticipants),
   };
   const statusTotal = Math.max(analytics.totalParticipants, status.joined + status.inProgress + status.completed, 1);
-  const passRate = analytics.scoreSummary?.passRate ?? 0;
+  const passRate = analytics.scoreSummary?.passRate ?? null;
   const itemHighlights = [...items]
     .sort((a, b) => {
       const riskA = (100 - a.completionPct) * 2 + a.hintUsagePct + Math.max(0, a.avgMaxScore * 0.65 - a.avgScore);
@@ -322,7 +332,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
                 <AlertBanner key={`${a.type}-${a.itemIndex ?? a.message}`} severity={a.severity}>
                   <AlertIcon>!</AlertIcon>
                   <span style={{ flex: '1 1 220px', minWidth: 0, overflowWrap: 'anywhere' }}>
-                    {a.message}
+                    {anomalyMessage(a, t)}
                   </span>
                 </AlertBanner>
               ))}
@@ -354,7 +364,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
                 <MetricLabel>{t.avgScore}</MetricLabel>
                 <MetricValue>{Math.round(analytics.avgScore)}</MetricValue>
                 <MetricSubtext>
-                  {t.median}: {Math.round(analytics.medianScore)} / {t.passRate}: {passRate}%
+                  {t.median}: {Math.round(analytics.medianScore)} / {t.passRate}: {passRate === null ? '—' : `${passRate}%`}
                 </MetricSubtext>
               </MetricCard>
               <MetricCard tone="amber">
@@ -604,7 +614,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
 
       {subTab === 'export' && <ExportSection activityId={activityId} period={period} />}
 
-      {activityId && (
+      {activityId && !shared && (
         <AdminReportChat activityId={activityId} onSwitchSubTab={setSubTab} />
       )}
     </>

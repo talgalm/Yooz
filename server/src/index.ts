@@ -34,6 +34,7 @@ import ttsRouter from './routes/tts';
 import reportAssistantRouter from './routes/reportAssistant';
 import adminHelpAssistantRouter from './routes/adminHelpAssistant';
 import devTasksRouter from './routes/devTasks';
+import sharedStatsRouter from './routes/sharedStats';
 
 const app = express();
 
@@ -72,6 +73,8 @@ app.use('/api/admin/upload', uploadRouter);
 app.use('/api/help', helpRouter);
 app.use('/api/avatar-chat', avatarChatRouter);
 app.use('/api/admin/analytics', analyticsRouter);
+// Public, token-scoped, read-only statistics share links (no admin auth).
+app.use('/api/shared/stats', sharedStatsRouter);
 app.use('/api/admin/report-assistant', reportAssistantRouter);
 app.use('/api/admin/help-assistant', adminHelpAssistantRouter);
 app.use('/api/admin/dev-tasks', devTasksRouter);

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useTranslations } from '../../../context/LanguageContext';
+import { useTranslations, useLang } from '../../../context/LanguageContext';
+import { formatDuration as formatDurationLoc } from '../../../utils/formatDuration';
 import { useOverview, useTimeline } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
 import Pagination from '../../../components/Pagination';
@@ -37,17 +38,10 @@ interface Props {
   onViewAuditLog: () => void;
 }
 
-function formatDuration(ms: number) {
-  if (!ms) return '—';
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  const rest = s % 60;
-  return rest ? `${m}m ${rest}s` : `${m}m`;
-}
-
 export default function OverviewSection({ activities, onSelectActivity, onViewAuditLog }: Props) {
   const t = useTranslations(texts);
+  const { lang } = useLang();
+  const formatDuration = (ms: number) => formatDurationLoc(ms, lang);
   const { data: overview, loading: overviewLoading } = useOverview();
   const { data: timeline } = useTimeline(30);
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(activities);
@@ -154,8 +148,8 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
                 <thead>
                   <tr>
                     <th>{t.itemName}</th>
-                    <th>Code</th>
-                    <th>Status</th>
+                    <th>{t.code}</th>
+                    <th>{t.statusHeader}</th>
                     <th>{t.totalParticipants}</th>
                   </tr>
                 </thead>
@@ -164,7 +158,7 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
                     <tr key={a._id} onClick={() => onSelectActivity(a._id)}>
                       <td style={{ fontWeight: 600 }}>{a.name}</td>
                       <td><code>{a.code}</code></td>
-                      <td>{a.status}</td>
+                      <td>{a.status === 'live' ? t.liveStatus : t.previewStatus}</td>
                       <td>→</td>
                     </tr>
                   ))}
@@ -178,7 +172,7 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
               <StatsMobileCard key={a._id} onClick={() => onSelectActivity(a._id)}>
                 <StatsMobileRow>
                   <StatsMobileValue>{a.name}</StatsMobileValue>
-                  <span style={{ fontSize: 12, color: '#888' }}>{a.status}</span>
+                  <span style={{ fontSize: 12, color: '#888' }}>{a.status === 'live' ? t.liveStatus : t.previewStatus}</span>
                 </StatsMobileRow>
                 <StatsMobileRow>
                   <StatsMobileLabel>{a.code}</StatsMobileLabel>

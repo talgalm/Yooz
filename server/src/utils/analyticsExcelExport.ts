@@ -1,4 +1,9 @@
 import ExcelJS from 'exceljs';
+import {
+  resolvePassThreshold,
+  normalizeScore,
+  resolveCeiling,
+} from './scoreNormalization';
 
 export type AnalyticsExportType = 'executive' | 'participants' | 'scores' | 'progress';
 
@@ -20,6 +25,8 @@ export interface ExportActivity {
   missionPuzzleCompletions?: number;
   missionTrashSortCompletions?: number;
   missionTrashSortScoreSum?: number;
+  /** Normalized (0-100) pass grade. Defaults to 70. null = no pass grade. */
+  passThreshold?: number | null;
 }
 
 export interface ExportQuestionAnswer {
@@ -84,6 +91,7 @@ interface ParticipantRow {
   status: CompletionStatus;
   statusLabel: string;
   totalScore: number;
+  normalizedScore: number;
   passLabel: string;
   progressPct: number;
   itemsCompleted: number;
@@ -162,10 +170,13 @@ interface ExportStats {
   joinedOnlyCount: number;
   completionRate: number;
   avgScore: number;
+  avgRawScore: number;
   medianScore: number;
   highestScore: number;
   lowestScore: number;
-  passRate: number;
+  passRate: number | null;
+  passThreshold: number | null;
+  maxPossibleScore: number;
   avgDurationMs: number;
   medianDurationMs: number;
   fastestMs: number;
@@ -306,7 +317,12 @@ function getReportScore(report: ExportReport) {
   return numberOrZero(report.data?.totalScore);
 }
 
-function buildParticipants(reports: ExportReport[], totalItemsInModule: number): ParticipantRow[] {
+function buildParticipants(
+  reports: ExportReport[],
+  totalItemsInModule: number,
+  scoreCeiling: number,
+  passThreshold: number | null,
+): ParticipantRow[] {
   const ranked = reports
     .map((report, index) => ({
       report,
@@ -325,6 +341,7 @@ function buildParticipants(reports: ExportReport[], totalItemsInModule: number):
   return reports.map((report, index) => {
     const status = normalizeStatus(report.completionStatus);
     const totalScore = getReportScore(report);
+    const normalizedScore = normalizeScore(totalScore, scoreCeiling);
     const totalItems = Math.max(totalItemsInModule, report.totalItemsInModule ?? 0);
     const durationMs = numberOrZero(report.sessionDurationMs);
     return {
@@ -340,7 +357,10 @@ function buildParticipants(reports: ExportReport[], totalItemsInModule: number):
       status,
       statusLabel: STATUS_LABELS[status],
       totalScore,
-      passLabel: totalScore >= 70 ? 'עבר' : 'לא עבר',
+      normalizedScore,
+      passLabel: passThreshold === null
+        ? '—'
+        : totalScore > 0 && normalizedScore >= passThreshold ? 'עבר' : 'לא עבר',
       progressPct: getProgressPct(report, totalItems),
       itemsCompleted: report.totalItemsCompleted ?? 0,
       totalItems,
@@ -551,11 +571,11 @@ function buildGroups(participants: ParticipantRow[]): GroupAggregate[] {
         inProgressCount: inProgress,
         joinedOnlyCount: joinedOnly,
         completionRate: members.length > 0 ? Math.round((completed / members.length) * 100) : 0,
-        avgScore: Math.round(average(members.map((member) => member.totalScore))),
+        avgScore: Math.round(average(members.map((member) => member.normalizedScore))),
         avgProgressPct: Math.round(average(members.map((member) => member.progressPct))),
         avgDurationMs,
         avgDurationLabel: formatDuration(avgDurationMs),
-        topScore: Math.max(0, ...members.map((member) => member.totalScore)),
+        topScore: Math.max(0, ...members.map((member) => member.normalizedScore)),
         followUpCount: members.filter((member) => member.status !== 'completed' && member.progressPct < 80).length,
       };
     })
@@ -664,13 +684,21 @@ function buildRecommendations(
 
 function buildStats(activity: ExportActivity, reports: ExportReport[]): ExportStats {
   const totalItemsInModule = getTotalItems(activity, reports);
-  const participants = buildParticipants(reports, totalItemsInModule);
-  const scores = participants.map((participant) => participant.totalScore).filter((score) => score > 0);
+  // Resolve the 0-100 scale and the configurable pass grade, then build rows.
+  const rawScoresAll = reports.map((report) => getReportScore(report)).filter((score) => score > 0);
+  const scoreCeiling = resolveCeiling(reports, rawScoresAll);
+  const passThreshold = resolvePassThreshold(activity.passThreshold); // null = no pass grade
+  const participants = buildParticipants(reports, totalItemsInModule, scoreCeiling, passThreshold);
+  const scoredParticipants = participants.filter((participant) => participant.totalScore > 0);
+  const scores = scoredParticipants.map((participant) => participant.normalizedScore); // 0-100
+  const rawScores = scoredParticipants.map((participant) => participant.totalScore);
   const durations = participants.map((participant) => participant.durationMs).filter((duration) => duration > 0);
   const completedCount = participants.filter((participant) => participant.status === 'completed').length;
   const inProgressCount = participants.filter((participant) => participant.status === 'in_progress').length;
   const joinedOnlyCount = participants.filter((participant) => participant.status === 'joined').length;
-  const passRate = scores.length > 0 ? Math.round((scores.filter((score) => score >= 70).length / scores.length) * 100) : 0;
+  const passRate = passThreshold === null
+    ? null
+    : scores.length > 0 ? Math.round((scores.filter((score) => score >= passThreshold).length / scores.length) * 100) : 0;
   const avgProgressPct = Math.round(average(participants.map((participant) => participant.progressPct)));
   const completionRate = participants.length > 0 ? Math.round((completedCount / participants.length) * 100) : 0;
   const items = buildItems(reports, participants.length);
@@ -686,10 +714,13 @@ function buildStats(activity: ExportActivity, reports: ExportReport[]): ExportSt
     joinedOnlyCount,
     completionRate,
     avgScore: Math.round(average(scores)),
+    avgRawScore: Math.round(average(rawScores)),
     medianScore: Math.round(median(scores)),
     highestScore: scores.length > 0 ? Math.max(...scores) : 0,
     lowestScore: scores.length > 0 ? Math.min(...scores) : 0,
     passRate,
+    passThreshold,
+    maxPossibleScore: scoreCeiling,
     avgDurationMs: Math.round(average(durations)),
     medianDurationMs: Math.round(median(durations)),
     fastestMs: durations.length > 0 ? Math.min(...durations) : 0,
@@ -851,16 +882,23 @@ function addSummarySheet(workbook: ExcelJS.Workbook, activity: ExportActivity, s
     10,
   );
 
+  // Pass-grade display (null = no pass grade configured).
+  const passRateText = stats.passRate === null ? 'ללא' : `${stats.passRate}%`;
+  const passRateTone: Tone = stats.passRate === null ? 'slate' : pctTone(stats.passRate);
+  const passGradeNote = stats.passThreshold === null
+    ? 'לא הוגדר ציון מעבר לפעילות.'
+    : `משתתפים עם ציון מנורמל ${stats.passThreshold} ומעלה`;
+
   worksheet.columns = Array.from({ length: 10 }, () => ({ width: 16 }));
   addKpi(worksheet, 4, 1, 'משתתפים', stats.totalParticipants, `${stats.completedCount} סיימו`, 'blue');
   addKpi(worksheet, 4, 3, 'אחוז סיום', `${stats.completionRate}%`, `${stats.inProgressCount} עדיין בתהליך`, pctTone(stats.completionRate));
-  addKpi(worksheet, 4, 5, 'ציון ממוצע', stats.avgScore, `חציון ${stats.medianScore} | מעבר ${stats.passRate}%`, pctTone(stats.avgScore));
+  addKpi(worksheet, 4, 5, 'ציון ממוצע (0-100)', stats.avgScore, `חציון ${stats.medianScore} | ממוצע גולמי ${stats.avgRawScore} | מעבר ${passRateText}`, pctTone(stats.avgScore));
   addKpi(worksheet, 4, 7, 'זמן ממוצע', formatDuration(stats.avgDurationMs) || '-', `חציון ${formatDuration(stats.medianDurationMs) || '-'}`, 'amber');
   addKpi(worksheet, 4, 9, 'התקדמות ממוצעת', `${stats.avgProgressPct}%`, `${stats.totalItemsInModule} תחנות במסלול`, pctTone(stats.avgProgressPct));
 
   addKpi(worksheet, 8, 1, 'המהיר ביותר', formatDuration(stats.fastestMs) || '-', `הארוך ביותר ${formatDuration(stats.slowestMs) || '-'}`, 'green');
-  addKpi(worksheet, 8, 3, 'ציון גבוה', stats.highestScore, `נמוך ${stats.lowestScore}`, 'green');
-  addKpi(worksheet, 8, 5, 'אחוז מעבר', `${stats.passRate}%`, 'משתתפים עם ציון 70 ומעלה', pctTone(stats.passRate));
+  addKpi(worksheet, 8, 3, 'ציון גבוה (0-100)', stats.highestScore, `נמוך ${stats.lowestScore}`, 'green');
+  addKpi(worksheet, 8, 5, 'אחוז מעבר', passRateText, passGradeNote, passRateTone);
   addKpi(worksheet, 8, 7, 'תחנות', stats.totalItemsInModule, `${stats.items.length} עם נתוני ביצוע`, 'slate');
   addKpi(worksheet, 8, 9, 'מודול', activity.module?.type || '-', activity.connectionType === 'group' ? 'פעילות קבוצתית' : 'פעילות אישית', 'blue');
 
@@ -877,7 +915,7 @@ function addSummarySheet(workbook: ExcelJS.Workbook, activity: ExportActivity, s
       { label: 'הושלם', value: stats.completedCount, note: 'מספר המשתתפים שעברו את כל הפעילות.' },
       { label: 'בתהליך', value: stats.inProgressCount, note: 'משתתפים שכדאי לשלוח אליהם תזכורת.' },
       { label: 'נכנסו בלבד', value: stats.joinedOnlyCount, note: 'נכנסו אך לא התחילו מסלול משמעותי.' },
-      { label: 'אחוז מעבר', value: `${stats.passRate}%`, note: 'משתתפים עם ציון 70 ומעלה.' },
+      { label: 'אחוז מעבר', value: passRateText, note: stats.passThreshold === null ? 'לא הוגדר ציון מעבר לפעילות.' : `משתתפים עם ציון מנורמל ${stats.passThreshold} ומעלה (מתוך 100).` },
       { label: 'התקדמות ממוצעת', value: `${stats.avgProgressPct}%`, note: 'כמה מהמסלול נצרך בפועל בממוצע.' },
     ],
     'SummaryStatusTable',
@@ -921,7 +959,7 @@ function addSummarySheet(workbook: ExcelJS.Workbook, activity: ExportActivity, s
 
 function addParticipantsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
   const worksheet = workbook.addWorksheet(safeSheetName('משתתפים'));
-  addTitle(worksheet, 'משתתפים - פרטי קשר, סטטוס ודירוג', 'מי שיחק, מי סיים, מי צריך פולו-אפ ומה הציון שלו.', 16);
+  addTitle(worksheet, 'משתתפים - פרטי קשר, סטטוס ודירוג', 'מי שיחק, מי סיים, מי צריך פולו-אפ ומה הציון שלו.', 17);
   const headerRow = 4;
   addTable(
     worksheet,
@@ -934,7 +972,8 @@ function addParticipantsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
       { header: 'טלפון', width: 18, value: (row) => row.phone },
       { header: 'קבוצה', width: 20, value: (row) => row.group },
       { header: 'סטטוס', width: 16, value: (row) => row.statusLabel },
-      { header: 'ציון', width: 12, value: (row) => row.totalScore },
+      { header: 'ציון גולמי', width: 12, value: (row) => row.totalScore },
+      { header: 'ציון (0-100)', width: 12, value: (row) => row.normalizedScore },
       { header: 'עבר/לא עבר', width: 14, value: (row) => row.passLabel },
       { header: 'התקדמות %', width: 14, value: (row) => row.progressPct },
       { header: 'תחנות שהושלמו', width: 16, value: (row) => row.itemsCompleted },
@@ -947,7 +986,8 @@ function addParticipantsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
     stats.participants,
     'ParticipantsTable',
   );
-  stylePercentColumn(worksheet, headerRow, 10, stats.participants.length);
+  stylePercentColumn(worksheet, headerRow, 9, stats.participants.length); // ציון (0-100)
+  stylePercentColumn(worksheet, headerRow, 11, stats.participants.length); // התקדמות %
   configureWorksheet(worksheet);
 }
 
@@ -977,6 +1017,7 @@ function addScoresSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], sta
     { header: 'קבוצה', width: 18, value: (row) => row.participant.group },
     { header: 'סטטוס', width: 15, value: (row) => row.participant.statusLabel },
     { header: 'ציון כולל', width: 14, value: (row) => row.participant.totalScore },
+    { header: 'ציון (0-100)', width: 13, value: (row) => row.participant.normalizedScore },
     { header: 'עבר/לא עבר', width: 14, value: (row) => row.participant.passLabel },
     { header: 'משך', width: 16, value: (row) => row.participant.durationLabel },
     ...itemNames.map((item) => ({
@@ -1101,10 +1142,10 @@ function addGroupsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
       { header: 'בתהליך', width: 12, value: (row) => row.inProgressCount },
       { header: 'נכנסו בלבד', width: 14, value: (row) => row.joinedOnlyCount },
       { header: 'אחוז סיום', width: 14, value: (row) => row.completionRate },
-      { header: 'ציון ממוצע', width: 14, value: (row) => row.avgScore },
+      { header: 'ציון ממוצע (0-100)', width: 16, value: (row) => row.avgScore },
       { header: 'התקדמות ממוצעת', width: 18, value: (row) => row.avgProgressPct },
       { header: 'זמן ממוצע', width: 18, value: (row) => row.avgDurationLabel },
-      { header: 'ציון מוביל', width: 14, value: (row) => row.topScore },
+      { header: 'ציון מוביל (0-100)', width: 16, value: (row) => row.topScore },
       { header: 'דורשים פולו-אפ', width: 16, value: (row) => row.followUpCount },
     ],
     stats.groups,
@@ -1201,12 +1242,12 @@ function addRecommendationsSheet(workbook: ExcelJS.Workbook, stats: ExportStats)
 
 function addScoreDistributionSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
   const worksheet = workbook.addWorksheet(safeSheetName('התפלגות'));
-  addTitle(worksheet, 'התפלגות ציונים', 'כמה משתתפים נמצאים בכל טווח ציון.', 4);
+  addTitle(worksheet, 'התפלגות ציונים', 'כמה משתתפים נמצאים בכל טווח ציון מנורמל (0-100).', 4);
   addTable(
     worksheet,
     4,
     [
-      { header: 'טווח ציון', width: 18, value: (row: { range: string; count: number }) => row.range },
+      { header: 'טווח ציון (0-100)', width: 18, value: (row: { range: string; count: number }) => row.range },
       { header: 'כמות משתתפים', width: 18, value: (row) => row.count },
     ],
     stats.scoreBuckets,
