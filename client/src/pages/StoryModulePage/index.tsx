@@ -328,15 +328,22 @@ export default function StoryModulePage() {
   // setInterval driving elapsedSeconds. ('both' also shows points alongside.)
   const isTimeMode = data?.leaderboardMode === 'time';
   const showsTimer = isTimeMode || data?.leaderboardMode === 'both';
+  // The cosmetic roadmap timer also needs the elapsed clock ticking, regardless
+  // of leaderboard mode.
+  const hasRoadmapTimer = (data?.roadmapTimerMinutes ?? 0) > 0;
+  const needsElapsedTimer = showsTimer || hasRoadmapTimer;
   useEffect(() => {
-    if (!showsTimer) return;
+    if (!needsElapsedTimer) return;
     if (phase === 'finish') return; // lock final time once activity ends
     const id = setInterval(() => {
       const secs = Math.floor((Date.now() - sessionStartedAt.current) / 1000);
       setElapsedSeconds(secs);
+      // The 1-minute warning popup belongs only to the real leaderboard time limit,
+      // not the cosmetic roadmap timer.
       const limitMins = data?.activityDurationMinutes;
       if (
-        limitMins
+        showsTimer
+        && limitMins
         && !timeWarningShown.current
         && secs >= limitMins * 60 - 60
         && secs < limitMins * 60
@@ -346,7 +353,7 @@ export default function StoryModulePage() {
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [showsTimer, data?.activityDurationMinutes, phase]);
+  }, [needsElapsedTimer, showsTimer, data?.activityDurationMinutes, phase]);
   const [ballGameMuted, setBallGameMuted] = useState(false);
 
   /** Roadmap header: animate points from → to after a game (ATM-style tally). */
@@ -1277,6 +1284,7 @@ export default function StoryModulePage() {
             leaderboardMode={data.leaderboardMode}
             elapsedSeconds={elapsedSeconds}
             activityDurationMinutes={data.activityDurationMinutes}
+            roadmapTimerMinutes={data.roadmapTimerMinutes}
             finalItemIndex={spidersFinalItemIndex !== -1 ? spidersFinalItemIndex : undefined}
             lockedFromIndex={lockedFromIndex}
           />
@@ -1319,6 +1327,7 @@ export default function StoryModulePage() {
           leaderboardMode={data.leaderboardMode}
           elapsedSeconds={elapsedSeconds}
           activityDurationMinutes={data.activityDurationMinutes}
+          roadmapTimerMinutes={data.roadmapTimerMinutes}
           lockedFromIndex={lockedFromIndex}
           activityNameOnRoadmap={data.includeOnRoadmap ? data.name : undefined}
         />

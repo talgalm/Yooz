@@ -253,6 +253,7 @@ export interface CreateActivityRequest {
   leaderboardMode?: 'points' | 'time' | 'both';
   hideLeaderboardInHeader?: boolean;
   activityDurationMinutes?: number;
+  roadmapTimerMinutes?: number;
   includeOnRoadmap?: boolean;
   passThreshold?: number | null;
 }

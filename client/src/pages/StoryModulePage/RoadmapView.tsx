@@ -700,6 +700,8 @@ interface RoadmapViewProps {
   leaderboardMode?: 'points' | 'time' | 'both';
   elapsedSeconds?: number;
   activityDurationMinutes?: number;
+  /** Cosmetic roadmap timer: turns red after this many minutes (counts up from 0). */
+  roadmapTimerMinutes?: number;
   /** Manager-controlled progress lock: items with index >= this are blocked. */
   lockedFromIndex?: number | null;
   /** When set, show activity name between header and path. */
@@ -709,7 +711,7 @@ interface RoadmapViewProps {
 export default function RoadmapView({
   items, currentItemIndex, completedCount, currentPoints, pointsRoll, onPointsRollComplete,
   showFootsteps, onFootstepsComplete, onNodeTap, onLogout, onViewLeaderboard, hideLeaderboardInHeader, popupModal, t, theme, customTheme,
-  leaderboardMode, elapsedSeconds, activityDurationMinutes, lockedFromIndex, activityNameOnRoadmap,
+  leaderboardMode, elapsedSeconds, activityDurationMinutes, roadmapTimerMinutes, lockedFromIndex, activityNameOnRoadmap,
 }: RoadmapViewProps) {
   const kit = useMemo(() => getThemeKit(theme), [theme]);
   const headerIconColor = useMemo(() => getHeaderIconColor(theme, customTheme), [theme, customTheme]);
@@ -1341,6 +1343,7 @@ export default function RoadmapView({
       leaderboardMode={leaderboardMode}
       elapsedSeconds={elapsedSeconds}
       activityDurationMinutes={activityDurationMinutes}
+      roadmapTimerMinutes={roadmapTimerMinutes}
       t={t}
       headerIconColor={headerIconColor}
       omitThirdSlot={hideLeaderboardInHeader}

@@ -335,6 +335,8 @@ export default function AdminCreateActivityPage() {
   const [leaderboardMode, setLeaderboardMode] = useState<'points' | 'time' | 'both'>('points');
   const [displayLeaderboardInHeader, setDisplayLeaderboardInHeader] = useState(false);
   const [activityDurationMinutes, setActivityDurationMinutes] = useState('');
+  const [roadmapTimerEnabled, setRoadmapTimerEnabled] = useState(false);
+  const [roadmapTimerMinutes, setRoadmapTimerMinutes] = useState('');
   const [isContinuous, setIsContinuous] = useState(false);
   const [portalId, setPortalId] = useState('');
   const [portals, setPortals] = useState<{ _id: string; name: string; code: string }[]>([]);
@@ -463,6 +465,10 @@ export default function AdminCreateActivityPage() {
         if (a.leaderboardMode) setLeaderboardMode(a.leaderboardMode as 'points' | 'time' | 'both');
         setDisplayLeaderboardInHeader(!a.hideLeaderboardInHeader);
         if (a.activityDurationMinutes) setActivityDurationMinutes(String(a.activityDurationMinutes));
+        if (a.roadmapTimerMinutes) {
+          setRoadmapTimerEnabled(true);
+          setRoadmapTimerMinutes(String(a.roadmapTimerMinutes));
+        }
         if (a.includeOnRoadmap) setIncludeOnRoadmap(true);
         setInitialLoading(false);
       })
@@ -830,6 +836,11 @@ export default function AdminCreateActivityPage() {
         const parsed = parseInt(activityDurationMinutes, 10);
         if (!isNaN(parsed) && parsed > 0) payload.activityDurationMinutes = parsed;
       }
+      // Cosmetic roadmap timer (omitted when off → server clears it on edit).
+      if (roadmapTimerEnabled && roadmapTimerMinutes.trim()) {
+        const parsed = parseInt(roadmapTimerMinutes, 10);
+        if (!isNaN(parsed) && parsed > 0) payload.roadmapTimerMinutes = parsed;
+      }
       if (isContinuous) {
         payload.isContinuous = true;
         if (portalId) payload.portalId = portalId;
@@ -1169,6 +1180,25 @@ export default function AdminCreateActivityPage() {
                             <Input type="datetime-local" value={scheduledEnd} onChange={(e) => setScheduledEnd(e.target.value)} />
                           </div>
                         </VerticalStack>
+                      )}
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, cursor: 'pointer', fontSize: 14 }}>
+                        <input
+                          type="checkbox"
+                          checked={roadmapTimerEnabled}
+                          onChange={(e) => setRoadmapTimerEnabled(e.target.checked)}
+                          style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                        />
+                        {t.roadmapTimerEnable}
+                      </label>
+                      {roadmapTimerEnabled && (
+                        <Input
+                          type="number"
+                          placeholder={t.roadmapTimerPlaceholder}
+                          value={roadmapTimerMinutes}
+                          onChange={(e) => setRoadmapTimerMinutes(e.target.value)}
+                          style={{ maxWidth: 140, marginTop: 8 }}
+                        />
                       )}
                     </SectionCard>
 

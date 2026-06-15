@@ -134,6 +134,7 @@ export interface ActivityModuleResponse {
   leaderboardMode?: 'points' | 'time' | 'both';
   hideLeaderboardInHeader?: boolean;
   activityDurationMinutes?: number;
+  roadmapTimerMinutes?: number;
   lockedFromIndex?: number | null;
   includeOnRoadmap?: boolean;
 }

@@ -106,6 +106,9 @@ export interface IActivity {
   hideLeaderboardInHeader?: boolean;
   /** Optional time limit in minutes (only relevant when leaderboardMode is 'time') */
   activityDurationMinutes?: number;
+  /** When set (> 0), shows a cosmetic count-up timer on the roadmap that turns red
+   *  after this many minutes. Purely visual — does not affect play. null = off. */
+  roadmapTimerMinutes?: number | null;
   /** Normalized (0-100) score at/above which a participant is considered to have
    *  passed, used in statistics and exported reports. Defaults to 70.
    *  null = no pass grade (pass/fail is not applied). */
@@ -232,6 +235,7 @@ const activitySchema = new Schema<IActivity>({
   leaderboardMode: { type: String, enum: ['points', 'time', 'both'], default: 'points' },
   hideLeaderboardInHeader: { type: Boolean, default: false },
   activityDurationMinutes: { type: Number },
+  roadmapTimerMinutes: { type: Number },
   passThreshold: { type: Number, default: 70 }, // null = no pass grade; range validated in code
   statsShareToken: { type: String, default: null, index: true, sparse: true },
   shareClicks: { type: Number, default: 0 },
