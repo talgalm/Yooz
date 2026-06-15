@@ -528,7 +528,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
           )}
           <FinishContent $stumpCentered>
           <IntroGameTitleSticker dir="auto">
-            <IntroGameTitleLine>{t.gameComplete}</IntroGameTitleLine>
+            <IntroGameTitleLine>{((game.settings as Record<string, unknown>).endTitle as string)?.trim() || t.gameComplete}</IntroGameTitleLine>
           </IntroGameTitleSticker>
 
           <FinishStumpStage aria-hidden>

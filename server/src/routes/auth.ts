@@ -7,8 +7,14 @@ import { bumpParticipantCount } from '../utils/participantCountCache';
 
 const router = Router();
 
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<LoginResponse | { error: string }>) => {
-  const { activityCode, participantName, email, phoneNumber, group } = req.body;
+  const { activityCode, participantName, email: rawEmail, phoneNumber, group } = req.body;
+  // Email is case-insensitive: normalize to lowercase so Orin@x and orin@x map to the same user
+  const email = rawEmail?.trim().toLowerCase();
 
   if (!activityCode) {
     res.status(400).json({ error: 'Activity code is required' });
@@ -66,8 +72,9 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
       res.status(403).json({ error: 'portal_not_found' });
       return;
     }
+    const lookupIdentifier = (participantName?.trim() || email?.trim() || '').toLowerCase();
     const portalUser = portal.users.find(
-      u => u.username === (participantName?.trim() || email?.trim() || '') && u.status === 'approved'
+      u => u.username.toLowerCase() === lookupIdentifier && u.status === 'approved'
     );
     if (!portalUser) {
       res.status(403).json({ error: 'not_portal_user' });
@@ -83,9 +90,10 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
 
   // Look for an existing Report for this participant in this activity
   // Priority: email > phoneNumber > participantName
+  // Email match is case-insensitive (so older mixed-case rows still resolve).
   const lookupQuery: Record<string, unknown> = { activityCode };
   if (email) {
-    lookupQuery.email = email.trim();
+    lookupQuery.email = { $regex: `^${escapeRegex(email)}$`, $options: 'i' };
   } else if (phoneNumber) {
     lookupQuery.phoneNumber = phoneNumber.trim();
   } else {

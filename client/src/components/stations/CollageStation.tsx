@@ -108,37 +108,60 @@ const CaptureHeader = styled('div')({ flexShrink: 0, textAlign: 'center' });
 const CaptureActions = styled('div')({ flexShrink: 0, marginTop: 'auto', paddingTop: 8 });
 
 const TopLabel = styled('p')({ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 4, marginTop: 0, letterSpacing: 1 });
-const BigTitle = styled('h1')({ textAlign: 'center', fontSize: 26, fontWeight: 800, margin: '0 0 10px', lineHeight: 1.25 });
+const BigTitle = styled('h1')({ textAlign: 'center', fontSize: 26, fontWeight: 800, margin: '0 0 18px', lineHeight: 1.25 });
 const SubText = styled('p')({ textAlign: 'center', fontSize: 15, color: 'rgba(255,255,255,0.72)', margin: '0 0 24px', lineHeight: 1.6 });
 
+const DisclaimerCard = styled('div')({
+  alignSelf: 'center',
+  background: '#fff',
+  color: '#1f1740',
+  borderRadius: 18,
+  padding: '20px 22px',
+  margin: '8px auto 22px',
+  textAlign: 'center',
+  fontWeight: 700,
+  fontSize: 16,
+  lineHeight: 1.55,
+  maxWidth: 220,
+  width: 'fit-content',
+  boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+  whiteSpace: 'pre-line',
+});
+
+const PartBadge = styled('div')({
+  textAlign: 'center',
+  fontSize: 14,
+  fontWeight: 700,
+  color: '#fde68a',
+  margin: '0 0 18px',
+});
+
 const MissionCard = styled('div')({
-  background: 'rgba(255,255,255,0.06)',
+  background: 'rgba(255,255,255,0.07)',
   border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: 16,
+  borderRadius: 18,
   padding: '14px 16px',
   marginBottom: 12,
   display: 'flex',
-  alignItems: 'flex-start',
+  alignItems: 'center',
   gap: 14,
 });
 const MissionNum = styled('div')({
   width: 36, height: 36, borderRadius: '50%',
   background: 'linear-gradient(135deg,#8b5cf6,#ec4899)',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  fontWeight: 800, fontSize: 16, flexShrink: 0,
-  // Numbered badges are explicit circles (QA Jun 2026 page 2 flagged them
-  // as visually broken). 36px square gave a rounded-square look that read
-  // as a glitch on desktop where everything else got crisper.
+  fontWeight: 800, fontSize: 16, flexShrink: 0, color: '#fff',
 });
-const MissionInfo = styled('div')({ flex: 1 });
-const MissionTitle = styled('div')({ fontWeight: 700, fontSize: 15 });
-const MissionDesc = styled('div')({ fontSize: 13, color: 'rgba(255,255,255,0.58)', marginTop: 2 });
+const MissionInfo = styled('div')({ flex: 1, textAlign: 'right' });
+const MissionTitle = styled('div')({ fontWeight: 800, fontSize: 16, color: '#fff' });
+const MissionDesc = styled('div')({ fontSize: 13, color: 'rgba(255,255,255,0.62)', marginTop: 3 });
 
 const PrimaryBtn = styled('button')({
-  width: '100%', padding: 14, borderRadius: 14, border: 'none',
-  background: 'linear-gradient(135deg,#f59e0b,#ec4899)',
-  color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer',
-  fontFamily: 'inherit', marginTop: 6,
+  width: '100%', padding: '18px 16px', borderRadius: 18, border: 'none',
+  background: 'linear-gradient(135deg,#f7a060,#ec5e9c)',
+  color: '#fff', fontSize: 18, fontWeight: 800, cursor: 'pointer',
+  fontFamily: 'inherit', marginTop: 12,
+  boxShadow: '0 10px 24px rgba(236,94,156,0.35)',
   '&:disabled': { opacity: 0.45, cursor: 'not-allowed' },
 });
 const OutlineBtn = styled('button')({
@@ -182,13 +205,13 @@ const CaptureArea = styled('div')({
   },
 });
 const CapturePreviewImg = styled('img')({ width: '100%', height: '100%', objectFit: 'cover' });
-const PlaceholderIcon = styled('div')({ fontSize: 48, marginBottom: 8, opacity: 0.38 });
-const PlaceholderText = styled('div')({ fontSize: 13, color: 'rgba(255,255,255,0.38)' });
+const PlaceholderIcon = styled('div')({ fontSize: 56, marginBottom: 12, opacity: 0.55 });
+const PlaceholderText = styled('div')({ fontSize: 17, fontWeight: 700, color: 'rgba(255,255,255,0.78)', lineHeight: 1.4 });
 
 const ButtonRow = styled('div')({ display: 'flex', gap: 8, marginBottom: 6 });
 const HalfBtn = styled('button')({
-  flex: 1, padding: '11px 8px', borderRadius: 12, border: 'none',
-  background: 'rgba(255,255,255,0.09)', color: '#fff', fontSize: 13, fontWeight: 600,
+  flex: 1, padding: '14px 10px', borderRadius: 12, border: 'none',
+  background: 'rgba(255,255,255,0.09)', color: '#fff', fontSize: 15, fontWeight: 700,
   cursor: 'pointer', fontFamily: 'inherit',
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
   '&:disabled': { opacity: 0.35, cursor: 'not-allowed' },
@@ -798,10 +821,14 @@ export default function CollageStation({ station, onContinue, code }: Props) {
           <BigTitle>{header}</BigTitle>
           {description && <SubText>{description}</SubText>}
 
+          {disclaimer && (
+            <DisclaimerCard>{disclaimer}</DisclaimerCard>
+          )}
+
           {isSplit && (
-            <SubText style={{ marginBottom: 14, color: '#fde68a' }}>
-              ✂️ חלק {partIndex + 1} מתוך {totalParts} — {partSize} תמונות בחלק הזה
-            </SubText>
+            <PartBadge>
+              🎬 חלק {partIndex + 1} מתוך {totalParts} – {partSize} תמונות בחלק הזה
+            </PartBadge>
           )}
 
           {multiSelect ? (
@@ -824,25 +851,9 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             ))
           )}
 
-          {disclaimer && (
-            <div style={{
-              marginTop: 16,
-              padding: '12px 14px',
-              borderRadius: 12,
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              fontSize: 12,
-              lineHeight: 1.55,
-              color: 'rgba(255,255,255,0.72)',
-              whiteSpace: 'pre-line',
-            }}>
-              {disclaimer}
-            </div>
-          )}
-
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 8 }}>
             <PrimaryBtn onClick={() => { setCurrentMission(0); setPhotos([]); setPreviewUrl(''); setPreviewBlob(null); setPhase('capture'); }}>
-              מתחילים לצלם 📷
+              מתחילים לצלם 📸
             </PrimaryBtn>
             <OutlineBtn onClick={onContinue}>דלג על התחנה הזו</OutlineBtn>
           </div>
@@ -860,9 +871,9 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       <Wrap>
         <CaptureLayout>
           <CaptureHeader>
-            <TopLabel style={{ marginBottom: 2 }}>תחנת צילום{isSplit ? ` — חלק ${partIndex + 1}/${totalParts}` : ''}</TopLabel>
-            <BigTitle style={{ fontSize: 20, marginBottom: 4 }}>בחרו {partMultiSelectCount} תמונות או סרטונים</BigTitle>
-            <SubText style={{ margin: '0 0 8px', fontSize: 14 }}>
+            <TopLabel style={{ marginBottom: 4, fontSize: 15 }}>תחנת צילום{isSplit ? ` — חלק ${partIndex + 1}/${totalParts}` : ''}</TopLabel>
+            <BigTitle style={{ fontSize: 26, marginBottom: 6 }}>בחרו {partMultiSelectCount} תמונות או סרטונים</BigTitle>
+            <SubText style={{ margin: '0 0 10px', fontSize: 16, color: 'rgba(255,255,255,0.85)' }}>
               נבחרו {photos.length} מתוך {partMultiSelectCount}
             </SubText>
           </CaptureHeader>
@@ -933,16 +944,17 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       <Wrap>
         <CaptureLayout>
           <CaptureHeader>
-            <TopLabel style={{ marginBottom: 2 }}>
+            <TopLabel style={{ marginBottom: 4, fontSize: 15 }}>
               צילום {currentMission + 1} מתוך {missions.length}
               {isSplit ? ` — חלק ${partIndex + 1}/${totalParts}` : ''}
             </TopLabel>
-            <BigTitle style={{ fontSize: 20, marginBottom: 4 }}>{mission.title}</BigTitle>
+            <BigTitle style={{ fontSize: 26, marginBottom: 6 }}>{mission.title}</BigTitle>
             {mission.description && (
               <SubText style={{
-                margin: '0 0 4px',
-                fontSize: 13,
-                lineHeight: 1.4,
+                margin: '0 0 8px',
+                fontSize: 16,
+                lineHeight: 1.45,
+                color: 'rgba(255,255,255,0.85)',
                 display: '-webkit-box',
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
@@ -966,7 +978,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
               ? (previewIsVideo || currentPhotoForMission?.isVideo)
                 ? <video src={displayUrl} autoPlay muted playsInline loop style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <CapturePreviewImg src={displayUrl} alt="preview" />
-              : <><PlaceholderIcon style={{ fontSize: 36 }}>🖼</PlaceholderIcon><PlaceholderText>צלמו או העלו תמונה / סרטון</PlaceholderText></>
+              : <><PlaceholderIcon>📷</PlaceholderIcon><PlaceholderText>צלמו תמונה או העלו מהגלריה</PlaceholderText></>
             }
           </CaptureArea>
 

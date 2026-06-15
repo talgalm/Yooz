@@ -715,7 +715,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
         <FinishContainer dir="rtl">
           <FinishContent>
             <IntroTitle dir="auto">
-              <IntroTitleLine>{t.gameComplete}</IntroTitleLine>
+              <IntroTitleLine>{((game.settings as Record<string, unknown>).endTitle as string)?.trim() || t.gameComplete}</IntroTitleLine>
             </IntroTitle>
 
             <FinishSummaryMiddle>

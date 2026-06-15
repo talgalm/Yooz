@@ -343,7 +343,7 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
     return (
       <SortContainer>
         <FinishScreen>
-          <FinishTitle>{t.finishTitle}</FinishTitle>
+          <FinishTitle>{(game.settings.endTitle as string)?.trim() || t.finishTitle}</FinishTitle>
           <FinishDesc>{t.finishDesc}</FinishDesc>
           <FinishScore>{score} {t.pts}</FinishScore>
           <TutorialButton onClick={handleFinish}>{(game.settings.endButtonText as string)?.trim() || t.continueBtn}</TutorialButton>

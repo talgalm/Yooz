@@ -310,7 +310,7 @@ export default function BallGame({
         <FinishContainer dir={dir}>
           <FinishContent $stumpCentered>
             <IntroTitle dir="auto" style={{ marginTop: 'clamp(24px, 6vh, 52px)' }}>
-              {t.gameComplete}
+              {((game.settings as unknown as Record<string, unknown>).endTitle as string)?.trim() || t.gameComplete}
             </IntroTitle>
 
             <FinishStumpStage aria-hidden>

@@ -441,7 +441,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
             </GameIntroHeaderBar>
           )}
           <FinishContent style={{ justifyContent: 'space-between' }}>
-            <IntroTitle style={{ marginBottom: 0 }}>{t.gameComplete}</IntroTitle>
+            <IntroTitle style={{ marginBottom: 0 }}>{((game.settings as Record<string, unknown>).endTitle as string)?.trim() || t.gameComplete}</IntroTitle>
 
             <FinishStumpStage aria-hidden>
               <FinishStump>

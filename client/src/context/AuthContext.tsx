@@ -71,6 +71,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: 'POST',
       body: JSON.stringify(data),
     });
+    // Identifier for "is this the same user as before" — case-insensitive email,
+    // falling back to phone or name. Used to decide whether to wipe local progress.
+    const newUserId =
+      data.email?.trim().toLowerCase()
+      || data.phoneNumber?.trim()
+      || data.participantName?.trim().toLowerCase()
+      || '';
+    const prevUserId = localStorage.getItem('yooz_last_user_id') || '';
+    if (prevUserId && newUserId && prevUserId !== newUserId) {
+      // Different user on this device — clear any leftover progress so they start from the top.
+      for (let i = sessionStorage.length - 1; i >= 0; i -= 1) {
+        const key = sessionStorage.key(i);
+        if (
+          key?.startsWith('yooz_session_') ||
+          key?.startsWith('yooz_game_progress_') ||
+          key?.startsWith('puzzle_progress_') ||
+          key?.startsWith('yooz_avatar_chat_') ||
+          key?.startsWith('yooz_entering_text_')
+        ) {
+          sessionStorage.removeItem(key);
+        }
+      }
+      for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+        const key = localStorage.key(i);
+        if (key?.startsWith('yooz_start_')) {
+          localStorage.removeItem(key);
+        }
+      }
+    }
+    if (newUserId) localStorage.setItem('yooz_last_user_id', newUserId);
     localStorage.setItem('yooz_token', res.token);
     if (data.activityCode) sessionStorage.setItem('yooz_play_code', data.activityCode);
     setToken(res.token);

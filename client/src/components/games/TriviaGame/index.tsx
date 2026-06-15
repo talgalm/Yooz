@@ -588,7 +588,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
         )}
         <FinishContent>
           <FinishTitleBanner>
-            {t.gameComplete}
+            {((game.settings as Record<string, unknown>).endTitle as string)?.trim() || t.gameComplete}
           </FinishTitleBanner>
 
           <FinishStumpStage aria-hidden>
