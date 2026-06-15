@@ -21,6 +21,13 @@ import {
   loadCollageParts,
   clearCollageParts,
 } from './collageSplitStorage';
+import {
+  doCollageUpload,
+  startBackgroundCollage,
+  getBackgroundCollage,
+  subscribeBackgroundCollage,
+  consumeBackgroundCollage,
+} from './backgroundCollageJob';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -264,102 +271,6 @@ const ProgressEta = styled('p')({ fontSize: 12, color: 'rgba(255,255,255,0.42)',
 const VideoWrap = styled('div')({ borderRadius: 16, overflow: 'hidden', width: '100%', marginBottom: 20, background: '#000' });
 const ResultVideo = styled('video')({ width: '100%', display: 'block' });
 
-// ─── XHR upload with progress ─────────────────────────────────────────────────
-
-function renderTitlePng(title: string): Blob | null {
-  // Render the title with the same look as station titles: white fill, thin
-  // black stroke, bold. Output is a PNG sized to the text + padding so the
-  // server can overlay it directly without scaling.
-  const trimmed = title.trim();
-  if (!trimmed) return null;
-  const fontSize = 96;
-  const padX = 32;
-  const padY = 24;
-  const strokeW = 6;
-  const fontStack = '900 96px system-ui, "Segoe UI", "Heebo", "Rubik", Arial, sans-serif';
-
-  const measureCanvas = document.createElement('canvas');
-  const measureCtx = measureCanvas.getContext('2d')!;
-  measureCtx.font = fontStack;
-  const metrics = measureCtx.measureText(trimmed);
-  const textW = Math.ceil(metrics.width);
-  const textH = Math.ceil(fontSize * 1.25);
-
-  const w = textW + padX * 2;
-  const h = textH + padY * 2;
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d')!;
-  ctx.font = fontStack;
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'center';
-  ctx.lineJoin = 'round';
-  ctx.miterLimit = 2;
-  ctx.lineWidth = strokeW;
-  ctx.strokeStyle = '#000';
-  ctx.fillStyle = '#fff';
-  const cx = w / 2;
-  const cy = h / 2;
-  ctx.strokeText(trimmed, cx, cy);
-  ctx.fillText(trimmed, cx, cy);
-
-  // Synchronous PNG via toDataURL (toBlob is async; this keeps uploadCollageParts simple)
-  const dataUrl = canvas.toDataURL('image/png');
-  const bytes = atob(dataUrl.split(',')[1]);
-  const buf = new Uint8Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) buf[i] = bytes.charCodeAt(i);
-  return new Blob([buf], { type: 'image/png' });
-}
-
-function uploadCollageParts(
-  photos: CapturedPhoto[],
-  title: string,
-  logoUrl: string,
-  activityCode: string,
-  template: string,
-  jobId: string,
-  onUploadProgress: (pct: number) => void, // 0-60
-): Promise<{ url: string; isVideo: boolean }> {
-  return new Promise((resolve, reject) => {
-    const formData = new FormData();
-    formData.append('activityCode', activityCode);
-    formData.append('title', title);
-    formData.append('template', template);
-    formData.append('jobId', jobId);
-    if (logoUrl) formData.append('logoUrl', logoUrl);
-    const titlePng = renderTitlePng(title);
-    if (titlePng) formData.append('titleImage', titlePng, 'title.png');
-    photos.forEach((p, i) => {
-      const ext = p.blob.type.includes('png') ? 'png' : 'jpg';
-      formData.append('images', p.blob, `photo_${i}.${ext}`);
-    });
-
-    const xhr = new XMLHttpRequest();
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) {
-        onUploadProgress(Math.round((e.loaded / e.total) * 60));
-      }
-    });
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          resolve(JSON.parse(xhr.responseText) as { url: string; isVideo: boolean });
-        } catch {
-          reject(new Error('Invalid server response'));
-        }
-      } else {
-        let msg = 'Server error';
-        try { msg = (JSON.parse(xhr.responseText) as { error: string }).error || msg; } catch { /* */ }
-        reject(new Error(msg));
-      }
-    });
-    xhr.addEventListener('error', () => reject(new Error('Network error')));
-    xhr.open('POST', '/api/collage/generate');
-    xhr.send(formData);
-  });
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CollageStation({ station, onContinue, code }: Props) {
@@ -467,6 +378,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const quickCaptureRef = useRef<HTMLInputElement>(null);
   const serverPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const bgUnsubRef = useRef<(() => void) | null>(null);
 
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -551,6 +463,36 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             partIndex,
             photos: photosForStorage(localPhotos),
           });
+          // If this save completes the photo set AND a dedicated video part
+          // exists later, kick off generation in the background. The XHR lives
+          // at module scope so it survives this component unmounting, and the
+          // result is often ready by the time the user reaches the video part.
+          if (hasVideoPart) {
+            try {
+              const allParts = await loadCollageParts(activityCode, splitMeta.splitGroupId);
+              const orderedPhotos: { blob: Blob; isVideo?: boolean }[] = [];
+              for (let i = 0; i < totalParts; i++) {
+                if (i === videoPartIndex) continue;
+                const part = allParts.find((p) => p.partIndex === i);
+                if (part) orderedPhotos.push(...part.photos);
+              }
+              if (orderedPhotos.length >= totalImages) {
+                const bgKey = `${activityCode}::${splitMeta.splitGroupId}`;
+                if (!getBackgroundCollage(bgKey)) {
+                  startBackgroundCollage(bgKey, {
+                    photos: orderedPhotos.slice(0, totalImages),
+                    title: '',
+                    logoUrl,
+                    activityCode,
+                    template,
+                    jobId: `j_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`,
+                  });
+                }
+              }
+            } catch {
+              /* swallow — video part will fall back to fresh generation */
+            }
+          }
         } catch { /* swallow — onContinue still advances */ }
       }
       onContinue();
@@ -653,13 +595,15 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     try {
       const activityCode = code ?? '';
       const orderedPhotos = [...source].sort((a, b) => a.missionIndex - b.missionIndex);
-      const result = await uploadCollageParts(
-        orderedPhotos,
-        collageTitle,
-        logoUrl,
-        activityCode,
-        template,
-        jobId,
+      const result = await doCollageUpload(
+        {
+          photos: orderedPhotos.map((p) => ({ blob: p.blob, isVideo: p.isVideo })),
+          title: collageTitle,
+          logoUrl,
+          activityCode,
+          template,
+          jobId,
+        },
         (uploadPct) => {
           setProgress((cur) => Math.max(cur, uploadPct));
           if (uploadPct >= 60 && !serverPollRef.current) {
@@ -690,9 +634,10 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     }
   };
 
-  // Stop polling on unmount.
+  // Stop polling + detach from background job on unmount.
   useEffect(() => () => {
     if (serverPollRef.current) clearInterval(serverPollRef.current);
+    if (bgUnsubRef.current) { bgUnsubRef.current(); bgUnsubRef.current = null; }
   }, []);
 
   const formatEta = (secs: number): string => {
@@ -772,9 +717,14 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   };
 
   // ── Video-only part bootstrap ───────────────────────────────────────────────
-  // When this station is a dedicated video-creation sub-station, load all prior
-  // parts from IndexedDB on mount and trigger generation immediately. The
-  // participant lands directly on the progress screen → result page.
+  // When this station is a dedicated video-creation sub-station:
+  //  1. If a background upload kicked off by the last photo part has finished,
+  //     skip straight to the result.
+  //  2. If it's still in flight, attach to it (show progress, poll server, await
+  //     the promise) so the user sees a real progress bar instead of a fresh
+  //     2-3 min wait.
+  //  3. Otherwise (no bg job, e.g. page reload killed it), fall back to the
+  //     original behavior: load photos from IndexedDB and generate from scratch.
   const bootstrappedRef = useRef(false);
   useEffect(() => {
     if (!isVideoPart || bootstrappedRef.current) return;
@@ -786,21 +736,100 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         setPhase('review');
         return;
       }
-      try {
-        const prior = await loadCollageParts(activityCode, splitMeta.splitGroupId);
-        const merged = mergeSplitPhotos(prior, []);
-        if (merged.length < totalImages) {
-          setError(`נדרשות ${totalImages} תמונות לסרטון. השלימו את החלקים הקודמים בפעילות (${merged.length}/${totalImages}).`);
+
+      const runFreshGeneration = async () => {
+        try {
+          const prior = await loadCollageParts(activityCode, splitMeta.splitGroupId);
+          const merged = mergeSplitPhotos(prior, []);
+          if (merged.length < totalImages) {
+            setError(`נדרשות ${totalImages} תמונות לסרטון. השלימו את החלקים הקודמים בפעילות (${merged.length}/${totalImages}).`);
+            setPhotos(merged);
+            setPhase('review');
+            return;
+          }
           setPhotos(merged);
+          await generateCollage(merged);
+        } catch {
+          setError('שגיאה בטעינת התמונות');
           setPhase('review');
-          return;
         }
-        setPhotos(merged);
-        await generateCollage(merged);
-      } catch {
-        setError('שגיאה בטעינת התמונות');
-        setPhase('review');
+      };
+
+      const bgKey = `${activityCode}::${splitMeta.splitGroupId}`;
+      const bg = getBackgroundCollage(bgKey);
+
+      // Case 1: background job already finished — show result immediately.
+      if (bg?.status === 'done' && bg.result) {
+        setResultUrl(bg.result.url);
+        setResultIsVideo(bg.result.isVideo);
+        setPhase('result');
+        try { await clearCollageParts(activityCode, splitMeta.splitGroupId); } catch { /* */ }
+        consumeBackgroundCollage(bgKey);
+        return;
       }
+
+      // Case 2: background job in flight — attach to it.
+      if (bg?.status === 'pending') {
+        setPhase('generating');
+        setProgress(bg.uploadPct);
+        setProgressLabel(bg.uploadPct < 60 ? 'מעלה תמונות...' : 'יוצר קולאז׳...');
+        setEtaSeconds(null);
+        setError('');
+
+        const unsub = subscribeBackgroundCollage(bgKey, (j) => {
+          setProgress((cur) => Math.max(cur, j.uploadPct));
+        });
+        bgUnsubRef.current = unsub;
+
+        // Mirror the server-progress polling started by generateCollage(). The
+        // jobId was generated when the bg upload was kicked off in the prior
+        // photo part, so the server already has the encoding state under it.
+        if (serverPollRef.current) clearInterval(serverPollRef.current);
+        const pollJobId = bg.jobId;
+        serverPollRef.current = setInterval(async () => {
+          try {
+            const res = await fetch(`/api/collage/progress/${pollJobId}`);
+            if (!res.ok) return;
+            const data = (await res.json()) as {
+              phase: string;
+              percent: number;
+              message: string;
+              etaSeconds: number | null;
+            };
+            const mapped = Math.min(99, Math.round(60 + (data.percent ?? 0) * 0.4));
+            setProgress((cur) => Math.max(cur, mapped));
+            if (data.message) setProgressLabel(data.message);
+            setEtaSeconds(typeof data.etaSeconds === 'number' ? data.etaSeconds : null);
+          } catch { /* network hiccup — next tick will retry */ }
+        }, 1000);
+
+        try {
+          const result = await bg.promise;
+          if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
+          unsub();
+          bgUnsubRef.current = null;
+          setProgress(100);
+          setProgressLabel('הסרטון מוכן!');
+          setEtaSeconds(0);
+          await new Promise((r) => setTimeout(r, 500));
+          try { await clearCollageParts(activityCode, splitMeta.splitGroupId); } catch { /* */ }
+          consumeBackgroundCollage(bgKey);
+          setResultUrl(result.url);
+          setResultIsVideo(result.isVideo);
+          setPhase('result');
+        } catch {
+          if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
+          unsub();
+          bgUnsubRef.current = null;
+          consumeBackgroundCollage(bgKey);
+          // Fall through to a fresh generation attempt rather than failing hard.
+          await runFreshGeneration();
+        }
+        return;
+      }
+
+      // Case 3: no background job, or it errored — original behavior.
+      await runFreshGeneration();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
