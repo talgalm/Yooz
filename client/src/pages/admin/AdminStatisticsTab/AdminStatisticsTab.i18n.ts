@@ -86,7 +86,7 @@ export const texts = {
     // Items
     itemName: 'Name',
     itemType: 'Type',
-    avgItemScore: 'Avg Score',
+    avgItemScore: 'Avg Score (0-100)',
     avgItemDuration: 'Avg Time',
     hintUsage: 'Hint Usage',
     completionPct: 'Completion',
@@ -258,7 +258,7 @@ export const texts = {
     // Items
     itemName: 'שם',
     itemType: 'סוג',
-    avgItemScore: 'ציון ממוצע',
+    avgItemScore: 'ציון ממוצע (0-100)',
     avgItemDuration: 'זמן ממוצע',
     hintUsage: 'שימוש ברמז',
     completionPct: 'השלמה',
