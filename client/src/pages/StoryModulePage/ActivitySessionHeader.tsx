@@ -220,6 +220,9 @@ export interface ActivitySessionHeaderProps {
   elapsedSeconds?: number;
   /** Optional time limit in minutes — timer turns red when exceeded. */
   activityDurationMinutes?: number;
+  /** Cosmetic count-up timer shown above the button row; turns red after this
+   *  many minutes. Independent of leaderboardMode (roadmap views only). */
+  roadmapTimerMinutes?: number;
   /** Theme kit icon color — applied on default chrome only. */
   headerIconColor?: string;
 }
@@ -242,14 +245,17 @@ export default function ActivitySessionHeader({
   leaderboardMode = 'points',
   elapsedSeconds = 0,
   activityDurationMinutes,
+  roadmapTimerMinutes,
   headerIconColor,
 }: ActivitySessionHeaderProps) {
   const puzzleChrome = chromeVariant === 'puzzle';
   const iconColor = puzzleChrome ? undefined : headerIconColor;
   const RoadmapItem = puzzleChrome ? RoadmapHeaderItemPuzzle : RoadmapHeaderItem;
   const RoadmapPoints = puzzleChrome ? RoadmapHeaderPointsPuzzle : RoadmapHeaderPoints;
-  // 'both' mode adds a 5th cell — let cells shrink so they fit narrow phones.
-  const compact = leaderboardMode === 'both';
+  const showFakeTimer = roadmapTimerMinutes != null && roadmapTimerMinutes > 0;
+  // 'both' mode (and the cosmetic roadmap timer) add an extra cell — let cells
+  // shrink so they fit narrow phones.
+  const compact = leaderboardMode === 'both' || showFakeTimer;
   const compactCellStyle: React.CSSProperties = {
     flex: '1 1 0',
     width: 'auto',
@@ -329,7 +335,7 @@ export default function ActivitySessionHeader({
     >
       <RoadmapHeaderTop>
         {topRow ? <SessionHeaderTopRow>{topRow}</SessionHeaderTopRow> : null}
-        <RoadmapHeaderButtonRow style={leaderboardMode === 'both' ? { gap: 8 } : undefined}>
+        <RoadmapHeaderButtonRow style={compact ? { gap: 8 } : undefined}>
           <RoadmapItem style={compact ? compactCellStyle : undefined}>
             <ActivityLogoutButton
               onClick={onLogout}
@@ -341,6 +347,35 @@ export default function ActivitySessionHeader({
           <RoadmapItem style={compact ? compactCellStyle : undefined}>
             <HelpChatHeaderButton tone={puzzleChrome ? 'puzzle' : 'dark'} iconColor={iconColor} />
           </RoadmapItem>
+          {showFakeTimer ? (() => {
+            const mins = Math.floor(elapsedSeconds / 60);
+            const secs = elapsedSeconds % 60;
+            const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            // Fake timer: only the color changes once the limit is reached.
+            const isOver = elapsedSeconds >= (roadmapTimerMinutes as number) * 60;
+            const color = isOver ? '#e74c3c' : (puzzleChrome ? '#1a1a1a' : (iconColor ?? '#fff'));
+            return (
+              <RoadmapItem style={compact ? compactCellStyle : undefined}>
+                <RoadmapPoints
+                  role="timer"
+                  aria-label={timeStr}
+                  style={{
+                    ...(compact ? compactPointsStyle : {}),
+                    color,
+                    borderColor: isOver ? 'rgba(231,76,60,0.5)' : undefined,
+                    fontSize: 13,
+                  }}
+                >
+                  <RoadmapHeaderPointsValue>{timeStr}</RoadmapHeaderPointsValue>
+                  {compact ? null : (
+                    <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
+                      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                    </svg>
+                  )}
+                </RoadmapPoints>
+              </RoadmapItem>
+            );
+          })() : null}
           {!omitThirdSlot ? (
             <RoadmapItem style={compact ? compactCellStyle : undefined}>
               {thirdSlot}

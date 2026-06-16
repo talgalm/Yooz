@@ -33,7 +33,7 @@ export interface StatusBreakdown {
 export interface ScoreSummary {
   highest: number;
   lowest: number;
-  passRate: number;
+  passRate: number | null; // null when no pass grade is set
   scoredParticipants: number;
 }
 
@@ -58,6 +58,8 @@ export interface ParticipantInsight {
 export interface ActivityAnalyticsData {
   activity: { _id: string; name: string; code: string; status: string; moduleType?: string };
   period?: ActivityPeriod;
+  passThreshold?: number | null;
+  maxPossibleScore?: number;
   totalParticipants: number;
   abandonmentCount?: number;
   abandonmentRate?: number;
@@ -119,9 +121,14 @@ export interface GroupStats {
 export interface AnomalyAlert {
   type: string;
   severity: 'warning' | 'error';
-  message: string;
   itemIndex?: number;
   itemName?: string;
+  // Structured fields used to build a localized message on the client.
+  dropoutPct?: number;
+  avgSeconds?: number;
+  multiplier?: number;
+  // Legacy/fallback pre-built message (older API responses).
+  message?: string;
 }
 
 export interface AuditLogEntry {
@@ -136,5 +143,15 @@ export interface AuditLogEntry {
   createdAt: string;
 }
 
+export interface RosterParticipant {
+  _id: string;
+  name: string;
+  group?: string;
+  status: 'joined' | 'in_progress' | 'completed';
+  score: number;
+  joinedAt: string;
+  excluded: boolean;
+}
+
 export type StatisticsView = 'overview' | 'activity' | 'audit';
-export type ActivitySubTab = 'overview' | 'funnel' | 'items' | 'groups' | 'export';
+export type ActivitySubTab = 'overview' | 'funnel' | 'items' | 'groups' | 'participants' | 'export';

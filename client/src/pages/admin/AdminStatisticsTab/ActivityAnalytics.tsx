@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -8,7 +8,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { useTranslations } from '../../../context/LanguageContext';
+import { useTranslations, useLang } from '../../../context/LanguageContext';
+import { formatDuration as formatDurationLoc } from '../../../utils/formatDuration';
 import {
   useActivityAnalytics,
   useAnomalies,
@@ -17,6 +18,7 @@ import {
   useItemStats,
 } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
+import { useAnalyticsSource } from './analyticsSource';
 import type {
   ActivityAnalyticsData,
   ActivityPeriod,
@@ -78,6 +80,7 @@ import {
 import FunnelChart from './FunnelChart';
 import ItemAnalyticsTable from './ItemAnalyticsTable';
 import GroupComparison from './GroupComparison';
+import ParticipantsRoster from './ParticipantsRoster';
 import ExportSection from './ExportSection';
 import AdminReportChat from '../../../components/AdminReportChat';
 
@@ -87,15 +90,6 @@ interface Props {
 }
 
 type Tone = 'green' | 'blue' | 'amber' | 'red';
-
-function formatDuration(ms?: number | null) {
-  if (!ms) return '-';
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  const m = Math.floor(s / 60);
-  const rest = s % 60;
-  return rest ? `${m}m ${rest}s` : `${m}m`;
-}
 
 function formatDateTime(value: string) {
   if (!value) return '-';
@@ -141,6 +135,20 @@ function template(text: string, values: Record<string, string | number>) {
   );
 }
 
+function anomalyMessage(alert: AnomalyAlert, t: Record<string, string>): string {
+  if (alert.type === 'high_dropout' && alert.dropoutPct !== undefined) {
+    return template(t.anomalyDropout, { item: alert.itemName ?? '', pct: alert.dropoutPct });
+  }
+  if (alert.type === 'unusual_time' && alert.avgSeconds !== undefined) {
+    return template(t.anomalySlow, {
+      item: alert.itemName ?? '',
+      sec: alert.avgSeconds,
+      mult: alert.multiplier ?? 0,
+    });
+  }
+  return alert.message ?? '';
+}
+
 function buildRecommendations(
   analytics: ActivityAnalyticsData,
   anomalies: AnomalyAlert[],
@@ -157,7 +165,7 @@ function buildRecommendations(
   if (anomalies.length > 0) {
     recommendations.push({
       title: t.reviewBottlenecks,
-      body: anomalies[0].message,
+      body: anomalyMessage(anomalies[0], t),
       tone: anomalies[0].severity === 'error' ? 'red' : 'amber',
     });
   }
@@ -199,14 +207,39 @@ function buildRecommendations(
 
 export default function ActivityAnalytics({ activityId }: Props) {
   const t = useTranslations(texts);
+  const { lang } = useLang();
+  const { shared } = useAnalyticsSource();
+  const formatDuration = (ms?: number | null) => formatDurationLoc(ms, lang);
   const [subTab, setSubTab] = useState<ActivitySubTab>('overview');
   const [period, setPeriod] = useState<ActivityPeriod>('year');
+  const [exclusionsDirty, setExclusionsDirty] = useState(false);
 
   const analyticsQuery = useActivityAnalytics(activityId, period);
   const anomaliesQuery = useAnomalies(activityId, period);
   const funnelQuery = useFunnel(activityId, period);
   const itemsQuery = useItemStats(activityId, period);
   const groupsQuery = useGroupStats(activityId, period);
+
+  // Always-mounted overview queries; refetch them after exclusions change so the
+  // panels reflect the new participant set (other sub-tabs refetch on mount).
+  const refetchPanels = () => {
+    analyticsQuery.refetch();
+    anomaliesQuery.refetch();
+    funnelQuery.refetch();
+    itemsQuery.refetch();
+    groupsQuery.refetch();
+  };
+
+  // Refresh the always-mounted overview panels the next time they're actually
+  // shown after exclusions changed — not on every checkbox click, and without
+  // tearing down the roster. (Funnel/Items/Groups refetch on their own mount.)
+  useEffect(() => {
+    if (subTab === 'overview' && exclusionsDirty) {
+      refetchPanels();
+      setExclusionsDirty(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subTab, exclusionsDirty]);
 
   const analytics = analyticsQuery.data;
   const anomalies = anomaliesQuery.data ?? [];
@@ -228,6 +261,9 @@ export default function ActivityAnalytics({ activityId }: Props) {
     { key: 'funnel', label: t.funnelTab },
     { key: 'items', label: t.itemsTab },
     { key: 'groups', label: t.groupsTab },
+    // Roster + exclusions are an admin-only management surface — hidden in the
+    // read-only public share view.
+    ...(shared ? [] : [{ key: 'participants' as ActivitySubTab, label: t.participantsTab }]),
     { key: 'export', label: t.exportTab },
   ];
   const periodOptions: { key: ActivityPeriod; label: string }[] = [
@@ -237,7 +273,9 @@ export default function ActivityAnalytics({ activityId }: Props) {
     { key: 'year', label: t.periodYear },
   ];
 
-  if (loading) {
+  // Only blank the page on the very first load — keep showing current data while a
+  // background refetch (period switch, exclusion refresh) is in flight.
+  if (loading && !analytics) {
     return <EmptyState>{t.loading}</EmptyState>;
   }
 
@@ -251,7 +289,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
     completed: Math.round((analytics.completionRate / 100) * analytics.totalParticipants),
   };
   const statusTotal = Math.max(analytics.totalParticipants, status.joined + status.inProgress + status.completed, 1);
-  const passRate = analytics.scoreSummary?.passRate ?? 0;
+  const passRate = analytics.scoreSummary?.passRate ?? null;
   const itemHighlights = [...items]
     .sort((a, b) => {
       const riskA = (100 - a.completionPct) * 2 + a.hintUsagePct + Math.max(0, a.avgMaxScore * 0.65 - a.avgScore);
@@ -322,7 +360,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
                 <AlertBanner key={`${a.type}-${a.itemIndex ?? a.message}`} severity={a.severity}>
                   <AlertIcon>!</AlertIcon>
                   <span style={{ flex: '1 1 220px', minWidth: 0, overflowWrap: 'anywhere' }}>
-                    {a.message}
+                    {anomalyMessage(a, t)}
                   </span>
                 </AlertBanner>
               ))}
@@ -354,7 +392,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
                 <MetricLabel>{t.avgScore}</MetricLabel>
                 <MetricValue>{Math.round(analytics.avgScore)}</MetricValue>
                 <MetricSubtext>
-                  {t.median}: {Math.round(analytics.medianScore)} / {t.passRate}: {passRate}%
+                  {t.median}: {Math.round(analytics.medianScore)} / {t.passRate}: {passRate === null ? '—' : `${passRate}%`}
                 </MetricSubtext>
               </MetricCard>
               <MetricCard tone="amber">
@@ -602,9 +640,13 @@ export default function ActivityAnalytics({ activityId }: Props) {
         <GroupComparison activityId={activityId} period={period} />
       )}
 
+      {subTab === 'participants' && !shared && (
+        <ParticipantsRoster activityId={activityId} onExclusionsChanged={() => setExclusionsDirty(true)} />
+      )}
+
       {subTab === 'export' && <ExportSection activityId={activityId} period={period} />}
 
-      {activityId && (
+      {activityId && !shared && (
         <AdminReportChat activityId={activityId} onSwitchSubTab={setSubTab} />
       )}
     </>

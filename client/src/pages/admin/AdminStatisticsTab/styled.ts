@@ -706,6 +706,143 @@ export const ExportDescription = styled('div')({
   marginTop: 4,
 });
 
+// ─── Pass grade control ───
+
+export const PassGradeCard = styled('div')({
+  border: `1px solid ${BORDER}`,
+  borderRadius: 12,
+  background: '#fff',
+  padding: 16,
+  marginBottom: 16,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
+});
+
+export const PassGradeTitleRow = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  flexWrap: 'wrap',
+});
+
+export const PassGradeTitle = styled('div')({
+  fontSize: 15,
+  fontWeight: 800,
+  color: TEXT_DARK,
+});
+
+export const PassGradeDescription = styled('div')({
+  fontSize: 13,
+  color: TEXT_LIGHT,
+  lineHeight: 1.5,
+});
+
+export const PassGradeControlRow = styled('div')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  flexWrap: 'wrap',
+});
+
+export const PassGradeInput = styled('input')({
+  width: 80,
+  height: 38,
+  border: `1px solid ${BORDER}`,
+  borderRadius: 8,
+  padding: '0 12px',
+  fontSize: 16,
+  fontWeight: 800,
+  fontFamily: 'inherit',
+  textAlign: 'center',
+  color: TEXT_DARK,
+  background: '#fff',
+});
+
+export const PassGradePreset = styled('button')({
+  border: `1px solid ${BORDER}`,
+  borderRadius: 8,
+  minHeight: 34,
+  padding: '0 12px',
+  fontSize: 14,
+  fontWeight: 800,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+  color: TEXT_DARK,
+  background: '#f7f8fa',
+  '&:hover': { background: '#eef1f6' },
+  '&:disabled': { opacity: 0.5, cursor: 'default' },
+});
+
+// ─── Share link control ───
+
+export const ShareRow = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  flexWrap: 'wrap',
+  width: '100%',
+});
+
+export const ShareUrlInput = styled('input')({
+  flex: 1,
+  minWidth: 180,
+  height: 38,
+  border: `1px solid ${BORDER}`,
+  borderRadius: 8,
+  padding: '0 12px',
+  fontSize: 13,
+  fontFamily: 'inherit',
+  color: TEXT_DARK,
+  background: '#f7f8fa',
+  direction: 'ltr',
+  textOverflow: 'ellipsis',
+});
+
+// ─── Participants roster ───
+
+export const RosterSearchInput = styled('input')({
+  width: '100%',
+  height: 38,
+  boxSizing: 'border-box',
+  border: `1px solid ${BORDER}`,
+  borderRadius: 8,
+  padding: '0 12px',
+  fontSize: 14,
+  fontFamily: 'inherit',
+  color: TEXT_DARK,
+  background: '#f7f8fa',
+  '&:focus': {
+    outline: 'none',
+    borderColor: PRIMARY,
+    background: '#fff',
+  },
+});
+
+export const RosterCheckbox = styled('input')({
+  width: 18,
+  height: 18,
+  cursor: 'pointer',
+  accentColor: PRIMARY,
+});
+
+export const RosterToolbar = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  flexWrap: 'wrap',
+  marginBottom: 12,
+});
+
+export const RosterActions = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  flexWrap: 'wrap',
+});
+
 // ─── Badge/Tag ───
 
 export const ImprovementBadge = styled('span')({

@@ -1,5 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useTranslations } from '../../../context/LanguageContext';
+import { useTranslations, useLang } from '../../../context/LanguageContext';
+import { formatDuration as formatDurationLoc } from '../../../utils/formatDuration';
 import { useGroupStats } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
 import {
@@ -20,15 +21,10 @@ interface Props {
   data?: GroupStats[];
 }
 
-function formatDuration(ms: number) {
-  if (!ms) return '—';
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  return `${Math.floor(s / 60)}m ${s % 60}s`;
-}
-
 export default function GroupComparison({ activityId, period, data }: Props) {
   const t = useTranslations(texts);
+  const { lang } = useLang();
+  const formatDuration = (ms: number) => formatDurationLoc(ms, lang);
   const { data: fetchedGroups, loading } = useGroupStats(data ? null : activityId, period);
   const groups = data ?? fetchedGroups;
 

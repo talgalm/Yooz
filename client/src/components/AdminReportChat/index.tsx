@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLang, useTranslations } from '../../context/LanguageContext';
 import { adminApiFetch } from '../../utils/adminApi';
 import { downloadExport, type AnalyticsExportType } from '../../hooks/useAnalytics';
+import { ADMIN_ANALYTICS_SOURCE } from '../../pages/admin/AdminStatisticsTab/analyticsSource';
 import type { ActivitySubTab } from '../../pages/admin/AdminStatisticsTab/types';
 import { texts } from './AdminReportChat.i18n';
 import { renderMarkdown } from './markdown';
@@ -157,7 +158,7 @@ export default function AdminReportChat({ activityId, onSwitchSubTab }: Props) {
   const handleOpenExisting = async (existing: ExistingReportResp) => {
     if (existing.reportKind === 'export') {
       try {
-        await downloadExport(activityId, existing.reportType as AnalyticsExportType);
+        await downloadExport(ADMIN_ANALYTICS_SOURCE.base(activityId), existing.reportType as AnalyticsExportType);
       } catch {
         setMessages((prev) => [...prev, { from: 'bot', text: t.errorGeneral }]);
       }

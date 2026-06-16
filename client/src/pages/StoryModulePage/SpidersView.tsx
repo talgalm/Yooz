@@ -448,6 +448,8 @@ interface SpidersViewProps {
   leaderboardMode?: 'points' | 'time';
   elapsedSeconds?: number;
   activityDurationMinutes?: number;
+  /** Cosmetic roadmap timer: turns red after this many minutes (counts up from 0). */
+  roadmapTimerMinutes?: number;
   finalItemIndex?: number;
   /** Manager-controlled progress lock: items with index >= this are blocked. */
   lockedFromIndex?: number | null;
@@ -469,6 +471,7 @@ export default function SpidersView({
   leaderboardMode,
   elapsedSeconds,
   activityDurationMinutes,
+  roadmapTimerMinutes,
   finalItemIndex,
   lockedFromIndex,
 }: SpidersViewProps) {
@@ -743,6 +746,7 @@ export default function SpidersView({
         leaderboardMode={leaderboardMode}
         elapsedSeconds={elapsedSeconds}
         activityDurationMinutes={activityDurationMinutes}
+        roadmapTimerMinutes={roadmapTimerMinutes}
         omitThirdSlot={hideLeaderboardInHeader}
         thirdSlot={!hideLeaderboardInHeader ? (
           <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'} iconColor={headerIconColor}>

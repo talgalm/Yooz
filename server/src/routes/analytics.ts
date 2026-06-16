@@ -9,6 +9,22 @@ import {
   type ExportActivity,
   type ExportReport,
 } from '../utils/analyticsExcelExport';
+import {
+  clampPassThreshold,
+  resolvePassThreshold,
+  maxScoreForReport,
+  normalizeScore,
+  resolveCeiling,
+} from '../utils/scoreNormalization';
+import {
+  getActivityAnalytics,
+  getFunnel,
+  getItems,
+  getQuestions,
+  getGroups,
+  getAnomalies,
+} from '../services/activityAnalyticsService';
+import crypto from 'crypto';
 
 const router = Router();
 
@@ -116,12 +132,21 @@ router.get('/overview', async (req: Request, res: Response) => {
     Activity.countDocuments(activityLiveMatch),
     Report.find(
       reportWithScoreMatch,
-      { 'data.totalScore': 1, completionStatus: 1, sessionDurationMs: 1 },
+      { 'data.totalScore': 1, 'data.itemResults.maxPossibleScore': 1, completionStatus: 1, sessionDurationMs: 1 },
     ).lean(),
   ]);
 
+  // Normalize every score to 0-100 against that report's own achievable maximum.
+  // Activities live on wildly different raw scales, so a per-report ceiling is the
+  // only meaningful denominator for a cross-activity average. Reports without
+  // max-score data fall back to their raw value so legacy data still counts.
   const scores = allReports
-    .map((r) => (r.data as { totalScore?: number })?.totalScore ?? 0)
+    .map((r) => {
+      const raw = (r.data as { totalScore?: number })?.totalScore ?? 0;
+      if (raw <= 0) return 0;
+      const ceiling = maxScoreForReport(r as { data?: { itemResults?: { maxPossibleScore?: number }[] } });
+      return ceiling > 0 ? normalizeScore(raw, ceiling) : raw;
+    })
     .filter((s) => s > 0);
   const durations = allReports
     .map((r) => r.sessionDurationMs)
@@ -185,135 +210,7 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
     return;
   }
 
-  const isMission = activity.module?.type === 'mission';
-
-  const reports = await Report.find(
-    activityReportMatch(activityId, req),
-    {
-      participantName: 1, email: 1, phoneNumber: 1, group: 1,
-      joinedAt: 1, 'data.totalScore': 1, 'data.itemResults': 1, completionStatus: 1,
-      sessionDurationMs: 1, totalItemsCompleted: 1, totalItemsInModule: 1,
-      lastActiveItemIndex: 1,
-    },
-  ).lean();
-
-  const totalParticipants = reports.length;
-  const scores = reports
-    .map((r) => (r.data as { totalScore?: number })?.totalScore ?? 0)
-    .filter((s) => s > 0);
-  const durations = reports
-    .map((r) => r.sessionDurationMs)
-    .filter((d): d is number => typeof d === 'number' && d > 0);
-  const completedCount = reports.filter((r) => r.completionStatus === 'completed').length;
-  const inProgressCount = reports.filter((r) => r.completionStatus === 'in_progress').length;
-  const joinedOnlyCount = reports.filter((r) => r.completionStatus === 'joined' || !r.completionStatus).length;
-  const abandonmentCount = inProgressCount + joinedOnlyCount;
-  const totalItemsInModule = Math.max(
-    activity.module?.items?.length ?? 0,
-    ...reports.map((r) => r.totalItemsInModule ?? 0),
-  );
-  const progressValues = reports.map((r) => {
-    if (totalItemsInModule <= 0) return r.completionStatus === 'completed' ? 100 : 0;
-    return Math.min(100, Math.round(((r.totalItemsCompleted ?? 0) / totalItemsInModule) * 100));
-  });
-  const avgProgressPct = progressValues.length > 0
-    ? Math.round(progressValues.reduce((sum, value) => sum + value, 0) / progressValues.length)
-    : 0;
-
-  // Score distribution histogram (buckets of 10)
-  const buckets = Array.from({ length: 11 }, (_, i) => ({ min: i * 10, max: i * 10 + 10, count: 0 }));
-  scores.forEach((s) => {
-    const idx = Math.min(Math.floor(s / 10), 10);
-    buckets[idx].count++;
-  });
-
-  // ── Mission-specific stats (read from activity counters) ──
-  let missionStats: {
-    puzzleCompletions: number;
-    trashSortCompletions: number;
-    avgTrashSortScore: number;
-  } | undefined;
-
-  if (isMission) {
-    const puzzleCompletions = activity.missionPuzzleCompletions ?? 0;
-    const trashSortCompletions = activity.missionTrashSortCompletions ?? 0;
-    const trashSortScoreSum = activity.missionTrashSortScoreSum ?? 0;
-    missionStats = {
-      puzzleCompletions,
-      trashSortCompletions,
-      avgTrashSortScore: trashSortCompletions > 0
-        ? Math.round(trashSortScoreSum / trashSortCompletions)
-      : 0,
-    };
-  }
-
-  const scoreSummary = {
-    highest: scores.length > 0 ? Math.max(...scores) : 0,
-    lowest: scores.length > 0 ? Math.min(...scores) : 0,
-    passRate: scores.length > 0 ? Math.round((scores.filter((s) => s >= 70).length / scores.length) * 100) : 0,
-    scoredParticipants: scores.length,
-  };
-
-  const durationSummary = {
-    fastestMs: durations.length > 0 ? Math.min(...durations) : 0,
-    slowestMs: durations.length > 0 ? Math.max(...durations) : 0,
-    completedWithDuration: durations.length,
-  };
-
-  const participantInsights = reports.map((r) => {
-    const score = (r.data as { totalScore?: number })?.totalScore ?? 0;
-    const progressPct = totalItemsInModule > 0
-      ? Math.min(100, Math.round(((r.totalItemsCompleted ?? 0) / totalItemsInModule) * 100))
-      : r.completionStatus === 'completed' ? 100 : 0;
-    return {
-      name: r.participantName,
-      group: r.group,
-      status: r.completionStatus ?? 'joined',
-      score,
-      durationMs: r.sessionDurationMs,
-      progressPct,
-      joinedAt: r.joinedAt ? new Date(r.joinedAt).toISOString() : '',
-    };
-  });
-
-  const topParticipants = [...participantInsights]
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return (a.durationMs ?? Number.MAX_SAFE_INTEGER) - (b.durationMs ?? Number.MAX_SAFE_INTEGER);
-    })
-    .slice(0, 5);
-
-  const recentParticipants = [...participantInsights]
-    .sort((a, b) => new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime())
-    .slice(0, 6);
-
-  res.json({
-    activity: { _id: activity._id, name: activity.name, code: activity.code, status: activity.status, moduleType: activity.module?.type },
-    period: analyticsPeriod(req),
-    totalParticipants,
-    abandonmentCount,
-    abandonmentRate: totalParticipants > 0 ? Math.round((abandonmentCount / totalParticipants) * 100) : 0,
-    completionRate: totalParticipants > 0 ? Math.round((completedCount / totalParticipants) * 100) : 0,
-    avgScore: scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0,
-    medianScore: Math.round(median(scores)),
-    avgDurationMs: durations.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length) : 0,
-    medianDurationMs: Math.round(median(durations)),
-    scoreDistribution: buckets,
-    shareClicks: activity.shareClicks ?? 0,
-    shareCompleted: activity.shareCompleted ?? 0,
-    statusBreakdown: {
-      joined: joinedOnlyCount,
-      inProgress: inProgressCount,
-      completed: completedCount,
-    },
-    scoreSummary,
-    durationSummary,
-    topParticipants,
-    recentParticipants,
-    totalItemsInModule,
-    avgProgressPct,
-    ...(missionStats && { missionStats }),
-  });
+  res.json(await getActivityAnalytics(activity, analyticsPeriod(req)));
 });
 
 // ─── Activity Funnel ───
@@ -331,27 +228,7 @@ router.get('/activities/:id/funnel', async (req: Request<{ id: string }>, res: R
     return;
   }
 
-  const reports = await Report.find(
-    activityReportMatch(activityId, req),
-    { completionStatus: 1, totalItemsCompleted: 1, totalItemsInModule: 1 },
-  ).lean();
-
-  const joined = reports.length;
-  const startedPlaying = reports.filter((r) => (r.totalItemsCompleted ?? 0) >= 1).length;
-  const completedHalf = reports.filter((r) => {
-    const total = r.totalItemsInModule || 1;
-    return (r.totalItemsCompleted ?? 0) >= Math.ceil(total / 2);
-  }).length;
-  const completed = reports.filter((r) => r.completionStatus === 'completed').length;
-
-  res.json({
-    funnel: [
-      { step: 'joined', count: joined, pct: 100 },
-      { step: 'started', count: startedPlaying, pct: joined > 0 ? Math.round((startedPlaying / joined) * 100) : 0 },
-      { step: 'halfway', count: completedHalf, pct: joined > 0 ? Math.round((completedHalf / joined) * 100) : 0 },
-      { step: 'completed', count: completed, pct: joined > 0 ? Math.round((completed / joined) * 100) : 0 },
-    ],
-  });
+  res.json({ funnel: await getFunnel(activityId, analyticsPeriod(req), activity.excludedReportIds) });
 });
 
 // ─── Per-Item Stats ───
@@ -369,44 +246,7 @@ router.get('/activities/:id/items', async (req: Request<{ id: string }>, res: Re
     return;
   }
 
-  const pipeline = await Report.aggregate([
-    { $match: { ...activityReportMatch(activityId, req), 'data.itemResults': { $exists: true } } },
-    { $unwind: '$data.itemResults' },
-    {
-      $group: {
-        _id: '$data.itemResults.itemIndex',
-        itemName: { $first: '$data.itemResults.itemName' },
-        itemType: { $first: '$data.itemResults.itemType' },
-        gameType: { $first: '$data.itemResults.gameType' },
-        participantCount: { $sum: 1 },
-        avgScore: { $avg: '$data.itemResults.score' },
-        avgDurationMs: { $avg: '$data.itemResults.durationMs' },
-        hintUsageCount: {
-          $sum: { $cond: [{ $eq: ['$data.itemResults.hintUsed', true] }, 1, 0] },
-        },
-        completionCount: {
-          $sum: { $cond: [{ $ne: ['$data.itemResults.completedAt', null] }, 1, 0] },
-        },
-        avgMaxScore: { $avg: '$data.itemResults.maxPossibleScore' },
-      },
-    },
-    { $sort: { _id: 1 } },
-  ]);
-
-  const items = pipeline.map((item) => ({
-    itemIndex: item._id,
-    itemName: item.itemName,
-    itemType: item.itemType,
-    gameType: item.gameType,
-    participantCount: item.participantCount,
-    avgScore: Math.round(item.avgScore ?? 0),
-    avgDurationMs: Math.round(item.avgDurationMs ?? 0),
-    hintUsagePct: item.participantCount > 0 ? Math.round((item.hintUsageCount / item.participantCount) * 100) : 0,
-    completionPct: item.participantCount > 0 ? Math.round((item.completionCount / item.participantCount) * 100) : 0,
-    avgMaxScore: Math.round(item.avgMaxScore ?? 0),
-  }));
-
-  res.json({ items });
+  res.json({ items: await getItems(activityId, analyticsPeriod(req), activity.excludedReportIds) });
 });
 
 // ─── Per-Question Stats (for question-based games) ───
@@ -426,37 +266,7 @@ router.get('/activities/:id/items/:index/questions', async (req: Request<{ id: s
     return;
   }
 
-  const pipeline = await Report.aggregate([
-    { $match: { ...activityReportMatch(activityId, req), 'data.itemResults': { $exists: true } } },
-    { $unwind: '$data.itemResults' },
-    { $match: { 'data.itemResults.itemIndex': itemIndex } },
-    { $unwind: '$data.itemResults.questionAnswers' },
-    {
-      $group: {
-        _id: '$data.itemResults.questionAnswers.questionIndex',
-        questionText: { $first: '$data.itemResults.questionAnswers.questionText' },
-        totalAttempts: { $sum: 1 },
-        correctCount: {
-          $sum: { $cond: ['$data.itemResults.questionAnswers.isCorrect', 1, 0] },
-        },
-        avgTimeMs: { $avg: '$data.itemResults.questionAnswers.timeSpentMs' },
-        avgPoints: { $avg: '$data.itemResults.questionAnswers.pointsEarned' },
-      },
-    },
-    { $sort: { _id: 1 } },
-  ]);
-
-  const questions = pipeline.map((q) => ({
-    questionIndex: q._id,
-    questionText: q.questionText,
-    totalAttempts: q.totalAttempts,
-    correctCount: q.correctCount,
-    successRate: q.totalAttempts > 0 ? Math.round((q.correctCount / q.totalAttempts) * 100) : 0,
-    avgTimeMs: Math.round(q.avgTimeMs ?? 0),
-    avgPoints: Math.round(q.avgPoints ?? 0),
-  }));
-
-  res.json({ questions });
+  res.json({ questions: await getQuestions(activityId, itemIndex, analyticsPeriod(req), activity.excludedReportIds) });
 });
 
 // ─── Group Comparison ───
@@ -474,31 +284,7 @@ router.get('/activities/:id/groups', async (req: Request<{ id: string }>, res: R
     return;
   }
 
-  const pipeline = await Report.aggregate([
-    { $match: { ...activityReportMatch(activityId, req), group: { $exists: true, $ne: null } } },
-    {
-      $group: {
-        _id: '$group',
-        memberCount: { $sum: 1 },
-        avgScore: { $avg: '$data.totalScore' },
-        completedCount: {
-          $sum: { $cond: [{ $eq: ['$completionStatus', 'completed'] }, 1, 0] },
-        },
-        avgDurationMs: { $avg: '$sessionDurationMs' },
-      },
-    },
-    { $sort: { avgScore: -1 } },
-  ]);
-
-  const groups = pipeline.map((g) => ({
-    group: g._id,
-    memberCount: g.memberCount,
-    avgScore: Math.round(g.avgScore ?? 0),
-    completionRate: g.memberCount > 0 ? Math.round((g.completedCount / g.memberCount) * 100) : 0,
-    avgDurationMs: Math.round(g.avgDurationMs ?? 0),
-  }));
-
-  res.json({ groups });
+  res.json({ groups: await getGroups(activityId, analyticsPeriod(req), activity.excludedReportIds) });
 });
 
 // ─── Anomaly Detection ───
@@ -516,55 +302,7 @@ router.get('/activities/:id/anomalies', async (req: Request<{ id: string }>, res
     return;
   }
 
-  // Get per-item stats
-  const itemStats = await Report.aggregate([
-    { $match: { ...activityReportMatch(activityId, req), 'data.itemResults': { $exists: true } } },
-    { $unwind: '$data.itemResults' },
-    {
-      $group: {
-        _id: '$data.itemResults.itemIndex',
-        itemName: { $first: '$data.itemResults.itemName' },
-        participantCount: { $sum: 1 },
-        completionCount: {
-          $sum: { $cond: [{ $ne: ['$data.itemResults.completedAt', null] }, 1, 0] },
-        },
-        avgDurationMs: { $avg: '$data.itemResults.durationMs' },
-      },
-    },
-  ]);
-
-  const overallAvgDuration = itemStats.length > 0
-    ? itemStats.reduce((s, i) => s + (i.avgDurationMs ?? 0), 0) / itemStats.length
-    : 0;
-
-  const alerts: { type: string; severity: 'warning' | 'error'; message: string; itemIndex?: number; itemName?: string }[] = [];
-
-  for (const item of itemStats) {
-    const completionRate = item.participantCount > 0 ? item.completionCount / item.participantCount : 1;
-    const avgDur = item.avgDurationMs ?? 0;
-
-    if (completionRate < 0.7) {
-      alerts.push({
-        type: 'high_dropout',
-        severity: completionRate < 0.5 ? 'error' : 'warning',
-        message: `"${item.itemName}" has ${Math.round((1 - completionRate) * 100)}% dropout rate`,
-        itemIndex: item._id,
-        itemName: item.itemName,
-      });
-    }
-
-    if (overallAvgDuration > 0 && avgDur > overallAvgDuration * 2) {
-      alerts.push({
-        type: 'unusual_time',
-        severity: 'warning',
-        message: `"${item.itemName}" takes ${Math.round(avgDur / 1000)}s avg — ${Math.round(avgDur / overallAvgDuration)}x the average`,
-        itemIndex: item._id,
-        itemName: item.itemName,
-      });
-    }
-  }
-
-  res.json({ alerts });
+  res.json({ alerts: await getAnomalies(activityId, analyticsPeriod(req), activity.excludedReportIds) });
 });
 
 // ════════════════════════════════════════════
@@ -604,8 +342,174 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
   }
 
   const reportFilter = await reportMatchForRequest(req, activityReportMatch(activityId, req));
+  if (activity.excludedReportIds && activity.excludedReportIds.length > 0) {
+    reportFilter._id = { $nin: activity.excludedReportIds.map((id) => new Types.ObjectId(id)) };
+  }
   const reports = await Report.find(reportFilter).lean();
   await sendWorkbook(activity as ExportActivity, reports as ExportReport[], `${exportType}_${analyticsPeriod(req)}`);
+});
+
+// ════════════════════════════════════════════
+// ─── Participants roster + exclusions ───
+// ════════════════════════════════════════════
+
+// Full roster (NOT exclusion-filtered, so excluded rows remain toggleable).
+router.get('/activities/:id/participants', async (req: Request<{ id: string }>, res: Response) => {
+  const activityId = req.params.id;
+  if (!Types.ObjectId.isValid(activityId)) {
+    res.status(400).json({ error: 'Invalid activity ID' });
+    return;
+  }
+  const activity = await Activity.findById(activityId, { excludedReportIds: 1, createdByEmail: 1 }).lean();
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  const reports = await Report.find(
+    { activityId: new Types.ObjectId(activityId) },
+    {
+      participantName: 1, group: 1, completionStatus: 1, joinedAt: 1,
+      'data.totalScore': 1, 'data.itemResults.itemIndex': 1, 'data.itemResults.maxPossibleScore': 1,
+    },
+  ).sort({ joinedAt: -1 }).lean();
+
+  // Normalize to the same 0-100 scale the panels use.
+  const rawScores = reports.map((r) => (r.data as { totalScore?: number })?.totalScore ?? 0).filter((s) => s > 0);
+  const ceiling = resolveCeiling(reports, rawScores);
+  const excluded = new Set((activity.excludedReportIds ?? []).map((id) => String(id)));
+
+  res.json({
+    participants: reports.map((r) => ({
+      _id: String(r._id),
+      name: r.participantName || '',
+      group: r.group,
+      status: r.completionStatus ?? 'joined',
+      score: normalizeScore((r.data as { totalScore?: number })?.totalScore ?? 0, ceiling),
+      joinedAt: r.joinedAt ? new Date(r.joinedAt).toISOString() : '',
+      excluded: excluded.has(String(r._id)),
+    })),
+  });
+});
+
+// Replace the full set of excluded report ids for this activity.
+router.patch('/activities/:id/participants/exclusions', async (req: Request<{ id: string }>, res: Response) => {
+  const activityId = req.params.id;
+  if (!Types.ObjectId.isValid(activityId)) {
+    res.status(400).json({ error: 'Invalid activity ID' });
+    return;
+  }
+  const activity = await Activity.findById(activityId);
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  if (isCustomerRole(req) && activity.customerEditLocked) {
+    res.status(403).json({ error: 'Activity is locked for customer edits' });
+    return;
+  }
+  const incoming: unknown[] = Array.isArray(req.body?.excludedReportIds) ? req.body.excludedReportIds : [];
+  const ids = [...new Set(
+    incoming.filter((id): id is string => typeof id === 'string' && Types.ObjectId.isValid(id)),
+  )].map((id) => new Types.ObjectId(id));
+  activity.excludedReportIds = ids;
+  await activity.save();
+  res.json({ excludedReportIds: ids.map((id) => String(id)) });
+});
+
+// ─── Pass grade (normalized 0-100 threshold for pass/fail in reports) ───
+
+router.get('/activities/:id/pass-threshold', async (req: Request<{ id: string }>, res: Response) => {
+  const activityId = req.params.id;
+  if (!Types.ObjectId.isValid(activityId)) {
+    res.status(400).json({ error: 'Invalid activity ID' });
+    return;
+  }
+  const activity = await Activity.findById(activityId, { passThreshold: 1, createdByEmail: 1 }).lean();
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  res.json({ passThreshold: resolvePassThreshold(activity.passThreshold) });
+});
+
+router.patch('/activities/:id/pass-threshold', async (req: Request<{ id: string }>, res: Response) => {
+  const activityId = req.params.id;
+  if (!Types.ObjectId.isValid(activityId)) {
+    res.status(400).json({ error: 'Invalid activity ID' });
+    return;
+  }
+  const activity = await Activity.findById(activityId);
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  if (isCustomerRole(req) && activity.customerEditLocked) {
+    res.status(403).json({ error: 'Activity is locked for customer edits' });
+    return;
+  }
+  const passThreshold = req.body?.passThreshold === null ? null : clampPassThreshold(req.body?.passThreshold);
+  activity.passThreshold = passThreshold;
+  await activity.save();
+  res.json({ passThreshold });
+});
+
+// ─── Public statistics share link (token management) ───
+
+router.get('/activities/:id/share', async (req: Request<{ id: string }>, res: Response) => {
+  const activityId = req.params.id;
+  if (!Types.ObjectId.isValid(activityId)) {
+    res.status(400).json({ error: 'Invalid activity ID' });
+    return;
+  }
+  const activity = await Activity.findById(activityId, { statsShareToken: 1, createdByEmail: 1 }).lean();
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  res.json({ token: activity.statsShareToken ?? null });
+});
+
+// Create or regenerate the share token (regenerating invalidates the old link).
+router.post('/activities/:id/share', async (req: Request<{ id: string }>, res: Response) => {
+  const activityId = req.params.id;
+  if (!Types.ObjectId.isValid(activityId)) {
+    res.status(400).json({ error: 'Invalid activity ID' });
+    return;
+  }
+  const activity = await Activity.findById(activityId);
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  if (isCustomerRole(req) && activity.customerEditLocked) {
+    res.status(403).json({ error: 'Activity is locked for customer edits' });
+    return;
+  }
+  activity.statsShareToken = crypto.randomBytes(24).toString('base64url');
+  await activity.save();
+  res.json({ token: activity.statsShareToken });
+});
+
+// Revoke the share link.
+router.delete('/activities/:id/share', async (req: Request<{ id: string }>, res: Response) => {
+  const activityId = req.params.id;
+  if (!Types.ObjectId.isValid(activityId)) {
+    res.status(400).json({ error: 'Invalid activity ID' });
+    return;
+  }
+  const activity = await Activity.findById(activityId);
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  if (isCustomerRole(req) && activity.customerEditLocked) {
+    res.status(403).json({ error: 'Activity is locked for customer edits' });
+    return;
+  }
+  activity.statsShareToken = null;
+  await activity.save();
+  res.json({ token: null });
 });
 
 // ════════════════════════════════════════════

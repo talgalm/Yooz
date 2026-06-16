@@ -12,6 +12,7 @@ import {
 } from '../middleware/customerScope';
 import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginField } from '../types';
 import { Activity, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
+import { clampPassThreshold } from '../utils/scoreNormalization';
 
 const router = Router();
 
@@ -52,7 +53,7 @@ function validateActivityPayload(body: CreateActivityRequest): string | null {
 }
 
 async function buildActivityData(body: CreateActivityRequest, existingPasswordHash?: string): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, hideLeaderboardInHeader, activityDurationMinutes, includeOnRoadmap } = body;
+  const { name, loginFields, emailGoogle, connectionType, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, hideLeaderboardInHeader, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -174,11 +175,24 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
     ? activityDurationMinutes
     : undefined;
 
+  // Cosmetic roadmap count-up timer (independent of leaderboard mode).
+  // null (not undefined) so disabling it actually clears the stored value on edit.
+  data.roadmapTimerMinutes = (roadmapTimerMinutes && roadmapTimerMinutes > 0)
+    ? Math.round(roadmapTimerMinutes)
+    : null;
+
   // Handle continuous activity
   data.isContinuous = isContinuous === true;
   data.portalId = isContinuous && portalId ? portalId : undefined;
 
   data.includeOnRoadmap = includeOnRoadmap === true;
+
+  // Pass grade (normalized 0-100, or null for no pass grade). Only written when
+  // present in the payload so a regular activity save from the editor (which
+  // doesn't send it) preserves the existing value rather than resetting it.
+  if (passThreshold !== undefined) {
+    data.passThreshold = passThreshold === null ? null : clampPassThreshold(passThreshold);
+  }
 
   // Handle manager credentials
   if (managerEmail && managerEmail.trim()) {

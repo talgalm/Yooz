@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
-import { useTranslations } from '../../../context/LanguageContext';
+import { useTranslations, useLang } from '../../../context/LanguageContext';
+import { formatDuration as formatDurationLoc } from '../../../utils/formatDuration';
 import { useItemStats, useQuestionStats } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
 import {
@@ -22,15 +23,10 @@ interface Props {
   questionsByItem?: Record<number, QuestionStats[]>;
 }
 
-function formatDuration(ms: number) {
-  if (!ms) return '—';
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  return `${Math.floor(s / 60)}m ${s % 60}s`;
-}
-
 export default function ItemAnalyticsTable({ activityId, period, data, questionsByItem }: Props) {
   const t = useTranslations(texts);
+  const { lang } = useLang();
+  const formatDuration = (ms: number) => formatDurationLoc(ms, lang);
   const { data: fetchedItems, loading } = useItemStats(data ? null : activityId, period);
   const items = data ?? fetchedItems;
   const [expandedItem, setExpandedItem] = useState<number | null>(null);
@@ -71,7 +67,7 @@ export default function ItemAnalyticsTable({ activityId, period, data, questions
                       }
                     >
                       <td>{item.itemIndex + 1}</td>
-                      <td style={{ fontWeight: 600 }}>{item.itemName || `Item ${item.itemIndex + 1}`}</td>
+                      <td style={{ fontWeight: 600 }}>{item.itemName || `${t.station} ${item.itemIndex + 1}`}</td>
                       <td>{item.gameType || item.itemType}</td>
                       <td>
                         {Math.round(item.avgScore)}/{Math.round(item.avgMaxScore)}
@@ -117,7 +113,7 @@ export default function ItemAnalyticsTable({ activityId, period, data, questions
               >
                 <StatsMobileRow>
                   <StatsMobileValue>
-                    {item.itemIndex + 1}. {item.itemName || `Item ${item.itemIndex + 1}`}
+                    {item.itemIndex + 1}. {item.itemName || `${t.station} ${item.itemIndex + 1}`}
                   </StatsMobileValue>
                   {needsImprovement && <ImprovementBadge>{t.needsImprovement}</ImprovementBadge>}
                 </StatsMobileRow>
@@ -205,7 +201,7 @@ function QuestionBreakdown({
           {questions.map((q) => (
             <tr key={q.questionIndex}>
               <td style={{ padding: '6px 10px' }}>{q.questionIndex + 1}</td>
-              <td style={{ padding: '6px 10px' }}>{q.questionText || `Q${q.questionIndex + 1}`}</td>
+              <td style={{ padding: '6px 10px' }}>{q.questionText || `${t.question} ${q.questionIndex + 1}`}</td>
               <td style={{ padding: '6px 10px' }}>
                 <span
                   style={{

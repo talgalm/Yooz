@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminApiFetch } from '../utils/adminApi';
+import { useAnalyticsSource } from '../pages/admin/AdminStatisticsTab/analyticsSource';
 import type {
   OverviewData,
   TimelinePoint,
@@ -11,6 +12,7 @@ import type {
   AnomalyAlert,
   AuditLogEntry,
   ActivityPeriod,
+  RosterParticipant,
 } from '../pages/admin/AdminStatisticsTab/types';
 
 const selectTimeline = (response: { timeline: TimelinePoint[] }) => response.timeline;
@@ -19,6 +21,7 @@ const selectItems = (response: { items: ItemStats[] }) => response.items;
 const selectQuestions = (response: { questions: QuestionStats[] }) => response.questions;
 const selectGroups = (response: { groups: GroupStats[] }) => response.groups;
 const selectAlerts = (response: { alerts: AnomalyAlert[] }) => response.alerts;
+const selectParticipants = (response: { participants: RosterParticipant[] }) => response.participants;
 const selectAuditLog = (response: { logs: AuditLogEntry[]; total: number; page: number; totalPages: number }) => ({
   entries: response.logs,
   total: response.total,
@@ -75,44 +78,50 @@ export function useTimeline(days = 30) {
 }
 
 export function useActivityAnalytics(activityId: string | null, period?: ActivityPeriod) {
+  const { base } = useAnalyticsSource();
   return useApiFetch<ActivityAnalyticsData>(
-    activityId ? `/api/admin/analytics/activities/${activityId}${periodQuery(period)}` : null,
+    activityId ? `${base(activityId)}${periodQuery(period)}` : null,
   );
 }
 
 export function useFunnel(activityId: string | null, period?: ActivityPeriod) {
+  const { base } = useAnalyticsSource();
   return useApiFetch<{ funnel: FunnelStep[] }, FunnelStep[]>(
-    activityId ? `/api/admin/analytics/activities/${activityId}/funnel${periodQuery(period)}` : null,
+    activityId ? `${base(activityId)}/funnel${periodQuery(period)}` : null,
     selectFunnel,
   );
 }
 
 export function useItemStats(activityId: string | null, period?: ActivityPeriod) {
+  const { base } = useAnalyticsSource();
   return useApiFetch<{ items: ItemStats[] }, ItemStats[]>(
-    activityId ? `/api/admin/analytics/activities/${activityId}/items${periodQuery(period)}` : null,
+    activityId ? `${base(activityId)}/items${periodQuery(period)}` : null,
     selectItems,
   );
 }
 
 export function useQuestionStats(activityId: string | null, itemIndex: number | null, period?: ActivityPeriod) {
+  const { base } = useAnalyticsSource();
   return useApiFetch<{ questions: QuestionStats[] }, QuestionStats[]>(
     activityId && itemIndex !== null
-      ? `/api/admin/analytics/activities/${activityId}/items/${itemIndex}/questions${periodQuery(period)}`
+      ? `${base(activityId)}/items/${itemIndex}/questions${periodQuery(period)}`
       : null,
     selectQuestions,
   );
 }
 
 export function useGroupStats(activityId: string | null, period?: ActivityPeriod) {
+  const { base } = useAnalyticsSource();
   return useApiFetch<{ groups: GroupStats[] }, GroupStats[]>(
-    activityId ? `/api/admin/analytics/activities/${activityId}/groups${periodQuery(period)}` : null,
+    activityId ? `${base(activityId)}/groups${periodQuery(period)}` : null,
     selectGroups,
   );
 }
 
 export function useAnomalies(activityId: string | null, period?: ActivityPeriod) {
+  const { base } = useAnalyticsSource();
   return useApiFetch<{ alerts: AnomalyAlert[] }, AnomalyAlert[]>(
-    activityId ? `/api/admin/analytics/activities/${activityId}/anomalies${periodQuery(period)}` : null,
+    activityId ? `${base(activityId)}/anomalies${periodQuery(period)}` : null,
     selectAlerts,
   );
 }
@@ -127,15 +136,74 @@ export function useAuditLog(page = 1, limit = 20) {
   );
 }
 
+// ── Pass grade (normalized 0-100 threshold) ──
+
+export function usePassThreshold(activityId: string | null) {
+  // null = no pass grade configured.
+  return useApiFetch<{ passThreshold: number | null }, number | null>(
+    activityId ? `/api/admin/analytics/activities/${activityId}/pass-threshold` : null,
+    (response) => response.passThreshold,
+  );
+}
+
+export async function savePassThreshold(activityId: string, value: number | null): Promise<number | null> {
+  const res = await adminApiFetch<{ passThreshold: number | null }>(
+    `/api/admin/analytics/activities/${activityId}/pass-threshold`,
+    { method: 'PATCH', body: JSON.stringify({ passThreshold: value }) },
+  );
+  return res.passThreshold;
+}
+
+// ── Public statistics share link (admin management) ──
+
+export function useShareLink(activityId: string | null) {
+  return useApiFetch<{ token: string | null }, string | null>(
+    activityId ? `/api/admin/analytics/activities/${activityId}/share` : null,
+    (response) => response.token,
+  );
+}
+
+export async function createShareLink(activityId: string): Promise<string> {
+  const res = await adminApiFetch<{ token: string }>(
+    `/api/admin/analytics/activities/${activityId}/share`,
+    { method: 'POST' },
+  );
+  return res.token;
+}
+
+export async function revokeShareLink(activityId: string): Promise<void> {
+  await adminApiFetch(`/api/admin/analytics/activities/${activityId}/share`, { method: 'DELETE' });
+}
+
+// ── Participants roster + exclusions (admin only) ──
+
+export function useParticipantsRoster(activityId: string | null) {
+  // NOTE: selector MUST be a stable module-level reference — an inline arrow makes
+  // useApiFetch's useCallback([url, select]) change every render and, because this
+  // returns a fresh array each fetch, loops forever.
+  return useApiFetch<{ participants: RosterParticipant[] }, RosterParticipant[]>(
+    activityId ? `/api/admin/analytics/activities/${activityId}/participants` : null,
+    selectParticipants,
+  );
+}
+
+export async function saveExclusions(activityId: string, excludedReportIds: string[]): Promise<string[]> {
+  const res = await adminApiFetch<{ excludedReportIds: string[] }>(
+    `/api/admin/analytics/activities/${activityId}/participants/exclusions`,
+    { method: 'PATCH', body: JSON.stringify({ excludedReportIds }) },
+  );
+  return res.excludedReportIds;
+}
+
 // ── Export helper (triggers download) ──
 
 export type AnalyticsExportType = 'executive' | 'participants' | 'scores' | 'progress';
 
-export async function downloadExport(activityId: string, type: AnalyticsExportType, period?: ActivityPeriod) {
+export async function downloadExport(baseUrl: string, type: AnalyticsExportType, period?: ActivityPeriod) {
   const token = localStorage.getItem('yooz_admin_token');
   const params = new URLSearchParams({ type });
   if (period) params.set('period', period);
-  const res = await fetch(`/api/admin/analytics/activities/${activityId}/export?${params.toString()}`, {
+  const res = await fetch(`${baseUrl}/export?${params.toString()}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) throw new Error('Export failed');
