@@ -123,10 +123,11 @@ export async function getActivityAnalytics(activity: AnalyticsActivity, period: 
     ? Math.round(progressValues.reduce((sum, value) => sum + value, 0) / progressValues.length)
     : 0;
 
-  // Score distribution histogram (buckets of 10)
-  const buckets = Array.from({ length: 11 }, (_, i) => ({ min: i * 10, max: i * 10 + 10, count: 0 }));
+  // Score distribution histogram: ten 0-100 buckets (scores are normalized to
+  // 0-100, so a perfect 100 lands in the 90-100 bucket — no "100-110" bucket).
+  const buckets = Array.from({ length: 10 }, (_, i) => ({ min: i * 10, max: i * 10 + 10, count: 0 }));
   scores.forEach((s) => {
-    const idx = Math.min(Math.floor(s / 10), 10);
+    const idx = Math.min(Math.floor(s / 10), 9);
     buckets[idx].count++;
   });
 
