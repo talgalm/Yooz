@@ -264,18 +264,24 @@ export async function getItems(activityId: string | Types.ObjectId, period: Anal
     { $sort: { _id: 1 } },
   ]);
 
-  return pipeline.map((item) => ({
-    itemIndex: item._id,
-    itemName: item.itemName,
-    itemType: item.itemType,
-    gameType: item.gameType,
-    participantCount: item.participantCount,
-    avgScore: Math.round(item.avgScore ?? 0),
-    avgDurationMs: Math.round(item.avgDurationMs ?? 0),
-    hintUsagePct: item.participantCount > 0 ? Math.round((item.hintUsageCount / item.participantCount) * 100) : 0,
-    completionPct: item.participantCount > 0 ? Math.round((item.completionCount / item.participantCount) * 100) : 0,
-    avgMaxScore: Math.round(item.avgMaxScore ?? 0),
-  }));
+  return pipeline.map((item) => {
+    const avgScore = Math.round(item.avgScore ?? 0);
+    const avgMaxScore = Math.round(item.avgMaxScore ?? 0);
+    return {
+      itemIndex: item._id,
+      itemName: item.itemName,
+      itemType: item.itemType,
+      gameType: item.gameType,
+      participantCount: item.participantCount,
+      avgScore,
+      avgMaxScore,
+      // Per-station score on the shared 0-100 scale (score as % of the station's max).
+      scoreRate: avgMaxScore > 0 ? Math.round((avgScore / avgMaxScore) * 100) : avgScore,
+      avgDurationMs: Math.round(item.avgDurationMs ?? 0),
+      hintUsagePct: item.participantCount > 0 ? Math.round((item.hintUsageCount / item.participantCount) * 100) : 0,
+      completionPct: item.participantCount > 0 ? Math.round((item.completionCount / item.participantCount) * 100) : 0,
+    };
+  });
 }
 
 export async function getQuestions(activityId: string | Types.ObjectId, itemIndex: number, period: AnalyticsPeriod, excludeIds?: ExcludeIds) {

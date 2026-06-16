@@ -170,7 +170,6 @@ interface ExportStats {
   joinedOnlyCount: number;
   completionRate: number;
   avgScore: number;
-  avgRawScore: number;
   medianScore: number;
   highestScore: number;
   lowestScore: number;
@@ -691,7 +690,6 @@ function buildStats(activity: ExportActivity, reports: ExportReport[]): ExportSt
   const participants = buildParticipants(reports, totalItemsInModule, scoreCeiling, passThreshold);
   const scoredParticipants = participants.filter((participant) => participant.totalScore > 0);
   const scores = scoredParticipants.map((participant) => participant.normalizedScore); // 0-100
-  const rawScores = scoredParticipants.map((participant) => participant.totalScore);
   const durations = participants.map((participant) => participant.durationMs).filter((duration) => duration > 0);
   const completedCount = participants.filter((participant) => participant.status === 'completed').length;
   const inProgressCount = participants.filter((participant) => participant.status === 'in_progress').length;
@@ -714,7 +712,6 @@ function buildStats(activity: ExportActivity, reports: ExportReport[]): ExportSt
     joinedOnlyCount,
     completionRate,
     avgScore: Math.round(average(scores)),
-    avgRawScore: Math.round(average(rawScores)),
     medianScore: Math.round(median(scores)),
     highestScore: scores.length > 0 ? Math.max(...scores) : 0,
     lowestScore: scores.length > 0 ? Math.min(...scores) : 0,
@@ -892,7 +889,7 @@ function addSummarySheet(workbook: ExcelJS.Workbook, activity: ExportActivity, s
   worksheet.columns = Array.from({ length: 10 }, () => ({ width: 16 }));
   addKpi(worksheet, 4, 1, 'משתתפים', stats.totalParticipants, `${stats.completedCount} סיימו`, 'blue');
   addKpi(worksheet, 4, 3, 'אחוז סיום', `${stats.completionRate}%`, `${stats.inProgressCount} עדיין בתהליך`, pctTone(stats.completionRate));
-  addKpi(worksheet, 4, 5, 'ציון ממוצע (0-100)', stats.avgScore, `חציון ${stats.medianScore} | ממוצע גולמי ${stats.avgRawScore} | מעבר ${passRateText}`, pctTone(stats.avgScore));
+  addKpi(worksheet, 4, 5, 'ציון ממוצע (0-100)', stats.avgScore, `חציון ${stats.medianScore} | מעבר ${passRateText}`, pctTone(stats.avgScore));
   addKpi(worksheet, 4, 7, 'זמן ממוצע', formatDuration(stats.avgDurationMs) || '-', `חציון ${formatDuration(stats.medianDurationMs) || '-'}`, 'amber');
   addKpi(worksheet, 4, 9, 'התקדמות ממוצעת', `${stats.avgProgressPct}%`, `${stats.totalItemsInModule} תחנות במסלול`, pctTone(stats.avgProgressPct));
 
@@ -945,7 +942,7 @@ function addSummarySheet(workbook: ExcelJS.Workbook, activity: ExportActivity, s
       { header: 'דירוג', width: 10, value: (row: ParticipantRow) => row.rank },
       { header: 'שם', width: 22, value: (row) => row.name },
       { header: 'קבוצה', width: 18, value: (row) => row.group },
-      { header: 'ציון', width: 12, value: (row) => row.totalScore },
+      { header: 'ציון (0-100)', width: 12, value: (row) => row.normalizedScore },
       { header: 'משך', width: 16, value: (row) => row.durationLabel },
       { header: 'התקדמות', width: 14, value: (row) => `${row.progressPct}%` },
     ],
@@ -972,7 +969,6 @@ function addParticipantsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
       { header: 'טלפון', width: 18, value: (row) => row.phone },
       { header: 'קבוצה', width: 20, value: (row) => row.group },
       { header: 'סטטוס', width: 16, value: (row) => row.statusLabel },
-      { header: 'ציון גולמי', width: 12, value: (row) => row.totalScore },
       { header: 'ציון (0-100)', width: 12, value: (row) => row.normalizedScore },
       { header: 'עבר/לא עבר', width: 14, value: (row) => row.passLabel },
       { header: 'התקדמות %', width: 14, value: (row) => row.progressPct },
@@ -986,8 +982,8 @@ function addParticipantsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
     stats.participants,
     'ParticipantsTable',
   );
-  stylePercentColumn(worksheet, headerRow, 9, stats.participants.length); // ציון (0-100)
-  stylePercentColumn(worksheet, headerRow, 11, stats.participants.length); // התקדמות %
+  stylePercentColumn(worksheet, headerRow, 8, stats.participants.length); // ציון (0-100)
+  stylePercentColumn(worksheet, headerRow, 10, stats.participants.length); // התקדמות %
   configureWorksheet(worksheet);
 }
 
@@ -1016,18 +1012,18 @@ function addScoresSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], sta
     { header: 'שם', width: 22, value: (row) => row.participant.name },
     { header: 'קבוצה', width: 18, value: (row) => row.participant.group },
     { header: 'סטטוס', width: 15, value: (row) => row.participant.statusLabel },
-    { header: 'ציון כולל', width: 14, value: (row) => row.participant.totalScore },
     { header: 'ציון (0-100)', width: 13, value: (row) => row.participant.normalizedScore },
     { header: 'עבר/לא עבר', width: 14, value: (row) => row.participant.passLabel },
     { header: 'משך', width: 16, value: (row) => row.participant.durationLabel },
     ...itemNames.map((item) => ({
-      header: `${item.itemIndex + 1}. ${item.itemName}`,
+      header: `${item.itemIndex + 1}. ${item.itemName} (0-100)`,
       width: 24,
       value: (row: { participant: ParticipantRow; itemMap: Map<number, ExportItemResult> }) => {
         const itemResult = row.itemMap.get(item.itemIndex);
         if (!itemResult) return '';
-        const max = itemResult.maxPossibleScore ? `/${itemResult.maxPossibleScore}` : '';
-        return `${itemResult.score ?? 0}${max}`;
+        const score = itemResult.score ?? 0;
+        const max = itemResult.maxPossibleScore ?? 0;
+        return max > 0 ? Math.round((score / max) * 100) : score;
       },
     })),
     ...legacyGameNames.map((gameName) => ({
@@ -1088,9 +1084,7 @@ function addItemsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
       { header: 'שיעור הגעה', width: 14, value: (row) => row.reachRate },
       { header: 'השלימו', width: 12, value: (row) => row.completedCount },
       { header: 'השלמה %', width: 14, value: (row) => row.completionRate },
-      { header: 'ציון ממוצע', width: 14, value: (row) => row.avgScore },
-      { header: 'ציון מקסימלי', width: 14, value: (row) => row.avgMaxScore },
-      { header: 'הצלחה %', width: 12, value: (row) => row.scoreRate },
+      { header: 'ציון ממוצע (0-100)', width: 16, value: (row) => row.scoreRate },
       { header: 'זמן ממוצע', width: 18, value: (row) => row.avgDurationLabel },
       { header: 'שימוש ברמז %', width: 16, value: (row) => row.hintUsageRate },
       { header: 'רמת סיכון', width: 14, value: (row) => row.risk === 'red' ? 'גבוהה' : row.risk === 'amber' ? 'בינונית' : 'נמוכה' },
@@ -1098,8 +1092,8 @@ function addItemsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
     stats.items,
     'ItemsTable',
   );
-  stylePercentColumn(worksheet, headerRow, 8, stats.items.length);
-  stylePercentColumn(worksheet, headerRow, 11, stats.items.length);
+  stylePercentColumn(worksheet, headerRow, 8, stats.items.length); // השלמה %
+  stylePercentColumn(worksheet, headerRow, 9, stats.items.length); // ציון ממוצע (0-100)
   configureWorksheet(worksheet);
 }
 

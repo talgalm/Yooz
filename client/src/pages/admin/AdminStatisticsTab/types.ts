@@ -98,6 +98,8 @@ export interface ItemStats {
   hintUsagePct: number;
   completionPct: number;
   avgMaxScore: number;
+  /** Per-station score on the 0-100 scale (avgScore as % of avgMaxScore). */
+  scoreRate: number;
 }
 
 export interface QuestionStats {

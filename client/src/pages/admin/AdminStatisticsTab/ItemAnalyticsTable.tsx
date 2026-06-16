@@ -58,7 +58,7 @@ export default function ItemAnalyticsTable({ activityId, period, data, questions
             </thead>
             <tbody>
               {items.map((item) => {
-                const needsImprovement = item.completionPct < 70 || item.avgScore < item.avgMaxScore * 0.3;
+                const needsImprovement = item.completionPct < 70 || item.scoreRate < 30;
                 return (
                   <Fragment key={item.itemIndex}>
                     <tr
@@ -69,9 +69,7 @@ export default function ItemAnalyticsTable({ activityId, period, data, questions
                       <td>{item.itemIndex + 1}</td>
                       <td style={{ fontWeight: 600 }}>{item.itemName || `${t.station} ${item.itemIndex + 1}`}</td>
                       <td>{item.gameType || item.itemType}</td>
-                      <td>
-                        {Math.round(item.avgScore)}/{Math.round(item.avgMaxScore)}
-                      </td>
+                      <td>{Math.round(item.scoreRate)}</td>
                       <td>{formatDuration(item.avgDurationMs)}</td>
                       <td>{Math.round(item.hintUsagePct)}%</td>
                       <td>{Math.round(item.completionPct)}%</td>
@@ -103,7 +101,7 @@ export default function ItemAnalyticsTable({ activityId, period, data, questions
 
       <HideOnDesktop>
         {items.map((item) => {
-          const needsImprovement = item.completionPct < 70 || item.avgScore < item.avgMaxScore * 0.3;
+          const needsImprovement = item.completionPct < 70 || item.scoreRate < 30;
           return (
             <div key={item.itemIndex}>
               <StatsMobileCard
@@ -119,9 +117,7 @@ export default function ItemAnalyticsTable({ activityId, period, data, questions
                 </StatsMobileRow>
                 <StatsMobileRow>
                   <StatsMobileLabel>{t.avgItemScore}</StatsMobileLabel>
-                  <StatsMobileValue>
-                    {Math.round(item.avgScore)}/{Math.round(item.avgMaxScore)}
-                  </StatsMobileValue>
+                  <StatsMobileValue>{Math.round(item.scoreRate)}</StatsMobileValue>
                 </StatsMobileRow>
                 <StatsMobileRow>
                   <StatsMobileLabel>{t.avgItemDuration}</StatsMobileLabel>
