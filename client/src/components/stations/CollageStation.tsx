@@ -119,19 +119,17 @@ const BigTitle = styled('h1')({ textAlign: 'center', fontSize: 26, fontWeight: 8
 const SubText = styled('p')({ textAlign: 'center', fontSize: 15, color: 'rgba(255,255,255,0.72)', margin: '0 0 24px', lineHeight: 1.6 });
 
 const DisclaimerCard = styled('div')({
-  alignSelf: 'center',
+  alignSelf: 'stretch',
   background: '#fff',
-  color: '#1f1740',
-  borderRadius: 18,
-  padding: '20px 22px',
-  margin: '8px auto 22px',
+  color: '#1a143f',
+  borderRadius: 20,
+  padding: '22px 20px',
+  margin: '4px 0 20px',
   textAlign: 'center',
-  fontWeight: 700,
-  fontSize: 16,
-  lineHeight: 1.55,
-  maxWidth: 220,
-  width: 'fit-content',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+  fontWeight: 800,
+  fontSize: 17,
+  lineHeight: 1.45,
+  boxShadow: '0 8px 24px rgba(0,0,0,0.22)',
   whiteSpace: 'pre-line',
 });
 
@@ -355,9 +353,9 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     : fullMissions.slice(partStartIndex, partStartIndex + partSize);
   const partMultiSelectCount = multiSelect ? Math.max(1, partSize) : multiSelectCount;
 
-  const initialPhase: Phase = isVideoPart
-    ? 'generating'
-    : (isSplit && !isFirstPart ? 'capture' : 'intro');
+  // Every photo part (including split parts 2+) starts on intro so the disclaimer
+  // and mission list are shown before capture.
+  const initialPhase: Phase = isVideoPart ? 'generating' : 'intro';
   const [phase, setPhase] = useState<Phase>(initialPhase);
   const [currentMission, setCurrentMission] = useState(0);
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
