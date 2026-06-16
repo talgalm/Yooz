@@ -12,6 +12,7 @@ import type {
   AnomalyAlert,
   AuditLogEntry,
   ActivityPeriod,
+  RosterParticipant,
 } from '../pages/admin/AdminStatisticsTab/types';
 
 const selectTimeline = (response: { timeline: TimelinePoint[] }) => response.timeline;
@@ -20,6 +21,7 @@ const selectItems = (response: { items: ItemStats[] }) => response.items;
 const selectQuestions = (response: { questions: QuestionStats[] }) => response.questions;
 const selectGroups = (response: { groups: GroupStats[] }) => response.groups;
 const selectAlerts = (response: { alerts: AnomalyAlert[] }) => response.alerts;
+const selectParticipants = (response: { participants: RosterParticipant[] }) => response.participants;
 const selectAuditLog = (response: { logs: AuditLogEntry[]; total: number; page: number; totalPages: number }) => ({
   entries: response.logs,
   total: response.total,
@@ -171,6 +173,26 @@ export async function createShareLink(activityId: string): Promise<string> {
 
 export async function revokeShareLink(activityId: string): Promise<void> {
   await adminApiFetch(`/api/admin/analytics/activities/${activityId}/share`, { method: 'DELETE' });
+}
+
+// ── Participants roster + exclusions (admin only) ──
+
+export function useParticipantsRoster(activityId: string | null) {
+  // NOTE: selector MUST be a stable module-level reference — an inline arrow makes
+  // useApiFetch's useCallback([url, select]) change every render and, because this
+  // returns a fresh array each fetch, loops forever.
+  return useApiFetch<{ participants: RosterParticipant[] }, RosterParticipant[]>(
+    activityId ? `/api/admin/analytics/activities/${activityId}/participants` : null,
+    selectParticipants,
+  );
+}
+
+export async function saveExclusions(activityId: string, excludedReportIds: string[]): Promise<string[]> {
+  const res = await adminApiFetch<{ excludedReportIds: string[] }>(
+    `/api/admin/analytics/activities/${activityId}/participants/exclusions`,
+    { method: 'PATCH', body: JSON.stringify({ excludedReportIds }) },
+  );
+  return res.excludedReportIds;
 }
 
 // ── Export helper (triggers download) ──

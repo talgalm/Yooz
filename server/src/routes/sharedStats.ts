@@ -64,13 +64,13 @@ router.get('/:token', async (req: Request, res: Response) => {
 router.get('/:token/funnel', async (req: Request, res: Response) => {
   const activity = await resolveActivity(req, res);
   if (!activity) return;
-  res.json({ funnel: await getFunnel(String(activity._id), parsePeriod(req.query.period)) });
+  res.json({ funnel: await getFunnel(String(activity._id), parsePeriod(req.query.period), activity.excludedReportIds) });
 });
 
 router.get('/:token/items', async (req: Request, res: Response) => {
   const activity = await resolveActivity(req, res);
   if (!activity) return;
-  res.json({ items: await getItems(String(activity._id), parsePeriod(req.query.period)) });
+  res.json({ items: await getItems(String(activity._id), parsePeriod(req.query.period), activity.excludedReportIds) });
 });
 
 router.get('/:token/items/:index/questions', async (req: Request, res: Response) => {
@@ -81,19 +81,19 @@ router.get('/:token/items/:index/questions', async (req: Request, res: Response)
     res.status(400).json({ error: 'Invalid item index' });
     return;
   }
-  res.json({ questions: await getQuestions(String(activity._id), itemIndex, parsePeriod(req.query.period)) });
+  res.json({ questions: await getQuestions(String(activity._id), itemIndex, parsePeriod(req.query.period), activity.excludedReportIds) });
 });
 
 router.get('/:token/groups', async (req: Request, res: Response) => {
   const activity = await resolveActivity(req, res);
   if (!activity) return;
-  res.json({ groups: await getGroups(String(activity._id), parsePeriod(req.query.period)) });
+  res.json({ groups: await getGroups(String(activity._id), parsePeriod(req.query.period), activity.excludedReportIds) });
 });
 
 router.get('/:token/anomalies', async (req: Request, res: Response) => {
   const activity = await resolveActivity(req, res);
   if (!activity) return;
-  res.json({ alerts: await getAnomalies(String(activity._id), parsePeriod(req.query.period)) });
+  res.json({ alerts: await getAnomalies(String(activity._id), parsePeriod(req.query.period), activity.excludedReportIds) });
 });
 
 router.get('/:token/export', async (req: Request, res: Response) => {
@@ -108,7 +108,7 @@ router.get('/:token/export', async (req: Request, res: Response) => {
   }
 
   const period = parsePeriod(req.query.period);
-  const reports = await getExportReports(String(activity._id), period);
+  const reports = await getExportReports(String(activity._id), period, activity.excludedReportIds);
   const buffer = await buildAnalyticsWorkbookBuffer(activity as unknown as ExportActivity, reports as ExportReport[], exportType);
 
   const safeName = activity.name.replace(/[^a-zA-Z0-9\u0590-\u05FF]/g, '_');

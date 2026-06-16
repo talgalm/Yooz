@@ -14,6 +14,7 @@ import {
   resolvePassThreshold,
   maxScoreForReport,
   normalizeScore,
+  resolveCeiling,
 } from '../utils/scoreNormalization';
 import {
   getActivityAnalytics,
@@ -227,7 +228,7 @@ router.get('/activities/:id/funnel', async (req: Request<{ id: string }>, res: R
     return;
   }
 
-  res.json({ funnel: await getFunnel(activityId, analyticsPeriod(req)) });
+  res.json({ funnel: await getFunnel(activityId, analyticsPeriod(req), activity.excludedReportIds) });
 });
 
 // ─── Per-Item Stats ───
@@ -245,7 +246,7 @@ router.get('/activities/:id/items', async (req: Request<{ id: string }>, res: Re
     return;
   }
 
-  res.json({ items: await getItems(activityId, analyticsPeriod(req)) });
+  res.json({ items: await getItems(activityId, analyticsPeriod(req), activity.excludedReportIds) });
 });
 
 // ─── Per-Question Stats (for question-based games) ───
@@ -265,7 +266,7 @@ router.get('/activities/:id/items/:index/questions', async (req: Request<{ id: s
     return;
   }
 
-  res.json({ questions: await getQuestions(activityId, itemIndex, analyticsPeriod(req)) });
+  res.json({ questions: await getQuestions(activityId, itemIndex, analyticsPeriod(req), activity.excludedReportIds) });
 });
 
 // ─── Group Comparison ───
@@ -283,7 +284,7 @@ router.get('/activities/:id/groups', async (req: Request<{ id: string }>, res: R
     return;
   }
 
-  res.json({ groups: await getGroups(activityId, analyticsPeriod(req)) });
+  res.json({ groups: await getGroups(activityId, analyticsPeriod(req), activity.excludedReportIds) });
 });
 
 // ─── Anomaly Detection ───
@@ -301,7 +302,7 @@ router.get('/activities/:id/anomalies', async (req: Request<{ id: string }>, res
     return;
   }
 
-  res.json({ alerts: await getAnomalies(activityId, analyticsPeriod(req)) });
+  res.json({ alerts: await getAnomalies(activityId, analyticsPeriod(req), activity.excludedReportIds) });
 });
 
 // ════════════════════════════════════════════
@@ -341,8 +342,79 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
   }
 
   const reportFilter = await reportMatchForRequest(req, activityReportMatch(activityId, req));
+  if (activity.excludedReportIds && activity.excludedReportIds.length > 0) {
+    reportFilter._id = { $nin: activity.excludedReportIds.map((id) => new Types.ObjectId(id)) };
+  }
   const reports = await Report.find(reportFilter).lean();
   await sendWorkbook(activity as ExportActivity, reports as ExportReport[], `${exportType}_${analyticsPeriod(req)}`);
+});
+
+// ════════════════════════════════════════════
+// ─── Participants roster + exclusions ───
+// ════════════════════════════════════════════
+
+// Full roster (NOT exclusion-filtered, so excluded rows remain toggleable).
+router.get('/activities/:id/participants', async (req: Request<{ id: string }>, res: Response) => {
+  const activityId = req.params.id;
+  if (!Types.ObjectId.isValid(activityId)) {
+    res.status(400).json({ error: 'Invalid activity ID' });
+    return;
+  }
+  const activity = await Activity.findById(activityId, { excludedReportIds: 1, createdByEmail: 1 }).lean();
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  const reports = await Report.find(
+    { activityId: new Types.ObjectId(activityId) },
+    {
+      participantName: 1, group: 1, completionStatus: 1, joinedAt: 1,
+      'data.totalScore': 1, 'data.itemResults.itemIndex': 1, 'data.itemResults.maxPossibleScore': 1,
+    },
+  ).sort({ joinedAt: -1 }).lean();
+
+  // Normalize to the same 0-100 scale the panels use.
+  const rawScores = reports.map((r) => (r.data as { totalScore?: number })?.totalScore ?? 0).filter((s) => s > 0);
+  const ceiling = resolveCeiling(reports, rawScores);
+  const excluded = new Set((activity.excludedReportIds ?? []).map((id) => String(id)));
+
+  res.json({
+    participants: reports.map((r) => ({
+      _id: String(r._id),
+      name: r.participantName || '',
+      group: r.group,
+      status: r.completionStatus ?? 'joined',
+      score: normalizeScore((r.data as { totalScore?: number })?.totalScore ?? 0, ceiling),
+      joinedAt: r.joinedAt ? new Date(r.joinedAt).toISOString() : '',
+      excluded: excluded.has(String(r._id)),
+    })),
+  });
+});
+
+// Replace the full set of excluded report ids for this activity.
+router.patch('/activities/:id/participants/exclusions', async (req: Request<{ id: string }>, res: Response) => {
+  const activityId = req.params.id;
+  if (!Types.ObjectId.isValid(activityId)) {
+    res.status(400).json({ error: 'Invalid activity ID' });
+    return;
+  }
+  const activity = await Activity.findById(activityId);
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  if (isCustomerRole(req) && activity.customerEditLocked) {
+    res.status(403).json({ error: 'Activity is locked for customer edits' });
+    return;
+  }
+  const incoming: unknown[] = Array.isArray(req.body?.excludedReportIds) ? req.body.excludedReportIds : [];
+  const ids = [...new Set(
+    incoming.filter((id): id is string => typeof id === 'string' && Types.ObjectId.isValid(id)),
+  )].map((id) => new Types.ObjectId(id));
+  activity.excludedReportIds = ids;
+  await activity.save();
+  res.json({ excludedReportIds: ids.map((id) => String(id)) });
 });
 
 // ─── Pass grade (normalized 0-100 threshold for pass/fail in reports) ───

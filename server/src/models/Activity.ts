@@ -116,6 +116,9 @@ export interface IActivity {
   /** Unguessable token for a public, read-only statistics share link.
    *  null/undefined = no active share link. */
   statsShareToken?: string | null;
+  /** Report `_id`s excluded from all statistics, exports and the public share
+   *  link. Non-destructive and reversible — the reports themselves are kept. */
+  excludedReportIds?: Types.ObjectId[];
   /** Share button analytics */
   shareClicks?: number;
   shareCompleted?: number;
@@ -238,6 +241,7 @@ const activitySchema = new Schema<IActivity>({
   roadmapTimerMinutes: { type: Number },
   passThreshold: { type: Number, default: 70 }, // null = no pass grade; range validated in code
   statsShareToken: { type: String, default: null, index: true, sparse: true },
+  excludedReportIds: { type: [Schema.Types.ObjectId], default: [] },
   shareClicks: { type: Number, default: 0 },
   shareCompleted: { type: Number, default: 0 },
   missionPuzzleCompletions: { type: Number, default: 0 },

@@ -113,6 +113,17 @@ export const texts = {
     downloading: 'Downloading...',
     exportFailed: 'Export failed. Please try again.',
 
+    // Participants roster
+    participantsTab: 'Participants',
+    included: 'In stats',
+    excludeFromStats: 'Include in statistics',
+    excludedCount: 'Excluded: {count}',
+    includeAll: 'Include all',
+    searchParticipants: 'Search by name or group…',
+    noParticipants: 'No participants yet',
+    excludeHint: 'Unchecked players are removed from all statistics — the dashboard panels, the Excel exports, and the public share link. Reversible at any time.',
+    exclusionSaveFailed: 'Could not save the change. Please try again.',
+
     // Pass grade
     passGrade: 'Pass grade',
     passGradeDesc: 'Participants whose normalized score (0-100) is at or above this value count as passing in reports and statistics. Choose None to skip pass/fail entirely.',
@@ -273,6 +284,17 @@ export const texts = {
     exportProgressDescription: 'התקדמות, צווארי בקבוק ומי דורש טיפול',
     downloading: 'מוריד...',
     exportFailed: 'הייצוא נכשל. נסה שוב.',
+
+    // Participants roster
+    participantsTab: 'משתתפים',
+    included: 'בסטטיסטיקה',
+    excludeFromStats: 'כלול בסטטיסטיקה',
+    excludedCount: 'מוחרגים: {count}',
+    includeAll: 'כלול את כולם',
+    searchParticipants: 'חיפוש לפי שם או קבוצה…',
+    noParticipants: 'אין עדיין משתתפים',
+    excludeHint: 'שחקנים שאינם מסומנים מוסרים מכל הסטטיסטיקות — מהפאנלים בלוח הבקרה, מקובצי האקסל ומקישור השיתוף הציבורי. ניתן לבטל בכל רגע.',
+    exclusionSaveFailed: 'לא ניתן לשמור את השינוי. נסה שוב.',
 
     // Pass grade
     passGrade: 'ציון מעבר',

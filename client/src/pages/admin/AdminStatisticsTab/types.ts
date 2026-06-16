@@ -143,5 +143,15 @@ export interface AuditLogEntry {
   createdAt: string;
 }
 
+export interface RosterParticipant {
+  _id: string;
+  name: string;
+  group?: string;
+  status: 'joined' | 'in_progress' | 'completed';
+  score: number;
+  joinedAt: string;
+  excluded: boolean;
+}
+
 export type StatisticsView = 'overview' | 'activity' | 'audit';
-export type ActivitySubTab = 'overview' | 'funnel' | 'items' | 'groups' | 'export';
+export type ActivitySubTab = 'overview' | 'funnel' | 'items' | 'groups' | 'participants' | 'export';

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -80,6 +80,7 @@ import {
 import FunnelChart from './FunnelChart';
 import ItemAnalyticsTable from './ItemAnalyticsTable';
 import GroupComparison from './GroupComparison';
+import ParticipantsRoster from './ParticipantsRoster';
 import ExportSection from './ExportSection';
 import AdminReportChat from '../../../components/AdminReportChat';
 
@@ -211,12 +212,34 @@ export default function ActivityAnalytics({ activityId }: Props) {
   const formatDuration = (ms?: number | null) => formatDurationLoc(ms, lang);
   const [subTab, setSubTab] = useState<ActivitySubTab>('overview');
   const [period, setPeriod] = useState<ActivityPeriod>('year');
+  const [exclusionsDirty, setExclusionsDirty] = useState(false);
 
   const analyticsQuery = useActivityAnalytics(activityId, period);
   const anomaliesQuery = useAnomalies(activityId, period);
   const funnelQuery = useFunnel(activityId, period);
   const itemsQuery = useItemStats(activityId, period);
   const groupsQuery = useGroupStats(activityId, period);
+
+  // Always-mounted overview queries; refetch them after exclusions change so the
+  // panels reflect the new participant set (other sub-tabs refetch on mount).
+  const refetchPanels = () => {
+    analyticsQuery.refetch();
+    anomaliesQuery.refetch();
+    funnelQuery.refetch();
+    itemsQuery.refetch();
+    groupsQuery.refetch();
+  };
+
+  // Refresh the always-mounted overview panels the next time they're actually
+  // shown after exclusions changed — not on every checkbox click, and without
+  // tearing down the roster. (Funnel/Items/Groups refetch on their own mount.)
+  useEffect(() => {
+    if (subTab === 'overview' && exclusionsDirty) {
+      refetchPanels();
+      setExclusionsDirty(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subTab, exclusionsDirty]);
 
   const analytics = analyticsQuery.data;
   const anomalies = anomaliesQuery.data ?? [];
@@ -238,6 +261,9 @@ export default function ActivityAnalytics({ activityId }: Props) {
     { key: 'funnel', label: t.funnelTab },
     { key: 'items', label: t.itemsTab },
     { key: 'groups', label: t.groupsTab },
+    // Roster + exclusions are an admin-only management surface — hidden in the
+    // read-only public share view.
+    ...(shared ? [] : [{ key: 'participants' as ActivitySubTab, label: t.participantsTab }]),
     { key: 'export', label: t.exportTab },
   ];
   const periodOptions: { key: ActivityPeriod; label: string }[] = [
@@ -247,7 +273,9 @@ export default function ActivityAnalytics({ activityId }: Props) {
     { key: 'year', label: t.periodYear },
   ];
 
-  if (loading) {
+  // Only blank the page on the very first load — keep showing current data while a
+  // background refetch (period switch, exclusion refresh) is in flight.
+  if (loading && !analytics) {
     return <EmptyState>{t.loading}</EmptyState>;
   }
 
@@ -610,6 +638,10 @@ export default function ActivityAnalytics({ activityId }: Props) {
 
       {subTab === 'groups' && (
         <GroupComparison activityId={activityId} period={period} />
+      )}
+
+      {subTab === 'participants' && !shared && (
+        <ParticipantsRoster activityId={activityId} onExclusionsChanged={() => setExclusionsDirty(true)} />
       )}
 
       {subTab === 'export' && <ExportSection activityId={activityId} period={period} />}

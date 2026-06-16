@@ -40,11 +40,21 @@ export function periodStart(period: AnalyticsPeriod): Date {
   return new Date(now.getFullYear(), 0, 1);
 }
 
-function reportMatch(activityId: string | Types.ObjectId, period: AnalyticsPeriod): Record<string, unknown> {
-  return {
+export type ExcludeIds = (string | Types.ObjectId)[] | undefined;
+
+function reportMatch(
+  activityId: string | Types.ObjectId,
+  period: AnalyticsPeriod,
+  excludeIds?: ExcludeIds,
+): Record<string, unknown> {
+  const match: Record<string, unknown> = {
     activityId: new Types.ObjectId(activityId),
     joinedAt: { $gte: periodStart(period) },
   };
+  if (excludeIds && excludeIds.length > 0) {
+    match._id = { $nin: excludeIds.map((id) => new Types.ObjectId(id)) };
+  }
+  return match;
 }
 
 function median(arr: number[]): number {
@@ -66,14 +76,17 @@ export interface AnalyticsActivity {
   missionTrashSortScoreSum?: number;
   shareClicks?: number;
   shareCompleted?: number;
+  /** Report `_id`s to drop from every statistic (see Activity.excludedReportIds). */
+  excludedReportIds?: ExcludeIds;
 }
 
 export async function getActivityAnalytics(activity: AnalyticsActivity, period: AnalyticsPeriod) {
   const activityId = String(activity._id);
   const isMission = activity.module?.type === 'mission';
+  const excludeIds = activity.excludedReportIds;
 
   const reports = await Report.find(
-    reportMatch(activityId, period),
+    reportMatch(activityId, period, excludeIds),
     {
       participantName: 1, email: 1, phoneNumber: 1, group: 1,
       joinedAt: 1, 'data.totalScore': 1, 'data.itemResults': 1, completionStatus: 1,
@@ -208,9 +221,9 @@ export async function getActivityAnalytics(activity: AnalyticsActivity, period: 
   };
 }
 
-export async function getFunnel(activityId: string | Types.ObjectId, period: AnalyticsPeriod) {
+export async function getFunnel(activityId: string | Types.ObjectId, period: AnalyticsPeriod, excludeIds?: ExcludeIds) {
   const reports = await Report.find(
-    reportMatch(activityId, period),
+    reportMatch(activityId, period, excludeIds),
     { completionStatus: 1, totalItemsCompleted: 1, totalItemsInModule: 1 },
   ).lean();
 
@@ -230,9 +243,9 @@ export async function getFunnel(activityId: string | Types.ObjectId, period: Ana
   ];
 }
 
-export async function getItems(activityId: string | Types.ObjectId, period: AnalyticsPeriod) {
+export async function getItems(activityId: string | Types.ObjectId, period: AnalyticsPeriod, excludeIds?: ExcludeIds) {
   const pipeline = await Report.aggregate([
-    { $match: { ...reportMatch(activityId, period), 'data.itemResults': { $exists: true } } },
+    { $match: { ...reportMatch(activityId, period, excludeIds), 'data.itemResults': { $exists: true } } },
     { $unwind: '$data.itemResults' },
     {
       $group: {
@@ -265,9 +278,9 @@ export async function getItems(activityId: string | Types.ObjectId, period: Anal
   }));
 }
 
-export async function getQuestions(activityId: string | Types.ObjectId, itemIndex: number, period: AnalyticsPeriod) {
+export async function getQuestions(activityId: string | Types.ObjectId, itemIndex: number, period: AnalyticsPeriod, excludeIds?: ExcludeIds) {
   const pipeline = await Report.aggregate([
-    { $match: { ...reportMatch(activityId, period), 'data.itemResults': { $exists: true } } },
+    { $match: { ...reportMatch(activityId, period, excludeIds), 'data.itemResults': { $exists: true } } },
     { $unwind: '$data.itemResults' },
     { $match: { 'data.itemResults.itemIndex': itemIndex } },
     { $unwind: '$data.itemResults.questionAnswers' },
@@ -295,9 +308,9 @@ export async function getQuestions(activityId: string | Types.ObjectId, itemInde
   }));
 }
 
-export async function getGroups(activityId: string | Types.ObjectId, period: AnalyticsPeriod) {
+export async function getGroups(activityId: string | Types.ObjectId, period: AnalyticsPeriod, excludeIds?: ExcludeIds) {
   const pipeline = await Report.aggregate([
-    { $match: { ...reportMatch(activityId, period), group: { $exists: true, $ne: null } } },
+    { $match: { ...reportMatch(activityId, period, excludeIds), group: { $exists: true, $ne: null } } },
     {
       $group: {
         _id: '$group',
@@ -312,7 +325,7 @@ export async function getGroups(activityId: string | Types.ObjectId, period: Ana
 
   // Resolve the activity ceiling so per-group averages share the 0-100 scale.
   const ceilingReports = await Report.find(
-    { ...reportMatch(activityId, period), 'data.itemResults': { $exists: true } },
+    { ...reportMatch(activityId, period, excludeIds), 'data.itemResults': { $exists: true } },
     { 'data.itemResults.itemIndex': 1, 'data.itemResults.maxPossibleScore': 1, 'data.totalScore': 1 },
   ).lean();
   const ceilingRawScores = ceilingReports
@@ -329,9 +342,9 @@ export async function getGroups(activityId: string | Types.ObjectId, period: Ana
   }));
 }
 
-export async function getAnomalies(activityId: string | Types.ObjectId, period: AnalyticsPeriod) {
+export async function getAnomalies(activityId: string | Types.ObjectId, period: AnalyticsPeriod, excludeIds?: ExcludeIds) {
   const itemStats = await Report.aggregate([
-    { $match: { ...reportMatch(activityId, period), 'data.itemResults': { $exists: true } } },
+    { $match: { ...reportMatch(activityId, period, excludeIds), 'data.itemResults': { $exists: true } } },
     { $unwind: '$data.itemResults' },
     {
       $group: {
@@ -390,6 +403,6 @@ export async function getAnomalies(activityId: string | Types.ObjectId, period: 
 }
 
 /** Reports for the export workbook (single activity, scoped by period). */
-export async function getExportReports(activityId: string | Types.ObjectId, period: AnalyticsPeriod) {
-  return Report.find(reportMatch(activityId, period)).lean();
+export async function getExportReports(activityId: string | Types.ObjectId, period: AnalyticsPeriod, excludeIds?: ExcludeIds) {
+  return Report.find(reportMatch(activityId, period, excludeIds)).lean();
 }

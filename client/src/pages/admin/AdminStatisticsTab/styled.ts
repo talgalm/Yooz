@@ -800,6 +800,49 @@ export const ShareUrlInput = styled('input')({
   textOverflow: 'ellipsis',
 });
 
+// ─── Participants roster ───
+
+export const RosterSearchInput = styled('input')({
+  width: '100%',
+  height: 38,
+  boxSizing: 'border-box',
+  border: `1px solid ${BORDER}`,
+  borderRadius: 8,
+  padding: '0 12px',
+  fontSize: 14,
+  fontFamily: 'inherit',
+  color: TEXT_DARK,
+  background: '#f7f8fa',
+  '&:focus': {
+    outline: 'none',
+    borderColor: PRIMARY,
+    background: '#fff',
+  },
+});
+
+export const RosterCheckbox = styled('input')({
+  width: 18,
+  height: 18,
+  cursor: 'pointer',
+  accentColor: PRIMARY,
+});
+
+export const RosterToolbar = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  flexWrap: 'wrap',
+  marginBottom: 12,
+});
+
+export const RosterActions = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  flexWrap: 'wrap',
+});
+
 // ─── Badge/Tag ───
 
 export const ImprovementBadge = styled('span')({
