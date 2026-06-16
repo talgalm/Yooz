@@ -91,11 +91,11 @@ interface Props {
 
 type Tone = 'green' | 'blue' | 'amber' | 'red';
 
-function formatDateTime(value: string) {
+function formatDateTime(value: string, lang: string) {
   if (!value) return '-';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -429,25 +429,21 @@ export default function ActivityAnalytics({ activityId }: Props) {
               </StatusLegend>
               {funnel.length > 0 && (
                 <InsightList>
-                  {funnel.map((step, index) => {
-                    const previous = index > 0 ? funnel[index - 1].count : step.count;
-                    const drop = previous > 0 ? Math.max(0, Math.round(((previous - step.count) / previous) * 100)) : 0;
-                    return (
-                      <InsightItem key={step.step}>
-                        <InsightMain>
-                          <InsightTitle>{funnelLabels[step.step] || step.step}</InsightTitle>
-                          <ProgressTrack>
-                            <ProgressFill pct={step.pct} tone={percentTone(step.pct)} />
-                          </ProgressTrack>
-                        </InsightMain>
-                        <ValueBadge tone={percentTone(step.pct)}>
-                          <NumberRun>
-                            {step.count} / {step.pct}%{drop > 0 ? ` -${drop}%` : ''}
-                          </NumberRun>
-                        </ValueBadge>
-                      </InsightItem>
-                    );
-                  })}
+                  {funnel.map((step) => (
+                    <InsightItem key={step.step}>
+                      <InsightMain>
+                        <InsightTitle>{funnelLabels[step.step] || step.step}</InsightTitle>
+                        <ProgressTrack>
+                          <ProgressFill pct={step.pct} tone={percentTone(step.pct)} />
+                        </ProgressTrack>
+                      </InsightMain>
+                      <ValueBadge tone={percentTone(step.pct)}>
+                        <NumberRun>
+                          {step.count} / {step.pct}%
+                        </NumberRun>
+                      </ValueBadge>
+                    </InsightItem>
+                  ))}
                 </InsightList>
               )}
             </StatusStack>
@@ -490,7 +486,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
                           </ProgressTrack>
                         </div>
                         <InsightMeta>
-                          {t.avgItemScore}: {Math.round(item.avgScore)}/{Math.round(item.avgMaxScore)} / {t.hintUsage}: {Math.round(item.hintUsagePct)}%
+                          {t.avgItemScore}: {Math.round(item.scoreRate)} / {t.hintUsage}: {Math.round(item.hintUsagePct)}%
                         </InsightMeta>
                         <ValueBadge tone={tone}>
                           {tone === 'red' || tone === 'amber' ? t.attention : t.healthy}
@@ -565,7 +561,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
                     <InsightMain>
                       <InsightTitle>{participant.name}</InsightTitle>
                       <InsightMeta>
-                        {participant.group || '-'} / {formatDateTime(participant.joinedAt)}
+                        {participant.group || '-'} / {formatDateTime(participant.joinedAt, lang)}
                       </InsightMeta>
                     </InsightMain>
                     <ValueBadge tone={percentTone(participant.progressPct)}>
