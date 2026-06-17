@@ -965,16 +965,23 @@ export default function StoryModulePage() {
     window.dispatchEvent(new CustomEvent('yooz:ballgame-audio-toggle'));
   }, []);
 
-  const getStationHint = (item: ModuleItemData): { text: string; imageUrl: string } | null => {
+  const getStationHint = (item: ModuleItemData): { text: string; imageUrl: string; free: boolean } | null => {
     if (item.type !== 'station') return null;
     const station = item as StationItemData;
     if (['feedback', 'avatar'].includes(station.stationType)) return null;
-    const hint = item.settings?.hint as { enabled?: boolean; text?: string; imageUrl?: string } | undefined;
+    const hint = item.settings?.hint as { enabled?: boolean; text?: string; imageUrl?: string; free?: boolean } | undefined;
     if (!hint?.enabled || (!hint.text && !hint.imageUrl)) return null;
-    return { text: hint.text || '', imageUrl: hint.imageUrl || '' };
+    return { text: hint.text || '', imageUrl: hint.imageUrl || '', free: !!hint.free };
   };
 
   const handleStationHintClick = () => {
+    // Free hints skip the cost warning and never enter `stationHintUsed`, so no
+    // point/time penalty is applied — clicking just reveals the clue.
+    const hint = data ? getStationHint(data.module.items[currentItemIndex]) : null;
+    if (hint?.free) {
+      setShowStationHintText(true);
+      return;
+    }
     if (stationHintUsed.has(currentItemIndex)) {
       setShowStationHintText(true);
       return;

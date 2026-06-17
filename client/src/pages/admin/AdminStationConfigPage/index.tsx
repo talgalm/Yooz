@@ -129,6 +129,7 @@ export default function AdminStationConfigPage() {
   const [hintEnabled, setHintEnabled] = useState(false);
   const [hintText, setHintText] = useState('');
   const [hintImageUrl, setHintImageUrl] = useState('');
+  const [hintFree, setHintFree] = useState(false);
 
   // Text station
   const [textContent, setTextContent] = useState('');
@@ -221,6 +222,7 @@ export default function AdminStationConfigPage() {
           setHintEnabled(!!h.enabled);
           setHintText((h.text as string) || '');
           setHintImageUrl((h.imageUrl as string) || '');
+          setHintFree(!!h.free);
         }
         if (settings.content) setTextContent(settings.content as string);
         if (settings.mediaUrl) setMediaUrl(settings.mediaUrl as string);
@@ -333,6 +335,7 @@ export default function AdminStationConfigPage() {
       setHintEnabled(!!h.enabled);
       setHintText((h.text as string) || '');
       setHintImageUrl((h.imageUrl as string) || '');
+      setHintFree(!!h.free);
     }
     if (settings.content) setTextContent(settings.content as string);
     if (settings.mediaUrl) setMediaUrl(settings.mediaUrl as string);
@@ -432,7 +435,7 @@ export default function AdminStationConfigPage() {
       const settings: Record<string, unknown> = {};
       const allowStationHint = !stationTypesWithoutHint.includes(stationType);
       if (allowStationHint && hintEnabled && (hintText.trim() || hintImageUrl.trim())) {
-        settings.hint = { enabled: true, text: hintText.trim(), imageUrl: hintImageUrl.trim() || undefined };
+        settings.hint = { enabled: true, text: hintText.trim(), imageUrl: hintImageUrl.trim() || undefined, free: hintFree || undefined };
       }
       if (stationType === 'text') {
         settings.content = textContent.trim();
@@ -590,6 +593,7 @@ export default function AdminStationConfigPage() {
     setHintEnabled(supportsHint);
     setHintText(supportsHint ? 'זהו רמז לדוגמה' : '');
     setHintImageUrl('');
+    setHintFree(false);
     setTextContent('');
     setMediaUrl('');
     setCollageHeader('');
@@ -843,6 +847,16 @@ export default function AdminStationConfigPage() {
                             </SmallOutlineButton>
                           </div>
                         )}
+                        <HintToggleRow>
+                          <SectionLabelNoMargin>{t.hintFreeLabel}</SectionLabelNoMargin>
+                          <ToggleButton
+                            type="button"
+                            selected={hintFree}
+                            onClick={() => setHintFree((v) => !v)}
+                          >
+                            {hintFree ? 'ON' : 'OFF'}
+                          </ToggleButton>
+                        </HintToggleRow>
                       </VerticalStack>
                     )}
                   </div>

@@ -792,9 +792,9 @@ export default function PlayingPhase({
               {renderContent()}
             </StationStage>
           </PlayingContent>
+          {stationClueButton}
         </AnimatedContent>
       </AnimatedStage>
-      {stationClueButton}
       {hintModals}
     </ThemedBackground>
   );
