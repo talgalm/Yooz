@@ -1157,7 +1157,6 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         <GeneratingWrap>
           <GeneratingCard>
             <GeneratingIntro>הופכים את התמונות שלכם לסרטון מדהים... זה יקח כמה דקות</GeneratingIntro>
-            {disclaimer && <CompactDisclaimer style={{ marginBottom: 14 }}>{disclaimer}</CompactDisclaimer>}
             <LoadingGif src="/images/camera-loading.gif" alt="" />
             <ProgressTrack><ProgressFill pct={progress} /></ProgressTrack>
             <ProgressLabel>יוצר קולאז׳... {progress}%</ProgressLabel>
