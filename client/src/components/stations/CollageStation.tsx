@@ -133,6 +133,21 @@ const DisclaimerCard = styled('div')({
   whiteSpace: 'pre-line',
 });
 
+const CompactDisclaimer = styled('div')({
+  alignSelf: 'stretch',
+  background: 'rgba(255,255,255,0.14)',
+  color: '#fff',
+  border: '1px solid rgba(255,255,255,0.26)',
+  borderRadius: 12,
+  padding: '8px 10px',
+  margin: '0 0 10px',
+  textAlign: 'center',
+  fontWeight: 700,
+  fontSize: 13,
+  lineHeight: 1.4,
+  whiteSpace: 'pre-line',
+});
+
 const PartBadge = styled('div')({
   textAlign: 'center',
   fontSize: 14,
@@ -184,10 +199,9 @@ const Dot = styled('div')<{ active?: boolean; done?: boolean }>(({ active, done 
 }));
 
 const CaptureArea = styled('div')({
-  width: '100%',
-  flex: '1 1 auto',
-  minHeight: 0,
-  maxHeight: 'min(36dvh, 200px)',
+  width: 'min(100%, 280px)',
+  aspectRatio: '3 / 4',
+  flex: '0 0 auto',
   background: 'rgba(0,0,0,0.45)',
   border: '2px dashed rgba(255,255,255,0.18)',
   borderRadius: 14,
@@ -198,14 +212,9 @@ const CaptureArea = styled('div')({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  // Desktop: stop the preview area from filling the entire viewport (QA
-  // Jun 2026 page 4 — "way too big"). Fix it to a portrait photo frame
-  // and let CaptureLayout center it vertically.
+  // Keep the capture frame portrait on all screens.
   '@media (min-width: 768px)': {
-    flex: '0 0 auto',
-    aspectRatio: '3 / 4',
     width: 'min(380px, 60vw)',
-    maxHeight: 'min(60vh, 480px)',
     margin: '12px auto 16px',
   },
 });
@@ -903,6 +912,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             <SubText style={{ margin: '0 0 10px', fontSize: 16, color: 'rgba(255,255,255,0.85)' }}>
               נבחרו {photos.length} מתוך {partMultiSelectCount}
             </SubText>
+            {disclaimer && <CompactDisclaimer>{disclaimer}</CompactDisclaimer>}
           </CaptureHeader>
 
           {photos.length > 0 && (
@@ -990,6 +1000,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
                 {mission.description}
               </SubText>
             )}
+            {disclaimer && <CompactDisclaimer>{disclaimer}</CompactDisclaimer>}
             <ProgressDots>
               {missions.map((_, i) => (
                 <Dot key={i}
@@ -1051,6 +1062,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
           <TopLabel>תחנת קולאז׳</TopLabel>
           <BigTitle>יש לנו {photos.length} תמונות 🎉</BigTitle>
           <SubText>תוכלו ליצור סרטון מהתמונות בהמשך הפעילות!</SubText>
+          {disclaimer && <CompactDisclaimer>{disclaimer}</CompactDisclaimer>}
 
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.48)', marginBottom: 6 }}>כותרת לסרטון (אופציונלי)</p>
           <TitleInput value={collageTitle} onChange={(e) => setCollageTitle(e.target.value)} placeholder="הרגעים שלנו יחד" dir="rtl" />
@@ -1075,7 +1087,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
           {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: 13, margin: '8px 0' }}>{error}</p>}
 
-          <PrimaryBtn onClick={generateCollage} style={{ marginTop: 12 }}>יצירת סרטון קולאז׳ 🎬</PrimaryBtn>
+          <PrimaryBtn onClick={() => void generateCollage()} style={{ marginTop: 12 }}>יצירת סרטון קולאז׳ 🎬</PrimaryBtn>
           {!isSplit && (
             <OutlineBtn onClick={() => { setPhase('capture'); setCurrentMission(missions.length - 1); }}>חזרה לצילום</OutlineBtn>
           )}
@@ -1093,6 +1105,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         <GeneratingWrap>
           <GeneratingCard>
             <GeneratingIntro>הופכים את התמונות שלכם לסרטון מדהים... זה יקח כמה דקות</GeneratingIntro>
+            {disclaimer && <CompactDisclaimer style={{ marginBottom: 14 }}>{disclaimer}</CompactDisclaimer>}
             <LoadingGif src="/images/camera-loading.gif" alt="" />
             <ProgressTrack><ProgressFill pct={progress} /></ProgressTrack>
             <ProgressLabel>יוצר קולאז׳... {progress}%</ProgressLabel>
@@ -1118,6 +1131,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         <Content>
           <TopLabel>תחנת קולאז׳</TopLabel>
           <BigTitle>הסרטון מוכן! 🎉</BigTitle>
+          {disclaimer && <CompactDisclaimer>{disclaimer}</CompactDisclaimer>}
 
           <VideoWrap>
             {resultIsVideo

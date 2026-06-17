@@ -274,7 +274,7 @@ const BalloonWobbleWrap = styled('div')<{ wobbleDuration: number }>(({ wobbleDur
 
 const BalloonSvg = ({ size }: { size: number }) => (
   <img
-    src="/images/baloon.svg"
+    src="/images/roadmap-balloon.png"
     alt=""
     aria-hidden
     style={{
