@@ -26,9 +26,7 @@ import {
   ModalOverlay,
   ModalCard,
   DarkHeaderActionIconButton,
-  DarkHeaderTextButton,
   PuzzleDarkHeaderActionIconButton,
-  PuzzleDarkHeaderTextButton,
 } from '../../components/styled';
 import {
   PlayingContent,
@@ -211,6 +209,55 @@ const FixedContinueButton = styled(StationContinueButton)({
   },
 });
 
+/** Floating clue button (lightbulb) for info/media stations — sits in the
+ *  bottom-left corner, clear of the centered Continue button. */
+/** Clue button (lightbulb + label) for info/media stations. Sits centered in
+ *  the lower-middle of the station, above the centered Continue button. */
+const StationClueButton = styled('button')({
+  position: 'fixed',
+  bottom: 96,
+  left: '50%',
+  transform: 'translateX(-50%)',
+  zIndex: 41,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '11px 22px',
+  borderRadius: 999,
+  border: '2px solid #5143c6',
+  background: 'linear-gradient(135deg, #8276f2 0%, #6c5ce7 100%)',
+  color: '#fff',
+  fontFamily: 'inherit',
+  fontSize: 15,
+  fontWeight: 700,
+  lineHeight: 1.2,
+  cursor: 'pointer',
+  boxShadow: '0 4px 14px rgba(108, 92, 231, 0.4)',
+  WebkitTapHighlightColor: 'transparent',
+  transition: 'box-shadow 0.15s ease, background 0.15s ease',
+  '&:hover': {
+    background: 'linear-gradient(135deg, #8e83f5 0%, #5f4fe0 100%)',
+  },
+  '&:active': {
+    transform: 'translateX(-50%) translateY(2px)',
+    boxShadow: '0 2px 8px rgba(108, 92, 231, 0.35)',
+  },
+  [DESKTOP_BREAKPOINT]: {
+    bottom: 108,
+  },
+});
+
+function ClueLightbulbIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="#fff"
+        d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"
+      />
+    </svg>
+  );
+}
+
 function StationHeaderBlock({
   title,
   description,
@@ -364,7 +411,6 @@ export default function PlayingPhase({
   const useDarkChrome = isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation;
   const headerIconColor = getHeaderIconColor(theme, customTheme);
   const SessionHeaderIconButton = useDarkChrome ? PuzzleDarkHeaderActionIconButton : DarkHeaderActionIconButton;
-  const SessionHintButton = useDarkChrome ? PuzzleDarkHeaderTextButton : DarkHeaderTextButton;
   useActivityGameHeaderFallbackWhenNeeded(isGameStep, currentItem._id);
   const showMusicInGameSlot = isGameStep && activityHeaderSlot != null;
   const showStandaloneLeaderboard =
@@ -655,13 +701,18 @@ export default function PlayingPhase({
       leaderboardMode={leaderboardMode}
       elapsedSeconds={elapsedSeconds}
       activityDurationMinutes={activityDurationMinutes}
-      topRow={(stationHintText || stationHintImageUrl) && !isRiddleStation && !isEnteringTextStation ? (
-        <SessionHintButton type="button" onClick={onStationHintClick}>
-          {stationHintUsed ? t.showStationHint : t.stationHint}
-        </SessionHintButton>
-      ) : undefined}
     />
   );
+
+  // Floating clue button for info/media stations (text, video, image, narrative,
+  // badge). Riddle/enteringText render their own clue UI, so they're excluded.
+  const stationClueButton =
+    (stationHintText || stationHintImageUrl) && !isRiddleStation && !isEnteringTextStation ? (
+      <StationClueButton type="button" onClick={onStationHintClick}>
+        <ClueLightbulbIcon />
+        {stationHintUsed ? t.showStationHint : t.stationHint}
+      </StationClueButton>
+    ) : null;
 
   const hintModals = (
     <>
@@ -748,6 +799,7 @@ export default function PlayingPhase({
           </PlayingContent>
         </AnimatedContent>
       </AnimatedStage>
+      {stationClueButton}
       {hintModals}
     </ThemedBackground>
   );

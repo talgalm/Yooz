@@ -968,7 +968,7 @@ export default function StoryModulePage() {
   const getStationHint = (item: ModuleItemData): { text: string; imageUrl: string } | null => {
     if (item.type !== 'station') return null;
     const station = item as StationItemData;
-    if (['text', 'video', 'image'].includes(station.stationType)) return null;
+    if (['feedback', 'avatar'].includes(station.stationType)) return null;
     const hint = item.settings?.hint as { enabled?: boolean; text?: string; imageUrl?: string } | undefined;
     if (!hint?.enabled || (!hint.text && !hint.imageUrl)) return null;
     return { text: hint.text || '', imageUrl: hint.imageUrl || '' };
