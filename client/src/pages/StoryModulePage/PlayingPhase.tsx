@@ -415,7 +415,6 @@ export default function PlayingPhase({
   const showMusicInGameSlot = isGameStep && activityHeaderSlot != null;
   const showStandaloneLeaderboard =
     !isGameStep && Boolean(onViewLeaderboard) && !hideLeaderboardInHeader;
-  const isRiddleStation = currentItem.type === 'station' && (currentItem as StationItemData).stationType === 'riddle';
   const isEnteringTextStation = currentItem.type === 'station' && (currentItem as StationItemData).stationType === 'enteringText';
 
   const renderContent = () => {
@@ -518,11 +517,7 @@ export default function PlayingPhase({
             <RiddleStation
               station={station}
               onComplete={onGameComplete}
-              stationHintText={stationHintText}
-              stationHintUsed={stationHintUsed}
-              onStationHintClick={onStationHintClick}
               textColor={customTheme?.textColor}
-              hintLabel={stationHintUsed ? t.showStationHint : t.stationHint}
             />
           </MediaGateWrapper>
         );
@@ -707,7 +702,7 @@ export default function PlayingPhase({
   // Floating clue button for info/media stations (text, video, image, narrative,
   // badge). Riddle/enteringText render their own clue UI, so they're excluded.
   const stationClueButton =
-    (stationHintText || stationHintImageUrl) && !isRiddleStation && !isEnteringTextStation ? (
+    (stationHintText || stationHintImageUrl) && !isEnteringTextStation ? (
       <StationClueButton type="button" onClick={onStationHintClick}>
         <ClueLightbulbIcon />
         {stationHintUsed ? t.showStationHint : t.stationHint}
