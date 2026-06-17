@@ -282,6 +282,7 @@ interface PlayingPhaseProps {
   currentItem: ModuleItemData;
   currentItemIndex: number;
   stationHintText: string | null;
+  stationHintImageUrl: string | null;
   stationHintUsed: boolean;
   bgStyle: React.CSSProperties;
   theme?: string;
@@ -320,6 +321,7 @@ export default function PlayingPhase({
   currentItem,
   currentItemIndex,
   stationHintText,
+  stationHintImageUrl,
   stationHintUsed,
   bgStyle: _bgStyle,
   theme,
@@ -653,7 +655,7 @@ export default function PlayingPhase({
       leaderboardMode={leaderboardMode}
       elapsedSeconds={elapsedSeconds}
       activityDurationMinutes={activityDurationMinutes}
-      topRow={stationHintText && !isRiddleStation && !isEnteringTextStation ? (
+      topRow={(stationHintText || stationHintImageUrl) && !isRiddleStation && !isEnteringTextStation ? (
         <SessionHintButton type="button" onClick={onStationHintClick}>
           {stationHintUsed ? t.showStationHint : t.stationHint}
         </SessionHintButton>
@@ -676,11 +678,25 @@ export default function PlayingPhase({
           </ModalCard>
         </ModalOverlay>
       )}
-      {showStationHintText && stationHintText && (
+      {showStationHintText && (stationHintText || stationHintImageUrl) && (
         <ModalOverlay onClick={onCloseHintText}>
           <ModalCard onClick={(e) => e.stopPropagation()}>
             <ModalTitle sx={{ marginBottom: '8px' }}>{t.hintTitle}</ModalTitle>
-            <ModalBody>{stationHintText}</ModalBody>
+            {stationHintImageUrl && (
+              <img
+                src={stationHintImageUrl}
+                alt={t.hintTitle}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  maxHeight: 280,
+                  objectFit: 'contain',
+                  borderRadius: 12,
+                  marginBottom: stationHintText ? 12 : 16,
+                }}
+              />
+            )}
+            {stationHintText && <ModalBody>{stationHintText}</ModalBody>}
             <ModalCloseButton onClick={onCloseHintText}>
               {t.hintClose}
             </ModalCloseButton>

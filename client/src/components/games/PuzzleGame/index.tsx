@@ -833,6 +833,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
 
           <HintModals
             hintText={settings.hint?.text}
+            hintImageUrl={settings.hint?.imageUrl}
             showHintWarning={gameHint.showHintWarning}
             showHintText={gameHint.showHintText}
             onConfirm={gameHint.confirmHint}
@@ -886,7 +887,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
         )}
 
         {/* Hint button / spacer */}
-        {settings.hint?.enabled && settings.hint.text && (
+        {settings.hint?.enabled && (settings.hint.text || settings.hint.imageUrl) && (
           checked ? (
             <HintSpacer aria-hidden="true" />
           ) : (
@@ -950,6 +951,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
 
       <HintModals
         hintText={settings.hint?.text}
+        hintImageUrl={settings.hint?.imageUrl}
         showHintWarning={gameHint.showHintWarning}
         showHintText={gameHint.showHintText}
         onConfirm={gameHint.confirmHint}

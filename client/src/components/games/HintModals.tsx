@@ -6,6 +6,7 @@ import {
   ModalTitle,
   HintModalHeading,
   HintModalHintBody,
+  HintModalImage,
   HintModalBulbWrap,
 } from './styled';
 
@@ -70,6 +71,7 @@ interface HintTranslations {
 
 interface HintModalsProps {
   hintText?: string;
+  hintImageUrl?: string;
   showHintWarning: boolean;
   showHintText: boolean;
   onConfirm: () => void;
@@ -80,6 +82,7 @@ interface HintModalsProps {
 
 export default function HintModals({
   hintText,
+  hintImageUrl,
   showHintWarning,
   showHintText,
   onConfirm,
@@ -144,7 +147,8 @@ export default function HintModals({
             <HintModalBulbWrap>
               <HintLightbulbIcon />
             </HintModalBulbWrap>
-            <HintModalHintBody>{hintText}</HintModalHintBody>
+            {hintImageUrl && <HintModalImage src={hintImageUrl} alt={t.hintTitle} />}
+            {hintText && <HintModalHintBody>{hintText}</HintModalHintBody>}
             <ModalCloseButton onClick={onDismissText}>{t.hintClose}</ModalCloseButton>
           </ModalCard>
         </ModalOverlay>

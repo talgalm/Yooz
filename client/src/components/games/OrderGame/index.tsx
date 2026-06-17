@@ -594,7 +594,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
       )}
 
       {/* Hint button */}
-      {settings.hint?.enabled && settings.hint.text && !checked && (
+      {settings.hint?.enabled && (settings.hint.text || settings.hint.imageUrl) && !checked && (
         <NatureHintWrapper>
           <HintButton
             hintUsed={hint.hintUsed}
@@ -682,6 +682,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
 
       <HintModals
         hintText={settings.hint?.text}
+        hintImageUrl={settings.hint?.imageUrl}
         showHintWarning={hint.showHintWarning}
         showHintText={hint.showHintText}
         onConfirm={hint.confirmHint}

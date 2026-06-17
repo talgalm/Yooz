@@ -4,6 +4,7 @@ import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminGameConfigPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
+import FileUploadButton from '../../../components/FileUploadButton';
 import {
   AdminPage,
   AdminHeader,
@@ -81,6 +82,7 @@ export default function AdminGameConfigPage() {
   const [endButtonText, setEndButtonText] = useState('');
   const [hintEnabled, setHintEnabled] = useState(false);
   const [hintText, setHintText] = useState('');
+  const [hintImageUrl, setHintImageUrl] = useState('');
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -117,6 +119,7 @@ export default function AdminGameConfigPage() {
           const h = s.hint as Record<string, unknown>;
           setHintEnabled(!!h.enabled);
           setHintText((h.text as string) || '');
+          setHintImageUrl((h.imageUrl as string) || '');
         }
         setInitialSettings(s);
         setInitialLoading(false);
@@ -147,6 +150,7 @@ export default function AdminGameConfigPage() {
       const h = s.hint as Record<string, unknown>;
       setHintEnabled(!!h.enabled);
       setHintText((h.text as string) || '');
+      setHintImageUrl((h.imageUrl as string) || '');
     }
     setInitialSettings(s);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -180,8 +184,8 @@ export default function AdminGameConfigPage() {
 
     setLoading(true);
     try {
-      const hintConfig = hintEnabled && hintText.trim()
-        ? { hint: { enabled: true, text: hintText.trim() } }
+      const hintConfig = hintEnabled && (hintText.trim() || hintImageUrl.trim())
+        ? { hint: { enabled: true, text: hintText.trim(), imageUrl: hintImageUrl.trim() || undefined } }
         : {};
 
       const gameTypeSettings = activeRef?.current?.getSettings() ?? {};
@@ -394,11 +398,44 @@ export default function AdminGameConfigPage() {
                     </ToggleButton>
                   </HintToggleRow>
                   {hintEnabled && (
-                    <Input
-                      placeholder={t.hintPlaceholder}
-                      value={hintText}
-                      onChange={(e) => setHintText(e.target.value)}
-                    />
+                    <>
+                      <Input
+                        placeholder={t.hintPlaceholder}
+                        value={hintText}
+                        onChange={(e) => setHintText(e.target.value)}
+                      />
+                      <SectionLabel style={{ marginTop: 12 }}>{t.hintImageLabel}</SectionLabel>
+                      <InlineRowGap12>
+                        <FileUploadButton
+                          accept="image/*"
+                          onUploaded={(url) => setHintImageUrl(url)}
+                          label={t.upload}
+                          uploadingLabel={t.uploading}
+                        />
+                        <Input
+                          placeholder={t.hintImagePlaceholder}
+                          value={hintImageUrl}
+                          onChange={(e) => setHintImageUrl(e.target.value)}
+                          style={{ flex: 1 }}
+                        />
+                      </InlineRowGap12>
+                      {hintImageUrl && (
+                        <div style={{ marginTop: 8 }}>
+                          <img
+                            src={hintImageUrl}
+                            alt=""
+                            style={{ maxHeight: 120, maxWidth: '100%', borderRadius: 8, display: 'block' }}
+                          />
+                          <SmallOutlineButton
+                            type="button"
+                            onClick={() => setHintImageUrl('')}
+                            style={{ marginTop: 8 }}
+                          >
+                            {t.removeHintImage}
+                          </SmallOutlineButton>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </FormSectionCard>

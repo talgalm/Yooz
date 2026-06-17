@@ -965,12 +965,13 @@ export default function StoryModulePage() {
     window.dispatchEvent(new CustomEvent('yooz:ballgame-audio-toggle'));
   }, []);
 
-  const getStationHint = (item: ModuleItemData) => {
+  const getStationHint = (item: ModuleItemData): { text: string; imageUrl: string } | null => {
     if (item.type !== 'station') return null;
     const station = item as StationItemData;
     if (['text', 'video', 'image'].includes(station.stationType)) return null;
-    const hint = item.settings?.hint as { enabled?: boolean; text?: string } | undefined;
-    return hint?.enabled && hint.text ? hint.text : null;
+    const hint = item.settings?.hint as { enabled?: boolean; text?: string; imageUrl?: string } | undefined;
+    if (!hint?.enabled || (!hint.text && !hint.imageUrl)) return null;
+    return { text: hint.text || '', imageUrl: hint.imageUrl || '' };
   };
 
   const handleStationHintClick = () => {
@@ -1494,7 +1495,7 @@ export default function StoryModulePage() {
   const currentItem = data.module.showItemTitleNumbers
     ? { ...data.module.items[currentItemIndex], name: `${currentItemIndex + 1}. ${data.module.items[currentItemIndex].name}` }
     : data.module.items[currentItemIndex];
-  const currentItemHintText = getStationHint(currentItem);
+  const currentItemHint = getStationHint(currentItem);
   const playingTotalPoints = Math.max(
     0,
     scores.reduce((sum, s) => sum + s.score, 0) - stationHintUsed.size * stationHintPenalty,
@@ -1506,7 +1507,8 @@ export default function StoryModulePage() {
       <PlayingPhase
         currentItem={currentItem}
         currentItemIndex={currentItemIndex}
-        stationHintText={currentItemHintText}
+        stationHintText={currentItemHint?.text || null}
+        stationHintImageUrl={currentItemHint?.imageUrl || null}
         stationHintUsed={stationHintUsed.has(currentItemIndex)}
         bgStyle={bgStyle}
         theme={data.module.theme}

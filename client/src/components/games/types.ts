@@ -2,6 +2,8 @@
 export interface HintConfig {
   enabled: boolean;
   text: string;
+  /** Optional image shown alongside (or instead of) the hint text */
+  imageUrl?: string;
 }
 
 /** Per-question answer tracking for analytics */
