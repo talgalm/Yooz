@@ -664,7 +664,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
       {!question.media && <NatureMediaSpacer aria-hidden />}
 
       {/* Hint area keeps its space after checking so answers do not jump upward */}
-      {settings.hint?.enabled && settings.hint.text && (
+      {settings.hint?.enabled && (settings.hint.text || settings.hint.imageUrl) && (
         checked ? (
           <HintSpacer aria-hidden="true" />
         ) : (
@@ -770,6 +770,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
 
       <HintModals
         hintText={settings.hint?.text}
+        hintImageUrl={settings.hint?.imageUrl}
         showHintWarning={gameHint.showHintWarning}
         showHintText={gameHint.showHintText}
         onConfirm={gameHint.confirmHint}

@@ -112,7 +112,7 @@ export default function AdminStationConfigPage() {
   const t = useTranslations(texts);
 
   const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle', 'avatar', 'enteringText'];
-  const stationTypesWithoutHint: StationTypeOption[] = ['text', 'video', 'image', 'feedback', 'avatar'];
+  const stationTypesWithoutHint: StationTypeOption[] = ['feedback', 'avatar'];
   const typeFromUrl = searchParams.get('type') as StationTypeOption | null;
   const defaultType: StationTypeOption =
     typeFromUrl && creatableTypes.includes(typeFromUrl) ? typeFromUrl : 'text';
@@ -128,6 +128,7 @@ export default function AdminStationConfigPage() {
   // Hint
   const [hintEnabled, setHintEnabled] = useState(false);
   const [hintText, setHintText] = useState('');
+  const [hintImageUrl, setHintImageUrl] = useState('');
 
   // Text station
   const [textContent, setTextContent] = useState('');
@@ -219,6 +220,7 @@ export default function AdminStationConfigPage() {
           const h = settings.hint as Record<string, unknown>;
           setHintEnabled(!!h.enabled);
           setHintText((h.text as string) || '');
+          setHintImageUrl((h.imageUrl as string) || '');
         }
         if (settings.content) setTextContent(settings.content as string);
         if (settings.mediaUrl) setMediaUrl(settings.mediaUrl as string);
@@ -330,6 +332,7 @@ export default function AdminStationConfigPage() {
       const h = settings.hint as Record<string, unknown>;
       setHintEnabled(!!h.enabled);
       setHintText((h.text as string) || '');
+      setHintImageUrl((h.imageUrl as string) || '');
     }
     if (settings.content) setTextContent(settings.content as string);
     if (settings.mediaUrl) setMediaUrl(settings.mediaUrl as string);
@@ -428,8 +431,8 @@ export default function AdminStationConfigPage() {
     try {
       const settings: Record<string, unknown> = {};
       const allowStationHint = !stationTypesWithoutHint.includes(stationType);
-      if (allowStationHint && hintEnabled && hintText.trim()) {
-        settings.hint = { enabled: true, text: hintText.trim() };
+      if (allowStationHint && hintEnabled && (hintText.trim() || hintImageUrl.trim())) {
+        settings.hint = { enabled: true, text: hintText.trim(), imageUrl: hintImageUrl.trim() || undefined };
       }
       if (stationType === 'text') {
         settings.content = textContent.trim();
@@ -586,6 +589,7 @@ export default function AdminStationConfigPage() {
     const supportsHint = !stationTypesWithoutHint.includes(randomType);
     setHintEnabled(supportsHint);
     setHintText(supportsHint ? 'זהו רמז לדוגמה' : '');
+    setHintImageUrl('');
     setTextContent('');
     setMediaUrl('');
     setCollageHeader('');
@@ -803,11 +807,43 @@ export default function AdminStationConfigPage() {
                       </ToggleButton>
                     </HintToggleRow>
                     {hintEnabled && (
-                      <Input
-                        placeholder={t.hintPlaceholder}
-                        value={hintText}
-                        onChange={(e) => setHintText(e.target.value)}
-                      />
+                      <VerticalStack>
+                        <Input
+                          placeholder={t.hintPlaceholder}
+                          value={hintText}
+                          onChange={(e) => setHintText(e.target.value)}
+                        />
+                        <SectionLabelNoMargin>{t.hintImageLabel}</SectionLabelNoMargin>
+                        <InlineRow>
+                          <FileUploadButton
+                            accept="image/*"
+                            onUploaded={(url) => setHintImageUrl(url)}
+                            label={t.upload}
+                            uploadingLabel={t.uploading}
+                          />
+                          <FlexInput
+                            placeholder={t.hintImagePlaceholder}
+                            value={hintImageUrl}
+                            onChange={(e) => setHintImageUrl(e.target.value)}
+                          />
+                        </InlineRow>
+                        {hintImageUrl && (
+                          <div>
+                            <img
+                              src={hintImageUrl}
+                              alt=""
+                              style={{ maxHeight: 120, maxWidth: '100%', borderRadius: 8, display: 'block' }}
+                            />
+                            <SmallOutlineButton
+                              type="button"
+                              onClick={() => setHintImageUrl('')}
+                              style={{ marginTop: 8 }}
+                            >
+                              {t.removeHintImage}
+                            </SmallOutlineButton>
+                          </div>
+                        )}
+                      </VerticalStack>
                     )}
                   </div>
                 </FormSectionCard>

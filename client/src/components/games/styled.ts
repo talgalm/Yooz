@@ -625,6 +625,16 @@ export const HintModalHintBody = styled('p')({
   lineHeight: 1.45,
 });
 
+/** Optional hint image */
+export const HintModalImage = styled('img')({
+  display: 'block',
+  width: '100%',
+  maxHeight: 280,
+  objectFit: 'contain',
+  borderRadius: 12,
+  margin: '0 0 20px',
+});
+
 export const ModalTitle = styled('p')({
   fontWeight: 600,
   color: '#333',

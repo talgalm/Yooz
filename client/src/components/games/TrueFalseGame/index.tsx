@@ -638,7 +638,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
       )}
 
       {/* Hint: keep mounted when answered so flex layout (timer position) does not jump */}
-      {settings.hint?.enabled && settings.hint.text && (
+      {settings.hint?.enabled && (settings.hint.text || settings.hint.imageUrl) && (
         <div
           style={{
             visibility: answered ? 'hidden' : 'visible',
@@ -708,6 +708,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
 
       <HintModals
         hintText={settings.hint?.text}
+        hintImageUrl={settings.hint?.imageUrl}
         showHintWarning={gameHint.showHintWarning}
         showHintText={gameHint.showHintText}
         onConfirm={gameHint.confirmHint}
