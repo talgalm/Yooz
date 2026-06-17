@@ -166,6 +166,9 @@ export default function MissionInlinePlayer({ mission, onComplete, code, onLogou
         muted={sounds.muted}
         toggleMute={sounds.toggleMute}
         startTrashBg={sounds.startTrashBg}
+        stopTrashBg={sounds.stopTrashBg}
+        stopBg={sounds.stopBg}
+        startBg={sounds.startBg}
         onComplete={handleTrashSortComplete}
         onContinue={handleMissionContinue}
         activityCode={code}

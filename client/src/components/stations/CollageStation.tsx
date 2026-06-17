@@ -91,12 +91,13 @@ const Content = styled('div')({
   },
 });
 
-/** Capture fits one screen: compact header, small preview, actions pinned at bottom. */
+/** Capture fits one screen: compact header, preview grows to fill space, actions pinned at bottom. */
 const CaptureLayout = styled('div')({
   flex: 1,
   minHeight: 0,
   display: 'flex',
   flexDirection: 'column',
+  overflow: 'hidden',
   padding: '10px 16px calc(12px + env(safe-area-inset-bottom, 0px))',
   maxWidth: 480,
   width: '100%',
@@ -199,9 +200,13 @@ const Dot = styled('div')<{ active?: boolean; done?: boolean }>(({ active, done 
 }));
 
 const CaptureArea = styled('div')({
+  flex: '1 1 0',
+  minHeight: 80,
   width: 'min(100%, 280px)',
+  maxWidth: '100%',
+  maxHeight: '100%',
   aspectRatio: '3 / 4',
-  flex: '0 0 auto',
+  alignSelf: 'center',
   background: 'rgba(0,0,0,0.45)',
   border: '2px dashed rgba(255,255,255,0.18)',
   borderRadius: 14,
@@ -212,7 +217,7 @@ const CaptureArea = styled('div')({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  // Keep the capture frame portrait on all screens.
+  // Keep the capture frame portrait on all screens; flex shrink keeps the next button visible.
   '@media (min-width: 768px)': {
     width: 'min(380px, 60vw)',
     margin: '12px auto 16px',
@@ -275,8 +280,31 @@ const ProgressSub = styled('p')({ fontSize: 13, color: 'rgba(255,255,255,0.5)', 
 const ProgressEta = styled('p')({ fontSize: 12, color: 'rgba(255,255,255,0.42)', margin: '4px 0 0', fontVariantNumeric: 'tabular-nums' });
 
 // Result phase
-const VideoWrap = styled('div')({ borderRadius: 16, overflow: 'hidden', width: '100%', marginBottom: 20, background: '#000' });
+const VideoWrap = styled('div')({ borderRadius: 16, overflow: 'hidden', width: '100%', marginBottom: 20, background: '#000', position: 'relative' });
 const ResultVideo = styled('video')({ width: '100%', display: 'block' });
+const VideoPlayOverlay = styled('button')({
+  position: 'absolute',
+  inset: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'rgba(0,0,0,0.35)',
+  border: 'none',
+  cursor: 'pointer',
+  padding: 0,
+});
+const VideoPlayIcon = styled('span')({
+  width: 72,
+  height: 72,
+  borderRadius: '50%',
+  background: 'rgba(255,255,255,0.92)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 32,
+  color: '#1a143f',
+  paddingLeft: 6,
+});
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -375,6 +403,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const [resultUrl, setResultUrl] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
   const [resultIsVideo, setResultIsVideo] = useState(false);
+  const [resultVideoStarted, setResultVideoStarted] = useState(false);
   const [error, setError] = useState('');
 
   // Capture state
@@ -384,6 +413,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const quickCaptureRef = useRef<HTMLInputElement>(null);
+  const resultVideoRef = useRef<HTMLVideoElement>(null);
   const serverPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const bgUnsubRef = useRef<(() => void) | null>(null);
 
@@ -722,6 +752,28 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       a.click();
     } catch { /* user can long-press to save */ }
   };
+
+  const handlePlayResultVideo = useCallback(async () => {
+    const video = resultVideoRef.current;
+    if (!video) return;
+    try {
+      setResultVideoStarted(true);
+      await video.play();
+      const el = video as HTMLVideoElement & { webkitEnterFullscreen?: () => void };
+      if (el.requestFullscreen) {
+        await el.requestFullscreen();
+      } else if (el.webkitEnterFullscreen) {
+        el.webkitEnterFullscreen();
+      }
+    } catch {
+      setResultVideoStarted(false);
+    }
+  }, []);
+
+  // Reset play overlay when a new result loads.
+  useEffect(() => {
+    setResultVideoStarted(false);
+  }, [resultUrl]);
 
   // ── Video-only part bootstrap ───────────────────────────────────────────────
   // When this station is a dedicated video-creation sub-station:
@@ -1131,11 +1183,24 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         <Content>
           <TopLabel>תחנת קולאז׳</TopLabel>
           <BigTitle>הסרטון מוכן! 🎉</BigTitle>
-          {disclaimer && <CompactDisclaimer>{disclaimer}</CompactDisclaimer>}
 
           <VideoWrap>
             {resultIsVideo
-              ? <ResultVideo src={resultUrl} controls autoPlay playsInline loop />
+              ? <>
+                  <ResultVideo
+                    ref={resultVideoRef}
+                    src={resultUrl}
+                    controls={resultVideoStarted}
+                    playsInline
+                    loop
+                    onPlay={() => setResultVideoStarted(true)}
+                  />
+                  {!resultVideoStarted && (
+                    <VideoPlayOverlay type="button" aria-label="נגן סרטון" onClick={() => void handlePlayResultVideo()}>
+                      <VideoPlayIcon aria-hidden>▶</VideoPlayIcon>
+                    </VideoPlayOverlay>
+                  )}
+                </>
               : <img src={resultUrl} alt="collage" style={{ width: '100%', display: 'block' }} />
             }
           </VideoWrap>

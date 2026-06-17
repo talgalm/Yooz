@@ -357,6 +357,9 @@ export default function MissionPage() {
         muted={sounds.muted}
         toggleMute={sounds.toggleMute}
         startTrashBg={sounds.startTrashBg}
+        stopTrashBg={sounds.stopTrashBg}
+        stopBg={sounds.stopBg}
+        startBg={sounds.startBg}
         participantName={participant?.name}
         activityCode={code}
         onComplete={handleTrashSortComplete}

@@ -402,6 +402,8 @@ interface MissionTrashSortProps {
   toggleMute?: () => void;
   startTrashBg?: () => void;
   stopTrashBg?: () => void;
+  stopBg?: () => void;
+  startBg?: () => void;
   onLogout?: () => void;
   onHelp?: () => void;
   title?: string;
@@ -504,6 +506,8 @@ export default function MissionTrashSort({
   toggleMute,
   startTrashBg,
   stopTrashBg,
+  stopBg,
+  startBg,
   title = 'איך משחקים?',
   description = 'עכשיו התמונה ברורה, אבל הזבל עדיין\nמסתיר את האות!\n\nליחצו על הפח הנכון עבור סוג\nהאשפה.',
   scoreLabel = 'ניקוד:',
@@ -858,14 +862,20 @@ export default function MissionTrashSort({
   const [countdownStep, setCountdownStep] = useState(0);
   const [stepLeaving, setStepLeaving] = useState(false);
 
-  // Keep trash music disabled on final screens and active elsewhere.
+  // Silence all background music during the finish video; resume after the user taps next.
   useEffect(() => {
-    if (phase === 'complete' || phase === 'badge') {
+    if (phase === 'complete') {
       stopTrashBg?.();
+      stopBg?.();
+      return;
+    }
+    if (phase === 'badge') {
+      stopTrashBg?.();
+      startBg?.();
       return;
     }
     startTrashBg?.();
-  }, [phase, startTrashBg, stopTrashBg]);
+  }, [phase, startTrashBg, stopTrashBg, stopBg, startBg]);
 
   // Refs for measuring positions
   const binIconRef = useRef<HTMLImageElement>(null);
