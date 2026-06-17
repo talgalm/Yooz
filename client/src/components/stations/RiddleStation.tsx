@@ -239,17 +239,6 @@ const AttemptDot = styled('div')<{ used: string }>(({ used }) => ({
   transition: 'background 0.2s',
 }));
 
-const ScoreBadge = styled('div')({
-  fontSize: 13,
-  color: '#8B2FC9',
-  fontWeight: 700,
-  textAlign: 'center',
-  background: '#f0eefa',
-  borderRadius: 20,
-  padding: '5px 14px',
-  border: '1.5px solid #d8c7f0',
-});
-
 const SubmitButton = styled(StationContinueButton)({
   position: 'fixed',
   bottom: 24,
@@ -386,20 +375,12 @@ const ResultScore = styled('div')({
 interface RiddleStationProps {
   station: StationItemData;
   onComplete: (result: GameResult) => void;
-  stationHintText?: string | null;
-  stationHintUsed?: boolean;
-  onStationHintClick?: () => void;
-  hintLabel?: string;
   textColor?: string;
 }
 
 export default function RiddleStation({
   station,
   onComplete,
-  stationHintText,
-  stationHintUsed = false,
-  onStationHintClick,
-  hintLabel,
   textColor,
 }: RiddleStationProps) {
   const [imageFullscreen, setImageFullscreen] = useState(false);
@@ -602,18 +583,6 @@ export default function RiddleStation({
             {isHebrew ? `ניסיון ${attempt + 1} מתוך 3` : `Attempt ${attempt + 1} of 3`}
           </span>
         </AttemptsRow>
-
-        {stationHintText && onStationHintClick ? (
-          <ScoreBadge
-            as="button"
-            type="button"
-            onClick={onStationHintClick}
-            style={{ cursor: 'pointer' }}
-            aria-label={hintLabel || (isHebrew ? 'רמז' : 'Hint')}
-          >
-            {hintLabel || (stationHintUsed ? (isHebrew ? 'הצג רמז' : 'Show Hint') : (isHebrew ? 'רמז' : 'Hint'))}
-          </ScoreBadge>
-        ) : null}
       </Container>
 
       {imageFullscreen && settings.mediaUrl && settings.mediaType === 'image' && createPortal(
