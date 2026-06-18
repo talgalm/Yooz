@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useTranslations } from '../../../context/LanguageContext';
@@ -21,6 +21,17 @@ import {
   ModalBodyText,
 } from '../styled';
 import ManagerLoginModal from '../../../components/login/ManagerLoginModal';
+
+const ProvisionWarning = styled('div')({
+  marginBottom: 20,
+  padding: '12px 16px',
+  borderRadius: 10,
+  background: '#fff8e1',
+  border: '1px solid #ffe082',
+  color: '#e65100',
+  fontSize: 14,
+  lineHeight: 1.5,
+});
 
 // ─── Styled Components ───
 
@@ -482,10 +493,20 @@ export default function AdminViewActivityPage() {
   const [togglingStatus, setTogglingStatus] = useState(false);
   const [lockSaving, setLockSaving] = useState(false);
   const [managerLoginOpen, setManagerLoginOpen] = useState(false);
+  const [provisionWarning, setProvisionWarning] = useState<string | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const t = useTranslations(texts);
   const { admin } = useAdminAuth();
+
+  useEffect(() => {
+    const warning = (location.state as { managerProvisionWarning?: string } | null)?.managerProvisionWarning;
+    if (warning) {
+      setProvisionWarning(warning);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.pathname, location.state, navigate]);
 
   useEffect(() => {
     if (!id) return;
@@ -607,6 +628,7 @@ export default function AdminViewActivityPage() {
       </AdminHeader>
 
       <ContentWrapper>
+        {provisionWarning && <ProvisionWarning>{provisionWarning}</ProvisionWarning>}
         {/* Page title */}
         <PageTitleText>{activity.name}</PageTitleText>
         <StatusRow>

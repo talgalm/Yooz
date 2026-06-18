@@ -13,6 +13,7 @@ import {
 import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginField } from '../types';
 import { Activity, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
 import { clampPassThreshold } from '../utils/scoreNormalization';
+import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
 
 const router = Router();
 
@@ -42,14 +43,25 @@ const VALID_LOGIN_FIELDS: LoginField[] = ['email', 'phoneNumber', 'name'];
 
 // --- Shared validation helpers ---
 
-function validateActivityPayload(body: CreateActivityRequest): string | null {
-  const { name, loginFields, connectionType } = body;
+function validateActivityPayload(body: CreateActivityRequest, options?: { isCreate?: boolean }): string | null {
+  const { name, loginFields, connectionType, managerEmail, managerPassword } = body;
   if (!name || !loginFields || !connectionType) return 'Name, login fields, and connection type are required';
   if (name.length < 2 || name.length > 100) return 'Name must be between 2 and 100 characters';
   if (!Array.isArray(loginFields) || loginFields.length === 0) return 'At least one login field is required';
   if (!loginFields.every((f) => VALID_LOGIN_FIELDS.includes(f as LoginField))) return 'Invalid login field. Valid: email, phoneNumber, name';
   if (!['single', 'group'].includes(connectionType)) return 'Connection type must be "single" or "group"';
+  if (options?.isCreate && managerEmail?.trim() && !managerPassword) {
+    return 'Manager password is required when assigning a manager';
+  }
   return null;
+}
+
+async function provisionActivityManager(
+  managerEmail: string | undefined,
+  managerPassword: string | undefined,
+): Promise<ManagerProvisionResult | undefined> {
+  if (!managerEmail?.trim()) return undefined;
+  return provisionManagerCustomer(managerEmail.trim(), managerPassword);
 }
 
 async function buildActivityData(body: CreateActivityRequest, existingPasswordHash?: string): Promise<Record<string, unknown>> {
@@ -354,7 +366,7 @@ router.get('/activities', authenticateAdmin, async (req: Request, res: Response)
 
 // Create activity
 router.post('/activities', authenticateAdmin, async (req: Request<{}, {}, CreateActivityRequest>, res: Response) => {
-  const error = validateActivityPayload(req.body);
+  const error = validateActivityPayload(req.body, { isCreate: true });
   if (error) { res.status(400).json({ error }); return; }
 
   const moduleErr = await assertModuleOwnedByCustomer(req, req.body.module);
@@ -366,8 +378,9 @@ router.post('/activities', authenticateAdmin, async (req: Request<{}, {}, Create
     ...activityData,
     createdByEmail: createdByEmailForNewResource(req),
   });
+  const managerProvision = await provisionActivityManager(req.body.managerEmail, req.body.managerPassword);
   logAdminAction(req, 'create_activity', 'activity', activity._id.toString(), activity.name);
-  res.status(201).json({ activity: stripManagerPassword(activity) });
+  res.status(201).json({ activity: stripManagerPassword(activity), managerProvision });
 });
 
 // Update activity (code is NOT editable)
@@ -383,7 +396,7 @@ router.put('/activities/:id', authenticateAdmin, async (req: Request<{ id: strin
     return;
   }
 
-  const moduleErr = await assertModuleOwnedByCustomer(req, req.body.module);
+  const moduleErr = await assertModuleOwnedByCustomer(req, req.body.module, existing);
   if (moduleErr) { res.status(403).json({ error: moduleErr }); return; }
 
   const activityData = await buildActivityData(req.body, existing.managerPassword);
@@ -397,8 +410,9 @@ router.put('/activities/:id', authenticateAdmin, async (req: Request<{ id: strin
     { $set: activityData, ...(Object.keys(unset).length > 0 && { $unset: unset }) },
     { new: true, runValidators: true },
   );
+  const managerProvision = await provisionActivityManager(req.body.managerEmail, req.body.managerPassword);
   logAdminAction(req, 'update_activity', 'activity', req.params.id, req.body.name);
-  res.json({ activity: activity ? stripManagerPassword(activity) : activity });
+  res.json({ activity: activity ? stripManagerPassword(activity) : activity, managerProvision });
 });
 
 // Get single activity (with populated items)

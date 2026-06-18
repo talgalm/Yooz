@@ -619,7 +619,7 @@ export default function AdminDashboardPage() {
     const tabs: { key: MainTab; label: string }[] = [
       { key: 'activities', label: t.tabActivities },
     ];
-    if (role === 'admin' || role === 'super_admin') {
+    if (role === 'admin' || role === 'super_admin' || role === 'customer') {
       tabs.push({ key: 'statistics', label: t.tabStatistics });
     }
     tabs.push({ key: 'stations', label: t.tabStations });

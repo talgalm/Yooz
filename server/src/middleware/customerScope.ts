@@ -10,20 +10,34 @@ export function customerOwnerEmail(req: Request): string | null {
   return req.admin.email.toLowerCase().trim();
 }
 
-/** Mongo filter for list queries — customers only see rows they own */
+/** Mongo filter for list queries — customers see activities they created or manage */
 export function customerMongoFilter(req: Request): Record<string, unknown> {
   if (!isCustomerRole(req)) return {};
   const email = customerOwnerEmail(req);
   if (!email) return { _id: { $exists: false } };
-  return { createdByEmail: email };
+  return { $or: [{ createdByEmail: email }, { managerEmail: email }] };
 }
 
-export function customerOwnsDoc(req: Request, doc: { createdByEmail?: string } | null | undefined): boolean {
+export function customerOwnsDoc(
+  req: Request,
+  doc: { createdByEmail?: string; managerEmail?: string } | null | undefined,
+): boolean {
   if (!doc) return false;
   if (!isCustomerRole(req)) return true;
   const email = customerOwnerEmail(req);
   if (!email) return false;
-  return doc.createdByEmail === email;
+  return doc.createdByEmail === email || doc.managerEmail?.toLowerCase() === email;
+}
+
+/** True when customer is assigned as manager but did not create the activity */
+export function customerIsAssignedManager(
+  req: Request,
+  doc: { createdByEmail?: string; managerEmail?: string } | null | undefined,
+): boolean {
+  if (!doc || !isCustomerRole(req)) return false;
+  const email = customerOwnerEmail(req);
+  if (!email) return false;
+  return doc.managerEmail?.toLowerCase() === email && doc.createdByEmail !== email;
 }
 
 export function createdByEmailForNewResource(req: Request): string {
@@ -31,8 +45,13 @@ export function createdByEmailForNewResource(req: Request): string {
 }
 
 /** Ensures story/mission module only references games/stations/missions the customer owns */
-export async function assertModuleOwnedByCustomer(req: Request, moduleConfig: unknown): Promise<string | null> {
+export async function assertModuleOwnedByCustomer(
+  req: Request,
+  moduleConfig: unknown,
+  activity?: { createdByEmail?: string; managerEmail?: string } | null,
+): Promise<string | null> {
   if (!isCustomerRole(req)) return null;
+  if (activity && customerIsAssignedManager(req, activity)) return null;
   const email = customerOwnerEmail(req);
   if (!email) return 'Unauthorized';
 

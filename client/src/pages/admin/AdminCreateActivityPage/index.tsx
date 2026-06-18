@@ -754,6 +754,10 @@ export default function AdminCreateActivityPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    if (!isEditMode && managerEmail.trim() && !managerPassword) {
+      setError(t.managerPasswordRequired);
+      return;
+    }
     setLoading(true);
     try {
       const payload: Record<string, unknown> = {
@@ -851,12 +855,21 @@ export default function AdminCreateActivityPage() {
         if (managerPassword) payload.managerPassword = managerPassword;
       }
 
+      type SaveActivityResponse = {
+        activity: { _id: string };
+        managerProvision?: { ok: boolean; warning?: string };
+      };
+
       if (isEditMode) {
-        await adminApiFetch(`/api/admin/activities/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
-        navigate(`/admin/activities/${id}`);
+        const data = await adminApiFetch<SaveActivityResponse>(`/api/admin/activities/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+        navigate(`/admin/activities/${id}`, {
+          state: data.managerProvision?.warning ? { managerProvisionWarning: data.managerProvision.warning } : undefined,
+        });
       } else {
-        const data = await adminApiFetch<{ activity: { _id: string } }>('/api/admin/activities', { method: 'POST', body: JSON.stringify(payload) });
-        navigate(`/admin/activities/${data.activity._id}`);
+        const data = await adminApiFetch<SaveActivityResponse>('/api/admin/activities', { method: 'POST', body: JSON.stringify(payload) });
+        navigate(`/admin/activities/${data.activity._id}`, {
+          state: data.managerProvision?.warning ? { managerProvisionWarning: data.managerProvision.warning } : undefined,
+        });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save');
@@ -1208,6 +1221,7 @@ export default function AdminCreateActivityPage() {
                         <SectionHeaderTitle>{t.managerSection}</SectionHeaderTitle>
                       </SectionHeader>
                       <VerticalStack>
+                        <SectionDescription>{t.managerHelperText}</SectionDescription>
                         <Input type="email" placeholder={t.managerEmail} value={managerEmail} onChange={(e) => setManagerEmail(e.target.value)} />
                         <Input
                           type="password"
