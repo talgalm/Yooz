@@ -43,6 +43,7 @@ export interface IReportData {
 export type CompletionStatus = 'joined' | 'in_progress' | 'completed';
 
 export interface IReport {
+  _id?: Types.ObjectId;
   activityId: Types.ObjectId;
   activityCode: string;
   participantName: string;

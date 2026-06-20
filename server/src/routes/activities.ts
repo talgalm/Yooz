@@ -1,16 +1,24 @@
 import { Router, Request, Response } from 'express';
-import { ActivityConfigResponse } from '../types';
+import jwt from 'jsonwebtoken';
+import { ActivityConfigResponse, JwtPayload } from '../types';
+import { JWT_SECRET } from '../config';
 import { authenticateToken } from '../middleware/auth';
 import { Activity, Report, Game, Station, Mission, CustomTheme } from '../models';
 import mongoose from 'mongoose';
 import { subscribe, sendLockEvent } from '../utils/lockBroadcaster';
 import { getParticipantCount } from '../utils/participantCountCache';
 import { getOrderSurveyLiveState } from '../utils/orderSurveySession';
+import { getGroupStatus } from '../utils/groupStatus';
+import { onGroupMemberCompleted } from '../services/groupRewardService';
+import activityGroupsRouter from './activityGroups';
 
 const router = Router();
 
 const activityConfigCache = new Map<string, { data: ActivityConfigResponse; expiresAt: number }>();
 const ACTIVITY_CONFIG_TTL_MS = 30_000;
+
+// Group self-service routes — must be registered before /:code
+router.use(activityGroupsRouter);
 
 // Public: get activity config by code (for /play/:code)
 router.get('/:code', async (req: Request<{ code: string }>, res: Response<ActivityConfigResponse | { error: string }>) => {
@@ -48,6 +56,7 @@ router.get('/:code', async (req: Request<{ code: string }>, res: Response<Activi
     loginFields: loginFields as ActivityConfigResponse['loginFields'],
     ...(emailGoogle && { emailGoogle: true }),
     connectionType: connectionType as ActivityConfigResponse['connectionType'],
+    ...(connectionType === 'group' && activity.groupEntryMode && { groupEntryMode: activity.groupEntryMode }),
     groups: activity.groups || [],
     ...(activity.opening && { opening: { type: activity.opening.type, url: activity.opening.url } }),
     ...(activity.scheduledStart && { scheduledStart: activity.scheduledStart.toISOString() }),
@@ -72,6 +81,33 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   if (!activity.module) {
     res.status(404).json({ error: 'No module configured for this activity' });
     return;
+  }
+
+  let participantGroup = req.query.group as string | undefined;
+
+  if (activity.connectionType === 'group' && activity.groupEntryMode === 'selfService') {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
+    if (!token) {
+      res.status(401).json({ error: 'group_auth_required' });
+      return;
+    }
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+      if (decoded.activityCode !== req.params.code || !decoded.group) {
+        res.status(403).json({ error: 'Forbidden' });
+        return;
+      }
+      const status = await getGroupStatus(activity, decoded.group);
+      if (!status?.canProceed) {
+        res.status(403).json({ error: 'group_not_ready', ...status });
+        return;
+      }
+      participantGroup = decoded.group;
+    } catch {
+      res.status(401).json({ error: 'Invalid token' });
+      return;
+    }
   }
 
   // Handle mission module type
@@ -123,8 +159,6 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   const missionMap = new Map(missions.map((m: any) => [m._id.toString(), m]));
 
   // Filter items by participant group (if activity uses groups)
-  // The participant's group comes from query param (set by client from JWT)
-  const participantGroup = req.query.group as string | undefined;
   const moduleItems = (activity.module.items || []).filter((item) => {
     // If item has no group restriction, show to everyone
     if (!item.groups || item.groups.length === 0) return true;
@@ -502,6 +536,12 @@ router.post('/:code/scores', authenticateToken, async (req: Request<{ code: stri
 
   const totalScore = scores.reduce((sum: number, s: { score: number }) => sum + (s.score || 0), 0);
 
+  const activity = await Activity.findOne({ code: activityCode });
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
   const updateOps: Record<string, unknown> = {
     'data.scores': scores,
     'data.totalScore': totalScore,
@@ -521,6 +561,12 @@ router.post('/:code/scores', authenticateToken, async (req: Request<{ code: stri
   if (!report) {
     res.status(404).json({ error: 'Report not found' });
     return;
+  }
+
+  if (report.group && activity.groupEntryMode === 'selfService') {
+    onGroupMemberCompleted(activity, report.group).catch((err) => {
+      console.error('[groupReward] Failed to process reward:', err);
+    });
   }
 
   res.json({ success: true });

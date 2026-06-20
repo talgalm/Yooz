@@ -5,6 +5,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './PlayPage.i18n';
 import ActivityLogin from '../../components/login/ActivityLogin';
+import { apiFetch } from '../../utils/api';
+import GroupEntryChoice from '../../components/groupEntry/GroupEntryChoice';
+import CreateGroupForm from '../../components/groupEntry/CreateGroupForm';
+import GroupCreatedSuccess from '../../components/groupEntry/GroupCreatedSuccess';
+import JoinExistingGroupForm from '../../components/groupEntry/JoinExistingGroupForm';
+import JoinGroupLogin from '../../components/groupEntry/JoinGroupLogin';
 import {
   CenteredPage,
   Card,
@@ -43,12 +49,15 @@ interface ActivityConfig {
   loginFields: LoginField[];
   emailGoogle?: boolean;
   connectionType: 'single' | 'group';
+  groupEntryMode?: 'preset' | 'selfService';
   groups: GroupConfig[];
   opening?: OpeningConfig;
   scheduledStart?: string;
   scheduledEnd?: string;
   moduleType?: string;
 }
+
+type GroupFlow = 'choice' | 'create' | 'join-paste' | 'join-login' | 'success';
 
 type OpeningPhase = 'playing' | 'fading' | 'done';
 
@@ -122,16 +131,22 @@ const CountdownLabel = styled('span')({
 
 
 export default function PlayPage() {
-  const { code } = useParams<{ code: string }>();
+  const { code, inviteToken: inviteTokenParam } = useParams<{ code: string; inviteToken?: string }>();
   const [activity, setActivity] = useState<ActivityConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [slowLoad, setSlowLoad] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const { login } = useAuth();
+  const { login, establishSession } = useAuth();
   const navigate = useNavigate();
   const t = useTranslations(texts);
+
+  const isSelfService = activity?.connectionType === 'group' && activity?.groupEntryMode === 'selfService';
+  const [groupFlow, setGroupFlow] = useState<GroupFlow | null>(inviteTokenParam ? 'join-login' : null);
+  const [resolvedInvite, setResolvedInvite] = useState<{ token: string; name: string } | null>(null);
+  const [inviteError, setInviteError] = useState(false);
+  const [createdGroup, setCreatedGroup] = useState<{ name: string; inviteUrl: string } | null>(null);
 
   // Scheduling state
   const [scheduleStatus, setScheduleStatus] = useState<'pending' | 'active' | 'expired' | null>(null);
@@ -174,6 +189,13 @@ export default function PlayPage() {
         if (cancelled) return;
         setActivity(data);
         if (!data.opening?.url) setShowDefaultSplash(true);
+        if (
+          data.connectionType === 'group'
+          && data.groupEntryMode === 'selfService'
+          && !inviteTokenParam
+        ) {
+          setGroupFlow('choice');
+        }
       } catch (err) {
         clearTimeout(timeoutId);
         if (cancelled) return;
@@ -198,7 +220,29 @@ export default function PlayPage() {
       cancelled = true;
       clearTimeout(slowTimer);
     };
-  }, [code, retryCount]);
+  }, [code, retryCount, inviteTokenParam]);
+
+  // Resolve invite token from URL
+  useEffect(() => {
+    if (!activity || !inviteTokenParam || activity.groupEntryMode !== 'selfService') return;
+    let cancelled = false;
+    setInviteError(false);
+    fetch(`/api/activities/${encodeURIComponent(activity.code)}/groups/by-token/${encodeURIComponent(inviteTokenParam)}`)
+      .then(async (res) => {
+        if (cancelled) return;
+        if (!res.ok) {
+          setInviteError(true);
+          return;
+        }
+        const data = await res.json() as { name: string };
+        setResolvedInvite({ token: inviteTokenParam, name: data.name });
+        setGroupFlow('join-login');
+      })
+      .catch(() => {
+        if (!cancelled) setInviteError(true);
+      });
+    return () => { cancelled = true; };
+  }, [activity, inviteTokenParam]);
 
   // Check scheduling and run countdown
   useEffect(() => {
@@ -288,7 +332,136 @@ export default function PlayPage() {
     v.play().catch(() => {});
   };
 
-  const handleSuccess = () => {
+  const handleGroupLogin = async (data: {
+    participantName?: string;
+    phoneNumber?: string;
+    email?: string;
+    groupToken: string;
+  }) => {
+    await login({
+      activityCode: activity!.code,
+      ...data,
+    });
+  };
+
+  const renderLoginContent = () => {
+    if (!activity) return null;
+
+    if (isSelfService && groupFlow) {
+      if (inviteError) {
+        return <BodyText style={{ color: '#ffcdd2', textAlign: 'center' }}>{t.invalidInvite}</BodyText>;
+      }
+
+      if (groupFlow === 'success' && createdGroup) {
+        return (
+          <GroupCreatedSuccess
+            activityCode={activity.code}
+            groupName={createdGroup.name}
+            inviteUrl={createdGroup.inviteUrl}
+            onContinue={() => { void handleSuccess(); }}
+          />
+        );
+      }
+
+      if (groupFlow === 'choice') {
+        return (
+          <GroupEntryChoice
+            onCreate={() => setGroupFlow('create')}
+            onJoin={() => setGroupFlow('join-paste')}
+          />
+        );
+      }
+
+      if (groupFlow === 'create') {
+        return (
+          <CreateGroupForm
+            activityCode={activity.code}
+            loginFields={activity.loginFields}
+            onBack={() => setGroupFlow('choice')}
+            onEstablishSession={(token) => establishSession(token, activity.code)}
+            onCreated={(result) => {
+              setCreatedGroup({ name: result.groupName, inviteUrl: result.inviteUrl });
+              setGroupFlow('success');
+            }}
+          />
+        );
+      }
+
+      if (groupFlow === 'join-paste') {
+        return (
+          <JoinExistingGroupForm
+            activityCode={activity.code}
+            onBack={() => setGroupFlow('choice')}
+            onTokenResolved={(token) => {
+              setResolvedInvite(null);
+              navigate(`/play/${activity.code}/join/${token}`, { replace: true });
+            }}
+          />
+        );
+      }
+
+      if (groupFlow === 'join-login' && resolvedInvite) {
+        return (
+          <JoinGroupLogin
+            groupName={resolvedInvite.name}
+            groupToken={resolvedInvite.token}
+            loginFields={activity.loginFields}
+            onBack={inviteTokenParam ? undefined : () => setGroupFlow('choice')}
+            onLogin={handleGroupLogin}
+            onSuccess={() => { void handleSuccess(); }}
+          />
+        );
+      }
+
+      if (groupFlow === 'join-login' && inviteTokenParam) {
+        return (
+          <PurpleLoadingScreen style={{ position: 'relative', inset: 'auto', background: 'transparent', minHeight: 80 }}>
+            <LoaderWave aria-label={t.loading}>
+              <span>z</span><span>o</span><span>o</span><span>Y</span>
+            </LoaderWave>
+          </PurpleLoadingScreen>
+        );
+      }
+    }
+
+    return (
+      <ActivityLogin
+        activityCode={activity.code}
+        loginFields={activity.loginFields}
+        emailGoogle={activity.emailGoogle}
+        connectionType={activity.connectionType}
+        groups={activity.groups}
+        onSuccess={handleSuccess}
+        onLogin={login}
+      />
+    );
+  };
+
+  const loginHeading = groupFlow === 'success'
+    ? t.teamCreatedHeading
+    : groupFlow === 'create'
+      ? t.createTeamHeading
+      : groupFlow === 'join-login'
+        ? t.joinTeamHeading
+        : t.readyForAdventure;
+
+  const loginSubheading = groupFlow === 'success'
+    ? t.teamCreatedSubheading
+    : groupFlow === 'choice'
+      ? t.groupChoiceSubheading
+      : t.connectAndPlay;
+
+  const handleSuccess = async () => {
+    if (isSelfService && activity) {
+      try {
+        const status = await apiFetch<{ canProceed: boolean }>(
+          `/api/activities/${encodeURIComponent(activity.code)}/groups/status`,
+        );
+        if (!status.canProceed) return;
+      } catch {
+        return;
+      }
+    }
     if (activity?.moduleType === 'mission') {
       navigate(`/mission/${activity.code}`);
     } else if (activity?.moduleType === 'story' || activity?.moduleType === 'spiders') {
@@ -468,18 +641,10 @@ export default function PlayPage() {
       {/* Login page — full screen purple */}
       <PurpleLoginPage visible={openingPhase !== 'playing'}>
         <LoginLogo src="/images/logo-white.png" alt="Yooz" />
-        <LoginHeading>{t.readyForAdventure}</LoginHeading>
-        <LoginSubheading>{t.connectAndPlay}</LoginSubheading>
+        <LoginHeading>{loginHeading}</LoginHeading>
+        <LoginSubheading>{loginSubheading}</LoginSubheading>
         <LoginFormWrapper>
-          <ActivityLogin
-            activityCode={activity.code}
-            loginFields={activity.loginFields}
-            emailGoogle={activity.emailGoogle}
-            connectionType={activity.connectionType}
-            groups={activity.groups}
-            onSuccess={handleSuccess}
-            onLogin={login}
-          />
+          {renderLoginContent()}
         </LoginFormWrapper>
       </PurpleLoginPage>
 

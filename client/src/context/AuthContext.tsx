@@ -19,6 +19,7 @@ interface LoginData {
   email?: string;
   phoneNumber?: string;
   group?: string;
+  groupToken?: string;
   age?: number;
 }
 
@@ -27,6 +28,7 @@ interface AuthContextType {
   participant: Participant | null;
   isAuthenticated: boolean;
   login: (data: LoginData) => Promise<void>;
+  establishSession: (token: string, activityCode?: string) => void;
   logout: () => void;
 }
 
@@ -66,6 +68,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   });
 
+  const persistSession = (newToken: string, activityCode?: string) => {
+    const decoded = decodeToken(newToken);
+    if (!decoded) return;
+    localStorage.setItem('yooz_token', newToken);
+    if (activityCode) sessionStorage.setItem('yooz_play_code', activityCode);
+    setToken(newToken);
+    setParticipant(decoded);
+  };
+
   const login = async (data: LoginData) => {
     const res = await apiFetch<{ token: string; participant: Participant }>('/api/auth/login', {
       method: 'POST',
@@ -101,10 +112,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
     if (newUserId) localStorage.setItem('yooz_last_user_id', newUserId);
-    localStorage.setItem('yooz_token', res.token);
-    if (data.activityCode) sessionStorage.setItem('yooz_play_code', data.activityCode);
-    setToken(res.token);
-    setParticipant(res.participant);
+    persistSession(res.token, data.activityCode);
+  };
+
+  const establishSession = (newToken: string, activityCode?: string) => {
+    persistSession(newToken, activityCode);
   };
 
   const logout = () => {
@@ -126,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ token, participant, isAuthenticated: !!token, login, logout }}>
+    <AuthContext.Provider value={{ token, participant, isAuthenticated: !!token, login, establishSession, logout }}>
       {children}
     </AuthContext.Provider>
   );

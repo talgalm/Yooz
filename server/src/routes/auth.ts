@@ -1,19 +1,13 @@
 import { Router, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '../config';
 import { LoginRequest, LoginResponse } from '../types';
-import { Activity, Portal, Report } from '../models';
-import { bumpParticipantCount } from '../utils/participantCountCache';
+import { Activity, Portal } from '../models';
+import { resolveGroupName, createParticipantSession } from '../utils/participantAuth';
+import { getGroupStatus } from '../utils/groupStatus';
 
 const router = Router();
 
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<LoginResponse | { error: string }>) => {
-  const { activityCode, participantName, email: rawEmail, phoneNumber, group } = req.body;
-  // Email is case-insensitive: normalize to lowercase so Orin@x and orin@x map to the same user
+  const { activityCode, participantName, email: rawEmail, phoneNumber, group, groupToken } = req.body;
   const email = rawEmail?.trim().toLowerCase();
 
   if (!activityCode) {
@@ -29,7 +23,6 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
 
   const loginFields = activity.loginFields || [];
 
-  // Validate required fields based on activity config
   if (loginFields.includes('email') && !email) {
     res.status(400).json({ error: 'Email is required for this activity' });
     return;
@@ -51,21 +44,18 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
     return;
   }
 
-  // Validate group if activity is group type
   const connectionType = activity.connectionType || 'single';
+  let resolvedGroup: string | undefined;
+
   if (connectionType === 'group') {
-    if (!group) {
-      res.status(400).json({ error: 'Group selection is required for this activity' });
+    const groupResult = await resolveGroupName(activity, { group, groupToken });
+    if ('error' in groupResult) {
+      res.status(groupResult.status).json({ error: groupResult.error });
       return;
     }
-    const validGroups = (activity.groups || []).map((g) => g.name);
-    if (!validGroups.includes(group)) {
-      res.status(400).json({ error: 'Invalid group selection' });
-      return;
-    }
+    resolvedGroup = groupResult.groupName;
   }
 
-  // Validate portal user for continuous activities
   if (activity.isContinuous && activity.portalId) {
     const portal = await Portal.findById(activity.portalId);
     if (!portal) {
@@ -74,7 +64,7 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
     }
     const lookupIdentifier = (participantName?.trim() || email?.trim() || '').toLowerCase();
     const portalUser = portal.users.find(
-      u => u.username.toLowerCase() === lookupIdentifier && u.status === 'approved'
+      (u) => u.username.toLowerCase() === lookupIdentifier && u.status === 'approved',
     );
     if (!portalUser) {
       res.status(403).json({ error: 'not_portal_user' });
@@ -82,65 +72,27 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
     }
   }
 
-  // Determine display name: prefer name > email > phone
   const displayName = participantName?.trim()
     || email?.trim()
     || phoneNumber?.trim()
     || 'Participant';
 
-  // Look for an existing Report for this participant in this activity
-  // Priority: email > phoneNumber > participantName
-  // Email match is case-insensitive (so older mixed-case rows still resolve).
-  const lookupQuery: Record<string, unknown> = { activityCode };
-  if (email) {
-    lookupQuery.email = { $regex: `^${escapeRegex(email)}$`, $options: 'i' };
-  } else if (phoneNumber) {
-    lookupQuery.phoneNumber = phoneNumber.trim();
-  } else {
-    lookupQuery.participantName = displayName;
+  const session = await createParticipantSession(activity, {
+    activityCode,
+    displayName,
+    email: email || undefined,
+    phoneNumber: phoneNumber?.trim(),
+    group: resolvedGroup,
+  });
+
+  let groupStatus;
+  if (connectionType === 'group' && activity.groupEntryMode === 'selfService' && resolvedGroup) {
+    groupStatus = await getGroupStatus(activity, resolvedGroup);
   }
-
-  const existingReport = await Report.findOne(lookupQuery).sort({ joinedAt: -1 });
-
-  // Use existing report's participantName so progress endpoints stay consistent
-  const resolvedName = existingReport?.participantName || displayName;
-
-  if (!existingReport) {
-    await Report.create({
-      activityId: activity._id,
-      activityCode,
-      participantName: resolvedName,
-      email: email?.trim(),
-      phoneNumber: phoneNumber?.trim(),
-      connectionType,
-      group,
-    });
-    bumpParticipantCount(activity._id);
-  }
-
-  const token = jwt.sign(
-    {
-      participantName: resolvedName,
-      activityCode,
-      connectionType,
-      ...(email && { email: email.trim() }),
-      ...(phoneNumber && { phoneNumber: phoneNumber.trim() }),
-      ...(group && { group }),
-    },
-    JWT_SECRET,
-    { expiresIn: '24h' }
-  );
 
   res.json({
-    token,
-    participant: {
-      name: resolvedName,
-      activityCode,
-      connectionType: connectionType as 'single' | 'group',
-      ...(email && { email: email.trim() }),
-      ...(phoneNumber && { phoneNumber: phoneNumber.trim() }),
-      ...(group && { group }),
-    },
+    ...session,
+    ...(groupStatus && { groupStatus }),
   });
 });
 

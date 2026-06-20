@@ -4,9 +4,27 @@ export type LoginField = 'email' | 'phoneNumber' | 'name';
 // Connection type (how participants connect)
 export type ConnectionType = 'single' | 'group';
 
+export type GroupEntryMode = 'preset' | 'selfService';
+
 // Group config
 export interface GroupConfig {
   name: string;
+}
+
+export interface GroupStatusResponse {
+  memberCount: number;
+  minMembers: number;
+  canProceed: boolean;
+  completedCount: number;
+  allMembersCompleted: boolean;
+}
+
+export interface GroupRewardConfig {
+  enabled: boolean;
+  couponCode: string;
+  messageTemplate?: string;
+  attachmentUrl?: string;
+  attachmentType?: 'image' | 'pdf';
 }
 
 // Admin types
@@ -239,6 +257,7 @@ export interface CreateActivityRequest {
   loginFields: LoginField[];
   emailGoogle?: boolean;
   connectionType: ConnectionType;
+  groupEntryMode?: GroupEntryMode;
   groups?: GroupConfig[];
   opening?: OpeningConfig | null;
   module?: ModuleConfigRequest;
@@ -256,6 +275,8 @@ export interface CreateActivityRequest {
   roadmapTimerMinutes?: number;
   includeOnRoadmap?: boolean;
   passThreshold?: number | null;
+  groupMinMembers?: number;
+  groupReward?: GroupRewardConfig;
 }
 
 export interface ActivityConfigResponse {
@@ -264,6 +285,7 @@ export interface ActivityConfigResponse {
   loginFields: LoginField[];
   emailGoogle?: boolean;
   connectionType: ConnectionType;
+  groupEntryMode?: GroupEntryMode;
   groups: GroupConfig[];
   opening?: OpeningConfig;
   scheduledStart?: string;
@@ -289,6 +311,25 @@ export interface LoginRequest {
   email?: string;
   phoneNumber?: string;
   group?: string;
+  groupToken?: string;
+}
+
+export interface CreateGroupRequest {
+  name: string;
+  participantName?: string;
+  phoneNumber?: string;
+  email?: string;
+}
+
+export interface CreateGroupResponse {
+  token: string;
+  participant: LoginResponse['participant'];
+  group: {
+    name: string;
+    inviteToken: string;
+    inviteUrl: string;
+  };
+  groupStatus?: GroupStatusResponse;
 }
 
 export interface LoginResponse {
@@ -301,6 +342,7 @@ export interface LoginResponse {
     phoneNumber?: string;
     group?: string;
   };
+  groupStatus?: GroupStatusResponse;
 }
 
 declare global {

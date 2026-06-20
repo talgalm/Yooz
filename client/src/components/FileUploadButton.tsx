@@ -32,7 +32,7 @@ interface FileUploadButtonProps {
   /** Accepted file types, e.g. "image/*", "video/*", "image/*,video/*" */
   accept: string;
   /** Called with the uploaded file URL on success */
-  onUploaded: (url: string) => void;
+  onUploaded: (url: string, file?: File) => void;
   /** Button label */
   label?: string;
   /** Uploading label */
@@ -54,7 +54,7 @@ export default function FileUploadButton({ accept, onUploaded, label = 'Upload',
     setUploading(true);
     try {
       const result = await adminUploadFile(file);
-      onUploaded(result.url);
+      onUploaded(result.url, file);
     } catch (err) {
       console.error('Upload failed:', err);
       alert(err instanceof Error ? err.message : 'Upload failed');

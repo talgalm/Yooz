@@ -1,6 +1,8 @@
 export { Station, type IStation } from './Station';
 export { Layout, type ILayout } from './Layout';
 export { Activity, type IActivity, type IModuleConfig, type IModuleItem } from './Activity';
+export { ActivityGroup, type IActivityGroup, normalizeGroupName } from './ActivityGroup';
+export { SmsNotification, type ISmsNotification, type SmsNotificationStatus } from './SmsNotification';
 export { Report, type IReport, type IReportData, type IItemResult, type IQuestionAnswer, type CompletionStatus } from './Report';
 export { Game, type IGame } from './Game';
 export { AdminAuditLog, type IAdminAuditLog } from './AdminAuditLog';

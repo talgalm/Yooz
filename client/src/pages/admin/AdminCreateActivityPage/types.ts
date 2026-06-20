@@ -1,5 +1,6 @@
 export type LoginField = 'email' | 'phoneNumber' | 'name';
 export type ConnectionType = 'single' | 'group';
+export type GroupEntryMode = 'preset' | 'selfService';
 export type ModuleType = 'none' | 'story' | 'spiders';
 export type OpeningType = 'none' | 'video' | 'image';
 export type TriggerPoint = 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
@@ -84,7 +85,10 @@ export interface Activity {
   loginFields: string[];
   emailGoogle?: boolean;
   connectionType: string;
+  groupEntryMode?: GroupEntryMode;
   groups: { name: string }[];
+  groupMinMembers?: number;
+  groupReward?: { enabled: boolean; couponCode: string; messageTemplate?: string; attachmentUrl?: string; attachmentType?: 'image' | 'pdf' };
   opening?: { type: 'video' | 'image'; url: string };
   module?: {
     type: string;

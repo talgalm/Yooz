@@ -13,6 +13,8 @@ import {
 import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginField } from '../types';
 import { Activity, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
 import { clampPassThreshold } from '../utils/scoreNormalization';
+import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
+import { IActivity } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
 
 const router = Router();
@@ -64,8 +66,12 @@ async function provisionActivityManager(
   return provisionManagerCustomer(managerEmail.trim(), managerPassword);
 }
 
-async function buildActivityData(body: CreateActivityRequest, existingPasswordHash?: string): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, hideLeaderboardInHeader, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
+async function buildActivityData(
+  body: CreateActivityRequest,
+  existingPasswordHash?: string,
+  existing?: IActivity,
+): Promise<Record<string, unknown>> {
+  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupReward, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, hideLeaderboardInHeader, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -79,7 +85,13 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
   }
   // Handle groups
   if (connectionType === 'group') {
-    if (groups && Array.isArray(groups) && groups.length > 0) {
+    const mode = groupEntryMode || 'preset';
+    data.groupEntryMode = mode;
+    if (mode === 'selfService') {
+      data.groups = [];
+      data.groupMinMembers = Math.max(1, groupMinMembers ?? 1);
+      data.groupReward = resolveGroupRewardForSave(groupReward, existing?.groupReward);
+    } else if (groups && Array.isArray(groups) && groups.length > 0) {
       data.groups = groups.map((g, i) => ({
         name: (g.name || '').trim() || `Group ${i + 1}`,
       }));
@@ -88,6 +100,9 @@ async function buildActivityData(body: CreateActivityRequest, existingPasswordHa
     }
   } else {
     data.groups = [];
+    data.groupEntryMode = undefined;
+    data.groupMinMembers = undefined;
+    data.groupReward = undefined;
   }
   // Handle opening (optional splash screen); null explicitly clears on update
   if (opening === null) {
@@ -399,7 +414,7 @@ router.put('/activities/:id', authenticateAdmin, async (req: Request<{ id: strin
   const moduleErr = await assertModuleOwnedByCustomer(req, req.body.module, existing);
   if (moduleErr) { res.status(403).json({ error: moduleErr }); return; }
 
-  const activityData = await buildActivityData(req.body, existing.managerPassword);
+  const activityData = await buildActivityData(req.body, existing.managerPassword, existing);
   const unset: Record<string, 1> = {};
   if (activityData.opening === null) {
     unset.opening = 1;

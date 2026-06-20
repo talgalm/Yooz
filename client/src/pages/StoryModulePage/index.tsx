@@ -419,21 +419,23 @@ export default function StoryModulePage() {
     sessionStorage.setItem(`yooz_session_${code}`, JSON.stringify(session));
   }, [code, sessionRestored, currentItemIndex, scores, phase, stationHintUsed, completedSpiderItems, showGuidelines]);
 
-  const fetchModule = useCallback((signal?: AbortSignal) => {
-    if (!code) return Promise.resolve();
-    return fetch(`/api/activities/${code}/module?group=${encodeURIComponent(participant?.group || '')}`, {
-      signal,
-      cache: 'no-store',
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed');
-        return res.json();
-      })
-      .then((d) => { setData(d); preloadActivityMedia(d); })
-      .catch((err) => {
-        if (err.name !== 'AbortError') setError(true);
+  const fetchModule = useCallback(async (signal?: AbortSignal) => {
+    if (!code) return;
+    try {
+      const d = await apiFetch<typeof data>(`/api/activities/${code}/module?group=${encodeURIComponent(participant?.group || '')}`, {
+        signal,
+        headers: { 'Cache-Control': 'no-store' },
       });
-  }, [code, participant?.group]);
+      setData(d);
+      preloadActivityMedia(d);
+    } catch (err) {
+      if (err instanceof Error && err.message === 'group_not_ready') {
+        navigate(`/play/${code}`, { replace: true });
+        return;
+      }
+      if (err instanceof Error && err.name !== 'AbortError') setError(true);
+    }
+  }, [code, participant?.group, navigate]);
 
   useEffect(() => {
     if (!code) return;

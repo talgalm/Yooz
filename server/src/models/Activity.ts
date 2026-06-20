@@ -74,12 +74,15 @@ export interface ICustomInstructions {
 }
 
 export interface IActivity {
+  _id?: Types.ObjectId;
   code: string;
   name: string;
   status: ActivityStatus;
   loginFields: string[];
   emailGoogle?: boolean;
   connectionType: string;
+  /** When connectionType is 'group': preset = admin-defined groups; selfService = participants create teams */
+  groupEntryMode?: 'preset' | 'selfService';
   groups: { name: string }[];
   opening?: IOpening;
   module?: IModuleConfig;
@@ -140,6 +143,17 @@ export interface IActivity {
     resultsRevealed: boolean;
     aggregatedRanking?: { item: string; bordaScore: number; rank: number }[];
     updatedAt: Date;
+  };
+  /** Self-service groups: minimum members before play can start (default 2). */
+  groupMinMembers?: number;
+  /** When enabled, highest-scoring group member gets an SMS coupon after all members finish. */
+  groupReward?: {
+    enabled: boolean;
+    couponCode: string;
+    messageTemplate?: string;
+    attachmentUrl?: string;
+    attachmentType?: 'image' | 'pdf';
+    downloadToken?: string;
   };
 }
 
@@ -219,6 +233,7 @@ const activitySchema = new Schema<IActivity>({
   loginFields: { type: [String], default: [] },
   emailGoogle: { type: Boolean },
   connectionType: { type: String, required: true, enum: ['single', 'group'], default: 'single' },
+  groupEntryMode: { type: String, enum: ['preset', 'selfService'] },
   groups: { type: [{ name: { type: String, required: true } }], default: [] },
   opening: { type: openingSchema },
   module: { type: moduleConfigSchema },
@@ -250,6 +265,18 @@ const activitySchema = new Schema<IActivity>({
   lockedFromIndex: { type: Number, default: null },
   includeOnRoadmap: { type: Boolean, default: false },
   orderSurveySession: { type: Schema.Types.Mixed, default: undefined },
+  groupMinMembers: { type: Number, default: 1 },
+  groupReward: {
+    type: new Schema({
+      enabled: { type: Boolean, default: false },
+      couponCode: { type: String, default: '' },
+      messageTemplate: { type: String },
+      attachmentUrl: { type: String },
+      attachmentType: { type: String, enum: ['image', 'pdf'] },
+      downloadToken: { type: String, index: true, sparse: true },
+    }, { _id: false }),
+    default: undefined,
+  },
 });
 
 export const Activity = model<IActivity>('Activity', activitySchema, 'activities');

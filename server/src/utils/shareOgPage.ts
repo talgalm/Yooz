@@ -11,6 +11,8 @@ export function isSocialCrawler(req: Request): boolean {
 export function requestOrigin(req: Request): string {
   const configured = process.env.SITE_URL?.replace(/\/$/, '');
   if (configured) return configured;
+  const origin = req.get('origin');
+  if (origin && /^https?:\/\/[^/]+$/i.test(origin)) return origin;
   const host = req.get('host');
   if (!host) return 'http://localhost';
   const proto = req.get('x-forwarded-proto') || req.protocol || 'https';

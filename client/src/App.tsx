@@ -92,6 +92,7 @@ export default function App() {
                 <Route path="/manager/present" element={<ManagerProtectedRoute><OrderSurveyPresentPage /></ManagerProtectedRoute>} />
 
                 {/* Participant routes — mobile layout */}
+                <Route path="/play/:code/join/:inviteToken" element={<MobileContainer><HelpChatProvider variant="fab"><PlayPage /><HelpChatFab /></HelpChatProvider></MobileContainer>} />
                 <Route path="/play/:code" element={<MobileContainer><HelpChatProvider variant="fab"><PlayPage /><HelpChatFab /></HelpChatProvider></MobileContainer>} />
                 <Route path="/home" element={<MobileContainer><HelpChatProvider variant="header"><ProtectedRoute><HomePage /></ProtectedRoute></HelpChatProvider></MobileContainer>} />
                 <Route path="/story/:code" element={<MobileContainer><HelpChatProvider variant="header" hideLogin><ProtectedRoute><StoryModulePage /></ProtectedRoute></HelpChatProvider></MobileContainer>} />

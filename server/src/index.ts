@@ -11,6 +11,8 @@ import {
   requestOrigin,
 } from './utils/shareOgPage';
 import { migrateActivities, seedSuperAdmin, seedBuiltInMission } from './db/seed';
+import { processExpiredRewardTimers } from './services/groupRewardService';
+import rewardDownloadRouter from './routes/rewardDownload';
 import authRouter from './routes/auth';
 import adminRouter from './routes/admin';
 import activitiesRouter from './routes/activities';
@@ -66,6 +68,7 @@ app.get('/api/health', async (_req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/activities', activitiesRouter);
+app.use('/api/reward-download', rewardDownloadRouter);
 app.use('/api/admin/games', gamesRouter);
 app.use('/api/admin/stations', stationsRouter);
 app.use('/api/manager', managerRouter);
@@ -148,6 +151,14 @@ async function start() {
   await migrateActivities();
   await seedSuperAdmin();
   await seedBuiltInMission();
+
+  const REWARD_TIMER_POLL_MS = 30_000;
+  setInterval(() => {
+    processExpiredRewardTimers().catch((err) => {
+      console.error('[groupReward] Timer poll failed:', err);
+    });
+  }, REWARD_TIMER_POLL_MS);
+
   app.listen(PORT, () => {
     console.log(`🚀 Yooz server running on http://localhost:${PORT}`);
   });

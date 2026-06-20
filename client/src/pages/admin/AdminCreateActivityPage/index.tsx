@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
@@ -34,6 +34,7 @@ import {
 import type {
   LoginField,
   ConnectionType,
+  GroupEntryMode,
   ModuleType,
   OpeningType,
   PopupContentType,
@@ -134,7 +135,7 @@ const StepBar = styled('div')({
   flexWrap: 'wrap',
 });
 
-const StepPill = styled('button')<{ active?: boolean; completed?: boolean; position: 'start' | 'end' }>(({ active, completed, position }) => ({
+const StepPill = styled('button')<{ active?: boolean; completed?: boolean; position: 'start' | 'middle' | 'end' }>(({ active, completed, position }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: 8,
@@ -187,6 +188,37 @@ const NameInput = styled(Input)({
   '&:focus': {
     borderColor: '#6c5ce7',
   },
+});
+
+
+const SmsTemplateArea = styled('textarea')({
+  width: '100%',
+  minHeight: 120,
+  padding: '14px 16px',
+  fontSize: 14,
+  fontFamily: 'inherit',
+  border: '1px solid #e0dce8',
+  borderRadius: 10,
+  resize: 'vertical',
+  boxSizing: 'border-box',
+  lineHeight: 1.5,
+  '&:focus': {
+    outline: 'none',
+    borderColor: '#6c5ce7',
+  },
+});
+
+const SmsVarChip = styled('button')({
+  fontSize: 12,
+  fontWeight: 600,
+  padding: '4px 10px',
+  borderRadius: 16,
+  border: '1px solid #d8d2e0',
+  background: '#f8f6fc',
+  color: '#6c5ce7',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  '&:hover': { background: '#f0eefa' },
 });
 
 
@@ -297,6 +329,13 @@ export default function AdminCreateActivityPage() {
   const [loginFields, setLoginFields] = useState<Set<LoginField>>(new Set(['name']));
   const [emailGoogle, setEmailGoogle] = useState(false);
   const [connectionType, setConnectionType] = useState<ConnectionType>('single');
+  const [groupEntryMode, setGroupEntryMode] = useState<GroupEntryMode>('preset');
+  const [groupMinMembers, setGroupMinMembers] = useState(1);
+  const [groupRewardEnabled, setGroupRewardEnabled] = useState(false);
+  const [groupRewardCoupon, setGroupRewardCoupon] = useState('');
+  const [groupRewardMessage, setGroupRewardMessage] = useState('');
+  const [groupRewardAttachmentUrl, setGroupRewardAttachmentUrl] = useState('');
+  const [groupRewardAttachmentType, setGroupRewardAttachmentType] = useState<'image' | 'pdf'>('image');
   const [groupCount, setGroupCount] = useState(2);
   const [groupNames, setGroupNames] = useState<string[]>(() => [defaultGroupName(1), defaultGroupName(2)]);
 
@@ -346,7 +385,7 @@ export default function AdminCreateActivityPage() {
   const [themeModalOpen, setThemeModalOpen] = useState(false);
   const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
 
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
 
   // Split-editor popup state: index into selectedItems of the collage being edited.
   const [splitEditorIndex, setSplitEditorIndex] = useState<number | null>(null);
@@ -354,6 +393,7 @@ export default function AdminCreateActivityPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEditMode);
+  const smsTemplateRef = useRef<HTMLTextAreaElement>(null);
 
   // Fetch custom themes on mount
   useEffect(() => {
@@ -391,9 +431,22 @@ export default function AdminCreateActivityPage() {
         setLoginFields(new Set(a.loginFields as LoginField[]));
         setEmailGoogle(a.emailGoogle || false);
         setConnectionType(a.connectionType as ConnectionType);
-        if (a.connectionType === 'group' && a.groups.length > 0) {
-          setGroupCount(a.groups.length);
-          setGroupNames(a.groups.map((g) => g.name));
+        if (a.connectionType === 'group') {
+          setGroupEntryMode(a.groupEntryMode === 'selfService' ? 'selfService' : 'preset');
+          setGroupMinMembers(a.groupMinMembers ?? 1);
+          if (a.groupReward) {
+            setGroupRewardEnabled(a.groupReward.enabled);
+            setGroupRewardCoupon(a.groupReward.couponCode || '');
+            setGroupRewardMessage(a.groupReward.messageTemplate || '');
+            if (a.groupReward.attachmentUrl) {
+              setGroupRewardAttachmentUrl(a.groupReward.attachmentUrl);
+              setGroupRewardAttachmentType(a.groupReward.attachmentType === 'pdf' ? 'pdf' : 'image');
+            }
+          }
+          if (a.groups.length > 0) {
+            setGroupCount(a.groups.length);
+            setGroupNames(a.groups.map((g) => g.name));
+          }
         }
         if (a.opening) {
           setOpeningType(a.opening.type as OpeningType);
@@ -751,11 +804,62 @@ export default function AdminCreateActivityPage() {
     setPopups((prev) => prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)));
   };
 
+  const smsAvailable = connectionType === 'group' && groupEntryMode === 'selfService';
+  const hasAnyField = loginFields.size > 0;
+  const isWizardModule = moduleType === 'story' || moduleType === 'spiders';
+  const canGoToStep2 = name.trim().length > 0 && hasAnyField && isWizardModule;
+  const canGoToStep3 = canGoToStep2;
+
+  useEffect(() => {
+    if (!isWizardModule && step > 1) setStep(1);
+  }, [isWizardModule, step]);
+
+  const insertSmsVariable = (token: string) => {
+    const el = smsTemplateRef.current;
+    if (!el) {
+      setGroupRewardMessage((prev) => prev + token);
+      return;
+    }
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? start;
+    const next = el.value.slice(0, start) + token + el.value.slice(end);
+    setGroupRewardMessage(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + token.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const isWizardModule = moduleType === 'story' || moduleType === 'spiders';
+    if (isWizardModule && step !== 3) {
+      if (step === 1 && canGoToStep2) setStep(2);
+      else if (step === 2) setStep(3);
+      return;
+    }
+
     if (!isEditMode && managerEmail.trim() && !managerPassword) {
       setError(t.managerPasswordRequired);
+      setStep(1);
+      return;
+    }
+    if (smsAvailable && groupRewardEnabled && !groupRewardCoupon.trim()) {
+      setError(t.groupRewardCouponRequired);
+      setStep(3);
+      return;
+    }
+    if (smsAvailable && groupRewardEnabled && !groupRewardAttachmentUrl.trim()) {
+      setError(t.groupRewardAttachmentRequired);
+      setStep(3);
+      return;
+    }
+    if (isWizardModule && selectedItems.length === 0) {
+      setError(t.step2ItemsRequired);
+      setStep(2);
       return;
     }
     setLoading(true);
@@ -768,7 +872,21 @@ export default function AdminCreateActivityPage() {
 
       if (loginFields.has('email') && emailGoogle) payload.emailGoogle = true;
       if (connectionType === 'group') {
-        payload.groups = groupNames.map((n) => ({ name: n.trim() || 'Group' }));
+        payload.groupEntryMode = groupEntryMode;
+        if (groupEntryMode === 'preset') {
+          payload.groups = groupNames.map((n) => ({ name: n.trim() || 'Group' }));
+        } else {
+          payload.groupMinMembers = groupMinMembers;
+          payload.groupReward = {
+            enabled: groupRewardEnabled,
+            couponCode: groupRewardCoupon.trim(),
+            ...(groupRewardMessage.trim() && { messageTemplate: groupRewardMessage.trim() }),
+            ...(groupRewardAttachmentUrl.trim() && {
+              attachmentUrl: groupRewardAttachmentUrl.trim(),
+              attachmentType: groupRewardAttachmentType,
+            }),
+          };
+        }
       }
       if (openingType === 'none') {
         payload.opening = null;
@@ -878,9 +996,7 @@ export default function AdminCreateActivityPage() {
     }
   };
 
-  const hasAnyField = loginFields.size > 0;
   if (initialLoading) return null;
-  const canGoToStep2 = name.trim().length > 0 && hasAnyField && (moduleType === 'story' || moduleType === 'spiders');
 
   return (
     <AdminPage>
@@ -898,7 +1014,7 @@ export default function AdminCreateActivityPage() {
               <StepPill
                 type="button"
                 active={step === 1}
-                completed={step === 2}
+                completed={step > 1}
                 position="start"
                 onClick={() => setStep(1)}
               >
@@ -908,13 +1024,24 @@ export default function AdminCreateActivityPage() {
               <StepPill
                 type="button"
                 active={step === 2}
-                completed={false}
-                position="end"
+                completed={step > 2}
+                position="middle"
                 disabled={!canGoToStep2}
                 onClick={() => canGoToStep2 && setStep(2)}
               >
                 <StepNumber active={step === 2}>2</StepNumber>
                 {t.step2Title}
+              </StepPill>
+              <StepPill
+                type="button"
+                active={step === 3}
+                completed={false}
+                position="end"
+                disabled={!canGoToStep3}
+                onClick={() => canGoToStep3 && setStep(3)}
+              >
+                <StepNumber active={step === 3}>3</StepNumber>
+                {t.step3Title}
               </StepPill>
             </StepBar>
           )}
@@ -1071,17 +1198,61 @@ export default function AdminCreateActivityPage() {
                       </SelectionGroup>
                       {connectionType === 'group' && (
                         <div>
-                          <SectionLabel>{t.groupConfig}</SectionLabel>
-                          <CounterRow>
-                            <CounterButton type="button" onClick={() => adjustGroupCount(-1)}>−</CounterButton>
-                            <CounterDisplay>{groupCount}</CounterDisplay>
-                            <CounterButton type="button" onClick={() => adjustGroupCount(1)}>+</CounterButton>
-                          </CounterRow>
-                          <VerticalStack>
-                            {groupNames.map((gName, i) => (
-                              <Input key={i} value={gName} onChange={(e) => updateGroupName(i, e.target.value)} placeholder={`${t.groupDefault} ${i + 1}`} />
-                            ))}
-                          </VerticalStack>
+                          <SectionLabel>{t.groupEntryMode}</SectionLabel>
+                          <SelectionGroup>
+                            <SelectionButton
+                              type="button"
+                              selected={groupEntryMode === 'preset'}
+                              onClick={() => setGroupEntryMode('preset')}
+                            >
+                              <div>{t.groupEntryPreset}</div>
+                              <SelectionSubtext>{t.groupEntryPresetDesc}</SelectionSubtext>
+                            </SelectionButton>
+                            <SelectionButton
+                              type="button"
+                              selected={groupEntryMode === 'selfService'}
+                              onClick={() => setGroupEntryMode('selfService')}
+                            >
+                              <div>{t.groupEntrySelfService}</div>
+                              <SelectionSubtext>{t.groupEntrySelfServiceDesc}</SelectionSubtext>
+                            </SelectionButton>
+                          </SelectionGroup>
+                          {groupEntryMode === 'selfService' && (
+                            <>
+                              <SectionLabel>{t.groupMinMembers}</SectionLabel>
+                              <CounterRow>
+                                <CounterButton
+                                  type="button"
+                                  onClick={() => setGroupMinMembers((n) => Math.max(1, n - 1))}
+                                >
+                                  −
+                                </CounterButton>
+                                <CounterDisplay>{groupMinMembers}</CounterDisplay>
+                                <CounterButton
+                                  type="button"
+                                  onClick={() => setGroupMinMembers((n) => Math.min(20, n + 1))}
+                                >
+                                  +
+                                </CounterButton>
+                              </CounterRow>
+                              <SectionDescription style={{ margin: '8px 0 0' }}>{t.groupMinMembersDesc}</SectionDescription>
+                            </>
+                          )}
+                          {groupEntryMode === 'preset' && (
+                            <>
+                              <SectionLabel>{t.groupConfig}</SectionLabel>
+                              <CounterRow>
+                                <CounterButton type="button" onClick={() => adjustGroupCount(-1)}>−</CounterButton>
+                                <CounterDisplay>{groupCount}</CounterDisplay>
+                                <CounterButton type="button" onClick={() => adjustGroupCount(1)}>+</CounterButton>
+                              </CounterRow>
+                              <VerticalStack>
+                                {groupNames.map((gName, i) => (
+                                  <Input key={i} value={gName} onChange={(e) => updateGroupName(i, e.target.value)} placeholder={`${t.groupDefault} ${i + 1}`} />
+                                ))}
+                              </VerticalStack>
+                            </>
+                          )}
                         </div>
                       )}
                     </SectionCard>
@@ -1496,9 +1667,135 @@ export default function AdminCreateActivityPage() {
                 </SectionCardWide>
 
                 <SectionCardWide>
-                  {error && <ErrorText>{error}</ErrorText>}
                   <StepNav>
                     <OutlineButton type="button" onClick={() => setStep(1)}>
+                      {t.prevStep} →
+                    </OutlineButton>
+                    <PrimaryButton
+                      type="button"
+                      onClick={() => setStep(3)}
+                      style={{ width: 'auto', padding: '12px 40px' }}
+                    >
+                      ← {t.nextStep}
+                    </PrimaryButton>
+                  </StepNav>
+                </SectionCardWide>
+              </>
+            )}
+
+            {/* ──── STEP 3 — After-activity SMS ──── */}
+            {step === 3 && (moduleType === 'story' || moduleType === 'spiders') && (
+              <>
+                <SectionCardWide>
+                  <SectionHeader>
+                    <SectionHeaderTitle>{t.step3Title}</SectionHeaderTitle>
+                  </SectionHeader>
+                  <SectionDescription style={{ margin: 0 }}>{t.afterActivitySmsDesc}</SectionDescription>
+
+                  {!smsAvailable && (
+                    <SectionDescription style={{ margin: '12px 0 0', color: '#e67e22' }}>
+                      {t.smsNotAvailable}
+                    </SectionDescription>
+                  )}
+
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      cursor: smsAvailable ? 'pointer' : 'not-allowed',
+                      fontSize: 14,
+                      marginTop: 16,
+                      opacity: smsAvailable ? 1 : 0.55,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={groupRewardEnabled}
+                      disabled={!smsAvailable}
+                      onChange={(e) => setGroupRewardEnabled(e.target.checked)}
+                      style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                    />
+                    {t.afterActivitySms}
+                  </label>
+
+                  {groupRewardEnabled && smsAvailable && (
+                    <VerticalStack style={{ marginTop: 16 }}>
+                      <div>
+                        <SectionLabelSmall>{t.groupRewardCoupon}</SectionLabelSmall>
+                        <Input
+                          placeholder={t.groupRewardCoupon}
+                          value={groupRewardCoupon}
+                          onChange={(e) => setGroupRewardCoupon(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <SectionLabelSmall>{t.smsAttachmentLabel}</SectionLabelSmall>
+                        <SectionDescription style={{ margin: '0 0 8px' }}>{t.smsAttachmentDesc}</SectionDescription>
+                        <InlineRowGap12 style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                          <FileUploadButton
+                            accept="image/*,.pdf,application/pdf"
+                            label={t.smsAttachmentUpload}
+                            uploadingLabel={t.uploading}
+                            onUploaded={(url, file) => {
+                              setGroupRewardAttachmentUrl(url);
+                              const isPdf = file?.type === 'application/pdf'
+                                || file?.name?.toLowerCase().endsWith('.pdf');
+                              setGroupRewardAttachmentType(isPdf ? 'pdf' : 'image');
+                            }}
+                          />
+                          {groupRewardAttachmentUrl && (
+                            <OutlineButton
+                              type="button"
+                              style={{ fontSize: 12, padding: '6px 12px' }}
+                              onClick={() => {
+                                setGroupRewardAttachmentUrl('');
+                                setGroupRewardAttachmentType('image');
+                              }}
+                            >
+                              {t.smsAttachmentRemove}
+                            </OutlineButton>
+                          )}
+                        </InlineRowGap12>
+                        {groupRewardAttachmentUrl && groupRewardAttachmentType === 'image' && (
+                          <img
+                            src={groupRewardAttachmentUrl}
+                            alt=""
+                            style={{ marginTop: 10, maxWidth: 200, maxHeight: 120, borderRadius: 8, objectFit: 'cover' }}
+                          />
+                        )}
+                        {groupRewardAttachmentUrl && groupRewardAttachmentType === 'pdf' && (
+                          <SectionDescription style={{ margin: '8px 0 0' }}>{t.smsAttachmentPdfReady}</SectionDescription>
+                        )}
+                      </div>
+                      <div>
+                        <SectionLabelSmall>{t.smsTemplateLabel}</SectionLabelSmall>
+                        <SmsTemplateArea
+                          ref={smsTemplateRef}
+                          placeholder={t.groupRewardMessagePlaceholder}
+                          value={groupRewardMessage}
+                          onChange={(e) => setGroupRewardMessage(e.target.value)}
+                        />
+                        <SectionDescription style={{ margin: '8px 0' }}>{t.groupRewardMessageHint}</SectionDescription>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {(['{name}', '{score}', '{coupon}', '{group}', '{link}'] as const).map((token) => (
+                            <SmsVarChip key={token} type="button" onClick={() => insertSmsVariable(token)}>
+                              {token}
+                            </SmsVarChip>
+                          ))}
+                        </div>
+                      </div>
+                      <SectionDescription style={{ margin: 0, fontSize: 13, color: '#6c5ce7' }}>
+                        {t.smsPreviewHint}
+                      </SectionDescription>
+                    </VerticalStack>
+                  )}
+                </SectionCardWide>
+
+                <SectionCardWide>
+                  {error && <ErrorText>{error}</ErrorText>}
+                  <StepNav>
+                    <OutlineButton type="button" onClick={() => setStep(2)}>
                       {t.prevStep} →
                     </OutlineButton>
                     <PrimaryButton type="submit" disabled={loading || !name || !hasAnyField} style={{ width: 'auto', padding: '12px 40px' }}>

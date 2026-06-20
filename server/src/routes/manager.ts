@@ -125,17 +125,21 @@ router.get('/reports', authenticateManager, async (req: Request, res: Response) 
 
   // Group standings (if group activity)
   let groupStandings: { name: string; totalScore: number; memberCount: number }[] = [];
-  if (activity.connectionType === 'group' && activity.groups.length > 0) {
+  if (activity.connectionType === 'group') {
     const groupMap = new Map<string, { totalScore: number; memberCount: number }>();
-    for (const g of activity.groups) {
-      groupMap.set(g.name, { totalScore: 0, memberCount: 0 });
+    if (activity.groupEntryMode !== 'selfService' && activity.groups.length > 0) {
+      for (const g of activity.groups) {
+        groupMap.set(g.name, { totalScore: 0, memberCount: 0 });
+      }
     }
     for (const p of participants) {
-      if (p.group && groupMap.has(p.group)) {
-        const entry = groupMap.get(p.group)!;
-        entry.totalScore += Number(p.totalScore) || 0;
-        entry.memberCount += 1;
+      if (!p.group) continue;
+      if (!groupMap.has(p.group)) {
+        groupMap.set(p.group, { totalScore: 0, memberCount: 0 });
       }
+      const entry = groupMap.get(p.group)!;
+      entry.totalScore += Number(p.totalScore) || 0;
+      entry.memberCount += 1;
     }
     groupStandings = Array.from(groupMap.entries())
       .map(([name, data]) => ({ name, ...data }))
