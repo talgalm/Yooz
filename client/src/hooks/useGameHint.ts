@@ -1,11 +1,12 @@
 import { useState, useCallback } from 'react';
+import { GAME_CONSTANTS } from '../components/games/types';
 
 interface HintConfig {
   enabled: boolean;
   text: string;
 }
 
-const HINT_PENALTY = 5;
+const HINT_PENALTY = GAME_CONSTANTS.HINT_PENALTY;
 
 interface UseGameHintReturn {
   hintUsed: boolean;
