@@ -974,11 +974,15 @@ export default function StoryModulePage() {
     return { text: hint.text || '', imageUrl: hint.imageUrl || '', free: !!hint.free };
   };
 
+  // True when the hint configured on the current item is marked "free" — no
+  // point penalty, no confirmation, and (in time mode) no 4-minute time penalty.
+  const isCurrentStationHintFree = (): boolean =>
+    !!(data && getStationHint(data.module.items[currentItemIndex])?.free);
+
   const handleStationHintClick = () => {
     // Free hints skip the cost warning and never enter `stationHintUsed`, so no
     // point/time penalty is applied — clicking just reveals the clue.
-    const hint = data ? getStationHint(data.module.items[currentItemIndex]) : null;
-    if (hint?.free) {
+    if (isCurrentStationHintFree()) {
       setShowStationHintText(true);
       return;
     }
@@ -1005,16 +1009,23 @@ export default function StoryModulePage() {
       setShowStationHintText(true);
       return;
     }
-    setStationHintUsed((prev) => new Set(prev).add(currentItemIndex));
-    if (isTimeMode) {
-      applyTimePenalty(GAME_CONSTANTS.HINT_TIME_PENALTY_MS);
+    // Defense in depth: a free hint should never reach this confirm flow (the
+    // warning is skipped in handleStationHintClick), but gate the penalties here
+    // too so the cost can never be charged for a free hint via any future path.
+    if (!isCurrentStationHintFree()) {
+      setStationHintUsed((prev) => new Set(prev).add(currentItemIndex));
+      if (isTimeMode) {
+        applyTimePenalty(GAME_CONSTANTS.HINT_TIME_PENALTY_MS);
+      }
     }
     setShowStationHintText(true);
   };
 
-  // EnteringText "show solution" hint: always costs 4 minutes (regardless of
-  // mode — even in points mode the time is still recorded for the leaderboard).
+  // EnteringText "show solution" hint: costs 4 minutes (regardless of mode —
+  // even in points mode the time is still recorded for the leaderboard), unless
+  // the station's hint is marked free, in which case no time is charged.
   const handleEnteringTextSolutionHintUsed = () => {
+    if (isCurrentStationHintFree()) return;
     applyTimePenalty(GAME_CONSTANTS.SOLUTION_HINT_TIME_PENALTY_MS);
   };
 
