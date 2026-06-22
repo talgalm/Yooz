@@ -9,9 +9,20 @@ export const texts = {
     tabLeaderboard: 'Leaderboard',
     tabParticipants: 'Participants',
     tabGroups: 'Groups',
+    tabCoupons: 'Coupons',
     tabControlFlow: 'Control Flow',
     openPresenter: 'Open survey screen',
     live: 'Live',
+
+    // Coupons tab
+    coupon: 'Coupon',
+    smsStatus: 'Status',
+    sentAt: 'Sent',
+    status_sent: 'Sent',
+    status_pending: 'Pending',
+    status_failed: 'Failed',
+    status_skipped: 'Skipped',
+    noCoupons: 'No coupons sent yet.',
 
     // Control Flow
     controlFlowTitle: 'Activity flow control',
@@ -75,9 +86,20 @@ export const texts = {
     tabLeaderboard: 'טבלת ניקוד',
     tabParticipants: 'משתתפים',
     tabGroups: 'קבוצות',
+    tabCoupons: 'קופונים',
     tabControlFlow: 'שליטה',
     openPresenter: 'פתח מסך סקר',
     live: 'בשידור חי',
+
+    // Coupons tab
+    coupon: 'קופון',
+    smsStatus: 'סטטוס',
+    sentAt: 'נשלח',
+    status_sent: 'נשלח',
+    status_pending: 'בהמתנה',
+    status_failed: 'נכשל',
+    status_skipped: 'דולג',
+    noCoupons: 'עדיין לא נשלחו קופונים.',
 
     // Control Flow
     controlFlowTitle: 'בקרת זרימת פעילות',

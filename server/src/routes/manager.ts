@@ -5,6 +5,7 @@ import { JWT_SECRET } from '../config';
 import { authenticateManager } from '../middleware/managerAuth';
 import { ManagerLoginRequest } from '../types';
 import { Activity, Report, Game, Station, Mission } from '../models';
+import { SmsNotification } from '../models/SmsNotification';
 import { broadcastLock } from '../utils/lockBroadcaster';
 import { closeOrderSurveyVoting, getOrderSurveyLiveState } from '../utils/orderSurveySession';
 
@@ -152,6 +153,40 @@ router.get('/reports', authenticateManager, async (req: Request, res: Response) 
     participants,
     groupStandings,
   });
+});
+
+// Manager: list of SMS coupons sent (or attempted) for the activity.
+router.get('/sms-notifications', authenticateManager, async (req: Request, res: Response) => {
+  const { activityCode } = req.manager!;
+
+  const activity = await Activity.findOne({ code: activityCode }).lean();
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  const enabled = !!activity.groupReward?.enabled && !!activity.groupReward?.couponCode?.trim();
+
+  const notifications = await SmsNotification.find(
+    { activityCode },
+    {
+      recipientName: 1,
+      phoneNumber: 1,
+      couponCode: 1,
+      message: 1,
+      status: 1,
+      error: 1,
+      provider: 1,
+      providerMessageId: 1,
+      groupName: 1,
+      createdAt: 1,
+      sentAt: 1,
+    },
+  )
+    .sort({ createdAt: -1 })
+    .lean();
+
+  res.json({ enabled, notifications });
 });
 
 // Manager: get module items (for the Control Flow tab) and current lock state.

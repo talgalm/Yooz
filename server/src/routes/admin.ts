@@ -16,6 +16,7 @@ import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { IActivity } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
+import { getSmsProvider } from '../services/sms/smsProvider';
 
 const router = Router();
 
@@ -648,6 +649,22 @@ router.get('/random-items', authenticateAdmin, async (req: Request, res: Respons
   }
 
   res.json({ items });
+});
+
+// Send a test SMS using the currently-configured provider — used by the
+// admin "test SMS" button on the activity creation page.
+router.post('/sms/test', authenticateAdmin, async (req: Request<{}, {}, { phoneNumber?: string; message?: string }>, res: Response) => {
+  const phone = (req.body.phoneNumber || '').trim();
+  const message = (req.body.message || '').trim();
+  if (!phone) return res.status(400).json({ error: 'phoneNumber is required' });
+  if (!message) return res.status(400).json({ error: 'message is required' });
+
+  const provider = getSmsProvider();
+  const result = await provider.send(phone, message);
+  if (!result.success) {
+    return res.status(502).json({ error: result.error || 'SMS send failed', provider: provider.name });
+  }
+  res.json({ ok: true, provider: provider.name, providerMessageId: result.providerMessageId });
 });
 
 export default router;

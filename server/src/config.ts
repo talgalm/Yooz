@@ -35,6 +35,11 @@ export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 export const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY || '';
 export const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION || '';
 
+// TextMe (https://my.textme.co.il/api) SMS provider config
+export const TEXTME_API_TOKEN = process.env.TEXTME_API_TOKEN || '';
+export const TEXTME_USERNAME = process.env.TEXTME_USERNAME || '';
+export const TEXTME_SOURCE = process.env.TEXTME_SOURCE || 'Yooz';
+
 if (!process.env.JWT_SECRET) {
   console.warn('⚠ JWT_SECRET not set in .env, using fallback (not safe for production)');
 }

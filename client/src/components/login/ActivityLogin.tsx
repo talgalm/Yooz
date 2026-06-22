@@ -5,6 +5,7 @@ import GroupSelector from './GroupSelector';
 import { Form } from '../styled';
 import { styled } from '@mui/material/styles';
 import { isGoogleAuthAvailable, openGooglePopup, fetchGoogleEmail } from '../../utils/googleAuth';
+import SmsConsent from '../SmsConsent';
 
 type LoginField = 'email' | 'phoneNumber' | 'name';
 type ConnectionType = 'single' | 'group';
@@ -132,6 +133,7 @@ export default function ActivityLogin({
   const [selectedGroup, setSelectedGroup] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [smsConsent, setSmsConsent] = useState(false);
   const t = useTranslations(texts);
 
   // Ref for group so Google popup callback can read latest value
@@ -152,7 +154,7 @@ export default function ActivityLogin({
     !loading &&
     (!hasName || name.length > 0) &&
     (!hasEmail || email.length > 0) &&
-    (!hasPhone || phoneNumber.length > 0) &&
+    (!hasPhone || (phoneNumber.length > 0 && smsConsent)) &&
     (!isGroup || selectedGroup.length > 0);
 
   const buildLoginData = (overrideEmail?: string): LoginData => ({
@@ -232,6 +234,8 @@ export default function ActivityLogin({
           onChange={setSelectedGroup}
         />
       )}
+
+      {hasPhone && <SmsConsent checked={smsConsent} onChange={setSmsConsent} />}
 
       {error && <LoginErrorText>{error}</LoginErrorText>}
 

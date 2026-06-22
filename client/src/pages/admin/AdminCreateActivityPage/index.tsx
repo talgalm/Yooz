@@ -336,6 +336,9 @@ export default function AdminCreateActivityPage() {
   const [groupRewardMessage, setGroupRewardMessage] = useState('');
   const [groupRewardAttachmentUrl, setGroupRewardAttachmentUrl] = useState('');
   const [groupRewardAttachmentType, setGroupRewardAttachmentType] = useState<'image' | 'pdf'>('image');
+  const [smsTestPhone, setSmsTestPhone] = useState('');
+  const [smsTestSending, setSmsTestSending] = useState(false);
+  const [smsTestFeedback, setSmsTestFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [groupCount, setGroupCount] = useState(2);
   const [groupNames, setGroupNames] = useState<string[]>(() => [defaultGroupName(1), defaultGroupName(2)]);
 
@@ -829,6 +832,29 @@ export default function AdminCreateActivityPage() {
       const pos = start + token.length;
       el.setSelectionRange(pos, pos);
     });
+  };
+
+  const handleSendTestSms = async () => {
+    setSmsTestFeedback(null);
+    const phone = smsTestPhone.trim();
+    if (!phone) return;
+    const message = groupRewardMessage.trim();
+    if (!message) {
+      setSmsTestFeedback({ ok: false, msg: t.smsTestEmptyTemplate });
+      return;
+    }
+    setSmsTestSending(true);
+    try {
+      await adminApiFetch<{ ok: boolean }>('/api/admin/sms/test', {
+        method: 'POST',
+        body: JSON.stringify({ phoneNumber: phone, message }),
+      });
+      setSmsTestFeedback({ ok: true, msg: t.smsTestSuccess });
+    } catch (err) {
+      setSmsTestFeedback({ ok: false, msg: err instanceof Error ? err.message : 'Send failed' });
+    } finally {
+      setSmsTestSending(false);
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -1788,6 +1814,44 @@ export default function AdminCreateActivityPage() {
                       <SectionDescription style={{ margin: 0, fontSize: 13, color: '#6c5ce7' }}>
                         {t.smsPreviewHint}
                       </SectionDescription>
+
+                      <div style={{ marginTop: 8, padding: 14, borderRadius: 12, background: '#f1f8f4', border: '1px solid #cde9d6' }}>
+                        <SectionLabelSmall style={{ marginBottom: 4 }}>{t.smsTestTitle}</SectionLabelSmall>
+                        <SectionDescription style={{ margin: '0 0 10px' }}>{t.smsTestDesc}</SectionDescription>
+                        <InlineRowGap12 style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                          <Input
+                            type="tel"
+                            placeholder={t.smsTestPhonePlaceholder}
+                            value={smsTestPhone}
+                            onChange={(e) => setSmsTestPhone(e.target.value)}
+                            style={{ flex: '1 1 200px', minWidth: 180 }}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleSendTestSms}
+                            disabled={smsTestSending || !smsTestPhone.trim()}
+                            style={{
+                              padding: '10px 18px',
+                              fontSize: 14,
+                              fontWeight: 700,
+                              color: '#fff',
+                              background: '#27ae60',
+                              border: 'none',
+                              borderRadius: 8,
+                              cursor: smsTestSending || !smsTestPhone.trim() ? 'not-allowed' : 'pointer',
+                              opacity: smsTestSending || !smsTestPhone.trim() ? 0.6 : 1,
+                              fontFamily: 'inherit',
+                            }}
+                          >
+                            {smsTestSending ? t.smsTestSending : t.smsTestSend}
+                          </button>
+                        </InlineRowGap12>
+                        {smsTestFeedback && (
+                          <SectionDescription style={{ margin: '8px 0 0', color: smsTestFeedback.ok ? '#27ae60' : '#e74c3c' }}>
+                            {smsTestFeedback.msg}
+                          </SectionDescription>
+                        )}
+                      </div>
                     </VerticalStack>
                   )}
                 </SectionCardWide>

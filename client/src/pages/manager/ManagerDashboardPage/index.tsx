@@ -67,7 +67,29 @@ interface ReportsResponse {
   groupStandings: GroupStanding[];
 }
 
-type TabKey = 'overview' | 'leaderboard' | 'participants' | 'groups' | 'controlFlow';
+type TabKey = 'overview' | 'leaderboard' | 'participants' | 'groups' | 'coupons' | 'controlFlow';
+
+type SmsStatus = 'pending' | 'sent' | 'failed' | 'skipped';
+
+interface SmsNotificationRow {
+  _id: string;
+  recipientName: string;
+  phoneNumber: string;
+  couponCode: string;
+  message: string;
+  status: SmsStatus;
+  error?: string;
+  provider: string;
+  providerMessageId?: string;
+  groupName: string;
+  createdAt: string;
+  sentAt?: string;
+}
+
+interface SmsNotificationsResponse {
+  enabled: boolean;
+  notifications: SmsNotificationRow[];
+}
 
 // ─── Styled Components ───
 
@@ -280,6 +302,7 @@ const LIVE_POLL_MS = 5000;
 
 export default function ManagerDashboardPage() {
   const [data, setData] = useState<ReportsResponse | null>(null);
+  const [smsData, setSmsData] = useState<SmsNotificationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const { manager, logout } = useManagerAuth();
@@ -297,9 +320,19 @@ export default function ManagerDashboardPage() {
     }
   }, []);
 
+  const fetchSmsNotifications = useCallback(async () => {
+    try {
+      const res = await managerApiFetch<SmsNotificationsResponse>('/api/manager/sms-notifications');
+      setSmsData(res);
+    } catch {
+      // ignore — keep previous snapshot
+    }
+  }, []);
+
   useEffect(() => {
     fetchReports();
-  }, [fetchReports]);
+    fetchSmsNotifications();
+  }, [fetchReports, fetchSmsNotifications]);
 
   // Live polling — refresh while the tab is visible
   useEffect(() => {
@@ -310,8 +343,14 @@ export default function ManagerDashboardPage() {
       if (cancelled) return;
       if (document.visibilityState === 'visible') {
         try {
-          const res = await managerApiFetch<ReportsResponse>('/api/manager/reports');
-          if (!cancelled) setData(res);
+          const [reports, sms] = await Promise.all([
+            managerApiFetch<ReportsResponse>('/api/manager/reports'),
+            managerApiFetch<SmsNotificationsResponse>('/api/manager/sms-notifications').catch(() => null),
+          ]);
+          if (!cancelled) {
+            setData(reports);
+            if (sms) setSmsData(sms);
+          }
         } catch {
           // ignore — keep previous snapshot
         }
@@ -346,6 +385,7 @@ export default function ManagerDashboardPage() {
   const handleRefresh = () => {
     setLoading(true);
     fetchReports();
+    fetchSmsNotifications();
   };
 
   // ─── Derived stats ───
@@ -481,6 +521,20 @@ export default function ManagerDashboardPage() {
               {t.tabGroups}
             </TabBtn>
           )}
+          {smsData?.enabled && (
+            <TabBtn
+              type="button"
+              role="tab"
+              aria-selected={activeTab === 'coupons'}
+              active={activeTab === 'coupons'}
+              onClick={() => setActiveTab('coupons')}
+            >
+              {t.tabCoupons}
+              {smsData.notifications.length > 0 && (
+                <TabCount>{smsData.notifications.length}</TabCount>
+              )}
+            </TabBtn>
+          )}
           <TabBtn
             type="button"
             role="tab"
@@ -504,6 +558,9 @@ export default function ManagerDashboardPage() {
         )}
         {activeTab === 'groups' && data && isGroup && (
           <GroupsTab groupStandings={data.groupStandings} t={t} />
+        )}
+        {activeTab === 'coupons' && smsData?.enabled && (
+          <CouponsTab notifications={smsData.notifications} t={t} />
         )}
         {activeTab === 'controlFlow' && (
           <ControlFlowTab t={t} />
@@ -669,6 +726,112 @@ function ParticipantsTab({ data, t }: { data: ReportsResponse; t: Record<string,
                   <td><ParticipantMeta>{new Date(p.joinedAt).toLocaleDateString()}</ParticipantMeta></td>
                 </tr>
               ))}
+            </tbody>
+          </Table>
+        </OverflowWrapper>
+      </AdminCardNoPadding>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
+    </>
+  );
+}
+
+// ─── Tab: Coupons (SMS notifications) ───
+
+const StatusPill = styled('span')<{ tone: 'sent' | 'pending' | 'failed' | 'skipped' }>(({ tone }) => {
+  const palette = {
+    sent: { bg: '#dcfce7', fg: '#166534' },
+    pending: { bg: '#fef9c3', fg: '#854d0e' },
+    failed: { bg: '#fee2e2', fg: '#b91c1c' },
+    skipped: { bg: '#e5e7eb', fg: '#4b5563' },
+  }[tone];
+  return {
+    display: 'inline-block',
+    padding: '3px 10px',
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: 700,
+    background: palette.bg,
+    color: palette.fg,
+    whiteSpace: 'nowrap',
+  };
+});
+
+const CouponMono = styled('span')({
+  fontFamily: 'monospace',
+  fontWeight: 700,
+  letterSpacing: 0.5,
+  padding: '2px 8px',
+  borderRadius: 6,
+  background: '#f3eefc',
+  color: '#6c5ce7',
+  fontSize: 13,
+});
+
+function CouponsTab({
+  notifications,
+  t,
+}: {
+  notifications: SmsNotificationRow[];
+  t: Record<string, string>;
+}) {
+  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(notifications);
+
+  if (notifications.length === 0) {
+    return (
+      <AdminCardNoPadding>
+        <EmptyText>{t.noCoupons}</EmptyText>
+      </AdminCardNoPadding>
+    );
+  }
+
+  return (
+    <>
+      <AdminCardNoPadding sx={{ marginBottom: '16px' }}>
+        <OverflowWrapper>
+          <Table>
+            <thead>
+              <tr>
+                <th>{t.name}</th>
+                <th>{t.phone}</th>
+                <th>{t.coupon}</th>
+                <th>{t.group}</th>
+                <th>{t.smsStatus}</th>
+                <th>{t.sentAt}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageItems.map((n) => {
+                const statusLabel = t[`status_${n.status}`] || n.status;
+                const sentDate = n.sentAt ? new Date(n.sentAt) : null;
+                return (
+                  <tr key={n._id}>
+                    <td>
+                      <ParticipantName>{n.recipientName}</ParticipantName>
+                    </td>
+                    <td>
+                      <ParticipantMeta>{n.phoneNumber || '—'}</ParticipantMeta>
+                    </td>
+                    <td><CouponMono>{n.couponCode}</CouponMono></td>
+                    <td>{n.groupName ? <Badge>{n.groupName}</Badge> : '—'}</td>
+                    <td>
+                      <StatusPill tone={n.status}>{statusLabel}</StatusPill>
+                      {n.status === 'failed' && n.error && (
+                        <ParticipantMeta title={n.error} style={{ marginTop: 4 }}>
+                          {n.error.length > 50 ? `${n.error.slice(0, 50)}…` : n.error}
+                        </ParticipantMeta>
+                      )}
+                      {n.status === 'skipped' && n.error && (
+                        <ParticipantMeta style={{ marginTop: 4 }}>{n.error}</ParticipantMeta>
+                      )}
+                    </td>
+                    <td>
+                      <ParticipantMeta>
+                        {sentDate ? sentDate.toLocaleString() : '—'}
+                      </ParticipantMeta>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </Table>
         </OverflowWrapper>

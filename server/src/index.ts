@@ -2,7 +2,13 @@ import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import { PORT, CLIENT_BUILD_PATH } from './config';
+import {
+  PORT,
+  CLIENT_BUILD_PATH,
+  TEXTME_API_TOKEN,
+  TEXTME_USERNAME,
+  TEXTME_SOURCE,
+} from './config';
 import { connectDB } from './db/connection';
 import { Activity } from './models';
 import {
@@ -12,6 +18,8 @@ import {
 } from './utils/shareOgPage';
 import { migrateActivities, seedSuperAdmin, seedBuiltInMission } from './db/seed';
 import { processExpiredRewardTimers } from './services/groupRewardService';
+import { setSmsProvider } from './services/sms/smsProvider';
+import { TextmeSmsProvider } from './services/sms/textmeSmsProvider';
 import rewardDownloadRouter from './routes/rewardDownload';
 import authRouter from './routes/auth';
 import adminRouter from './routes/admin';
@@ -151,6 +159,13 @@ async function start() {
   await migrateActivities();
   await seedSuperAdmin();
   await seedBuiltInMission();
+
+  if (TEXTME_API_TOKEN && TEXTME_USERNAME) {
+    setSmsProvider(new TextmeSmsProvider(TEXTME_API_TOKEN, TEXTME_USERNAME, TEXTME_SOURCE));
+    console.log(`📱 SMS provider: textme.co.il (source: ${TEXTME_SOURCE})`);
+  } else {
+    console.log('📱 SMS provider: stub (set TEXTME_API_TOKEN, TEXTME_USERNAME to enable)');
+  }
 
   const REWARD_TIMER_POLL_MS = 30_000;
   setInterval(() => {

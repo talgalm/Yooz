@@ -10,6 +10,7 @@ import {
   TeamNameBadge,
 } from './styled';
 import { GroupEntryBackButton } from './GroupEntryChoice';
+import SmsConsent from '../SmsConsent';
 
 type LoginField = 'email' | 'phoneNumber' | 'name';
 
@@ -41,6 +42,7 @@ export default function JoinGroupLogin({
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [smsConsent, setSmsConsent] = useState(false);
 
   const hasName = loginFields.includes('name');
   const hasPhone = loginFields.includes('phoneNumber');
@@ -49,7 +51,7 @@ export default function JoinGroupLogin({
   const canSubmit =
     !loading &&
     (!hasName || name.length > 0) &&
-    (!hasPhone || phoneNumber.length > 0) &&
+    (!hasPhone || (phoneNumber.length > 0 && smsConsent)) &&
     (!hasEmail || email.length > 0);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -104,6 +106,8 @@ export default function JoinGroupLogin({
           required
         />
       )}
+
+      {hasPhone && <SmsConsent checked={smsConsent} onChange={setSmsConsent} />}
 
       {error && <GroupEntryError>{error}</GroupEntryError>}
 
