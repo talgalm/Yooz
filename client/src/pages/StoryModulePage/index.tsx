@@ -5,7 +5,7 @@ import { HelpChatHeaderButton } from '../../components/HelpChat';
 import { useAuth } from '../../context/AuthContext';
 import { ActivityPlayingHeaderProvider } from '../../context/activityPlayingHeaderContext';
 import { useTranslations } from '../../context/LanguageContext';
-import { apiFetch, apiFetchWithRetry } from '../../utils/api';
+import { apiFetch, apiFetchPersistSilent, apiFetchWithRetry } from '../../utils/api';
 import { preloadActivityMedia } from '../../utils/mediaPreloader';
 import { texts } from './StoryModulePage.i18n';
 import { GAME_CONSTANTS, type GameResult } from '../../components/games/types';
@@ -268,7 +268,6 @@ export default function StoryModulePage() {
   const [showFootsteps, setShowFootsteps] = useState(false);
   const [entryTransitionStage, setEntryTransitionStage] = useState<'idle' | 'closing' | 'opening'>('idle');
   const scoresSaved = useRef(false);
-  const [finishSaveState, setFinishSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const entryTransitionTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
   const sessionStartedAt = useRef((() => {
     const token = localStorage.getItem('yooz_token') ?? 'anon';
@@ -466,7 +465,7 @@ export default function StoryModulePage() {
       };
     }
 
-    await apiFetchWithRetry(`/api/activities/${code}/progress`, {
+    await apiFetchPersistSilent(`/api/activities/${code}/progress`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     });
@@ -478,6 +477,7 @@ export default function StoryModulePage() {
       const d = await apiFetchWithRetry<ActivityModuleResponse>(
         `/api/activities/${code}/module?group=${encodeURIComponent(participant?.group || '')}`,
         { signal, headers: { 'Cache-Control': 'no-store' } },
+        10,
       );
       setData(d);
       setError(false);
@@ -498,18 +498,22 @@ export default function StoryModulePage() {
     }
   }, [code, participant?.group, navigate]);
 
-  const handleRetryLoad = useCallback(() => {
-    setError(false);
-    setLoading(true);
-    fetchModule().finally(() => setLoading(false));
-  }, [fetchModule]);
-
   useEffect(() => {
     if (!code) return;
     const controller = new AbortController();
     fetchModule(controller.signal).finally(() => setLoading(false));
     return () => controller.abort();
   }, [code, fetchModule]);
+
+  // Silently retry module load while the error screen is visible (no UI change).
+  useEffect(() => {
+    if (!error || !code) return;
+    const id = setInterval(() => {
+      if (!navigator.onLine) return;
+      fetchModule().then(() => setError(false)).catch(() => {});
+    }, 8000);
+    return () => clearInterval(id);
+  }, [error, code, fetchModule]);
 
   // Refetch module content when the tab regains visibility (catches edits made in other tabs)
   useEffect(() => {
@@ -595,10 +599,7 @@ export default function StoryModulePage() {
 
   // Lock the final session duration the moment we arrive at the finish screen.
   useEffect(() => {
-    if (phase !== 'finish') {
-      setFinishSaveState('idle');
-      return;
-    }
+    if (phase !== 'finish') return;
     setFinalDurationMs((prev) => prev ?? Date.now() - sessionStartedAt.current);
   }, [phase]);
 
@@ -883,17 +884,15 @@ export default function StoryModulePage() {
     );
 
     if (code) {
-      try {
-        await apiFetchWithRetry(`/api/activities/${code}/progress`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            itemResult,
-            totalItemsCompleted: completedCount,
-            lastActiveItemIndex: currentItemIndex,
-            runningTotal,
-          }),
-        });
-      } catch { /* sessionStorage still holds local state */ }
+      await apiFetchPersistSilent(`/api/activities/${code}/progress`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          itemResult,
+          totalItemsCompleted: completedCount,
+          lastActiveItemIndex: currentItemIndex,
+          runningTotal,
+        }),
+      });
     }
 
     advanceToNextItem();
@@ -928,7 +927,7 @@ export default function StoryModulePage() {
       },
     };
 
-    await apiFetchWithRetry(`/api/activities/${code}/progress`, {
+    await apiFetchPersistSilent(`/api/activities/${code}/progress`, {
       method: 'PATCH',
       body: JSON.stringify({
         itemResult,
@@ -954,7 +953,7 @@ export default function StoryModulePage() {
     ]);
 
     if (code) {
-      apiFetchWithRetry(`/api/activities/${code}/progress`, {
+      void apiFetchPersistSilent(`/api/activities/${code}/progress`, {
         method: 'PATCH',
         body: JSON.stringify({
           progressOnly: true,
@@ -962,16 +961,14 @@ export default function StoryModulePage() {
           lastActiveItemIndex: currentItemIndex,
           runningTotal,
         }),
-      }).catch(() => { /* best effort */ });
+      });
     }
 
     advanceToNextItem();
   };
 
   const handleStationContinue = async () => {
-    try {
-      await saveItemProgress();
-    } catch { /* sessionStorage still holds local state */ }
+    await saveItemProgress();
     advanceToNextItem();
   };
 
@@ -982,9 +979,7 @@ export default function StoryModulePage() {
   /** Triggered by a "last step" station to end the activity immediately,
    *  skipping any remaining roadmap items and going straight to finish. */
   const handleStationFinishActivity = async () => {
-    try {
-      await saveItemProgress();
-    } catch { /* best effort */ }
+    await saveItemProgress();
     showPopupsOrRun('afterItem', currentItemIndex, () => {
       showPopupsOrRun('endOfActivity', undefined, () => {
         setPhase('finish');
@@ -1021,17 +1016,15 @@ export default function StoryModulePage() {
     const runningTotal = scores.reduce((sum, s) => sum + s.score, 0);
 
     if (code) {
-      try {
-        await apiFetchWithRetry(`/api/activities/${code}/progress`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            itemResult,
-            totalItemsCompleted: completedCount,
-            lastActiveItemIndex: currentItemIndex,
-            runningTotal,
-          }),
-        });
-      } catch { /* sessionStorage still holds local state */ }
+      await apiFetchPersistSilent(`/api/activities/${code}/progress`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          itemResult,
+          totalItemsCompleted: completedCount,
+          lastActiveItemIndex: currentItemIndex,
+          runningTotal,
+        }),
+      });
     }
 
     advanceToNextItem();
@@ -1111,40 +1104,37 @@ export default function StoryModulePage() {
   // session is marked completed and sessionDurationMs is saved — required for
   // the participant to appear on the leaderboard (especially time mode).
   useEffect(() => {
-    if (phase !== 'finish' || !code) return;
-    if (finishSaveState === 'saved' || finishSaveState === 'saving') return;
+    if (phase !== 'finish' || scoresSaved.current || !code) return;
 
-    setFinishSaveState('saving');
     const totalHintPen = stationHintUsed.size * stationHintPenalty;
     const scorePayload = scores.map((s) => ({ gameName: s.gameName, score: s.score }));
     if (totalHintPen > 0) {
       scorePayload.push({ gameName: 'Hint Penalty', score: -totalHintPen });
     }
 
-    let cancelled = false;
-    (async () => {
-      try {
-        await apiFetchWithRetry(`/api/activities/${code}/scores`, {
-          method: 'POST',
-          body: JSON.stringify({
-            scores: scorePayload,
-            sessionDurationMs: Date.now() - sessionStartedAt.current,
-          }),
-        }, 5);
-        if (cancelled) return;
-        scoresSaved.current = true;
-        setFinishSaveState('saved');
-      } catch {
-        if (!cancelled) setFinishSaveState('failed');
+    const url = `/api/activities/${code}/scores`;
+    const body = JSON.stringify({
+      scores: scorePayload,
+      sessionDurationMs: Date.now() - sessionStartedAt.current,
+    });
+
+    const attemptSave = async () => {
+      if (scoresSaved.current) return;
+      await apiFetchPersistSilent(url, { method: 'POST', body });
+      scoresSaved.current = true;
+    };
+
+    void attemptSave();
+    const interval = setInterval(() => {
+      if (scoresSaved.current) {
+        clearInterval(interval);
+        return;
       }
-    })();
+      void attemptSave();
+    }, 15_000);
 
-    return () => { cancelled = true; };
-  }, [phase, code, scores, stationHintUsed, stationHintPenalty, finishSaveState]);
-
-  const retryFinishSave = useCallback(() => {
-    setFinishSaveState('idle');
-  }, []);
+    return () => clearInterval(interval);
+  }, [phase, code, scores, stationHintUsed, stationHintPenalty]);
 
   // Fetch leaderboard
   const leaderboardAbortRef = useRef<AbortController | null>(null);
@@ -1155,15 +1145,20 @@ export default function StoryModulePage() {
     leaderboardAbortRef.current = controller;
     setLeaderboardLoading(true);
     try {
-      const res = await fetch(`/api/activities/${code}/leaderboard`, { signal: controller.signal });
-      if (res.ok) {
-        const d = await res.json();
-        setLeaderboard(d.leaderboard || []);
+      for (let attempt = 0; attempt < 4; attempt++) {
+        try {
+          const res = await fetch(`/api/activities/${code}/leaderboard`, { signal: controller.signal });
+          if (res.ok) {
+            const d = await res.json();
+            setLeaderboard(d.leaderboard || []);
+            return;
+          }
+        } catch (err) {
+          if ((err as Error).name === 'AbortError') return;
+          if (attempt < 3) await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        }
       }
-    } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        setLeaderboard([]);
-      }
+      setLeaderboard([]);
     } finally {
       setLeaderboardLoading(false);
     }
@@ -1264,9 +1259,7 @@ export default function StoryModulePage() {
       <PageShell>
         <PageContainer>
           <CenteredContent>
-            <BodyText style={{ fontWeight: 600, fontSize: 18, marginBottom: 8 }}>{t.error}</BodyText>
-            <BodyText style={{ marginBottom: 16 }}>{t.errorMessage}</BodyText>
-            <OutlineButton onClick={handleRetryLoad}>{t.retry}</OutlineButton>
+            <BodyText>{t.error}</BodyText>
           </CenteredContent>
         </PageContainer>
       </PageShell>
@@ -1484,30 +1477,6 @@ export default function StoryModulePage() {
           popupModal={popupModal}
           t={t}
         />
-        {finishSaveState === 'failed' && (
-          <button
-            type="button"
-            onClick={retryFinishSave}
-            style={{
-              position: 'fixed',
-              bottom: 24,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              zIndex: 9999,
-              padding: '12px 20px',
-              borderRadius: 10,
-              border: 'none',
-              background: '#e74c3c',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: 14,
-              cursor: 'pointer',
-              maxWidth: '90%',
-            }}
-          >
-            {t.finishSaveFailed}
-          </button>
-        )}
         {entryTransitionStage !== 'idle' && (
           <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
         )}

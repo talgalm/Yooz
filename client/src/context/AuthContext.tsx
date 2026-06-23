@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { apiFetchWithRetry } from '../utils/api';
+import { flushOfflineQueue } from '../utils/offlineQueue';
 
 type ConnectionType = 'single' | 'group';
 
@@ -113,10 +114,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (newUserId) localStorage.setItem('yooz_last_user_id', newUserId);
     persistSession(res.token, data.activityCode);
+    void flushOfflineQueue();
   };
 
   const establishSession = (newToken: string, activityCode?: string) => {
     persistSession(newToken, activityCode);
+    void flushOfflineQueue();
   };
 
   const logout = () => {

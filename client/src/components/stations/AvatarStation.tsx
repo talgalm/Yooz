@@ -62,6 +62,20 @@ interface PreparedSpeech {
   stop: () => void;
 }
 
+async function fetchWithNetworkRetry(url: string, options: RequestInit, retries = 4): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fetch(url, options);
+    } catch (err) {
+      lastError = err;
+      if (!(err instanceof TypeError) || attempt >= retries - 1) throw err;
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
+
 /** Pre-fetch and buffer TTS audio so playback can start with no network gap.
  *  Falls back to browser SpeechSynthesis when the TTS API is unavailable. */
 async function prepareSpeech(
@@ -69,7 +83,7 @@ async function prepareSpeech(
   voiceType: 'man' | 'woman' = 'man'
 ): Promise<PreparedSpeech> {
   try {
-    const res = await fetch('/api/tts', {
+    const res = await fetchWithNetworkRetry('/api/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, voiceType }),
@@ -190,7 +204,7 @@ async function askAvatar(
   history: { role: 'user' | 'character'; text: string }[]
 ): Promise<string> {
   try {
-    const res = await fetch('/api/avatar-chat', {
+    const res = await fetchWithNetworkRetry('/api/avatar-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message, settings, history }),

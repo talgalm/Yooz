@@ -76,7 +76,6 @@ export default function OrderSurveyGame({
   const [submittedRanking, setSubmittedRanking] = useState<string[]>([]);
   const [resultsRevealed, setResultsRevealed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
   const gameStartTime = useRef(Date.now());
 
   const [dragInfo, setDragInfo] = useState<{
@@ -181,7 +180,6 @@ export default function OrderSurveyGame({
   const handleSubmit = async () => {
     if (submitted || submitting || cards.length === 0) return;
     setSubmitting(true);
-    setSubmitError('');
     const payload: OrderSurveySubmitPayload = {
       ranking: [...cards],
       items: [...referenceItems],
@@ -192,8 +190,6 @@ export default function OrderSurveyGame({
       await onSurveySubmit?.(payload);
       setSubmittedRanking(payload.ranking);
       setSubmitted(true);
-    } catch {
-      setSubmitError(t.submitFailed);
     } finally {
       setSubmitting(false);
     }
@@ -368,11 +364,6 @@ export default function OrderSurveyGame({
         </NatureCardsList>
 
         <OrderActionBar>
-          {submitError && (
-            <IntroDescText style={{ textAlign: 'center', color: '#c0392b', marginBottom: 8 }}>
-              {submitError}
-            </IntroDescText>
-          )}
           {!submitted ? (
             <NatureCheckButton onClick={() => void handleSubmit()} disabled={submitting}>
               {t.submitRanking}

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ensureOfflineQueueListeners } from './utils/offlineQueue';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
 import { ManagerAuthProvider, useManagerAuth } from './context/ManagerAuthContext';
 import { LanguageProvider } from './context/LanguageContext';
@@ -63,6 +64,7 @@ function ManagerPublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  ensureOfflineQueueListeners();
   return (
     <ErrorBoundary>
     <LanguageProvider>

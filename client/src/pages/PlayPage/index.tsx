@@ -138,7 +138,6 @@ export default function PlayPage() {
   const [loadError, setLoadError] = useState(false);
   const [slowLoad, setSlowLoad] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const [enterError, setEnterError] = useState(false);
   const { login, establishSession, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const t = useTranslations(texts);
@@ -294,13 +293,13 @@ export default function PlayPage() {
     (async () => {
       try {
         if (isSelfService) {
-          const status = await apiFetch<{ canProceed: boolean }>(
+          const status = await apiFetchWithRetry<{ canProceed: boolean }>(
             `/api/activities/${encodeURIComponent(activity.code)}/groups/status`,
           );
           if (!status.canProceed || cancelled) return;
         }
 
-        const progress = await apiFetch<{
+        const progress = await apiFetchWithRetry<{
           completionStatus: string;
           totalItemsCompleted: number;
         }>(`/api/activities/${code}/my-progress`);
@@ -496,16 +495,18 @@ export default function PlayPage() {
       : t.connectAndPlay;
 
   const handleSuccess = async () => {
-    setEnterError(false);
     if (isSelfService && activity) {
-      try {
-        const status = await apiFetchWithRetry<{ canProceed: boolean }>(
-          `/api/activities/${encodeURIComponent(activity.code)}/groups/status`,
-        );
-        if (!status.canProceed) return;
-      } catch {
-        setEnterError(true);
-        return;
+      for (let attempt = 0; attempt < 6; attempt++) {
+        try {
+          const status = await apiFetchWithRetry<{ canProceed: boolean }>(
+            `/api/activities/${encodeURIComponent(activity.code)}/groups/status`,
+          );
+          if (!status.canProceed) return;
+          break;
+        } catch {
+          if (attempt >= 5) return;
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        }
       }
     }
     if (activity?.moduleType === 'mission') {
@@ -690,11 +691,6 @@ export default function PlayPage() {
         <LoginHeading>{loginHeading}</LoginHeading>
         <LoginSubheading>{loginSubheading}</LoginSubheading>
         <LoginFormWrapper>
-          {enterError && (
-            <BodyText style={{ color: '#ffcdd2', textAlign: 'center', marginBottom: 12 }}>
-              {t.enterFailed}
-            </BodyText>
-          )}
           {renderLoginContent()}
         </LoginFormWrapper>
       </PurpleLoginPage>

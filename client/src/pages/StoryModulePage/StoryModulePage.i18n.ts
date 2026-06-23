@@ -1,9 +1,7 @@
 export const texts = {
   en: {
     loading: 'Loading...',
-    error: 'Connection problem',
-    errorMessage: 'We couldn\'t reach the server. Your progress is saved — try again.',
-    retry: 'Try again',
+    error: 'Failed to load activity',
     welcome: 'Welcome!',
     startButton: 'Start',
     step: 'Step',
@@ -75,9 +73,7 @@ export const texts = {
   },
   he: {
     loading: 'טוען...',
-    error: 'בעיית חיבור',
-    errorMessage: 'לא הצלחנו להתחבר לשרת. ההתקדמות שלכם שמורה — נסו שוב.',
-    retry: 'נסו שוב',
+    error: 'שגיאה בטעינת הפעילות',
     welcome: 'ברוכים הבאים!',
     startButton: 'התחילו',
     step: 'שלב',
