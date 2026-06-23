@@ -6,6 +6,7 @@ import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './PlayPage.i18n';
 import ActivityLogin from '../../components/login/ActivityLogin';
 import { apiFetch, apiFetchWithRetry } from '../../utils/api';
+import { participantMissionPath, participantStoryPath, rememberActivityCode } from '../../utils/participantActivity';
 import GroupEntryChoice from '../../components/groupEntry/GroupEntryChoice';
 import CreateGroupForm from '../../components/groupEntry/CreateGroupForm';
 import GroupCreatedSuccess from '../../components/groupEntry/GroupCreatedSuccess';
@@ -166,6 +167,11 @@ export default function PlayPage() {
     if (!isAuthenticated) resumeCheckedForCode.current = null;
   }, [isAuthenticated]);
 
+  // Remember activity as soon as the QR / link is opened (before login).
+  useEffect(() => {
+    if (code) rememberActivityCode(code);
+  }, [code]);
+
   useEffect(() => {
     if (!code) return;
     let cancelled = false;
@@ -308,9 +314,9 @@ export default function PlayPage() {
         if (progress.completionStatus !== 'in_progress' || progress.totalItemsCompleted <= 0) return;
 
         if (activity.moduleType === 'mission') {
-          navigate(`/mission/${activity.code}`, { replace: true });
+          navigate(participantMissionPath(activity.code), { replace: true });
         } else if (activity.moduleType === 'story' || activity.moduleType === 'spiders') {
-          navigate(`/story/${activity.code}`, { replace: true });
+          navigate(participantStoryPath(activity.code), { replace: true });
         }
       } catch {
         // Stay on login — user can sign in manually
@@ -510,11 +516,11 @@ export default function PlayPage() {
       }
     }
     if (activity?.moduleType === 'mission') {
-      navigate(`/mission/${activity.code}`);
+      navigate(participantMissionPath(activity.code), { replace: true });
     } else if (activity?.moduleType === 'story' || activity?.moduleType === 'spiders') {
-      navigate(`/story/${activity.code}`);
+      navigate(participantStoryPath(activity.code), { replace: true });
     } else {
-      navigate('/home');
+      navigate('/home', { replace: true });
     }
   };
 

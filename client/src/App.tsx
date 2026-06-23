@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ensureOfflineQueueListeners } from './utils/offlineQueue';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
@@ -20,20 +20,40 @@ import PortalPage from './pages/portal/PortalPage';
 import ManagerLoginPage from './pages/manager/ManagerLoginPage';
 import ManagerDashboardPage from './pages/manager/ManagerDashboardPage';
 import OrderSurveyPresentPage from './pages/manager/OrderSurveyPresentPage';
-import LandingPage from './pages/LandingPage';
 import PrivacyPage from './pages/PrivacyPage';
 import SharedStatsPage from './pages/shared/SharedStatsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpChatProvider, HelpChatFab } from './components/HelpChat';
 import AdminHelpChat from './components/AdminHelpChat';
 import { MobileContainer } from './components/MobileContainer';
+import ParticipantActivityScope from './components/ParticipantActivityScope';
+import ParticipantLandingRedirect from './components/ParticipantLandingRedirect';
 import './App.css';
+import { participantPlayPath, resolveParticipantActivityCode } from './utils/participantActivity';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
+  const { code: urlCode } = useParams<{ code?: string }>();
+  const { pathname } = useLocation();
   if (isAuthenticated) return <>{children}</>;
-  const lastCode = sessionStorage.getItem('yooz_play_code');
-  return <Navigate to={lastCode ? `/play/${lastCode}` : '/'} replace />;
+  const activityCode = resolveParticipantActivityCode({ urlCode, pathname });
+  return <Navigate to={participantPlayPath(activityCode)} replace />;
+}
+
+/** Unknown paths: keep participants on their activity login, not the marketing landing page. */
+function FallbackRedirect() {
+  const { pathname } = useLocation();
+  if (
+    pathname.startsWith('/admin')
+    || pathname.startsWith('/manager')
+    || pathname.startsWith('/portal')
+    || pathname.startsWith('/stats')
+    || pathname === '/privacy'
+  ) {
+    return <Navigate to="/" replace />;
+  }
+  const activityCode = resolveParticipantActivityCode({ pathname });
+  return <Navigate to={participantPlayPath(activityCode)} replace />;
 }
 
 function AdminProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -94,11 +114,11 @@ export default function App() {
                 <Route path="/manager/present" element={<ManagerProtectedRoute><OrderSurveyPresentPage /></ManagerProtectedRoute>} />
 
                 {/* Participant routes — mobile layout */}
-                <Route path="/play/:code/join/:inviteToken" element={<MobileContainer><HelpChatProvider variant="fab"><PlayPage /><HelpChatFab /></HelpChatProvider></MobileContainer>} />
-                <Route path="/play/:code" element={<MobileContainer><HelpChatProvider variant="fab"><PlayPage /><HelpChatFab /></HelpChatProvider></MobileContainer>} />
-                <Route path="/home" element={<MobileContainer><HelpChatProvider variant="header"><ProtectedRoute><HomePage /></ProtectedRoute></HelpChatProvider></MobileContainer>} />
-                <Route path="/story/:code" element={<MobileContainer><HelpChatProvider variant="header" hideLogin><ProtectedRoute><StoryModulePage /></ProtectedRoute></HelpChatProvider></MobileContainer>} />
-                <Route path="/mission/:code" element={<MobileContainer><HelpChatProvider variant="fab" hideLogin><ProtectedRoute><MissionPage /></ProtectedRoute><HelpChatFab /></HelpChatProvider></MobileContainer>} />
+                <Route path="/play/:code/join/:inviteToken" element={<ParticipantActivityScope><MobileContainer><HelpChatProvider variant="fab"><PlayPage /><HelpChatFab /></HelpChatProvider></MobileContainer></ParticipantActivityScope>} />
+                <Route path="/play/:code" element={<ParticipantActivityScope><MobileContainer><HelpChatProvider variant="fab"><PlayPage /><HelpChatFab /></HelpChatProvider></MobileContainer></ParticipantActivityScope>} />
+                <Route path="/home" element={<ParticipantActivityScope><MobileContainer><HelpChatProvider variant="header"><ProtectedRoute><HomePage /></ProtectedRoute></HelpChatProvider></MobileContainer></ParticipantActivityScope>} />
+                <Route path="/story/:code" element={<ParticipantActivityScope><MobileContainer><HelpChatProvider variant="header" hideLogin><ProtectedRoute><StoryModulePage /></ProtectedRoute></HelpChatProvider></MobileContainer></ParticipantActivityScope>} />
+                <Route path="/mission/:code" element={<ParticipantActivityScope><MobileContainer><HelpChatProvider variant="fab" hideLogin><ProtectedRoute><MissionPage /></ProtectedRoute><HelpChatFab /></HelpChatProvider></MobileContainer></ParticipantActivityScope>} />
 
                 {/* Portal route — public */}
                 <Route path="/portal/:code" element={<PortalPage />} />
@@ -110,8 +130,8 @@ export default function App() {
                 <Route path="/stats/:token" element={<SharedStatsPage />} />
 
                 {/* Default: YOOZ landing page — responsive (mobile + desktop) */}
-                <Route path="/" element={<LandingPage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="/" element={<ParticipantLandingRedirect />} />
+                <Route path="*" element={<FallbackRedirect />} />
               </Routes>
             </BrowserRouter>
           </ManagerAuthProvider>

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { apiFetchWithRetry } from '../utils/api';
 import { flushOfflineQueue } from '../utils/offlineQueue';
+import { rememberActivityCode, rememberParticipantActivity } from '../utils/participantActivity';
 
 type ConnectionType = 'single' | 'group';
 
@@ -58,7 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('yooz_token');
     if (saved) {
       const decoded = decodeToken(saved);
-      if (decoded) return saved;
+      if (decoded) {
+        rememberActivityCode(decoded.activityCode);
+        return saved;
+      }
       localStorage.removeItem('yooz_token');
     }
     return null;
@@ -73,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const decoded = decodeToken(newToken);
     if (!decoded) return;
     localStorage.setItem('yooz_token', newToken);
-    if (activityCode) sessionStorage.setItem('yooz_play_code', activityCode);
+    rememberActivityCode(activityCode || decoded.activityCode);
     setToken(newToken);
     setParticipant(decoded);
   };
@@ -123,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    rememberParticipantActivity(participant?.activityCode);
     localStorage.removeItem('yooz_token');
     for (let i = sessionStorage.length - 1; i >= 0; i -= 1) {
       const key = sessionStorage.key(i);

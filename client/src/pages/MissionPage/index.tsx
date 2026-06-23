@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { rememberActivityCode } from '../../utils/participantActivity';
+import { useParticipantExit } from '../../hooks/useParticipantExit';
 import { useTranslations } from '../../context/LanguageContext';
 import { apiFetchPersistSilent, apiFetchWithRetry } from '../../utils/api';
 import { texts } from './MissionPage.i18n';
@@ -161,6 +163,7 @@ const BROWSER_CHROME_COLOR = '#1a0a2e';
 export default function MissionPage() {
   const { code } = useParams<{ code: string }>();
   const { participant } = useAuth();
+  const exitActivity = useParticipantExit();
   const t = useTranslations(texts);
   const sounds = useMissionSounds();
   const [mission, setMission] = useState<MissionData | null>(null);
@@ -173,6 +176,13 @@ export default function MissionPage() {
   const sessionStartRef = useRef(Date.now());
   const puzzleStartRef = useRef(Date.now());
 
+  useEffect(() => {
+    if (code) rememberActivityCode(code);
+  }, [code]);
+
+  const handleLogout = useCallback(() => {
+    exitActivity(code);
+  }, [code, exitActivity]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -373,6 +383,7 @@ export default function MissionPage() {
         code={code}
         completeHeader={mission.puzzleConfig?.completeHeader}
         completeButton={mission.puzzleConfig?.completeButton}
+        onLogout={handleLogout}
       />
     );
   }
@@ -403,6 +414,7 @@ export default function MissionPage() {
         badgeAchievementText={mission.trashSortConfig?.badgeAchievementText}
         shareButton={mission.trashSortConfig?.shareButton}
         continueButton={mission.trashSortConfig?.continueButton}
+        onLogout={handleLogout}
       />
     );
   }
@@ -435,7 +447,7 @@ export default function MissionPage() {
         )}
 
         {/* Info menu (top-right): tap to open menu with mute/help/logout rows */}
-        <MissionTopMenu toggleMute={sounds.toggleMute} muted={sounds.muted} />
+        <MissionTopMenu onLogout={handleLogout} toggleMute={sounds.toggleMute} muted={sounds.muted} />
 
         {/* Header - only shown if has content */}
         {hasHeader && (

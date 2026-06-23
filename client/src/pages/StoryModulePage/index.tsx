@@ -6,6 +6,8 @@ import { useAuth } from '../../context/AuthContext';
 import { ActivityPlayingHeaderProvider } from '../../context/activityPlayingHeaderContext';
 import { useTranslations } from '../../context/LanguageContext';
 import { apiFetch, apiFetchPersistSilent, apiFetchWithRetry } from '../../utils/api';
+import { participantPlayPath, rememberActivityCode } from '../../utils/participantActivity';
+import { useParticipantExit } from '../../hooks/useParticipantExit';
 import { preloadActivityMedia } from '../../utils/mediaPreloader';
 import { texts } from './StoryModulePage.i18n';
 import { GAME_CONSTANTS, type GameResult } from '../../components/games/types';
@@ -250,8 +252,9 @@ const ENTRY_TRANSITION_OPEN_MS = 480;
 
 export default function StoryModulePage() {
   const { code } = useParams<{ code: string }>();
-  const { participant, logout } = useAuth();
+  const { participant } = useAuth();
   const navigate = useNavigate();
+  const exitActivity = useParticipantExit();
   const t = useTranslations(texts);
 
   const [data, setData] = useState<ActivityModuleResponse | null>(null);
@@ -261,6 +264,10 @@ export default function StoryModulePage() {
   // Live manager-controlled progress lock (SSE). Initial value comes from the
   // module fetch; SSE updates override it as soon as the manager toggles.
   const lockedFromIndex = useLockStream(code, data?.lockedFromIndex ?? null);
+
+  useEffect(() => {
+    if (code) rememberActivityCode(code);
+  }, [code]);
 
   const [phase, setPhase] = useState<Phase>('roadmap');
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
@@ -488,7 +495,7 @@ export default function StoryModulePage() {
         // Only kick to login on the initial load — a background refetch must not
         // eject the participant mid-activity when the connection flickers.
         if (opts?.soft && hasModuleData.current) return;
-        navigate(`/play/${code}`, { replace: true });
+        navigate(participantPlayPath(code), { replace: true });
         return;
       }
       if (err instanceof Error && err.name !== 'AbortError') {
@@ -562,14 +569,12 @@ export default function StoryModulePage() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const doExit = useCallback(() => {
-    const loginPath = code ? `/play/${code}` : '/';
     if (countdownRef.current) clearInterval(countdownRef.current);
     if (code) sessionStorage.removeItem(`yooz_session_${code}`);
     const token = localStorage.getItem('yooz_token') ?? 'anon';
     if (code) localStorage.removeItem(`yooz_start_${code}_${token}`);
-    navigate(loginPath, { replace: true });
-    logout();
-  }, [code, logout, navigate]);
+    exitActivity(code);
+  }, [code, exitActivity]);
 
   const handleExit = useCallback(() => {
     if (data?.isContinuous && phase !== 'finish') {
@@ -1576,7 +1581,7 @@ export default function StoryModulePage() {
           <BodyText sx={{ marginBottom: '24px', color: '#fff' }}>{t.totalScore}</BodyText>
           <OutlineButton
             style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.6)' }}
-            onClick={() => navigate('/home')}
+            onClick={() => navigate(participantPlayPath(code), { replace: true })}
           >
             {t.backToHome}
           </OutlineButton>

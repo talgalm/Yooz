@@ -1,5 +1,7 @@
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { rememberParticipantActivity } from '../../utils/participantActivity';
+import { useParticipantExit } from '../../hooks/useParticipantExit';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './HomePage.i18n';
 import LangDrawer from '../../components/LangDrawer';
@@ -17,15 +19,13 @@ import {
 import { GroupText } from '../admin/styled';
 
 export default function HomePage() {
-  const { participant, logout } = useAuth();
+  const { participant } = useAuth();
   const t = useTranslations(texts);
-  const navigate = useNavigate();
+  const exitActivity = useParticipantExit();
 
-  const handleLogout = () => {
-    const loginPath = participant?.activityCode ? `/play/${participant.activityCode}` : '/';
-    navigate(loginPath, { replace: true });
-    logout();
-  };
+  useEffect(() => {
+    rememberParticipantActivity(participant?.activityCode);
+  }, [participant?.activityCode]);
 
   return (
     <PageContainer>
@@ -34,7 +34,7 @@ export default function HomePage() {
         <HeaderActions>
           <LangDrawer />
           <HelpChatHeaderButton tone="light" />
-          <OutlineButton onClick={handleLogout}>{t.leave}</OutlineButton>
+          <OutlineButton onClick={() => exitActivity(participant?.activityCode)}>{t.leave}</OutlineButton>
         </HeaderActions>
       </HeaderBar>
       <CenteredContent>
