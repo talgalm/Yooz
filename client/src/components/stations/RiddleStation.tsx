@@ -58,53 +58,62 @@ const fadeIn = keyframes`
 
 const Container = styled('div')({
   flex: 1,
+  minHeight: 0,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  // Bottom padding reserves a safety zone above the fixed SubmitButton so the
-  padding: '32px 20px 120px',
-  gap: 16,
-  overflowY: 'auto',
+  // No scroll: everything fits one screen. The image (MediaSlot) flex-shrinks
+  // to whatever vertical space is left after title/clue/boxes/buttons.
+  padding: '16px 20px 20px',
+  gap: 12,
+  overflow: 'hidden',
   // Desktop: cap to a centered column so clue + image + letter boxes don't
   // stretch edge to edge of a wide monitor (QA Jun 2026 page 15 #17).
   '@media (min-width: 768px)': {
     width: 'min(840px, 90vw)',
     marginInline: 'auto',
-    padding: '48px 24px 180px',
-    gap: 24,
+    padding: '24px 24px 28px',
+    gap: 18,
   },
 });
 
 const StationTitle = styled('h2')({
-  fontSize: 26,
+  fontSize: 24,
   fontWeight: 800,
   color: '#fff',
   WebkitTextStroke: '1.5px #000',
   paintOrder: 'stroke fill',
   margin: 0,
-  marginBottom: 16,
   textAlign: 'center',
-  position: 'sticky',
-  top: 0,
-  zIndex: 10,
-  paddingTop: 8,
+  flexShrink: 0,
   '@media (min-width: 768px)': {
     fontSize: 34,
-    marginBottom: 24,
   },
 });
 
 const ClueText = styled('p')({
-  fontSize: 22,
+  fontSize: 20,
   fontWeight: 800,
   color: '#111',
   textAlign: 'center',
   margin: 0,
-  lineHeight: 1.4,
+  lineHeight: 1.35,
+  flexShrink: 0,
   '@media (min-width: 768px)': {
     fontSize: 28,
     maxWidth: 'min(640px, 80vw)',
   },
+});
+
+// Flex slot that absorbs all remaining vertical space; the image scales down
+// inside it (object-fit: contain) so the station never needs to scroll.
+const MediaSlot = styled('div')({
+  flex: '1 1 0',
+  minHeight: 0,
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
 });
 
 const MediaWrapper = styled('div')({
@@ -127,15 +136,16 @@ const MediaWrapper = styled('div')({
 
 const RiddleMediaImage = styled('img')({
   display: 'block',
+  // Bounded by the flex MediaSlot (which has a definite height), so the image
+  // shrinks to fit the leftover space — no scroll. Decoration lives on the img
+  // itself: with only max-* set the element hugs the scaled image, so the
+  // shadow never sticks out past it (QA Jun 2026 page 15 shadow-ratio note).
   maxWidth: '100%',
-  // Viewport-relative so the image scales with phone size instead of a fixed
-  // 260px that felt cramped on big phones and overflowed on small ones.
-  maxHeight: 'min(42vh, 340px)',
+  maxHeight: '100%',
   objectFit: 'contain',
+  borderRadius: 14,
+  boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
   cursor: 'zoom-in',
-  '@media (min-width: 768px)': {
-    maxHeight: 'min(60vh, 480px)',
-  },
 });
 
 const ImageFullscreenOverlay = styled('div')({
@@ -192,6 +202,7 @@ const BoxesArea = styled('div')<{ isrtl: string }>(({ isrtl }) => ({
   direction: isrtl === 'true' ? 'rtl' : 'ltr',
   width: '100%',
   padding: '4px 0',
+  flexShrink: 0,
 }));
 
 const WordGroup = styled('div')({
@@ -230,6 +241,7 @@ const AttemptsRow = styled('div')({
   gap: 6,
   fontSize: 14,
   color: '#666',
+  flexShrink: 0,
 });
 
 // Inline hint button (in normal flow, above the fixed Check button). Replaces
@@ -250,6 +262,7 @@ const InlineHintButton = styled('button')({
   cursor: 'pointer',
   boxShadow: '0 4px 14px rgba(108, 92, 231, 0.4)',
   WebkitTapHighlightColor: 'transparent',
+  flexShrink: 0,
   '&:active': {
     transform: 'translateY(2px)',
     boxShadow: '0 2px 8px rgba(108, 92, 231, 0.35)',
@@ -265,21 +278,17 @@ const AttemptDot = styled('div')<{ used: string }>(({ used }) => ({
 }));
 
 const SubmitButton = styled(StationContinueButton)({
-  position: 'fixed',
-  bottom: 24,
-  left: '50%',
-  transform: 'translateX(-50%)',
-  zIndex: 40,
+  // In normal flow (last item in the flex column) so the layout fits one
+  // screen with no scroll and nothing overlaps it.
+  flexShrink: 0,
   width: 'auto',
   padding: '14px 48px',
   borderRadius: 50,
   whiteSpace: 'nowrap',
   '&:active': {
-    transform: 'translateX(-50%) translateY(3px)',
+    transform: 'translateY(3px)',
   },
   '&:disabled': {
-    // Use filter instead of opacity so the button remains fully opaque and
-    // doesn't reveal the AttemptDots / "ניסיון X מתוך 3" row sitting behind it.
     filter: 'grayscale(0.6) brightness(0.85)',
     cursor: 'default',
   },
@@ -555,14 +564,14 @@ export default function RiddleStation({
         {clue ? <ClueText style={textColor ? { color: textColor } : undefined}>{clue}</ClueText> : null}
 
         {settings.mediaUrl && settings.mediaType === 'image' && (
-          <MediaWrapper>
+          <MediaSlot>
             <RiddleMediaImage
               src={settings.mediaUrl}
               alt=""
               onClick={() => setImageFullscreen(true)}
               onTouchStart={(e) => { if (e.touches.length >= 2) setImageFullscreen(true); }}
             />
-          </MediaWrapper>
+          </MediaSlot>
         )}
 
         {settings.mediaUrl && settings.mediaType === 'video' && (() => {
@@ -625,6 +634,15 @@ export default function RiddleStation({
             💡 {hintLabel || (isHebrew ? 'רמז' : 'Hint')}
           </InlineHintButton>
         )}
+
+        {phase !== 'success' && (
+          <SubmitButton
+            onClick={handleCheck}
+            disabled={!allFilled || phase !== 'playing'}
+          >
+            {checkLabel}
+          </SubmitButton>
+        )}
       </Container>
 
       {imageFullscreen && settings.mediaUrl && settings.mediaType === 'image' && createPortal(
@@ -639,15 +657,6 @@ export default function RiddleStation({
           <ImageFullscreenImg src={settings.mediaUrl} alt="" onClick={(e) => e.stopPropagation()} />
         </ImageFullscreenOverlay>,
         document.body
-      )}
-
-      {phase !== 'success' && (
-        <SubmitButton
-          onClick={handleCheck}
-          disabled={!allFilled || phase !== 'playing'}
-        >
-          {checkLabel}
-        </SubmitButton>
       )}
 
       {phase === 'success' && (
