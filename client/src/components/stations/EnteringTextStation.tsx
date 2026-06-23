@@ -504,12 +504,9 @@ export default function EnteringTextStation({
   };
 
   const handleRetryDismiss = () => {
-    // Reset attempts (try again) and stay in the station so the user can use
-    // the solution hint (if enabled + first hint used).
     setShowRetryPopup(false);
-    setAttempts(0);
-    setError('');
-    setValues(fields.map(() => ''));
+    clearPersistedAttempts();
+    handleSuccessContinue();
   };
 
   const handleSolutionHintClick = () => {
@@ -703,7 +700,7 @@ export default function EnteringTextStation({
             <SuccessTitle>{retryTitle || 'נגמרו הניסיונות'}</SuccessTitle>
             <SuccessSubtitle>{retryMessage || 'לא נורא — נסו שוב.'}</SuccessSubtitle>
             <SuccessContinueButton type="button" onClick={handleRetryDismiss}>
-              {retryButtonLabel || 'ניסיון נוסף'}
+              {retryButtonLabel || 'המשך'}
             </SuccessContinueButton>
           </SuccessCard>
         </ModalOverlay>

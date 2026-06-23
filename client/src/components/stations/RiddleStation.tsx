@@ -62,9 +62,8 @@ const Container = styled('div')({
   flexDirection: 'column',
   alignItems: 'center',
   // Bottom padding reserves a safety zone above the fixed SubmitButton so the
-  // AttemptsRow / hint badge are never positioned behind it.
-  padding: '32px 20px 160px',
-  gap: 18,
+  padding: '32px 20px 120px',
+  gap: 16,
   overflowY: 'auto',
   // Desktop: cap to a centered column so clue + image + letter boxes don't
   // stretch edge to edge of a wide monitor (QA Jun 2026 page 15 #17).
@@ -129,7 +128,9 @@ const MediaWrapper = styled('div')({
 const RiddleMediaImage = styled('img')({
   display: 'block',
   maxWidth: '100%',
-  maxHeight: 260,
+  // Viewport-relative so the image scales with phone size instead of a fixed
+  // 260px that felt cramped on big phones and overflowed on small ones.
+  maxHeight: 'min(42vh, 340px)',
   objectFit: 'contain',
   cursor: 'zoom-in',
   '@media (min-width: 768px)': {
@@ -229,6 +230,30 @@ const AttemptsRow = styled('div')({
   gap: 6,
   fontSize: 14,
   color: '#666',
+});
+
+// Inline hint button (in normal flow, above the fixed Check button). Replaces
+// the floating clue pill that used to overlap the riddle image. Matches the
+// EnteringText station's hint button styling.
+const InlineHintButton = styled('button')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '11px 22px',
+  borderRadius: 999,
+  border: '2px solid #5143c6',
+  background: 'linear-gradient(135deg, #8276f2 0%, #6c5ce7 100%)',
+  color: '#fff',
+  fontFamily: 'inherit',
+  fontSize: 15,
+  fontWeight: 700,
+  cursor: 'pointer',
+  boxShadow: '0 4px 14px rgba(108, 92, 231, 0.4)',
+  WebkitTapHighlightColor: 'transparent',
+  '&:active': {
+    transform: 'translateY(2px)',
+    boxShadow: '0 2px 8px rgba(108, 92, 231, 0.35)',
+  },
 });
 
 const AttemptDot = styled('div')<{ used: string }>(({ used }) => ({
@@ -376,12 +401,23 @@ interface RiddleStationProps {
   station: StationItemData;
   onComplete: (result: GameResult) => void;
   textColor?: string;
+  /** Hint wiring (penalty + modal handled by PlayingPhase). */
+  stationHintText?: string | null;
+  stationHintImageUrl?: string | null;
+  stationHintUsed?: boolean;
+  onStationHintClick?: () => void;
+  hintLabel?: string;
 }
 
 export default function RiddleStation({
   station,
   onComplete,
   textColor,
+  stationHintText,
+  stationHintImageUrl,
+  stationHintUsed,
+  onStationHintClick,
+  hintLabel,
 }: RiddleStationProps) {
   const [imageFullscreen, setImageFullscreen] = useState(false);
   const settings = (station.settings || {}) as RiddleSettings;
@@ -583,6 +619,12 @@ export default function RiddleStation({
             {isHebrew ? `ניסיון ${attempt + 1} מתוך 3` : `Attempt ${attempt + 1} of 3`}
           </span>
         </AttemptsRow>
+
+        {(stationHintText || stationHintImageUrl) && onStationHintClick && phase === 'playing' && (
+          <InlineHintButton type="button" onClick={onStationHintClick}>
+            💡 {hintLabel || (isHebrew ? 'רמז' : 'Hint')}
+          </InlineHintButton>
+        )}
       </Container>
 
       {imageFullscreen && settings.mediaUrl && settings.mediaType === 'image' && createPortal(

@@ -799,6 +799,7 @@ export const MediaStationVideo = styled('video')({
   width: '100%',
   border: '2px solid #fff',
   borderRadius: 12,
+  maxHeight: '46vh',
   '@media (min-width: 768px)': {
     maxHeight: '49vh',
     background: '#000',
@@ -833,7 +834,7 @@ export const MediaStationImageWrapper = styled('div')({
 
 export const MediaStationImage = styled('img')({
   maxWidth: '100%',
-  maxHeight: 350,
+  maxHeight: 'min(46vh, 350px)',
   border: '2px solid #fff',
   borderRadius: 12,
   objectFit: 'contain',

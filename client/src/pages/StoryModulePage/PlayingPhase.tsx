@@ -150,7 +150,7 @@ const StationTopLayout = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  padding: '24px 24px 100px',
+  padding: '24px 24px 150px',
   textAlign: 'center',
   [DESKTOP_BREAKPOINT]: {
     width: '100%',
@@ -416,6 +416,7 @@ export default function PlayingPhase({
   const showStandaloneLeaderboard =
     !isGameStep && Boolean(onViewLeaderboard) && !hideLeaderboardInHeader;
   const isEnteringTextStation = currentItem.type === 'station' && (currentItem as StationItemData).stationType === 'enteringText';
+  const isRiddleStation = currentItem.type === 'station' && (currentItem as StationItemData).stationType === 'riddle';
 
   const renderContent = () => {
     if (currentItem.type === 'mission') {
@@ -518,6 +519,11 @@ export default function PlayingPhase({
               station={station}
               onComplete={onGameComplete}
               textColor={customTheme?.textColor}
+              stationHintText={stationHintText}
+              stationHintImageUrl={stationHintImageUrl}
+              stationHintUsed={stationHintUsed}
+              onStationHintClick={onStationHintClick}
+              hintLabel={stationHintUsed ? t.showStationHint : t.stationHint}
             />
           </MediaGateWrapper>
         );
@@ -702,7 +708,7 @@ export default function PlayingPhase({
   // Floating clue button for info/media stations (text, video, image, narrative,
   // badge). Riddle/enteringText render their own clue UI, so they're excluded.
   const stationClueButton =
-    (stationHintText || stationHintImageUrl) && !isEnteringTextStation ? (
+    (stationHintText || stationHintImageUrl) && !isEnteringTextStation && !isRiddleStation ? (
       <StationClueButton type="button" onClick={onStationHintClick}>
         <ClueLightbulbIcon />
         {stationHintUsed ? t.showStationHint : t.stationHint}
