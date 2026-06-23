@@ -1,7 +1,9 @@
 export const texts = {
   en: {
     loading: 'Loading...',
-    error: 'Failed to load activity',
+    error: 'Connection problem',
+    errorMessage: 'We couldn\'t reach the server. Your progress is saved — try again.',
+    retry: 'Try again',
     welcome: 'Welcome!',
     startButton: 'Start',
     step: 'Step',
@@ -38,6 +40,7 @@ export const texts = {
     finishComplete: 'Done!',
     finishStatus: 'Status',
     stayHere: 'Stay Here',
+    finishSaveFailed: 'Could not save your results. Tap to retry.',
     viewLeaderboard: 'CONTINUE ADVENTURE',
     exitActivity: 'Exit',
     exitConfirmTitle: 'Are you sure?',
@@ -72,7 +75,9 @@ export const texts = {
   },
   he: {
     loading: 'טוען...',
-    error: 'שגיאה בטעינת הפעילות',
+    error: 'בעיית חיבור',
+    errorMessage: 'לא הצלחנו להתחבר לשרת. ההתקדמות שלכם שמורה — נסו שוב.',
+    retry: 'נסו שוב',
     welcome: 'ברוכים הבאים!',
     startButton: 'התחילו',
     step: 'שלב',
@@ -109,6 +114,7 @@ export const texts = {
     finishComplete: 'סיום!',
     finishStatus: 'סטטוס',
     stayHere: 'הישארו כאן',
+    finishSaveFailed: 'לא הצלחנו לשמור את התוצאות. לחצו לניסיון נוסף.',
     viewLeaderboard: 'טבלת מובילים',
     exitActivity: 'יציאה',
     exitConfirmTitle: 'האם אתה בטוח?',

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { apiFetch } from '../utils/api';
+import { apiFetchWithRetry } from '../utils/api';
 
 type ConnectionType = 'single' | 'group';
 
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (data: LoginData) => {
-    const res = await apiFetch<{ token: string; participant: Participant }>('/api/auth/login', {
+    const res = await apiFetchWithRetry<{ token: string; participant: Participant }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     });

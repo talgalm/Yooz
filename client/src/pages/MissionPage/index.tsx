@@ -121,6 +121,7 @@ const ErrorWrapper = styled('div')({
   minHeight: '100dvh',
   background: '#1a0a2e',
   display: 'flex',
+  flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
   color: '#F2F7FF',
@@ -129,6 +130,19 @@ const ErrorWrapper = styled('div')({
   padding: 24,
   direction: 'rtl',
   fontFamily: "'Rubik', sans-serif",
+  gap: 16,
+});
+
+const RetryButton = styled('button')({
+  padding: '12px 28px',
+  fontSize: 16,
+  fontWeight: 700,
+  color: '#1a0a2e',
+  background: '#39CABC',
+  border: 'none',
+  borderRadius: 10,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
 });
 
 // ─── Session helpers ───
@@ -160,12 +174,13 @@ const BROWSER_CHROME_COLOR = '#1a0a2e';
 
 export default function MissionPage() {
   const { code } = useParams<{ code: string }>();
-  const { token, participant } = useAuth();
+  const { participant } = useAuth();
   const t = useTranslations(texts);
   const sounds = useMissionSounds();
   const [mission, setMission] = useState<MissionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const saved = loadSession(code || '');
   const [currentScreen, setCurrentScreen] = useState(saved.currentScreen);
   const [phase, setPhase] = useState<Phase>(saved.phase);
@@ -220,27 +235,31 @@ export default function MissionPage() {
   // Fetch mission module data
   useEffect(() => {
     if (!code) return;
+    let cancelled = false;
     const fetchMission = async () => {
+      setError('');
+      setLoading(true);
       try {
-        const res = await fetch(`${API}/api/activities/${code}/module`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error(t.errorLoad);
-        const data = await res.json();
-        const mod = data.module as MissionModule;
+        const data = await apiFetchWithRetry<{ module: MissionModule }>(
+          `/api/activities/${code}/module`,
+        );
+        if (cancelled) return;
+        const mod = data.module;
         if (mod.type !== 'mission' || !mod.mission) {
           throw new Error(t.errorNotMission);
         }
         setMission(mod.mission);
       } catch (err) {
+        if (cancelled) return;
         setError(err instanceof Error ? err.message : t.errorLoad);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchMission();
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code, token]);
+  }, [code, loadAttempt]);
 
   // Persist session on phase/screen changes
   useEffect(() => {
@@ -254,7 +273,7 @@ export default function MissionPage() {
     }
   }, [phase]);
 
-  const savePuzzleProgress = useCallback(() => {
+  const savePuzzleProgress = useCallback(async () => {
     if (!code) return;
     fetch(`${API}/api/activities/${code}/mission-event`, {
       method: 'POST',
@@ -262,9 +281,8 @@ export default function MissionPage() {
       body: JSON.stringify({ event: 'puzzle_completed' }),
     }).catch(() => {});
 
-    // Update Report: puzzle completed (item 0)
     const now = new Date();
-    apiFetchWithRetry(`${API}/api/activities/${code}/progress`, {
+    await apiFetchWithRetry(`${API}/api/activities/${code}/progress`, {
       method: 'PATCH',
       body: JSON.stringify({
         itemResult: {
@@ -281,19 +299,21 @@ export default function MissionPage() {
         lastActiveItemIndex: 0,
         runningTotal: 0,
       }),
-    }).catch(() => {});
+    });
   }, [code]);
 
-  const handleTrashSortComplete = useCallback((score: number) => {
+  const handleTrashSortComplete = useCallback(async (score: number) => {
     if (!code) return;
     const sessionDurationMs = Date.now() - sessionStartRef.current;
-    apiFetch(`${API}/api/activities/${code}/scores`, {
-      method: 'POST',
-      body: JSON.stringify({
-        scores: [{ gameName: 'Trash Sort', score }],
-        sessionDurationMs,
-      }),
-    }).catch(() => {});
+    try {
+      await apiFetchWithRetry(`${API}/api/activities/${code}/scores`, {
+        method: 'POST',
+        body: JSON.stringify({
+          scores: [{ gameName: 'Trash Sort', score }],
+          sessionDurationMs,
+        }),
+      });
+    } catch { /* session is in sessionStorage — user can retry by replaying finish */ }
   }, [code]);
 
   const handleNext = useCallback(() => {
@@ -308,8 +328,8 @@ export default function MissionPage() {
     }
   }, [mission, currentScreen, sounds]);
 
-  const handlePuzzleComplete = useCallback(() => {
-    savePuzzleProgress();
+  const handlePuzzleComplete = useCallback(async () => {
+    await savePuzzleProgress();
     setPhase('done');
   }, [savePuzzleProgress]);
 
@@ -324,7 +344,19 @@ export default function MissionPage() {
   }
 
   if (error || !mission) {
-    return <ErrorWrapper>{error || t.errorNotFound}</ErrorWrapper>;
+    return (
+      <ErrorWrapper>
+        <div>{error || t.errorNotFound}</div>
+        {error && (
+          <>
+            <div style={{ fontSize: 14, opacity: 0.85 }}>{t.errorMessage}</div>
+            <RetryButton type="button" onClick={() => setLoadAttempt((n) => n + 1)}>
+              {t.retry}
+            </RetryButton>
+          </>
+        )}
+      </ErrorWrapper>
+    );
   }
 
   // ─── Puzzle phase ───

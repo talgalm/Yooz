@@ -577,32 +577,40 @@ export default function EnteringTextStation({
 
     setLoading(true);
     setError('');
-    try {
-      const res = await fetch('/api/check-answer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fields: fieldsToCheck }),
-      });
-      const data = await res.json() as { results?: boolean[] };
-      const allCorrect = data.results?.every(Boolean) ?? false;
+    let lastNetworkError = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await fetch('/api/check-answer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: fieldsToCheck }),
+        });
+        const data = await res.json() as { results?: boolean[] };
+        const allCorrect = data.results?.every(Boolean) ?? false;
 
-      if (allCorrect) {
-        handleCorrect();
-      } else {
-        const next = attempts + 1;
-        setAttempts(next);
-        const remaining = Math.max(maxAttempts - next, 0);
-        if (remaining > 0) {
-          setError(`תשובה לא נכונה. נשארו ${remaining} ניסיונות.`);
+        if (allCorrect) {
+          handleCorrect();
         } else {
-          triggerFailedRound();
+          const next = attempts + 1;
+          setAttempts(next);
+          const remaining = Math.max(maxAttempts - next, 0);
+          if (remaining > 0) {
+            setError(`תשובה לא נכונה. נשארו ${remaining} ניסיונות.`);
+          } else {
+            triggerFailedRound();
+          }
+        }
+        setLoading(false);
+        return;
+      } catch {
+        lastNetworkError = true;
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
         }
       }
-    } catch {
-      setError('שגיאה בבדיקה, נסו שוב.');
-    } finally {
-      setLoading(false);
     }
+    setError(lastNetworkError ? 'שגיאת חיבור, נסו שוב.' : 'שגיאה בבדיקה, נסו שוב.');
+    setLoading(false);
   };
 
   const showBackButton = station.settings?.showBackButton !== false;

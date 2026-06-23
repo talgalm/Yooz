@@ -27,6 +27,7 @@ export const texts = {
     yourRanking: 'Your ranking',
     waitingForResults: 'Waiting for results…',
     continueAfterResults: 'Continue',
+    submitFailed: 'Connection problem — could not submit. Please try again.',
   },
   he: {
     instructions: 'גררו וסדרו את הפריטים בסדר הנכון',
@@ -56,5 +57,6 @@ export const texts = {
     yourRanking: 'הדירוג שלך',
     waitingForResults: 'ממתין לתוצאות…',
     continueAfterResults: 'המשך',
+    submitFailed: 'בעיית חיבור — לא הצלחנו לשלוח. נסו שוב.',
   },
 };

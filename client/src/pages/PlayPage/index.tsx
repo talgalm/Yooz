@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './PlayPage.i18n';
 import ActivityLogin from '../../components/login/ActivityLogin';
-import { apiFetch } from '../../utils/api';
+import { apiFetch, apiFetchWithRetry } from '../../utils/api';
 import GroupEntryChoice from '../../components/groupEntry/GroupEntryChoice';
 import CreateGroupForm from '../../components/groupEntry/CreateGroupForm';
 import GroupCreatedSuccess from '../../components/groupEntry/GroupCreatedSuccess';
@@ -138,9 +138,11 @@ export default function PlayPage() {
   const [loadError, setLoadError] = useState(false);
   const [slowLoad, setSlowLoad] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const { login, establishSession } = useAuth();
+  const [enterError, setEnterError] = useState(false);
+  const { login, establishSession, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const t = useTranslations(texts);
+  const resumeCheckedForCode = useRef<string | null>(null);
 
   const isSelfService = activity?.connectionType === 'group' && activity?.groupEntryMode === 'selfService';
   const [groupFlow, setGroupFlow] = useState<GroupFlow | null>(inviteTokenParam ? 'join-login' : null);
@@ -160,6 +162,10 @@ export default function PlayPage() {
   const fadeStartedRef = useRef(false);
   const hasOpening = activity?.opening?.url;
   const openingType = activity?.opening?.type;
+
+  useEffect(() => {
+    if (!isAuthenticated) resumeCheckedForCode.current = null;
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!code) return;
@@ -276,6 +282,44 @@ export default function PlayPage() {
     }
     setScheduleStatus('active');
   }, [activity]);
+
+  // If the participant still has a valid token and saved progress, skip the login
+  // screen and return them to the activity (e.g. after a connection drop).
+  useEffect(() => {
+    if (!isAuthenticated || !activity || !code || scheduleStatus !== 'active') return;
+    if (resumeCheckedForCode.current === code) return;
+    resumeCheckedForCode.current = code;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        if (isSelfService) {
+          const status = await apiFetch<{ canProceed: boolean }>(
+            `/api/activities/${encodeURIComponent(activity.code)}/groups/status`,
+          );
+          if (!status.canProceed || cancelled) return;
+        }
+
+        const progress = await apiFetch<{
+          completionStatus: string;
+          totalItemsCompleted: number;
+        }>(`/api/activities/${code}/my-progress`);
+
+        if (cancelled) return;
+        if (progress.completionStatus !== 'in_progress' || progress.totalItemsCompleted <= 0) return;
+
+        if (activity.moduleType === 'mission') {
+          navigate(`/mission/${activity.code}`, { replace: true });
+        } else if (activity.moduleType === 'story' || activity.moduleType === 'spiders') {
+          navigate(`/story/${activity.code}`, { replace: true });
+        }
+      } catch {
+        // Stay on login — user can sign in manually
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [isAuthenticated, activity, code, scheduleStatus, isSelfService, navigate]);
 
   const startFadeOut = useCallback(() => {
     if (fadeStartedRef.current) return;
@@ -452,13 +496,15 @@ export default function PlayPage() {
       : t.connectAndPlay;
 
   const handleSuccess = async () => {
+    setEnterError(false);
     if (isSelfService && activity) {
       try {
-        const status = await apiFetch<{ canProceed: boolean }>(
+        const status = await apiFetchWithRetry<{ canProceed: boolean }>(
           `/api/activities/${encodeURIComponent(activity.code)}/groups/status`,
         );
         if (!status.canProceed) return;
       } catch {
+        setEnterError(true);
         return;
       }
     }
@@ -644,6 +690,11 @@ export default function PlayPage() {
         <LoginHeading>{loginHeading}</LoginHeading>
         <LoginSubheading>{loginSubheading}</LoginSubheading>
         <LoginFormWrapper>
+          {enterError && (
+            <BodyText style={{ color: '#ffcdd2', textAlign: 'center', marginBottom: 12 }}>
+              {t.enterFailed}
+            </BodyText>
+          )}
           {renderLoginContent()}
         </LoginFormWrapper>
       </PurpleLoginPage>

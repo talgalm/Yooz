@@ -257,6 +257,7 @@ export default function StoryModulePage() {
   const [data, setData] = useState<ActivityModuleResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const hasModuleData = useRef(false);
   // Live manager-controlled progress lock (SSE). Initial value comes from the
   // module fetch; SSE updates override it as soon as the manager toggles.
   const lockedFromIndex = useLockStream(code, data?.lockedFromIndex ?? null);
@@ -267,6 +268,7 @@ export default function StoryModulePage() {
   const [showFootsteps, setShowFootsteps] = useState(false);
   const [entryTransitionStage, setEntryTransitionStage] = useState<'idle' | 'closing' | 'opening'>('idle');
   const scoresSaved = useRef(false);
+  const [finishSaveState, setFinishSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   const entryTransitionTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
   const sessionStartedAt = useRef((() => {
     const token = localStorage.getItem('yooz_token') ?? 'anon';
@@ -419,23 +421,88 @@ export default function StoryModulePage() {
     sessionStorage.setItem(`yooz_session_${code}`, JSON.stringify(session));
   }, [code, sessionRestored, currentItemIndex, scores, phase, stationHintUsed, completedSpiderItems, showGuidelines]);
 
-  const fetchModule = useCallback(async (signal?: AbortSignal) => {
+  useEffect(() => {
+    hasModuleData.current = !!data;
+  }, [data]);
+
+  const saveItemProgress = useCallback(async (
+    overrides?: {
+      itemIndex?: number;
+      itemResult?: Record<string, unknown>;
+      progressOnly?: boolean;
+      completedCount?: number;
+      runningTotal?: number;
+    },
+  ) => {
+    if (!code || !data) return;
+    const idx = overrides?.itemIndex ?? currentItemIndex;
+    const currentItem = data.module.items[idx];
+    const now = new Date();
+    const completedCount = overrides?.completedCount ?? idx + 1;
+    const runningTotal = overrides?.runningTotal ?? Math.max(
+      0,
+      scores.reduce((sum, s) => sum + s.score, 0) - stationHintUsed.size * stationHintPenalty,
+    );
+
+    const payload: Record<string, unknown> = {
+      totalItemsCompleted: completedCount,
+      lastActiveItemIndex: idx,
+      runningTotal,
+    };
+
+    if (overrides?.progressOnly) {
+      payload.progressOnly = true;
+    } else {
+      payload.itemResult = overrides?.itemResult ?? {
+        itemIndex: idx,
+        itemId: currentItem._id,
+        itemType: currentItem.type,
+        itemName: currentItem.name,
+        score: 0,
+        maxPossibleScore: 0,
+        startedAt: new Date(itemStartTime.current),
+        completedAt: now,
+        durationMs: now.getTime() - itemStartTime.current,
+      };
+    }
+
+    await apiFetchWithRetry(`/api/activities/${code}/progress`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  }, [code, data, currentItemIndex, scores, stationHintUsed, stationHintPenalty]);
+
+  const fetchModule = useCallback(async (signal?: AbortSignal, opts?: { soft?: boolean }) => {
     if (!code) return;
     try {
-      const d = await apiFetch<typeof data>(`/api/activities/${code}/module?group=${encodeURIComponent(participant?.group || '')}`, {
-        signal,
-        headers: { 'Cache-Control': 'no-store' },
-      });
+      const d = await apiFetchWithRetry<ActivityModuleResponse>(
+        `/api/activities/${code}/module?group=${encodeURIComponent(participant?.group || '')}`,
+        { signal, headers: { 'Cache-Control': 'no-store' } },
+      );
       setData(d);
+      setError(false);
       preloadActivityMedia(d);
     } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       if (err instanceof Error && err.message === 'group_not_ready') {
+        // Only kick to login on the initial load — a background refetch must not
+        // eject the participant mid-activity when the connection flickers.
+        if (opts?.soft && hasModuleData.current) return;
         navigate(`/play/${code}`, { replace: true });
         return;
       }
-      if (err instanceof Error && err.name !== 'AbortError') setError(true);
+      if (err instanceof Error && err.name !== 'AbortError') {
+        if (opts?.soft && hasModuleData.current) return;
+        setError(true);
+      }
     }
   }, [code, participant?.group, navigate]);
+
+  const handleRetryLoad = useCallback(() => {
+    setError(false);
+    setLoading(true);
+    fetchModule().finally(() => setLoading(false));
+  }, [fetchModule]);
 
   useEffect(() => {
     if (!code) return;
@@ -448,7 +515,7 @@ export default function StoryModulePage() {
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        fetchModule();
+        fetchModule(undefined, { soft: true });
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
@@ -528,7 +595,10 @@ export default function StoryModulePage() {
 
   // Lock the final session duration the moment we arrive at the finish screen.
   useEffect(() => {
-    if (phase !== 'finish') return;
+    if (phase !== 'finish') {
+      setFinishSaveState('idle');
+      return;
+    }
     setFinalDurationMs((prev) => prev ?? Date.now() - sessionStartedAt.current);
   }, [phase]);
 
@@ -765,7 +835,7 @@ export default function StoryModulePage() {
     }
   }, [phase, data]);
 
-  const handleGameComplete = (result: GameResult) => {
+  const handleGameComplete = async (result: GameResult) => {
     if (!data) return;
     const currentItem = data.module.items[currentItemIndex];
     const now = new Date();
@@ -807,26 +877,23 @@ export default function StoryModulePage() {
     };
 
     const completedCount = currentItemIndex + 1;
-    // scores state hasn't updated yet (setScores is async), so compute running total manually.
-    // Subtract station-level hint penalty so the leaderboard reflects it during the activity
-    // (the final /scores save also includes it as a "Hint Penalty" entry — this keeps the in-progress
-    // leaderboard consistent with what the participant sees in the header).
     const runningTotal = Math.max(
       0,
       scores.reduce((sum, s) => sum + s.score, 0) + result.score - stationHintUsed.size * stationHintPenalty,
     );
 
-    // Save incrementally (fire & forget)
     if (code) {
-      apiFetchWithRetry(`/api/activities/${code}/progress`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          itemResult,
-          totalItemsCompleted: completedCount,
-          lastActiveItemIndex: currentItemIndex,
-          runningTotal,
-        }),
-      }).catch(() => { /* best effort after retries */ });
+      try {
+        await apiFetchWithRetry(`/api/activities/${code}/progress`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            itemResult,
+            totalItemsCompleted: completedCount,
+            lastActiveItemIndex: currentItemIndex,
+            runningTotal,
+          }),
+        });
+      } catch { /* sessionStorage still holds local state */ }
     }
 
     advanceToNextItem();
@@ -901,7 +968,10 @@ export default function StoryModulePage() {
     advanceToNextItem();
   };
 
-  const handleStationContinue = () => {
+  const handleStationContinue = async () => {
+    try {
+      await saveItemProgress();
+    } catch { /* sessionStorage still holds local state */ }
     advanceToNextItem();
   };
 
@@ -911,7 +981,10 @@ export default function StoryModulePage() {
 
   /** Triggered by a "last step" station to end the activity immediately,
    *  skipping any remaining roadmap items and going straight to finish. */
-  const handleStationFinishActivity = () => {
+  const handleStationFinishActivity = async () => {
+    try {
+      await saveItemProgress();
+    } catch { /* best effort */ }
     showPopupsOrRun('afterItem', currentItemIndex, () => {
       showPopupsOrRun('endOfActivity', undefined, () => {
         setPhase('finish');
@@ -919,7 +992,7 @@ export default function StoryModulePage() {
     });
   };
 
-  const handleFeedbackContinue = (feedbackResult: { answers: { questionIndex: number; questionText: string; value: number; label: string }[]; notes: string }) => {
+  const handleFeedbackContinue = async (feedbackResult: { answers: { questionIndex: number; questionText: string; value: number; label: string }[]; notes: string }) => {
     if (!data) return;
     const currentItem = data.module.items[currentItemIndex];
     // Save feedback answers as part of progress
@@ -948,15 +1021,17 @@ export default function StoryModulePage() {
     const runningTotal = scores.reduce((sum, s) => sum + s.score, 0);
 
     if (code) {
-      apiFetchWithRetry(`/api/activities/${code}/progress`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          itemResult,
-          totalItemsCompleted: completedCount,
-          lastActiveItemIndex: currentItemIndex,
-          runningTotal,
-        }),
-      }).catch(() => { /* best effort after retries */ });
+      try {
+        await apiFetchWithRetry(`/api/activities/${code}/progress`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            itemResult,
+            totalItemsCompleted: completedCount,
+            lastActiveItemIndex: currentItemIndex,
+            runningTotal,
+          }),
+        });
+      } catch { /* sessionStorage still holds local state */ }
     }
 
     advanceToNextItem();
@@ -1036,33 +1111,40 @@ export default function StoryModulePage() {
   // session is marked completed and sessionDurationMs is saved — required for
   // the participant to appear on the leaderboard (especially time mode).
   useEffect(() => {
-    if (phase !== 'finish' || scoresSaved.current || !code) return;
-    scoresSaved.current = true;
+    if (phase !== 'finish' || !code) return;
+    if (finishSaveState === 'saved' || finishSaveState === 'saving') return;
+
+    setFinishSaveState('saving');
     const totalHintPen = stationHintUsed.size * stationHintPenalty;
     const scorePayload = scores.map((s) => ({ gameName: s.gameName, score: s.score }));
     if (totalHintPen > 0) {
       scorePayload.push({ gameName: 'Hint Penalty', score: -totalHintPen });
     }
-    const saveWithRetry = async (retries = 3) => {
-      for (let attempt = 0; attempt < retries; attempt++) {
-        try {
-          await apiFetch(`/api/activities/${code}/scores`, {
-            method: 'POST',
-            body: JSON.stringify({
-              scores: scorePayload,
-              sessionDurationMs: Date.now() - sessionStartedAt.current,
-            }),
-          });
-          return;
-        } catch {
-          if (attempt < retries - 1) {
-            await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-          }
-        }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        await apiFetchWithRetry(`/api/activities/${code}/scores`, {
+          method: 'POST',
+          body: JSON.stringify({
+            scores: scorePayload,
+            sessionDurationMs: Date.now() - sessionStartedAt.current,
+          }),
+        }, 5);
+        if (cancelled) return;
+        scoresSaved.current = true;
+        setFinishSaveState('saved');
+      } catch {
+        if (!cancelled) setFinishSaveState('failed');
       }
-    };
-    saveWithRetry();
-  }, [phase, code, scores]);
+    })();
+
+    return () => { cancelled = true; };
+  }, [phase, code, scores, stationHintUsed, stationHintPenalty, finishSaveState]);
+
+  const retryFinishSave = useCallback(() => {
+    setFinishSaveState('idle');
+  }, []);
 
   // Fetch leaderboard
   const leaderboardAbortRef = useRef<AbortController | null>(null);
@@ -1182,7 +1264,9 @@ export default function StoryModulePage() {
       <PageShell>
         <PageContainer>
           <CenteredContent>
-            <BodyText>{t.error}</BodyText>
+            <BodyText style={{ fontWeight: 600, fontSize: 18, marginBottom: 8 }}>{t.error}</BodyText>
+            <BodyText style={{ marginBottom: 16 }}>{t.errorMessage}</BodyText>
+            <OutlineButton onClick={handleRetryLoad}>{t.retry}</OutlineButton>
           </CenteredContent>
         </PageContainer>
       </PageShell>
@@ -1400,6 +1484,30 @@ export default function StoryModulePage() {
           popupModal={popupModal}
           t={t}
         />
+        {finishSaveState === 'failed' && (
+          <button
+            type="button"
+            onClick={retryFinishSave}
+            style={{
+              position: 'fixed',
+              bottom: 24,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 9999,
+              padding: '12px 20px',
+              borderRadius: 10,
+              border: 'none',
+              background: '#e74c3c',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: 14,
+              cursor: 'pointer',
+              maxWidth: '90%',
+            }}
+          >
+            {t.finishSaveFailed}
+          </button>
+        )}
         {entryTransitionStage !== 'idle' && (
           <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
         )}

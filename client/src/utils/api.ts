@@ -1,3 +1,9 @@
+function isRetryableFetchError(err: unknown): boolean {
+  if (err instanceof Error && err.name === 'AbortError') return false;
+  // fetch() rejects with TypeError on network drops / timeouts — not on HTTP 4xx/5xx.
+  return err instanceof TypeError;
+}
+
 export async function apiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('yooz_token');
 
@@ -30,9 +36,8 @@ export async function apiFetchWithRetry<T>(
       return await apiFetch<T>(url, options);
     } catch (err) {
       lastError = err;
-      if (attempt < retries - 1) {
-        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-      }
+      if (!isRetryableFetchError(err) || attempt >= retries - 1) break;
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
     }
   }
   throw lastError;
