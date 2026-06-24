@@ -176,22 +176,44 @@ async function start() {
     });
   }, REWARD_TIMER_POLL_MS);
 
-  // Reschedule any collage encode that was in-flight when the process died
-  // (PM2 restart, OOM, deploy). The in-memory inFlight set is gone, so a fresh
-  // schedule starts cleanly. >2 min stale means it's not actively progressing.
-  // ponytail: simple boot sweep, swap for a queue/worker pool if collage volume grows.
-  try {
-    const cutoff = new Date(Date.now() - 2 * 60 * 1000);
-    const stuck = await CollageJob.find({
-      phase: { $in: ['queued', 'preparing', 'encoding'] },
-      updatedAt: { $lt: cutoff },
-    }).select('jobId phase updatedAt').lean();
-    for (const j of stuck) {
-      console.log(`[collage] resuming stuck job ${j.jobId} (phase=${j.phase})`);
-      scheduleCollageEncode(j.jobId);
+  // Recover collage jobs that were mid-encode when the process died (PM2
+  // restart, OOM, deploy). Only resurrect jobs *recently* in-flight — older
+  // ones mean the client gave up long ago, and re-encoding them at boot just
+  // floods the new process (a 100-VU load test left 40+ stale jobs that
+  // crashed the box on the next restart).
+  //  - 2..15 min stale → reschedule (genuinely mid-encode when we crashed)
+  //  - >15 min stale  → mark as error so they're not retried
+  //
+  // PM2 cluster mode runs 2+ workers; only the primary should sweep, otherwise
+  // every job gets scheduled N times.
+  const isPrimaryWorker = !process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === '0';
+  if (isPrimaryWorker) {
+    try {
+      const now = Date.now();
+      const resumeFloor = new Date(now - 15 * 60 * 1000);
+      const resumeCeil  = new Date(now - 2  * 60 * 1000);
+      const stuck = await CollageJob.find({
+        phase: { $in: ['queued', 'preparing', 'encoding', 'uploading'] },
+      }).select('jobId phase updatedAt').lean();
+      let resumed = 0, aborted = 0;
+      for (const j of stuck) {
+        if (j.updatedAt > resumeCeil) continue; // currently progressing — skip
+        if (j.updatedAt < resumeFloor) {
+          await CollageJob.updateOne(
+            { jobId: j.jobId },
+            { $set: { phase: 'error', error: 'aborted due to server restart', message: 'הקידוד הופסק' } },
+          );
+          aborted++;
+        } else {
+          console.log(`[collage] resuming stuck job ${j.jobId} (phase=${j.phase})`);
+          scheduleCollageEncode(j.jobId);
+          resumed++;
+        }
+      }
+      if (resumed || aborted) console.log(`[collage] boot recovery: resumed=${resumed} aborted=${aborted}`);
+    } catch (err) {
+      console.error('[collage] boot recovery failed:', err);
     }
-  } catch (err) {
-    console.error('[collage] boot recovery failed:', err);
   }
 
   app.listen(PORT, () => {
