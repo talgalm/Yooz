@@ -905,7 +905,7 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
         compactDesktop
       />
       {mediaEl}
-      <FixedContinueButton onClick={onContinue} disabled={!mediaReady}>
+      <FixedContinueButton onClick={onContinue} disabled={!ready}>
         {t.continueButton}
       </FixedContinueButton>
       {fullscreen && mediaUrl && createPortal(
