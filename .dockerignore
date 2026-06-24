@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/.git
+client
+loadtest
+walkthroughs
+deploy
+server/assets/face-swap-videos
+server/assets/collage-template.mp4.bak
+server/assets/collage-music.mp3

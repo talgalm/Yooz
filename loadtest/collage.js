@@ -28,7 +28,9 @@ const CODE = __ENV.CODE;
 const TEMPLATE = __ENV.TEMPLATE || 'gan-yehoshua';
 const REQUIRED_IMAGES = Number(__ENV.REQUIRED_IMAGES || 6);
 const POLL_INTERVAL = Number(__ENV.POLL_INTERVAL || 3);   // seconds
-const POLL_TIMEOUT = Number(__ENV.POLL_TIMEOUT || 300);   // seconds
+// Default 10min: under heavy concurrent load on t3.medium, ffmpeg encodes
+// serialize on the 1-2 vCPU and 2-3min single-job time stretches to 5-8min.
+const POLL_TIMEOUT = Number(__ENV.POLL_TIMEOUT || 600);   // seconds
 const GROUP = __ENV.GROUP || `collage_load_${Date.now().toString(36)}`;
 const LOGO_URL = __ENV.LOGO_URL || 'https://res.cloudinary.com/drhc5tpmg/image/upload/v1779896769/yooz/aubdkrb6uwrg8ud4lrfn.png';
 const SLOW = __ENV.SLOW === '1';   // bad-signal mode: add jitter + drop tolerance
@@ -133,7 +135,8 @@ export default function (data) {
     }),
     { headers: { 'Content-Type': 'application/json' }, tags: { name: 'create_job' } },
   );
-  if (!check(createJob, { 'create_job 200': r => r.status === 200 })) {
+  if (!check(createJob, { 'create_job 2xx': r => r.status === 200 || r.status === 201 })) {
+    console.log(`vu=${vu} create_job ${createJob.status} ${createJob.body?.slice(0,160)}`);
     errored.add(1); completed.add(0); return;
   }
 
@@ -188,7 +191,10 @@ export default function (data) {
     if (prog.status !== 200) continue;
     const snap = prog.json();
     if (snap.phase === 'done') { final = 'done'; break; }
-    if (snap.phase === 'error') { final = 'error'; break; }
+    // Treat error-field-set as terminal too — guards against pre-fix prod
+    // where the late ffmpeg progress callback could overwrite phase=error
+    // back to phase=encoding.
+    if (snap.phase === 'error' || snap.error) { final = 'error'; break; }
   }
 
   const encodeDur = Date.now() - encodeStart;

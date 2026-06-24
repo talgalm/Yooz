@@ -1,0 +1,64 @@
+name: Deploy Collage Lambda
+
+# Builds the container image, pushes to ECR, updates the Lambda function.
+# Triggers on changes to anything the Lambda actually bundles. Manual run is
+# always available via workflow_dispatch.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/src/lambda/**'
+      - 'server/src/routes/collage.ts'
+      - 'server/src/services/collageProcessor.ts'
+      - 'server/src/models/CollageJob.ts'
+      - 'server/src/config.ts'
+      - 'server/src/data/collage-template-*.json'
+      - 'server/assets/collage-template*.mp4'
+      - 'server/package.json'
+      - 'server/package-lock.json'
+      - 'server/Dockerfile.lambda'
+      - '.github/workflows/deploy-lambda.yml'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-1
+  ECR_REPO: yooz-collage-lambda
+  LAMBDA_FN: yooz-collage
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          IMAGE=$REGISTRY/$ECR_REPO:${{ github.sha }}
+          docker build -f server/Dockerfile.lambda -t $IMAGE .
+          docker push $IMAGE
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+
+      - name: Update Lambda function code
+        run: |
+          aws lambda update-function-code \
+            --function-name "$LAMBDA_FN" \
+            --image-uri "$IMAGE" \
+            --region "$AWS_REGION" >/dev/null
+          aws lambda wait function-updated \
+            --function-name "$LAMBDA_FN" \
+            --region "$AWS_REGION"
+          echo "✅ Lambda $LAMBDA_FN updated to $IMAGE"

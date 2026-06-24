@@ -1,52 +1,16 @@
-import { v2 as cloudinary } from 'cloudinary';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import sharp from 'sharp';
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { CollageJob, type ICollageJob } from '../models/CollageJob';
-import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from '../config';
-import { TEMPLATES, DEFAULT_TEMPLATE_ID, runFfmpeg, type TemplateMeta } from '../routes/collage';
+import { TEMPLATES, DEFAULT_TEMPLATE_ID, type TemplateMeta } from '../routes/collage';
 
-cloudinary.config({
-  cloud_name: CLOUDINARY_CLOUD_NAME,
-  api_key: CLOUDINARY_API_KEY,
-  api_secret: CLOUDINARY_API_SECRET,
-});
+// ffmpeg encoding now runs in AWS Lambda. The server just kicks the job and
+// the Lambda updates the same Mongo CollageJob document the client polls.
+const LAMBDA_FN = process.env.COLLAGE_LAMBDA_FUNCTION_NAME || '';
+const lambda = new LambdaClient({ region: process.env.AWS_REGION || 'eu-west-1' });
 
-const inFlight = new Set<string>();
-
-// Cap concurrent ffmpeg encodes so a burst of finishes (e.g. 50 participants
-// completing photos at once) doesn't spawn 50 ffmpeg processes and OOM the box.
-// On 2-vCPU t3.medium, 2 in parallel is the sustainable max — others queue.
-// Tune MAX_CONCURRENT_ENCODES upward when you move to a bigger box.
-const MAX_CONCURRENT_ENCODES = Number(process.env.MAX_CONCURRENT_ENCODES || 2);
-// Hard ceiling on the wait queue. Middleware (loadShedding.ts) opens the
-// circuit at LOAD_MAX_QUEUE_DEPTH already, so reaching this means something
-// raced past it — fail fast rather than letting the queue eat memory.
-const MAX_QUEUE_DEPTH = Number(process.env.LOAD_MAX_QUEUE_DEPTH || 10);
-let encodeSlotsUsed = 0;
-const encodeQueue: Array<() => void> = [];
-
-async function acquireEncodeSlot(): Promise<void> {
-  if (encodeSlotsUsed < MAX_CONCURRENT_ENCODES) {
-    encodeSlotsUsed++;
-    return;
-  }
-  if (encodeQueue.length >= MAX_QUEUE_DEPTH) {
-    throw new Error('encode_queue_full');
-  }
-  await new Promise<void>((resolve) => encodeQueue.push(resolve));
-  encodeSlotsUsed++;
-}
-
-function releaseEncodeSlot(): void {
-  encodeSlotsUsed--;
-  const next = encodeQueue.shift();
-  if (next) next();
-}
-
-export function getEncodeQueueDepth(): number { return encodeQueue.length; }
-export function getEncodeSlotsInUse(): number { return encodeSlotsUsed; }
+// Legacy in-memory counters kept as stubs so existing status endpoints don't
+// crash. Concurrency is now AWS's problem.
+export function getEncodeQueueDepth(): number { return 0; }
+export function getEncodeSlotsInUse(): number { return 0; }
 
 export async function updateCollageJobProgress(
   jobId: string,
@@ -69,199 +33,30 @@ export async function updateCollageJobProgress(
   await job.save();
 }
 
-async function downloadToFile(url: string, destPath: string): Promise<void> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to download asset (${res.status})`);
-  const buf = Buffer.from(await res.arrayBuffer());
-  fs.writeFileSync(destPath, buf);
-}
-
-async function prepareImageInputs(
-  tmpDir: string,
-  sources: string[],
-): Promise<string[]> {
-  return Promise.all(
-    sources.map(async (src, i) => {
-      const filePath = path.join(tmpDir, `image_${i}.jpg`);
-      if (/^https?:\/\//i.test(src)) {
-        const rawPath = path.join(tmpDir, `raw_${i}`);
-        await downloadToFile(src, rawPath);
-        try {
-          const resized = await sharp(rawPath, { failOn: 'none' })
-            .rotate()
-            .resize({ width: 1080, height: 1080, fit: 'inside', withoutEnlargement: true })
-            .jpeg({ quality: 85, mozjpeg: true })
-            .toBuffer();
-          fs.writeFileSync(filePath, resized);
-        } catch {
-          fs.copyFileSync(rawPath, filePath);
-        }
-        try { fs.unlinkSync(rawPath); } catch { /* ignore */ }
-      } else {
-        fs.copyFileSync(src, filePath);
-      }
-      return filePath;
-    }),
-  );
-}
-
 export async function runCollageEncode(jobId: string): Promise<void> {
-  if (inFlight.has(jobId)) return;
-  inFlight.add(jobId);
-
-  const job = await CollageJob.findOne({ jobId });
-  if (!job) {
-    inFlight.delete(jobId);
-    return;
-  }
-
-  if (job.phase === 'done' && job.resultUrl) {
-    inFlight.delete(jobId);
-    return;
-  }
-
-  const templateId = job.template && TEMPLATES[job.template] ? job.template : DEFAULT_TEMPLATE_ID;
-  const template = TEMPLATES[templateId];
-  const orderedUrls = Array.from({ length: job.requiredImages }, (_, i) => job.imageUrls[i] || '');
-  if (orderedUrls.some((u) => !u)) {
+  if (!LAMBDA_FN) {
     await updateCollageJobProgress(jobId, {
       phase: 'error',
-      error: 'Missing photo uploads',
-      message: 'שגיאה — חסרות תמונות',
-    });
-    inFlight.delete(jobId);
-    return;
-  }
-
-  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
-    await updateCollageJobProgress(jobId, {
-      phase: 'error',
-      error: 'Cloudinary not configured',
+      error: 'COLLAGE_LAMBDA_FUNCTION_NAME not configured',
       message: 'שגיאת שרת',
     });
-    inFlight.delete(jobId);
     return;
   }
-
-  const templatePath = path.join(process.cwd(), 'assets', template.videoFile);
-  if (!fs.existsSync(templatePath)) {
-    await updateCollageJobProgress(jobId, {
-      phase: 'error',
-      error: `Template not found: ${template.videoFile}`,
-      message: 'שגיאת שרת',
-    });
-    inFlight.delete(jobId);
-    return;
-  }
-
-  // Wait for an encode slot. A burst of completions queues here instead of
-  // spawning N parallel ffmpeg processes that would OOM the box.
-  await updateCollageJobProgress(jobId, {
-    phase: 'queued',
-    message: encodeSlotsUsed >= MAX_CONCURRENT_ENCODES
-      ? `ממתין בתור (${encodeQueue.length + 1})...`
-      : 'מתחיל קידוד...',
-  });
-  await acquireEncodeSlot();
-
-  const sessionId = `collage_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const tmpDir = path.join(os.tmpdir(), sessionId);
-  fs.mkdirSync(tmpDir, { recursive: true });
-
   try {
-    await updateCollageJobProgress(jobId, {
-      phase: 'preparing',
-      percent: 5,
-      message: 'מכין תמונות...',
-    });
-
-    const imagePaths = await prepareImageInputs(tmpDir, orderedUrls);
-
-    await updateCollageJobProgress(jobId, {
-      phase: 'encoding',
-      percent: 15,
-      message: 'מתחיל קידוד וידאו...',
-    });
-
-    const [logoPath, titlePath] = await Promise.all([
-      (async (): Promise<string | undefined> => {
-        if (!(job.logoUrl && /^https?:\/\//i.test(job.logoUrl))) return undefined;
-        const p = path.join(tmpDir, 'logo.png');
-        try {
-          await downloadToFile(job.logoUrl, p);
-          return p;
-        } catch {
-          return undefined;
-        }
-      })(),
-      (async (): Promise<string | undefined> => {
-        if (!(job.titleImageUrl && /^https?:\/\//i.test(job.titleImageUrl))) return undefined;
-        const p = path.join(tmpDir, 'title.png');
-        try {
-          await downloadToFile(job.titleImageUrl, p);
-          return p;
-        } catch {
-          return undefined;
-        }
-      })(),
-    ]);
-
-    const ffStart = Date.now();
-    const totalFrames = Math.max(1, Math.round(template.duration * 20));
-    const { stdout: encodedStream, done: ffmpegDone } = runFfmpeg(
-      template,
-      templatePath,
-      imagePaths,
-      {
-        logoPath,
-        titlePath,
-        onProgress: (frame) => {
-          const ratio = Math.min(1, frame / totalFrames);
-          void updateCollageJobProgress(jobId, {
-            phase: 'encoding',
-            percent: 15 + ratio * 80,
-            message: `מקודד ומעלה (${Math.round(ratio * 100)}%)...`,
-          });
-        },
-      },
+    await lambda.send(
+      new InvokeCommand({
+        FunctionName: LAMBDA_FN,
+        InvocationType: 'Event', // fire-and-forget — Lambda updates Mongo itself
+        Payload: Buffer.from(JSON.stringify({ jobId })),
+      }),
     );
-
-    const uploadPromise = new Promise<{ secure_url: string; bytes: number }>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { resource_type: 'video', folder: 'yooz/collages', eager: [], eager_async: true },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result as { secure_url: string; bytes: number });
-        },
-      );
-      encodedStream.pipe(stream);
-      encodedStream.on('error', (err) => stream.destroy(err));
-    });
-
-    const [, cloudResult] = await Promise.all([ffmpegDone, uploadPromise]);
-    console.log(
-      `[collage] job ${jobId} ffmpeg+upload ${Date.now() - ffStart}ms → ${(cloudResult.bytes / 1024 / 1024).toFixed(1)}MB`,
-    );
-
-    await updateCollageJobProgress(jobId, {
-      phase: 'done',
-      percent: 100,
-      message: 'הסרטון מוכן!',
-      resultUrl: cloudResult.secure_url,
-      isVideo: true,
-    });
   } catch (err) {
-    console.error(`[collage] job ${jobId} error:`, err);
-    const msg = err instanceof Error ? err.message : 'Collage generation failed';
+    console.error(`[collage] lambda invoke failed for ${jobId}:`, err);
     await updateCollageJobProgress(jobId, {
       phase: 'error',
-      error: msg,
-      message: 'שגיאה ביצירת הסרטון',
+      error: err instanceof Error ? err.message : 'Lambda invoke failed',
+      message: 'שגיאת שרת',
     });
-  } finally {
-    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
-    inFlight.delete(jobId);
-    releaseEncodeSlot();
   }
 }
 

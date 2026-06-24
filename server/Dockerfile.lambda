@@ -1,0 +1,43 @@
+# Lambda container image for collage ffmpeg encoding.
+#
+# Layout in the final image:
+#   /var/task/                       (LAMBDA_TASK_ROOT, cwd at runtime)
+#     lambda/collageHandler.js       (entrypoint)
+#     routes/, services/, models/, data/, config.js
+#     node_modules/                  (incl. sharp linux-x64 + cloudinary + mongoose + aws-sdk)
+#     assets/collage-template*.mp4   (baked-in template videos)
+#   /usr/local/bin/ffmpeg            (static binary)
+
+FROM public.ecr.aws/lambda/nodejs:20 AS build
+WORKDIR /build
+COPY server/package*.json ./
+RUN npm install --no-audit --no-fund
+COPY server/tsconfig.json ./
+COPY server/src ./src
+RUN npx tsc
+
+FROM public.ecr.aws/lambda/nodejs:20
+
+# ffmpeg static build — single binary, no apt/dnf juggling.
+RUN dnf install -y tar xz \
+  && curl -fsSL https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -o /tmp/ff.tar.xz \
+  && tar -xJf /tmp/ff.tar.xz -C /tmp \
+  && mv /tmp/ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/ffmpeg \
+  && chmod +x /usr/local/bin/ffmpeg \
+  && rm -rf /tmp/ff* \
+  && dnf clean all
+
+WORKDIR ${LAMBDA_TASK_ROOT}
+
+# Compiled JS + production deps.
+COPY --from=build /build/dist/ ./
+COPY --from=build /build/node_modules/ ./node_modules/
+
+# Template MP4s — runtime resolves them via path.join(process.cwd(), 'assets', ...).
+COPY server/assets/collage-template.mp4 ./assets/collage-template.mp4
+COPY server/assets/collage-template-gan-yehoshua.mp4 ./assets/collage-template-gan-yehoshua.mp4
+
+ENV FFMPEG_PATH=/usr/local/bin/ffmpeg
+ENV NODE_OPTIONS=--enable-source-maps
+
+CMD ["lambda/collageHandler.handler"]
