@@ -9,6 +9,7 @@ export const texts = {
     or: 'or',
     needHelp: 'Need help?',
     notPortalUser: 'Cannot play — you must sign in through the portal',
+    groupFull: 'This team is full',
   },
   he: {
     email: 'אימייל',
@@ -20,5 +21,6 @@ export const texts = {
     or: 'או',
     needHelp: 'צריכים עזרה?',
     notPortalUser: 'לא ניתן לשחק - יש להתחבר דרך הפורטל',
+    groupFull: 'הקבוצה מלאה',
   },
 };

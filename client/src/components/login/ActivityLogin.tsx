@@ -175,7 +175,8 @@ export default function ActivityLogin({
       onSuccess();
     } catch (err) {
       if (err instanceof Error && err.message !== 'Popup closed') {
-        setError(err.message);
+        const msg = err.message;
+        setError(msg === 'not_portal_user' ? t.notPortalUser : msg === 'group_full' ? t.groupFull : msg);
       }
     } finally {
       setLoading(false);
@@ -191,7 +192,7 @@ export default function ActivityLogin({
       onSuccess();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed';
-      setError(msg === 'not_portal_user' ? t.notPortalUser : msg);
+      setError(msg === 'not_portal_user' ? t.notPortalUser : msg === 'group_full' ? t.groupFull : msg);
     } finally {
       setLoading(false);
     }

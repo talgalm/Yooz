@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { LoginRequest, LoginResponse } from '../types';
 import { Activity, Portal } from '../models';
-import { resolveGroupName, createParticipantSession } from '../utils/participantAuth';
+import { resolveGroupName, createParticipantSession, checkGroupCapacity } from '../utils/participantAuth';
 import { getGroupStatus } from '../utils/groupStatus';
 
 const router = Router();
@@ -54,6 +54,16 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
       return;
     }
     resolvedGroup = groupResult.groupName;
+
+    const capError = await checkGroupCapacity(activity, resolvedGroup, {
+      email,
+      phoneNumber: phoneNumber?.trim(),
+      displayName: participantName?.trim() || email || phoneNumber?.trim() || 'Participant',
+    });
+    if (capError) {
+      res.status(409).json({ error: capError });
+      return;
+    }
   }
 
   if (activity.isContinuous && activity.portalId) {

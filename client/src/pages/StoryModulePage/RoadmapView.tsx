@@ -25,8 +25,14 @@ const ROAD_BORDER = 16;
 // ─── Animations ───
 
 const pulse = keyframes`
-  0%, 100% { transform: translate(-50%,-50%) scale(1); box-shadow: 0 4px 12px rgba(0,0,0,.25); }
-  50%       { transform: translate(-50%,-50%) scale(1.07); box-shadow: 0 4px 22px rgba(0,0,0,.38); }
+  0%, 100% {
+    transform: translate(-50%,-50%) scale(1);
+    box-shadow: 0 4px 14px rgba(0,0,0,.3), 0 0 0 0 var(--node-active-border), 0 0 18px 2px var(--node-active-border);
+  }
+  50% {
+    transform: translate(-50%,-50%) scale(1.15);
+    box-shadow: 0 6px 26px rgba(0,0,0,.42), 0 0 0 14px rgba(255,255,255,0), 0 0 36px 10px var(--node-active-border);
+  }
 `;
 const footstepAppear = keyframes`
   0%   { opacity: 0; transform: translate(-50%,-50%) scale(.3); }
@@ -126,11 +132,11 @@ const NodeWrapper = styled('div')<{ state: 'completed' | 'active' | 'locked'; an
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     cursor: state === 'active' ? 'pointer' : 'default',
     zIndex: 10,
-    border: `5px solid var(--node-${state}-border)`,
+    border: `${state === 'active' ? 8 : 5}px solid var(--node-${state}-border)`,
     background: `var(--node-${state}-bg)`,
     boxShadow: state === 'active' ? '0 6px 20px rgba(0,0,0,.3)' : '0 4px 12px rgba(0,0,0,.2)',
     animation: state === 'active'
-      ? `${pulse} 1.5s ease-in-out infinite`
+      ? `${pulse} 1.4s ease-in-out infinite`
       : animateIn ? `${nodePopIn} 0.4s ease-out` : 'none',
     transition: 'transform .1s, box-shadow .1s',
     '&:active': state === 'active' ? {

@@ -35,6 +35,7 @@ export const texts = {
     joinHelp: 'Enter your team name or paste the invite link',
     or: 'or',
     notPortalUser: 'You are not registered for this activity',
+    groupFull: 'This team is full',
   },
   he: {
     createGroup: 'צור קבוצה חדשה',
@@ -72,5 +73,6 @@ export const texts = {
     joinHelp: 'הזינו את שם הקבוצה או הדביקו את קישור ההזמנה',
     or: 'או',
     notPortalUser: 'אינכם רשומים לפעילות זו',
+    groupFull: 'הקבוצה מלאה',
   },
 };

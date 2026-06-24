@@ -88,6 +88,7 @@ export interface Activity {
   groupEntryMode?: GroupEntryMode;
   groups: { name: string }[];
   groupMinMembers?: number;
+  groupMaxMembers?: number;
   groupReward?: { enabled: boolean; couponCode: string; messageTemplate?: string; attachmentUrl?: string; attachmentType?: 'image' | 'pdf' };
   opening?: { type: 'video' | 'image'; url: string };
   module?: {

@@ -52,6 +52,34 @@ export async function resolveGroupName(
   return { groupName: opts.group };
 }
 
+export async function checkGroupCapacity(
+  activity: IActivity,
+  groupName: string,
+  identity: { email?: string; phoneNumber?: string; displayName: string },
+): Promise<string | null> {
+  const max = activity.groupMaxMembers;
+  if (!max || max <= 0) return null;
+  if (activity.connectionType !== 'group' || activity.groupEntryMode !== 'selfService') return null;
+
+  const lookup = buildReportLookupQuery(
+    activity.code,
+    identity.displayName,
+    groupName,
+    identity.email,
+    identity.phoneNumber,
+    true,
+  );
+  const alreadyMember = await Report.exists(lookup);
+  if (alreadyMember) return null;
+
+  // ponytail: read-then-write race could let two concurrent joins both squeak past
+  // the cap. Family-group sizes are small / low-concurrency so acceptable; upgrade
+  // to a unique-index or transactional join slot if it ever bites.
+  const memberCount = await Report.countDocuments({ activityId: activity._id, group: groupName });
+  if (memberCount >= max) return 'group_full';
+  return null;
+}
+
 export function buildReportLookupQuery(
   activityCode: string,
   displayName: string,

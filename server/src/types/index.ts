@@ -276,6 +276,7 @@ export interface CreateActivityRequest {
   includeOnRoadmap?: boolean;
   passThreshold?: number | null;
   groupMinMembers?: number;
+  groupMaxMembers?: number;
   groupReward?: GroupRewardConfig;
 }
 

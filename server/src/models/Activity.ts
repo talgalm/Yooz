@@ -146,6 +146,8 @@ export interface IActivity {
   };
   /** Self-service groups: minimum members before play can start (default 2). */
   groupMinMembers?: number;
+  /** Self-service groups: maximum members allowed per group (0/undef = no cap). */
+  groupMaxMembers?: number;
   /** When enabled, highest-scoring group member gets an SMS coupon after all members finish. */
   groupReward?: {
     enabled: boolean;
@@ -266,6 +268,7 @@ const activitySchema = new Schema<IActivity>({
   includeOnRoadmap: { type: Boolean, default: false },
   orderSurveySession: { type: Schema.Types.Mixed, default: undefined },
   groupMinMembers: { type: Number, default: 1 },
+  groupMaxMembers: { type: Number, default: null },
   groupReward: {
     type: new Schema({
       enabled: { type: Boolean, default: false },

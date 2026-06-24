@@ -72,7 +72,7 @@ async function buildActivityData(
   existingPasswordHash?: string,
   existing?: IActivity,
 ): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupReward, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, hideLeaderboardInHeader, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
+  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, hideLeaderboardInHeader, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -91,6 +91,7 @@ async function buildActivityData(
     if (mode === 'selfService') {
       data.groups = [];
       data.groupMinMembers = Math.max(1, groupMinMembers ?? 1);
+      data.groupMaxMembers = groupMaxMembers && groupMaxMembers > 0 ? groupMaxMembers : null;
       data.groupReward = resolveGroupRewardForSave(groupReward, existing?.groupReward);
     } else if (groups && Array.isArray(groups) && groups.length > 0) {
       data.groups = groups.map((g, i) => ({
@@ -103,6 +104,7 @@ async function buildActivityData(
     data.groups = [];
     data.groupEntryMode = undefined;
     data.groupMinMembers = undefined;
+    data.groupMaxMembers = undefined;
     data.groupReward = undefined;
   }
   // Handle opening (optional splash screen); null explicitly clears on update

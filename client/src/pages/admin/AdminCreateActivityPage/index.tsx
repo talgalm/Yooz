@@ -331,6 +331,7 @@ export default function AdminCreateActivityPage() {
   const [connectionType, setConnectionType] = useState<ConnectionType>('single');
   const [groupEntryMode, setGroupEntryMode] = useState<GroupEntryMode>('preset');
   const [groupMinMembers, setGroupMinMembers] = useState(1);
+  const [groupMaxMembers, setGroupMaxMembers] = useState(0);
   const [groupRewardEnabled, setGroupRewardEnabled] = useState(false);
   const [groupRewardCoupon, setGroupRewardCoupon] = useState('');
   const [groupRewardMessage, setGroupRewardMessage] = useState('');
@@ -437,6 +438,7 @@ export default function AdminCreateActivityPage() {
         if (a.connectionType === 'group') {
           setGroupEntryMode(a.groupEntryMode === 'selfService' ? 'selfService' : 'preset');
           setGroupMinMembers(a.groupMinMembers ?? 1);
+          setGroupMaxMembers(a.groupMaxMembers ?? 0);
           if (a.groupReward) {
             setGroupRewardEnabled(a.groupReward.enabled);
             setGroupRewardCoupon(a.groupReward.couponCode || '');
@@ -903,6 +905,7 @@ export default function AdminCreateActivityPage() {
           payload.groups = groupNames.map((n) => ({ name: n.trim() || 'Group' }));
         } else {
           payload.groupMinMembers = groupMinMembers;
+          payload.groupMaxMembers = groupMaxMembers > 0 ? groupMaxMembers : null;
           payload.groupReward = {
             enabled: groupRewardEnabled,
             couponCode: groupRewardCoupon.trim(),
@@ -1262,6 +1265,23 @@ export default function AdminCreateActivityPage() {
                                 </CounterButton>
                               </CounterRow>
                               <SectionDescription style={{ margin: '8px 0 0' }}>{t.groupMinMembersDesc}</SectionDescription>
+                              <SectionLabel style={{ marginTop: 16 }}>{t.groupMaxMembers}</SectionLabel>
+                              <CounterRow>
+                                <CounterButton
+                                  type="button"
+                                  onClick={() => setGroupMaxMembers((n) => Math.max(0, n - 1))}
+                                >
+                                  −
+                                </CounterButton>
+                                <CounterDisplay>{groupMaxMembers || '∞'}</CounterDisplay>
+                                <CounterButton
+                                  type="button"
+                                  onClick={() => setGroupMaxMembers((n) => Math.min(100, n + 1))}
+                                >
+                                  +
+                                </CounterButton>
+                              </CounterRow>
+                              <SectionDescription style={{ margin: '8px 0 0' }}>{t.groupMaxMembersDesc}</SectionDescription>
                             </>
                           )}
                           {groupEntryMode === 'preset' && (
