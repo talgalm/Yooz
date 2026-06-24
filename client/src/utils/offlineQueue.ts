@@ -1,3 +1,5 @@
+import { HttpError, isRetryableFetchError, retryDelayMs } from './fetchErrors';
+
 const STORAGE_KEY = 'yooz_offline_queue';
 const MAX_QUEUE = 30;
 
@@ -8,14 +10,23 @@ type QueuedWrite = {
   queuedAt: number;
 };
 
+const queueListeners = new Set<() => void>();
+
+function notifyQueueListeners(): void {
+  for (const cb of queueListeners) cb();
+}
+
 function isWriteMethod(method: string): boolean {
   const m = method.toUpperCase();
   return m === 'POST' || m === 'PATCH' || m === 'PUT' || m === 'DELETE';
 }
 
-function isRetryableFetchError(err: unknown): boolean {
-  if (err instanceof Error && err.name === 'AbortError') return false;
-  return err instanceof TypeError;
+function normalizeUrl(url: string): string {
+  return url.replace(/\?.*$/, '');
+}
+
+function isScoresPost(url: string, method: string): boolean {
+  return method === 'POST' && /\/scores$/.test(normalizeUrl(url));
 }
 
 function readQueue(): QueuedWrite[] {
@@ -39,28 +50,60 @@ function writeQueue(queue: QueuedWrite[]): void {
 
 async function sendQueuedRequest(item: QueuedWrite): Promise<void> {
   const token = localStorage.getItem('yooz_token');
-  const res = await fetch(item.url, {
-    method: item.method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: item.body,
-  });
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || 'Request failed');
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      const res = await fetch(item.url, {
+        method: item.method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: item.body,
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Request failed' }));
+        throw new HttpError(error.error || 'Request failed', res.status);
+      }
+      return;
+    } catch (err) {
+      lastError = err;
+      if (!isRetryableFetchError(err) || attempt >= 5) throw err;
+      await new Promise((r) => setTimeout(r, retryDelayMs(attempt)));
+    }
   }
+
+  throw lastError;
 }
 
-/** Queue a failed write; latest body per URL wins (progress/scores supersede older). */
+/**
+ * Queue a failed write. Progress PATCHes are appended in order so every
+ * completed station is replayed. Scores POSTs dedupe by URL (latest wins).
+ */
 export function enqueueOfflineRequest(url: string, options: RequestInit = {}): void {
   const method = (options.method || 'GET').toUpperCase();
   if (!isWriteMethod(method)) return;
   const body = typeof options.body === 'string' ? options.body : '';
-  const queue = readQueue().filter((q) => q.url !== url);
+
+  let queue = readQueue();
+  if (isScoresPost(url, method)) {
+    queue = queue.filter((q) => !(q.url === url && q.method === method));
+  }
+
   queue.push({ url, method, body, queuedAt: Date.now() });
   writeQueue(queue);
+  notifyQueueListeners();
+}
+
+export function isRequestQueued(url: string, method = 'POST'): boolean {
+  const m = method.toUpperCase();
+  return readQueue().some((q) => q.url === url && q.method === m);
+}
+
+export function subscribeOfflineQueue(listener: () => void): () => void {
+  queueListeners.add(listener);
+  return () => queueListeners.delete(listener);
 }
 
 let flushing = false;
@@ -77,12 +120,12 @@ export async function flushOfflineQueue(): Promise<void> {
     for (const item of queue) {
       try {
         await sendQueuedRequest(item);
-      } catch (err) {
+      } catch {
         remaining.push(item);
-        void err;
       }
     }
     writeQueue(remaining);
+    notifyQueueListeners();
   } finally {
     flushing = false;
   }
@@ -103,4 +146,4 @@ export function ensureOfflineQueueListeners(): void {
   setInterval(tick, 20_000);
 }
 
-export { isRetryableFetchError };
+export { isRetryableFetchError } from './fetchErrors';

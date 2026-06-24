@@ -30,9 +30,13 @@ import os from 'os';
 import ffmpegPath from 'ffmpeg-static';
 import sharp from 'sharp';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from '../config';
-import { Activity } from '../models';
+import { Activity, CollageJob } from '../models';
 import motionDataDefault from '../data/collage-template-motion.json';
 import motionDataGanYehoshua from '../data/collage-template-gan-yehoshua-motion.json';
+import {
+  requiredImageCount,
+  scheduleCollageEncode,
+} from '../services/collageProcessor';
 
 const router = Router();
 
@@ -64,7 +68,7 @@ interface MotionScene {
   keyframes: number[][];
 }
 
-interface TemplateMeta {
+export interface TemplateMeta {
   videoFile: string;
   width: number;
   height: number;
@@ -141,7 +145,7 @@ export const TEMPLATES: Record<string, TemplateMeta> = {
   },
 };
 
-const DEFAULT_TEMPLATE_ID = 'default';
+export const DEFAULT_TEMPLATE_ID = 'default';
 
 const FFMPEG_BIN = process.env.FFMPEG_PATH || ffmpegPath || 'ffmpeg';
 
@@ -428,7 +432,26 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000).unref();
 
-router.get('/progress/:jobId', (req: Request<{ jobId: string }>, res: Response) => {
+router.get('/progress/:jobId', async (req: Request<{ jobId: string }>, res: Response) => {
+  const mongoJob = await CollageJob.findOne({ jobId: req.params.jobId });
+  if (mongoJob) {
+    const elapsedSec = (Date.now() - mongoJob.createdAt.getTime()) / 1000;
+    const etaSeconds =
+      mongoJob.phase === 'done' || mongoJob.phase === 'error' || mongoJob.percent <= 0 || mongoJob.percent >= 100
+        ? null
+        : Math.max(0, Math.round((elapsedSec * (100 - mongoJob.percent)) / mongoJob.percent));
+    res.json({
+      phase: mongoJob.phase,
+      percent: mongoJob.percent,
+      message: mongoJob.message,
+      etaSeconds,
+      error: mongoJob.error,
+      resultUrl: mongoJob.resultUrl,
+      isVideo: mongoJob.isVideo,
+    });
+    return;
+  }
+
   const job = jobs.get(req.params.jobId);
   if (!job) {
     res.status(404).json({ error: 'unknown job' });
@@ -446,6 +469,270 @@ router.get('/progress/:jobId', (req: Request<{ jobId: string }>, res: Response) 
     etaSeconds,
     error: job.error,
   });
+});
+
+function serializeCollageJob(job: InstanceType<typeof CollageJob>) {
+  const uploaded = job.imageUrls.filter(Boolean).length;
+  return {
+    jobId: job.jobId,
+    activityCode: job.activityCode,
+    splitGroupId: job.splitGroupId,
+    template: job.template,
+    phase: job.phase,
+    percent: job.percent,
+    message: job.message,
+    error: job.error,
+    resultUrl: job.resultUrl,
+    isVideo: job.isVideo,
+    requiredImages: job.requiredImages,
+    uploadedImages: uploaded,
+    imageUrls: job.imageUrls,
+    title: job.title,
+  };
+}
+
+const photoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 },
+});
+
+router.post('/upload-photo', photoUpload.single('file'), async (req: Request, res: Response) => {
+  const { activityCode, jobId, imageIndex } = req.body as {
+    activityCode?: string;
+    jobId?: string;
+    imageIndex?: string;
+  };
+
+  if (!activityCode || !jobId || imageIndex === undefined) {
+    res.status(400).json({ error: 'activityCode, jobId, and imageIndex are required' });
+    return;
+  }
+  if (!req.file) {
+    res.status(400).json({ error: 'No file provided' });
+    return;
+  }
+
+  const activity = await Activity.findOne({ code: activityCode });
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
+    res.status(500).json({ error: 'Cloudinary not configured' });
+    return;
+  }
+
+  const idx = parseInt(imageIndex, 10);
+  if (!Number.isFinite(idx) || idx < 0) {
+    res.status(400).json({ error: 'Invalid imageIndex' });
+    return;
+  }
+
+  try {
+    const cloudResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'image',
+          folder: `yooz/collage-inputs/${activityCode}`,
+          format: 'jpg',
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result as { secure_url: string });
+        },
+      );
+      stream.end(req.file!.buffer);
+    });
+
+    let job = await CollageJob.findOne({ jobId });
+    if (!job) {
+      res.status(404).json({ error: 'Job not found — create it first' });
+      return;
+    }
+
+    while (job.imageUrls.length <= idx) job.imageUrls.push('');
+    job.imageUrls[idx] = cloudResult.secure_url;
+    job.phase = job.phase === 'error' ? 'collecting' : job.phase;
+    job.message = `הועלו ${job.imageUrls.filter(Boolean).length}/${job.requiredImages} תמונות`;
+    await job.save();
+
+    res.json({ url: cloudResult.secure_url, jobId, imageIndex: idx });
+  } catch (err) {
+    console.error('[collage] upload-photo error:', err);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+});
+
+router.post('/upload-title', photoUpload.single('file'), async (req: Request, res: Response) => {
+  const { activityCode, jobId } = req.body as { activityCode?: string; jobId?: string };
+  if (!activityCode || !jobId || !req.file) {
+    res.status(400).json({ error: 'activityCode, jobId, and file are required' });
+    return;
+  }
+
+  const activity = await Activity.findOne({ code: activityCode });
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  try {
+    const cloudResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { resource_type: 'image', folder: `yooz/collage-inputs/${activityCode}` },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result as { secure_url: string });
+        },
+      );
+      stream.end(req.file!.buffer);
+    });
+
+    const job = await CollageJob.findOne({ jobId });
+    if (!job) {
+      res.status(404).json({ error: 'Job not found' });
+      return;
+    }
+    job.titleImageUrl = cloudResult.secure_url;
+    await job.save();
+    res.json({ url: cloudResult.secure_url });
+  } catch (err) {
+    console.error('[collage] upload-title error:', err);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+});
+
+router.post('/jobs', async (req: Request, res: Response) => {
+  const {
+    jobId,
+    activityCode,
+    template: templateId,
+    splitGroupId,
+    logoUrl,
+    title,
+    requiredImages: requiredImagesBody,
+  } = req.body as {
+    jobId?: string;
+    activityCode?: string;
+    template?: string;
+    splitGroupId?: string;
+    logoUrl?: string;
+    title?: string;
+    requiredImages?: number;
+  };
+
+  if (!jobId || !activityCode) {
+    res.status(400).json({ error: 'jobId and activityCode are required' });
+    return;
+  }
+
+  const activity = await Activity.findOne({ code: activityCode });
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  const requiredImages = requiredImagesBody ?? requiredImageCount(templateId);
+  const existing = await CollageJob.findOne({ jobId });
+  if (existing) {
+    res.json(serializeCollageJob(existing));
+    return;
+  }
+
+  const job = await CollageJob.create({
+    jobId,
+    activityCode,
+    splitGroupId,
+    template: templateId && TEMPLATES[templateId] ? templateId : DEFAULT_TEMPLATE_ID,
+    logoUrl,
+    title,
+    requiredImages,
+    imageUrls: [],
+    phase: 'collecting',
+    percent: 0,
+    message: 'אוסף תמונות...',
+    isVideo: true,
+  });
+
+  res.status(201).json(serializeCollageJob(job));
+});
+
+router.get('/jobs/:jobId', async (req: Request<{ jobId: string }>, res: Response) => {
+  const job = await CollageJob.findOne({ jobId: req.params.jobId });
+  if (!job) {
+    res.status(404).json({ error: 'Job not found' });
+    return;
+  }
+  res.json(serializeCollageJob(job));
+});
+
+router.get('/jobs', async (req: Request, res: Response) => {
+  const { activityCode, splitGroupId } = req.query as { activityCode?: string; splitGroupId?: string };
+  if (!activityCode) {
+    res.status(400).json({ error: 'activityCode is required' });
+    return;
+  }
+  const filter: Record<string, string> = { activityCode };
+  if (splitGroupId) filter.splitGroupId = splitGroupId;
+  const job = await CollageJob.findOne(filter).sort({ updatedAt: -1 });
+  if (!job) {
+    res.status(404).json({ error: 'Job not found' });
+    return;
+  }
+  res.json(serializeCollageJob(job));
+});
+
+router.post('/jobs/:jobId/start', async (req: Request<{ jobId: string }>, res: Response) => {
+  const { title } = req.body as { title?: string };
+  const job = await CollageJob.findOne({ jobId: req.params.jobId });
+  if (!job) {
+    res.status(404).json({ error: 'Job not found' });
+    return;
+  }
+
+  if (job.phase === 'done' && job.resultUrl) {
+    res.json(serializeCollageJob(job));
+    return;
+  }
+
+  if (title?.trim()) job.title = title.trim();
+
+  const orderedUrls = Array.from({ length: job.requiredImages }, (_, i) => job.imageUrls[i] || '');
+  if (orderedUrls.some((u) => !u)) {
+    res.status(400).json({
+      error: `Missing photos (${orderedUrls.filter(Boolean).length}/${job.requiredImages})`,
+    });
+    return;
+  }
+
+  if (job.phase === 'encoding' || job.phase === 'preparing' || job.phase === 'queued') {
+    res.status(202).json(serializeCollageJob(job));
+    return;
+  }
+
+  job.phase = 'queued';
+  job.percent = Math.max(job.percent, 2);
+  job.message = 'ממתין לקידוד...';
+  job.error = undefined;
+  await job.save();
+
+  scheduleCollageEncode(job.jobId);
+  res.status(202).json(serializeCollageJob(job));
+});
+
+router.post('/jobs/:jobId/retry', async (req: Request<{ jobId: string }>, res: Response) => {
+  const job = await CollageJob.findOne({ jobId: req.params.jobId });
+  if (!job) {
+    res.status(404).json({ error: 'Job not found' });
+    return;
+  }
+  job.phase = 'queued';
+  job.error = undefined;
+  job.message = 'מנסה שוב...';
+  await job.save();
+  scheduleCollageEncode(job.jobId);
+  res.status(202).json(serializeCollageJob(job));
 });
 
 // Max images across all templates — multer needs a static limit. All current

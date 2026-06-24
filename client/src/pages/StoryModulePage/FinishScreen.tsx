@@ -364,6 +364,35 @@ const Countdown = styled('div')({
   fontWeight: 500,
 });
 
+const SaveStatusBanner = styled('div')<{ warning?: boolean }>(({ warning }) => ({
+  width: '100%',
+  maxWidth: 360,
+  marginBottom: 16,
+  padding: '12px 16px',
+  borderRadius: 12,
+  background: warning ? 'rgba(255, 193, 7, 0.2)' : 'rgba(255,255,255,0.12)',
+  border: warning ? '1px solid rgba(255, 193, 7, 0.5)' : '1px solid rgba(255,255,255,0.2)',
+  color: '#fff',
+  fontSize: 14,
+  textAlign: 'center',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 10,
+  alignItems: 'center',
+}));
+
+const SaveRetryButton = styled('button')({
+  padding: '8px 20px',
+  background: '#fff',
+  color: C_PURPLE_DARK,
+  border: 'none',
+  borderRadius: 50,
+  fontSize: 14,
+  fontWeight: 700,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+});
+
 // ─── SVG Icons ───
 
 function CheckmarkIcon() {
@@ -406,6 +435,8 @@ interface FinishScreenProps {
   bgStyle: React.CSSProperties;
   leaderboardMode?: 'points' | 'time' | 'both';
   finalDurationMs?: number | null;
+  scoresSaveStatus?: 'pending' | 'saved' | 'queued';
+  onRetrySaveScores?: () => void;
   onStay: () => void;
   onViewLeaderboard: () => void;
   onExit: () => void;
@@ -430,6 +461,8 @@ export default function FinishScreen({
   countdown,
   leaderboardMode,
   finalDurationMs,
+  scoresSaveStatus = 'saved',
+  onRetrySaveScores,
   onStay,
   onViewLeaderboard,
   onExit,
@@ -543,6 +576,20 @@ export default function FinishScreen({
             <StatLabel>{t.finishStatus}</StatLabel>
           </StatCard>
         </StatCardsRow>
+
+        {scoresSaveStatus === 'pending' && (
+          <SaveStatusBanner>{t.finishSavePending}</SaveStatusBanner>
+        )}
+        {scoresSaveStatus === 'queued' && (
+          <SaveStatusBanner warning>
+            <span>{t.finishSaveFailed}</span>
+            {onRetrySaveScores && (
+              <SaveRetryButton type="button" onClick={onRetrySaveScores}>
+                {t.mediaRetry}
+              </SaveRetryButton>
+            )}
+          </SaveStatusBanner>
+        )}
 
         <ActionsColumn>
           <ContinueButton onClick={onViewLeaderboard}>

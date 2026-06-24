@@ -11,7 +11,7 @@
 
 export interface StoredCollagePart {
   partIndex: number;
-  photos: { blob: Blob; isVideo?: boolean }[];
+  photos: { blob: Blob; isVideo?: boolean; cloudinaryUrl?: string }[];
 }
 
 const DB_NAME = 'yooz_collage_split';

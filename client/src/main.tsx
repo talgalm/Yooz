@@ -20,6 +20,12 @@ import '@fontsource/secular-one/400.css';
 
 initFacebookSdk().catch(() => { /* missing/blocked SDK falls back to sharer.php */ });
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

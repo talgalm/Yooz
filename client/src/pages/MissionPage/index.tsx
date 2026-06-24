@@ -5,6 +5,9 @@ import { rememberActivityCode } from '../../utils/participantActivity';
 import { useParticipantExit } from '../../hooks/useParticipantExit';
 import { useTranslations } from '../../context/LanguageContext';
 import { apiFetchPersistSilent, apiFetchWithRetry } from '../../utils/api';
+import { getCachedModuleData } from '../../utils/moduleCache';
+import { optimizeActivityMediaData } from '../../utils/participantMedia';
+import { preloadActivityMedia } from '../../utils/mediaPreloader';
 import { texts } from './MissionPage.i18n';
 import {
   MissionWrapper,
@@ -231,24 +234,36 @@ export default function MissionPage() {
   useEffect(() => {
     if (!code) return;
     let cancelled = false;
+
+    const cached = getCachedModuleData<{ module: MissionModule }>(code, '');
+    if (cached?.module?.type === 'mission' && cached.module.mission) {
+      setMission(cached.module.mission);
+      preloadActivityMedia(cached);
+      setLoading(false);
+    }
+
     const fetchMission = async () => {
       setError('');
-      setLoading(true);
+      if (!cached?.module?.mission) setLoading(true);
       try {
-        const data = await apiFetchWithRetry<{ module: MissionModule }>(
+        const raw = await apiFetchWithRetry<{ module: MissionModule }>(
           `/api/activities/${code}/module`,
           {},
           10,
         );
         if (cancelled) return;
+        const data = optimizeActivityMediaData(raw);
         const mod = data.module;
         if (mod.type !== 'mission' || !mod.mission) {
           throw new Error(t.errorNotMission);
         }
         setMission(mod.mission);
+        preloadActivityMedia(data);
       } catch (err) {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : t.errorLoad);
+        if (!cached?.module?.mission) {
+          setError(err instanceof Error ? err.message : t.errorLoad);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -295,12 +310,10 @@ export default function MissionPage() {
 
   const savePuzzleProgress = useCallback(async () => {
     if (!code) return;
-    fetch(`${API}/api/activities/${code}/mission-event`, {
+    await apiFetchPersistSilent(`${API}/api/activities/${code}/mission-event`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ event: 'puzzle_completed' }),
-    }).catch(() => {});
-
+    });
     const now = new Date();
     await apiFetchPersistSilent(`${API}/api/activities/${code}/progress`, {
       method: 'PATCH',

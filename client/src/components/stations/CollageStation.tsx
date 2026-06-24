@@ -22,12 +22,18 @@ import {
   clearCollageParts,
 } from './collageSplitStorage';
 import {
-  doCollageUpload,
   startBackgroundCollage,
   getBackgroundCollage,
   subscribeBackgroundCollage,
   consumeBackgroundCollage,
+  uploadSplitPhotosInBackground,
+  getCompletedCollageResult,
+  waitForServerCollageJob,
+  cleanupCollageJobPersistence,
+  makeSplitCollageJobId,
+  findCollageJob,
 } from './backgroundCollageJob';
+import { fetchCollageProgress } from '../../utils/collageApi';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -500,36 +506,21 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             partIndex,
             photos: photosForStorage(localPhotos),
           });
-          // If this save completes the photo set AND a dedicated video part
-          // exists later, kick off generation in the background. The XHR lives
-          // at module scope so it survives this component unmounting, and the
-          // result is often ready by the time the user reaches the video part.
-          if (hasVideoPart) {
-            try {
-              const allParts = await loadCollageParts(activityCode, splitMeta.splitGroupId);
-              const orderedPhotos: { blob: Blob; isVideo?: boolean }[] = [];
-              for (let i = 0; i < totalParts; i++) {
-                if (i === videoPartIndex) continue;
-                const part = allParts.find((p) => p.partIndex === i);
-                if (part) orderedPhotos.push(...part.photos);
-              }
-              if (orderedPhotos.length >= totalImages) {
-                const bgKey = `${activityCode}::${splitMeta.splitGroupId}`;
-                if (!getBackgroundCollage(bgKey)) {
-                  startBackgroundCollage(bgKey, {
-                    photos: orderedPhotos.slice(0, totalImages),
-                    title: '',
-                    logoUrl,
-                    activityCode,
-                    template,
-                    jobId: `j_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`,
-                  });
-                }
-              }
-            } catch {
-              /* swallow — video part will fall back to fresh generation */
-            }
-          }
+          // Upload this part's photos to Cloudinary in the background so the
+          // video-creation station only needs to trigger ffmpeg stitch.
+          uploadSplitPhotosInBackground(
+            activityCode,
+            splitMeta.splitGroupId,
+            localPhotos.map((p) => ({
+              globalIndex: partStartIndex + p.missionIndex,
+              blob: p.blob,
+            })),
+            {
+              template,
+              logoUrl,
+              requiredImages: totalImages,
+            },
+          );
         } catch { /* swallow — onContinue still advances */ }
       }
       onContinue();
@@ -601,64 +592,68 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     setEtaSeconds(null);
     setError('');
 
-    // Poll the server's job entry every 1s for real progress + ETA. Server
-    // progress (0-100%) is rescaled to the client's 60-99% range — 0-60 is
-    // already used by the XHR upload-progress events, and 100 is reserved for
-    // the final HTTP response. We tolerate transient 404s while the server is
-    // still spinning up the job record.
-    const jobId = `j_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
-    const startServerPoll = () => {
+    const activityCode = code ?? '';
+    const orderedPhotos = [...source].sort((a, b) => a.missionIndex - b.missionIndex);
+    // Use a stable groupId for non-split stations too, so the IndexedDB +
+    // server lookup pipeline can resume after reload.
+    const effectiveGroupId = isSplit && splitMeta
+      ? splitMeta.splitGroupId
+      : `single_${station._id}`;
+    const jobId = makeSplitCollageJobId(activityCode, effectiveGroupId);
+    const bgKey = `${activityCode}::${effectiveGroupId}`;
+    const effectiveTitle = collageTitle.trim() || header;
+
+    const startServerPoll = (pollJobId: string) => {
       if (serverPollRef.current) clearInterval(serverPollRef.current);
       serverPollRef.current = setInterval(async () => {
         try {
-          const res = await fetch(`/api/collage/progress/${jobId}`);
-          if (!res.ok) return;
-          const data = (await res.json()) as {
-            phase: string;
-            percent: number;
-            message: string;
-            etaSeconds: number | null;
-          };
-          const mapped = Math.min(99, Math.round(60 + (data.percent ?? 0) * 0.4));
-          setProgress((cur) => Math.max(cur, mapped));
+          const data = await fetchCollageProgress(pollJobId);
           if (data.message) setProgressLabel(data.message);
           setEtaSeconds(typeof data.etaSeconds === 'number' ? data.etaSeconds : null);
         } catch {
-          /* network hiccup — next tick will retry */
+          /* network hiccup */
         }
       }, 1000);
     };
 
     try {
-      const activityCode = code ?? '';
-      const orderedPhotos = [...source].sort((a, b) => a.missionIndex - b.missionIndex);
-      const result = await doCollageUpload(
-        {
-          photos: orderedPhotos.map((p) => ({ blob: p.blob, isVideo: p.isVideo })),
-          title: collageTitle,
-          logoUrl,
-          activityCode,
-          template,
-          jobId,
-        },
-        (uploadPct) => {
-          setProgress((cur) => Math.max(cur, uploadPct));
-          if (uploadPct >= 60 && !serverPollRef.current) {
-            startServerPoll();
-          }
-        },
-      );
+      const bg = startBackgroundCollage(bgKey, {
+        photos: orderedPhotos.map((p) => ({ blob: p.blob, isVideo: p.isVideo })),
+        photoIndices: orderedPhotos.map((p) => p.missionIndex),
+        title: effectiveTitle,
+        logoUrl,
+        activityCode,
+        template,
+        splitGroupId: splitMeta?.splitGroupId,
+        jobId,
+        requiredImages: totalImages,
+      });
+
+      startServerPoll(jobId);
+      const unsub = subscribeBackgroundCollage(bgKey, (j) => {
+        setProgress((cur) => Math.max(cur, j.uploadPct));
+        if (j.uploadPct >= 55) setProgressLabel('יוצר קולאז׳...');
+      });
+      bgUnsubRef.current = unsub;
+
+      const result = await bg.promise;
 
       if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
+      unsub();
+      bgUnsubRef.current = null;
+      consumeBackgroundCollage(bgKey);
+
       setProgress(100);
       setProgressLabel('הסרטון מוכן!');
       setEtaSeconds(0);
 
       await new Promise((r) => setTimeout(r, 500));
 
-      // Final video for a split group is built — wipe the saved parts.
-      if (isSplit && splitMeta && (code ?? '')) {
-        try { await clearCollageParts(code ?? '', splitMeta.splitGroupId); } catch { /* ignore */ }
+      if (activityCode) {
+        try {
+          if (isSplit && splitMeta) await clearCollageParts(activityCode, splitMeta.splitGroupId);
+          await cleanupCollageJobPersistence(activityCode, effectiveGroupId);
+        } catch { /* ignore */ }
       }
 
       setResultUrl(result.url);
@@ -666,6 +661,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       setPhase('result');
     } catch (err) {
       if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
+      if (bgUnsubRef.current) { bgUnsubRef.current(); bgUnsubRef.current = null; }
       setError(err instanceof Error ? err.message : 'שגיאה ביצירת הסרטון');
       setPhase('review');
     }
@@ -775,15 +771,55 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     setResultVideoStarted(false);
   }, [resultUrl]);
 
+  // ── Non-split reload recovery ───────────────────────────────────────────────
+  // If user reloaded mid-encode, jump straight to generating/result instead of
+  // restarting from intro. (Split case is handled by the video-part bootstrap
+  // below; this only fires for !isSplit.)
+  const recoverRef = useRef(false);
+  useEffect(() => {
+    if (isSplit || recoverRef.current) return;
+    recoverRef.current = true;
+    const activityCode = code ?? '';
+    if (!activityCode) return;
+    const groupId = `single_${station._id}`;
+    (async () => {
+      try {
+        const completed = await getCompletedCollageResult(activityCode, groupId);
+        if (completed) {
+          setResultUrl(completed.url);
+          setResultIsVideo(completed.isVideo);
+          setPhase('result');
+          return;
+        }
+        const serverJob = await findCollageJob(activityCode, groupId);
+        if (serverJob && ['queued', 'preparing', 'encoding', 'uploading'].includes(serverJob.phase)) {
+          setPhase('generating');
+          setProgress(Math.min(99, Math.round(55 + serverJob.percent * 0.45)));
+          setProgressLabel(serverJob.message || 'יוצר קולאז׳...');
+          try {
+            const result = await waitForServerCollageJob(serverJob.jobId, (snap) => {
+              setProgress((cur) => Math.max(cur, Math.min(99, Math.round(55 + snap.percent * 0.45))));
+              if (snap.message) setProgressLabel(snap.message);
+              setEtaSeconds(typeof snap.etaSeconds === 'number' ? snap.etaSeconds : null);
+            });
+            setProgress(100);
+            setProgressLabel('הסרטון מוכן!');
+            await cleanupCollageJobPersistence(activityCode, groupId);
+            setResultUrl(result.url);
+            setResultIsVideo(result.isVideo);
+            setPhase('result');
+          } catch {
+            // Server job died — fall back to intro so user can re-shoot.
+            // Photos weren't persisted (only the job ID was) so nothing to recover beyond this.
+            setPhase('intro');
+          }
+        }
+      } catch { /* swallow — stay on intro */ }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Video-only part bootstrap ───────────────────────────────────────────────
-  // When this station is a dedicated video-creation sub-station:
-  //  1. If a background upload kicked off by the last photo part has finished,
-  //     skip straight to the result.
-  //  2. If it's still in flight, attach to it (show progress, poll server, await
-  //     the promise) so the user sees a real progress bar instead of a fresh
-  //     2-3 min wait.
-  //  3. Otherwise (no bg job, e.g. page reload killed it), fall back to the
-  //     original behavior: load photos from IndexedDB and generate from scratch.
   const bootstrappedRef = useRef(false);
   useEffect(() => {
     if (!isVideoPart || bootstrappedRef.current) return;
@@ -796,6 +832,63 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         return;
       }
 
+      const bgKey = `${activityCode}::${splitMeta.splitGroupId}`;
+      const jobId = makeSplitCollageJobId(activityCode, splitMeta.splitGroupId);
+      const effectiveTitle = header;
+
+      const finishWithResult = async (url: string, isVideo: boolean) => {
+        setProgress(100);
+        setProgressLabel('הסרטון מוכן!');
+        setEtaSeconds(0);
+        await new Promise((r) => setTimeout(r, 500));
+        try {
+          await clearCollageParts(activityCode, splitMeta.splitGroupId);
+          await cleanupCollageJobPersistence(activityCode, splitMeta.splitGroupId);
+        } catch { /* */ }
+        consumeBackgroundCollage(bgKey);
+        setResultUrl(url);
+        setResultIsVideo(isVideo);
+        setPhase('result');
+      };
+
+      const attachToJob = async (activeJobId: string, promise: Promise<{ url: string; isVideo: boolean }>) => {
+        setPhase('generating');
+        setProgress(0);
+        setProgressLabel('מעלה תמונות...');
+        setEtaSeconds(null);
+        setError('');
+
+        if (serverPollRef.current) clearInterval(serverPollRef.current);
+        serverPollRef.current = setInterval(async () => {
+          try {
+            const data = await fetchCollageProgress(activeJobId);
+            if (data.message) setProgressLabel(data.message);
+            setEtaSeconds(typeof data.etaSeconds === 'number' ? data.etaSeconds : null);
+          } catch { /* */ }
+        }, 1000);
+
+        const unsub = subscribeBackgroundCollage(bgKey, (j) => {
+          setProgress((cur) => Math.max(cur, j.uploadPct));
+          if (j.uploadPct >= 55) setProgressLabel('יוצר קולאז׳...');
+        });
+        bgUnsubRef.current = unsub;
+
+        try {
+          const result = await promise;
+          if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
+          unsub();
+          bgUnsubRef.current = null;
+          await finishWithResult(result.url, result.isVideo);
+        } catch {
+          if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
+          unsub();
+          bgUnsubRef.current = null;
+          consumeBackgroundCollage(bgKey);
+          setError('שגיאה ביצירת הסרטון — מנסה שוב...');
+          await runFreshGeneration();
+        }
+      };
+
       const runFreshGeneration = async () => {
         try {
           const prior = await loadCollageParts(activityCode, splitMeta.splitGroupId);
@@ -807,6 +900,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             return;
           }
           setPhotos(merged);
+          setCollageTitle(effectiveTitle);
           await generateCollage(merged);
         } catch {
           setError('שגיאה בטעינת התמונות');
@@ -814,80 +908,40 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         }
       };
 
-      const bgKey = `${activityCode}::${splitMeta.splitGroupId}`;
       const bg = getBackgroundCollage(bgKey);
-
-      // Case 1: background job already finished — show result immediately.
       if (bg?.status === 'done' && bg.result) {
-        setResultUrl(bg.result.url);
-        setResultIsVideo(bg.result.isVideo);
-        setPhase('result');
-        try { await clearCollageParts(activityCode, splitMeta.splitGroupId); } catch { /* */ }
-        consumeBackgroundCollage(bgKey);
+        await finishWithResult(bg.result.url, bg.result.isVideo);
+        return;
+      }
+      if (bg?.status === 'pending') {
+        await attachToJob(bg.jobId, bg.promise);
         return;
       }
 
-      // Case 2: background job in flight — attach to it.
-      if (bg?.status === 'pending') {
+      const completed = await getCompletedCollageResult(activityCode, splitMeta.splitGroupId);
+      if (completed) {
+        await finishWithResult(completed.url, completed.isVideo);
+        return;
+      }
+
+      const serverJob = await findCollageJob(activityCode, splitMeta.splitGroupId);
+      if (serverJob && ['queued', 'preparing', 'encoding', 'uploading'].includes(serverJob.phase)) {
         setPhase('generating');
-        setProgress(bg.uploadPct);
-        setProgressLabel(bg.uploadPct < 60 ? 'מעלה תמונות...' : 'יוצר קולאז׳...');
-        setEtaSeconds(null);
-        setError('');
-
-        const unsub = subscribeBackgroundCollage(bgKey, (j) => {
-          setProgress((cur) => Math.max(cur, j.uploadPct));
-        });
-        bgUnsubRef.current = unsub;
-
-        // Mirror the server-progress polling started by generateCollage(). The
-        // jobId was generated when the bg upload was kicked off in the prior
-        // photo part, so the server already has the encoding state under it.
-        if (serverPollRef.current) clearInterval(serverPollRef.current);
-        const pollJobId = bg.jobId;
-        serverPollRef.current = setInterval(async () => {
-          try {
-            const res = await fetch(`/api/collage/progress/${pollJobId}`);
-            if (!res.ok) return;
-            const data = (await res.json()) as {
-              phase: string;
-              percent: number;
-              message: string;
-              etaSeconds: number | null;
-            };
-            const mapped = Math.min(99, Math.round(60 + (data.percent ?? 0) * 0.4));
-            setProgress((cur) => Math.max(cur, mapped));
-            if (data.message) setProgressLabel(data.message);
-            setEtaSeconds(typeof data.etaSeconds === 'number' ? data.etaSeconds : null);
-          } catch { /* network hiccup — next tick will retry */ }
-        }, 1000);
-
+        setProgress(serverJob.percent);
+        setProgressLabel(serverJob.message || 'יוצר קולאז׳...');
         try {
-          const result = await bg.promise;
-          if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
-          unsub();
-          bgUnsubRef.current = null;
-          setProgress(100);
-          setProgressLabel('הסרטון מוכן!');
-          setEtaSeconds(0);
-          await new Promise((r) => setTimeout(r, 500));
-          try { await clearCollageParts(activityCode, splitMeta.splitGroupId); } catch { /* */ }
-          consumeBackgroundCollage(bgKey);
-          setResultUrl(result.url);
-          setResultIsVideo(result.isVideo);
-          setPhase('result');
+          const result = await waitForServerCollageJob(serverJob.jobId, (snap) => {
+            setProgress((cur) => Math.max(cur, Math.min(99, Math.round(55 + snap.percent * 0.45))));
+            if (snap.message) setProgressLabel(snap.message);
+            setEtaSeconds(typeof snap.etaSeconds === 'number' ? snap.etaSeconds : null);
+          });
+          await finishWithResult(result.url, result.isVideo);
         } catch {
-          if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
-          unsub();
-          bgUnsubRef.current = null;
-          consumeBackgroundCollage(bgKey);
-          // Fall through to a fresh generation attempt rather than failing hard.
           await runFreshGeneration();
         }
         return;
       }
 
-      // Case 3: no background job, or it errored — original behavior.
       await runFreshGeneration();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps

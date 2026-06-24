@@ -1,14 +1,13 @@
-// Keys whose values are always image URLs
-const IMAGE_KEYS = new Set([
-  'backgroundImage', 'imageUrl', 'image', 'badgeImageUrl',
-  'puzzleImage', 'media', 'iconUrl',
-]);
+import {
+  isParticipantImageUrl,
+  isVideoMediaUrl,
+  preloadParticipantImage,
+  preloadParticipantVideo,
+  shouldDeferVideoPrefetch,
+} from './participantMedia';
 
-// Keys whose values may be image or video — detected by URL
-const AMBIGUOUS_KEYS = new Set(['mediaUrl', 'url']);
-
-function isVideoUrl(url: string): boolean {
-  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url) || url.includes('/video/upload/');
+function isEmbeddableStreamUrl(url: string): boolean {
+  return /youtube\.com|youtu\.be|vimeo\.com/i.test(url);
 }
 
 function collect(obj: unknown, images: Set<string>, videos: Set<string>): void {
@@ -18,32 +17,71 @@ function collect(obj: unknown, images: Set<string>, videos: Set<string>): void {
     return;
   }
   const record = obj as Record<string, unknown>;
-  for (const [key, val] of Object.entries(record)) {
+  for (const val of Object.values(record)) {
     if (typeof val === 'string' && val.startsWith('http')) {
-      if (AMBIGUOUS_KEYS.has(key)) {
-        isVideoUrl(val) ? videos.add(val) : images.add(val);
-      } else if (IMAGE_KEYS.has(key)) {
-        images.add(val);
-      }
+      if (isEmbeddableStreamUrl(val)) continue;
+      if (isVideoMediaUrl(val)) videos.add(val);
+      else if (isParticipantImageUrl(val)) images.add(val);
     } else if (val && typeof val === 'object') {
       collect(val, images, videos);
     }
   }
 }
 
-export function preloadActivityMedia(data: unknown): void {
-  const images = new Set<string>();
-  const videos = new Set<string>();
-  collect(data, images, videos);
+function preloadUrls(images: Set<string>, videos: Set<string>, includeVideos: boolean): void {
+  for (const src of images) preloadParticipantImage(src);
+  if (includeVideos) {
+    for (const src of videos) preloadParticipantVideo(src);
+  }
+}
 
-  for (const src of images) {
-    const img = new Image();
-    img.src = src;
+function deferBackgroundPreload(fn: () => void): void {
+  if (typeof requestIdleCallback !== 'undefined') {
+    requestIdleCallback(fn, { timeout: 5000 });
+    return;
+  }
+  setTimeout(fn, 200);
+}
+
+export interface PreloadActivityMediaOptions {
+  /** Preload this station and the next two first; defer the rest. */
+  priorityIndex?: number;
+}
+
+export function preloadActivityMedia(data: unknown, opts?: PreloadActivityMediaOptions): void {
+  const deferVideos = shouldDeferVideoPrefetch();
+  const module = (data as { module?: { items?: unknown[] } })?.module;
+  const items = module?.items;
+
+  if (!items?.length) {
+    const images = new Set<string>();
+    const videos = new Set<string>();
+    collect(data, images, videos);
+    preloadUrls(images, videos, !deferVideos);
+    return;
   }
 
-  for (const src of videos) {
-    const vid = document.createElement('video');
-    vid.preload = 'auto';
-    vid.src = src;
-  }
+  const start = opts?.priorityIndex ?? 0;
+  const priorityIndexes = [start, start + 1, start + 2].filter((i) => i >= 0 && i < items.length);
+  const uniquePriority = [...new Set(priorityIndexes)];
+
+  const priorityImages = new Set<string>();
+  const priorityVideos = new Set<string>();
+  for (const i of uniquePriority) collect(items[i], priorityImages, priorityVideos);
+  preloadUrls(priorityImages, priorityVideos, true);
+
+  deferBackgroundPreload(() => {
+    const allImages = new Set<string>();
+    const allVideos = new Set<string>();
+    for (const item of items) collect(item, allImages, allVideos);
+
+    for (const src of allImages) {
+      if (!priorityImages.has(src)) preloadParticipantImage(src);
+    }
+    if (!deferVideos) {
+      for (const src of allVideos) {
+        if (!priorityVideos.has(src)) preloadParticipantVideo(src);
+      }
+    }
+  });
 }

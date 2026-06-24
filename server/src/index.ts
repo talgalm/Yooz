@@ -18,6 +18,8 @@ import {
 } from './utils/shareOgPage';
 import { migrateActivities, seedSuperAdmin, seedBuiltInMission } from './db/seed';
 import { processExpiredRewardTimers } from './services/groupRewardService';
+import { CollageJob } from './models/CollageJob';
+import { scheduleCollageEncode } from './services/collageProcessor';
 import { setSmsProvider } from './services/sms/smsProvider';
 import { TextmeSmsProvider } from './services/sms/textmeSmsProvider';
 import rewardDownloadRouter from './routes/rewardDownload';
@@ -173,6 +175,24 @@ async function start() {
       console.error('[groupReward] Timer poll failed:', err);
     });
   }, REWARD_TIMER_POLL_MS);
+
+  // Reschedule any collage encode that was in-flight when the process died
+  // (PM2 restart, OOM, deploy). The in-memory inFlight set is gone, so a fresh
+  // schedule starts cleanly. >2 min stale means it's not actively progressing.
+  // ponytail: simple boot sweep, swap for a queue/worker pool if collage volume grows.
+  try {
+    const cutoff = new Date(Date.now() - 2 * 60 * 1000);
+    const stuck = await CollageJob.find({
+      phase: { $in: ['queued', 'preparing', 'encoding'] },
+      updatedAt: { $lt: cutoff },
+    }).select('jobId phase updatedAt').lean();
+    for (const j of stuck) {
+      console.log(`[collage] resuming stuck job ${j.jobId} (phase=${j.phase})`);
+      scheduleCollageEncode(j.jobId);
+    }
+  } catch (err) {
+    console.error('[collage] boot recovery failed:', err);
+  }
 
   app.listen(PORT, () => {
     console.log(`🚀 Yooz server running on http://localhost:${PORT}`);

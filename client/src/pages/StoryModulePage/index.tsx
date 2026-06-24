@@ -6,9 +6,13 @@ import { useAuth } from '../../context/AuthContext';
 import { ActivityPlayingHeaderProvider } from '../../context/activityPlayingHeaderContext';
 import { useTranslations } from '../../context/LanguageContext';
 import { apiFetch, apiFetchPersistSilent, apiFetchWithRetry } from '../../utils/api';
+import { isRequestQueued, subscribeOfflineQueue } from '../../utils/offlineQueue';
 import { participantPlayPath, rememberActivityCode } from '../../utils/participantActivity';
 import { useParticipantExit } from '../../hooks/useParticipantExit';
 import { preloadActivityMedia } from '../../utils/mediaPreloader';
+import { optimizeActivityMediaData } from '../../utils/participantMedia';
+import { getCachedModuleData, setCachedModuleData } from '../../utils/moduleCache';
+import { clearStorySession, loadStorySessionRaw, saveStorySessionRaw } from '../../utils/storySession';
 import { texts } from './StoryModulePage.i18n';
 import { GAME_CONSTANTS, type GameResult } from '../../components/games/types';
 import type { OrderSurveySubmitPayload } from '../../components/games/OrderGame';
@@ -275,6 +279,7 @@ export default function StoryModulePage() {
   const [showFootsteps, setShowFootsteps] = useState(false);
   const [entryTransitionStage, setEntryTransitionStage] = useState<'idle' | 'closing' | 'opening'>('idle');
   const scoresSaved = useRef(false);
+  const [scoresSaveStatus, setScoresSaveStatus] = useState<'pending' | 'saved' | 'queued'>('pending');
   const entryTransitionTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
   const sessionStartedAt = useRef((() => {
     const token = localStorage.getItem('yooz_token') ?? 'anon';
@@ -379,7 +384,7 @@ export default function StoryModulePage() {
   // Restore session on mount
   useEffect(() => {
     if (!code) return;
-    const raw = sessionStorage.getItem(`yooz_session_${code}`);
+    const raw = loadStorySessionRaw(code);
     if (!raw) { setSessionRestored(true); return; }
     try {
       const session = JSON.parse(raw);
@@ -391,10 +396,14 @@ export default function StoryModulePage() {
       setStationHintUsed(new Set(session.stationHintUsed ?? []));
       setCompletedSpiderItems(new Set(session.completedSpiderItems ?? []));
       if (session.guidelinesDismissed) setShowGuidelines(false);
-      if (session.scoresSaved) scoresSaved.current = true;
+      if (session.scoresSaved) {
+        scoresSaved.current = true;
+        const scoresUrl = `/api/activities/${code}/scores`;
+        setScoresSaveStatus(isRequestQueued(scoresUrl, 'POST') ? 'queued' : 'saved');
+      }
       setSessionRestored(true);
     } catch {
-      sessionStorage.removeItem(`yooz_session_${code}`);
+      clearStorySession(code);
       setSessionRestored(true);
     }
   }, [code]);
@@ -421,11 +430,11 @@ export default function StoryModulePage() {
       stationHintUsed: Array.from(stationHintUsed),
       completedSpiderItems: Array.from(completedSpiderItems),
       guidelinesDismissed: !showGuidelines,
-      scoresSaved: scoresSaved.current,
+      scoresSaved: scoresSaveStatus === 'saved',
       lastActive: Date.now(),
     };
-    sessionStorage.setItem(`yooz_session_${code}`, JSON.stringify(session));
-  }, [code, sessionRestored, currentItemIndex, scores, phase, stationHintUsed, completedSpiderItems, showGuidelines]);
+    saveStorySessionRaw(code, JSON.stringify(session));
+  }, [code, sessionRestored, currentItemIndex, scores, phase, stationHintUsed, completedSpiderItems, showGuidelines, scoresSaveStatus]);
 
   useEffect(() => {
     hasModuleData.current = !!data;
@@ -481,11 +490,13 @@ export default function StoryModulePage() {
   const fetchModule = useCallback(async (signal?: AbortSignal, opts?: { soft?: boolean }) => {
     if (!code) return;
     try {
-      const d = await apiFetchWithRetry<ActivityModuleResponse>(
+      const raw = await apiFetchWithRetry<ActivityModuleResponse>(
         `/api/activities/${code}/module?group=${encodeURIComponent(participant?.group || '')}`,
         { signal, headers: { 'Cache-Control': 'no-store' } },
         10,
       );
+      const d = optimizeActivityMediaData(raw);
+      setCachedModuleData(code, participant?.group || '', d);
       setData(d);
       setError(false);
       preloadActivityMedia(d);
@@ -507,6 +518,14 @@ export default function StoryModulePage() {
 
   useEffect(() => {
     if (!code) return;
+    const group = participant?.group || '';
+    const cached = getCachedModuleData<ActivityModuleResponse>(code, group);
+    if (cached) {
+      setData(cached);
+      setError(false);
+      preloadActivityMedia(cached);
+      setLoading(false);
+    }
     const controller = new AbortController();
     fetchModule(controller.signal).finally(() => setLoading(false));
     return () => controller.abort();
@@ -533,6 +552,12 @@ export default function StoryModulePage() {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [fetchModule]);
 
+  // Priority media prefetch: current station + next two, then background rest.
+  useEffect(() => {
+    if (!data) return;
+    preloadActivityMedia(data, { priorityIndex: currentItemIndex });
+  }, [data, currentItemIndex]);
+
   // Restore progress from server when no sessionStorage exists (cross-session resume)
   useEffect(() => {
     if (!sessionRestored || !data || !code || sessionFoundInStorage.current) return;
@@ -547,6 +572,7 @@ export default function StoryModulePage() {
         if (progress.completionStatus === 'completed' && progress.scores?.length) {
           setScores(progress.scores.map((s, i) => ({ itemIndex: i, gameName: s.gameName, score: s.score })));
           scoresSaved.current = true;
+          setScoresSaveStatus('saved');
           setShowGuidelines(false);
           setPhase('finish');
         } else if (progress.completionStatus === 'in_progress' && progress.totalItemsCompleted > 0) {
@@ -570,7 +596,7 @@ export default function StoryModulePage() {
 
   const doExit = useCallback(() => {
     if (countdownRef.current) clearInterval(countdownRef.current);
-    if (code) sessionStorage.removeItem(`yooz_session_${code}`);
+    if (code) clearStorySession(code);
     const token = localStorage.getItem('yooz_token') ?? 'anon';
     if (code) localStorage.removeItem(`yooz_start_${code}_${token}`);
     exitActivity(code);
@@ -1108,6 +1134,37 @@ export default function StoryModulePage() {
   // Always run on entering finish (even when there are no game scores) so the
   // session is marked completed and sessionDurationMs is saved — required for
   // the participant to appear on the leaderboard (especially time mode).
+  const scoresUrl = code ? `/api/activities/${code}/scores` : '';
+  const saveScoresBodyRef = useRef('');
+
+  const attemptSaveScores = useCallback(async () => {
+    if (!code || !scoresUrl || scoresSaved.current) return;
+    setScoresSaveStatus('pending');
+    const ok = await apiFetchPersistSilent(scoresUrl, {
+      method: 'POST',
+      body: saveScoresBodyRef.current,
+    });
+    if (ok) {
+      scoresSaved.current = true;
+      setScoresSaveStatus('saved');
+    } else {
+      setScoresSaveStatus('queued');
+    }
+  }, [code, scoresUrl]);
+
+  useEffect(() => {
+    if (!scoresUrl) return;
+    return subscribeOfflineQueue(() => {
+      if (phase !== 'finish') return;
+      if (isRequestQueued(scoresUrl, 'POST')) {
+        scoresSaved.current = false;
+        setScoresSaveStatus('queued');
+      } else if (scoresSaved.current) {
+        setScoresSaveStatus('saved');
+      }
+    });
+  }, [phase, scoresUrl]);
+
   useEffect(() => {
     if (phase !== 'finish' || scoresSaved.current || !code) return;
 
@@ -1117,29 +1174,22 @@ export default function StoryModulePage() {
       scorePayload.push({ gameName: 'Hint Penalty', score: -totalHintPen });
     }
 
-    const url = `/api/activities/${code}/scores`;
-    const body = JSON.stringify({
+    saveScoresBodyRef.current = JSON.stringify({
       scores: scorePayload,
       sessionDurationMs: Date.now() - sessionStartedAt.current,
     });
 
-    const attemptSave = async () => {
-      if (scoresSaved.current) return;
-      await apiFetchPersistSilent(url, { method: 'POST', body });
-      scoresSaved.current = true;
-    };
-
-    void attemptSave();
+    void attemptSaveScores();
     const interval = setInterval(() => {
       if (scoresSaved.current) {
         clearInterval(interval);
         return;
       }
-      void attemptSave();
+      void attemptSaveScores();
     }, 15_000);
 
     return () => clearInterval(interval);
-  }, [phase, code, scores, stationHintUsed, stationHintPenalty]);
+  }, [phase, code, scores, stationHintUsed, stationHintPenalty, attemptSaveScores]);
 
   // Fetch leaderboard
   const leaderboardAbortRef = useRef<AbortController | null>(null);
@@ -1479,6 +1529,8 @@ export default function StoryModulePage() {
           }}
           onViewLeaderboard={handleViewLeaderboard}
           onExit={handleExit}
+          scoresSaveStatus={scoresSaveStatus}
+          onRetrySaveScores={() => { void attemptSaveScores(); }}
           popupModal={popupModal}
           t={t}
         />

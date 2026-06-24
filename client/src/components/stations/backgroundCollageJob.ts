@@ -1,29 +1,32 @@
 /**
- * Background collage upload + job tracking.
+ * Background collage job orchestration.
  *
- * The collage POST /api/collage/generate is long (5-60s upload + 2-3 min
- * server ffmpeg). When a station is split with a dedicated video part, the
- * client can start uploading the photos as soon as the last photo part is
- * captured — the XHR's lifetime is tied to this module, not the React
- * component, so it survives CollageStation unmounting while the user keeps
- * playing other stations.
- *
- * Heavy work is on the server. The phone uploads (~30MB) once, then idles on
- * the open HTTP connection. No worker thread, no main-thread blocking.
+ * Photos upload to Cloudinary as each split part completes. Video encode runs
+ * asynchronously on the server — the client only polls for progress. State is
+ * mirrored in IndexedDB so a tab reload can resume.
  */
+
+import {
+  ensureCollageJob,
+  findCollageJob,
+  makeSplitCollageJobId,
+  startCollageJob,
+  uploadCollagePhotosParallel,
+  uploadCollageTitleImage,
+  waitForCollageCompletion,
+  type CollageJobParams,
+  type CollageProgressSnapshot,
+} from '../../utils/collageApi';
+import {
+  clearPersistedCollageJob,
+  loadPersistedCollageJob,
+  savePersistedCollageJob,
+} from './collageJobStorage';
 
 export interface CollagePhoto {
   blob: Blob;
   isVideo?: boolean;
-}
-
-export interface CollageUploadParams {
-  photos: CollagePhoto[];
-  title: string;
-  logoUrl: string;
-  activityCode: string;
-  template: string;
-  jobId: string;
+  cloudinaryUrl?: string;
 }
 
 export interface CollageResult {
@@ -31,116 +34,23 @@ export interface CollageResult {
   isVideo: boolean;
 }
 
-// ─── Title PNG ─────────────────────────────────────────────────────────────
-//
-// Renders the user-entered title as a transparent PNG that the server overlays
-// on the final video. White fill + thin black stroke, matching the look of
-// station titles. Returns null for empty/whitespace titles so the server
-// composites without a title overlay.
-
-function renderTitlePng(title: string): Blob | null {
-  const trimmed = title.trim();
-  if (!trimmed) return null;
-  const fontSize = 96;
-  const padX = 32;
-  const padY = 24;
-  const strokeW = 6;
-  const fontStack = '900 96px system-ui, "Segoe UI", "Heebo", "Rubik", Arial, sans-serif';
-
-  const measureCanvas = document.createElement('canvas');
-  const measureCtx = measureCanvas.getContext('2d')!;
-  measureCtx.font = fontStack;
-  const metrics = measureCtx.measureText(trimmed);
-  const textW = Math.ceil(metrics.width);
-  const textH = Math.ceil(fontSize * 1.25);
-
-  const w = textW + padX * 2;
-  const h = textH + padY * 2;
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d')!;
-  ctx.font = fontStack;
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'center';
-  ctx.lineJoin = 'round';
-  ctx.miterLimit = 2;
-  ctx.lineWidth = strokeW;
-  ctx.strokeStyle = '#000';
-  ctx.fillStyle = '#fff';
-  const cx = w / 2;
-  const cy = h / 2;
-  ctx.strokeText(trimmed, cx, cy);
-  ctx.fillText(trimmed, cx, cy);
-
-  const dataUrl = canvas.toDataURL('image/png');
-  const bytes = atob(dataUrl.split(',')[1]);
-  const buf = new Uint8Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) buf[i] = bytes.charCodeAt(i);
-  return new Blob([buf], { type: 'image/png' });
+export interface CollageUploadParams {
+  photos: CollagePhoto[];
+  /** Global panel index per photo */
+  photoIndices: number[];
+  title: string;
+  logoUrl: string;
+  activityCode: string;
+  template: string;
+  splitGroupId?: string;
+  jobId: string;
+  requiredImages: number;
 }
-
-// ─── Upload ────────────────────────────────────────────────────────────────
-//
-// Fires the actual XHR. Caller receives a promise that resolves with the
-// result URL. The caller is responsible for showing upload progress via
-// onUploadProgress (0..60 — upload phase only; server progress is polled
-// separately via /api/collage/progress/:jobId).
-
-export function doCollageUpload(
-  params: CollageUploadParams,
-  onUploadProgress: (pct: number) => void,
-): Promise<CollageResult> {
-  return new Promise((resolve, reject) => {
-    const formData = new FormData();
-    formData.append('activityCode', params.activityCode);
-    formData.append('title', params.title);
-    formData.append('template', params.template);
-    formData.append('jobId', params.jobId);
-    if (params.logoUrl) formData.append('logoUrl', params.logoUrl);
-    const titlePng = renderTitlePng(params.title);
-    if (titlePng) formData.append('titleImage', titlePng, 'title.png');
-    params.photos.forEach((p, i) => {
-      const ext = p.blob.type.includes('png') ? 'png' : 'jpg';
-      formData.append('images', p.blob, `photo_${i}.${ext}`);
-    });
-
-    const xhr = new XMLHttpRequest();
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) onUploadProgress(Math.round((e.loaded / e.total) * 60));
-    });
-    xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const data = JSON.parse(xhr.responseText) as { url: string; isVideo?: boolean };
-          resolve({ url: data.url, isVideo: data.isVideo ?? false });
-        } catch {
-          reject(new Error('Invalid server response'));
-        }
-      } else {
-        let msg = 'Server error';
-        try { msg = (JSON.parse(xhr.responseText) as { error: string }).error || msg; } catch { /* */ }
-        reject(new Error(msg));
-      }
-    });
-    xhr.addEventListener('error', () => reject(new Error('Network error')));
-    xhr.open('POST', '/api/collage/generate');
-    xhr.send(formData);
-  });
-}
-
-// ─── Background job singleton ──────────────────────────────────────────────
-//
-// Keyed by `${activityCode}::${splitGroupId}`. At most one in-flight upload
-// per key. The XHR keeps running while the React component is unmounted; when
-// the video-part station mounts, it reads the current state and attaches.
-
-type JobStatus = 'pending' | 'done' | 'error';
 
 export interface BackgroundJob {
-  status: JobStatus;
+  status: 'pending' | 'done' | 'error';
   jobId: string;
-  uploadPct: number;            // 0..60 from XHR upload-progress; 100 on done
+  uploadPct: number;
   result?: CollageResult;
   error?: string;
   promise: Promise<CollageResult>;
@@ -151,6 +61,10 @@ interface InternalJob extends BackgroundJob {
 }
 
 const jobs = new Map<string, InternalJob>();
+
+function jobKey(activityCode: string, splitGroupId: string): string {
+  return `${activityCode}::${splitGroupId}`;
+}
 
 function snapshot(j: InternalJob): BackgroundJob {
   return {
@@ -168,24 +82,145 @@ function notify(key: string): void {
   if (!j) return;
   const snap = snapshot(j);
   for (const cb of j.subscribers) {
-    try { cb(snap); } catch { /* ignore subscriber errors */ }
+    try { cb(snap); } catch { /* ignore */ }
   }
 }
 
-/**
- * Start an upload at module scope. Idempotent — if a pending/done job for
- * this key already exists, the existing job is returned and no new XHR is
- * fired. An errored entry is replaced.
- */
-export function startBackgroundCollage(
+function mapServerPercentToClient(snap: CollageProgressSnapshot, uploadDone: boolean): number {
+  if (!uploadDone) return Math.min(55, snap.percent);
+  return Math.min(99, Math.round(55 + snap.percent * 0.45));
+}
+
+async function runAsyncCollageJob(
   key: string,
   params: CollageUploadParams,
-): BackgroundJob {
+  opts?: { skipPhotoUpload?: boolean },
+): Promise<CollageResult> {
+  const splitGroupId = params.splitGroupId || 'default';
+  const persistKey = { activityCode: params.activityCode, splitGroupId };
+
+  await savePersistedCollageJob({
+    jobId: params.jobId,
+    ...persistKey,
+    status: 'uploading',
+    updatedAt: Date.now(),
+  });
+
+  const jobParams: CollageJobParams = {
+    activityCode: params.activityCode,
+    jobId: params.jobId,
+    template: params.template,
+    splitGroupId: params.splitGroupId,
+    logoUrl: params.logoUrl,
+    requiredImages: params.requiredImages,
+    title: params.title,
+  };
+
+  await ensureCollageJob(jobParams);
+
+  const entry = jobs.get(key);
+  const setUploadPct = (pct: number) => {
+    const j = jobs.get(key);
+    if (j) {
+      j.uploadPct = Math.max(j.uploadPct, pct);
+      notify(key);
+    }
+  };
+
+  if (!opts?.skipPhotoUpload) {
+    const toUpload = params.photos
+      .map((p, i) => ({ photo: p, index: params.photoIndices[i] }))
+      .filter((x) => !x.photo.cloudinaryUrl);
+
+    if (toUpload.length > 0) {
+      setUploadPct(5);
+      await uploadCollagePhotosParallel(
+        params.activityCode,
+        params.jobId,
+        toUpload.map((x) => ({ index: x.index, blob: x.photo.blob })),
+        (uploaded, total) => setUploadPct(Math.round(5 + (uploaded / total) * 50)),
+      );
+    }
+    setUploadPct(55);
+  }
+
+  if (params.title.trim()) {
+    await uploadCollageTitleImage(params.activityCode, params.jobId, params.title);
+  }
+
+  await startCollageJob(params.jobId, params.title);
+
+  await savePersistedCollageJob({
+    jobId: params.jobId,
+    ...persistKey,
+    status: 'processing',
+    updatedAt: Date.now(),
+  });
+
+  const result = await waitForCollageCompletion(params.jobId, (snap) => {
+    setUploadPct(mapServerPercentToClient(snap, true));
+    const j = jobs.get(key);
+    if (j && entry) {
+      entry.uploadPct = mapServerPercentToClient(snap, true);
+      notify(key);
+    }
+  });
+
+  await savePersistedCollageJob({
+    jobId: params.jobId,
+    ...persistKey,
+    status: 'done',
+    resultUrl: result.url,
+    isVideo: result.isVideo,
+    updatedAt: Date.now(),
+  });
+
+  return result;
+}
+
+/**
+ * Upload photos for a split part in the background (no encode yet).
+ */
+export function uploadSplitPhotosInBackground(
+  activityCode: string,
+  splitGroupId: string,
+  items: { globalIndex: number; blob: Blob; cloudinaryUrl?: string }[],
+  jobParams: Omit<CollageJobParams, 'activityCode' | 'jobId' | 'splitGroupId'>,
+): void {
+  const jobId = makeSplitCollageJobId(activityCode, splitGroupId);
+  void (async () => {
+    try {
+      await ensureCollageJob({
+        activityCode,
+        jobId,
+        splitGroupId,
+        ...jobParams,
+      });
+      const pending = items.filter((i) => !i.cloudinaryUrl);
+      if (pending.length === 0) return;
+      await uploadCollagePhotosParallel(
+        activityCode,
+        jobId,
+        pending.map((i) => ({ index: i.globalIndex, blob: i.blob })),
+      );
+      await savePersistedCollageJob({
+        jobId,
+        activityCode,
+        splitGroupId,
+        status: 'collecting',
+        updatedAt: Date.now(),
+      });
+    } catch {
+      /* video part will retry missing uploads */
+    }
+  })();
+}
+
+/** Start full async collage (upload remaining + encode). Idempotent per key. */
+export function startBackgroundCollage(key: string, params: CollageUploadParams): BackgroundJob {
   const existing = jobs.get(key);
   if (existing && existing.status !== 'error') return snapshot(existing);
 
-  // The promise is assigned synchronously below; this placeholder satisfies
-  // the type and is immediately overwritten before any caller can read it.
   const entry: InternalJob = {
     status: 'pending',
     jobId: params.jobId,
@@ -195,12 +230,7 @@ export function startBackgroundCollage(
   };
   jobs.set(key, entry);
 
-  entry.promise = doCollageUpload(params, (pct) => {
-    const j = jobs.get(key);
-    if (!j) return;
-    j.uploadPct = Math.max(j.uploadPct, pct);
-    notify(key);
-  }).then(
+  entry.promise = runAsyncCollageJob(key, params).then(
     (result) => {
       const j = jobs.get(key);
       if (j) {
@@ -218,6 +248,14 @@ export function startBackgroundCollage(
         j.error = err.message;
         notify(key);
       }
+      void savePersistedCollageJob({
+        jobId: params.jobId,
+        activityCode: params.activityCode,
+        splitGroupId: params.splitGroupId || 'default',
+        status: 'error',
+        error: err.message,
+        updatedAt: Date.now(),
+      });
       throw err;
     },
   );
@@ -243,7 +281,40 @@ export function subscribeBackgroundCollage(
   };
 }
 
-/** Drop the entry. Call after the result has been displayed/consumed. */
 export function consumeBackgroundCollage(key: string): void {
   jobs.delete(key);
+}
+
+/** Immediate result from storage/server if encode already finished. */
+export async function getCompletedCollageResult(
+  activityCode: string,
+  splitGroupId: string,
+): Promise<CollageResult | null> {
+  const persisted = await loadPersistedCollageJob(activityCode, splitGroupId);
+  const serverJob = await findCollageJob(activityCode, splitGroupId);
+
+  if (serverJob?.phase === 'done' && serverJob.resultUrl) {
+    return { url: serverJob.resultUrl, isVideo: serverJob.isVideo ?? true };
+  }
+  if (persisted?.status === 'done' && persisted.resultUrl) {
+    return { url: persisted.resultUrl, isVideo: persisted.isVideo ?? true };
+  }
+  return null;
+}
+
+/** Poll an in-flight server encode (after reload). */
+export async function waitForServerCollageJob(
+  jobId: string,
+  onProgress: (snap: CollageProgressSnapshot) => void,
+): Promise<CollageResult> {
+  return waitForCollageCompletion(jobId, onProgress);
+}
+
+export { makeSplitCollageJobId, findCollageJob };
+
+export async function cleanupCollageJobPersistence(
+  activityCode: string,
+  splitGroupId: string,
+): Promise<void> {
+  await clearPersistedCollageJob(activityCode, splitGroupId);
 }

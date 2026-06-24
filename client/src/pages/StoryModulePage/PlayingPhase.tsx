@@ -317,10 +317,45 @@ const ModalCloseButton = styled(PrimaryButton)({
 
 // ─── Media gate — shows spinner until all URLs are loaded ───
 
-function MediaGateWrapper({ urls, children }: { urls: (string | undefined | null)[]; children: React.ReactNode }) {
-  const ready = useMediaPreload(urls);
-  if (!ready) return <GameLoadingSpinner />;
-  return <>{children}</>;
+const MediaLoadRetry = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 16,
+  minHeight: 200,
+  padding: 24,
+  textAlign: 'center',
+});
+
+const MediaRetryButton = styled(PrimaryButton)({
+  width: 'auto',
+  minWidth: 160,
+  padding: '12px 24px',
+});
+
+function MediaGateWrapper({
+  urls,
+  children,
+  t,
+}: {
+  urls: (string | undefined | null)[];
+  children: React.ReactNode;
+  t: Record<string, string>;
+}) {
+  const { ready, failed, retry } = useMediaPreload(urls);
+  if (ready) return <>{children}</>;
+  if (failed) {
+    return (
+      <MediaLoadRetry>
+        <BodyText>{t.mediaLoadSlow}</BodyText>
+        <MediaRetryButton type="button" onClick={retry}>
+          {t.mediaRetry}
+        </MediaRetryButton>
+      </MediaLoadRetry>
+    );
+  }
+  return <GameLoadingSpinner />;
 }
 
 // ─── Component ───
@@ -456,13 +491,23 @@ export default function PlayingPhase({
       }
 
       if (station.stationType === 'video') {
-        return (
+        const videoUrl = station.settings?.mediaUrl as string | undefined;
+        const source = videoUrl ? resolveVideoSource(videoUrl) : null;
+        const player = (
           <VideoStationPlayer
             station={station}
             onContinue={onStationContinue}
             t={t}
             textColor={customTheme?.textColor}
           />
+        );
+        if (!videoUrl || source?.kind === 'iframe') {
+          return player;
+        }
+        return (
+          <MediaGateWrapper urls={[videoUrl]} t={t}>
+            {player}
+          </MediaGateWrapper>
         );
       }
 
@@ -482,7 +527,7 @@ export default function PlayingPhase({
           <MediaGateWrapper urls={[
             station.settings?.backgroundImage as string | undefined,
             station.settings?.imageUrl as string | undefined,
-          ]}>
+          ]} t={t}>
             <NarrativeStation station={station} onContinue={onStationContinue} />
           </MediaGateWrapper>
         );
@@ -491,7 +536,7 @@ export default function PlayingPhase({
       if (station.stationType === 'badge') {
         const badgeUrl = (station.settings?.badgeImageUrl || station.settings?.mediaUrl) as string | undefined;
         return (
-          <MediaGateWrapper urls={[badgeUrl]}>
+          <MediaGateWrapper urls={[badgeUrl]} t={t}>
             <BadgeStation station={station} onContinue={onStationContinue} />
           </MediaGateWrapper>
         );
@@ -514,7 +559,7 @@ export default function PlayingPhase({
       if (station.stationType === 'riddle') {
         const riddleMediaUrl = station.settings?.mediaUrl as string | undefined;
         return (
-          <MediaGateWrapper urls={[riddleMediaUrl]}>
+          <MediaGateWrapper urls={[riddleMediaUrl]} t={t}>
             <RiddleStation
               station={station}
               onComplete={onGameComplete}
@@ -532,7 +577,7 @@ export default function PlayingPhase({
       if (station.stationType === 'avatar') {
         const avatarImageUrl = station.settings?.characterImageUrl as string | undefined;
         return (
-          <MediaGateWrapper urls={[avatarImageUrl]}>
+          <MediaGateWrapper urls={[avatarImageUrl]} t={t}>
             <AvatarStation
               station={station}
               onContinue={onStationContinue}
@@ -609,7 +654,7 @@ export default function PlayingPhase({
       const triviaSettings = gameData.settings as { questions?: Array<{ media?: string }> };
       const triviaMedia = (triviaSettings.questions || []).map(q => q.media);
       return (
-        <MediaGateWrapper urls={triviaMedia}>
+        <MediaGateWrapper urls={triviaMedia} t={t}>
           <TriviaGame game={gameData} onComplete={onGameComplete} />
         </MediaGateWrapper>
       );
@@ -619,7 +664,7 @@ export default function PlayingPhase({
       const puzzleSettings = gameData.settings as { puzzleImage?: string; questions?: Array<{ media?: string }> };
       const puzzleMedia = [puzzleSettings.puzzleImage, ...(puzzleSettings.questions || []).map(q => q.media)];
       return (
-        <MediaGateWrapper urls={puzzleMedia}>
+        <MediaGateWrapper urls={puzzleMedia} t={t}>
           <PuzzleGame game={gameData} onComplete={onGameComplete} />
         </MediaGateWrapper>
       );
@@ -629,7 +674,7 @@ export default function PlayingPhase({
       const tfSettings = gameData.settings as { statements?: Array<{ media?: string }> };
       const tfMedia = (tfSettings.statements || []).map(s => s.media);
       return (
-        <MediaGateWrapper urls={tfMedia}>
+        <MediaGateWrapper urls={tfMedia} t={t}>
           <TrueFalseGame game={gameData} onComplete={onGameComplete} />
         </MediaGateWrapper>
       );
@@ -654,7 +699,7 @@ export default function PlayingPhase({
         ...(tsSettings.bins || []).map(b => b.iconUrl),
       ];
       return (
-        <MediaGateWrapper urls={tsMedia}>
+        <MediaGateWrapper urls={tsMedia} t={t}>
           <TrashSortGame game={gameData} onComplete={onGameComplete} />
         </MediaGateWrapper>
       );
@@ -815,7 +860,7 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
   textColor?: string;
 }) {
   const mediaUrl = station.settings?.mediaUrl as string | undefined;
-  const mediaReady = useMediaPreload([mediaUrl]);
+  const { ready, failed, retry } = useMediaPreload([mediaUrl]);
   const descAfter = station.settings?.descPosition === 'after';
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -828,7 +873,7 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
     return () => window.removeEventListener('keydown', handleKey);
   }, [fullscreen]);
 
-  const mediaEl = mediaReady ? (
+  const mediaEl = ready ? (
     <MediaStationWindow style={{ marginTop: 16 }} isDynamic>
       <MediaStationImageWrapper style={{ marginBottom: 0 }}>
         <MediaStationImage
@@ -839,6 +884,13 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
         />
       </MediaStationImageWrapper>
     </MediaStationWindow>
+  ) : failed ? (
+    <MediaLoadRetry>
+      <BodyText>{t.mediaLoadSlow}</BodyText>
+      <MediaRetryButton type="button" onClick={retry}>
+        {t.mediaRetry}
+      </MediaRetryButton>
+    </MediaLoadRetry>
   ) : (
     <GameLoadingSpinner style={{ minHeight: 200, flex: 'none' }} />
   );

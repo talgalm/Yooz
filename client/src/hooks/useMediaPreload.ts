@@ -1,59 +1,84 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  isVideoMediaUrl,
+  loadParticipantImage,
+  loadParticipantVideo,
+} from '../utils/participantMedia';
 
-function isVideoUrl(url: string): boolean {
-  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url) || url.includes('/video/upload/');
+export interface MediaPreloadState {
+  ready: boolean;
+  failed: boolean;
+  retry: () => void;
 }
 
 /**
- * Returns true once all provided media URLs have finished loading (or errored / timed out).
- * An empty url list resolves immediately.
+ * Waits until all provided media URLs have loaded. Retries on failure; never
+ * gives up with a timeout — shows failed state so the UI can offer a retry.
  * URLs are captured on mount — changing the array after mount has no effect.
  */
-export function useMediaPreload(urls: (string | undefined | null)[]): boolean {
+export function useMediaPreload(urls: (string | undefined | null)[]): MediaPreloadState {
   const urlsRef = useRef<string[]>(urls.filter((u): u is string => Boolean(u)));
   const [ready, setReady] = useState(urlsRef.current.length === 0);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
+  const retry = useCallback(() => {
+    setReady(false);
+    setFailed(false);
+    setAttempt((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     const filtered = urlsRef.current;
     if (filtered.length === 0) {
       setReady(true);
+      setFailed(false);
       return;
     }
 
-    let remaining = filtered.length;
+    let loaded = 0;
+    let anyFailed = false;
     let cancelled = false;
+    const total = filtered.length;
+    const cleanups: Array<() => void> = [];
+
+    const checkDone = () => {
+      if (cancelled || loaded < total) return;
+      if (anyFailed) {
+        setReady(false);
+        setFailed(true);
+      } else {
+        setReady(true);
+        setFailed(false);
+      }
+    };
 
     const done = () => {
       if (cancelled) return;
-      remaining -= 1;
-      if (remaining === 0) setReady(true);
+      loaded += 1;
+      checkDone();
+    };
+
+    const fail = () => {
+      if (cancelled) return;
+      anyFailed = true;
+      loaded += 1;
+      checkDone();
     };
 
     for (const url of filtered) {
-      if (isVideoUrl(url)) {
-        const vid = document.createElement('video');
-        vid.preload = 'metadata';
-        vid.onloadedmetadata = done;
-        vid.onerror = done;
-        vid.src = url;
+      if (isVideoMediaUrl(url)) {
+        cleanups.push(loadParticipantVideo(url, done, fail));
       } else {
-        const img = new Image();
-        img.onload = done;
-        img.onerror = done;
-        img.src = url;
+        cleanups.push(loadParticipantImage(url, done, fail));
       }
     }
 
-    // Safety: never block the UI forever
-    const timeout = setTimeout(() => {
-      if (!cancelled) setReady(true);
-    }, 8000);
-
     return () => {
       cancelled = true;
-      clearTimeout(timeout);
+      for (const cleanup of cleanups) cleanup();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [attempt]);
 
-  return ready;
+  return { ready, failed, retry };
 }

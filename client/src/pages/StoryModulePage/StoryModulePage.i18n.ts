@@ -28,6 +28,8 @@ export const texts = {
     hintTitle: 'Hint',
     hintClose: 'Got it',
     popupDismiss: 'OK',
+    mediaLoadSlow: 'Still loading — check your connection.',
+    mediaRetry: 'Try again',
     continueButton: 'Continue',
     // Finish page
     finishTitle: 'LESSON COMPLETE!',
@@ -39,6 +41,7 @@ export const texts = {
     finishStatus: 'Status',
     stayHere: 'Stay Here',
     finishSaveFailed: 'Could not save your results. Tap to retry.',
+    finishSavePending: 'Saving your results...',
     viewLeaderboard: 'CONTINUE ADVENTURE',
     exitActivity: 'Exit',
     exitConfirmTitle: 'Are you sure?',
@@ -100,6 +103,8 @@ export const texts = {
     hintTitle: 'רמז',
     hintClose: 'הבנתי',
     popupDismiss: 'אישור',
+    mediaLoadSlow: 'עדיין טוען — בדקו את החיבור לאינטרנט.',
+    mediaRetry: 'נסו שוב',
     continueButton: 'המשך',
     // Finish page
     finishTitle: 'השלמת את המסלול!',
@@ -111,6 +116,7 @@ export const texts = {
     finishStatus: 'סטטוס',
     stayHere: 'הישארו כאן',
     finishSaveFailed: 'לא הצלחנו לשמור את התוצאות. לחצו לניסיון נוסף.',
+    finishSavePending: 'שומרים את התוצאות...',
     viewLeaderboard: 'טבלת מובילים',
     exitActivity: 'יציאה',
     exitConfirmTitle: 'האם אתה בטוח?',

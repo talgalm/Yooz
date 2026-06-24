@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 
 const API = import.meta.env.VITE_API_URL || '';
+import { apiFetchPersistSilent } from '../../utils/api';
 import {
   MissionWrapper,
   FrameContainer,
@@ -896,11 +897,10 @@ export default function MissionTrashSort({
     if (phase !== 'complete' || analyticsSavedRef.current) return;
     analyticsSavedRef.current = true;
     if (activityCode) {
-      fetch(`${API}/api/activities/${activityCode}/mission-event`, {
+      void apiFetchPersistSilent(`${API}/api/activities/${activityCode}/mission-event`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ event: 'trashsort_completed', score: gameScore }),
-      }).catch(() => {});
+      });
     }
     onComplete?.(gameScore);
   }, [phase, gameScore, activityCode, onComplete]);

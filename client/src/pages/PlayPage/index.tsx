@@ -7,6 +7,10 @@ import { texts } from './PlayPage.i18n';
 import ActivityLogin from '../../components/login/ActivityLogin';
 import { apiFetch, apiFetchWithRetry } from '../../utils/api';
 import { participantMissionPath, participantStoryPath, rememberActivityCode } from '../../utils/participantActivity';
+import { startEarlyModulePrefetch } from '../../utils/earlyModulePrefetch';
+import { participantImageUrl, participantVideoUrl } from '../../utils/participantMedia';
+import { useMediaPreload } from '../../hooks/useMediaPreload';
+import { GameLoadingSpinner } from '../../components/games/styled';
 import GroupEntryChoice from '../../components/groupEntry/GroupEntryChoice';
 import CreateGroupForm from '../../components/groupEntry/CreateGroupForm';
 import GroupCreatedSuccess from '../../components/groupEntry/GroupCreatedSuccess';
@@ -61,6 +65,109 @@ interface ActivityConfig {
 type GroupFlow = 'choice' | 'create' | 'join-paste' | 'join-login' | 'success';
 
 type OpeningPhase = 'playing' | 'fading' | 'done';
+
+const OpeningRetryWrap = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 16,
+  minHeight: 200,
+  padding: 24,
+  textAlign: 'center',
+  color: '#fff',
+});
+
+const OpeningRetryButton = styled('button')({
+  padding: '12px 24px',
+  background: '#fff',
+  color: '#4c1d95',
+  border: 'none',
+  borderRadius: 50,
+  fontSize: 14,
+  fontWeight: 700,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+});
+
+interface CustomOpeningOverlayProps {
+  activity: ActivityConfig;
+  openingPhase: OpeningPhase;
+  openingType: 'video' | 'image' | undefined;
+  videoStarted: boolean;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  t: Record<string, string>;
+  onOverlayClick: () => void;
+  onVideoEnded: () => void;
+  onStartVideo: (e: React.MouseEvent) => void;
+}
+
+function CustomOpeningOverlay({
+  activity,
+  openingPhase,
+  openingType,
+  videoStarted,
+  videoRef,
+  t,
+  onOverlayClick,
+  onVideoEnded,
+  onStartVideo,
+}: CustomOpeningOverlayProps) {
+  const opening = activity.opening!;
+  const mediaUrl = opening.type === 'video'
+    ? participantVideoUrl(opening.url)
+    : participantImageUrl(opening.url);
+  const { ready, failed, retry } = useMediaPreload([mediaUrl]);
+
+  return (
+    <OpeningOverlay
+      fading={openingPhase === 'fading'}
+      onClick={onOverlayClick}
+    >
+      {!ready && !failed && <GameLoadingSpinner />}
+      {failed && (
+        <OpeningRetryWrap>
+          <BodyText style={{ color: '#fff' }}>{t.mediaLoadSlow}</BodyText>
+          <OpeningRetryButton type="button" onClick={retry}>
+            {t.mediaRetry}
+          </OpeningRetryButton>
+        </OpeningRetryWrap>
+      )}
+      {ready && opening.type === 'video' ? (
+        <>
+          <OpeningMedia
+            ref={videoRef}
+            src={participantVideoUrl(opening.url)}
+            playsInline
+            preload="auto"
+            muted={!videoStarted}
+            onEnded={onVideoEnded}
+            onLoadedMetadata={(e) => {
+              const v = e.currentTarget;
+              if (!videoStarted && v.currentTime === 0) {
+                try { v.currentTime = 0.001; } catch {}
+              }
+            }}
+          />
+          {!videoStarted && (
+            <PlayWithSoundButton type="button" onClick={onStartVideo}>
+              <span className="play-icon" aria-hidden="true">▶</span>
+              <span>{t.tapToStart}</span>
+            </PlayWithSoundButton>
+          )}
+        </>
+      ) : ready ? (
+        <OpeningImage
+          src={participantImageUrl(opening.url)}
+          alt=""
+        />
+      ) : null}
+      {ready && (openingType !== 'video' || videoStarted) && (
+        <SkipHint>{t.tapToSkip}</SkipHint>
+      )}
+    </OpeningOverlay>
+  );
+}
 
 const PurpleLoadingScreen = styled('div')({
   position: 'fixed',
@@ -139,7 +246,7 @@ export default function PlayPage() {
   const [loadError, setLoadError] = useState(false);
   const [slowLoad, setSlowLoad] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const { login, establishSession, isAuthenticated } = useAuth();
+  const { login, establishSession, isAuthenticated, participant } = useAuth();
   const navigate = useNavigate();
   const t = useTranslations(texts);
   const resumeCheckedForCode = useRef<string | null>(null);
@@ -288,6 +395,19 @@ export default function PlayPage() {
     setScheduleStatus('active');
   }, [activity]);
 
+  const prefetchModuleIfNeeded = useCallback((activityCode: string, group = '') => {
+    if (!activity?.moduleType) return;
+    if (activity.moduleType === 'story' || activity.moduleType === 'spiders' || activity.moduleType === 'mission') {
+      startEarlyModulePrefetch(activityCode, group);
+    }
+  }, [activity?.moduleType]);
+
+  // Start downloading activity media while the login / opening screen is visible.
+  useEffect(() => {
+    if (!isAuthenticated || !activity?.code || scheduleStatus !== 'active') return;
+    prefetchModuleIfNeeded(activity.code, participant?.group || '');
+  }, [isAuthenticated, activity?.code, scheduleStatus, participant?.group, prefetchModuleIfNeeded]);
+
   // If the participant still has a valid token and saved progress, skip the login
   // screen and return them to the activity (e.g. after a connection drop).
   useEffect(() => {
@@ -313,6 +433,8 @@ export default function PlayPage() {
         if (cancelled) return;
         if (progress.completionStatus !== 'in_progress' || progress.totalItemsCompleted <= 0) return;
 
+        prefetchModuleIfNeeded(activity.code, participant?.group || '');
+
         if (activity.moduleType === 'mission') {
           navigate(participantMissionPath(activity.code), { replace: true });
         } else if (activity.moduleType === 'story' || activity.moduleType === 'spiders') {
@@ -324,7 +446,7 @@ export default function PlayPage() {
     })();
 
     return () => { cancelled = true; };
-  }, [isAuthenticated, activity, code, scheduleStatus, isSelfService, navigate]);
+  }, [isAuthenticated, activity, code, scheduleStatus, isSelfService, navigate, participant?.group, prefetchModuleIfNeeded]);
 
   const startFadeOut = useCallback(() => {
     if (fadeStartedRef.current) return;
@@ -515,6 +637,9 @@ export default function PlayPage() {
         }
       }
     }
+    if (activity?.code) {
+      prefetchModuleIfNeeded(activity.code, participant?.group || '');
+    }
     if (activity?.moduleType === 'mission') {
       navigate(participantMissionPath(activity.code), { replace: true });
     } else if (activity?.moduleType === 'story' || activity?.moduleType === 'spiders') {
@@ -648,47 +773,18 @@ export default function PlayPage() {
       )}
 
       {/* Custom opening overlay */}
-      {hasOpening && openingPhase !== 'done' && (
-        <OpeningOverlay
-          fading={openingPhase === 'fading'}
-          onClick={handleOpeningClick}
-        >
-          {activity.opening!.type === 'video' ? (
-            <>
-              <OpeningMedia
-                ref={videoRef}
-                src={activity.opening!.url}
-                playsInline
-                preload="auto"
-                muted={!videoStarted}
-                onEnded={handleVideoEnded}
-                onLoadedMetadata={(e) => {
-                  // Force the first frame to paint so the splash isn't a black
-                  // screen before the user presses play. iOS/Safari only renders
-                  // a frame after currentTime moves.
-                  const v = e.currentTarget;
-                  if (!videoStarted && v.currentTime === 0) {
-                    try { v.currentTime = 0.001; } catch {}
-                  }
-                }}
-              />
-              {!videoStarted && (
-                <PlayWithSoundButton type="button" onClick={handleStartVideo}>
-                  <span className="play-icon" aria-hidden="true">▶</span>
-                  <span>{t.tapToStart}</span>
-                </PlayWithSoundButton>
-              )}
-            </>
-          ) : (
-            <OpeningImage
-              src={activity.opening!.url}
-              alt=""
-            />
-          )}
-          {(openingType !== 'video' || videoStarted) && (
-            <SkipHint>{t.tapToSkip}</SkipHint>
-          )}
-        </OpeningOverlay>
+      {hasOpening && openingPhase !== 'done' && activity && (
+        <CustomOpeningOverlay
+          activity={activity}
+          openingPhase={openingPhase}
+          openingType={openingType}
+          videoStarted={videoStarted}
+          videoRef={videoRef}
+          t={t}
+          onOverlayClick={handleOpeningClick}
+          onVideoEnded={handleVideoEnded}
+          onStartVideo={handleStartVideo}
+        />
       )}
 
       {/* Login page — full screen purple */}
