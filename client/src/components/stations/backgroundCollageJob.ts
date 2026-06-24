@@ -179,13 +179,18 @@ async function runAsyncCollageJob(
 }
 
 /**
- * Upload photos for a split part in the background (no encode yet).
+ * Upload photos for a split part in the background. If this upload completes
+ * the full set (every part's photos now on Cloudinary), also kicks off the
+ * encode — so by the time the user reaches the video station, ffmpeg is
+ * either already running or done. Server's /start is idempotent if two parts
+ * race to start it.
  */
 export function uploadSplitPhotosInBackground(
   activityCode: string,
   splitGroupId: string,
   items: { globalIndex: number; blob: Blob; cloudinaryUrl?: string }[],
   jobParams: Omit<CollageJobParams, 'activityCode' | 'jobId' | 'splitGroupId'>,
+  effectiveTitle?: string,
 ): void {
   const jobId = makeSplitCollageJobId(activityCode, splitGroupId);
   void (async () => {
@@ -197,12 +202,13 @@ export function uploadSplitPhotosInBackground(
         ...jobParams,
       });
       const pending = items.filter((i) => !i.cloudinaryUrl);
-      if (pending.length === 0) return;
-      await uploadCollagePhotosParallel(
-        activityCode,
-        jobId,
-        pending.map((i) => ({ index: i.globalIndex, blob: i.blob })),
-      );
+      if (pending.length > 0) {
+        await uploadCollagePhotosParallel(
+          activityCode,
+          jobId,
+          pending.map((i) => ({ index: i.globalIndex, blob: i.blob })),
+        );
+      }
       await savePersistedCollageJob({
         jobId,
         activityCode,
@@ -210,8 +216,19 @@ export function uploadSplitPhotosInBackground(
         status: 'collecting',
         updatedAt: Date.now(),
       });
+
+      // If this part's upload completed the full set, kick the encode off
+      // right away — don't wait for the participant to reach the video station.
+      const job = await fetchCollageJob(jobId);
+      const uploaded = (job.imageUrls || []).filter(Boolean).length;
+      if (uploaded >= jobParams.requiredImages && job.phase === 'collecting') {
+        if (effectiveTitle?.trim()) {
+          await uploadCollageTitleImage(activityCode, jobId, effectiveTitle).catch(() => {});
+        }
+        await startCollageJob(jobId, effectiveTitle).catch(() => {});
+      }
     } catch {
-      /* video part will retry missing uploads */
+      /* video part will retry missing uploads + start */
     }
   })();
 }

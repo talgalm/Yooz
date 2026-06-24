@@ -520,6 +520,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
               logoUrl,
               requiredImages: totalImages,
             },
+            header,
           );
         } catch { /* swallow — onContinue still advances */ }
       }
