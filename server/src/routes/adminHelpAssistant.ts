@@ -96,7 +96,11 @@ ACTIVITY ENTITY — every field
 - loginFields[]: any subset of ['name','email','phoneNumber']. Dynamic — login form renders only the chosen fields.
 - emailGoogle: when true and 'email' is in loginFields, participants get a Google Sign-in button (OAuth implicit flow).
 - connectionType: 'single' | 'group'.
-- groups: [{name}]. 2–50 groups when connectionType='group'. Buttons UI when ≤5 groups, dropdown when more.
+- groupEntryMode (group only): 'preset' = admin defines named groups up-front, OR 'selfService' = participants create their own groups on join. selfService activates SMS reward + min/max member fields.
+- groups: [{name}]. 2–50 groups when groupEntryMode='preset'. Buttons UI when ≤5 groups, dropdown when more. selfService starts with empty groups[].
+- groupMinMembers (selfService only): minimum members before play starts (default 1).
+- groupMaxMembers (selfService only): max members per group; 0/null = no cap. Login returns error 'group_full' / "This team is full" when exceeded.
+- groupReward (selfService only): { enabled, couponCode, messageTemplate, attachmentUrl, attachmentType:'image'|'pdf', downloadToken }. Winner (highest score in group) gets SMS with coupon after all members finish.
 - opening: { type:'video'|'image', url } — fullscreen splash before login. Video plays muted+autoplay then fades. Image shows 3s then fades. "Tap to skip" hint after 1.5s. Smooth fade-out + scale-up transition.
 - module: see MODULE section below.
 - guidelines: free-text guidelines string shown to participants on welcome.
@@ -105,37 +109,57 @@ ACTIVITY ENTITY — every field
 - managerEmail / managerPassword (bcrypt hash): optional per-activity manager.
 - leaderboardMode: 'points' | 'time' | 'both'. Time and Both modes accept activityDurationMinutes (drives the live timer + 1-min-warning popup). Both ranks by points but also shows the timer alongside the score in the header / leaderboard / finish stats.
 - hideLeaderboardInHeader: hides the trophy button from the session header.
+- activityDurationMinutes: time-mode timer cap (minutes).
+- roadmapTimerMinutes: cosmetic count-up timer on the roadmap that turns red after N minutes. Independent of leaderboardMode — purely visual. null = off.
+- passThreshold: normalized 0–100 score considered "passing" in stats/exports. Default 70. null = no pass/fail.
+- statsShareToken: unguessable token for the public read-only stats share link (URL /stats/:token). Create/revoke via the Export section in Statistics. null = no active share.
+- excludedReportIds: report _ids excluded from all stats/exports/share — reversible toggle in the participants roster (non-destructive; reports kept).
 - isContinuous + portalId: marks the activity as portal-bound (participants login via portal username instead of anonymously).
 - includeOnRoadmap: show the activity name on the story roadmap between header and path.
 - lockedFromIndex: manager-controlled progress lock — items from this index onward are blocked. Set live via the Manager Dashboard's Control Flow tab.
 - shareClicks / shareCompleted: share-button analytics counters.
 - missionPuzzleCompletions / missionTrashSortCompletions / missionTrashSortScoreSum: mission aggregate analytics.
 - orderSurveySession: live presenter mode for Order survey games (Borda aggregation, voting/results phases).
-- createdByEmail + customerEditLocked: customer scoping (super_admin can lock out the original customer).
+- createdByEmail + customerEditLocked: customer scoping (super_admin can lock out the original customer). Assigning a managerEmail auto-provisions a "customer" user account if one doesn't exist (so the manager can later log in to the admin dashboard as a scoped customer).
 
 ================================================================
-CREATE ACTIVITY FLOW (/admin/activities/new — 2 steps)
+CREATE ACTIVITY FLOW (/admin/activities/new — 3 wizard steps for story/spiders; single page for "none")
 ================================================================
+Tabs at top labeled: 1 הגדרות פעילות (Settings) / 2 בחירת משחקים ותחנות (Items) / 3 SMS לאחר הפעילות (SMS).
+Steps 2 + 3 only exist for story / spiders modules. moduleType='none' = step 1 only.
+
 Step 1 (basics + setup):
 - Activity name (required, large input at top).
 - "Include on roadmap" checkbox (story module only): show activity name on roadmap.
 - Module type: None (no module — direct to /home) / Story (סיפור) / Spiders (עכבישים).
 - Theme picker (story+spiders only): Default / Ocean (אוקיינוס) / Desert (מדבר) / Office (משרד) / Ganei Yehoshua (גני יהושע) / custom themes. "+" to create a new CustomTheme.
 - Login fields: name (שם) / email (אימייל) / phone (טלפון) — pick any combination. If email selected, "Allow Google Sign-in" toggle.
-- Connection type: Single (יחיד) / Group (קבוצה). Group reveals a counter (2–50) + group name inputs.
+- Connection type: Single (יחיד) / Group (קבוצה).
+- Group entry mode (group only): Preset (admin defines groups, counter 2–50 + name inputs) / Self-service (participants create groups on join — reveals groupMinMembers + groupMaxMembers inputs).
 - Opening: None / Video / Image — uploads via FileUploadButton + URL field.
 - Continuous Activity checkbox + portal dropdown (required if continuous).
 - Scheduling: "Always open" checkbox; uncheck to set scheduledStart + scheduledEnd as datetime-local.
-- Manager: managerEmail + managerPassword inputs.
-Step 2 (only for story / spiders module — gated until name + login field + module type are set):
-- Module Items: see MODULE ITEMS section.
+- Manager: managerEmail + managerPassword inputs. Saving auto-provisions a "customer" admin user with these credentials (if not already present) so the manager can sign into the admin dashboard scoped to activities they manage.
+
+Step 2 (Items / בחירת משחקים ותחנות — only for story / spiders module, gated until name + login field + module type are set):
+- Module Items picker (ModuleItemsSection): see MODULE ITEMS section.
 - "Show station numbers in spiders" checkbox (spiders only).
 - "Show item title numbers" checkbox.
 - Leaderboard mode: Points / Time / Both. Time + Both reveal the activityDurationMinutes input. "Display leaderboard in header" toggle.
+- Cosmetic Roadmap Timer toggle + minutes — independent count-up timer on the roadmap that turns red after N minutes.
 - Guidelines text (free-form) — shown on welcome unless customInstructions is set.
 - Custom Instructions section: toggle "Use default" off to set title, missionTitle, missionItems[], guidelinesTitle, guidelineItems[], buttonText.
 - Popup Messages section: see POPUPS.
-- Submit (Create / Save). Edit mode = same form pre-filled, PUT /api/admin/activities/:id.
+
+Step 3 (SMS לאחר הפעילות / SMS After Activity — only for story / spiders):
+- Available ONLY when connectionType='group' AND groupEntryMode='selfService'. Otherwise the step shows a warning ("SMS זמין רק כשסוג החיבור הוא קבוצה והקבוצות נוצרות על ידי המשתתפים") and the controls are disabled.
+- "הפעל מערכת תקשורת SMS לאחר הפעילות" toggle (groupReward.enabled).
+- groupRewardCoupon (קוד קופון) — required if enabled.
+- SMS attachment uploader: image OR pdf (FileUploadButton accept image/*,.pdf). Required if enabled.
+- SMS template textarea + variable chips: {name} {score} {coupon} {group} {link}.
+- Test SMS section: phone input + "Send test" → POST /api/admin/sms/test { phoneNumber, message }.
+
+Submit (Create / Save). Edit mode = same form pre-filled, PUT /api/admin/activities/:id. Customer role: refs already on the saved activity are grandfathered on update — only newly-added items are ownership-checked.
 
 ================================================================
 MODULE SYSTEM
@@ -186,7 +210,7 @@ Type list and what each is:
 9. avatar — interactive AI avatar dialog. Has character name, character image, voice type (TTS), description-as-popup option, detective riddle, instructions, optional answers, forbidden phrases, videos, matching words, characters, clues, knowledge gates, hint strategy. Powered by /api/avatar-chat (Gemini) + /api/tts.
 10. enteringText — multi-field text-entry challenge with submit button, max attempts, success title/subtitle, success media (none/image/video), return button.
 
-Station types WITHOUT a hint feature: text, video, image, feedback, avatar.
+Hint feature: all station types support a hint now — text/video/image use a small floating "clue" button; riddle/enteringText/badge/narrative/collage use the standard hint button. Feedback + avatar are the only types without a hint UI. Station hint can be marked "free" (no penalty) per station and can include an image alongside the text.
 Creatable from the create form: text, video, image, collage, feedback, riddle, avatar, enteringText (8 types; narrative and badge are legacy / created elsewhere).
 
 Stations tab inner view: type filter sub-tabs (All + one per type present), tags drawer filter, free-text search, paginated table with name + customer · theme + tags.
@@ -267,10 +291,11 @@ Playback: video = muted autoplay+playsInline, fades when ended; image = display 
 ================================================================
 HINT SYSTEM
 ================================================================
-- Game hint: in game config → "Include hint" toggle + text input. Stored at game.settings.hint = {enabled, text}.
-- Station hint: same UI inside station create form (only on station types that support hints — i.e., NOT text/video/image/feedback/avatar).
-- Participant taps "Use Hint" → confirm popup warns "-4 points" → confirm reveals text. Re-tap is free (no extra penalty).
-- Game hint penalty applied at onComplete; station hint penalty applied at the summary. In time leaderboard mode the penalty is +4 min added to duration instead of points.
+- Game hint: in game config → "Include hint" toggle + text input + optional Hint Image (FileUploadButton). Stored at game.settings.hint = { enabled, text, imageUrl? }.
+- Station hint: same UI inside station create form. Available on ALL station types now — text/video/image stations show a floating "clue" (רמז) button in the corner; riddle/enteringText/badge/narrative/collage show the standard hint button. (avatar still has its own dialog and doesn't use the shared hint flow.)
+- Station hint settings: { enabled, text, imageUrl?, free? }. free=true ("רמז ללא קנס" / "no penalty" toggle in the station form) means taking the hint costs nothing.
+- Participant taps "Use Hint" → confirm popup warns "-4 points" (or "no penalty" if free) → confirm reveals text + image (if set). Re-tap is free (no extra penalty).
+- Game hint penalty applied at onComplete; station hint penalty applied at the summary. In time leaderboard mode the penalty is +4 min added to duration instead of points. Free station hints skip the penalty entirely.
 
 ================================================================
 LEADERBOARD MODES
@@ -337,6 +362,9 @@ Click an activity (or use initialActivityId) to open Activity Analytics with sub
    - Scores (ניקוד): per-game scores per participant.
    - Progress (התקדמות): completion progress + lastActiveItemIndex per participant.
    Endpoint: /api/admin/analytics/activities/:id/export?type=... (auth required).
+   Public share link: same section has a "Share statistics" control that generates/revokes statsShareToken. Public URL = ${'${origin}/stats/<token>'} — read-only stats with no admin auth required. Backend mirror: /api/shared/stats/:token/{funnel,items,groups,anomalies,export,...}.
+Excluded reports: the participants/roster table has a per-row "exclude" toggle. Excluded report _ids are stored in activity.excludedReportIds and filtered out of every analytics endpoint (incl. the public share) and every export. Reversible.
+Analytics use scoreRate (normalized 0–100) — labels say "ציון ממוצע (%)" rather than raw points so games with different max scores compare fairly.
 Anomalies endpoint: /api/admin/analytics/activities/:id/anomalies — flags suspicious patterns (very fast completions, hint abuse, etc.).
 Audit Log view: from Overview, click "View Audit Log" → AuditLogView. Shows AdminAuditLog rows (adminEmail, action, targetType, targetId, targetName, details, ip, createdAt). Logged on activity create/edit/delete, status changes, user changes, etc.
 
@@ -444,7 +472,10 @@ FILE UPLOAD (Cloudinary)
 ================================================================
 SUPPORTING SERVER ROUTES (for completeness)
 ================================================================
-- /api/collage — collage server-side ffmpeg compositing. Endpoints: POST (start job), GET /progress/:jobId (poll job).
+- /api/collage — collage compositing. Direct-to-Cloudinary uploads with an encode semaphore on the server. Heavy ffmpeg encode is offloaded to AWS Lambda; Express handles job orchestration + boot recovery (skips stale jobs, runs on primary worker only). Endpoints: POST (start), GET /progress/:jobId.
+- /api/admin/sms/test — send a test SMS to an arbitrary number (body: { phoneNumber, message }). Used by the Test SMS box in activity Step 3.
+- SMS auto-send: when a self-service group finishes (all members complete) and groupReward.enabled, the highest scorer is messaged via the SMS provider with the template (variables {name}/{score}/{coupon}/{group}/{link}) + attachmentUrl. Storage: SmsNotification doc per activity+group.
+- /api/shared/stats/:token/* — public read-only stats mirror (no auth). Powers /stats/:token client route. Honors excludedReportIds the same way the admin endpoints do.
 - /api/tts — text-to-speech for avatar station voices.
 - /api/avatar-chat — interactive avatar dialog backed by Gemini.
 - /api/check-answer — server-side answer validation for fuzzy-match question types.
