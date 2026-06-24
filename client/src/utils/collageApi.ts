@@ -83,6 +83,15 @@ export async function findCollageJob(
   }
 }
 
+interface SignResp {
+  cloudName: string; apiKey: string; timestamp: number;
+  signature: string; folder: string; publicId: string;
+}
+
+// Direct-to-Cloudinary upload. Server only signs (cheap), then we POST the
+// file straight to api.cloudinary.com. Removes upload bandwidth from our box
+// — the bottleneck that capped concurrency at ~25 in the load test.
+// Falls back to the legacy server-streamed endpoint if signing fails.
 export async function uploadCollagePhoto(
   activityCode: string,
   jobId: string,
@@ -91,12 +100,41 @@ export async function uploadCollagePhoto(
 ): Promise<string> {
   const compressed = await compressPhotoForCollage(blob);
   return withRetry(async () => {
+    const signRes = await apiFetchWithRetry<SignResp>('/api/collage/upload-sign', {
+      method: 'POST',
+      body: JSON.stringify({ activityCode, jobId, imageIndex }),
+    }).catch(() => null);
+
+    if (signRes) {
+      const fd = new FormData();
+      fd.append('file', compressed, `photo_${imageIndex}.jpg`);
+      fd.append('api_key', signRes.apiKey);
+      fd.append('timestamp', String(signRes.timestamp));
+      fd.append('signature', signRes.signature);
+      fd.append('folder', signRes.folder);
+      fd.append('public_id', signRes.publicId);
+      const cloudRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`,
+        { method: 'POST', body: fd },
+      );
+      if (!cloudRes.ok) throw new Error(`Cloudinary upload failed (${cloudRes.status})`);
+      const cloudData = (await cloudRes.json()) as { secure_url: string };
+      const url = cloudData.secure_url;
+
+      await apiFetchWithRetry('/api/collage/photo-uploaded', {
+        method: 'POST',
+        body: JSON.stringify({ activityCode, jobId, imageIndex, url }),
+      });
+      return url;
+    }
+
+    // Fallback: legacy server-streamed upload (used if /upload-sign isn't
+    // deployed yet, e.g. mid-rollout).
     const formData = new FormData();
     formData.append('activityCode', activityCode);
     formData.append('jobId', jobId);
     formData.append('imageIndex', String(imageIndex));
     formData.append('file', compressed, `photo_${imageIndex}.jpg`);
-
     const res = await fetch('/api/collage/upload-photo', { method: 'POST', body: formData });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Upload failed' }));

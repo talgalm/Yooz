@@ -24,7 +24,7 @@ module.exports = {
       exec_mode: 'cluster',
       autorestart: true,
       watch: false,
-      max_memory_restart: '500M',
+      max_memory_restart: '1000M',
       env: loadEnvFile('/etc/yooz/prod.env'),
       error_file: '/var/log/yooz/error.log',
       out_file: '/var/log/yooz/out.log',

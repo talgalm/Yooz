@@ -496,6 +496,64 @@ const photoUpload = multer({
   limits: { fileSize: 15 * 1024 * 1024 },
 });
 
+// Sign a direct-to-Cloudinary upload. Removes the server from the upload
+// bandwidth path: client POSTs the file straight to api.cloudinary.com using
+// these short-lived credentials, then reports the resulting URL via
+// /photo-uploaded. Much higher concurrency ceiling than streaming through us.
+router.post('/upload-sign', async (req: Request, res: Response) => {
+  const { activityCode, jobId, imageIndex } = req.body as {
+    activityCode?: string; jobId?: string; imageIndex?: number;
+  };
+  if (!activityCode || !jobId || typeof imageIndex !== 'number') {
+    res.status(400).json({ error: 'activityCode, jobId, imageIndex required' });
+    return;
+  }
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
+    res.status(500).json({ error: 'Cloudinary not configured' });
+    return;
+  }
+  const activity = await Activity.findOne({ code: activityCode }).select('_id').lean();
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  const timestamp = Math.round(Date.now() / 1000);
+  const folder = `yooz/collage-inputs/${activityCode}`;
+  const public_id = `${jobId}_${imageIndex}_${Math.random().toString(36).slice(2, 8)}`;
+  const signature = cloudinary.utils.api_sign_request(
+    { timestamp, folder, public_id },
+    CLOUDINARY_API_SECRET,
+  );
+  res.json({
+    cloudName: CLOUDINARY_CLOUD_NAME,
+    apiKey: CLOUDINARY_API_KEY,
+    timestamp, signature, folder, publicId: public_id,
+  });
+});
+
+// Record a successful direct upload — what /upload-photo used to do after
+// streaming bytes through us. Just the DB write; no I/O.
+router.post('/photo-uploaded', async (req: Request, res: Response) => {
+  const { activityCode, jobId, imageIndex, url } = req.body as {
+    activityCode?: string; jobId?: string; imageIndex?: number; url?: string;
+  };
+  if (!activityCode || !jobId || typeof imageIndex !== 'number' || !url) {
+    res.status(400).json({ error: 'activityCode, jobId, imageIndex, url required' });
+    return;
+  }
+  const job = await CollageJob.findOne({ jobId });
+  if (!job) {
+    res.status(404).json({ error: 'Job not found — create it first' });
+    return;
+  }
+  while (job.imageUrls.length <= imageIndex) job.imageUrls.push('');
+  job.imageUrls[imageIndex] = url;
+  if (job.phase === 'error') job.phase = 'collecting';
+  job.message = `הועלו ${job.imageUrls.filter(Boolean).length}/${job.requiredImages} תמונות`;
+  await job.save();
+  res.json({ url, jobId, imageIndex });
+});
+
 router.post('/upload-photo', photoUpload.single('file'), async (req: Request, res: Response) => {
   const { activityCode, jobId, imageIndex } = req.body as {
     activityCode?: string;

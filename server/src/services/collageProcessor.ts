@@ -15,6 +15,29 @@ cloudinary.config({
 
 const inFlight = new Set<string>();
 
+// Cap concurrent ffmpeg encodes so a burst of finishes (e.g. 50 participants
+// completing photos at once) doesn't spawn 50 ffmpeg processes and OOM the box.
+// On 2-vCPU t3.medium, 2 in parallel is the sustainable max — others queue.
+// Tune MAX_CONCURRENT_ENCODES upward when you move to a bigger box.
+const MAX_CONCURRENT_ENCODES = Number(process.env.MAX_CONCURRENT_ENCODES || 2);
+let encodeSlotsUsed = 0;
+const encodeQueue: Array<() => void> = [];
+
+async function acquireEncodeSlot(): Promise<void> {
+  if (encodeSlotsUsed < MAX_CONCURRENT_ENCODES) {
+    encodeSlotsUsed++;
+    return;
+  }
+  await new Promise<void>((resolve) => encodeQueue.push(resolve));
+  encodeSlotsUsed++;
+}
+
+function releaseEncodeSlot(): void {
+  encodeSlotsUsed--;
+  const next = encodeQueue.shift();
+  if (next) next();
+}
+
 export async function updateCollageJobProgress(
   jobId: string,
   patch: Partial<Pick<ICollageJob, 'phase' | 'percent' | 'message' | 'error' | 'resultUrl' | 'isVideo'>>,
@@ -121,6 +144,16 @@ export async function runCollageEncode(jobId: string): Promise<void> {
     return;
   }
 
+  // Wait for an encode slot. A burst of completions queues here instead of
+  // spawning N parallel ffmpeg processes that would OOM the box.
+  await updateCollageJobProgress(jobId, {
+    phase: 'queued',
+    message: encodeSlotsUsed >= MAX_CONCURRENT_ENCODES
+      ? `ממתין בתור (${encodeQueue.length + 1})...`
+      : 'מתחיל קידוד...',
+  });
+  await acquireEncodeSlot();
+
   const sessionId = `collage_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const tmpDir = path.join(os.tmpdir(), sessionId);
   fs.mkdirSync(tmpDir, { recursive: true });
@@ -218,6 +251,7 @@ export async function runCollageEncode(jobId: string): Promise<void> {
   } finally {
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
     inFlight.delete(jobId);
+    releaseEncodeSlot();
   }
 }
 
