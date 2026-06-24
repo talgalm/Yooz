@@ -21,6 +21,10 @@ export async function updateCollageJobProgress(
 ): Promise<void> {
   const job = await CollageJob.findOne({ jobId });
   if (!job) return;
+  // Terminal phases (done/error) are sticky — late ffmpeg progress callbacks
+  // would otherwise resurrect the job from 'error' back to 'encoding', leaving
+  // clients polling forever.
+  if (job.phase === 'done' || job.phase === 'error') return;
   if (patch.percent !== undefined) {
     job.percent = Math.max(job.percent, patch.percent);
   }
