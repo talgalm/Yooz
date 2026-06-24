@@ -301,7 +301,21 @@ export default function LeaderboardView({
             <EmptyText>{t.leaderboardEmpty}</EmptyText>
           ) : (
             <PlayerList>
-              {leaderboard.map((entry, i) => {
+              {(() => {
+                const myIdx = currentParticipantName
+                  ? leaderboard.findIndex((e) => e.name === currentParticipantName)
+                  : -1;
+                const top = leaderboard.slice(0, 3);
+                const tail = myIdx > 2
+                  ? leaderboard.slice(myIdx, myIdx + 4) // me + 3 below
+                  : leaderboard.slice(3, 6);            // me in top 3 → just the next 3
+                const seen = new Set<number>();
+                return [...top, ...tail].filter((e) => {
+                  if (seen.has(e.rank)) return false;
+                  seen.add(e.rank);
+                  return true;
+                });
+              })().map((entry, i) => {
                 const isMe = currentParticipantName === entry.name;
                 const isTop3 = entry.rank <= 3;
                 return (
