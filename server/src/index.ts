@@ -74,6 +74,13 @@ app.get('/api/health', async (_req, res) => {
   res.json({ status: 'ok', db: 'connected' });
 });
 
+// Live load snapshot — eyeball during incidents, scrape from monitor.sh / Grafana.
+// Public on purpose (same level as /api/health). Not sensitive — just gauges.
+app.get('/api/load-status', async (_req, res) => {
+  const { getLoadSnapshot } = await import('./middleware/loadShedding');
+  res.json(getLoadSnapshot());
+});
+
 // API routes
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);

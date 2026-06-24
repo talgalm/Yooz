@@ -37,6 +37,7 @@ import {
   requiredImageCount,
   scheduleCollageEncode,
 } from '../services/collageProcessor';
+import { loadShed } from '../middleware/loadShedding';
 
 const router = Router();
 
@@ -500,7 +501,9 @@ const photoUpload = multer({
 // bandwidth path: client POSTs the file straight to api.cloudinary.com using
 // these short-lived credentials, then reports the resulting URL via
 // /photo-uploaded. Much higher concurrency ceiling than streaming through us.
-router.post('/upload-sign', async (req: Request, res: Response) => {
+// loadShed: refuses signing when the box is already saturated, so we don't
+// keep authorizing new uploads while we're falling over.
+router.post('/upload-sign', loadShed, async (req: Request, res: Response) => {
   const { activityCode, jobId, imageIndex } = req.body as {
     activityCode?: string; jobId?: string; imageIndex?: number;
   };
@@ -741,7 +744,7 @@ router.get('/jobs', async (req: Request, res: Response) => {
   res.json(serializeCollageJob(job));
 });
 
-router.post('/jobs/:jobId/start', async (req: Request<{ jobId: string }>, res: Response) => {
+router.post('/jobs/:jobId/start', loadShed, async (req: Request<{ jobId: string }>, res: Response) => {
   const { title } = req.body as { title?: string };
   const job = await CollageJob.findOne({ jobId: req.params.jobId });
   if (!job) {

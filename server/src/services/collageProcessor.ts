@@ -20,6 +20,10 @@ const inFlight = new Set<string>();
 // On 2-vCPU t3.medium, 2 in parallel is the sustainable max — others queue.
 // Tune MAX_CONCURRENT_ENCODES upward when you move to a bigger box.
 const MAX_CONCURRENT_ENCODES = Number(process.env.MAX_CONCURRENT_ENCODES || 2);
+// Hard ceiling on the wait queue. Middleware (loadShedding.ts) opens the
+// circuit at LOAD_MAX_QUEUE_DEPTH already, so reaching this means something
+// raced past it — fail fast rather than letting the queue eat memory.
+const MAX_QUEUE_DEPTH = Number(process.env.LOAD_MAX_QUEUE_DEPTH || 10);
 let encodeSlotsUsed = 0;
 const encodeQueue: Array<() => void> = [];
 
@@ -27,6 +31,9 @@ async function acquireEncodeSlot(): Promise<void> {
   if (encodeSlotsUsed < MAX_CONCURRENT_ENCODES) {
     encodeSlotsUsed++;
     return;
+  }
+  if (encodeQueue.length >= MAX_QUEUE_DEPTH) {
+    throw new Error('encode_queue_full');
   }
   await new Promise<void>((resolve) => encodeQueue.push(resolve));
   encodeSlotsUsed++;
@@ -37,6 +44,9 @@ function releaseEncodeSlot(): void {
   const next = encodeQueue.shift();
   if (next) next();
 }
+
+export function getEncodeQueueDepth(): number { return encodeQueue.length; }
+export function getEncodeSlotsInUse(): number { return encodeSlotsUsed; }
 
 export async function updateCollageJobProgress(
   jobId: string,

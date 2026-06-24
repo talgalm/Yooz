@@ -107,6 +107,17 @@ if ! crontab -l 2>/dev/null | grep -q pm2; then
   pm2 save
 fi
 
+# Install kernel-level CPU/memory limits on the PM2 systemd unit so a runaway
+# ffmpeg can't take down the whole box (real users + SSH stay reachable).
+# Idempotent — daemon-reload + restart only when the file actually changes.
+sudo mkdir -p /etc/systemd/system/pm2-ubuntu.service.d
+if ! sudo cmp -s /opt/yooz/deploy/pm2-systemd-limits.conf /etc/systemd/system/pm2-ubuntu.service.d/limits.conf 2>/dev/null; then
+  sudo cp /opt/yooz/deploy/pm2-systemd-limits.conf /etc/systemd/system/pm2-ubuntu.service.d/limits.conf
+  sudo systemctl daemon-reload
+  sudo systemctl restart pm2-ubuntu || true
+  echo "--- Installed/updated systemd cgroup limits for pm2-ubuntu"
+fi
+
 echo "--- Checking app status..."
 sleep 2
 pm2 show yooz | grep -E "status|uptime|restart"

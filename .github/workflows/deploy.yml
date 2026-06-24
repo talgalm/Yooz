@@ -130,6 +130,15 @@ jobs:
             chmod +x /opt/yooz/deploy/patch-nginx.sh
             bash /opt/yooz/deploy/patch-nginx.sh || echo "  nginx patch skipped"
 
+            # Kernel-level cgroup limits on PM2 — defends the box if Node's
+            # in-app circuit breaker fails (orphan ffmpeg, etc.).
+            sudo mkdir -p /etc/systemd/system/pm2-ubuntu.service.d
+            if ! sudo cmp -s /opt/yooz/deploy/pm2-systemd-limits.conf /etc/systemd/system/pm2-ubuntu.service.d/limits.conf 2>/dev/null; then
+              sudo cp /opt/yooz/deploy/pm2-systemd-limits.conf /etc/systemd/system/pm2-ubuntu.service.d/limits.conf
+              sudo systemctl daemon-reload
+              echo "  systemd cgroup limits updated"
+            fi
+
             pm2 delete yooz 2>/dev/null || true
             pm2 start /opt/yooz/deploy/ecosystem.config.js
             pm2 save
