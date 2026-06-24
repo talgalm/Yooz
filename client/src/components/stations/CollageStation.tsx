@@ -284,6 +284,7 @@ const ProgressFill = styled('div')<{ pct: number }>(({ pct }) => ({
 const ProgressLabel = styled('p')({ fontSize: 16, fontWeight: 700, color: '#fff', margin: 0 });
 const ProgressSub = styled('p')({ fontSize: 13, color: 'rgba(255,255,255,0.5)', margin: '6px 0 0' });
 const ProgressEta = styled('p')({ fontSize: 12, color: 'rgba(255,255,255,0.42)', margin: '4px 0 0', fontVariantNumeric: 'tabular-nums' });
+const ProgressOffline = styled('p')({ fontSize: 12, color: '#fde68a', margin: '8px 0 0', fontWeight: 700 });
 
 // Result phase
 const VideoWrap = styled('div')({ borderRadius: 16, overflow: 'hidden', width: '100%', marginBottom: 20, background: '#000', position: 'relative' });
@@ -411,6 +412,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const [resultIsVideo, setResultIsVideo] = useState(false);
   const [resultVideoStarted, setResultVideoStarted] = useState(false);
   const [error, setError] = useState('');
+  const [pollOffline, setPollOffline] = useState(false);
 
   // Capture state
   const [previewUrl, setPreviewUrl] = useState('');
@@ -420,7 +422,40 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const quickCaptureRef = useRef<HTMLInputElement>(null);
   const resultVideoRef = useRef<HTMLVideoElement>(null);
-  const serverPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const serverPollRef = useRef<(() => void) | null>(null);
+
+  // Progress poll with backoff: 1s normally, 5s after 3 consecutive failures
+  // (and surfaces a "reconnecting…" banner). Lets the UI degrade gracefully
+  // on bad signal instead of silently hammering a dead link.
+  const stopPoll = useCallback(() => {
+    if (serverPollRef.current) { serverPollRef.current(); serverPollRef.current = null; }
+    setPollOffline(false);
+  }, []);
+  const startPoll = useCallback((jobId: string) => {
+    stopPoll();
+    let cancelled = false;
+    let errors = 0;
+    let handle: ReturnType<typeof setTimeout> | null = null;
+    const tick = async () => {
+      try {
+        const data = await fetchCollageProgress(jobId);
+        errors = 0;
+        setPollOffline(false);
+        if (data.message) setProgressLabel(data.message);
+        setEtaSeconds(typeof data.etaSeconds === 'number' ? data.etaSeconds : null);
+      } catch {
+        errors += 1;
+        if (errors >= 3) setPollOffline(true);
+      } finally {
+        if (!cancelled) handle = setTimeout(tick, errors >= 3 ? 5_000 : 1_000);
+      }
+    };
+    handle = setTimeout(tick, 1_000);
+    serverPollRef.current = () => {
+      cancelled = true;
+      if (handle) clearTimeout(handle);
+    };
+  }, [stopPoll]);
   const bgUnsubRef = useRef<(() => void) | null>(null);
 
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -604,19 +639,6 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     const bgKey = `${activityCode}::${effectiveGroupId}`;
     const effectiveTitle = collageTitle.trim() || header;
 
-    const startServerPoll = (pollJobId: string) => {
-      if (serverPollRef.current) clearInterval(serverPollRef.current);
-      serverPollRef.current = setInterval(async () => {
-        try {
-          const data = await fetchCollageProgress(pollJobId);
-          if (data.message) setProgressLabel(data.message);
-          setEtaSeconds(typeof data.etaSeconds === 'number' ? data.etaSeconds : null);
-        } catch {
-          /* network hiccup */
-        }
-      }, 1000);
-    };
-
     try {
       const bg = startBackgroundCollage(bgKey, {
         photos: orderedPhotos.map((p) => ({ blob: p.blob, isVideo: p.isVideo })),
@@ -630,7 +652,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         requiredImages: totalImages,
       });
 
-      startServerPoll(jobId);
+      startPoll(jobId);
       const unsub = subscribeBackgroundCollage(bgKey, (j) => {
         setProgress((cur) => Math.max(cur, j.uploadPct));
         if (j.uploadPct >= 55) setProgressLabel('יוצר קולאז׳...');
@@ -639,7 +661,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
       const result = await bg.promise;
 
-      if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
+      stopPoll();
       unsub();
       bgUnsubRef.current = null;
       consumeBackgroundCollage(bgKey);
@@ -652,6 +674,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
       if (activityCode) {
         try {
+          await clearCollageParts(activityCode, effectiveGroupId);
           if (isSplit && splitMeta) await clearCollageParts(activityCode, splitMeta.splitGroupId);
           await cleanupCollageJobPersistence(activityCode, effectiveGroupId);
         } catch { /* ignore */ }
@@ -661,7 +684,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       setResultIsVideo(result.isVideo ?? false);
       setPhase('result');
     } catch (err) {
-      if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
+      stopPoll();
       if (bgUnsubRef.current) { bgUnsubRef.current(); bgUnsubRef.current = null; }
       setError(err instanceof Error ? err.message : 'שגיאה ביצירת הסרטון');
       setPhase('review');
@@ -670,7 +693,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
   // Stop polling + detach from background job on unmount.
   useEffect(() => () => {
-    if (serverPollRef.current) clearInterval(serverPollRef.current);
+    stopPoll();
     if (bgUnsubRef.current) { bgUnsubRef.current(); bgUnsubRef.current = null; }
   }, []);
 
@@ -772,6 +795,20 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     setResultVideoStarted(false);
   }, [resultUrl]);
 
+  // Persist non-split captures to IndexedDB so a refresh before upload finishes
+  // doesn't lose the photos. Split flow already persists via finishLocalPart.
+  useEffect(() => {
+    if (isSplit) return;
+    const activityCode = code ?? '';
+    if (!activityCode) return;
+    if (phase !== 'capture' && phase !== 'review') return;
+    if (photos.length === 0) return;
+    void saveCollagePart(activityCode, `single_${station._id}`, {
+      partIndex: 0,
+      photos: photosForStorage(photos),
+    }).catch(() => {});
+  }, [photos, phase, isSplit, code, station._id]);
+
   // ── Non-split reload recovery ───────────────────────────────────────────────
   // If user reloaded mid-encode, jump straight to generating/result instead of
   // restarting from intro. (Split case is handled by the video-part bootstrap
@@ -783,6 +820,21 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     const activityCode = code ?? '';
     if (!activityCode) return;
     const groupId = `single_${station._id}`;
+    const restoreFromIdb = async (): Promise<boolean> => {
+      try {
+        const stored = await loadCollageParts(activityCode, groupId);
+        const photos0 = stored[0]?.photos ?? [];
+        if (photos0.length === 0) return false;
+        setPhotos(photos0.map((ph, i) => ({
+          missionIndex: i,
+          blob: ph.blob,
+          previewUrl: URL.createObjectURL(ph.blob),
+          isVideo: ph.isVideo,
+        })));
+        setPhase('review');
+        return true;
+      } catch { return false; }
+    };
     (async () => {
       try {
         const completed = await getCompletedCollageResult(activityCode, groupId);
@@ -810,11 +862,13 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             setResultIsVideo(result.isVideo);
             setPhase('result');
           } catch {
-            // Server job died — fall back to intro so user can re-shoot.
-            // Photos weren't persisted (only the job ID was) so nothing to recover beyond this.
-            setPhase('intro');
+            // Server job died — try local photos first; otherwise back to intro.
+            if (!(await restoreFromIdb())) setPhase('intro');
           }
+          return;
         }
+        // No active server job — restore captures if any survived the reload.
+        await restoreFromIdb();
       } catch { /* swallow — stay on intro */ }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -859,14 +913,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         setEtaSeconds(null);
         setError('');
 
-        if (serverPollRef.current) clearInterval(serverPollRef.current);
-        serverPollRef.current = setInterval(async () => {
-          try {
-            const data = await fetchCollageProgress(activeJobId);
-            if (data.message) setProgressLabel(data.message);
-            setEtaSeconds(typeof data.etaSeconds === 'number' ? data.etaSeconds : null);
-          } catch { /* */ }
-        }, 1000);
+        startPoll(activeJobId);
 
         const unsub = subscribeBackgroundCollage(bgKey, (j) => {
           setProgress((cur) => Math.max(cur, j.uploadPct));
@@ -876,12 +923,12 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
         try {
           const result = await promise;
-          if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
+          stopPoll();
           unsub();
           bgUnsubRef.current = null;
           await finishWithResult(result.url, result.isVideo);
         } catch {
-          if (serverPollRef.current) { clearInterval(serverPollRef.current); serverPollRef.current = null; }
+          stopPoll();
           unsub();
           bgUnsubRef.current = null;
           consumeBackgroundCollage(bgKey);
@@ -1216,8 +1263,11 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             <ProgressTrack><ProgressFill pct={progress} /></ProgressTrack>
             <ProgressLabel>יוצר קולאז׳... {progress}%</ProgressLabel>
             <ProgressSub>{progressLabel}</ProgressSub>
-            {etaSeconds !== null && progress < 100 && (
+            {etaSeconds !== null && progress < 100 && !pollOffline && (
               <ProgressEta>{formatEta(etaSeconds)}</ProgressEta>
+            )}
+            {pollOffline && (
+              <ProgressOffline>קליטה חלשה — ממתינים לחיבור...</ProgressOffline>
             )}
             {isSplit && isVideoPart && (
               <OutlineBtn onClick={onContinue} style={{ marginTop: 12 }}>דלג על התחנה הזו</OutlineBtn>

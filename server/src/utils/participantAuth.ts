@@ -130,7 +130,9 @@ export async function createParticipantSession(
       ...(opts.group && { group: opts.group }),
     },
     JWT_SECRET,
-    { expiresIn: '24h' },
+    // ponytail: 7d so a queued score still flushes after a long offline gap.
+    // Participants are anonymous; no security downside.
+    { expiresIn: '7d' },
   );
 
   return {

@@ -198,7 +198,10 @@ async function start() {
     try {
       const now = Date.now();
       const resumeFloor = new Date(now - 15 * 60 * 1000);
-      const resumeCeil  = new Date(now - 2  * 60 * 1000);
+      // ponytail: 30s ceiling — real Lambda heartbeats every few seconds during
+      // encode/upload, so a 30s gap means the worker died. Was 2min, which
+      // left jobs stuck whose ffmpeg crashed just after a photo-uploaded write.
+      const resumeCeil  = new Date(now - 30 * 1000);
       const stuck = await CollageJob.find({
         phase: { $in: ['queued', 'preparing', 'encoding', 'uploading'] },
       }).select('jobId phase updatedAt').lean();

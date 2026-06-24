@@ -113,9 +113,10 @@ export async function uploadCollagePhoto(
       fd.append('signature', signRes.signature);
       fd.append('folder', signRes.folder);
       fd.append('public_id', signRes.publicId);
+      // ponytail: 45s upload timeout — native fetch hangs forever on stalled 4G otherwise.
       const cloudRes = await fetch(
         `https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`,
-        { method: 'POST', body: fd },
+        { method: 'POST', body: fd, signal: AbortSignal.timeout(45_000) },
       );
       if (!cloudRes.ok) throw new Error(`Cloudinary upload failed (${cloudRes.status})`);
       const cloudData = (await cloudRes.json()) as { secure_url: string };
@@ -135,7 +136,9 @@ export async function uploadCollagePhoto(
     formData.append('jobId', jobId);
     formData.append('imageIndex', String(imageIndex));
     formData.append('file', compressed, `photo_${imageIndex}.jpg`);
-    const res = await fetch('/api/collage/upload-photo', { method: 'POST', body: formData });
+    const res = await fetch('/api/collage/upload-photo', {
+      method: 'POST', body: formData, signal: AbortSignal.timeout(45_000),
+    });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Upload failed' }));
       throw new Error(err.error || 'Upload failed');
@@ -199,7 +202,9 @@ export async function uploadCollageTitleImage(
     formData.append('activityCode', activityCode);
     formData.append('jobId', jobId);
     formData.append('file', png, 'title.png');
-    const res = await fetch('/api/collage/upload-title', { method: 'POST', body: formData });
+    const res = await fetch('/api/collage/upload-title', {
+      method: 'POST', body: formData, signal: AbortSignal.timeout(45_000),
+    });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Upload failed' }));
       throw new Error(err.error || 'Upload failed');
@@ -232,7 +237,10 @@ export interface CollageProgressSnapshot {
 }
 
 export async function fetchCollageProgress(jobId: string): Promise<CollageProgressSnapshot> {
-  const res = await fetch(`/api/collage/progress/${encodeURIComponent(jobId)}`);
+  // ponytail: 8s — poll runs every 1s, must not stack pending requests on a stalled network.
+  const res = await fetch(`/api/collage/progress/${encodeURIComponent(jobId)}`, {
+    signal: AbortSignal.timeout(8_000),
+  });
   if (!res.ok) throw new Error('Progress unavailable');
   return res.json() as Promise<CollageProgressSnapshot>;
 }
@@ -246,8 +254,13 @@ export async function uploadCollagePhotosParallel(
 ): Promise<void> {
   let done = 0;
   const queue = [...items];
+  // ponytail: 5min wall-clock cap. Each in-flight photo still has its own 45s ×
+  // 5-retry budget, so worst-case overrun ≈ one stuck photo finishing after the
+  // deadline (~4min). Without this the parallel call could hang for ~22min.
+  const deadline = Date.now() + 5 * 60_000;
   const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
     while (queue.length > 0) {
+      if (Date.now() > deadline) throw new Error('Upload timed out — connection too slow');
       const item = queue.shift();
       if (!item) break;
       await uploadCollagePhoto(activityCode, jobId, item.index, item.blob);

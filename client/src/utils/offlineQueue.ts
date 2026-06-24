@@ -1,7 +1,9 @@
 import { HttpError, isRetryableFetchError, retryDelayMs } from './fetchErrors';
 
 const STORAGE_KEY = 'yooz_offline_queue';
-const MAX_QUEUE = 30;
+// ponytail: 200 covers a full activity's worth of progress PATCHes + score POSTs.
+// Items are tiny JSON, 30 was dropping legit early-station progress silently.
+const MAX_QUEUE = 200;
 
 type QueuedWrite = {
   url: string;

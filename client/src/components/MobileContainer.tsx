@@ -1,5 +1,6 @@
 import { styled } from '@mui/material/styles';
 import type { ReactNode } from 'react';
+import { isStorageHealthy } from '../utils/storageHealth';
 
 const DESKTOP_BREAKPOINT = '@media (min-width: 768px)';
 
@@ -23,10 +24,27 @@ const Inner = styled('div')({
   },
 });
 
+const StorageBanner = styled('div')({
+  background: '#fde68a',
+  color: '#1a143f',
+  fontSize: 13,
+  fontWeight: 700,
+  padding: '8px 12px',
+  textAlign: 'center',
+  lineHeight: 1.35,
+});
+
 export function MobileContainer({ children }: { children: ReactNode }) {
   return (
     <Outer>
-      <Inner>{children}</Inner>
+      <Inner>
+        {!isStorageHealthy() && (
+          <StorageBanner>
+            שמירה מקומית חסומה — צאו ממצב גלישה פרטית כדי לא לאבד התקדמות
+          </StorageBanner>
+        )}
+        {children}
+      </Inner>
     </Outer>
   );
 }
