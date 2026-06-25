@@ -413,3 +413,153 @@ export async function getAnomalies(activityId: string | Types.ObjectId, period: 
 export async function getExportReports(activityId: string | Types.ObjectId, period: AnalyticsPeriod, excludeIds?: ExcludeIds) {
   return Report.find(reportMatch(activityId, period, excludeIds)).lean();
 }
+
+// ─────────────────────────────────────────────────────────────
+// Combined multi-activity report card.
+//
+// Follows the SAME person across several activities: their normalized grade in
+// each, plus a final grade = the average of their own grades. Each activity is
+// normalized against its own ceiling so grades are comparable. Exclusions and
+// the period filter are honored per activity (via reportMatch).
+// ─────────────────────────────────────────────────────────────
+
+export interface CombinedReportActivity {
+  _id: unknown;
+  name: string;
+  code: string;
+  excludedReportIds?: ExcludeIds;
+}
+
+export interface ReportCardParticipant {
+  key: string;
+  name: string;
+  email: string;
+  phone: string;
+  /** activityId → normalized 0-100 grade, or null when they didn't play it. */
+  grades: Record<string, number | null>;
+  /** null = the participant appears but has no score in any selected activity. */
+  finalGrade: number | null;
+  activitiesPlayed: number;
+}
+
+/** Match the same person across activities: email → phone (digits) → name. */
+function identityKey(r: { _id?: unknown; email?: string; phoneNumber?: string; participantName?: string }): string {
+  const email = (r.email || '').trim().toLowerCase();
+  if (email) return `e:${email}`;
+  const phone = (r.phoneNumber || '').replace(/\D/g, '');
+  if (phone) return `p:${phone}`;
+  const name = (r.participantName || '').trim().toLowerCase();
+  // Anonymous quick-join (empty loginFields) leaves the name as the literal
+  // 'Participant' placeholder with no email/phone — that is NOT an identifier, so
+  // key by report id to avoid collapsing every anonymous player into one row.
+  if (!name || name === 'participant') return `r:${String(r._id ?? '')}`;
+  return `n:${name}`;
+}
+
+export async function getCombinedReportCard(activities: CombinedReportActivity[], period: AnalyticsPeriod) {
+  const activityMeta = activities.map((a) => ({ _id: String(a._id), name: a.name, code: a.code }));
+
+  interface Entry {
+    key: string;
+    name: string;
+    email: string;
+    phone: string;
+    latestJoinedAt: number;
+    perActivity: Map<string, { grade: number; joinedAt: number }>;
+  }
+  const map = new Map<string, Entry>();
+
+  for (const activity of activities) {
+    const activityId = String(activity._id);
+    const reports = await Report.find(
+      reportMatch(activityId, period, activity.excludedReportIds),
+      {
+        participantName: 1, email: 1, phoneNumber: 1, joinedAt: 1,
+        'data.totalScore': 1, 'data.itemResults.itemIndex': 1, 'data.itemResults.maxPossibleScore': 1,
+      },
+    ).lean();
+
+    // Per-activity ceiling so grades land on a comparable 0-100 scale.
+    const rawScores = reports.map((r) => (r.data as { totalScore?: number })?.totalScore ?? 0).filter((s) => s > 0);
+    const ceiling = resolveCeiling(reports, rawScores);
+
+    // Deterministic order so "most recent attempt" is stable on joinedAt ties.
+    reports.sort((a, b) => {
+      const ta = a.joinedAt ? new Date(a.joinedAt).getTime() : 0;
+      const tb = b.joinedAt ? new Date(b.joinedAt).getTime() : 0;
+      return ta !== tb ? ta - tb : String(a._id).localeCompare(String(b._id));
+    });
+
+    for (const r of reports) {
+      const key = identityKey(r);
+      const joinedAt = r.joinedAt ? new Date(r.joinedAt).getTime() : 0;
+      const raw = (r.data as { totalScore?: number })?.totalScore ?? 0;
+
+      let entry = map.get(key);
+      if (!entry) {
+        entry = { key, name: '', email: '', phone: '', latestJoinedAt: -1, perActivity: new Map() };
+        map.set(key, entry);
+      }
+      // Only a scored attempt counts as "played" (mirrors the s > 0 filter the
+      // per-activity analytics use). Join-only / zero-score reports create no
+      // grade, so they never deflate the final-grade average. Keep the most
+      // recent scored attempt per activity.
+      if (raw > 0) {
+        const grade = normalizeScore(raw, ceiling);
+        const existing = entry.perActivity.get(activityId);
+        if (!existing || joinedAt >= existing.joinedAt) {
+          entry.perActivity.set(activityId, { grade, joinedAt });
+        }
+      }
+      // Display identity = the person's most recent report across all activities
+      // (updated even for join-only reports so a scored-elsewhere person resolves).
+      if (joinedAt >= entry.latestJoinedAt) {
+        entry.latestJoinedAt = joinedAt;
+        entry.name = r.participantName || entry.name;
+        entry.email = r.email || entry.email;
+        entry.phone = r.phoneNumber || entry.phone;
+      }
+    }
+  }
+
+  const participants: ReportCardParticipant[] = [...map.values()].map((entry) => {
+    const grades: Record<string, number | null> = {};
+    let sum = 0;
+    let count = 0;
+    for (const meta of activityMeta) {
+      const pa = entry.perActivity.get(meta._id);
+      if (pa) {
+        grades[meta._id] = pa.grade;
+        sum += pa.grade;
+        count += 1;
+      } else {
+        grades[meta._id] = null;
+      }
+    }
+    return {
+      key: entry.key,
+      name: entry.name,
+      email: entry.email,
+      phone: entry.phone,
+      grades,
+      // Everyone with a report appears. A participant with no score in any
+      // selected activity gets a null final grade (shown as "—") rather than a 0,
+      // so they neither vanish nor deflate the average.
+      finalGrade: count > 0 ? Math.round(sum / count) : null,
+      activitiesPlayed: count,
+    };
+  });
+
+  // Highest graded first; ungraded ("—") participants sink to the bottom.
+  participants.sort((a, b) => (b.finalGrade ?? -1) - (a.finalGrade ?? -1));
+
+  const totalParticipants = participants.length;
+  const graded = participants.filter(
+    (p): p is ReportCardParticipant & { finalGrade: number } => p.finalGrade !== null,
+  );
+  const avgFinalGrade = graded.length > 0
+    ? Math.round(graded.reduce((s, p) => s + p.finalGrade, 0) / graded.length)
+    : null;
+
+  return { activities: activityMeta, participants, totalParticipants, avgFinalGrade, period };
+}

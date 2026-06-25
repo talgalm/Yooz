@@ -5,9 +5,12 @@ import { customerMongoFilter, customerOwnsDoc, isCustomerRole } from '../middlew
 import { Activity, Report, AdminAuditLog } from '../models';
 import {
   buildAnalyticsWorkbookBuffer,
+  buildCombinedReportCardWorkbook,
+  buildCombinedActivitiesWorkbook,
   type AnalyticsExportType,
   type ExportActivity,
   type ExportReport,
+  type CombinedExportActivity,
 } from '../utils/analyticsExcelExport';
 import {
   clampPassThreshold,
@@ -23,6 +26,9 @@ import {
   getQuestions,
   getGroups,
   getAnomalies,
+  getCombinedReportCard,
+  getExportReports,
+  type CombinedReportActivity,
 } from '../services/activityAnalyticsService';
 import crypto from 'crypto';
 
@@ -347,6 +353,99 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
   }
   const reports = await Report.find(reportFilter).lean();
   await sendWorkbook(activity as ExportActivity, reports as ExportReport[], `${exportType}_${analyticsPeriod(req)}`);
+});
+
+// ════════════════════════════════════════════
+// ─── Combined multi-activity report card ───
+// ════════════════════════════════════════════
+
+// Parse ?ids=a,b,c → the owned activity docs, preserving the requested order.
+const MAX_COMBINED_ACTIVITIES = 50;
+
+async function loadCombinedActivities(req: Request, res: Response): Promise<CombinedReportActivity[] | null> {
+  // De-duplicate (preserving first-seen order) so a repeated id can't double-count
+  // an activity in the grade average or duplicate its sheets/columns.
+  const ids = [...new Set(
+    String(req.query.ids || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => Types.ObjectId.isValid(s)),
+  )];
+  if (ids.length === 0) {
+    res.status(400).json({ error: 'Provide at least one valid activity id in ?ids=' });
+    return null;
+  }
+  if (ids.length > MAX_COMBINED_ACTIVITIES) {
+    res.status(400).json({ error: `Too many activities (max ${MAX_COMBINED_ACTIVITIES})` });
+    return null;
+  }
+  // Full docs (not a projection) — the combined full-report export needs module,
+  // status, groups, passThreshold, etc. for each activity's report sheets.
+  const activities = await Activity.find(
+    { _id: { $in: ids.map((id) => new Types.ObjectId(id)) } },
+  ).lean();
+  const ownedById = new Map(
+    activities.filter((a) => customerOwnsDoc(req, a)).map((a) => [String(a._id), a]),
+  );
+  if (ownedById.size === 0) {
+    res.status(404).json({ error: 'No matching activities found' });
+    return null;
+  }
+  // Keep the order the admin selected them in, dropping any not owned/found.
+  return ids
+    .map((id) => ownedById.get(id))
+    .filter((a): a is NonNullable<typeof a> => Boolean(a)) as unknown as CombinedReportActivity[];
+}
+
+router.get('/combined/report-card', async (req: Request, res: Response) => {
+  const activities = await loadCombinedActivities(req, res);
+  if (!activities) return;
+  res.json(await getCombinedReportCard(activities, analyticsPeriod(req)));
+});
+
+router.get('/combined/report-card/export', async (req: Request, res: Response) => {
+  const activities = await loadCombinedActivities(req, res);
+  if (!activities) return;
+  const period = analyticsPeriod(req);
+  const data = await getCombinedReportCard(activities, period);
+  const buffer = await buildCombinedReportCardWorkbook(data);
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const fileName = `combined_report_card_${period}_${dateStr}.xlsx`;
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
+  res.send(buffer);
+});
+
+// Full combined report (one of executive/participants/scores/progress): a workbook
+// with the cross-activity views plus each activity's own full report sheets.
+router.get('/combined/export', async (req: Request, res: Response) => {
+  // Validate the export type before any DB work (matches the per-activity route).
+  const exportType = ((req.query.type as string) || 'executive') as AnalyticsExportType;
+  const validExportTypes: AnalyticsExportType[] = ['executive', 'participants', 'scores', 'progress'];
+  if (!validExportTypes.includes(exportType)) {
+    res.status(400).json({ error: 'Invalid export type. Must be one of: executive, participants, scores, progress' });
+    return;
+  }
+
+  const activities = await loadCombinedActivities(req, res);
+  if (!activities) return;
+
+  const period = analyticsPeriod(req);
+  const reportCard = await getCombinedReportCard(activities, period);
+  const perActivity: CombinedExportActivity[] = await Promise.all(
+    activities.map(async (activity) => ({
+      activity: activity as unknown as ExportActivity,
+      reports: (await getExportReports(String(activity._id), period, activity.excludedReportIds)) as unknown as ExportReport[],
+    })),
+  );
+  const buffer = await buildCombinedActivitiesWorkbook(perActivity, exportType, reportCard);
+
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const fileName = `combined_${exportType}_${period}_${dateStr}.xlsx`;
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`);
+  res.send(buffer);
 });
 
 // ════════════════════════════════════════════

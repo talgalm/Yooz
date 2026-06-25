@@ -155,5 +155,25 @@ export interface RosterParticipant {
   excluded: boolean;
 }
 
-export type StatisticsView = 'overview' | 'activity' | 'audit';
+export interface ReportCardParticipant {
+  key: string;
+  name: string;
+  email: string;
+  phone: string;
+  /** activityId → normalized 0-100 grade, or null when they didn't play it. */
+  grades: Record<string, number | null>;
+  /** null = appears in the roster but has no score in any selected activity. */
+  finalGrade: number | null;
+  activitiesPlayed: number;
+}
+
+export interface CombinedReportData {
+  activities: { _id: string; name: string; code: string }[];
+  participants: ReportCardParticipant[];
+  totalParticipants: number;
+  avgFinalGrade: number | null;
+  period?: ActivityPeriod;
+}
+
+export type StatisticsView = 'overview' | 'activity' | 'audit' | 'combined';
 export type ActivitySubTab = 'overview' | 'funnel' | 'items' | 'groups' | 'participants' | 'export';

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTranslations, useLang } from '../../../context/LanguageContext';
 import { formatDuration as formatDurationLoc } from '../../../utils/formatDuration';
@@ -22,6 +22,7 @@ import {
   StatsMobileLabel,
   StatsMobileValue,
   ActionButton,
+  RosterCheckbox,
 } from './styled';
 import { DesktopOnly, HideOnDesktop } from '../../../components/styled';
 
@@ -36,15 +37,27 @@ interface Props {
   activities: Activity[];
   onSelectActivity: (id: string) => void;
   onViewAuditLog: () => void;
+  onCreateCombined: (ids: string[]) => void;
 }
 
-export default function OverviewSection({ activities, onSelectActivity, onViewAuditLog }: Props) {
+export default function OverviewSection({ activities, onSelectActivity, onViewAuditLog, onCreateCombined }: Props) {
   const t = useTranslations(texts);
   const { lang } = useLang();
   const formatDuration = (ms: number) => formatDurationLoc(ms, lang);
   const { data: overview, loading: overviewLoading } = useOverview();
   const { data: timeline } = useTimeline(30);
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(activities);
+
+  // Multi-select for building a combined report card (selection survives paging).
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggleSelected = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const chartData = useMemo(() => {
     if (!timeline) return [];
@@ -132,6 +145,11 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
       <SectionHeader>
         <SectionTitle>{t.activitiesTable}</SectionTitle>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {selected.size >= 2 && (
+            <ActionButton type="button" variant="primary" onClick={() => onCreateCombined([...selected])}>
+              {t.combinedReport} ({selected.size})
+            </ActionButton>
+          )}
           <ActionButton type="button" onClick={onViewAuditLog}>
             {t.viewAuditLog}
           </ActionButton>
@@ -147,6 +165,7 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
               <StatsTable>
                 <thead>
                   <tr>
+                    <th style={{ width: 40 }} />
                     <th>{t.itemName}</th>
                     <th>{t.code}</th>
                     <th>{t.statusHeader}</th>
@@ -156,6 +175,14 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
                 <tbody>
                   {pageItems.map((a) => (
                     <tr key={a._id} onClick={() => onSelectActivity(a._id)}>
+                      <td onClick={(e) => e.stopPropagation()} style={{ cursor: 'default' }}>
+                        <RosterCheckbox
+                          type="checkbox"
+                          checked={selected.has(a._id)}
+                          onChange={() => toggleSelected(a._id)}
+                          aria-label={t.selectActivities}
+                        />
+                      </td>
                       <td style={{ fontWeight: 600 }}>{a.name}</td>
                       <td><code>{a.code}</code></td>
                       <td>{a.status === 'live' ? t.liveStatus : t.previewStatus}</td>
@@ -171,7 +198,16 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
             {pageItems.map((a) => (
               <StatsMobileCard key={a._id} onClick={() => onSelectActivity(a._id)}>
                 <StatsMobileRow>
-                  <StatsMobileValue>{a.name}</StatsMobileValue>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <RosterCheckbox
+                      type="checkbox"
+                      checked={selected.has(a._id)}
+                      onChange={() => toggleSelected(a._id)}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={t.selectActivities}
+                    />
+                    <StatsMobileValue>{a.name}</StatsMobileValue>
+                  </span>
                   <span style={{ fontSize: 12, color: '#888' }}>{a.status === 'live' ? t.liveStatus : t.previewStatus}</span>
                 </StatsMobileRow>
                 <StatsMobileRow>
