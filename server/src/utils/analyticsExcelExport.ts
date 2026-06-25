@@ -1230,6 +1230,153 @@ function addOrderSurveySheet(workbook: ExcelJS.Workbook, reports: ExportReport[]
   configureWorksheet(worksheet);
 }
 
+function ratingColor(value: number): string {
+  if (value >= 5) return COLORS.green;
+  if (value >= 4) return COLORS.blue;
+  if (value >= 3) return COLORS.amber;
+  return COLORS.red;
+}
+
+interface FeedbackAnswer {
+  questionIndex: number;
+  questionText: string;
+  value: number;
+  label: string;
+}
+
+// Feedback ("משוב") stations: each is an itemResult whose metadata holds
+// { feedbackType:'rating_6_level', answers:[{questionIndex,questionText,value,label}],
+//   notes, averageRating }. One sheet, a block per feedback station: per-question
+// averages (1-6) + a per-participant table of ratings and their free-text notes.
+function addFeedbackSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], nameSuffix = '') {
+  interface FbRow {
+    itemIndex: number;
+    itemName: string;
+    participant: string;
+    answers: FeedbackAnswer[];
+    notes: string;
+    averageRating: number;
+  }
+  const rows: FbRow[] = [];
+  reports.forEach((report) => {
+    (report.data?.itemResults ?? []).forEach((item) => {
+      const meta = item.metadata;
+      if (!meta || meta.feedbackType !== 'rating_6_level' || !Array.isArray(meta.answers)) return;
+      rows.push({
+        itemIndex: item.itemIndex ?? 0,
+        itemName: item.itemName || `תחנה ${(item.itemIndex ?? 0) + 1}`,
+        participant: report.participantName || 'ללא שם',
+        answers: (meta.answers as FeedbackAnswer[]).filter((a) => a && typeof a.value === 'number'),
+        notes: typeof meta.notes === 'string' ? meta.notes : '',
+        averageRating: typeof meta.averageRating === 'number' ? meta.averageRating : 0,
+      });
+    });
+  });
+
+  if (rows.length === 0) return;
+
+  const worksheet = addSheet(workbook, 'משוב' + nameSuffix);
+  addTitle(
+    worksheet,
+    'משוב — דירוגים וחוות דעת',
+    'תשובות המשתתפים בתחנות המשוב: דירוג לכל שאלה (1-6), ממוצע וטקסט חופשי.',
+    12,
+  );
+  worksheet.getColumn(1).width = 26;
+  for (let col = 2; col <= 14; col += 1) worksheet.getColumn(col).width = 24;
+
+  const groups = new Map<number, FbRow[]>();
+  rows.forEach((row) => {
+    const list = groups.get(row.itemIndex) ?? [];
+    list.push(row);
+    groups.set(row.itemIndex, list);
+  });
+
+  let rowPtr = 4;
+  [...groups.entries()].sort((a, b) => a[0] - b[0]).forEach(([itemIndex, groupRows]) => {
+    const itemName = groupRows[0]?.itemName || `תחנה ${itemIndex + 1}`;
+
+    // Union of questions across this station's responses, ordered by index.
+    const questionMap = new Map<number, string>();
+    groupRows.forEach((r) => r.answers.forEach((a) => {
+      if (!questionMap.has(a.questionIndex)) {
+        questionMap.set(a.questionIndex, a.questionText || `שאלה ${a.questionIndex + 1}`);
+      }
+    }));
+    const questions = [...questionMap.entries()].sort((a, b) => a[0] - b[0]);
+
+    const titleCell = worksheet.getCell(rowPtr, 1);
+    titleCell.value = `${itemIndex + 1}. ${itemName}  (${groupRows.length} תשובות)`;
+    titleCell.font = { name: 'Arial', bold: true, size: 13, color: { argb: COLORS.dark } };
+    rowPtr += 2;
+
+    // Per-question averages.
+    addSectionHeader(worksheet, rowPtr, 'ממוצע דירוג לכל שאלה (1-6)', Math.max(3, questions.length + 1));
+    rowPtr += 1;
+    questions.forEach(([qIndex, qText]) => {
+      const ratings = groupRows
+        .map((r) => r.answers.find((a) => a.questionIndex === qIndex)?.value)
+        .filter((v): v is number => typeof v === 'number');
+      const avg = ratings.length > 0 ? +(ratings.reduce((s, v) => s + v, 0) / ratings.length).toFixed(2) : 0;
+      worksheet.getCell(rowPtr, 1).value = qText;
+      worksheet.getCell(rowPtr, 1).font = { name: 'Arial', size: 10 };
+      const avgCell = worksheet.getCell(rowPtr, 2);
+      avgCell.value = avg;
+      avgCell.font = { name: 'Arial', bold: true, color: { argb: ratingColor(avg) } };
+      worksheet.getCell(rowPtr, 3).value = `${ratings.length} תשובות`;
+      worksheet.getCell(rowPtr, 3).font = { name: 'Arial', size: 9, color: { argb: COLORS.slate } };
+      rowPtr += 1;
+    });
+    rowPtr += 1;
+
+    // Per-participant detail: name | rating per question | average | notes.
+    const headers = ['שם', ...questions.map(([, text]) => text), 'ממוצע', 'הערות'];
+    const headerRowObj = worksheet.getRow(rowPtr);
+    headers.forEach((header, idx) => {
+      const cell = headerRowObj.getCell(idx + 1);
+      cell.value = header;
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.dark } };
+      cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: COLORS.white } };
+      cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
+      cell.border = THIN_BORDER;
+    });
+    rowPtr += 1;
+
+    groupRows.forEach((r) => {
+      const dataRow = worksheet.getRow(rowPtr);
+      let col = 1;
+      const nameCell = dataRow.getCell(col);
+      nameCell.value = r.participant;
+      nameCell.font = { name: 'Arial', size: 10 };
+      nameCell.border = THIN_BORDER;
+      col += 1;
+      questions.forEach(([qIndex]) => {
+        const ans = r.answers.find((a) => a.questionIndex === qIndex);
+        const cell = dataRow.getCell(col);
+        cell.value = ans ? `${ans.value} – ${ans.label}` : '';
+        cell.font = { name: 'Arial', size: 10 };
+        cell.alignment = { horizontal: 'right', wrapText: true };
+        cell.border = THIN_BORDER;
+        col += 1;
+      });
+      const avgCell = dataRow.getCell(col);
+      avgCell.value = r.averageRating;
+      avgCell.font = { name: 'Arial', size: 10, bold: true, color: { argb: ratingColor(r.averageRating) } };
+      avgCell.border = THIN_BORDER;
+      col += 1;
+      const notesCell = dataRow.getCell(col);
+      notesCell.value = r.notes;
+      notesCell.font = { name: 'Arial', size: 10 };
+      notesCell.alignment = { horizontal: 'right', wrapText: true };
+      notesCell.border = THIN_BORDER;
+      rowPtr += 1;
+    });
+    rowPtr += 2;
+  });
+
+  configureWorksheet(worksheet);
+}
+
 function addRecommendationsSheet(workbook: ExcelJS.Workbook, stats: ExportStats, nameSuffix = '') {
   const worksheet = addSheet(workbook, 'המלצות' + nameSuffix);
   addTitle(worksheet, 'המלצות ותובנות ללקוח', 'שורות שמוכנות כמעט כמו סיכום מנהלים: מה קרה, למה זה חשוב ומה עושים.', 9);
@@ -1303,6 +1450,7 @@ function addActivityReportSheets(
   }
 
   addOrderSurveySheet(workbook, reports, nameSuffix);
+  addFeedbackSheet(workbook, reports, nameSuffix);
 }
 
 function applyLandscapePageSetup(workbook: ExcelJS.Workbook) {
