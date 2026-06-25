@@ -121,8 +121,22 @@ export const texts = {
     includeAll: 'Include all',
     searchParticipants: 'Search by name or group…',
     noParticipants: 'No participants yet',
+    reportLoadFailed: 'Could not load the report. Please try again.',
     excludeHint: 'Unchecked players are removed from all statistics — the dashboard panels, the Excel exports, and the public share link. Reversible at any time.',
     exclusionSaveFailed: 'Could not save the change. Please try again.',
+
+    // Combined report card
+    combinedReport: 'Combined report',
+    selectActivities: 'Select activities to combine',
+    uniqueParticipants: 'Participants',
+    avgFinalGrade: 'Avg final grade',
+    finalGrade: 'Final grade',
+    reportCardTitle: 'Report card',
+    reportCardHint: 'Each row is one person matched across the selected activities (by email, phone, or name). The final grade is the average of their grades in the activities they played; "—" means they didn\'t play that one.',
+    exportReportCard: 'Report card',
+    exportReportCardDescription: 'Final grade per person across the activities',
+    combinedReports: 'Reports',
+    combinedReportsHint: 'Every download bundles the cross-activity views (report card + all participants) with each selected activity\'s full report.',
 
     // Pass grade
     passGrade: 'Pass grade',
@@ -293,8 +307,22 @@ export const texts = {
     includeAll: 'כלול את כולם',
     searchParticipants: 'חיפוש לפי שם או קבוצה…',
     noParticipants: 'אין עדיין משתתפים',
+    reportLoadFailed: 'לא ניתן לטעון את הדוח. נסה שוב.',
     excludeHint: 'שחקנים שאינם מסומנים מוסרים מכל הסטטיסטיקות — מהפאנלים בלוח הבקרה, מקובצי האקסל ומקישור השיתוף הציבורי. ניתן לבטל בכל רגע.',
     exclusionSaveFailed: 'לא ניתן לשמור את השינוי. נסה שוב.',
+
+    // Combined report card
+    combinedReport: 'דוח משולב',
+    selectActivities: 'בחר פעילויות לדוח משולב',
+    uniqueParticipants: 'משתתפים',
+    avgFinalGrade: 'ציון סופי ממוצע',
+    finalGrade: 'ציון סופי',
+    reportCardTitle: 'גליון ציונים',
+    reportCardHint: 'כל שורה היא משתתף אחד שזוהה לאורך הפעילויות שנבחרו (לפי אימייל, טלפון או שם). הציון הסופי הוא ממוצע הציונים שלו בפעילויות שבהן השתתף; "—" מסמן שלא השתתף בפעילות הזו.',
+    exportReportCard: 'גליון ציונים',
+    exportReportCardDescription: 'ציון סופי לכל משתתף בכל הפעילויות',
+    combinedReports: 'דוחות',
+    combinedReportsHint: 'כל הורדה כוללת את התצוגות החוצות-פעילויות (גליון ציונים + כל המשתתפים) יחד עם הדוח המלא של כל פעילות שנבחרה.',
 
     // Pass grade
     passGrade: 'ציון מעבר',

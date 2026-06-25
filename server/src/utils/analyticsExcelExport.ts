@@ -298,6 +298,21 @@ function safeSheetName(name: string) {
   return name.replace(/[\\/*?:[\]]/g, '').slice(0, 31) || 'Sheet';
 }
 
+// Add a worksheet with a sanitized, GUARANTEED-UNIQUE name (≤31 chars). Needed
+// for combined workbooks where the same base name (e.g. "משתתפים") recurs per
+// activity — Excel rejects duplicate sheet names.
+function addSheet(workbook: ExcelJS.Workbook, name: string): ExcelJS.Worksheet {
+  const base = safeSheetName(name);
+  let candidate = base;
+  let n = 2;
+  while (workbook.getWorksheet(candidate)) {
+    const suffix = ` ${n}`;
+    candidate = `${base.slice(0, 31 - suffix.length)}${suffix}`;
+    n += 1;
+  }
+  return workbook.addWorksheet(candidate);
+}
+
 function getTotalItems(activity: ExportActivity, reports: ExportReport[]) {
   return Math.max(
     activity.module?.items?.length ?? 0,
@@ -870,8 +885,8 @@ function stylePercentColumn(
   }
 }
 
-function addSummarySheet(workbook: ExcelJS.Workbook, activity: ExportActivity, stats: ExportStats, exportType: AnalyticsExportType) {
-  const worksheet = workbook.addWorksheet(safeSheetName('תקציר מנהלים'));
+function addSummarySheet(workbook: ExcelJS.Workbook, activity: ExportActivity, stats: ExportStats, exportType: AnalyticsExportType, nameSuffix = '') {
+  const worksheet = addSheet(workbook, 'תקציר מנהלים' + nameSuffix);
   addTitle(
     worksheet,
     `${EXPORT_LABELS[exportType]} - ${activity.name}`,
@@ -954,8 +969,8 @@ function addSummarySheet(workbook: ExcelJS.Workbook, activity: ExportActivity, s
   styleRangeBorder(worksheet, 4, 10, 1, 10);
 }
 
-function addParticipantsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
-  const worksheet = workbook.addWorksheet(safeSheetName('משתתפים'));
+function addParticipantsSheet(workbook: ExcelJS.Workbook, stats: ExportStats, nameSuffix = '') {
+  const worksheet = addSheet(workbook, 'משתתפים' + nameSuffix);
   addTitle(worksheet, 'משתתפים - פרטי קשר, סטטוס ודירוג', 'מי שיחק, מי סיים, מי צריך פולו-אפ ומה הציון שלו.', 17);
   const headerRow = 4;
   addTable(
@@ -987,8 +1002,8 @@ function addParticipantsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
   configureWorksheet(worksheet);
 }
 
-function addScoresSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], stats: ExportStats) {
-  const worksheet = workbook.addWorksheet(safeSheetName('ציונים'));
+function addScoresSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], stats: ExportStats, nameSuffix = '') {
+  const worksheet = addSheet(workbook, 'ציונים' + nameSuffix);
   addTitle(worksheet, 'ציונים - סיכום וכל תחנה', 'פירוט ציון כולל לצד ציוני תחנות ומשחקים לכל משתתף.', 10);
 
   const itemNames = [...stats.items].sort((a, b) => a.itemIndex - b.itemIndex);
@@ -1036,8 +1051,8 @@ function addScoresSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], sta
   configureWorksheet(worksheet);
 }
 
-function addProgressSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], stats: ExportStats) {
-  const worksheet = workbook.addWorksheet(safeSheetName('התקדמות'));
+function addProgressSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], stats: ExportStats, nameSuffix = '') {
+  const worksheet = addSheet(workbook, 'התקדמות' + nameSuffix);
   addTitle(worksheet, 'התקדמות - איפה כל משתתף נמצא', 'שימושי במיוחד למנהלים שרוצים להבין מי נתקע ובאיזו תחנה.', 12);
   const itemNames = [...stats.items].sort((a, b) => a.itemIndex - b.itemIndex);
   const rows = stats.participants.map((participant) => {
@@ -1068,8 +1083,8 @@ function addProgressSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], s
   configureWorksheet(worksheet);
 }
 
-function addItemsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
-  const worksheet = workbook.addWorksheet(safeSheetName('תחנות'));
+function addItemsSheet(workbook: ExcelJS.Workbook, stats: ExportStats, nameSuffix = '') {
+  const worksheet = addSheet(workbook, 'תחנות' + nameSuffix);
   addTitle(worksheet, 'תחנות ומשחקים - ביצועים וסיכונים', 'מזהה צווארי בקבוק, שימוש ברמזים, זמני פתרון וציוני תחנות.', 13);
   const headerRow = 4;
   addTable(
@@ -1097,8 +1112,8 @@ function addItemsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
   configureWorksheet(worksheet);
 }
 
-function addQuestionsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
-  const worksheet = workbook.addWorksheet(safeSheetName('שאלות'));
+function addQuestionsSheet(workbook: ExcelJS.Workbook, stats: ExportStats, nameSuffix = '') {
+  const worksheet = addSheet(workbook, 'שאלות' + nameSuffix);
   addTitle(worksheet, 'שאלות - ניתוח הצלחה וזמן', 'פירוט שאלות במשחקים מבוססי שאלות, כולל שאלות קשות וזמני מענה.', 10);
   const headerRow = 4;
   addTable(
@@ -1122,8 +1137,8 @@ function addQuestionsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
   configureWorksheet(worksheet);
 }
 
-function addGroupsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
-  const worksheet = workbook.addWorksheet(safeSheetName('קבוצות'));
+function addGroupsSheet(workbook: ExcelJS.Workbook, stats: ExportStats, nameSuffix = '') {
+  const worksheet = addSheet(workbook, 'קבוצות' + nameSuffix);
   addTitle(worksheet, 'קבוצות - השוואת ביצועים', 'השוואת צוותים לפי ציון, השלמה, זמן ומשתתפים שדורשים פולו-אפ.', 12);
   const headerRow = 4;
   addTable(
@@ -1150,7 +1165,7 @@ function addGroupsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
   configureWorksheet(worksheet);
 }
 
-function addOrderSurveySheet(workbook: ExcelJS.Workbook, reports: ExportReport[]) {
+function addOrderSurveySheet(workbook: ExcelJS.Workbook, reports: ExportReport[], nameSuffix = '') {
   const surveyRows: {
     itemIndex: number;
     itemName: string;
@@ -1175,7 +1190,7 @@ function addOrderSurveySheet(workbook: ExcelJS.Workbook, reports: ExportReport[]
 
   if (surveyRows.length === 0) return;
 
-  const worksheet = workbook.addWorksheet(safeSheetName('סקר דירוג'));
+  const worksheet = addSheet(workbook, 'סקר דירוג' + nameSuffix);
   addTitle(worksheet, 'סקר דירוג — דירוגים אישיים', 'טבלת דירוג אישית לכל משתתף במשחקי סדר במצב סקר.', 12);
 
   const itemGroups = new Map<number, typeof surveyRows>();
@@ -1215,8 +1230,155 @@ function addOrderSurveySheet(workbook: ExcelJS.Workbook, reports: ExportReport[]
   configureWorksheet(worksheet);
 }
 
-function addRecommendationsSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
-  const worksheet = workbook.addWorksheet(safeSheetName('המלצות'));
+function ratingColor(value: number): string {
+  if (value >= 5) return COLORS.green;
+  if (value >= 4) return COLORS.blue;
+  if (value >= 3) return COLORS.amber;
+  return COLORS.red;
+}
+
+interface FeedbackAnswer {
+  questionIndex: number;
+  questionText: string;
+  value: number;
+  label: string;
+}
+
+// Feedback ("משוב") stations: each is an itemResult whose metadata holds
+// { feedbackType:'rating_6_level', answers:[{questionIndex,questionText,value,label}],
+//   notes, averageRating }. One sheet, a block per feedback station: per-question
+// averages (1-6) + a per-participant table of ratings and their free-text notes.
+function addFeedbackSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], nameSuffix = '') {
+  interface FbRow {
+    itemIndex: number;
+    itemName: string;
+    participant: string;
+    answers: FeedbackAnswer[];
+    notes: string;
+    averageRating: number;
+  }
+  const rows: FbRow[] = [];
+  reports.forEach((report) => {
+    (report.data?.itemResults ?? []).forEach((item) => {
+      const meta = item.metadata;
+      if (!meta || meta.feedbackType !== 'rating_6_level' || !Array.isArray(meta.answers)) return;
+      rows.push({
+        itemIndex: item.itemIndex ?? 0,
+        itemName: item.itemName || `תחנה ${(item.itemIndex ?? 0) + 1}`,
+        participant: report.participantName || 'ללא שם',
+        answers: (meta.answers as FeedbackAnswer[]).filter((a) => a && typeof a.value === 'number'),
+        notes: typeof meta.notes === 'string' ? meta.notes : '',
+        averageRating: typeof meta.averageRating === 'number' ? meta.averageRating : 0,
+      });
+    });
+  });
+
+  if (rows.length === 0) return;
+
+  const worksheet = addSheet(workbook, 'משוב' + nameSuffix);
+  addTitle(
+    worksheet,
+    'משוב — דירוגים וחוות דעת',
+    'תשובות המשתתפים בתחנות המשוב: דירוג לכל שאלה (1-6), ממוצע וטקסט חופשי.',
+    12,
+  );
+  worksheet.getColumn(1).width = 26;
+  for (let col = 2; col <= 14; col += 1) worksheet.getColumn(col).width = 24;
+
+  const groups = new Map<number, FbRow[]>();
+  rows.forEach((row) => {
+    const list = groups.get(row.itemIndex) ?? [];
+    list.push(row);
+    groups.set(row.itemIndex, list);
+  });
+
+  let rowPtr = 4;
+  [...groups.entries()].sort((a, b) => a[0] - b[0]).forEach(([itemIndex, groupRows]) => {
+    const itemName = groupRows[0]?.itemName || `תחנה ${itemIndex + 1}`;
+
+    // Union of questions across this station's responses, ordered by index.
+    const questionMap = new Map<number, string>();
+    groupRows.forEach((r) => r.answers.forEach((a) => {
+      if (!questionMap.has(a.questionIndex)) {
+        questionMap.set(a.questionIndex, a.questionText || `שאלה ${a.questionIndex + 1}`);
+      }
+    }));
+    const questions = [...questionMap.entries()].sort((a, b) => a[0] - b[0]);
+
+    const titleCell = worksheet.getCell(rowPtr, 1);
+    titleCell.value = `${itemIndex + 1}. ${itemName}  (${groupRows.length} תשובות)`;
+    titleCell.font = { name: 'Arial', bold: true, size: 13, color: { argb: COLORS.dark } };
+    rowPtr += 2;
+
+    // Per-question averages.
+    addSectionHeader(worksheet, rowPtr, 'ממוצע דירוג לכל שאלה (1-6)', Math.max(3, questions.length + 1));
+    rowPtr += 1;
+    questions.forEach(([qIndex, qText]) => {
+      const ratings = groupRows
+        .map((r) => r.answers.find((a) => a.questionIndex === qIndex)?.value)
+        .filter((v): v is number => typeof v === 'number');
+      const avg = ratings.length > 0 ? +(ratings.reduce((s, v) => s + v, 0) / ratings.length).toFixed(2) : 0;
+      worksheet.getCell(rowPtr, 1).value = qText;
+      worksheet.getCell(rowPtr, 1).font = { name: 'Arial', size: 10 };
+      const avgCell = worksheet.getCell(rowPtr, 2);
+      avgCell.value = avg;
+      avgCell.font = { name: 'Arial', bold: true, color: { argb: ratingColor(avg) } };
+      worksheet.getCell(rowPtr, 3).value = `${ratings.length} תשובות`;
+      worksheet.getCell(rowPtr, 3).font = { name: 'Arial', size: 9, color: { argb: COLORS.slate } };
+      rowPtr += 1;
+    });
+    rowPtr += 1;
+
+    // Per-participant detail: name | rating per question | average | notes.
+    const headers = ['שם', ...questions.map(([, text]) => text), 'ממוצע', 'הערות'];
+    const headerRowObj = worksheet.getRow(rowPtr);
+    headers.forEach((header, idx) => {
+      const cell = headerRowObj.getCell(idx + 1);
+      cell.value = header;
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.dark } };
+      cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: COLORS.white } };
+      cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
+      cell.border = THIN_BORDER;
+    });
+    rowPtr += 1;
+
+    groupRows.forEach((r) => {
+      const dataRow = worksheet.getRow(rowPtr);
+      let col = 1;
+      const nameCell = dataRow.getCell(col);
+      nameCell.value = r.participant;
+      nameCell.font = { name: 'Arial', size: 10 };
+      nameCell.border = THIN_BORDER;
+      col += 1;
+      questions.forEach(([qIndex]) => {
+        const ans = r.answers.find((a) => a.questionIndex === qIndex);
+        const cell = dataRow.getCell(col);
+        cell.value = ans ? `${ans.value} – ${ans.label}` : '';
+        cell.font = { name: 'Arial', size: 10 };
+        cell.alignment = { horizontal: 'right', wrapText: true };
+        cell.border = THIN_BORDER;
+        col += 1;
+      });
+      const avgCell = dataRow.getCell(col);
+      avgCell.value = r.averageRating;
+      avgCell.font = { name: 'Arial', size: 10, bold: true, color: { argb: ratingColor(r.averageRating) } };
+      avgCell.border = THIN_BORDER;
+      col += 1;
+      const notesCell = dataRow.getCell(col);
+      notesCell.value = r.notes;
+      notesCell.font = { name: 'Arial', size: 10 };
+      notesCell.alignment = { horizontal: 'right', wrapText: true };
+      notesCell.border = THIN_BORDER;
+      rowPtr += 1;
+    });
+    rowPtr += 2;
+  });
+
+  configureWorksheet(worksheet);
+}
+
+function addRecommendationsSheet(workbook: ExcelJS.Workbook, stats: ExportStats, nameSuffix = '') {
+  const worksheet = addSheet(workbook, 'המלצות' + nameSuffix);
   addTitle(worksheet, 'המלצות ותובנות ללקוח', 'שורות שמוכנות כמעט כמו סיכום מנהלים: מה קרה, למה זה חשוב ומה עושים.', 9);
   addTable(
     worksheet,
@@ -1234,8 +1396,8 @@ function addRecommendationsSheet(workbook: ExcelJS.Workbook, stats: ExportStats)
   configureWorksheet(worksheet);
 }
 
-function addScoreDistributionSheet(workbook: ExcelJS.Workbook, stats: ExportStats) {
-  const worksheet = workbook.addWorksheet(safeSheetName('התפלגות'));
+function addScoreDistributionSheet(workbook: ExcelJS.Workbook, stats: ExportStats, nameSuffix = '') {
+  const worksheet = addSheet(workbook, 'התפלגות' + nameSuffix);
   addTitle(worksheet, 'התפלגות ציונים', 'כמה משתתפים נמצאים בכל טווח ציון מנורמל (0-100).', 4);
   addTable(
     worksheet,
@@ -1250,6 +1412,60 @@ function addScoreDistributionSheet(workbook: ExcelJS.Workbook, stats: ExportStat
   configureWorksheet(worksheet);
 }
 
+// Adds one activity's full set of report sheets (per export type) to a workbook.
+// `nameSuffix` disambiguates sheet names when several activities share a workbook.
+function addActivityReportSheets(
+  workbook: ExcelJS.Workbook,
+  activity: ExportActivity,
+  reports: ExportReport[],
+  exportType: AnalyticsExportType,
+  nameSuffix = '',
+) {
+  const stats = buildStats(activity, reports);
+  addSummarySheet(workbook, activity, stats, exportType, nameSuffix);
+
+  if (exportType === 'participants') {
+    addParticipantsSheet(workbook, stats, nameSuffix);
+    addGroupsSheet(workbook, stats, nameSuffix);
+    addProgressSheet(workbook, reports, stats, nameSuffix);
+  } else if (exportType === 'scores') {
+    addScoresSheet(workbook, reports, stats, nameSuffix);
+    addItemsSheet(workbook, stats, nameSuffix);
+    addQuestionsSheet(workbook, stats, nameSuffix);
+    addScoreDistributionSheet(workbook, stats, nameSuffix);
+  } else if (exportType === 'progress') {
+    addProgressSheet(workbook, reports, stats, nameSuffix);
+    addParticipantsSheet(workbook, stats, nameSuffix);
+    addItemsSheet(workbook, stats, nameSuffix);
+    addRecommendationsSheet(workbook, stats, nameSuffix);
+  } else {
+    addParticipantsSheet(workbook, stats, nameSuffix);
+    addScoresSheet(workbook, reports, stats, nameSuffix);
+    addProgressSheet(workbook, reports, stats, nameSuffix);
+    addItemsSheet(workbook, stats, nameSuffix);
+    addQuestionsSheet(workbook, stats, nameSuffix);
+    addGroupsSheet(workbook, stats, nameSuffix);
+    addScoreDistributionSheet(workbook, stats, nameSuffix);
+    addRecommendationsSheet(workbook, stats, nameSuffix);
+  }
+
+  addOrderSurveySheet(workbook, reports, nameSuffix);
+  addFeedbackSheet(workbook, reports, nameSuffix);
+}
+
+function applyLandscapePageSetup(workbook: ExcelJS.Workbook) {
+  workbook.eachSheet((worksheet) => {
+    worksheet.pageSetup = {
+      paperSize: 9,
+      orientation: 'landscape',
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      horizontalCentered: true,
+    };
+  });
+}
+
 export async function buildAnalyticsWorkbookBuffer(
   activity: ExportActivity,
   reports: ExportReport[],
@@ -1262,35 +1478,7 @@ export async function buildAnalyticsWorkbookBuffer(
   workbook.modified = new Date();
   workbook.views = [{ x: 0, y: 0, width: 16000, height: 9000, firstSheet: 0, activeTab: 0, visibility: 'visible' }];
 
-  const stats = buildStats(activity, reports);
-  addSummarySheet(workbook, activity, stats, exportType);
-
-  if (exportType === 'participants') {
-    addParticipantsSheet(workbook, stats);
-    addGroupsSheet(workbook, stats);
-    addProgressSheet(workbook, reports, stats);
-  } else if (exportType === 'scores') {
-    addScoresSheet(workbook, reports, stats);
-    addItemsSheet(workbook, stats);
-    addQuestionsSheet(workbook, stats);
-    addScoreDistributionSheet(workbook, stats);
-  } else if (exportType === 'progress') {
-    addProgressSheet(workbook, reports, stats);
-    addParticipantsSheet(workbook, stats);
-    addItemsSheet(workbook, stats);
-    addRecommendationsSheet(workbook, stats);
-  } else {
-    addParticipantsSheet(workbook, stats);
-    addScoresSheet(workbook, reports, stats);
-    addProgressSheet(workbook, reports, stats);
-    addItemsSheet(workbook, stats);
-    addQuestionsSheet(workbook, stats);
-    addGroupsSheet(workbook, stats);
-    addScoreDistributionSheet(workbook, stats);
-    addRecommendationsSheet(workbook, stats);
-  }
-
-  addOrderSurveySheet(workbook, reports);
+  addActivityReportSheets(workbook, activity, reports, exportType);
 
   workbook.eachSheet((worksheet) => {
     worksheet.pageSetup = {
@@ -1302,6 +1490,159 @@ export async function buildAnalyticsWorkbookBuffer(
       horizontalCentered: true,
     };
   });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Combined multi-activity report card workbook.
+// One sheet: a person per row, their grade per activity, and a final grade.
+// ─────────────────────────────────────────────────────────────
+
+export interface CombinedReportCardActivityMeta {
+  _id: string;
+  name: string;
+  code: string;
+}
+
+export interface CombinedReportCardParticipant {
+  key: string;
+  name: string;
+  email: string;
+  phone: string;
+  grades: Record<string, number | null>;
+  finalGrade: number | null;
+  activitiesPlayed: number;
+}
+
+export interface CombinedReportCardData {
+  activities: CombinedReportCardActivityMeta[];
+  participants: CombinedReportCardParticipant[];
+  totalParticipants: number;
+  avgFinalGrade: number | null;
+  period: string;
+}
+
+function addCombinedReportCardSheet(workbook: ExcelJS.Workbook, data: CombinedReportCardData) {
+  const worksheet = addSheet(workbook, 'דוח משולב');
+  const activityCount = data.activities.length;
+  const totalCols = 3 + activityCount + 2; // #, name, contact, per-activity..., played, final
+
+  addTitle(
+    worksheet,
+    'דוח משולב — ציון סופי לכל משתתף',
+    `${activityCount} פעילויות | ${data.totalParticipants} משתתפים | ציון סופי ממוצע ${data.avgFinalGrade ?? '—'} | תקופה: ${data.period}`,
+    totalCols,
+  );
+
+  type Row = CombinedReportCardParticipant & { index: number };
+  const rows: Row[] = data.participants.map((participant, index) => ({ ...participant, index: index + 1 }));
+
+  const columns: TableColumn<Row>[] = [
+    { header: '#', width: 8, value: (row) => row.index },
+    { header: 'שם', width: 24, value: (row) => row.name || 'ללא שם' },
+    { header: 'איש קשר', width: 28, value: (row) => row.email || row.phone || '' },
+    ...data.activities.map((activity, index) => ({
+      header: `${index + 1}. ${activity.name}`,
+      width: 18,
+      value: (row: Row) => {
+        const grade = row.grades[activity._id];
+        return grade === null || grade === undefined ? '—' : grade;
+      },
+    })),
+    { header: 'פעילויות', width: 12, value: (row) => row.activitiesPlayed },
+    { header: 'ציון סופי', width: 14, value: (row) => row.finalGrade ?? '—' },
+  ];
+
+  const headerRow = 4;
+  addTable(worksheet, headerRow, columns, rows, 'CombinedReportCardTable');
+  stylePercentColumn(worksheet, headerRow, totalCols, rows.length); // final grade column (last)
+  configureWorksheet(worksheet);
+}
+
+export async function buildCombinedReportCardWorkbook(data: CombinedReportCardData): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'YOOZ';
+  workbook.lastModifiedBy = 'YOOZ';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  addCombinedReportCardSheet(workbook, data);
+  applyLandscapePageSetup(workbook);
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
+}
+
+// ─────────────────────────────────────────────────────────────
+// Combined multi-activity full report (executive/participants/scores/progress).
+// Cross-activity views (report card + pooled participants) followed by each
+// activity's own full report sheets — every activity keeps its own ceiling/items.
+// ─────────────────────────────────────────────────────────────
+
+export interface CombinedExportActivity {
+  activity: ExportActivity;
+  reports: ExportReport[];
+}
+
+// A flat list of every report across all selected activities, tagged with its
+// activity and the participant's normalized 0-100 grade for that activity.
+function addCombinedParticipantsSheet(workbook: ExcelJS.Workbook, perActivity: CombinedExportActivity[]) {
+  type Row = ParticipantRow & { activityName: string };
+  const rows: Row[] = [];
+  perActivity.forEach(({ activity, reports }) => {
+    const stats = buildStats(activity, reports);
+    stats.participants.forEach((participant) => rows.push({ ...participant, activityName: activity.name }));
+  });
+  rows.sort((a, b) => (a.activityName === b.activityName ? a.rank - b.rank : a.activityName.localeCompare(b.activityName)));
+
+  const worksheet = addSheet(workbook, 'כל המשתתפים');
+  addTitle(worksheet, 'כל המשתתפים — כל הפעילויות', 'כל הדוחות מכל הפעילויות שנבחרו, עם הפעילות והציון המנורמל (0-100).', 11);
+  const headerRow = 4;
+  addTable(
+    worksheet,
+    headerRow,
+    [
+      { header: 'פעילות', width: 24, value: (row: Row) => row.activityName },
+      { header: 'שם', width: 22, value: (row) => row.name },
+      { header: 'אימייל', width: 28, value: (row) => row.email },
+      { header: 'טלפון', width: 18, value: (row) => row.phone },
+      { header: 'קבוצה', width: 18, value: (row) => row.group },
+      { header: 'סטטוס', width: 14, value: (row) => row.statusLabel },
+      { header: 'ציון (0-100)', width: 12, value: (row) => row.normalizedScore },
+      { header: 'עבר/לא עבר', width: 12, value: (row) => row.passLabel },
+      { header: 'התקדמות %', width: 12, value: (row) => row.progressPct },
+      { header: 'משך', width: 16, value: (row) => row.durationLabel },
+      { header: 'הצטרפות', width: 20, value: (row) => row.joinedAt },
+    ],
+    rows,
+    'CombinedAllParticipantsTable',
+  );
+  stylePercentColumn(worksheet, headerRow, 7, rows.length); // ציון (0-100)
+  stylePercentColumn(worksheet, headerRow, 9, rows.length); // התקדמות %
+  configureWorksheet(worksheet);
+}
+
+export async function buildCombinedActivitiesWorkbook(
+  perActivity: CombinedExportActivity[],
+  exportType: AnalyticsExportType,
+  reportCard: CombinedReportCardData,
+): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'YOOZ';
+  workbook.lastModifiedBy = 'YOOZ';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+  workbook.views = [{ x: 0, y: 0, width: 16000, height: 9000, firstSheet: 0, activeTab: 0, visibility: 'visible' }];
+
+  addCombinedReportCardSheet(workbook, reportCard);
+  addCombinedParticipantsSheet(workbook, perActivity);
+  perActivity.forEach((entry, index) => {
+    addActivityReportSheets(workbook, entry.activity, entry.reports, exportType, ` ${index + 1}`);
+  });
+
+  applyLandscapePageSetup(workbook);
 
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);

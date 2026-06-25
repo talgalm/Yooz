@@ -13,6 +13,7 @@ import type {
   AuditLogEntry,
   ActivityPeriod,
   RosterParticipant,
+  CombinedReportData,
 } from '../pages/admin/AdminStatisticsTab/types';
 
 const selectTimeline = (response: { timeline: TimelinePoint[] }) => response.timeline;
@@ -199,21 +200,15 @@ export async function saveExclusions(activityId: string, excludedReportIds: stri
 
 export type AnalyticsExportType = 'executive' | 'participants' | 'scores' | 'progress';
 
-export async function downloadExport(baseUrl: string, type: AnalyticsExportType, period?: ActivityPeriod) {
-  const token = localStorage.getItem('yooz_admin_token');
-  const params = new URLSearchParams({ type });
-  if (period) params.set('period', period);
-  const res = await fetch(`${baseUrl}/export?${params.toString()}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+// Resolve the server filename (RFC 5987 filename* first, then plain) and trigger
+// a browser download from a fetch Response.
+async function triggerBlobDownload(res: Response, fallbackName: string) {
   if (!res.ok) throw new Error('Export failed');
-
   const blob = await res.blob();
   const disposition = res.headers.get('content-disposition') || '';
-  // Try RFC 5987 filename* first (supports unicode), then fall back to plain filename
   const utf8Match = disposition.match(/filename\*=UTF-8''(.+?)(?:;|$)/);
   const plainMatch = disposition.match(/filename="?([^";]+)"?/);
-  const filename = utf8Match ? decodeURIComponent(utf8Match[1]) : plainMatch ? plainMatch[1] : `${type}-export.xlsx`;
+  const filename = utf8Match ? decodeURIComponent(utf8Match[1]) : plainMatch ? plainMatch[1] : fallbackName;
 
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -223,4 +218,50 @@ export async function downloadExport(baseUrl: string, type: AnalyticsExportType,
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem('yooz_admin_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export async function downloadExport(baseUrl: string, type: AnalyticsExportType, period?: ActivityPeriod) {
+  const params = new URLSearchParams({ type });
+  if (period) params.set('period', period);
+  const res = await fetch(`${baseUrl}/export?${params.toString()}`, { headers: authHeaders() });
+  await triggerBlobDownload(res, `${type}-export.xlsx`);
+}
+
+// ── Combined multi-activity report (admin only) ──
+
+function combinedQuery(activityIds: string[], period?: ActivityPeriod, extra?: Record<string, string>) {
+  const params = new URLSearchParams({ ids: activityIds.join(','), ...extra });
+  if (period) params.set('period', period);
+  return params.toString();
+}
+
+export function useCombinedReportCard(activityIds: string[], period?: ActivityPeriod) {
+  // Response is already the data shape — no select function (and so no loop risk).
+  return useApiFetch<CombinedReportData>(
+    activityIds.length > 0
+      ? `/api/admin/analytics/combined/report-card?${combinedQuery(activityIds, period)}`
+      : null,
+  );
+}
+
+export async function downloadCombinedReportCardExport(activityIds: string[], period?: ActivityPeriod) {
+  const res = await fetch(
+    `/api/admin/analytics/combined/report-card/export?${combinedQuery(activityIds, period)}`,
+    { headers: authHeaders() },
+  );
+  await triggerBlobDownload(res, 'combined-report-card.xlsx');
+}
+
+// Full combined report (executive/participants/scores/progress) across activities.
+export async function downloadCombinedExport(activityIds: string[], type: AnalyticsExportType, period?: ActivityPeriod) {
+  const res = await fetch(
+    `/api/admin/analytics/combined/export?${combinedQuery(activityIds, period, { type })}`,
+    { headers: authHeaders() },
+  );
+  await triggerBlobDownload(res, `combined-${type}.xlsx`);
 }
