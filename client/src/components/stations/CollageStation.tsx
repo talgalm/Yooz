@@ -588,7 +588,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
               logoUrl,
               requiredImages: totalImages,
             },
-            header,
+            '',
           );
         } catch { /* swallow — onContinue still advances */ }
       }
@@ -670,7 +670,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       : singleGroupId;
     const jobId = makeSplitCollageJobId(activityCode, effectiveGroupId);
     const bgKey = `${activityCode}::${effectiveGroupId}`;
-    const effectiveTitle = collageTitle.trim() || header;
+    const effectiveTitle = collageTitle.trim();
 
     try {
       const bg = startBackgroundCollage(bgKey, {
@@ -928,7 +928,9 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
       const bgKey = `${activityCode}::${splitGroupId}`;
       const jobId = makeSplitCollageJobId(activityCode, splitGroupId);
-      const effectiveTitle = header;
+      // Video-only part: user never sees the review screen, so there's no
+      // title to set. Stay blank instead of falling back to the station header.
+      const effectiveTitle = '';
 
       const finishWithResult = async (url: string, isVideo: boolean) => {
         setProgress(100);

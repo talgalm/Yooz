@@ -197,14 +197,21 @@ export function buildFilterComplex(
 
   // Stack photo overlays time-gated by scene window. Each image is positioned
   // at (panelX - buffer, panelY - buffer) so its center sits on the panel.
+  // Pad the enable window slightly past the detected scene boundaries so a
+  // chromakey'd green panel doesn't briefly flash between scenes (the auto-
+  // detected windows are tighter than the panel's actual visibility).
+  const ENABLE_PRE = 0.2;
+  const ENABLE_POST = 0.4;
   let prev = 'bg';
   scenes.forEach((sc, i) => {
     const xExpr = `(${piecewiseLinearExpr(sc.keyframes, 'x')})-${buffer}`;
     const yExpr = `(${piecewiseLinearExpr(sc.keyframes, 'y')})-${buffer}`;
+    const enableStart = Math.max(0, sc.startSec - ENABLE_PRE);
+    const enableEnd = sc.endSec + ENABLE_POST;
     const out = `b${i}`;
     parts.push(
       `[${prev}][i${i}]overlay=x='${xExpr}':y='${yExpr}'` +
-        `:enable='between(t,${sc.startSec},${sc.endSec})'[${out}]`,
+        `:enable='between(t,${enableStart},${enableEnd})'[${out}]`,
     );
     prev = out;
   });
