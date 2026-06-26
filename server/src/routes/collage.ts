@@ -267,9 +267,9 @@ export function buildFilterComplex(
     scaleIn = 'vrawFixed';
   }
 
-  // Final downscale to 720px wide. Phones are the primary delivery target;
-  // 1080→720 cuts pixel count by ~56% and shaves a third off encode time.
-  parts.push(`[${scaleIn}]scale=720:-2[vout]`);
+  // Final downscale to 540px wide. Phones are the primary delivery target;
+  // 1080→540 cuts pixel count by ~75% and roughly halves encode time vs 720.
+  parts.push(`[${scaleIn}]scale=540:-2[vout]`);
 
   // Quiet the unused dimension lints
   void width;
@@ -326,9 +326,9 @@ export function runFfmpeg(
     // ultrafast vs superfast: ~25% faster encode in exchange for a slightly
     // larger MP4. Since the collage output streams via Cloudinary and is short
     // (~32s), file size is not the bottleneck — encode wall-time is.
-    // CRF 25 (was 23): higher number = lower bitrate / faster encode. 25 is
+    // CRF 28 (was 25): higher number = lower bitrate / faster encode. 28 is
     // still well above the visible-artifact threshold for mobile playback.
-    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '25',
+    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '28',
     '-c:a', 'aac', '-b:a', '128k',
     // Fragmented MP4 — required when writing to a pipe (no seekable backing
     // means the normal moov-at-end pattern can't work). empty_moov+
