@@ -63,14 +63,14 @@ jobs:
             --region "$AWS_REGION"
           echo "✅ Lambda $LAMBDA_FN updated to $IMAGE"
 
-      # ponytail: 8192 MB → ~4.6 vCPU on Lambda. ffmpeg with -threads 0 uses
-      # them all; encode roughly halves vs 3008 MB. Bump higher only if a
-      # CloudWatch run shows ffmpeg still dominating wall time.
+      # ponytail: stuck at 3008 MB until AWS Support raises the per-function
+      # quota (request filed; usually approved within hours). Bump this to
+      # 8192 the moment they approve — encode time roughly halves at 8192.
       - name: Set Lambda memory + timeout
         run: |
           aws lambda update-function-configuration \
             --function-name "$LAMBDA_FN" \
-            --memory-size 8192 \
+            --memory-size 3008 \
             --timeout 300 \
             --region "$AWS_REGION" >/dev/null
           aws lambda wait function-updated \
