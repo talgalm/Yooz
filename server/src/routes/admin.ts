@@ -72,7 +72,7 @@ async function buildActivityData(
   existingPasswordHash?: string,
   existing?: IActivity,
 ): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, hideLeaderboardInHeader, leaderboardCurrentDayOnly, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
+  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, hideLeaderboardInHeader, leaderboardCurrentDayOnly, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -219,6 +219,7 @@ async function buildActivityData(
   data.includeOnRoadmap = includeOnRoadmap === true;
 
   data.smsForCollage = smsForCollage === true && Array.isArray(loginFields) && loginFields.includes('phoneNumber');
+  data.smsForCollageMessage = data.smsForCollage && smsForCollageMessage?.trim() ? smsForCollageMessage.trim() : undefined;
 
   // Pass grade (normalized 0-100, or null for no pass grade). Only written when
   // present in the payload so a regular activity save from the editor (which

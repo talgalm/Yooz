@@ -154,6 +154,9 @@ export interface IActivity {
    *  participant can skip the wait — server SMS's them the result when ready.
    *  Requires phoneNumber in loginFields. */
   smsForCollage?: boolean;
+  /** Custom SMS body for collage-ready notification. Use {link} as a placeholder
+   *  for the video URL; if absent the URL is appended on a new line. */
+  smsForCollageMessage?: string;
   /** When enabled, highest-scoring group member gets an SMS coupon after all members finish. */
   groupReward?: {
     enabled: boolean;
@@ -277,6 +280,7 @@ const activitySchema = new Schema<IActivity>({
   groupMinMembers: { type: Number, default: 1 },
   groupMaxMembers: { type: Number, default: null },
   smsForCollage: { type: Boolean, default: false },
+  smsForCollageMessage: { type: String },
   groupReward: {
     type: new Schema({
       enabled: { type: Boolean, default: false },

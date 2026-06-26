@@ -91,6 +91,7 @@ export interface Activity {
   groupMaxMembers?: number;
   groupReward?: { enabled: boolean; couponCode: string; messageTemplate?: string; attachmentUrl?: string; attachmentType?: 'image' | 'pdf' };
   smsForCollage?: boolean;
+  smsForCollageMessage?: string;
   opening?: { type: 'video' | 'image'; url: string };
   module?: {
     type: string;

@@ -80,6 +80,7 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
   const jobId = event?.jobId;
   if (!jobId) throw new Error('jobId required');
 
+  console.log(`[lambda-collage] start job=${jobId}`);
   await ensureMongo();
 
   const job = await CollageJob.findOne({ jobId });
@@ -106,6 +107,7 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
   fs.mkdirSync(tmpDir, { recursive: true });
 
   try {
+    console.log(`[lambda-collage] preparing job=${jobId} images=${orderedUrls.length} template=${templateId}`);
     await patchJob(jobId, { phase: 'preparing', percent: 5, message: 'מכין תמונות...' });
 
     const imagePaths = await Promise.all(
@@ -128,6 +130,7 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
       }),
     );
 
+    console.log(`[lambda-collage] encoding job=${jobId}`);
     await patchJob(jobId, { phase: 'encoding', percent: 15, message: 'מתחיל קידוד וידאו...' });
 
     const [logoPath, titlePath] = await Promise.all([
@@ -187,6 +190,13 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
       resultUrl: cloudResult.secure_url,
       isVideo: true,
     });
+    // Re-read so we catch a smsPhone that the participant set mid-encode.
+    const finalJob = await CollageJob.findOne({ jobId }).select('smsPhone').lean();
+    if (finalJob?.smsPhone) {
+      console.log(`[lambda-collage] done job=${jobId} → SMS will be sent to ${finalJob.smsPhone}`);
+    } else {
+      console.log(`[lambda-collage] done job=${jobId}`);
+    }
     return { ok: true, jobId };
   } catch (err) {
     console.error(`[lambda-collage] job ${jobId} error:`, err);

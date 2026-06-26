@@ -814,6 +814,7 @@ router.post('/jobs/:jobId/notify-sms', async (req: Request<{ jobId: string }>, r
   }
   job.smsPhone = phone;
   await job.save();
+  console.log(`[collage] SMS requested job=${job.jobId} phase=${job.phase} → send to ${phone}`);
   if (job.phase === 'done' && job.resultUrl && !job.smsSentAt) {
     void sendCollageReadySms(job.jobId).catch((e) => console.error('[collage] immediate SMS failed', e));
   }
@@ -1050,18 +1051,37 @@ router.post(
 // transition. Sweep finished jobs with a pending smsPhone and fire the SMS.
 
 export async function sendCollageReadySms(jobId: string): Promise<void> {
-  const job = await CollageJob.findOne({ jobId });
-  if (!job || !job.smsPhone || job.smsSentAt || job.phase !== 'done' || !job.resultUrl) return;
-  const message = `הסרטון שלך מוכן! צפה והורד כאן: ${job.resultUrl}`;
+  // Atomic claim — PM2 cluster mode runs 2+ workers, both sweep on the same
+  // interval. Without this guard, both find the same un-sent job and the
+  // participant gets the SMS twice. findOneAndUpdate is one round-trip and
+  // returns null if another worker already claimed it.
+  const claimed = await CollageJob.findOneAndUpdate(
+    {
+      jobId,
+      phase: 'done',
+      smsPhone: { $exists: true, $ne: '' },
+      smsSentAt: { $exists: false },
+      resultUrl: { $exists: true, $ne: '' },
+    },
+    { $set: { smsSentAt: new Date() } },
+    { new: true },
+  );
+  if (!claimed || !claimed.smsPhone || !claimed.resultUrl) return;
+
+  const activity = await Activity.findOne({ code: claimed.activityCode }).select('smsForCollageMessage').lean();
+  const template = activity?.smsForCollageMessage?.trim() || 'הסרטון שלך מוכן! צפה והורד כאן: {link}';
+  const message = template.includes('{link}')
+    ? template.replace(/\{link\}/g, claimed.resultUrl)
+    : `${template}\n${claimed.resultUrl}`;
+
+  console.log(`[collage] SMS sending job=${jobId} to=${claimed.smsPhone}`);
   try {
-    await getSmsProvider().send(job.smsPhone, message);
+    await getSmsProvider().send(claimed.smsPhone, message);
   } catch (err) {
+    // smsSentAt is already set by the claim — at-most-once delivery; check
+    // provider logs to see what actually went out.
     console.error(`[collage] SMS send failed for ${jobId}:`, err);
   }
-  // Stamp smsSentAt even on send failure — at-most-once delivery; the provider
-  // log is the source of truth for what actually went out.
-  job.smsSentAt = new Date();
-  await job.save();
 }
 
 export async function processPendingCollageSms(): Promise<void> {

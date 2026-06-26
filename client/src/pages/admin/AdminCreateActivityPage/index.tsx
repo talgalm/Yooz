@@ -338,6 +338,7 @@ export default function AdminCreateActivityPage() {
   const [groupRewardAttachmentUrl, setGroupRewardAttachmentUrl] = useState('');
   const [groupRewardAttachmentType, setGroupRewardAttachmentType] = useState<'image' | 'pdf'>('image');
   const [smsForCollage, setSmsForCollage] = useState(false);
+  const [smsForCollageMessage, setSmsForCollageMessage] = useState('');
   const [smsTestPhone, setSmsTestPhone] = useState('');
   const [smsTestSending, setSmsTestSending] = useState(false);
   const [smsTestFeedback, setSmsTestFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -456,6 +457,7 @@ export default function AdminCreateActivityPage() {
           }
         }
         setSmsForCollage(a.smsForCollage === true);
+        setSmsForCollageMessage(a.smsForCollageMessage || '');
         if (a.opening) {
           setOpeningType(a.opening.type as OpeningType);
           setOpeningUrl(a.opening.url || '');
@@ -904,6 +906,9 @@ export default function AdminCreateActivityPage() {
 
       if (loginFields.has('email') && emailGoogle) payload.emailGoogle = true;
       payload.smsForCollage = smsForCollage && loginFields.has('phoneNumber');
+      if (payload.smsForCollage && smsForCollageMessage.trim()) {
+        payload.smsForCollageMessage = smsForCollageMessage.trim();
+      }
       if (connectionType === 'group') {
         payload.groupEntryMode = groupEntryMode;
         if (groupEntryMode === 'preset') {
@@ -1774,6 +1779,17 @@ export default function AdminCreateActivityPage() {
                   <SectionDescription style={{ margin: '6px 0 0' }}>
                     {loginFields.has('phoneNumber') ? t.smsForCollageHint : t.smsForCollageNeedsPhone}
                   </SectionDescription>
+
+                  {smsForCollage && loginFields.has('phoneNumber') && (
+                    <div style={{ marginTop: 12 }}>
+                      <SectionLabelSmall>{t.smsForCollageMessageLabel}</SectionLabelSmall>
+                      <SmsTemplateArea
+                        placeholder={t.smsForCollageMessagePlaceholder}
+                        value={smsForCollageMessage}
+                        onChange={(e) => setSmsForCollageMessage(e.target.value)}
+                      />
+                    </div>
+                  )}
 
                   <SectionDescription style={{ margin: '20px 0 0' }}>{t.afterActivitySmsDesc}</SectionDescription>
 
