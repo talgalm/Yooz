@@ -107,6 +107,8 @@ export interface IActivity {
   leaderboardMode?: 'points' | 'time' | 'both';
   /** When true, hide the leaderboard trophy button from the session header */
   hideLeaderboardInHeader?: boolean;
+  /** When true (default), leaderboard only includes reports completed today in Israel time */
+  leaderboardCurrentDayOnly?: boolean;
   /** Optional time limit in minutes (only relevant when leaderboardMode is 'time') */
   activityDurationMinutes?: number;
   /** When set (> 0), shows a cosmetic count-up timer on the roadmap that turns red
@@ -254,6 +256,7 @@ const activitySchema = new Schema<IActivity>({
   loginComponent: { type: String }, // legacy
   leaderboardMode: { type: String, enum: ['points', 'time', 'both'], default: 'points' },
   hideLeaderboardInHeader: { type: Boolean, default: false },
+  leaderboardCurrentDayOnly: { type: Boolean, default: true },
   activityDurationMinutes: { type: Number },
   roadmapTimerMinutes: { type: Number },
   passThreshold: { type: Number, default: 70 }, // null = no pass grade; range validated in code

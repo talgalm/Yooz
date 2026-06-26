@@ -120,4 +120,5 @@ export interface Activity {
   portalId?: string;
   includeOnRoadmap?: boolean;
   hideLeaderboardInHeader?: boolean;
+  leaderboardCurrentDayOnly?: boolean;
 }

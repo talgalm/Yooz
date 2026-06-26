@@ -377,6 +377,7 @@ export default function AdminCreateActivityPage() {
 
   const [leaderboardMode, setLeaderboardMode] = useState<'points' | 'time' | 'both'>('points');
   const [displayLeaderboardInHeader, setDisplayLeaderboardInHeader] = useState(false);
+  const [leaderboardCurrentDayOnly, setLeaderboardCurrentDayOnly] = useState(true);
   const [activityDurationMinutes, setActivityDurationMinutes] = useState('');
   const [roadmapTimerEnabled, setRoadmapTimerEnabled] = useState(false);
   const [roadmapTimerMinutes, setRoadmapTimerMinutes] = useState('');
@@ -522,6 +523,7 @@ export default function AdminCreateActivityPage() {
         }
         if (a.leaderboardMode) setLeaderboardMode(a.leaderboardMode as 'points' | 'time' | 'both');
         setDisplayLeaderboardInHeader(!a.hideLeaderboardInHeader);
+        setLeaderboardCurrentDayOnly(a.leaderboardCurrentDayOnly !== false);
         if (a.activityDurationMinutes) setActivityDurationMinutes(String(a.activityDurationMinutes));
         if (a.roadmapTimerMinutes) {
           setRoadmapTimerEnabled(true);
@@ -981,6 +983,7 @@ export default function AdminCreateActivityPage() {
       }
       payload.leaderboardMode = leaderboardMode;
       payload.hideLeaderboardInHeader = !displayLeaderboardInHeader;
+      payload.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly;
       // Time limit field is shown for both 'time' and 'both' modes — it drives
       // the live timer + warning popup in either case.
       if ((leaderboardMode === 'time' || leaderboardMode === 'both') && activityDurationMinutes.trim()) {
@@ -1565,6 +1568,15 @@ export default function AdminCreateActivityPage() {
                       style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
                     />
                     {t.displayLeaderboardInHeader}
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, cursor: 'pointer', fontSize: 14, color: '#444' }}>
+                    <input
+                      type="checkbox"
+                      checked={leaderboardCurrentDayOnly}
+                      onChange={(e) => setLeaderboardCurrentDayOnly(e.target.checked)}
+                      style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                    />
+                    {t.leaderboardCurrentDayOnly}
                   </label>
                 </SectionCardWide>
 

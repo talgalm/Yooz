@@ -334,10 +334,28 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
   const isTimeMode = activity.leaderboardMode === 'time';
   const isBothMode = activity.leaderboardMode === 'both';
 
+  // Israel-time start-of-today. Compute by subtracting Israel wall-clock H:M:S
+  // from `now` — the result is the UTC instant of midnight Israel time today.
+  // Default ON (undefined → true) — matches the model default.
+  const currentDayOnly = activity.leaderboardCurrentDayOnly !== false;
+  const dateFilter: Record<string, unknown> = {};
+  if (currentDayOnly) {
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Jerusalem',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    }).formatToParts(now);
+    const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
+    const startOfTodayIsrael = new Date(
+      now.getTime() - (get('hour') * 3600 + get('minute') * 60 + get('second')) * 1000,
+    );
+    dateFilter.createdAt = { $gte: startOfTodayIsrael };
+  }
+
   let leaderboard;
   if (isTimeMode) {
     const reports = await Report.find(
-      { activityId: activity._id, completionStatus: 'completed', sessionDurationMs: { $exists: true, $gt: 0 } },
+      { activityId: activity._id, completionStatus: 'completed', sessionDurationMs: { $exists: true, $gt: 0 }, ...dateFilter },
       { participantName: 1, group: 1, sessionDurationMs: 1 }
     )
       .sort({ sessionDurationMs: 1 })
@@ -356,7 +374,7 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
     // tiebreaker (kept simple — most natural reading is "leaderboard by score,
     // with how long it took").
     const reports = await Report.find(
-      { activityId: activity._id, 'data.totalScore': { $exists: true } },
+      { activityId: activity._id, 'data.totalScore': { $exists: true }, ...dateFilter },
       { participantName: 1, group: 1, data: 1, sessionDurationMs: 1 }
     )
       .sort({ 'data.totalScore': -1 })
@@ -372,7 +390,7 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
     }));
   } else {
     const reports = await Report.find(
-      { activityId: activity._id, 'data.totalScore': { $exists: true } },
+      { activityId: activity._id, 'data.totalScore': { $exists: true }, ...dateFilter },
       { participantName: 1, group: 1, data: 1 }
     )
       .sort({ 'data.totalScore': -1 })

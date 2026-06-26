@@ -271,6 +271,7 @@ export interface CreateActivityRequest {
   portalId?: string;
   leaderboardMode?: 'points' | 'time' | 'both';
   hideLeaderboardInHeader?: boolean;
+  leaderboardCurrentDayOnly?: boolean;
   activityDurationMinutes?: number;
   roadmapTimerMinutes?: number;
   includeOnRoadmap?: boolean;
