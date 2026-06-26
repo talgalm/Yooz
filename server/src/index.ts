@@ -35,7 +35,7 @@ import avatarChatRouter from './routes/avatarChat';
 import analyticsRouter from './routes/analytics';
 import usersRouter from './routes/users';
 import missionsRouter from './routes/missions';
-import collageRouter from './routes/collage';
+import collageRouter, { processPendingCollageSms } from './routes/collage';
 import libraryRouter from './routes/library';
 import alertsRouter from './routes/alerts';
 import portalsRouter from './routes/portals';
@@ -182,6 +182,13 @@ async function start() {
       console.error('[groupReward] Timer poll failed:', err);
     });
   }, REWARD_TIMER_POLL_MS);
+
+  const COLLAGE_SMS_POLL_MS = 15_000;
+  setInterval(() => {
+    processPendingCollageSms().catch((err) => {
+      console.error('[collage] SMS sweep failed:', err);
+    });
+  }, COLLAGE_SMS_POLL_MS);
 
   // Recover collage jobs that were mid-encode when the process died (PM2
   // restart, OOM, deploy). Only resurrect jobs *recently* in-flight — older

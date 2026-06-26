@@ -279,6 +279,7 @@ export interface CreateActivityRequest {
   groupMinMembers?: number;
   groupMaxMembers?: number;
   groupReward?: GroupRewardConfig;
+  smsForCollage?: boolean;
 }
 
 export interface ActivityConfigResponse {

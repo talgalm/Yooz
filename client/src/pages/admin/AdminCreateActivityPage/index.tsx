@@ -337,6 +337,7 @@ export default function AdminCreateActivityPage() {
   const [groupRewardMessage, setGroupRewardMessage] = useState('');
   const [groupRewardAttachmentUrl, setGroupRewardAttachmentUrl] = useState('');
   const [groupRewardAttachmentType, setGroupRewardAttachmentType] = useState<'image' | 'pdf'>('image');
+  const [smsForCollage, setSmsForCollage] = useState(false);
   const [smsTestPhone, setSmsTestPhone] = useState('');
   const [smsTestSending, setSmsTestSending] = useState(false);
   const [smsTestFeedback, setSmsTestFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -454,6 +455,7 @@ export default function AdminCreateActivityPage() {
             setGroupNames(a.groups.map((g) => g.name));
           }
         }
+        setSmsForCollage(a.smsForCollage === true);
         if (a.opening) {
           setOpeningType(a.opening.type as OpeningType);
           setOpeningUrl(a.opening.url || '');
@@ -901,6 +903,7 @@ export default function AdminCreateActivityPage() {
       };
 
       if (loginFields.has('email') && emailGoogle) payload.emailGoogle = true;
+      payload.smsForCollage = smsForCollage && loginFields.has('phoneNumber');
       if (connectionType === 'group') {
         payload.groupEntryMode = groupEntryMode;
         if (groupEntryMode === 'preset') {
@@ -1748,7 +1751,31 @@ export default function AdminCreateActivityPage() {
                   <SectionHeader>
                     <SectionHeaderTitle>{t.step3Title}</SectionHeaderTitle>
                   </SectionHeader>
-                  <SectionDescription style={{ margin: 0 }}>{t.afterActivitySmsDesc}</SectionDescription>
+
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      cursor: loginFields.has('phoneNumber') ? 'pointer' : 'not-allowed',
+                      fontSize: 14,
+                      opacity: loginFields.has('phoneNumber') ? 1 : 0.55,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={smsForCollage && loginFields.has('phoneNumber')}
+                      disabled={!loginFields.has('phoneNumber')}
+                      onChange={(e) => setSmsForCollage(e.target.checked)}
+                      style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                    />
+                    {t.smsForCollage}
+                  </label>
+                  <SectionDescription style={{ margin: '6px 0 0' }}>
+                    {loginFields.has('phoneNumber') ? t.smsForCollageHint : t.smsForCollageNeedsPhone}
+                  </SectionDescription>
+
+                  <SectionDescription style={{ margin: '20px 0 0' }}>{t.afterActivitySmsDesc}</SectionDescription>
 
                   {!smsAvailable && (
                     <SectionDescription style={{ margin: '12px 0 0', color: '#e67e22' }}>

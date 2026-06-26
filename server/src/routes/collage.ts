@@ -31,6 +31,7 @@ import ffmpegPath from 'ffmpeg-static';
 import sharp from 'sharp';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from '../config';
 import { Activity, CollageJob } from '../models';
+import { getSmsProvider } from '../services/sms/smsProvider';
 import motionDataDefault from '../data/collage-template-motion.json';
 import motionDataGanYehoshua from '../data/collage-template-gan-yehoshua-motion.json';
 import {
@@ -791,6 +792,34 @@ router.post('/jobs/:jobId/start', loadShed, async (req: Request<{ jobId: string 
   res.status(202).json(serializeCollageJob(job));
 });
 
+// Participant taps "send video by SMS" in the loading screen → save phone on
+// the job. The sweeper below picks it up once Lambda flips phase='done'.
+// If the job is already done, fire the SMS immediately.
+router.post('/jobs/:jobId/notify-sms', async (req: Request<{ jobId: string }>, res: Response) => {
+  const { phoneNumber } = req.body as { phoneNumber?: string };
+  const phone = phoneNumber?.trim();
+  if (!phone) {
+    res.status(400).json({ error: 'phoneNumber required' });
+    return;
+  }
+  const job = await CollageJob.findOne({ jobId: req.params.jobId });
+  if (!job) {
+    res.status(404).json({ error: 'Job not found' });
+    return;
+  }
+  const activity = await Activity.findOne({ code: job.activityCode }).lean();
+  if (!activity?.smsForCollage) {
+    res.status(403).json({ error: 'SMS for collage not enabled for this activity' });
+    return;
+  }
+  job.smsPhone = phone;
+  await job.save();
+  if (job.phase === 'done' && job.resultUrl && !job.smsSentAt) {
+    void sendCollageReadySms(job.jobId).catch((e) => console.error('[collage] immediate SMS failed', e));
+  }
+  res.json({ ok: true });
+});
+
 router.post('/jobs/:jobId/retry', async (req: Request<{ jobId: string }>, res: Response) => {
   const job = await CollageJob.findOne({ jobId: req.params.jobId });
   if (!job) {
@@ -1015,5 +1044,36 @@ router.post(
     }
   },
 );
+
+// ─── SMS-on-ready ─────────────────────────────────────────────────────────────
+// Lambda updates CollageJob directly; the main server doesn't see that
+// transition. Sweep finished jobs with a pending smsPhone and fire the SMS.
+
+export async function sendCollageReadySms(jobId: string): Promise<void> {
+  const job = await CollageJob.findOne({ jobId });
+  if (!job || !job.smsPhone || job.smsSentAt || job.phase !== 'done' || !job.resultUrl) return;
+  const message = `הסרטון שלך מוכן! צפה והורד כאן: ${job.resultUrl}`;
+  try {
+    await getSmsProvider().send(job.smsPhone, message);
+  } catch (err) {
+    console.error(`[collage] SMS send failed for ${jobId}:`, err);
+  }
+  // Stamp smsSentAt even on send failure — at-most-once delivery; the provider
+  // log is the source of truth for what actually went out.
+  job.smsSentAt = new Date();
+  await job.save();
+}
+
+export async function processPendingCollageSms(): Promise<void> {
+  const pending = await CollageJob.find({
+    phase: 'done',
+    smsPhone: { $exists: true, $ne: '' },
+    smsSentAt: { $exists: false },
+    resultUrl: { $exists: true, $ne: '' },
+  }).limit(50);
+  for (const job of pending) {
+    await sendCollageReadySms(job.jobId);
+  }
+}
 
 export default router;

@@ -1693,6 +1693,7 @@ export default function StoryModulePage() {
         leaderboardMode={data.leaderboardMode}
         elapsedSeconds={elapsedSeconds}
         activityDurationMinutes={data.activityDurationMinutes}
+        smsForCollage={data.smsForCollage}
       />
       </ActivityPlayingHeaderProvider>
       {entryTransitionStage !== 'idle' && (

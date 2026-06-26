@@ -150,6 +150,10 @@ export interface IActivity {
   groupMinMembers?: number;
   /** Self-service groups: maximum members allowed per group (0/undef = no cap). */
   groupMaxMembers?: number;
+  /** When enabled, collage station shows a "get the video by SMS" button so the
+   *  participant can skip the wait — server SMS's them the result when ready.
+   *  Requires phoneNumber in loginFields. */
+  smsForCollage?: boolean;
   /** When enabled, highest-scoring group member gets an SMS coupon after all members finish. */
   groupReward?: {
     enabled: boolean;
@@ -272,6 +276,7 @@ const activitySchema = new Schema<IActivity>({
   orderSurveySession: { type: Schema.Types.Mixed, default: undefined },
   groupMinMembers: { type: Number, default: 1 },
   groupMaxMembers: { type: Number, default: null },
+  smsForCollage: { type: Boolean, default: false },
   groupReward: {
     type: new Schema({
       enabled: { type: Boolean, default: false },

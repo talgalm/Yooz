@@ -288,6 +288,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     ...(activity.roadmapTimerMinutes && { roadmapTimerMinutes: activity.roadmapTimerMinutes }),
     lockedFromIndex: typeof activity.lockedFromIndex === 'number' ? activity.lockedFromIndex : null,
     ...(activity.includeOnRoadmap && { includeOnRoadmap: true }),
+    ...(activity.smsForCollage && { smsForCollage: true }),
   });
 });
 

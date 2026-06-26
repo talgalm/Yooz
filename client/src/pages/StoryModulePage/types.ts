@@ -137,6 +137,7 @@ export interface ActivityModuleResponse {
   roadmapTimerMinutes?: number;
   lockedFromIndex?: number | null;
   includeOnRoadmap?: boolean;
+  smsForCollage?: boolean;
 }
 
 export interface LeaderboardEntry {

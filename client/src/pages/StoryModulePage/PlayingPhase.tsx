@@ -397,6 +397,7 @@ interface PlayingPhaseProps {
   leaderboardMode?: 'points' | 'time' | 'both';
   elapsedSeconds?: number;
   activityDurationMinutes?: number;
+  smsForCollage?: boolean;
 }
 
 export default function PlayingPhase({
@@ -434,6 +435,7 @@ export default function PlayingPhase({
   leaderboardMode,
   elapsedSeconds,
   activityDurationMinutes,
+  smsForCollage,
 }: PlayingPhaseProps) {
   const activityHeaderSlot = useActivityPlayingHeaderSlot();
   const { toggle: toggleHelpChat } = useHelpChat();
@@ -543,7 +545,7 @@ export default function PlayingPhase({
       }
 
       if (station.stationType === 'collage') {
-        return <CollageStation station={station} onContinue={onStationContinue} code={code} />;
+        return <CollageStation station={station} onContinue={onStationContinue} code={code} smsForCollage={smsForCollage} />;
       }
 
       if (station.stationType === 'feedback') {

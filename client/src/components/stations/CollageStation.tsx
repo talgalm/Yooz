@@ -59,6 +59,9 @@ interface Props {
   station: StationItemData;
   onContinue: () => void;
   code?: string;
+  /** Activity-level toggle from admin: lets participant skip the wait and receive
+   *  the rendered video by SMS. Shown only when participant has a phone number. */
+  smsForCollage?: boolean;
 }
 
 // ─── Styled components ────────────────────────────────────────────────────────
@@ -319,7 +322,7 @@ const VideoPlayIcon = styled('span')({
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function CollageStation({ station, onContinue, code }: Props) {
+export default function CollageStation({ station, onContinue, code, smsForCollage }: Props) {
   // User-scope every collage storage/server key so one participant's job
   // can't be picked up by a different participant logging in on the same
   // device (was: User B re-using the same activity code instantly got
@@ -433,6 +436,8 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const [resultVideoStarted, setResultVideoStarted] = useState(false);
   const [error, setError] = useState('');
   const [pollOffline, setPollOffline] = useState(false);
+  const [activeJobId, setActiveJobId] = useState<string>('');
+  const [smsRequestState, setSmsRequestState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   // Capture state
   const [previewUrl, setPreviewUrl] = useState('');
@@ -453,6 +458,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   }, []);
   const startPoll = useCallback((jobId: string) => {
     stopPoll();
+    setActiveJobId(jobId);
     let cancelled = false;
     let errors = 0;
     let handle: ReturnType<typeof setTimeout> | null = null;
@@ -745,6 +751,25 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   };
 
   const shareUrl = code ? `${window.location.origin}/play/${code}` : undefined;
+
+  const participantPhone = participant?.phoneNumber?.trim() || '';
+  const canRequestSms = !!(smsForCollage && participantPhone && activeJobId);
+  const handleRequestSms = useCallback(async () => {
+    if (!canRequestSms || smsRequestState === 'sending') return;
+    setSmsRequestState('sending');
+    try {
+      const res = await fetch(`/api/collage/jobs/${encodeURIComponent(activeJobId)}/notify-sms`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: participantPhone }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      setSmsRequestState('sent');
+      onContinue();
+    } catch {
+      setSmsRequestState('error');
+    }
+  }, [activeJobId, canRequestSms, onContinue, participantPhone, smsRequestState]);
 
   const getResultVideoFile = useCallback(async (): Promise<File | null> => {
     if (!resultIsVideo || !resultUrl) return null;
@@ -1314,6 +1339,30 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             )}
             {pollOffline && (
               <ProgressOffline>קליטה חלשה — ממתינים לחיבור...</ProgressOffline>
+            )}
+            {canRequestSms && smsRequestState !== 'sent' && (
+              <button
+                type="button"
+                onClick={() => void handleRequestSms()}
+                disabled={smsRequestState === 'sending'}
+                style={{
+                  marginTop: 14,
+                  background: 'none',
+                  border: '1px solid rgba(255,255,255,0.45)',
+                  color: '#fff',
+                  borderRadius: 999,
+                  padding: '10px 18px',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: smsRequestState === 'sending' ? 'wait' : 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                {smsRequestState === 'sending' ? 'שולח...' : '📲 שלחו לי את הסרטון ב-SMS'}
+              </button>
+            )}
+            {smsRequestState === 'error' && (
+              <p style={{ color: '#f87171', fontSize: 12, margin: '8px 0 0' }}>שגיאה — נסו שוב</p>
             )}
             {isSplit && isVideoPart && (
               <OutlineBtn onClick={handleSkip} style={{ marginTop: 12 }}>דלג על התחנה הזו</OutlineBtn>

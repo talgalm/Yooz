@@ -90,6 +90,7 @@ export interface Activity {
   groupMinMembers?: number;
   groupMaxMembers?: number;
   groupReward?: { enabled: boolean; couponCode: string; messageTemplate?: string; attachmentUrl?: string; attachmentType?: 'image' | 'pdf' };
+  smsForCollage?: boolean;
   opening?: { type: 'video' | 'image'; url: string };
   module?: {
     type: string;

@@ -26,6 +26,9 @@ export interface ICollageJob {
   error?: string;
   resultUrl?: string;
   isVideo: boolean;
+  /** When set, server SMS's resultUrl to this number once phase === 'done'. */
+  smsPhone?: string;
+  smsSentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,6 +54,8 @@ const collageJobSchema = new Schema<ICollageJob>(
     error: { type: String },
     resultUrl: { type: String },
     isVideo: { type: Boolean, default: true },
+    smsPhone: { type: String },
+    smsSentAt: { type: Date },
   },
   { timestamps: true },
 );
