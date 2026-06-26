@@ -37,6 +37,7 @@ import {
   findCollageJob,
 } from './backgroundCollageJob';
 import { fetchCollageProgress } from '../../utils/collageApi';
+import { useAuth } from '../../context/AuthContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -319,6 +320,22 @@ const VideoPlayIcon = styled('span')({
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CollageStation({ station, onContinue, code }: Props) {
+  // User-scope every collage storage/server key so one participant's job
+  // can't be picked up by a different participant logging in on the same
+  // device (was: User B re-using the same activity code instantly got
+  // User A's already-encoded video).
+  const { participant } = useAuth();
+  const userTag = (
+    participant?.email?.trim().toLowerCase()
+    || participant?.phoneNumber?.trim()
+    || participant?.name?.trim().toLowerCase()
+    || 'anon'
+  ).replace(/[^a-z0-9_-]/g, '_').slice(0, 32);
+  const splitGroupId = station.collageSplit
+    ? `${station.collageSplit.splitGroupId}_${userTag}`
+    : '';
+  const singleGroupId = `single_${station._id}_${userTag}`;
+
   const settings = (station.settings ?? {}) as Record<string, unknown>;
   const header = (settings.header as string) || station.name || 'תחנת צילום';
   const description = (settings.description as string) || station.description || '';
@@ -464,12 +481,12 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   // Skipping any split part means the final part can't reach the required
   // photo count — propagate the skip to remaining parts in the group.
   const handleSkip = useCallback(() => {
-    if (isSplit && splitMeta && code) markCollageSkipped(code, splitMeta.splitGroupId);
+    if (isSplit && splitMeta && code) markCollageSkipped(code, splitGroupId);
     onContinue();
   }, [isSplit, splitMeta, code, onContinue]);
 
   useEffect(() => {
-    if (isSplit && !isFirstPart && splitMeta && code && isCollageSkipped(code, splitMeta.splitGroupId)) {
+    if (isSplit && !isFirstPart && splitMeta && code && isCollageSkipped(code, splitGroupId)) {
       onContinue();
     }
   }, [isSplit, isFirstPart, splitMeta, code, onContinue]);
@@ -553,7 +570,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       const activityCode = code ?? '';
       if (activityCode && splitMeta) {
         try {
-          await saveCollagePart(activityCode, splitMeta.splitGroupId, {
+          await saveCollagePart(activityCode, splitGroupId, {
             partIndex,
             photos: photosForStorage(localPhotos),
           });
@@ -561,7 +578,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
           // video-creation station only needs to trigger ffmpeg stitch.
           uploadSplitPhotosInBackground(
             activityCode,
-            splitMeta.splitGroupId,
+            splitGroupId,
             localPhotos.map((p) => ({
               globalIndex: partStartIndex + p.missionIndex,
               blob: p.blob,
@@ -584,7 +601,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       let merged: CapturedPhoto[] = [];
       if (activityCode && splitMeta) {
         try {
-          const prior = await loadCollageParts(activityCode, splitMeta.splitGroupId);
+          const prior = await loadCollageParts(activityCode, splitGroupId);
           merged = mergeSplitPhotos(prior, localPhotos);
         } catch {
           merged = mergeSplitPhotos([], localPhotos);
@@ -649,8 +666,8 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     // Use a stable groupId for non-split stations too, so the IndexedDB +
     // server lookup pipeline can resume after reload.
     const effectiveGroupId = isSplit && splitMeta
-      ? splitMeta.splitGroupId
-      : `single_${station._id}`;
+      ? splitGroupId
+      : singleGroupId;
     const jobId = makeSplitCollageJobId(activityCode, effectiveGroupId);
     const bgKey = `${activityCode}::${effectiveGroupId}`;
     const effectiveTitle = collageTitle.trim() || header;
@@ -663,7 +680,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         logoUrl,
         activityCode,
         template,
-        splitGroupId: splitMeta?.splitGroupId,
+        splitGroupId: splitMeta ? splitGroupId : undefined,
         jobId,
         requiredImages: totalImages,
       });
@@ -692,8 +709,8 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         try {
           await clearCollageParts(activityCode, effectiveGroupId);
           if (isSplit && splitMeta) {
-            await clearCollageParts(activityCode, splitMeta.splitGroupId);
-            clearCollageSkipped(activityCode, splitMeta.splitGroupId);
+            await clearCollageParts(activityCode, splitGroupId);
+            clearCollageSkipped(activityCode, splitGroupId);
           }
           await cleanupCollageJobPersistence(activityCode, effectiveGroupId);
         } catch { /* ignore */ }
@@ -825,7 +842,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     if (!activityCode) return;
     if (phase !== 'capture' && phase !== 'review') return;
     if (photos.length === 0) return;
-    void saveCollagePart(activityCode, `single_${station._id}`, {
+    void saveCollagePart(activityCode, singleGroupId, {
       partIndex: 0,
       photos: photosForStorage(photos),
     }).catch(() => {});
@@ -841,7 +858,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
     recoverRef.current = true;
     const activityCode = code ?? '';
     if (!activityCode) return;
-    const groupId = `single_${station._id}`;
+    const groupId = singleGroupId;
     const restoreFromIdb = async (): Promise<boolean> => {
       try {
         const stored = await loadCollageParts(activityCode, groupId);
@@ -909,8 +926,8 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         return;
       }
 
-      const bgKey = `${activityCode}::${splitMeta.splitGroupId}`;
-      const jobId = makeSplitCollageJobId(activityCode, splitMeta.splitGroupId);
+      const bgKey = `${activityCode}::${splitGroupId}`;
+      const jobId = makeSplitCollageJobId(activityCode, splitGroupId);
       const effectiveTitle = header;
 
       const finishWithResult = async (url: string, isVideo: boolean) => {
@@ -919,9 +936,9 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         setEtaSeconds(0);
         await new Promise((r) => setTimeout(r, 500));
         try {
-          await clearCollageParts(activityCode, splitMeta.splitGroupId);
-          clearCollageSkipped(activityCode, splitMeta.splitGroupId);
-          await cleanupCollageJobPersistence(activityCode, splitMeta.splitGroupId);
+          await clearCollageParts(activityCode, splitGroupId);
+          clearCollageSkipped(activityCode, splitGroupId);
+          await cleanupCollageJobPersistence(activityCode, splitGroupId);
         } catch { /* */ }
         consumeBackgroundCollage(bgKey);
         setResultUrl(url);
@@ -962,7 +979,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
       const runFreshGeneration = async () => {
         try {
-          const prior = await loadCollageParts(activityCode, splitMeta.splitGroupId);
+          const prior = await loadCollageParts(activityCode, splitGroupId);
           const merged = mergeSplitPhotos(prior, []);
           if (merged.length < totalImages) {
             setError(`נדרשות ${totalImages} תמונות לסרטון. השלימו את החלקים הקודמים בפעילות (${merged.length}/${totalImages}).`);
@@ -989,13 +1006,13 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         return;
       }
 
-      const completed = await getCompletedCollageResult(activityCode, splitMeta.splitGroupId);
+      const completed = await getCompletedCollageResult(activityCode, splitGroupId);
       if (completed) {
         await finishWithResult(completed.url, completed.isVideo);
         return;
       }
 
-      const serverJob = await findCollageJob(activityCode, splitMeta.splitGroupId);
+      const serverJob = await findCollageJob(activityCode, splitGroupId);
       if (serverJob && ['queued', 'preparing', 'encoding', 'uploading'].includes(serverJob.phase)) {
         setPhase('generating');
         setProgress(serverJob.percent);

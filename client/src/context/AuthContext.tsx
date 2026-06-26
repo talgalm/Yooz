@@ -111,7 +111,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       for (let i = localStorage.length - 1; i >= 0; i -= 1) {
         const key = localStorage.key(i);
-        if (key?.startsWith('yooz_start_')) {
+        // yooz_session_* is mirrored to localStorage (see storySession.ts) so
+        // the previous user's progress survives a sessionStorage wipe on
+        // mobile. Has to be cleared here too or a different user opening the
+        // same link continues from the old session.
+        if (
+          key?.startsWith('yooz_start_') ||
+          key?.startsWith('yooz_session_')
+        ) {
           localStorage.removeItem(key);
         }
       }
