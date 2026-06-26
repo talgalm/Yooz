@@ -179,10 +179,12 @@ export function buildFilterComplex(
   const { logoIdx, titleIdx } = opts;
   const parts: string[] = [];
 
-  // Pad the template's start with a clone of its first frame, then split
-  // into one stream for the BG (no chroma) and one for the FG (chromakey'd).
+  // Pad the template's start with a clone of its first frame, then drop the
+  // framerate to match the output (20fps) BEFORE the heavy filter chain runs.
+  // Without fps=20 here, chromakey/overlay/alphamerge all process 30fps frames
+  // that the encoder then throws away — ~33% wasted filter work.
   parts.push(
-    `[0:v]tpad=start_mode=clone:start_duration=${startPad},setpts=PTS-STARTPTS,split=2[tmpl_bg][tmpl_fg]`,
+    `[0:v]tpad=start_mode=clone:start_duration=${startPad},setpts=PTS-STARTPTS,fps=20,split=2[tmpl_bg][tmpl_fg]`,
   );
   parts.push(`[tmpl_bg]format=yuv420p[bg]`);
 
