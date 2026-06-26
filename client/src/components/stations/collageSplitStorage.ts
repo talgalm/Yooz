@@ -73,6 +73,24 @@ export async function loadCollageParts(
   return result.sort((a, b) => a.partIndex - b.partIndex);
 }
 
+// ponytail: sessionStorage flag — once any part of a split-collage group is
+// skipped, the remaining parts can't reach the required photo count, so they
+// auto-skip on mount. Cleared alongside clearCollageParts on success.
+const skipKey = (activityCode: string, splitGroupId: string) =>
+  `yooz_collage_skip::${activityCode}::${splitGroupId}`;
+
+export function markCollageSkipped(activityCode: string, splitGroupId: string): void {
+  try { sessionStorage.setItem(skipKey(activityCode, splitGroupId), '1'); } catch { /* */ }
+}
+
+export function isCollageSkipped(activityCode: string, splitGroupId: string): boolean {
+  try { return sessionStorage.getItem(skipKey(activityCode, splitGroupId)) === '1'; } catch { return false; }
+}
+
+export function clearCollageSkipped(activityCode: string, splitGroupId: string): void {
+  try { sessionStorage.removeItem(skipKey(activityCode, splitGroupId)); } catch { /* */ }
+}
+
 export async function clearCollageParts(
   activityCode: string,
   splitGroupId: string,

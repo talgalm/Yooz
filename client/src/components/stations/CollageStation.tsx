@@ -20,6 +20,9 @@ import {
   saveCollagePart,
   loadCollageParts,
   clearCollageParts,
+  markCollageSkipped,
+  isCollageSkipped,
+  clearCollageSkipped,
 } from './collageSplitStorage';
 import {
   startBackgroundCollage,
@@ -458,6 +461,19 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   }, [stopPoll]);
   const bgUnsubRef = useRef<(() => void) | null>(null);
 
+  // Skipping any split part means the final part can't reach the required
+  // photo count — propagate the skip to remaining parts in the group.
+  const handleSkip = useCallback(() => {
+    if (isSplit && splitMeta && code) markCollageSkipped(code, splitMeta.splitGroupId);
+    onContinue();
+  }, [isSplit, splitMeta, code, onContinue]);
+
+  useEffect(() => {
+    if (isSplit && !isFirstPart && splitMeta && code && isCollageSkipped(code, splitMeta.splitGroupId)) {
+      onContinue();
+    }
+  }, [isSplit, isFirstPart, splitMeta, code, onContinue]);
+
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -675,7 +691,10 @@ export default function CollageStation({ station, onContinue, code }: Props) {
       if (activityCode) {
         try {
           await clearCollageParts(activityCode, effectiveGroupId);
-          if (isSplit && splitMeta) await clearCollageParts(activityCode, splitMeta.splitGroupId);
+          if (isSplit && splitMeta) {
+            await clearCollageParts(activityCode, splitMeta.splitGroupId);
+            clearCollageSkipped(activityCode, splitMeta.splitGroupId);
+          }
           await cleanupCollageJobPersistence(activityCode, effectiveGroupId);
         } catch { /* ignore */ }
       }
@@ -700,6 +719,9 @@ export default function CollageStation({ station, onContinue, code }: Props) {
   const formatEta = (secs: number): string => {
     if (secs <= 0) return 'כמעט סיימנו...';
     if (secs < 60) return `נותרו כ-${secs} שניות`;
+    // ponytail: server ETA extrapolates from createdAt, so a resumed/stale job
+    // can show absurd values (hours). Cap the honest signal at "a few minutes".
+    if (secs > 10 * 60) return 'נותרו עוד כמה דקות';
     const m = Math.floor(secs / 60);
     const s = secs % 60;
     return s === 0 ? `נותרו כ-${m} דקות` : `נותרו כ-${m}:${String(s).padStart(2, '0')} דקות`;
@@ -898,6 +920,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
         await new Promise((r) => setTimeout(r, 500));
         try {
           await clearCollageParts(activityCode, splitMeta.splitGroupId);
+          clearCollageSkipped(activityCode, splitMeta.splitGroupId);
           await cleanupCollageJobPersistence(activityCode, splitMeta.splitGroupId);
         } catch { /* */ }
         consumeBackgroundCollage(bgKey);
@@ -1045,7 +1068,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
             <PrimaryBtn onClick={() => { setCurrentMission(0); setPhotos([]); setPreviewUrl(''); setPreviewBlob(null); setPhase('capture'); }}>
               מתחילים לצלם 📸
             </PrimaryBtn>
-            <OutlineBtn onClick={onContinue}>דלג על התחנה הזו</OutlineBtn>
+            <OutlineBtn onClick={handleSkip}>דלג על התחנה הזו</OutlineBtn>
           </div>
         </Content>
       </Wrap>
@@ -1114,7 +1137,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
               {isSplit && !finalizesCollage ? 'שמור והמשך לתחנה הבאה' : 'אישור והמשך'}
             </PrimaryBtn>
             {isSplit && !isFirstPart && (
-              <OutlineBtn onClick={onContinue}>דלג על התחנה הזו</OutlineBtn>
+              <OutlineBtn onClick={handleSkip}>דלג על התחנה הזו</OutlineBtn>
             )}
           </CaptureActions>
 
@@ -1194,7 +1217,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
                 : 'אישור תמונה והמשך'}
             </PrimaryBtn>
             {isSplit && !isFirstPart && (
-              <OutlineBtn onClick={onContinue}>דלג על התחנה הזו</OutlineBtn>
+              <OutlineBtn onClick={handleSkip}>דלג על התחנה הזו</OutlineBtn>
             )}
           </CaptureActions>
 
@@ -1241,7 +1264,11 @@ export default function CollageStation({ station, onContinue, code }: Props) {
 
           {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: 13, margin: '8px 0' }}>{error}</p>}
 
-          <PrimaryBtn onClick={() => void generateCollage()} style={{ marginTop: 12 }}>יצירת סרטון קולאז׳ 🎬</PrimaryBtn>
+          {photos.length < totalImages ? (
+            <PrimaryBtn onClick={handleSkip} style={{ marginTop: 12 }}>המשך בפעילות</PrimaryBtn>
+          ) : (
+            <PrimaryBtn onClick={() => void generateCollage()} style={{ marginTop: 12 }}>יצירת סרטון קולאז׳ 🎬</PrimaryBtn>
+          )}
           {!isSplit && (
             <OutlineBtn onClick={() => { setPhase('capture'); setCurrentMission(missions.length - 1); }}>חזרה לצילום</OutlineBtn>
           )}
@@ -1270,7 +1297,7 @@ export default function CollageStation({ station, onContinue, code }: Props) {
               <ProgressOffline>קליטה חלשה — ממתינים לחיבור...</ProgressOffline>
             )}
             {isSplit && isVideoPart && (
-              <OutlineBtn onClick={onContinue} style={{ marginTop: 12 }}>דלג על התחנה הזו</OutlineBtn>
+              <OutlineBtn onClick={handleSkip} style={{ marginTop: 12 }}>דלג על התחנה הזו</OutlineBtn>
             )}
           </GeneratingCard>
         </GeneratingWrap>

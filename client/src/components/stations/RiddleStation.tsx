@@ -214,26 +214,41 @@ const WordGroup = styled('div')({
 const LetterBoxInput = styled('input')<{ filled: string; shaking: string }>(({ filled, shaking }) => ({
   width: 38,
   height: 46,
-  border: `2.5px solid ${filled === 'true' ? '#6c5ce7' : '#ccc'}`,
+  border: `2.5px solid ${
+    shaking === 'true' ? '#e74c3c' : filled === 'true' ? '#6c5ce7' : '#ccc'
+  }`,
   borderRadius: 10,
   textAlign: 'center',
   fontSize: 20,
   fontWeight: 700,
-  color: '#111',
-  background: filled === 'true' ? '#f0eefa' : '#fafafa',
+  color: shaking === 'true' ? '#c0392b' : '#111',
+  background: shaking === 'true' ? '#fdecea' : filled === 'true' ? '#f0eefa' : '#fafafa',
   outline: 'none',
-  transition: 'border-color 0.15s, background 0.15s, box-shadow 0.15s',
+  transition: 'border-color 0.15s, background 0.15s, box-shadow 0.15s, color 0.15s',
   fontFamily: 'inherit',
   caretColor: 'transparent',
   cursor: 'text',
   animation: shaking === 'true' ? `${shakeAnim} 0.45s ease` : 'none',
+  boxShadow: shaking === 'true' ? '0 0 0 3px rgba(231,76,60,0.18)' : 'none',
   '&:focus': {
-    borderColor: '#8B2FC9',
-    background: '#f5f0ff',
-    boxShadow: '0 0 0 3px rgba(139,47,201,0.18)',
+    borderColor: shaking === 'true' ? '#e74c3c' : '#8B2FC9',
+    background: shaking === 'true' ? '#fdecea' : '#f5f0ff',
+    boxShadow: shaking === 'true'
+      ? '0 0 0 3px rgba(231,76,60,0.25)'
+      : '0 0 0 3px rgba(139,47,201,0.18)',
   },
   '-webkit-user-select': 'text',
 }));
+
+const WrongHint = styled('div')({
+  fontSize: 15,
+  fontWeight: 800,
+  color: '#c0392b',
+  textAlign: 'center',
+  minHeight: 20,
+  animation: `${fadeIn} 0.15s ease`,
+  flexShrink: 0,
+});
 
 const AttemptsRow = styled('div')({
   display: 'flex',
@@ -628,6 +643,10 @@ export default function RiddleStation({
             {isHebrew ? `ניסיון ${attempt + 1} מתוך 3` : `Attempt ${attempt + 1} of 3`}
           </span>
         </AttemptsRow>
+
+        <WrongHint>
+          {shaking ? (isHebrew ? '❌ לא נכון, נסו שוב' : '❌ Not quite — try again') : ' '}
+        </WrongHint>
 
         {(stationHintText || stationHintImageUrl) && onStationHintClick && phase === 'playing' && (
           <InlineHintButton type="button" onClick={onStationHintClick}>

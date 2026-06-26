@@ -186,8 +186,10 @@ export default function BallGame({
         { source: 'yooz-host', type: 'BALLGAME_TOGGLE_MUTE' },
         '*'
       );
-      // After using the parent header mute, refocus the iframe — otherwise the first taps
-      // can be lost (Safari / embedded iframe) and answer clicks appear to do nothing.
+      // ponytail: refocus iframe synchronously + rAF so the first answer tap isn't
+      // eaten by Safari/iOS re-engaging the iframe. Mute button itself uses
+      // preventDefault on mouse/touch-down to avoid stealing focus in the first place.
+      iframe?.focus();
       window.requestAnimationFrame(() => {
         iframe?.focus();
       });

@@ -721,6 +721,8 @@ export default function PlayingPhase({
     <SessionHeaderIconButton
       type="button"
       onClick={activityHeaderSlot.toggleMute}
+      onMouseDown={(e) => e.preventDefault()}
+      onTouchStart={(e) => e.preventDefault()}
       aria-label={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
       title={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
       {...themedIconProps}
