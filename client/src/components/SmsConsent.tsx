@@ -1,5 +1,22 @@
 import { useRef } from 'react';
+import styled from '@emotion/styled';
 import { useTranslations } from '../context/LanguageContext';
+
+// ponytail: scrollbar forced visible (overflow-y:scroll) and thinned so users see they can scroll. Webkit + Firefox both covered, can't be done inline.
+const DialogBody = styled.div({
+  padding: '20px 22px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 12,
+  maxHeight: '85dvh',
+  overflowY: 'scroll',
+  boxSizing: 'border-box',
+  scrollbarWidth: 'thin',
+  scrollbarColor: '#bbb transparent',
+  '&::-webkit-scrollbar': { width: 6 },
+  '&::-webkit-scrollbar-thumb': { background: '#bbb', borderRadius: 3 },
+  '&::-webkit-scrollbar-track': { background: 'transparent' },
+});
 
 const texts = {
   en: {
@@ -48,6 +65,13 @@ interface Props {
 export default function SmsConsent({ checked, onChange }: Props) {
   const t = useTranslations(texts);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  const openDialog = () => {
+    dialogRef.current?.showModal();
+    // ponytail: reset after the browser's auto-focus scroll, so the dialog opens at the top.
+    queueMicrotask(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0; });
+  };
 
   return (
     <>
@@ -113,7 +137,7 @@ export default function SmsConsent({ checked, onChange }: Props) {
           {t.prefix}
           <button
             type="button"
-            onClick={() => dialogRef.current?.showModal()}
+            onClick={openDialog}
             style={{
               background: 'none',
               border: 'none',
@@ -146,17 +170,7 @@ export default function SmsConsent({ checked, onChange }: Props) {
           color: '#222',
         }}
       >
-        <div
-          style={{
-            padding: '20px 22px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
-            maxHeight: '85dvh',
-            overflowY: 'auto',
-            boxSizing: 'border-box',
-          }}
-        >
+        <DialogBody ref={bodyRef}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{t.title}</h3>
           {t.body.map((p, i) => (
             <p key={i} style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{p}</p>
@@ -176,11 +190,13 @@ export default function SmsConsent({ checked, onChange }: Props) {
               borderRadius: 10,
               cursor: 'pointer',
               fontFamily: 'inherit',
+              outline: 'none',
+              WebkitTapHighlightColor: 'transparent',
             }}
           >
             {t.close}
           </button>
-        </div>
+        </DialogBody>
       </dialog>
     </>
   );
