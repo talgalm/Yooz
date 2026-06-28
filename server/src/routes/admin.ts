@@ -17,7 +17,7 @@ import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { IActivity } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
 import { getSmsProvider } from '../services/sms/smsProvider';
-import { cloudinaryAttachmentUrl, renderWinnerSms } from '../utils/groupRewardConfig';
+import { renderWinnerSms } from '../utils/groupRewardConfig';
 import { DEFAULT_SMS_TEMPLATE } from '../services/groupRewardService';
 
 const router = Router();
@@ -666,9 +666,12 @@ router.post('/sms/test', authenticateAdmin, async (req: Request<{}, {}, { phoneN
   const template = (req.body.message || '').trim() || DEFAULT_SMS_TEMPLATE;
   if (!phone) return res.status(400).json({ error: 'phoneNumber is required' });
 
-  // ponytail: test SMS links directly to Cloudinary (no downloadToken yet); winner SMS proxies via /api/reward-download/:token.
+  // ponytail: test SMS routes through the same /api/reward-download/:token proxy as the real winner link, using a self-contained test_<base64url(url)> token (no DB write needed pre-save).
   const attachmentUrl = (req.body.attachmentUrl || '').trim();
-  const link = attachmentUrl ? cloudinaryAttachmentUrl(attachmentUrl) : '';
+  const siteBase = process.env.SITE_URL?.replace(/\/$/, '') || `${req.protocol}://${req.get('host')}`;
+  const link = attachmentUrl
+    ? `${siteBase}/api/reward-download/test_${Buffer.from(attachmentUrl, 'utf8').toString('base64url')}`
+    : '';
   const message = renderWinnerSms(template, {
     name: 'בדיקה',
     score: 100,
