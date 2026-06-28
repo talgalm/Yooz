@@ -1,13 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { Activity } from '../models';
+import { cloudinaryAttachmentUrl } from '../utils/groupRewardConfig';
 
 const router = Router();
-
-function cloudinaryAttachmentUrl(url: string): string {
-  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
-  if (url.includes('/upload/fl_attachment')) return url;
-  return url.replace('/upload/', '/upload/fl_attachment/');
-}
 
 // Public: download reward file (image/PDF) for group winner SMS link
 router.get('/:token', async (req: Request<{ token: string }>, res: Response) => {

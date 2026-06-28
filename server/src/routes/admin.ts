@@ -17,6 +17,8 @@ import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { IActivity } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
 import { getSmsProvider } from '../services/sms/smsProvider';
+import { cloudinaryAttachmentUrl, renderWinnerSms } from '../utils/groupRewardConfig';
+import { DEFAULT_SMS_TEMPLATE } from '../services/groupRewardService';
 
 const router = Router();
 
@@ -659,11 +661,21 @@ router.get('/random-items', authenticateAdmin, async (req: Request, res: Respons
 
 // Send a test SMS using the currently-configured provider — used by the
 // admin "test SMS" button on the activity creation page.
-router.post('/sms/test', authenticateAdmin, async (req: Request<{}, {}, { phoneNumber?: string; message?: string }>, res: Response) => {
+router.post('/sms/test', authenticateAdmin, async (req: Request<{}, {}, { phoneNumber?: string; message?: string; attachmentUrl?: string; couponCode?: string }>, res: Response) => {
   const phone = (req.body.phoneNumber || '').trim();
-  const message = (req.body.message || '').trim();
+  const template = (req.body.message || '').trim() || DEFAULT_SMS_TEMPLATE;
   if (!phone) return res.status(400).json({ error: 'phoneNumber is required' });
-  if (!message) return res.status(400).json({ error: 'message is required' });
+
+  // ponytail: test SMS links directly to Cloudinary (no downloadToken yet); winner SMS proxies via /api/reward-download/:token.
+  const attachmentUrl = (req.body.attachmentUrl || '').trim();
+  const link = attachmentUrl ? cloudinaryAttachmentUrl(attachmentUrl) : '';
+  const message = renderWinnerSms(template, {
+    name: 'בדיקה',
+    score: 100,
+    coupon: (req.body.couponCode || '').trim() || 'TEST123',
+    group: 'קבוצת בדיקה',
+    link,
+  });
 
   const provider = getSmsProvider();
   const result = await provider.send(phone, message);

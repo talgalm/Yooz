@@ -3,12 +3,12 @@ import { ActivityGroup, IActivityGroup, normalizeGroupName } from '../models/Act
 import { IReport, Report } from '../models/Report';
 import { SmsNotification } from '../models/SmsNotification';
 import { getSmsProvider } from './sms/smsProvider';
-import { buildRewardDownloadUrl } from '../utils/groupRewardConfig';
+import { buildRewardDownloadUrl, renderWinnerSms } from '../utils/groupRewardConfig';
 
 /** After the last finish in a group, wait this long before SMS (resets on each new finish). */
 export const GROUP_REWARD_IDLE_MS = 5 * 60 * 1000;
 
-const DEFAULT_SMS_TEMPLATE =
+export const DEFAULT_SMS_TEMPLATE =
   'מזל טוב {name}! ניצחתם עם {score} נקודות. קוד הקופון: {coupon}\n{link}';
 
 function isRewardEnabled(activity: IActivity): boolean {
@@ -18,23 +18,6 @@ function isRewardEnabled(activity: IActivity): boolean {
     && !!activity.groupReward?.enabled
     && !!activity.groupReward.couponCode?.trim()
   );
-}
-
-function renderTemplate(
-  template: string,
-  vars: { name: string; score: number; coupon: string; group: string; link: string },
-): string {
-  let result = template
-    .replace(/\{name\}/g, vars.name)
-    .replace(/\{score\}/g, String(vars.score))
-    .replace(/\{coupon\}/g, vars.coupon)
-    .replace(/\{group\}/g, vars.group)
-    .replace(/\{link\}/g, vars.link);
-
-  if (vars.link && !template.includes('{link}')) {
-    result = `${result}\n${vars.link}`;
-  }
-  return result;
 }
 
 /** Highest score among completed players; ties broken by earliest finish. */
@@ -65,7 +48,7 @@ async function sendWinnerSms(
     ? buildRewardDownloadUrl(activity.groupReward!.downloadToken)
     : '';
   const template = activity.groupReward!.messageTemplate?.trim() || DEFAULT_SMS_TEMPLATE;
-  const message = renderTemplate(template, {
+  const message = renderWinnerSms(template, {
     name: winner.participantName,
     score,
     coupon: couponCode,

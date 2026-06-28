@@ -7,6 +7,26 @@ export function buildRewardDownloadUrl(downloadToken: string): string {
   return `${base}/api/reward-download/${downloadToken}`;
 }
 
+export function cloudinaryAttachmentUrl(url: string): string {
+  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
+  if (url.includes('/upload/fl_attachment')) return url;
+  return url.replace('/upload/', '/upload/fl_attachment/');
+}
+
+export function renderWinnerSms(
+  template: string,
+  vars: { name: string; score: number; coupon: string; group: string; link: string },
+): string {
+  let result = template
+    .replace(/\{name\}/g, vars.name)
+    .replace(/\{score\}/g, String(vars.score))
+    .replace(/\{coupon\}/g, vars.coupon)
+    .replace(/\{group\}/g, vars.group)
+    .replace(/\{link\}/g, vars.link);
+  if (vars.link && !template.includes('{link}')) result = `${result}\n${vars.link}`;
+  return result;
+}
+
 export function resolveGroupRewardForSave(
   groupReward: GroupRewardConfig | undefined,
   existing?: IActivity['groupReward'],

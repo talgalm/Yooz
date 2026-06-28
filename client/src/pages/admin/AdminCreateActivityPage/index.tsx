@@ -855,7 +855,12 @@ export default function AdminCreateActivityPage() {
     try {
       await adminApiFetch<{ ok: boolean }>('/api/admin/sms/test', {
         method: 'POST',
-        body: JSON.stringify({ phoneNumber: phone, message }),
+        body: JSON.stringify({
+          phoneNumber: phone,
+          message,
+          attachmentUrl: groupRewardAttachmentUrl.trim() || undefined,
+          couponCode: groupRewardCoupon.trim() || undefined,
+        }),
       });
       setSmsTestFeedback({ ok: true, msg: t.smsTestSuccess });
     } catch (err) {
