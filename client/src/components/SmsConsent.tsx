@@ -66,11 +66,15 @@ export default function SmsConsent({ checked, onChange }: Props) {
   const t = useTranslations(texts);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
 
   const openDialog = () => {
     dialogRef.current?.showModal();
-    // ponytail: reset after the browser's auto-focus scroll, so the dialog opens at the top.
-    queueMicrotask(() => { if (bodyRef.current) bodyRef.current.scrollTop = 0; });
+    // ponytail: claim focus on the title with preventScroll so the browser doesn't auto-scroll the close button into view; rAF reset as belt-and-braces.
+    titleRef.current?.focus({ preventScroll: true });
+    requestAnimationFrame(() => {
+      if (bodyRef.current) bodyRef.current.scrollTop = 0;
+    });
   };
 
   return (
@@ -171,7 +175,7 @@ export default function SmsConsent({ checked, onChange }: Props) {
         }}
       >
         <DialogBody ref={bodyRef}>
-          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{t.title}</h3>
+          <h3 ref={titleRef} tabIndex={-1} style={{ margin: 0, fontSize: 18, fontWeight: 800, outline: 'none' }}>{t.title}</h3>
           {t.body.map((p, i) => (
             <p key={i} style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{p}</p>
           ))}

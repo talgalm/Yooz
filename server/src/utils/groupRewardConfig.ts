@@ -7,10 +7,29 @@ export function buildRewardDownloadUrl(downloadToken: string): string {
   return `${base}/api/reward-download/${downloadToken}`;
 }
 
+function israelDateToday(): string {
+  // ponytail: en-GB pads day/month to 2 digits; format the Israel-tz Y/M/D parts ourselves to match the coupon's "31.7.2026" style (no leading zeros).
+  const parts: Record<string, string> = {};
+  for (const p of new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())) {
+    parts[p.type] = p.value;
+  }
+  return `${Number(parts.day)}.${Number(parts.month)}.${parts.year}`;
+}
+
 export function cloudinaryAttachmentUrl(url: string): string {
   if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
   if (url.includes('/upload/fl_attachment')) return url;
-  return url.replace('/upload/', '/upload/fl_attachment/');
+  // ponytail: today's-date overlay font/position hardcoded for current coupon template; move to per-activity config if a second coupon design appears. PDFs skip the overlay.
+  const isPdf = /\.pdf(\?|$)/i.test(url);
+  const overlay = isPdf
+    ? ''
+    : `l_text:Arial_70_bold:${encodeURIComponent(israelDateToday())},co_white,g_south,y_60/`;
+  return url.replace('/upload/', `/upload/${overlay}fl_attachment/`);
 }
 
 export function renderWinnerSms(
