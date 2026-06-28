@@ -63,13 +63,52 @@ export default function SmsConsent({ checked, onChange }: Props) {
           cursor: 'pointer',
         }}
       >
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onChange(e.target.checked)}
-          style={{ marginTop: 3, accentColor: '#fff', flexShrink: 0 }}
-          required
-        />
+        {/* ponytail: appearance:none + overlay ✓ — native accentColor renders an invisible white-on-white check on some iOS/Android builds. */}
+        <span
+          style={{
+            position: 'relative',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 22,
+            height: 22,
+            flexShrink: 0,
+            marginTop: 1,
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(e) => onChange(e.target.checked)}
+            style={{
+              margin: 0,
+              width: '100%',
+              height: '100%',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              border: '2px solid #fff',
+              borderRadius: 4,
+              background: checked ? '#fff' : 'transparent',
+              cursor: 'pointer',
+            }}
+            required
+          />
+          {checked && (
+            <span
+              aria-hidden
+              style={{
+                position: 'absolute',
+                color: '#632e7d',
+                fontSize: 16,
+                fontWeight: 900,
+                lineHeight: 1,
+                pointerEvents: 'none',
+              }}
+            >
+              ✓
+            </span>
+          )}
+        </span>
         <span>
           {t.prefix}
           <button

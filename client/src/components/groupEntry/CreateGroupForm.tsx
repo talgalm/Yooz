@@ -10,6 +10,7 @@ import {
 } from './styled';
 import { GroupEntryBackButton } from './GroupEntryChoice';
 import { useDebouncedGroupNameCheck } from './useDebouncedGroupNameCheck';
+import SmsConsent from '../SmsConsent';
 
 type LoginField = 'email' | 'phoneNumber' | 'name';
 
@@ -37,6 +38,7 @@ export default function CreateGroupForm({
   const [name, setName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
+  const [smsConsent, setSmsConsent] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -50,7 +52,7 @@ export default function CreateGroupForm({
     groupName.trim().length >= 2 &&
     nameStatus === 'available' &&
     (!hasName || name.length > 0) &&
-    (!hasPhone || phoneNumber.length > 0) &&
+    (!hasPhone || (phoneNumber.length > 0 && smsConsent)) &&
     (!hasEmail || email.length > 0);
 
   const hintText =
@@ -136,6 +138,7 @@ export default function CreateGroupForm({
           required
         />
       )}
+      {hasPhone && <SmsConsent checked={smsConsent} onChange={setSmsConsent} />}
 
       {error && <GroupEntryError>{error}</GroupEntryError>}
 
