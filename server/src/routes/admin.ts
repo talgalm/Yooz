@@ -668,7 +668,7 @@ router.post('/sms/test', authenticateAdmin, async (req: Request<{}, {}, { phoneN
 
   // ponytail: test SMS routes through the same /api/reward-download/:token proxy as the real winner link, using a self-contained test_<base64url(url)> token (no DB write needed pre-save).
   const attachmentUrl = (req.body.attachmentUrl || '').trim();
-  const siteBase = process.env.SITE_URL?.replace(/\/$/, '') || `${req.protocol}://${req.get('host')}`;
+  const siteBase = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '') || `${req.protocol}://${req.get('host')}`;
   const link = attachmentUrl
     ? `${siteBase}/api/reward-download/test_${Buffer.from(attachmentUrl, 'utf8').toString('base64url')}`
     : '';

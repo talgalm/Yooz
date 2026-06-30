@@ -2,6 +2,7 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 import { apiFetchWithRetry } from '../utils/api';
 import { flushOfflineQueue } from '../utils/offlineQueue';
 import { rememberActivityCode, rememberParticipantActivity } from '../utils/participantActivity';
+import { decodeJwtPayload } from '../utils/jwt';
 
 type ConnectionType = 'single' | 'group';
 
@@ -38,7 +39,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 function decodeToken(token: string): Participant | null {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const payload = decodeJwtPayload<{ participantName?: string; activityCode?: string; connectionType?: string; email?: string; phoneNumber?: string; group?: string; age?: number }>(token);
     return {
       name: payload.participantName,
       activityCode: payload.activityCode,

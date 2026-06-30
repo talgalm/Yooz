@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { managerApiFetch } from '../utils/managerApi';
+import { decodeJwtPayload } from '../utils/jwt';
 
 interface Manager {
   email: string;
@@ -26,7 +27,7 @@ const ManagerAuthContext = createContext<ManagerAuthContextType | null>(null);
 
 function decodeToken(token: string): Manager | null {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const payload = decodeJwtPayload<{ role?: string; email?: string; activityCode?: string }>(token);
     if (payload.role !== 'manager') return null;
     return {
       email: payload.email,

@@ -3,7 +3,7 @@ import { GroupRewardConfig } from '../types';
 import { IActivity } from '../models/Activity';
 
 export function buildRewardDownloadUrl(downloadToken: string): string {
-  const base = process.env.SITE_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+  const base = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '') || 'http://localhost:3000';
   return `${base}/api/reward-download/${downloadToken}`;
 }
 

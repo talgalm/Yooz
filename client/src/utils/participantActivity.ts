@@ -1,3 +1,5 @@
+import { decodeJwtPayload } from './jwt';
+
 const PLAY_CODE_SESSION_KEY = 'yooz_play_code';
 const PLAY_CODE_LOCAL_KEY = 'yooz_play_code';
 
@@ -36,7 +38,7 @@ export function activityCodeFromToken(): string | null {
   try {
     const token = localStorage.getItem('yooz_token');
     if (!token) return null;
-    const payload = JSON.parse(atob(token.split('.')[1])) as { activityCode?: string };
+    const payload = decodeJwtPayload<{ activityCode?: string }>(token);
     return typeof payload.activityCode === 'string' && payload.activityCode ? payload.activityCode : null;
   } catch {
     return null;

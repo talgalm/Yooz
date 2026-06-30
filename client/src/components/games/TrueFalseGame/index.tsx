@@ -7,6 +7,7 @@ import HintModals from '../HintModals';
 import HintButton from '../HintButton';
 import { GameProps, QuestionAnswerRecord, HintConfig, GAME_CONSTANTS } from '../types';
 import { useGameSounds } from '../../../hooks/useGameSounds';
+import { decodeJwtPayload } from '../../../utils/jwt';
 import {
   useActivityPlayingHeaderHostActive,
   useRegisterActivityGameHeader,
@@ -130,7 +131,7 @@ function getProgressKey(gameId: string): string {
   try {
     const token = localStorage.getItem('yooz_token');
     if (token) {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const payload = decodeJwtPayload<{ participantName?: string; activityCode?: string }>(token);
       const userId = `${payload.participantName || ''}_${payload.activityCode || ''}`;
       return PROGRESS_KEY_PREFIX + userId + '_' + gameId;
     }

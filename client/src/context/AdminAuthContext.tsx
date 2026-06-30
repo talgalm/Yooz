@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { adminApiFetch } from '../utils/adminApi';
+import { decodeJwtPayload } from '../utils/jwt';
 
 export type AdminRole = 'viewer' | 'admin' | 'super_admin' | 'customer';
 
@@ -24,7 +25,7 @@ const VALID_ROLES: AdminRole[] = ['viewer', 'admin', 'super_admin', 'customer'];
 
 function decodeToken(token: string): Admin | null {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const payload = decodeJwtPayload<{ role: AdminRole; email: string; name?: string; exp?: number }>(token);
     if (!VALID_ROLES.includes(payload.role)) return null;
     // Reject expired tokens
     if (payload.exp && payload.exp * 1000 < Date.now()) return null;

@@ -9,7 +9,7 @@ export function isSocialCrawler(req: Request): boolean {
 }
 
 export function requestOrigin(req: Request): string {
-  const configured = process.env.SITE_URL?.replace(/\/$/, '');
+  const configured = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '');
   if (configured) return configured;
   const origin = req.get('origin');
   if (origin && /^https?:\/\/[^/]+$/i.test(origin)) return origin;
