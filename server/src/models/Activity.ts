@@ -100,6 +100,8 @@ export interface IActivity {
   customerEditLocked?: boolean;
   /** Portal this activity is attached to */
   portalId?: Types.ObjectId;
+  /** Admin-dashboard folder this activity is filed under (null = ungrouped). */
+  folderId?: Types.ObjectId | null;
   /** When true, participants must login via portal username */
   isContinuous?: boolean;
   loginComponent?: string; // legacy
@@ -259,6 +261,7 @@ const activitySchema = new Schema<IActivity>({
   createdByEmail: { type: String, lowercase: true, trim: true },
   customerEditLocked: { type: Boolean, default: false },
   portalId: { type: Schema.Types.ObjectId, ref: 'Portal' },
+  folderId: { type: Schema.Types.ObjectId, ref: 'ActivityFolder', default: null, index: true },
   isContinuous: { type: Boolean, default: false },
   loginComponent: { type: String }, // legacy
   leaderboardMode: { type: String, enum: ['points', 'time', 'both'], default: 'points' },

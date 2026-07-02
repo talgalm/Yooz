@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
@@ -16,6 +16,8 @@ import AdminLibraryTab from '../AdminLibraryTab';
 import AdminPortalsTab from '../AdminPortalsTab';
 import AdminTutorialsTab from '../AdminTutorialsTab';
 import type { Portal } from '../AdminPortalsTab';
+import FolderFormModal from './FolderFormModal';
+import { resolveFolderColor, DEFAULT_FOLDER_COLOR } from '../folderColors';
 import {
   AdminHeader,
   OutlineButton,
@@ -390,6 +392,99 @@ function PencilIcon() {
   );
 }
 
+// ─── Folder styled components ───
+
+const HeaderButtons = styled('div')({
+  display: 'flex',
+  gap: 8,
+  flexWrap: 'wrap',
+});
+
+const Breadcrumb = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  marginBottom: 12,
+  fontSize: 14,
+  flexWrap: 'wrap',
+});
+
+const BreadcrumbLink = styled('button')<{ dragOver?: boolean }>(({ dragOver }) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  background: dragOver ? '#efeafd' : 'transparent',
+  border: dragOver ? '1.5px dashed #6c5ce7' : '1.5px solid transparent',
+  color: '#6c5ce7',
+  fontWeight: 600,
+  fontSize: 14,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+  padding: '6px 10px',
+  borderRadius: 10,
+  transition: 'background 0.15s',
+  '&:hover': { background: '#f2effc' },
+}));
+
+const BreadcrumbCurrent = styled('span')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  fontWeight: 700,
+  color: '#333',
+});
+
+const BreadcrumbSep = styled('span')({
+  color: '#bbb',
+});
+
+const FolderNameWrap = styled('div')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 10,
+  minWidth: 0,
+  lineHeight: 1, // tighten the text line-box so it centers against the folder glyph
+});
+
+const DragGhost = styled('div')({
+  position: 'fixed',
+  zIndex: 2000,
+  pointerEvents: 'none',
+  transform: 'translate(-50%, -130%)',
+  background: '#fff',
+  border: '1.5px solid #6c5ce7',
+  borderRadius: 10,
+  padding: '8px 14px',
+  fontSize: 14,
+  fontWeight: 700,
+  color: '#333',
+  boxShadow: '0 8px 28px rgba(0,0,0,0.18)',
+  maxWidth: 260,
+  overflow: 'hidden',
+  whiteSpace: 'nowrap',
+  textOverflow: 'ellipsis',
+  touchAction: 'none',
+});
+
+// Draggable activity rows: suppress text-selection / iOS long-press callout so press-and-hold
+// starts a clean drag, and dim the row while it is being lifted.
+function dragRowStyle(dragging: boolean): CSSProperties {
+  return {
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
+    WebkitTouchCallout: 'none',
+    ...(dragging ? { opacity: 0.45 } : null),
+  };
+}
+
+function FolderGlyph({ color, size = 20 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden="true" style={{ flexShrink: 0, display: 'block' }}>
+      <path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2z" />
+    </svg>
+  );
+}
+
 // ─── Create Modal styled components ───
 
 const ModalOverlay = styled('div')({
@@ -555,6 +650,16 @@ interface Activity {
   module?: { type: string };
   createdAt: number;
   createdByEmail?: string;
+  folderId?: string | null;
+}
+
+interface Folder {
+  _id: string;
+  name: string;
+  color: string;
+  createdByEmail?: string;
+  order?: number;
+  createdAt?: string;
 }
 
 export interface Game {
@@ -596,6 +701,7 @@ export default function AdminDashboardPage() {
   const initialActivityId = searchParams.get('activityId');
 
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [stations, setStations] = useState<Station[]>([]);
   const [missions, setMissions] = useState<Mission[]>([]);
@@ -651,14 +757,16 @@ export default function AdminDashboardPage() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [activitiesRes, gamesRes, stationsRes, missionsRes, portalsRes] = await Promise.all([
+      const [activitiesRes, foldersRes, gamesRes, stationsRes, missionsRes, portalsRes] = await Promise.all([
         adminApiFetch<{ activities: Activity[] }>('/api/admin/activities'),
+        adminApiFetch<{ folders: Folder[] }>('/api/admin/activity-folders'),
         adminApiFetch<{ games: Game[] }>('/api/admin/games'),
         adminApiFetch<{ stations: Station[] }>('/api/admin/stations'),
         adminApiFetch<{ missions: Mission[] }>('/api/admin/missions'),
         adminApiFetch<{ portals: Portal[] }>('/api/admin/portals'),
       ]);
       setActivities(activitiesRes.activities);
+      setFolders(foldersRes.folders);
       setGames(gamesRes.games);
       setStations(stationsRes.stations);
       setMissions(missionsRes.missions);
@@ -770,7 +878,7 @@ export default function AdminDashboardPage() {
 
         {/* ── Activities Tab ── */}
         {activeTab === 'activities' && (
-          <ActivitiesSection activities={activities} navigate={navigate} t={t} onRefresh={fetchAll} />
+          <ActivitiesSection activities={activities} folders={folders} navigate={navigate} t={t} onRefresh={fetchAll} />
         )}
 
         {/* ── Statistics Tab ── */}
@@ -985,22 +1093,49 @@ export default function AdminDashboardPage() {
 
 // ─── Activities sub-section with pagination ───
 
-function ActivitiesSection({ activities, navigate, t, onRefresh }: { activities: Activity[]; navigate: ReturnType<typeof useNavigate>; t: Record<string, string>; onRefresh: () => void }) {
+function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { activities: Activity[]; folders: Folder[]; navigate: ReturnType<typeof useNavigate>; t: Record<string, string>; onRefresh: () => void }) {
   const [search, setSearch] = useState('');
+  const [openFolderId, setOpenFolderId] = useState<string | null>(null);
+
+  // activity action menu
   const [actionsActivityId, setActionsActivityId] = useState<string | null>(null);
   const [confirmDeleteInDrawer, setConfirmDeleteInDrawer] = useState(false);
+  const [moveMenuOpen, setMoveMenuOpen] = useState(false);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const openActions = (id: string) => {
-    setActionsActivityId(id);
-    setConfirmDeleteInDrawer(false);
-  };
+  // folder action menu + modal
+  const [actionsFolderId, setActionsFolderId] = useState<string | null>(null);
+  const [confirmDeleteFolderId, setConfirmDeleteFolderId] = useState<string | null>(null);
+  const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
+  const [folderModal, setFolderModal] = useState<{ mode: 'create' | 'edit'; folder?: Folder } | null>(null);
+
+  // drag-and-drop
+  const [draggingActivityId, setDraggingActivityId] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null); // folder _id, '__root__', or null
+  const [touchGhost, setTouchGhost] = useState<{ name: string; x: number; y: number } | null>(null);
+  const mouseDragIdRef = useRef<string | null>(null);
+  const touchDragRef = useRef<{ activityId: string } | null>(null);
+  const longPressRef = useRef<{ id: string; x: number; y: number; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const justDraggedRef = useRef(false);
+  const dropTargetRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const activitiesRef = useRef(activities);
+  activitiesRef.current = activities;
 
   const closeActions = () => {
     setActionsActivityId(null);
     setConfirmDeleteInDrawer(false);
+    setMoveMenuOpen(false);
   };
+  const closeAllMenus = useCallback(() => {
+    setActionsActivityId(null);
+    setConfirmDeleteInDrawer(false);
+    setMoveMenuOpen(false);
+    setActionsFolderId(null);
+    setConfirmDeleteFolderId(null);
+  }, []);
+  const openActivityActions = (id: string) => { closeAllMenus(); setActionsActivityId(id); };
+  const openFolderActions = (id: string) => { closeAllMenus(); setActionsFolderId(id); };
 
   const handleDuplicateFromDrawer = async () => {
     if (!actionsActivityId || duplicatingId) return;
@@ -1036,15 +1171,159 @@ function ActivitiesSection({ activities, navigate, t, onRefresh }: { activities:
     }
   };
 
+  // Persist a folder move immediately (there is no surrounding save form on the dashboard).
+  const moveActivityToFolder = useCallback(async (activityId: string, folderId: string | null) => {
+    const current = activitiesRef.current.find((a) => a._id === activityId);
+    if (!current) return;
+    if ((current.folderId ?? null) === folderId) return; // already there — no-op
+    try {
+      await adminApiFetch(`/api/admin/activities/${activityId}/folder`, {
+        method: 'PATCH',
+        body: JSON.stringify({ folderId }),
+      });
+      onRefresh();
+    } catch {
+      /* ignore — activity stays where it was */
+    }
+  }, [onRefresh]);
+
+  const submitFolder = async (name: string, color: string) => {
+    if (folderModal?.mode === 'edit' && folderModal.folder) {
+      await adminApiFetch(`/api/admin/activity-folders/${folderModal.folder._id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name, color }),
+      });
+    } else {
+      await adminApiFetch('/api/admin/activity-folders', {
+        method: 'POST',
+        body: JSON.stringify({ name, color }),
+      });
+    }
+    onRefresh();
+  };
+
+  const handleDeleteFolder = async (folder: Folder) => {
+    if (confirmDeleteFolderId !== folder._id) {
+      setConfirmDeleteFolderId(folder._id);
+      return;
+    }
+    setDeletingFolderId(folder._id);
+    try {
+      await adminApiFetch(`/api/admin/activity-folders/${folder._id}`, { method: 'DELETE' });
+      if (openFolderId === folder._id) setOpenFolderId(null);
+      closeAllMenus();
+      onRefresh();
+    } finally {
+      setDeletingFolderId(null);
+    }
+  };
+
+  // ── drag: mouse (HTML5 Drag API) ──
+  const onMouseDragStart = (e: React.DragEvent, id: string) => {
+    mouseDragIdRef.current = id;
+    setDraggingActivityId(id);
+    try { e.dataTransfer.setData('text/plain', id); } catch { /* Firefox requires setData to start a drag */ }
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  const onMouseDragEnd = () => {
+    mouseDragIdRef.current = null;
+    setDraggingActivityId(null);
+    setDragOverKey(null);
+  };
+  const onTargetDragOver = (e: React.DragEvent, key: string) => {
+    if (!mouseDragIdRef.current) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverKey(key);
+  };
+  const onTargetDragLeave = (key: string) => {
+    setDragOverKey((cur) => (cur === key ? null : cur));
+  };
+  const onTargetDrop = (e: React.DragEvent, folderId: string | null) => {
+    e.preventDefault();
+    const id = mouseDragIdRef.current;
+    mouseDragIdRef.current = null;
+    setDraggingActivityId(null);
+    setDragOverKey(null);
+    if (id) moveActivityToFolder(id, folderId);
+  };
+
+  // ── drag: touch (press-and-hold to lift, then drag — Finder-style, no visible handle) ──
+  const hitTestKey = useCallback((x: number, y: number): string | null => {
+    for (const [key, el] of dropTargetRefs.current.entries()) {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) continue; // hidden in the other (desktop/mobile) layout
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return key;
+    }
+    return null;
+  }, []);
+  // Blocks page scroll only while a drag is actually active (registered non-passive).
+  const onTouchMovePrevent = useCallback((e: TouchEvent) => {
+    if (touchDragRef.current) e.preventDefault();
+  }, []);
+  const onTouchPointerMove = useCallback((e: PointerEvent) => {
+    if (!touchDragRef.current) {
+      // Long-press still pending: if the finger travels first, it's a scroll — cancel the lift.
+      const lp = longPressRef.current;
+      if (lp && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 12) {
+        clearTimeout(lp.timer);
+        longPressRef.current = null;
+      }
+      return;
+    }
+    setDragOverKey(hitTestKey(e.clientX, e.clientY));
+    const name = activitiesRef.current.find((a) => a._id === touchDragRef.current!.activityId)?.name || '';
+    setTouchGhost({ name, x: e.clientX, y: e.clientY });
+  }, [hitTestKey]);
+  const onTouchPointerUp = useCallback((e: PointerEvent) => {
+    if (longPressRef.current) { clearTimeout(longPressRef.current.timer); longPressRef.current = null; }
+    window.removeEventListener('pointermove', onTouchPointerMove);
+    window.removeEventListener('pointerup', onTouchPointerUp);
+    window.removeEventListener('pointercancel', onTouchPointerUp);
+    window.removeEventListener('touchmove', onTouchMovePrevent);
+    const st = touchDragRef.current;
+    touchDragRef.current = null;
+    setTouchGhost(null);
+    setDraggingActivityId(null);
+    setDragOverKey(null);
+    if (st) {
+      justDraggedRef.current = true; // suppress the click that follows the lifted gesture
+      const key = hitTestKey(e.clientX, e.clientY);
+      if (key) moveActivityToFolder(st.activityId, key === '__root__' ? null : key);
+    }
+  }, [onTouchPointerMove, onTouchMovePrevent, hitTestKey, moveActivityToFolder]);
+  const onRowPointerDown = useCallback((e: React.PointerEvent, id: string) => {
+    if (e.pointerType !== 'touch') return; // mouse uses the HTML5 path
+    if ((e.target as HTMLElement).closest('[data-row-actions]')) return; // don't lift from the ⋯ menu
+    justDraggedRef.current = false;
+    const x = e.clientX, y = e.clientY;
+    const timer = setTimeout(() => {
+      touchDragRef.current = { activityId: id };
+      setDraggingActivityId(id);
+      const name = activitiesRef.current.find((a) => a._id === id)?.name || '';
+      setTouchGhost({ name, x: longPressRef.current?.x ?? x, y: longPressRef.current?.y ?? y });
+    }, 300);
+    longPressRef.current = { id, x, y, timer };
+    window.addEventListener('pointermove', onTouchPointerMove);
+    window.addEventListener('pointerup', onTouchPointerUp);
+    window.addEventListener('pointercancel', onTouchPointerUp);
+    window.addEventListener('touchmove', onTouchMovePrevent, { passive: false });
+  }, [onTouchPointerMove, onTouchPointerUp, onTouchMovePrevent]);
+
+  const registerDropTarget = (key: string) => (el: HTMLElement | null) => {
+    if (el) dropTargetRefs.current.set(key, el);
+    else dropTargetRefs.current.delete(key);
+  };
+
   useEffect(() => {
-    if (!actionsActivityId) return;
+    if (!actionsActivityId && !actionsFolderId) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeActions();
+      if (e.key === 'Escape') closeAllMenus();
     };
     const onMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && target.closest('[data-row-actions]')) return;
-      closeActions();
+      closeAllMenus();
     };
     window.addEventListener('keydown', onKey);
     window.addEventListener('mousedown', onMouseDown);
@@ -1052,27 +1331,156 @@ function ActivitiesSection({ activities, navigate, t, onRefresh }: { activities:
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('mousedown', onMouseDown);
     };
-  }, [actionsActivityId]);
+  }, [actionsActivityId, actionsFolderId, closeAllMenus]);
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return activities;
-    const q = search.trim().toLowerCase();
-    return activities.filter((a) =>
+  useEffect(() => () => {
+    if (longPressRef.current) clearTimeout(longPressRef.current.timer);
+    window.removeEventListener('pointermove', onTouchPointerMove);
+    window.removeEventListener('pointerup', onTouchPointerUp);
+    window.removeEventListener('pointercancel', onTouchPointerUp);
+    window.removeEventListener('touchmove', onTouchMovePrevent);
+  }, [onTouchPointerMove, onTouchPointerUp, onTouchMovePrevent]);
+
+  // If the open folder is deleted (here or elsewhere), fall back to the root view.
+  useEffect(() => {
+    if (openFolderId && !folders.some((f) => f._id === openFolderId)) setOpenFolderId(null);
+  }, [folders, openFolderId]);
+
+  const searching = search.trim().length > 0;
+  const q = search.trim().toLowerCase();
+  const openFolder = openFolderId ? folders.find((f) => f._id === openFolderId) || null : null;
+
+  const visibleActivities = useMemo(() => {
+    const matches = (a: Activity) =>
       a.name.toLowerCase().includes(q) ||
       (a.createdByEmail || '').toLowerCase().includes(q) ||
-      (a.code || '').toLowerCase().includes(q)
-    );
-  }, [activities, search]);
+      (a.code || '').toLowerCase().includes(q);
+    if (searching) return activities.filter(matches); // flat search across all folders
+    if (openFolderId) return activities.filter((a) => (a.folderId ?? null) === openFolderId);
+    return activities.filter((a) => !a.folderId); // root: ungrouped only
+  }, [activities, searching, q, openFolderId]);
 
-  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(filtered);
+  // Root (not searching): all folders. While searching: folders whose name matches.
+  // Inside an open folder (not searching): no folder rows.
+  const visibleFolders = useMemo(() => {
+    if (searching) return folders.filter((f) => f.name.toLowerCase().includes(q));
+    if (openFolderId) return [];
+    return folders;
+  }, [folders, searching, q, openFolderId]);
+  const countFor = (folderId: string) => activities.filter((a) => (a.folderId ?? null) === folderId).length;
+
+  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(visibleActivities);
+
+  const renderFolderMenu = (folder: Folder) => (
+    <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
+      <RowActionIconButton
+        type="button"
+        aria-label={t.actions}
+        title={t.actions}
+        onClick={() => (actionsFolderId === folder._id ? closeAllMenus() : openFolderActions(folder._id))}
+      >
+        <PencilIcon />
+      </RowActionIconButton>
+      {actionsFolderId === folder._id && (
+        <RowActionMenu>
+          <RowActionMenuItem
+            type="button"
+            onClick={() => { setFolderModal({ mode: 'edit', folder }); closeAllMenus(); }}
+          >
+            {t.editFolder}
+          </RowActionMenuItem>
+          <RowActionMenuItem
+            type="button"
+            danger
+            confirm={confirmDeleteFolderId === folder._id}
+            disabled={deletingFolderId === folder._id}
+            onClick={() => handleDeleteFolder(folder)}
+          >
+            {confirmDeleteFolderId === folder._id ? t.confirmDeleteFolder : t.deleteFolder}
+          </RowActionMenuItem>
+        </RowActionMenu>
+      )}
+    </RowActionWrapper>
+  );
+
+  const renderActivityMenu = (activity: Activity) => (
+    <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
+      <RowActionIconButton
+        type="button"
+        aria-label={t.actions}
+        title={t.actions}
+        onClick={() => (actionsActivityId === activity._id ? closeActions() : openActivityActions(activity._id))}
+      >
+        <PencilIcon />
+      </RowActionIconButton>
+      {actionsActivityId === activity._id && (
+        <RowActionMenu>
+          {!moveMenuOpen ? (
+            <>
+              <RowActionMenuItem
+                type="button"
+                disabled={duplicatingId === activity._id || deletingId === activity._id}
+                onClick={handleDuplicateFromDrawer}
+              >
+                {duplicatingId === activity._id ? t.duplicating : t.duplicate}
+              </RowActionMenuItem>
+              {folders.length > 0 && (
+                <RowActionMenuItem type="button" onClick={() => setMoveMenuOpen(true)}>
+                  {t.moveToFolder}
+                </RowActionMenuItem>
+              )}
+              <RowActionMenuItem
+                type="button"
+                danger
+                confirm={confirmDeleteInDrawer}
+                disabled={duplicatingId === activity._id || deletingId === activity._id}
+                onClick={handleDeleteFromDrawer}
+              >
+                {confirmDeleteInDrawer ? t.confirmDelete : t.delete}
+              </RowActionMenuItem>
+            </>
+          ) : (
+            <>
+              {folders.map((f) => (
+                <RowActionMenuItem
+                  key={f._id}
+                  type="button"
+                  disabled={(activity.folderId ?? null) === f._id}
+                  onClick={() => { moveActivityToFolder(activity._id, f._id); closeActions(); }}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <FolderGlyph color={resolveFolderColor(f.color).accent} size={16} />
+                    {f.name}
+                  </span>
+                </RowActionMenuItem>
+              ))}
+              {activity.folderId && (
+                <RowActionMenuItem
+                  type="button"
+                  onClick={() => { moveActivityToFolder(activity._id, null); closeActions(); }}
+                >
+                  {t.removeFromFolder}
+                </RowActionMenuItem>
+              )}
+            </>
+          )}
+        </RowActionMenu>
+      )}
+    </RowActionWrapper>
+  );
 
   return (
     <>
       <SectionHeaderRow>
         <PageTitleNoMargin>{t.title}</PageTitleNoMargin>
-        <SmallActionButton onClick={() => navigate('/admin/activities/new')}>
-          + {t.createNew}
-        </SmallActionButton>
+        <HeaderButtons>
+          <SmallActionButton onClick={() => setFolderModal({ mode: 'create' })}>
+            {t.newFolder}
+          </SmallActionButton>
+          <SmallActionButton onClick={() => navigate('/admin/activities/new')}>
+            + {t.createNew}
+          </SmallActionButton>
+        </HeaderButtons>
       </SectionHeaderRow>
       <div style={{ position: 'relative', marginBottom: 12 }}>
         <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#bbb', fontSize: 15, pointerEvents: 'none' }}>🔍</span>
@@ -1098,7 +1506,28 @@ function ActivitiesSection({ activities, navigate, t, onRefresh }: { activities:
         />
       </div>
 
-      {activities.length === 0 ? (
+      {openFolder && !searching && (
+        <Breadcrumb>
+          <BreadcrumbLink
+            type="button"
+            ref={registerDropTarget('__root__')}
+            dragOver={dragOverKey === '__root__'}
+            onClick={() => setOpenFolderId(null)}
+            onDragOver={(e) => onTargetDragOver(e, '__root__')}
+            onDragLeave={() => onTargetDragLeave('__root__')}
+            onDrop={(e) => onTargetDrop(e, null)}
+          >
+            ‹ {t.allActivities}
+          </BreadcrumbLink>
+          <BreadcrumbSep>/</BreadcrumbSep>
+          <BreadcrumbCurrent>
+            <FolderGlyph color={resolveFolderColor(openFolder.color).accent} size={18} />
+            {openFolder.name}
+          </BreadcrumbCurrent>
+        </Breadcrumb>
+      )}
+
+      {activities.length === 0 && folders.length === 0 ? (
         <TableCard style={{ padding: 32 }}>
           <EmptyText>{t.noActivities}</EmptyText>
         </TableCard>
@@ -1119,8 +1548,43 @@ function ActivitiesSection({ activities, navigate, t, onRefresh }: { activities:
                   </tr>
                 </thead>
                 <tbody>
+                  {visibleFolders.map((folder) => {
+                    const fc = resolveFolderColor(folder.color);
+                    const isOver = dragOverKey === folder._id;
+                    return (
+                      <tr
+                        key={`folder-${folder._id}`}
+                        onClick={() => { setSearch(''); setOpenFolderId(folder._id); }}
+                        onDragOver={(e) => onTargetDragOver(e, folder._id)}
+                        onDragLeave={() => onTargetDragLeave(folder._id)}
+                        onDrop={(e) => onTargetDrop(e, folder._id)}
+                        style={isOver ? { outline: `2px dashed ${fc.accent}`, outlineOffset: '-2px' } : undefined}
+                      >
+                        <td>
+                          <FolderNameWrap>
+                            <FolderGlyph color={fc.accent} />
+                            <NameMain>{folder.name}</NameMain>
+                            <IconBadge variant="purple">{countFor(folder._id)}</IconBadge>
+                          </FolderNameWrap>
+                        </td>
+                        <td colSpan={5} />
+                        <RowActionsCell>{renderFolderMenu(folder)}</RowActionsCell>
+                      </tr>
+                    );
+                  })}
                   {pageItems.map((activity) => (
-                    <tr key={activity._id} onClick={() => navigate(`/admin/activities/${activity._id}`)}>
+                    <tr
+                      key={activity._id}
+                      draggable
+                      onDragStart={(e) => onMouseDragStart(e, activity._id)}
+                      onDragEnd={onMouseDragEnd}
+                      onPointerDown={(e) => onRowPointerDown(e, activity._id)}
+                      onClick={() => {
+                        if (justDraggedRef.current) { justDraggedRef.current = false; return; }
+                        navigate(`/admin/activities/${activity._id}`);
+                      }}
+                      style={dragRowStyle(draggingActivityId === activity._id)}
+                    >
                       <td>
                         <NameCell>
                           <NameMain>{activity.name}</NameMain>
@@ -1147,38 +1611,7 @@ function ActivitiesSection({ activities, navigate, t, onRefresh }: { activities:
                       <td>
                         <DateCell>{new Date(activity.createdAt).toLocaleDateString()}</DateCell>
                       </td>
-                      <RowActionsCell>
-                        <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
-                          <RowActionIconButton
-                            type="button"
-                            aria-label={t.actions}
-                            title={t.actions}
-                            onClick={() => actionsActivityId === activity._id ? closeActions() : openActions(activity._id)}
-                          >
-                            <PencilIcon />
-                          </RowActionIconButton>
-                          {actionsActivityId === activity._id && (
-                            <RowActionMenu>
-                              <RowActionMenuItem
-                                type="button"
-                                disabled={duplicatingId === activity._id || deletingId === activity._id}
-                                onClick={handleDuplicateFromDrawer}
-                              >
-                                {duplicatingId === activity._id ? t.duplicating : t.duplicate}
-                              </RowActionMenuItem>
-                              <RowActionMenuItem
-                                type="button"
-                                danger
-                                confirm={confirmDeleteInDrawer}
-                                disabled={duplicatingId === activity._id || deletingId === activity._id}
-                                onClick={handleDeleteFromDrawer}
-                              >
-                                {confirmDeleteInDrawer ? t.confirmDelete : t.delete}
-                              </RowActionMenuItem>
-                            </RowActionMenu>
-                          )}
-                        </RowActionWrapper>
-                      </RowActionsCell>
+                      <RowActionsCell>{renderActivityMenu(activity)}</RowActionsCell>
                     </tr>
                   ))}
                 </tbody>
@@ -1188,8 +1621,43 @@ function ActivitiesSection({ activities, navigate, t, onRefresh }: { activities:
 
           <MobileOnlyDiv>
             <MobileList>
+              {visibleFolders.map((folder) => {
+                const fc = resolveFolderColor(folder.color);
+                const isOver = dragOverKey === folder._id;
+                return (
+                  <MobileCard
+                    key={`folder-${folder._id}`}
+                    ref={registerDropTarget(folder._id)}
+                    onClick={() => { setSearch(''); setOpenFolderId(folder._id); }}
+                    onDragOver={(e) => onTargetDragOver(e, folder._id)}
+                    onDragLeave={() => onTargetDragLeave(folder._id)}
+                    onDrop={(e) => onTargetDrop(e, folder._id)}
+                    style={isOver ? { border: `1.5px dashed ${fc.accent}` } : undefined}
+                  >
+                    <MobileCardHeader>
+                      <FolderNameWrap>
+                        <FolderGlyph color={fc.accent} />
+                        <MobileCardNameLarge>{folder.name}</MobileCardNameLarge>
+                        <IconBadge variant="purple">{countFor(folder._id)}</IconBadge>
+                      </FolderNameWrap>
+                      {renderFolderMenu(folder)}
+                    </MobileCardHeader>
+                  </MobileCard>
+                );
+              })}
               {pageItems.map((activity) => (
-                <MobileCard key={activity._id} onClick={() => navigate(`/admin/activities/${activity._id}`)}>
+                <MobileCard
+                  key={activity._id}
+                  draggable
+                  onDragStart={(e) => onMouseDragStart(e, activity._id)}
+                  onDragEnd={onMouseDragEnd}
+                  onPointerDown={(e) => onRowPointerDown(e, activity._id)}
+                  onClick={() => {
+                    if (justDraggedRef.current) { justDraggedRef.current = false; return; }
+                    navigate(`/admin/activities/${activity._id}`);
+                  }}
+                  style={dragRowStyle(draggingActivityId === activity._id)}
+                >
                   <MobileCardHeader>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
                       <MobileCardNameLarge>{activity.name}</MobileCardNameLarge>
@@ -1197,36 +1665,7 @@ function ActivitiesSection({ activities, navigate, t, onRefresh }: { activities:
                         {activity.status === 'live' ? t.live : t.preview}
                       </StatusBadge>
                     </div>
-                    <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
-                      <RowActionIconButton
-                        type="button"
-                        aria-label={t.actions}
-                        title={t.actions}
-                        onClick={() => actionsActivityId === activity._id ? closeActions() : openActions(activity._id)}
-                      >
-                        <PencilIcon />
-                      </RowActionIconButton>
-                      {actionsActivityId === activity._id && (
-                        <RowActionMenu>
-                          <RowActionMenuItem
-                            type="button"
-                            disabled={duplicatingId === activity._id || deletingId === activity._id}
-                            onClick={handleDuplicateFromDrawer}
-                          >
-                            {duplicatingId === activity._id ? t.duplicating : t.duplicate}
-                          </RowActionMenuItem>
-                          <RowActionMenuItem
-                            type="button"
-                            danger
-                            confirm={confirmDeleteInDrawer}
-                            disabled={duplicatingId === activity._id || deletingId === activity._id}
-                            onClick={handleDeleteFromDrawer}
-                          >
-                            {confirmDeleteInDrawer ? t.confirmDelete : t.delete}
-                          </RowActionMenuItem>
-                        </RowActionMenu>
-                      )}
-                    </RowActionWrapper>
+                    {renderActivityMenu(activity)}
                   </MobileCardHeader>
                   <MobileCardDetails>
                     <MobileCardCode>{activity.code}</MobileCardCode>
@@ -1244,8 +1683,32 @@ function ActivitiesSection({ activities, navigate, t, onRefresh }: { activities:
             </MobileList>
           </MobileOnlyDiv>
 
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
+          {openFolder && !searching && visibleActivities.length === 0 && (
+            <TableCard style={{ padding: 28, marginTop: 12 }}>
+              <EmptyText>{t.emptyFolder}</EmptyText>
+            </TableCard>
+          )}
+
+          {visibleActivities.length > 0 && (
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
+          )}
         </>
+      )}
+
+      {touchGhost && (
+        <DragGhost style={{ left: touchGhost.x, top: touchGhost.y }}>{touchGhost.name}</DragGhost>
+      )}
+
+      {folderModal && (
+        <FolderFormModal
+          t={t}
+          title={folderModal.mode === 'edit' ? t.editFolderTitle : t.newFolderTitle}
+          submitLabel={folderModal.mode === 'edit' ? t.saveFolder : t.createFolderBtn}
+          initialName={folderModal.folder?.name}
+          initialColor={folderModal.folder?.color || DEFAULT_FOLDER_COLOR}
+          onClose={() => setFolderModal(null)}
+          onSubmit={submitFolder}
+        />
       )}
     </>
   );
