@@ -343,17 +343,18 @@ const RowActionIconButton = styled('button')({
 });
 
 const RowActionMenu = styled('div')({
-  position: 'absolute',
-  top: '100%',
-  insetInlineEnd: 0,
-  zIndex: 300,
+  // position:fixed (coords set inline from the anchor button's rect) so the menu escapes
+  // TableCard's overflow:hidden and is never clipped for bottom rows.
+  position: 'fixed',
+  zIndex: 1000,
   background: '#fff',
   border: '1px solid #e0d8f0',
   borderRadius: 14,
   boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
   minWidth: 160,
-  overflow: 'hidden',
-  marginTop: 8,
+  maxHeight: '70vh',
+  overflowY: 'auto',
+  overflowX: 'hidden',
 });
 
 const RowActionMenuItem = styled('button')<{ danger?: boolean; confirm?: boolean }>(({ danger, confirm }) => ({
@@ -474,6 +475,21 @@ function dragRowStyle(dragging: boolean): CSSProperties {
     WebkitUserSelect: 'none',
     WebkitTouchCallout: 'none',
     ...(dragging ? { opacity: 0.45 } : null),
+  };
+}
+
+// Fixed-position coords for a row action menu, computed from its anchor button's viewport
+// rect. Opens downward, flipping up when there isn't room below (so bottom rows aren't clipped).
+const ACTION_MENU_EST_HEIGHT = 170;
+function actionMenuStyle(rect: DOMRect | null): CSSProperties {
+  if (!rect) return { visibility: 'hidden' };
+  const openUp = rect.bottom + ACTION_MENU_EST_HEIGHT > window.innerHeight && rect.top > ACTION_MENU_EST_HEIGHT;
+  return {
+    left: rect.left,
+    insetInlineEnd: 'auto',
+    ...(openUp
+      ? { bottom: window.innerHeight - rect.top + 6, top: 'auto' }
+      : { top: rect.bottom + 6 }),
   };
 }
 
@@ -1104,6 +1120,9 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // anchor rect of the currently-open row menu (for fixed positioning)
+  const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null);
+
   // folder action menu + modal
   const [actionsFolderId, setActionsFolderId] = useState<string | null>(null);
   const [confirmDeleteFolderId, setConfirmDeleteFolderId] = useState<string | null>(null);
@@ -1134,8 +1153,8 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
     setActionsFolderId(null);
     setConfirmDeleteFolderId(null);
   }, []);
-  const openActivityActions = (id: string) => { closeAllMenus(); setActionsActivityId(id); };
-  const openFolderActions = (id: string) => { closeAllMenus(); setActionsFolderId(id); };
+  const openActivityActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsActivityId(id); };
+  const openFolderActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsFolderId(id); };
 
   const handleDuplicateFromDrawer = async () => {
     if (!actionsActivityId || duplicatingId) return;
@@ -1325,11 +1344,16 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
       if (target && target.closest('[data-row-actions]')) return;
       closeAllMenus();
     };
+    const onScrollOrResize = () => closeAllMenus();
     window.addEventListener('keydown', onKey);
     window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
     };
   }, [actionsActivityId, actionsFolderId, closeAllMenus]);
 
@@ -1377,12 +1401,12 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
         type="button"
         aria-label={t.actions}
         title={t.actions}
-        onClick={() => (actionsFolderId === folder._id ? closeAllMenus() : openFolderActions(folder._id))}
+        onClick={(e) => (actionsFolderId === folder._id ? closeAllMenus() : openFolderActions(folder._id, e.currentTarget.getBoundingClientRect()))}
       >
         <PencilIcon />
       </RowActionIconButton>
       {actionsFolderId === folder._id && (
-        <RowActionMenu>
+        <RowActionMenu style={actionMenuStyle(menuAnchorRect)}>
           <RowActionMenuItem
             type="button"
             onClick={() => { setFolderModal({ mode: 'edit', folder }); closeAllMenus(); }}
@@ -1409,12 +1433,12 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
         type="button"
         aria-label={t.actions}
         title={t.actions}
-        onClick={() => (actionsActivityId === activity._id ? closeActions() : openActivityActions(activity._id))}
+        onClick={(e) => (actionsActivityId === activity._id ? closeActions() : openActivityActions(activity._id, e.currentTarget.getBoundingClientRect()))}
       >
         <PencilIcon />
       </RowActionIconButton>
       {actionsActivityId === activity._id && (
-        <RowActionMenu>
+        <RowActionMenu style={actionMenuStyle(menuAnchorRect)}>
           {!moveMenuOpen ? (
             <>
               <RowActionMenuItem
