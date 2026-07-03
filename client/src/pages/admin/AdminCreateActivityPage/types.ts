@@ -120,6 +120,7 @@ export interface Activity {
   managerEmail?: string;
   isContinuous?: boolean;
   portalId?: string;
+  folderId?: string | null;
   includeOnRoadmap?: boolean;
   hideLeaderboardInHeader?: boolean;
   leaderboardCurrentDayOnly?: boolean;

@@ -11,7 +11,7 @@ import {
   isCustomerRole,
 } from '../middleware/customerScope';
 import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginField } from '../types';
-import { Activity, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
+import { Activity, ActivityFolder, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
 import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { IActivity } from '../models/Activity';
@@ -490,6 +490,40 @@ router.patch('/activities/:id/status', authenticateAdmin, async (req: Request<{ 
   activity.status = status;
   await activity.save();
   logAdminAction(req, 'toggle_status', 'activity', req.params.id, activity.name, { status });
+  res.json({ activity: stripManagerPassword(activity) });
+});
+
+// Move an activity into a folder, or out to the ungrouped root (folderId: null).
+// Filing is organizational (not a content edit), so this is intentionally allowed even
+// when the activity is customerEditLocked — unlike the status/PUT endpoints.
+router.patch('/activities/:id/folder', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
+  const { folderId } = req.body as { folderId?: unknown };
+  if (folderId !== null && typeof folderId !== 'string') {
+    res.status(400).json({ error: 'folderId must be a string or null' });
+    return;
+  }
+
+  const activity = await Activity.findById(req.params.id);
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  if (folderId) {
+    const folder = await ActivityFolder.findById(folderId);
+    if (!folder || !customerOwnsDoc(req, folder)) {
+      res.status(404).json({ error: 'Folder not found' });
+      return;
+    }
+    activity.folderId = folder._id;
+  } else {
+    activity.folderId = null;
+  }
+
+  await activity.save();
+  logAdminAction(req, 'move_activity_folder', 'activity', activity._id.toString(), activity.name, {
+    folderId: folderId || null,
+  });
   res.json({ activity: stripManagerPassword(activity) });
 });
 
