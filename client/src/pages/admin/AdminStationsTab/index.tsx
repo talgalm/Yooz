@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { styled, keyframes } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
@@ -7,6 +7,21 @@ import { adminApiFetch } from '../../../utils/adminApi';
 import Pagination from '../../../components/Pagination';
 import { usePagination } from '../../../hooks/usePagination';
 import type { Station } from '../AdminDashboardPage';
+import FolderFormModal from '../FolderFormModal';
+import { resolveFolderColor, DEFAULT_FOLDER_COLOR } from '../folderColors';
+import {
+  type Folder,
+  FolderGlyph,
+  HeaderButtons,
+  FolderNameWrap,
+  Breadcrumb,
+  BreadcrumbLink,
+  BreadcrumbCurrent,
+  BreadcrumbSep,
+  DragGhost,
+  dragRowStyle,
+  actionMenuStyle,
+} from '../folderUi';
 import {
   AdminCard,
   Table,
@@ -187,18 +202,19 @@ const RowActionIconButton = styled('button')({
   },
 });
 
+// position:fixed (coords set inline from the anchor button's rect) so the menu escapes the
+// card's overflow:hidden and is never clipped for bottom rows.
 const RowActionMenu = styled('div')({
-  position: 'absolute',
-  top: '100%',
-  insetInlineEnd: 0,
-  zIndex: 300,
+  position: 'fixed',
+  zIndex: 1000,
   background: '#fff',
   border: '1px solid #e0d8f0',
   borderRadius: 14,
   boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
   minWidth: 160,
-  overflow: 'hidden',
-  marginTop: 8,
+  maxHeight: '70vh',
+  overflowY: 'auto',
+  overflowX: 'hidden',
 });
 
 const RowActionMenuItem = styled('button')<{ danger?: boolean; confirm?: boolean }>(({ danger, confirm }) => ({
@@ -222,6 +238,18 @@ const RowActionMenuItem = styled('button')<{ danger?: boolean; confirm?: boolean
   },
   '&:disabled': { opacity: 0.6, cursor: 'default' },
 }));
+
+const FolderCount = styled('span')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 4,
+  padding: '4px 10px',
+  fontSize: 12,
+  fontWeight: 600,
+  borderRadius: 6,
+  background: '#f0eefa',
+  color: '#6c5ce7',
+});
 
 const SearchInput = styled(Input)({
   flex: 1,
@@ -322,32 +350,61 @@ function PencilIcon() {
 
 interface AdminStationsTabProps {
   stations: Station[];
+  folders: Folder[];
   onRefresh: () => void;
   defaultType?: string;
   hideCreateButton?: boolean;
 }
 
-export default function AdminStationsTab({ stations, onRefresh, defaultType, hideCreateButton }: AdminStationsTabProps) {
+export default function AdminStationsTab({ stations, folders, onRefresh, defaultType, hideCreateButton }: AdminStationsTabProps) {
   const navigate = useNavigate();
-  const [actionsStationId, setActionsStationId] = useState<string | null>(null);
-  const [confirmDeleteInDrawer, setConfirmDeleteInDrawer] = useState(false);
-  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const t = useTranslations(texts);
+
+  // filters
   const [search, setSearch] = useState('');
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [tagDrawerOpen, setTagDrawerOpen] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const t = useTranslations(texts);
 
-  const openActions = (id: string) => {
-    setActionsStationId(id);
-    setConfirmDeleteInDrawer(false);
-  };
+  // folder view + row menus
+  const [openFolderId, setOpenFolderId] = useState<string | null>(null);
+  const [actionsStationId, setActionsStationId] = useState<string | null>(null);
+  const [actionsFolderId, setActionsFolderId] = useState<string | null>(null);
+  const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null);
+  const [moveMenuOpen, setMoveMenuOpen] = useState(false);
+  const [confirmDeleteInDrawer, setConfirmDeleteInDrawer] = useState(false);
+  const [confirmDeleteFolderId, setConfirmDeleteFolderId] = useState<string | null>(null);
+  const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [folderModal, setFolderModal] = useState<{ mode: 'create' | 'edit'; folder?: Folder } | null>(null);
+
+  // drag-and-drop
+  const [draggingStationId, setDraggingStationId] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+  const [touchGhost, setTouchGhost] = useState<{ name: string; x: number; y: number } | null>(null);
+  const mouseDragIdRef = useRef<string | null>(null);
+  const touchDragRef = useRef<{ stationId: string } | null>(null);
+  const longPressRef = useRef<{ id: string; x: number; y: number; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const justDraggedRef = useRef(false);
+  const dropTargetRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const stationsRef = useRef(stations);
+  stationsRef.current = stations;
 
   const closeActions = () => {
     setActionsStationId(null);
     setConfirmDeleteInDrawer(false);
+    setMoveMenuOpen(false);
   };
+  const closeAllMenus = useCallback(() => {
+    setActionsStationId(null);
+    setConfirmDeleteInDrawer(false);
+    setMoveMenuOpen(false);
+    setActionsFolderId(null);
+    setConfirmDeleteFolderId(null);
+  }, []);
+  const openStationActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsStationId(id); };
+  const openFolderActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsFolderId(id); };
 
   const handleDeleteFromDrawer = async () => {
     if (!actionsStationId) return;
@@ -383,6 +440,147 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
     }
   };
 
+  const moveStationToFolder = useCallback(async (stationId: string, folderId: string | null) => {
+    const current = stationsRef.current.find((s) => s._id === stationId);
+    if (!current) return;
+    if ((current.folderId ?? null) === folderId) return;
+    try {
+      await adminApiFetch(`/api/admin/stations/${stationId}/folder`, {
+        method: 'PATCH',
+        body: JSON.stringify({ folderId }),
+      });
+      onRefresh();
+    } catch {
+      /* ignore — station stays where it was */
+    }
+  }, [onRefresh]);
+
+  const submitFolder = async (name: string, color: string) => {
+    if (folderModal?.mode === 'edit' && folderModal.folder) {
+      await adminApiFetch(`/api/admin/station-folders/${folderModal.folder._id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name, color }),
+      });
+    } else {
+      await adminApiFetch('/api/admin/station-folders', {
+        method: 'POST',
+        body: JSON.stringify({ name, color }),
+      });
+    }
+    onRefresh();
+  };
+
+  const handleDeleteFolder = async (folder: Folder) => {
+    if (confirmDeleteFolderId !== folder._id) {
+      setConfirmDeleteFolderId(folder._id);
+      return;
+    }
+    setDeletingFolderId(folder._id);
+    try {
+      await adminApiFetch(`/api/admin/station-folders/${folder._id}`, { method: 'DELETE' });
+      if (openFolderId === folder._id) setOpenFolderId(null);
+      closeAllMenus();
+      onRefresh();
+    } finally {
+      setDeletingFolderId(null);
+    }
+  };
+
+  // ── drag: mouse (HTML5) ──
+  const onMouseDragStart = (e: React.DragEvent, id: string) => {
+    mouseDragIdRef.current = id;
+    setDraggingStationId(id);
+    try { e.dataTransfer.setData('text/plain', id); } catch { /* Firefox requires setData */ }
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  const onMouseDragEnd = () => {
+    mouseDragIdRef.current = null;
+    setDraggingStationId(null);
+    setDragOverKey(null);
+  };
+  const onTargetDragOver = (e: React.DragEvent, key: string) => {
+    if (!mouseDragIdRef.current) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverKey(key);
+  };
+  const onTargetDragLeave = (key: string) => {
+    setDragOverKey((cur) => (cur === key ? null : cur));
+  };
+  const onTargetDrop = (e: React.DragEvent, folderId: string | null) => {
+    e.preventDefault();
+    const id = mouseDragIdRef.current;
+    mouseDragIdRef.current = null;
+    setDraggingStationId(null);
+    setDragOverKey(null);
+    if (id) moveStationToFolder(id, folderId);
+  };
+
+  // ── drag: touch (press-and-hold to lift, then drag) ──
+  const hitTestKey = useCallback((x: number, y: number): string | null => {
+    for (const [key, el] of dropTargetRefs.current.entries()) {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) continue;
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return key;
+    }
+    return null;
+  }, []);
+  const onTouchMovePrevent = useCallback((e: TouchEvent) => {
+    if (touchDragRef.current) e.preventDefault();
+  }, []);
+  const onTouchPointerMove = useCallback((e: PointerEvent) => {
+    if (!touchDragRef.current) {
+      const lp = longPressRef.current;
+      if (lp && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 12) {
+        clearTimeout(lp.timer);
+        longPressRef.current = null;
+      }
+      return;
+    }
+    setDragOverKey(hitTestKey(e.clientX, e.clientY));
+    const name = stationsRef.current.find((s) => s._id === touchDragRef.current!.stationId)?.name || '';
+    setTouchGhost({ name, x: e.clientX, y: e.clientY });
+  }, [hitTestKey]);
+  const onTouchPointerUp = useCallback((e: PointerEvent) => {
+    if (longPressRef.current) { clearTimeout(longPressRef.current.timer); longPressRef.current = null; }
+    window.removeEventListener('pointermove', onTouchPointerMove);
+    window.removeEventListener('pointerup', onTouchPointerUp);
+    window.removeEventListener('pointercancel', onTouchPointerUp);
+    window.removeEventListener('touchmove', onTouchMovePrevent);
+    const st = touchDragRef.current;
+    touchDragRef.current = null;
+    setTouchGhost(null);
+    setDraggingStationId(null);
+    setDragOverKey(null);
+    if (st) {
+      justDraggedRef.current = true;
+      const key = hitTestKey(e.clientX, e.clientY);
+      if (key) moveStationToFolder(st.stationId, key === '__root__' ? null : key);
+    }
+  }, [onTouchPointerMove, onTouchMovePrevent, hitTestKey, moveStationToFolder]);
+  const onRowPointerDown = useCallback((e: React.PointerEvent, id: string) => {
+    if (e.pointerType !== 'touch') return;
+    if ((e.target as HTMLElement).closest('[data-row-actions]')) return;
+    justDraggedRef.current = false;
+    const x = e.clientX, y = e.clientY;
+    const timer = setTimeout(() => {
+      touchDragRef.current = { stationId: id };
+      setDraggingStationId(id);
+      const name = stationsRef.current.find((s) => s._id === id)?.name || '';
+      setTouchGhost({ name, x: longPressRef.current?.x ?? x, y: longPressRef.current?.y ?? y });
+    }, 300);
+    longPressRef.current = { id, x, y, timer };
+    window.addEventListener('pointermove', onTouchPointerMove);
+    window.addEventListener('pointerup', onTouchPointerUp);
+    window.addEventListener('pointercancel', onTouchPointerUp);
+    window.addEventListener('touchmove', onTouchMovePrevent, { passive: false });
+  }, [onTouchPointerMove, onTouchPointerUp, onTouchMovePrevent]);
+
+  const registerDropTarget = (key: string) => (el: HTMLElement | null) => {
+    if (el) dropTargetRefs.current.set(key, el);
+    else dropTargetRefs.current.delete(key);
+  };
+
   const typeLabel = (type?: string) => {
     switch (type) {
       case 'text': return t.typeText;
@@ -407,42 +605,30 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
 
   const allCustomers = useMemo(() => {
     const set = new Set<string>();
-    stations.forEach((s) => {
-      if (s.customer) set.add(s.customer);
-    });
+    stations.forEach((s) => { if (s.customer) set.add(s.customer); });
     return [...set].sort();
   }, [stations]);
 
   const allTypes = useMemo(() => {
     const set = new Set<string>();
-    stations.forEach((s) => {
-      if (s.type) set.add(s.type);
-    });
+    stations.forEach((s) => { if (s.type) set.add(s.type); });
     return [...set].sort();
   }, [stations]);
 
   const tagGroups = useMemo(() => {
     const customersLower = new Set(allCustomers.map((c) => c.toLowerCase()));
     const typesLower = new Set(allTypes.map((x) => x.toLowerCase()));
-
     const source: string[] = [];
     const projects: string[] = [];
     const contentTypes: string[] = [];
     const general: string[] = [];
-
     for (const tag of allTags) {
       const lower = tag.toLowerCase();
-      if (SOURCE_TAGS.has(tag)) {
-        source.push(tag);
-      } else if (customersLower.has(lower)) {
-        projects.push(tag);
-      } else if (typesLower.has(lower)) {
-        contentTypes.push(tag);
-      } else {
-        general.push(tag);
-      }
+      if (SOURCE_TAGS.has(tag)) source.push(tag);
+      else if (customersLower.has(lower)) projects.push(tag);
+      else if (typesLower.has(lower)) contentTypes.push(tag);
+      else general.push(tag);
     }
-
     return { source, projects, contentTypes, general };
   }, [allTags, allCustomers, allTypes]);
 
@@ -455,70 +641,198 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
     });
   };
 
-  const filtered = useMemo(() => {
+  const searching = search.trim() !== '';
+  const q = search.trim().toLowerCase();
+
+  const typeTagFiltered = useMemo(() => {
     let result = stations;
-
-    if (typeFilter !== 'all') {
-      result = result.filter((s) => s.type === typeFilter);
-    }
-
+    if (typeFilter !== 'all') result = result.filter((s) => s.type === typeFilter);
     if (activeTags.size > 0) {
       result = result.filter((s) => {
         const tags = s.tags || [];
         return [...activeTags].every((tag) => tags.includes(tag));
       });
     }
-
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      result = result.filter((s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.description?.toLowerCase().includes(q) ||
-        s.customer?.toLowerCase().includes(q) ||
-        s.theme?.toLowerCase().includes(q) ||
-        s.tags?.some((tag) => tag.toLowerCase().includes(q))
-      );
-    }
-
     return result;
-  }, [stations, search, activeTags, typeFilter]);
+  }, [stations, typeFilter, activeTags]);
+
+  const visibleStations = useMemo(() => {
+    const matches = (s: Station) =>
+      s.name.toLowerCase().includes(q) ||
+      (s.description || '').toLowerCase().includes(q) ||
+      (s.customer || '').toLowerCase().includes(q) ||
+      (s.theme || '').toLowerCase().includes(q) ||
+      (s.tags || []).some((tag) => tag.toLowerCase().includes(q));
+    if (searching) return typeTagFiltered.filter(matches);
+    if (openFolderId) return typeTagFiltered.filter((s) => (s.folderId ?? null) === openFolderId);
+    return typeTagFiltered.filter((s) => !s.folderId);
+  }, [typeTagFiltered, searching, q, openFolderId]);
+
+  const visibleFolders = useMemo(() => {
+    if (searching) return folders.filter((f) => f.name.toLowerCase().includes(q));
+    if (openFolderId) return [];
+    return folders;
+  }, [folders, searching, q, openFolderId]);
+
+  const countFor = (folderId: string) => stations.filter((s) => (s.folderId ?? null) === folderId).length;
+  const openFolder = openFolderId ? folders.find((f) => f._id === openFolderId) || null : null;
+
+  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(visibleStations);
 
   useEffect(() => {
     if (!tagDrawerOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setTagDrawerOpen(false);
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setTagDrawerOpen(false); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [tagDrawerOpen]);
 
   useEffect(() => {
-    if (!actionsStationId) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeActions();
-    };
+    if (!actionsStationId && !actionsFolderId) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeAllMenus(); };
     const onMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && target.closest('[data-row-actions]')) return;
-      closeActions();
+      closeAllMenus();
     };
+    const onScrollOrResize = () => closeAllMenus();
     window.addEventListener('keydown', onKey);
     window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
     };
-  }, [actionsStationId]);
+  }, [actionsStationId, actionsFolderId, closeAllMenus]);
+
+  useEffect(() => () => {
+    if (longPressRef.current) clearTimeout(longPressRef.current.timer);
+    window.removeEventListener('pointermove', onTouchPointerMove);
+    window.removeEventListener('pointerup', onTouchPointerUp);
+    window.removeEventListener('pointercancel', onTouchPointerUp);
+    window.removeEventListener('touchmove', onTouchMovePrevent);
+  }, [onTouchPointerMove, onTouchPointerUp, onTouchMovePrevent]);
+
+  useEffect(() => {
+    if (openFolderId && !folders.some((f) => f._id === openFolderId)) setOpenFolderId(null);
+  }, [folders, openFolderId]);
+
+  const renderFolderMenu = (folder: Folder) => (
+    <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
+      <RowActionIconButton
+        type="button"
+        aria-label={t.actions}
+        title={t.actions}
+        onClick={(e) => (actionsFolderId === folder._id ? closeAllMenus() : openFolderActions(folder._id, e.currentTarget.getBoundingClientRect()))}
+      >
+        <PencilIcon />
+      </RowActionIconButton>
+      {actionsFolderId === folder._id && (
+        <RowActionMenu style={actionMenuStyle(menuAnchorRect)}>
+          <RowActionMenuItem
+            type="button"
+            onClick={() => { setFolderModal({ mode: 'edit', folder }); closeAllMenus(); }}
+          >
+            {t.editFolder}
+          </RowActionMenuItem>
+          <RowActionMenuItem
+            type="button"
+            danger
+            confirm={confirmDeleteFolderId === folder._id}
+            disabled={deletingFolderId === folder._id}
+            onClick={() => handleDeleteFolder(folder)}
+          >
+            {confirmDeleteFolderId === folder._id ? t.confirmDeleteFolder : t.deleteFolder}
+          </RowActionMenuItem>
+        </RowActionMenu>
+      )}
+    </RowActionWrapper>
+  );
+
+  const renderStationMenu = (station: Station) => (
+    <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
+      <RowActionIconButton
+        type="button"
+        aria-label={t.actions}
+        title={t.actions}
+        onClick={(e) => (actionsStationId === station._id ? closeActions() : openStationActions(station._id, e.currentTarget.getBoundingClientRect()))}
+      >
+        <PencilIcon />
+      </RowActionIconButton>
+      {actionsStationId === station._id && (
+        <RowActionMenu style={actionMenuStyle(menuAnchorRect)}>
+          {!moveMenuOpen ? (
+            <>
+              <RowActionMenuItem
+                type="button"
+                disabled={duplicatingId === station._id || deletingId === station._id}
+                onClick={handleDuplicateFromDrawer}
+              >
+                {duplicatingId === station._id ? t.duplicating : t.duplicate}
+              </RowActionMenuItem>
+              {folders.length > 0 && (
+                <RowActionMenuItem type="button" onClick={() => setMoveMenuOpen(true)}>
+                  {t.moveToFolder}
+                </RowActionMenuItem>
+              )}
+              <RowActionMenuItem
+                type="button"
+                danger
+                confirm={confirmDeleteInDrawer}
+                disabled={duplicatingId === station._id || deletingId === station._id}
+                onClick={handleDeleteFromDrawer}
+              >
+                {confirmDeleteInDrawer ? t.confirmDelete : t.delete}
+              </RowActionMenuItem>
+            </>
+          ) : (
+            <>
+              {folders.map((f) => (
+                <RowActionMenuItem
+                  key={f._id}
+                  type="button"
+                  disabled={(station.folderId ?? null) === f._id}
+                  onClick={() => { moveStationToFolder(station._id, f._id); closeActions(); }}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <FolderGlyph color={resolveFolderColor(f.color).accent} size={16} />
+                    {f.name}
+                  </span>
+                </RowActionMenuItem>
+              ))}
+              {station.folderId && (
+                <RowActionMenuItem
+                  type="button"
+                  onClick={() => { moveStationToFolder(station._id, null); closeActions(); }}
+                >
+                  {t.removeFromFolder}
+                </RowActionMenuItem>
+              )}
+            </>
+          )}
+        </RowActionMenu>
+      )}
+    </RowActionWrapper>
+  );
+
+  const noResultsShown = visibleStations.length === 0 && visibleFolders.length === 0;
 
   return (
     <>
       <SectionHeaderRow>
         <PageTitleNoMargin>{t.title}</PageTitleNoMargin>
-        {!hideCreateButton && (
-          <SmallActionButton onClick={() => navigate(`/admin/stations/new${defaultType ? `?type=${defaultType}` : ''}`)}>
-            {t.createNew}
+        <HeaderButtons>
+          <SmallActionButton onClick={() => setFolderModal({ mode: 'create' })}>
+            {t.newFolder}
           </SmallActionButton>
-        )}
+          {!hideCreateButton && (
+            <SmallActionButton onClick={() => navigate(`/admin/stations/new${defaultType ? `?type=${defaultType}` : ''}`)}>
+              {t.createNew}
+            </SmallActionButton>
+          )}
+        </HeaderButtons>
       </SectionHeaderRow>
 
       {allTypes.length > 1 && (
@@ -544,15 +858,13 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
             onClick={() => setTagDrawerOpen(true)}
           >
             {t.filterByTags}
-            {activeTags.size > 0 && (
-              <TagCountBadge>{activeTags.size}</TagCountBadge>
-            )}
+            {activeTags.size > 0 && <TagCountBadge>{activeTags.size}</TagCountBadge>}
           </OpenTagDrawerButton>
         )}
         <SearchInput
           placeholder={t.searchPlaceholder}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         />
       </FilterRow>
 
@@ -563,10 +875,7 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
               <TagDrawerTitle>{t.tagFiltersTitle}</TagDrawerTitle>
               <TagDrawerActions>
                 {activeTags.size > 0 && (
-                  <TagDrawerClearButton
-                    type="button"
-                    onClick={() => setActiveTags(new Set())}
-                  >
+                  <TagDrawerClearButton type="button" onClick={() => setActiveTags(new Set())}>
                     {t.clearTagFilters}
                   </TagDrawerClearButton>
                 )}
@@ -582,9 +891,7 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
                     <TagGroupLabel>[{t.generalTags}]</TagGroupLabel>
                     <TagGroupChips>
                       {tagGroups.general.map((tag) => (
-                        <TagChip key={tag} active={activeTags.has(tag)} onClick={() => toggleTag(tag)}>
-                          {tag}
-                        </TagChip>
+                        <TagChip key={tag} active={activeTags.has(tag)} onClick={() => toggleTag(tag)}>{tag}</TagChip>
                       ))}
                     </TagGroupChips>
                   </TagGroup>
@@ -594,9 +901,7 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
                     <TagGroupLabel>[{t.projectsTags}]</TagGroupLabel>
                     <TagGroupChips>
                       {tagGroups.projects.map((tag) => (
-                        <TagChip key={tag} active={activeTags.has(tag)} onClick={() => toggleTag(tag)}>
-                          {tag}
-                        </TagChip>
+                        <TagChip key={tag} active={activeTags.has(tag)} onClick={() => toggleTag(tag)}>{tag}</TagChip>
                       ))}
                     </TagGroupChips>
                   </TagGroup>
@@ -606,9 +911,7 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
                     <TagGroupLabel>[{t.sourceTags}]</TagGroupLabel>
                     <TagGroupChips>
                       {tagGroups.source.map((tag) => (
-                        <TagChip key={tag} active={activeTags.has(tag)} onClick={() => toggleTag(tag)}>
-                          {tag}
-                        </TagChip>
+                        <TagChip key={tag} active={activeTags.has(tag)} onClick={() => toggleTag(tag)}>{tag}</TagChip>
                       ))}
                     </TagGroupChips>
                   </TagGroup>
@@ -618,9 +921,7 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
                     <TagGroupLabel>[{t.contentTypeTags}]</TagGroupLabel>
                     <TagGroupChips>
                       {tagGroups.contentTypes.map((tag) => (
-                        <TagChip key={tag} active={activeTags.has(tag)} onClick={() => toggleTag(tag)}>
-                          {tag}
-                        </TagChip>
+                        <TagChip key={tag} active={activeTags.has(tag)} onClick={() => toggleTag(tag)}>{tag}</TagChip>
                       ))}
                     </TagGroupChips>
                   </TagGroup>
@@ -631,191 +932,200 @@ export default function AdminStationsTab({ stations, onRefresh, defaultType, hid
         </TagDrawerBackdrop>
       )}
 
-      {filtered.length === 0 ? (
+      {openFolder && !searching && (
+        <Breadcrumb>
+          <BreadcrumbLink
+            type="button"
+            ref={registerDropTarget('__root__')}
+            dragOver={dragOverKey === '__root__'}
+            onClick={() => setOpenFolderId(null)}
+            onDragOver={(e) => onTargetDragOver(e, '__root__')}
+            onDragLeave={() => onTargetDragLeave('__root__')}
+            onDrop={(e) => onTargetDrop(e, null)}
+          >
+            ‹ {t.allStations}
+          </BreadcrumbLink>
+          <BreadcrumbSep>/</BreadcrumbSep>
+          <BreadcrumbCurrent>
+            <FolderGlyph color={resolveFolderColor(openFolder.color).accent} size={18} />
+            {openFolder.name}
+          </BreadcrumbCurrent>
+        </Breadcrumb>
+      )}
+
+      {stations.length === 0 && folders.length === 0 ? (
         <AdminCard>
-          <EmptyText>{stations.length === 0 ? t.noStations : t.noResults}</EmptyText>
+          <EmptyText>{t.noStations}</EmptyText>
         </AdminCard>
       ) : (
-        <PaginatedStations
-          filtered={filtered}
-          navigate={navigate}
-          actionsStationId={actionsStationId}
-          openActions={openActions}
-          closeActions={closeActions}
-          confirmDeleteInDrawer={confirmDeleteInDrawer}
-          duplicatingId={duplicatingId}
-          deletingId={deletingId}
-          handleDuplicateFromDrawer={handleDuplicateFromDrawer}
-          handleDeleteFromDrawer={handleDeleteFromDrawer}
-          typeLabel={typeLabel}
+        <>
+          <DesktopOnly>
+            <AdminCardNoPadding>
+              <Table>
+                <thead>
+                  <tr>
+                    <th>{t.name}</th>
+                    <th>{t.type}</th>
+                    <th>{t.tags}</th>
+                    <th>{t.created}</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleFolders.map((folder) => {
+                    const fc = resolveFolderColor(folder.color);
+                    const isOver = dragOverKey === folder._id;
+                    return (
+                      <tr
+                        key={`folder-${folder._id}`}
+                        onClick={() => { setSearch(''); setOpenFolderId(folder._id); }}
+                        onDragOver={(e) => onTargetDragOver(e, folder._id)}
+                        onDragLeave={() => onTargetDragLeave(folder._id)}
+                        onDrop={(e) => onTargetDrop(e, folder._id)}
+                        style={isOver ? { outline: `2px dashed ${fc.accent}`, outlineOffset: '-2px' } : undefined}
+                      >
+                        <td>
+                          <FolderNameWrap>
+                            <FolderGlyph color={fc.accent} />
+                            <CellBold>{folder.name}</CellBold>
+                            <FolderCount>{countFor(folder._id)}</FolderCount>
+                          </FolderNameWrap>
+                        </td>
+                        <td colSpan={3} />
+                        <CellAlignEnd>{renderFolderMenu(folder)}</CellAlignEnd>
+                      </tr>
+                    );
+                  })}
+                  {pageItems.map((station) => (
+                    <tr
+                      key={station._id}
+                      draggable
+                      onDragStart={(e) => onMouseDragStart(e, station._id)}
+                      onDragEnd={onMouseDragEnd}
+                      onPointerDown={(e) => onRowPointerDown(e, station._id)}
+                      onClick={() => {
+                        if (justDraggedRef.current) { justDraggedRef.current = false; return; }
+                        navigate(`/admin/stations/${station._id}`);
+                      }}
+                      style={dragRowStyle(draggingStationId === station._id)}
+                    >
+                      <td>
+                        <CellBold>{station.name}</CellBold>
+                        {(station.customer || station.theme) && (
+                          <CellMuted style={{ fontSize: 12 }}>
+                            {[station.customer, station.theme].filter(Boolean).join(' · ')}
+                          </CellMuted>
+                        )}
+                      </td>
+                      <td><Chip>{typeLabel(station.type)}</Chip></td>
+                      <td>
+                        {station.tags && station.tags.length > 0 ? (
+                          station.tags.map((tag) => <TagBadge key={tag}>{tag}</TagBadge>)
+                        ) : (
+                          <CellMuted>—</CellMuted>
+                        )}
+                      </td>
+                      <td><CellMuted>{new Date(station.createdAt).toLocaleDateString()}</CellMuted></td>
+                      <CellAlignEnd>{renderStationMenu(station)}</CellAlignEnd>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </AdminCardNoPadding>
+          </DesktopOnly>
+
+          <HideOnDesktop>
+            <MobileCardList>
+              {visibleFolders.map((folder) => {
+                const fc = resolveFolderColor(folder.color);
+                const isOver = dragOverKey === folder._id;
+                return (
+                  <MobileCardItem
+                    key={`folder-${folder._id}`}
+                    ref={registerDropTarget(folder._id)}
+                    onClick={() => { setSearch(''); setOpenFolderId(folder._id); }}
+                    onDragOver={(e) => onTargetDragOver(e, folder._id)}
+                    onDragLeave={() => onTargetDragLeave(folder._id)}
+                    onDrop={(e) => onTargetDrop(e, folder._id)}
+                    style={isOver ? { border: `1.5px dashed ${fc.accent}` } : undefined}
+                  >
+                    <MobileCardHeader>
+                      <FolderNameWrap>
+                        <FolderGlyph color={fc.accent} />
+                        <MobileCardNameRow>{folder.name}</MobileCardNameRow>
+                        <FolderCount>{countFor(folder._id)}</FolderCount>
+                      </FolderNameWrap>
+                      {renderFolderMenu(folder)}
+                    </MobileCardHeader>
+                  </MobileCardItem>
+                );
+              })}
+              {pageItems.map((station) => (
+                <MobileCardItem
+                  key={station._id}
+                  draggable
+                  onDragStart={(e) => onMouseDragStart(e, station._id)}
+                  onDragEnd={onMouseDragEnd}
+                  onPointerDown={(e) => onRowPointerDown(e, station._id)}
+                  onClick={() => {
+                    if (justDraggedRef.current) { justDraggedRef.current = false; return; }
+                    navigate(`/admin/stations/${station._id}`);
+                  }}
+                  style={dragRowStyle(draggingStationId === station._id)}
+                >
+                  <MobileCardHeader>
+                    <div>
+                      <MobileCardNameRow>{station.name}</MobileCardNameRow>
+                      {(station.customer || station.theme) && (
+                        <CellMuted style={{ fontSize: 12 }}>
+                          {[station.customer, station.theme].filter(Boolean).join(' · ')}
+                        </CellMuted>
+                      )}
+                      {station.tags && station.tags.length > 0 && (
+                        <div style={{ marginTop: 4 }}>
+                          {station.tags.map((tag) => <TagBadge key={tag}>{tag}</TagBadge>)}
+                        </div>
+                      )}
+                      <MobileCardRow>
+                        <Chip>{typeLabel(station.type)}</Chip>
+                        <MobileCardDate>{new Date(station.createdAt).toLocaleDateString()}</MobileCardDate>
+                      </MobileCardRow>
+                    </div>
+                    {renderStationMenu(station)}
+                  </MobileCardHeader>
+                </MobileCardItem>
+              ))}
+            </MobileCardList>
+          </HideOnDesktop>
+
+          {openFolder && !searching && visibleStations.length === 0 && (
+            <AdminCard><EmptyText>{t.emptyFolder}</EmptyText></AdminCard>
+          )}
+          {(searching || typeFilter !== 'all' || activeTags.size > 0) && noResultsShown && (
+            <AdminCard><EmptyText>{t.noResults}</EmptyText></AdminCard>
+          )}
+
+          {visibleStations.length > 0 && (
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
+          )}
+        </>
+      )}
+
+      {touchGhost && (
+        <DragGhost style={{ left: touchGhost.x, top: touchGhost.y }}>{touchGhost.name}</DragGhost>
+      )}
+
+      {folderModal && (
+        <FolderFormModal
           t={t}
+          title={folderModal.mode === 'edit' ? t.editFolderTitle : t.newFolderTitle}
+          submitLabel={folderModal.mode === 'edit' ? t.saveFolder : t.createFolderBtn}
+          initialName={folderModal.folder?.name}
+          initialColor={folderModal.folder?.color || DEFAULT_FOLDER_COLOR}
+          onClose={() => setFolderModal(null)}
+          onSubmit={submitFolder}
         />
       )}
-    </>
-  );
-}
-
-function PaginatedStations({
-  filtered,
-  navigate,
-  actionsStationId,
-  openActions,
-  closeActions,
-  confirmDeleteInDrawer,
-  duplicatingId,
-  deletingId,
-  handleDuplicateFromDrawer,
-  handleDeleteFromDrawer,
-  typeLabel,
-  t,
-}: {
-  filtered: Station[];
-  navigate: ReturnType<typeof useNavigate>;
-  actionsStationId: string | null;
-  openActions: (id: string) => void;
-  closeActions: () => void;
-  confirmDeleteInDrawer: boolean;
-  duplicatingId: string | null;
-  deletingId: string | null;
-  handleDuplicateFromDrawer: () => void;
-  handleDeleteFromDrawer: () => void;
-  typeLabel: (type?: string) => string;
-  t: Record<string, string>;
-}) {
-  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(filtered);
-
-  return (
-    <>
-      <DesktopOnly>
-        <AdminCardNoPadding>
-          <Table>
-            <thead>
-              <tr>
-                <th>{t.name}</th>
-                <th>{t.type}</th>
-                <th>{t.tags}</th>
-                <th>{t.created}</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {pageItems.map((station) => (
-                <tr key={station._id} onClick={() => navigate(`/admin/stations/${station._id}`)}>
-                  <td>
-                    <CellBold>{station.name}</CellBold>
-                    {(station.customer || station.theme) && (
-                      <CellMuted style={{ fontSize: 12 }}>
-                        {[station.customer, station.theme].filter(Boolean).join(' · ')}
-                      </CellMuted>
-                    )}
-                  </td>
-                  <td><Chip>{typeLabel(station.type)}</Chip></td>
-                  <td>
-                    {station.tags && station.tags.length > 0 ? (
-                      station.tags.map((tag) => <TagBadge key={tag}>{tag}</TagBadge>)
-                    ) : (
-                      <CellMuted>—</CellMuted>
-                    )}
-                  </td>
-                  <td><CellMuted>{new Date(station.createdAt).toLocaleDateString()}</CellMuted></td>
-                  <CellAlignEnd>
-                    <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
-                      <RowActionIconButton
-                        type="button"
-                        aria-label={t.actions}
-                        title={t.actions}
-                        onClick={() => actionsStationId === station._id ? closeActions() : openActions(station._id)}
-                      >
-                        <PencilIcon />
-                      </RowActionIconButton>
-                      {actionsStationId === station._id && (
-                        <RowActionMenu>
-                          <RowActionMenuItem
-                            type="button"
-                            disabled={duplicatingId === station._id || deletingId === station._id}
-                            onClick={handleDuplicateFromDrawer}
-                          >
-                            {duplicatingId === station._id ? t.duplicating : t.duplicate}
-                          </RowActionMenuItem>
-                          <RowActionMenuItem
-                            type="button"
-                            danger
-                            confirm={confirmDeleteInDrawer}
-                            disabled={duplicatingId === station._id || deletingId === station._id}
-                            onClick={handleDeleteFromDrawer}
-                          >
-                            {confirmDeleteInDrawer ? t.confirmDelete : t.delete}
-                          </RowActionMenuItem>
-                        </RowActionMenu>
-                      )}
-                    </RowActionWrapper>
-                  </CellAlignEnd>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </AdminCardNoPadding>
-      </DesktopOnly>
-
-      <HideOnDesktop>
-        <MobileCardList>
-          {pageItems.map((station) => (
-            <MobileCardItem key={station._id} onClick={() => navigate(`/admin/stations/${station._id}`)}>
-              <MobileCardHeader>
-                <div>
-                  <MobileCardNameRow>{station.name}</MobileCardNameRow>
-                  {(station.customer || station.theme) && (
-                    <CellMuted style={{ fontSize: 12 }}>
-                      {[station.customer, station.theme].filter(Boolean).join(' · ')}
-                    </CellMuted>
-                  )}
-                  {station.tags && station.tags.length > 0 && (
-                    <div style={{ marginTop: 4 }}>
-                      {station.tags.map((tag) => <TagBadge key={tag}>{tag}</TagBadge>)}
-                    </div>
-                  )}
-                  <MobileCardRow>
-                    <Chip>{typeLabel(station.type)}</Chip>
-                    <MobileCardDate>{new Date(station.createdAt).toLocaleDateString()}</MobileCardDate>
-                  </MobileCardRow>
-                </div>
-                <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
-                  <RowActionIconButton
-                    type="button"
-                    aria-label={t.actions}
-                    title={t.actions}
-                    onClick={() => actionsStationId === station._id ? closeActions() : openActions(station._id)}
-                  >
-                    <PencilIcon />
-                  </RowActionIconButton>
-                  {actionsStationId === station._id && (
-                    <RowActionMenu>
-                      <RowActionMenuItem
-                        type="button"
-                        disabled={duplicatingId === station._id || deletingId === station._id}
-                        onClick={handleDuplicateFromDrawer}
-                      >
-                        {duplicatingId === station._id ? t.duplicating : t.duplicate}
-                      </RowActionMenuItem>
-                      <RowActionMenuItem
-                        type="button"
-                        danger
-                        confirm={confirmDeleteInDrawer}
-                        disabled={duplicatingId === station._id || deletingId === station._id}
-                        onClick={handleDeleteFromDrawer}
-                      >
-                        {confirmDeleteInDrawer ? t.confirmDelete : t.delete}
-                      </RowActionMenuItem>
-                    </RowActionMenu>
-                  )}
-                </RowActionWrapper>
-              </MobileCardHeader>
-            </MobileCardItem>
-          ))}
-        </MobileCardList>
-      </HideOnDesktop>
-
-      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
     </>
   );
 }

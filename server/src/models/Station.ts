@@ -13,6 +13,8 @@ export interface IStation {
   settings: Record<string, unknown>;
   createdAt: Date;
   createdByEmail?: string;
+  /** Admin Stations-tab folder this station is filed under (null = ungrouped). */
+  folderId?: Types.ObjectId | null;
 }
 
 const stationSchema = new Schema<IStation>({
@@ -25,6 +27,7 @@ const stationSchema = new Schema<IStation>({
   settings: { type: Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now },
   createdByEmail: { type: String, lowercase: true, trim: true },
+  folderId: { type: Schema.Types.ObjectId, ref: 'StationFolder', default: null, index: true },
 });
 
 stationSchema.index({ tags: 1 });

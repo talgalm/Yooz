@@ -11,6 +11,8 @@ export interface IGame {
   settings: Record<string, unknown>;
   createdAt: Date;
   createdByEmail?: string;
+  /** Admin Games sub-tab folder this game is filed under (null = ungrouped). */
+  folderId?: Types.ObjectId | null;
 }
 
 const gameSchema = new Schema<IGame>({
@@ -23,6 +25,7 @@ const gameSchema = new Schema<IGame>({
   settings: { type: Schema.Types.Mixed, default: {} },
   createdAt: { type: Date, default: Date.now },
   createdByEmail: { type: String, lowercase: true, trim: true },
+  folderId: { type: Schema.Types.ObjectId, ref: 'GameFolder', default: null, index: true },
 });
 
 gameSchema.index({ tags: 1 });

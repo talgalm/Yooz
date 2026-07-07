@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authenticateAdmin } from '../middleware/adminAuth';
 import { createdByEmailForNewResource, customerMongoFilter, customerOwnsDoc } from '../middleware/customerScope';
 import { CreateStationRequest } from '../types';
-import { Station } from '../models';
+import { Station, StationFolder } from '../models';
 
 const router = Router();
 
@@ -77,6 +77,35 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
   );
 
   if (!station) { res.status(404).json({ error: 'Station not found' }); return; }
+  res.json({ station });
+});
+
+// Move a station into a folder, or out to the ungrouped root (folderId: null).
+router.patch('/:id/folder', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
+  const { folderId } = req.body as { folderId?: unknown };
+  if (folderId !== null && typeof folderId !== 'string') {
+    res.status(400).json({ error: 'folderId must be a string or null' });
+    return;
+  }
+
+  const station = await Station.findById(req.params.id);
+  if (!station || !customerOwnsDoc(req, station)) {
+    res.status(404).json({ error: 'Station not found' });
+    return;
+  }
+
+  if (folderId) {
+    const folder = await StationFolder.findById(folderId);
+    if (!folder || !customerOwnsDoc(req, folder)) {
+      res.status(404).json({ error: 'Folder not found' });
+      return;
+    }
+    station.folderId = folder._id;
+  } else {
+    station.folderId = null;
+  }
+
+  await station.save();
   res.json({ station });
 });
 

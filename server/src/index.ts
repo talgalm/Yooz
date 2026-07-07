@@ -48,6 +48,9 @@ import adminHelpAssistantRouter from './routes/adminHelpAssistant';
 import devTasksRouter from './routes/devTasks';
 import sharedStatsRouter from './routes/sharedStats';
 import activityFoldersRouter from './routes/activityFolders';
+import stationFoldersRouter from './routes/stationFolders';
+import gameFoldersRouter from './routes/gameFolders';
+import missionFoldersRouter from './routes/missionFolders';
 
 const app = express();
 
@@ -108,6 +111,9 @@ app.use('/api/admin/portals', portalsRouter);
 app.use('/api/admin/tutorials', tutorialsRouter);
 app.use('/api/admin/themes', themesRouter);
 app.use('/api/admin/activity-folders', activityFoldersRouter);
+app.use('/api/admin/station-folders', stationFoldersRouter);
+app.use('/api/admin/game-folders', gameFoldersRouter);
+app.use('/api/admin/mission-folders', missionFoldersRouter);
 app.use('/api/check-answer', checkAnswerRouter);
 app.use('/api/tts', ttsRouter);
 

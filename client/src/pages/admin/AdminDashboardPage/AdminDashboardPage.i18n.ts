@@ -87,6 +87,8 @@ export const texts = {
     allActivities: 'All activities',
     emptyFolder: 'This folder is empty. Drag activities here or use the ⋯ menu.',
     emptyFolderName: 'Please enter a folder name',
+    allMissions: 'All missions',
+    emptyMissionsFolder: 'This folder is empty. Drag missions here.',
   },
   he: {
     title: 'פעילויות',
@@ -176,5 +178,7 @@ export const texts = {
     allActivities: 'כל הפעילויות',
     emptyFolder: 'התיקייה ריקה. גררו פעילויות לכאן או השתמשו בתפריט ⋯.',
     emptyFolderName: 'יש להזין שם תיקייה',
+    allMissions: 'כל המשימות',
+    emptyMissionsFolder: 'התיקייה ריקה. גררו משימות לכאן.',
   },
 };
