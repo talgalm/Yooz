@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateAdmin } from '../middleware/adminAuth';
 import { createdByEmailForNewResource, customerMongoFilter, customerOwnsDoc } from '../middleware/customerScope';
-import { Mission } from '../models';
+import { Mission, MissionFolder } from '../models';
 
 const router = Router();
 
@@ -57,6 +57,35 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: 
     },
     { new: true, runValidators: true },
   );
+  res.json({ mission });
+});
+
+// Move a mission into a folder, or out to the ungrouped root (folderId: null).
+router.patch('/:id/folder', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
+  const { folderId } = req.body as { folderId?: unknown };
+  if (folderId !== null && typeof folderId !== 'string') {
+    res.status(400).json({ error: 'folderId must be a string or null' });
+    return;
+  }
+
+  const mission = await Mission.findById(req.params.id);
+  if (!mission || !customerOwnsDoc(req, mission)) {
+    res.status(404).json({ error: 'Mission not found' });
+    return;
+  }
+
+  if (folderId) {
+    const folder = await MissionFolder.findById(folderId);
+    if (!folder || !customerOwnsDoc(req, folder)) {
+      res.status(404).json({ error: 'Folder not found' });
+      return;
+    }
+    mission.folderId = folder._id;
+  } else {
+    mission.folderId = null;
+  }
+
+  await mission.save();
   res.json({ mission });
 });
 

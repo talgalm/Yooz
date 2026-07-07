@@ -16,7 +16,7 @@ import AdminLibraryTab from '../AdminLibraryTab';
 import AdminPortalsTab from '../AdminPortalsTab';
 import AdminTutorialsTab from '../AdminTutorialsTab';
 import type { Portal } from '../AdminPortalsTab';
-import FolderFormModal from './FolderFormModal';
+import FolderFormModal from '../FolderFormModal';
 import { resolveFolderColor, DEFAULT_FOLDER_COLOR } from '../folderColors';
 import {
   AdminHeader,
@@ -26,9 +26,6 @@ import {
   SegmentedControl,
   SegmentedControlCenter,
   SegmentedButton,
-  GameTabBar,
-  GameTabGroup,
-  GameTab,
 } from '../../../components/styled';
 import {
   HeaderActionsRow,
@@ -654,7 +651,6 @@ const TypeTileEmoji = styled('span')({
 
 type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'users' | 'portals' | 'tutorials';
 type StationsSection = 'stations' | 'games' | 'missions';
-type GameSubTab = 'all' | 'order' | 'trivia' | 'puzzle' | 'trueFalse' | 'ballGame';
 type CreateStep = 'main' | 'game' | 'station';
 
 interface Activity {
@@ -687,6 +683,7 @@ export interface Game {
   theme?: string;
   tags?: string[];
   createdAt: string;
+  folderId?: string | null;
 }
 
 export interface Station {
@@ -699,6 +696,7 @@ export interface Station {
   tags?: string[];
   settings?: Record<string, unknown>;
   createdAt: string;
+  folderId?: string | null;
 }
 
 export interface Mission {
@@ -708,6 +706,7 @@ export interface Mission {
   customer?: string;
   explanationScreens: { header: string; description: string; buttonText: string }[];
   createdAt: string;
+  folderId?: string | null;
 }
 
 export default function AdminDashboardPage() {
@@ -719,14 +718,16 @@ export default function AdminDashboardPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [games, setGames] = useState<Game[]>([]);
+  const [gameFolders, setGameFolders] = useState<Folder[]>([]);
   const [stations, setStations] = useState<Station[]>([]);
+  const [stationFolders, setStationFolders] = useState<Folder[]>([]);
   const [missions, setMissions] = useState<Mission[]>([]);
+  const [missionFolders, setMissionFolders] = useState<Folder[]>([]);
   const [portals, setPortals] = useState<Portal[]>([]);
   const [activeTab, setActiveTab] = useState<MainTab>(
     ['activities', 'statistics', 'stations', 'library', 'users', 'portals', 'tutorials'].includes(initialTab) ? initialTab : 'activities'
   );
   const [stationsSection, setStationsSection] = useState<StationsSection>('stations');
-  const [gameSubTab, setGameSubTab] = useState<GameSubTab>('all');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createStep, setCreateStep] = useState<CreateStep>('main');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -773,19 +774,25 @@ export default function AdminDashboardPage() {
 
   const fetchAll = useCallback(async () => {
     try {
-      const [activitiesRes, foldersRes, gamesRes, stationsRes, missionsRes, portalsRes] = await Promise.all([
+      const [activitiesRes, foldersRes, gamesRes, gameFoldersRes, stationsRes, stationFoldersRes, missionsRes, missionFoldersRes, portalsRes] = await Promise.all([
         adminApiFetch<{ activities: Activity[] }>('/api/admin/activities'),
         adminApiFetch<{ folders: Folder[] }>('/api/admin/activity-folders'),
         adminApiFetch<{ games: Game[] }>('/api/admin/games'),
+        adminApiFetch<{ folders: Folder[] }>('/api/admin/game-folders'),
         adminApiFetch<{ stations: Station[] }>('/api/admin/stations'),
+        adminApiFetch<{ folders: Folder[] }>('/api/admin/station-folders'),
         adminApiFetch<{ missions: Mission[] }>('/api/admin/missions'),
+        adminApiFetch<{ folders: Folder[] }>('/api/admin/mission-folders'),
         adminApiFetch<{ portals: Portal[] }>('/api/admin/portals'),
       ]);
       setActivities(activitiesRes.activities);
       setFolders(foldersRes.folders);
       setGames(gamesRes.games);
+      setGameFolders(gameFoldersRes.folders);
       setStations(stationsRes.stations);
+      setStationFolders(stationFoldersRes.folders);
       setMissions(missionsRes.missions);
+      setMissionFolders(missionFoldersRes.folders);
       setPortals(portalsRes.portals);
     } catch {
       // silently fail — data stays empty
@@ -800,15 +807,34 @@ export default function AdminDashboardPage() {
 
   const refreshGames = useCallback(async () => {
     try {
-      const data = await adminApiFetch<{ games: Game[] }>('/api/admin/games');
-      setGames(data.games);
+      const [gamesData, foldersData] = await Promise.all([
+        adminApiFetch<{ games: Game[] }>('/api/admin/games'),
+        adminApiFetch<{ folders: Folder[] }>('/api/admin/game-folders'),
+      ]);
+      setGames(gamesData.games);
+      setGameFolders(foldersData.folders);
+    } catch {}
+  }, []);
+
+  const refreshMissions = useCallback(async () => {
+    try {
+      const [missionsData, foldersData] = await Promise.all([
+        adminApiFetch<{ missions: Mission[] }>('/api/admin/missions'),
+        adminApiFetch<{ folders: Folder[] }>('/api/admin/mission-folders'),
+      ]);
+      setMissions(missionsData.missions);
+      setMissionFolders(foldersData.folders);
     } catch {}
   }, []);
 
   const refreshStations = useCallback(async () => {
     try {
-      const data = await adminApiFetch<{ stations: Station[] }>('/api/admin/stations');
-      setStations(data.stations);
+      const [stationsData, foldersData] = await Promise.all([
+        adminApiFetch<{ stations: Station[] }>('/api/admin/stations'),
+        adminApiFetch<{ folders: Folder[] }>('/api/admin/station-folders'),
+      ]);
+      setStations(stationsData.stations);
+      setStationFolders(foldersData.folders);
     } catch {}
   }, []);
 
@@ -943,53 +969,20 @@ export default function AdminDashboardPage() {
             </SegmentedControlCenter>
 
             {stationsSection === 'stations' && (
-              <AdminStationsTab stations={stations} onRefresh={refreshStations} hideCreateButton />
+              <AdminStationsTab stations={stations} folders={stationFolders} onRefresh={refreshStations} hideCreateButton />
             )}
 
             {stationsSection === 'games' && (
-              <>
-                <GameTabBar>
-                  <GameTabGroup>
-                    <GameTab active={gameSubTab === 'all'} onClick={() => setGameSubTab('all')}>
-                      {t.subTabAll}
-                    </GameTab>
-                    <GameTab active={gameSubTab === 'order'} onClick={() => setGameSubTab('order')}>
-                      {t.subTabOrder}
-                    </GameTab>
-                    <GameTab active={gameSubTab === 'trivia'} onClick={() => setGameSubTab('trivia')}>
-                      {t.subTabTrivia}
-                    </GameTab>
-                    <GameTab active={gameSubTab === 'puzzle'} onClick={() => setGameSubTab('puzzle')}>
-                      {t.subTabPuzzle}
-                    </GameTab>
-                    <GameTab active={gameSubTab === 'trueFalse'} onClick={() => setGameSubTab('trueFalse')}>
-                      {t.subTabTrueFalse}
-                    </GameTab>
-                    <GameTab active={gameSubTab === 'ballGame'} onClick={() => setGameSubTab('ballGame')}>
-                      {t.subTabBallGame}
-                    </GameTab>
-                  </GameTabGroup>
-                </GameTabBar>
-
-                <AdminGamesTab
-                  games={games}
-                  gameType={gameSubTab}
-                  title={({
-                    all: t.subTabAll,
-                    order: t.subTabOrder,
-                    trivia: t.subTabTrivia,
-                    puzzle: t.subTabPuzzle,
-                    trueFalse: t.subTabTrueFalse,
-                    ballGame: t.subTabBallGame,
-                  } as Record<string, string>)[gameSubTab] ?? t.subTabAll}
-                  onRefresh={refreshGames}
-                  hideCreateButton
-                />
-              </>
+              <AdminGamesTab
+                games={games}
+                folders={gameFolders}
+                onRefresh={refreshGames}
+                hideCreateButton
+              />
             )}
 
             {stationsSection === 'missions' && (
-              <MissionsSection missions={missions} navigate={navigate} t={t} />
+              <MissionsSection missions={missions} folders={missionFolders} navigate={navigate} t={t} onRefresh={refreshMissions} />
             )}
           </>
         )}
@@ -1740,19 +1733,274 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
 
 // ─── Missions sub-section with pagination ───
 
-function MissionsSection({ missions, navigate, t }: { missions: Mission[]; navigate: ReturnType<typeof useNavigate>; t: Record<string, string> }) {
-  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(missions);
+function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missions: Mission[]; folders: Folder[]; navigate: ReturnType<typeof useNavigate>; t: Record<string, string>; onRefresh: () => void }) {
+  const [openFolderId, setOpenFolderId] = useState<string | null>(null);
+  const [actionsMissionId, setActionsMissionId] = useState<string | null>(null);
+  const [actionsFolderId, setActionsFolderId] = useState<string | null>(null);
+  const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null);
+  const [confirmDeleteFolderId, setConfirmDeleteFolderId] = useState<string | null>(null);
+  const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
+  const [folderModal, setFolderModal] = useState<{ mode: 'create' | 'edit'; folder?: Folder } | null>(null);
+
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+  const [touchGhost, setTouchGhost] = useState<{ name: string; x: number; y: number } | null>(null);
+  const mouseDragIdRef = useRef<string | null>(null);
+  const touchDragRef = useRef<{ id: string } | null>(null);
+  const longPressRef = useRef<{ id: string; x: number; y: number; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const justDraggedRef = useRef(false);
+  const dropTargetRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const missionsRef = useRef(missions);
+  missionsRef.current = missions;
+
+  const closeAllMenus = useCallback(() => {
+    setActionsMissionId(null);
+    setActionsFolderId(null);
+    setConfirmDeleteFolderId(null);
+  }, []);
+  const openMissionActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsMissionId(id); };
+  const openFolderActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsFolderId(id); };
+
+  const moveToFolder = useCallback(async (id: string, folderId: string | null) => {
+    const cur = missionsRef.current.find((m) => m._id === id);
+    if (!cur) return;
+    if ((cur.folderId ?? null) === folderId) return;
+    try {
+      await adminApiFetch(`/api/admin/missions/${id}/folder`, { method: 'PATCH', body: JSON.stringify({ folderId }) });
+      onRefresh();
+    } catch { /* ignore */ }
+  }, [onRefresh]);
+
+  const submitFolder = async (name: string, color: string) => {
+    if (folderModal?.mode === 'edit' && folderModal.folder) {
+      await adminApiFetch(`/api/admin/mission-folders/${folderModal.folder._id}`, { method: 'PATCH', body: JSON.stringify({ name, color }) });
+    } else {
+      await adminApiFetch('/api/admin/mission-folders', { method: 'POST', body: JSON.stringify({ name, color }) });
+    }
+    onRefresh();
+  };
+  const handleDeleteFolder = async (folder: Folder) => {
+    if (confirmDeleteFolderId !== folder._id) { setConfirmDeleteFolderId(folder._id); return; }
+    setDeletingFolderId(folder._id);
+    try {
+      await adminApiFetch(`/api/admin/mission-folders/${folder._id}`, { method: 'DELETE' });
+      if (openFolderId === folder._id) setOpenFolderId(null);
+      closeAllMenus();
+      onRefresh();
+    } finally {
+      setDeletingFolderId(null);
+    }
+  };
+
+  // mouse drag (HTML5)
+  const onMouseDragStart = (e: React.DragEvent, id: string) => {
+    mouseDragIdRef.current = id;
+    setDraggingId(id);
+    try { e.dataTransfer.setData('text/plain', id); } catch { /* Firefox */ }
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  const onMouseDragEnd = () => { mouseDragIdRef.current = null; setDraggingId(null); setDragOverKey(null); };
+  const onTargetDragOver = (e: React.DragEvent, key: string) => {
+    if (!mouseDragIdRef.current) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverKey(key);
+  };
+  const onTargetDragLeave = (key: string) => setDragOverKey((cur) => (cur === key ? null : cur));
+  const onTargetDrop = (e: React.DragEvent, folderId: string | null) => {
+    e.preventDefault();
+    const id = mouseDragIdRef.current;
+    mouseDragIdRef.current = null;
+    setDraggingId(null);
+    setDragOverKey(null);
+    if (id) moveToFolder(id, folderId);
+  };
+
+  // touch drag (press-and-hold)
+  const hitTestKey = useCallback((x: number, y: number): string | null => {
+    for (const [key, el] of dropTargetRefs.current.entries()) {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) continue;
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return key;
+    }
+    return null;
+  }, []);
+  const onTouchMovePrevent = useCallback((e: TouchEvent) => { if (touchDragRef.current) e.preventDefault(); }, []);
+  const onTouchPointerMove = useCallback((e: PointerEvent) => {
+    if (!touchDragRef.current) {
+      const lp = longPressRef.current;
+      if (lp && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 12) { clearTimeout(lp.timer); longPressRef.current = null; }
+      return;
+    }
+    setDragOverKey(hitTestKey(e.clientX, e.clientY));
+    const name = missionsRef.current.find((m) => m._id === touchDragRef.current!.id)?.name || '';
+    setTouchGhost({ name, x: e.clientX, y: e.clientY });
+  }, [hitTestKey]);
+  const onTouchPointerUp = useCallback((e: PointerEvent) => {
+    if (longPressRef.current) { clearTimeout(longPressRef.current.timer); longPressRef.current = null; }
+    window.removeEventListener('pointermove', onTouchPointerMove);
+    window.removeEventListener('pointerup', onTouchPointerUp);
+    window.removeEventListener('pointercancel', onTouchPointerUp);
+    window.removeEventListener('touchmove', onTouchMovePrevent);
+    const st = touchDragRef.current;
+    touchDragRef.current = null;
+    setTouchGhost(null);
+    setDraggingId(null);
+    setDragOverKey(null);
+    if (st) {
+      justDraggedRef.current = true;
+      const key = hitTestKey(e.clientX, e.clientY);
+      if (key) moveToFolder(st.id, key === '__root__' ? null : key);
+    }
+  }, [onTouchPointerMove, onTouchMovePrevent, hitTestKey, moveToFolder]);
+  const onRowPointerDown = useCallback((e: React.PointerEvent, id: string) => {
+    if (e.pointerType !== 'touch') return;
+    if ((e.target as HTMLElement).closest('[data-row-actions]')) return;
+    justDraggedRef.current = false;
+    const x = e.clientX, y = e.clientY;
+    const timer = setTimeout(() => {
+      touchDragRef.current = { id };
+      setDraggingId(id);
+      const name = missionsRef.current.find((m) => m._id === id)?.name || '';
+      setTouchGhost({ name, x: longPressRef.current?.x ?? x, y: longPressRef.current?.y ?? y });
+    }, 300);
+    longPressRef.current = { id, x, y, timer };
+    window.addEventListener('pointermove', onTouchPointerMove);
+    window.addEventListener('pointerup', onTouchPointerUp);
+    window.addEventListener('pointercancel', onTouchPointerUp);
+    window.addEventListener('touchmove', onTouchMovePrevent, { passive: false });
+  }, [onTouchPointerMove, onTouchPointerUp, onTouchMovePrevent]);
+  const registerDropTarget = (key: string) => (el: HTMLElement | null) => {
+    if (el) dropTargetRefs.current.set(key, el);
+    else dropTargetRefs.current.delete(key);
+  };
+
+  useEffect(() => {
+    if (!actionsMissionId && !actionsFolderId) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeAllMenus(); };
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest('[data-row-actions]')) return;
+      closeAllMenus();
+    };
+    const onScrollOrResize = () => closeAllMenus();
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
+    };
+  }, [actionsMissionId, actionsFolderId, closeAllMenus]);
+
+  useEffect(() => () => {
+    if (longPressRef.current) clearTimeout(longPressRef.current.timer);
+    window.removeEventListener('pointermove', onTouchPointerMove);
+    window.removeEventListener('pointerup', onTouchPointerUp);
+    window.removeEventListener('pointercancel', onTouchPointerUp);
+    window.removeEventListener('touchmove', onTouchMovePrevent);
+  }, [onTouchPointerMove, onTouchPointerUp, onTouchMovePrevent]);
+
+  useEffect(() => {
+    if (openFolderId && !folders.some((f) => f._id === openFolderId)) setOpenFolderId(null);
+  }, [folders, openFolderId]);
+
+  const openFolder = openFolderId ? folders.find((f) => f._id === openFolderId) || null : null;
+  const visibleMissions = useMemo(
+    () => (openFolderId ? missions.filter((m) => (m.folderId ?? null) === openFolderId) : missions.filter((m) => !m.folderId)),
+    [missions, openFolderId],
+  );
+  const visibleFolders = openFolderId ? [] : folders;
+  const countFor = (fid: string) => missions.filter((m) => (m.folderId ?? null) === fid).length;
+
+  const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(visibleMissions);
+
+  const renderFolderMenu = (folder: Folder) => (
+    <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
+      <RowActionIconButton type="button" aria-label={t.actions} title={t.actions}
+        onClick={(e) => (actionsFolderId === folder._id ? closeAllMenus() : openFolderActions(folder._id, e.currentTarget.getBoundingClientRect()))}
+      >
+        <PencilIcon />
+      </RowActionIconButton>
+      {actionsFolderId === folder._id && (
+        <RowActionMenu style={actionMenuStyle(menuAnchorRect)}>
+          <RowActionMenuItem type="button" onClick={() => { setFolderModal({ mode: 'edit', folder }); closeAllMenus(); }}>
+            {t.editFolder}
+          </RowActionMenuItem>
+          <RowActionMenuItem type="button" danger confirm={confirmDeleteFolderId === folder._id} disabled={deletingFolderId === folder._id}
+            onClick={() => handleDeleteFolder(folder)}
+          >
+            {confirmDeleteFolderId === folder._id ? t.confirmDeleteFolder : t.deleteFolder}
+          </RowActionMenuItem>
+        </RowActionMenu>
+      )}
+    </RowActionWrapper>
+  );
+
+  const renderMissionMenu = (m: Mission) => {
+    if (folders.length === 0 && !m.folderId) return null; // nothing to move to
+    return (
+      <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
+        <RowActionIconButton type="button" aria-label={t.moveToFolder} title={t.moveToFolder}
+          onClick={(e) => (actionsMissionId === m._id ? closeAllMenus() : openMissionActions(m._id, e.currentTarget.getBoundingClientRect()))}
+        >
+          <PencilIcon />
+        </RowActionIconButton>
+        {actionsMissionId === m._id && (
+          <RowActionMenu style={actionMenuStyle(menuAnchorRect)}>
+            {folders.map((f) => (
+              <RowActionMenuItem key={f._id} type="button" disabled={(m.folderId ?? null) === f._id}
+                onClick={() => { moveToFolder(m._id, f._id); closeAllMenus(); }}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <FolderGlyph color={resolveFolderColor(f.color).accent} size={16} />
+                  {f.name}
+                </span>
+              </RowActionMenuItem>
+            ))}
+            {m.folderId && (
+              <RowActionMenuItem type="button" onClick={() => { moveToFolder(m._id, null); closeAllMenus(); }}>
+                {t.removeFromFolder}
+              </RowActionMenuItem>
+            )}
+          </RowActionMenu>
+        )}
+      </RowActionWrapper>
+    );
+  };
 
   return (
     <>
       <SectionHeaderRow>
         <PageTitleNoMargin>{t.missionsTitle}</PageTitleNoMargin>
-        <SmallActionButton onClick={() => navigate('/admin/missions/new')}>
-          {t.newMission}
-        </SmallActionButton>
+        <HeaderButtons>
+          <SmallActionButton onClick={() => setFolderModal({ mode: 'create' })}>{t.newFolder}</SmallActionButton>
+          <SmallActionButton onClick={() => navigate('/admin/missions/new')}>{t.newMission}</SmallActionButton>
+        </HeaderButtons>
       </SectionHeaderRow>
 
-      {missions.length === 0 ? (
+      {openFolder && (
+        <Breadcrumb>
+          <BreadcrumbLink type="button" ref={registerDropTarget('__root__')} dragOver={dragOverKey === '__root__'}
+            onClick={() => setOpenFolderId(null)}
+            onDragOver={(e) => onTargetDragOver(e, '__root__')}
+            onDragLeave={() => onTargetDragLeave('__root__')}
+            onDrop={(e) => onTargetDrop(e, null)}
+          >
+            ‹ {t.allMissions}
+          </BreadcrumbLink>
+          <BreadcrumbSep>/</BreadcrumbSep>
+          <BreadcrumbCurrent>
+            <FolderGlyph color={resolveFolderColor(openFolder.color).accent} size={18} />
+            {openFolder.name}
+          </BreadcrumbCurrent>
+        </Breadcrumb>
+      )}
+
+      {missions.length === 0 && folders.length === 0 ? (
         <TableCard style={{ padding: 32 }}>
           <EmptyText>{t.noMissions}</EmptyText>
         </TableCard>
@@ -1767,11 +2015,45 @@ function MissionsSection({ missions, navigate, t }: { missions: Mission[]; navig
                     <th>{t.missionScreens}</th>
                     <th>{t.missionCustomer}</th>
                     <th>{t.created}</th>
+                    <th />
                   </tr>
                 </thead>
                 <tbody>
+                  {visibleFolders.map((folder) => {
+                    const fc = resolveFolderColor(folder.color);
+                    const isOver = dragOverKey === folder._id;
+                    return (
+                      <tr key={`folder-${folder._id}`}
+                        onClick={() => setOpenFolderId(folder._id)}
+                        onDragOver={(e) => onTargetDragOver(e, folder._id)}
+                        onDragLeave={() => onTargetDragLeave(folder._id)}
+                        onDrop={(e) => onTargetDrop(e, folder._id)}
+                        style={isOver ? { outline: `2px dashed ${fc.accent}`, outlineOffset: '-2px' } : undefined}
+                      >
+                        <td>
+                          <FolderNameWrap>
+                            <FolderGlyph color={fc.accent} />
+                            <NameMain>{folder.name}</NameMain>
+                            <IconBadge variant="purple">{countFor(folder._id)}</IconBadge>
+                          </FolderNameWrap>
+                        </td>
+                        <td colSpan={3} />
+                        <RowActionsCell>{renderFolderMenu(folder)}</RowActionsCell>
+                      </tr>
+                    );
+                  })}
                   {pageItems.map((m) => (
-                    <tr key={m._id} onClick={() => navigate(`/admin/missions/${m._id}`)} style={{ cursor: 'pointer' }}>
+                    <tr key={m._id}
+                      draggable
+                      onDragStart={(e) => onMouseDragStart(e, m._id)}
+                      onDragEnd={onMouseDragEnd}
+                      onPointerDown={(e) => onRowPointerDown(e, m._id)}
+                      onClick={() => {
+                        if (justDraggedRef.current) { justDraggedRef.current = false; return; }
+                        navigate(`/admin/missions/${m._id}`);
+                      }}
+                      style={dragRowStyle(draggingId === m._id)}
+                    >
                       <td><CellBold>{m.name}</CellBold></td>
                       <td>
                         <IconBadge variant="purple">
@@ -1782,6 +2064,7 @@ function MissionsSection({ missions, navigate, t }: { missions: Mission[]; navig
                       <td>
                         <DateCell>{new Date(m.createdAt).toLocaleDateString()}</DateCell>
                       </td>
+                      <RowActionsCell>{renderMissionMenu(m)}</RowActionsCell>
                     </tr>
                   ))}
                 </tbody>
@@ -1790,13 +2073,49 @@ function MissionsSection({ missions, navigate, t }: { missions: Mission[]; navig
           </DesktopOnlyDiv>
           <MobileOnlyDiv>
             <MobileList>
+              {visibleFolders.map((folder) => {
+                const fc = resolveFolderColor(folder.color);
+                const isOver = dragOverKey === folder._id;
+                return (
+                  <MobileCard key={`folder-${folder._id}`}
+                    ref={registerDropTarget(folder._id)}
+                    onClick={() => setOpenFolderId(folder._id)}
+                    onDragOver={(e) => onTargetDragOver(e, folder._id)}
+                    onDragLeave={() => onTargetDragLeave(folder._id)}
+                    onDrop={(e) => onTargetDrop(e, folder._id)}
+                    style={isOver ? { border: `1.5px dashed ${fc.accent}` } : undefined}
+                  >
+                    <MobileCardHeader>
+                      <FolderNameWrap>
+                        <FolderGlyph color={fc.accent} />
+                        <MobileCardNameLarge>{folder.name}</MobileCardNameLarge>
+                        <IconBadge variant="purple">{countFor(folder._id)}</IconBadge>
+                      </FolderNameWrap>
+                      {renderFolderMenu(folder)}
+                    </MobileCardHeader>
+                  </MobileCard>
+                );
+              })}
               {pageItems.map((m) => (
-                <MobileCard key={m._id} onClick={() => navigate(`/admin/missions/${m._id}`)}>
+                <MobileCard key={m._id}
+                  draggable
+                  onDragStart={(e) => onMouseDragStart(e, m._id)}
+                  onDragEnd={onMouseDragEnd}
+                  onPointerDown={(e) => onRowPointerDown(e, m._id)}
+                  onClick={() => {
+                    if (justDraggedRef.current) { justDraggedRef.current = false; return; }
+                    navigate(`/admin/missions/${m._id}`);
+                  }}
+                  style={dragRowStyle(draggingId === m._id)}
+                >
                   <MobileCardHeader>
                     <MobileCardNameLarge>{m.name}</MobileCardNameLarge>
-                    <IconBadge variant="purple">
-                      {m.explanationScreens?.length || 0} {t.missionScreens}
-                    </IconBadge>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <IconBadge variant="purple">
+                        {m.explanationScreens?.length || 0} {t.missionScreens}
+                      </IconBadge>
+                      {renderMissionMenu(m)}
+                    </div>
                   </MobileCardHeader>
                   <MobileCardDetails>
                     <MobileCardDate>{new Date(m.createdAt).toLocaleDateString()}</MobileCardDate>
@@ -1806,8 +2125,32 @@ function MissionsSection({ missions, navigate, t }: { missions: Mission[]; navig
             </MobileList>
           </MobileOnlyDiv>
 
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
+          {openFolder && visibleMissions.length === 0 && (
+            <TableCard style={{ padding: 28, marginTop: 12 }}>
+              <EmptyText>{t.emptyMissionsFolder}</EmptyText>
+            </TableCard>
+          )}
+
+          {visibleMissions.length > 0 && (
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} showing={showing} totalItems={totalItems} />
+          )}
         </>
+      )}
+
+      {touchGhost && (
+        <DragGhost style={{ left: touchGhost.x, top: touchGhost.y }}>{touchGhost.name}</DragGhost>
+      )}
+
+      {folderModal && (
+        <FolderFormModal
+          t={t}
+          title={folderModal.mode === 'edit' ? t.editFolderTitle : t.newFolderTitle}
+          submitLabel={folderModal.mode === 'edit' ? t.saveFolder : t.createFolderBtn}
+          initialName={folderModal.folder?.name}
+          initialColor={folderModal.folder?.color || DEFAULT_FOLDER_COLOR}
+          onClose={() => setFolderModal(null)}
+          onSubmit={submitFolder}
+        />
       )}
     </>
   );

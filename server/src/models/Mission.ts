@@ -41,6 +41,8 @@ export interface IMission {
   trashSortConfig?: ITrashSortConfig;
   createdAt: Date;
   createdByEmail?: string;
+  /** Admin Missions sub-tab folder this mission is filed under (null = ungrouped). */
+  folderId?: Types.ObjectId | null;
 }
 
 const missionScreenSchema = new Schema<IMissionScreen>({
@@ -80,6 +82,7 @@ const missionSchema = new Schema<IMission>({
   trashSortConfig: { type: trashSortConfigSchema },
   createdAt: { type: Date, default: Date.now },
   createdByEmail: { type: String, lowercase: true, trim: true },
+  folderId: { type: Schema.Types.ObjectId, ref: 'MissionFolder', default: null, index: true },
 });
 
 export const Mission = model<IMission>('Mission', missionSchema, 'missions');

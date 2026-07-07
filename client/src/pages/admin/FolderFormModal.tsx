@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { styled } from '@mui/material/styles';
-import PastelSwatchPicker from '../PastelSwatchPicker';
-import { DEFAULT_FOLDER_COLOR } from '../folderColors';
+import PastelSwatchPicker from './PastelSwatchPicker';
+import { DEFAULT_FOLDER_COLOR } from './folderColors';
 
 // ─── Styled (matches ThemeFormModal's modal aesthetic) ───
 

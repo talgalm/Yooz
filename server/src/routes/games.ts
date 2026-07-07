@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authenticateAdmin } from '../middleware/adminAuth';
 import { createdByEmailForNewResource, customerMongoFilter, customerOwnsDoc } from '../middleware/customerScope';
 import { CreateGameRequest } from '../types';
-import { Game } from '../models';
+import { Game, GameFolder } from '../models';
 
 const router = Router();
 
@@ -64,6 +64,35 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
   );
 
   if (!game) { res.status(404).json({ error: 'Game not found' }); return; }
+  res.json({ game });
+});
+
+// Move a game into a folder, or out to the ungrouped root (folderId: null).
+router.patch('/:id/folder', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
+  const { folderId } = req.body as { folderId?: unknown };
+  if (folderId !== null && typeof folderId !== 'string') {
+    res.status(400).json({ error: 'folderId must be a string or null' });
+    return;
+  }
+
+  const game = await Game.findById(req.params.id);
+  if (!game || !customerOwnsDoc(req, game)) {
+    res.status(404).json({ error: 'Game not found' });
+    return;
+  }
+
+  if (folderId) {
+    const folder = await GameFolder.findById(folderId);
+    if (!folder || !customerOwnsDoc(req, folder)) {
+      res.status(404).json({ error: 'Folder not found' });
+      return;
+    }
+    game.folderId = folder._id;
+  } else {
+    game.folderId = null;
+  }
+
+  await game.save();
   res.json({ game });
 });
 

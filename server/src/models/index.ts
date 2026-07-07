@@ -8,6 +8,9 @@ export {
   FOLDER_COLOR_HEXES,
   DEFAULT_FOLDER_COLOR,
 } from './ActivityFolder';
+export { StationFolder, type IStationFolder } from './StationFolder';
+export { GameFolder, type IGameFolder } from './GameFolder';
+export { MissionFolder, type IMissionFolder } from './MissionFolder';
 export { SmsNotification, type ISmsNotification, type SmsNotificationStatus } from './SmsNotification';
 export { Report, type IReport, type IReportData, type IItemResult, type IQuestionAnswer, type CompletionStatus } from './Report';
 export { Game, type IGame } from './Game';
