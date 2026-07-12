@@ -135,8 +135,8 @@ app.get('/play/:code', async (req, res, next) => {
     const origin = requestOrigin(req);
     const pageUrl = `${origin}/play/${activity.code}`;
     const imageUrl = `${origin}/images/logo-purple.png`;
-    const title = activity.name ? `${activity.name} | גני יהושע` : 'גני יהושע';
-    const description = activity.name?.trim() || 'גני יהושע';
+    const title = activity.name ? `${activity.name} | Yooz` : 'Yooz';
+    const description = activity.name?.trim() || 'Game it the YOOZ way';
     res.type('html').send(
       buildPlayOgHtml({
         pageUrl,
