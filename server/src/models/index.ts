@@ -23,3 +23,5 @@ export { Tutorial, type ITutorial } from './Tutorial';
 export { CustomTheme, type ICustomTheme } from './CustomTheme';
 export { DevTask, type IDevTask, type DevTaskType, type DevTaskStatus } from './DevTask';
 export { CollageJob, type ICollageJob, type CollageJobPhase } from './CollageJob';
+export { SiteContent, DEFAULT_SITE_CONTENT, type ISiteContent, type LocalizedText, type IAudience, type IBooster, type IProject, type ICustomerLogo } from './SiteContent';
+export { ContactLead, type IContactLead } from './ContactLead';

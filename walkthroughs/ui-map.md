@@ -67,8 +67,15 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 | Stations | תחנות | `button:has-text("Stations"), button:has-text("תחנות")` |
 | Library | ספרייה | `button:has-text("Library"), button:has-text("ספרייה")` |
 | Portals | פורטלים | `button:has-text("Portals"), button:has-text("פורטלים")` |
+| Publicity | אתר פרסום | `button:has-text("Publicity"), button:has-text("אתר פרסום")` (admin + super_admin only) |
 | Users | משתמשים | `button:has-text("Users"), button:has-text("משתמשים")` |
 | Tutorials | סרטוני הדרכה | `button:has-text("Tutorials"), button:has-text("סרטוני הדרכה")` |
+
+**Publicity Tab** (edits the public marketing site served at `/`):
+- Sub-tabs: Content (`button:has-text("Content"), button:has-text("תוכן")`) and Leads (`button:has-text("Leads"), button:has-text("פניות")`).
+- Content editor sections: Branding, Hero, Who is it for (4 audiences), Marketing Engine (3 boosters), Customers, Contact. Each text field has paired Hebrew + English inputs; images use the shared `FileUploadButton` (`button:has-text("Upload"), button:has-text("העלאה")`).
+- Save button: `button:has-text("Save changes"), button:has-text("שמירת שינויים")`.
+- Leads sub-tab: table of contact-form submissions with a "handled" checkbox per row.
 
 **Activities Tab:**
 - Search input: `input[placeholder*="Search name"], input[placeholder*="חיפוש"]` — matches activity name, creator email, and activity code (case-insensitive)
@@ -380,6 +387,7 @@ page.waitForURL('**/story/**')
 | Stations | תחנות |
 | Library | ספרייה |
 | Portals | פורטלים |
+| Publicity | אתר פרסום |
 | Users | משתמשים |
 | Tutorials | סרטוני הדרכה |
 
