@@ -379,7 +379,6 @@ export default function StoryModulePage() {
   // ─── Session persistence ───
   // Must be STATE (not ref) so the save effect only runs after restored values are in state
   const [sessionRestored, setSessionRestored] = useState(false);
-  const sessionFoundInStorage = useRef(false);
 
   // Restore session on mount
   useEffect(() => {
@@ -388,7 +387,6 @@ export default function StoryModulePage() {
     if (!raw) { setSessionRestored(true); return; }
     try {
       const session = JSON.parse(raw);
-      sessionFoundInStorage.current = true;
       setCurrentItemIndex(session.currentItemIndex ?? 0);
       setScores(session.scores ?? []);
       setPhase(session.phase === 'playing' ? 'roadmap' : (session.phase ?? 'roadmap'));
@@ -558,16 +556,20 @@ export default function StoryModulePage() {
     preloadActivityMedia(data, { priorityIndex: currentItemIndex });
   }, [data, currentItemIndex]);
 
-  // Restore progress from server when no sessionStorage exists (cross-session resume)
+  // The server save is the source of truth. On every mount/refresh, pull the
+  // saved progress and adopt it; the local sessionStorage session (restored
+  // above) is only a fast-paint fallback used when the server has no progress
+  // yet. This is what makes a refreshed desktop tab jump to the station the
+  // participant advanced to on their phone.
   useEffect(() => {
-    if (!sessionRestored || !data || !code || sessionFoundInStorage.current) return;
+    if (!sessionRestored || !data || !code) return;
     apiFetch<{
       completionStatus: string;
       lastActiveItemIndex: number;
       totalItemsCompleted: number;
       scores?: { gameName: string; score: number }[];
       itemResults?: { itemIndex: number; itemName: string; score: number }[];
-    }>(`/api/activities/${code}/my-progress`)
+    }>(`/api/activities/${code}/my-progress`, { headers: { 'Cache-Control': 'no-store' } })
       .then((progress) => {
         if (progress.completionStatus === 'completed' && progress.scores?.length) {
           setScores(progress.scores.map((s, i) => ({ itemIndex: i, gameName: s.gameName, score: s.score })));
@@ -576,20 +578,20 @@ export default function StoryModulePage() {
           setShowGuidelines(false);
           setPhase('finish');
         } else if (progress.completionStatus === 'in_progress' && progress.totalItemsCompleted > 0) {
-          if (progress.itemResults?.length) {
-            setScores(progress.itemResults.map((ir) => ({ itemIndex: ir.itemIndex, gameName: ir.itemName, score: ir.score })));
-          }
           if (data.module.type === 'spiders' && progress.itemResults?.length) {
-            // Restore completed items for spiders mode from itemResults
             setCompletedSpiderItems(new Set(progress.itemResults.map((ir) => ir.itemIndex)));
           } else {
             const resumeIndex = Math.min(progress.lastActiveItemIndex + 1, data.module.items.length - 1);
             setCurrentItemIndex(resumeIndex);
           }
+          if (progress.itemResults?.length) {
+            setScores(progress.itemResults.map((ir) => ({ itemIndex: ir.itemIndex, gameName: ir.itemName, score: ir.score })));
+          }
           setShowGuidelines(false);
         }
+        // No server progress → keep the restored local session as-is.
       })
-      .catch(() => { /* fresh start */ });
+      .catch(() => { /* offline / fresh start → keep local session */ });
   }, [sessionRestored, data, code]);
 
   const [showExitConfirm, setShowExitConfirm] = useState(false);
