@@ -297,6 +297,10 @@ export default function StoryModulePage() {
 
   // Guidelines popup (shown once on first roadmap entry)
   const [showGuidelines, setShowGuidelines] = useState(true);
+  // Guidelines must wait for the server progress check — otherwise a participant
+  // who already started on another device sees them flash before my-progress
+  // comes back and hides them.
+  const [progressChecked, setProgressChecked] = useState(false);
   const hasProcessedEntry = useRef(false);
 
   // Spiders mode: track which items have been completed (any order)
@@ -591,7 +595,8 @@ export default function StoryModulePage() {
         }
         // No server progress → keep the restored local session as-is.
       })
-      .catch(() => { /* offline / fresh start → keep local session */ });
+      .catch(() => { /* offline / fresh start → keep local session */ })
+      .finally(() => setProgressChecked(true));
   }, [sessionRestored, data, code]);
 
   const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -1443,7 +1448,7 @@ export default function StoryModulePage() {
             finalItemIndex={spidersFinalItemIndex !== -1 ? spidersFinalItemIndex : undefined}
             lockedFromIndex={lockedFromIndex}
           />
-          {showGuidelines && !currentPopup && (
+          {showGuidelines && progressChecked && !currentPopup && (
             <GuidelinesPopup
               itemCount={data.module.items.length}
               guidelines={data.guidelines}
@@ -1486,7 +1491,7 @@ export default function StoryModulePage() {
           lockedFromIndex={lockedFromIndex}
           activityNameOnRoadmap={data.includeOnRoadmap ? data.name : undefined}
         />
-        {showGuidelines && !currentPopup && (
+        {showGuidelines && progressChecked && !currentPopup && (
           <GuidelinesPopup
             itemCount={data.module.items.length}
             guidelines={data.guidelines}
@@ -1702,7 +1707,7 @@ export default function StoryModulePage() {
         <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
       )}
       {/* Guidelines overlay on top of station — for single-item activities */}
-      {showGuidelines && !currentPopup && data.module.items.length === 1 && (
+      {showGuidelines && progressChecked && !currentPopup && data.module.items.length === 1 && (
         <GuidelinesPopup
           itemCount={data.module.items.length}
           guidelines={data.guidelines}
