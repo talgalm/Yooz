@@ -124,4 +124,5 @@ export interface Activity {
   includeOnRoadmap?: boolean;
   hideLeaderboardInHeader?: boolean;
   leaderboardCurrentDayOnly?: boolean;
+  leaderboardAsGrade?: boolean;
 }

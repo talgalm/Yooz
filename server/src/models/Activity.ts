@@ -107,6 +107,9 @@ export interface IActivity {
   loginComponent?: string; // legacy
   /** Leaderboard scoring mode */
   leaderboardMode?: 'points' | 'time' | 'both';
+  /** When true, leaderboard points are shown as a 0-100 grade (normalized
+   *  against the activity's max possible score). Ignored in 'time' mode. */
+  leaderboardAsGrade?: boolean;
   /** When true, hide the leaderboard trophy button from the session header */
   hideLeaderboardInHeader?: boolean;
   /** When true (default), leaderboard only includes reports completed today in Israel time */
@@ -265,6 +268,7 @@ const activitySchema = new Schema<IActivity>({
   isContinuous: { type: Boolean, default: false },
   loginComponent: { type: String }, // legacy
   leaderboardMode: { type: String, enum: ['points', 'time', 'both'], default: 'points' },
+  leaderboardAsGrade: { type: Boolean, default: false },
   hideLeaderboardInHeader: { type: Boolean, default: false },
   leaderboardCurrentDayOnly: { type: Boolean, default: true },
   activityDurationMinutes: { type: Number },

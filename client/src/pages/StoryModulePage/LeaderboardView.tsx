@@ -237,6 +237,11 @@ function formatLeaderboardScore(score: number): string {
   return Number.isInteger(t) ? String(t) : t.toFixed(1);
 }
 
+/** Points cell: a 0-100 grade (server-normalized) or the raw score. */
+function formatScore(score: number, asGrade: boolean): string {
+  return asGrade ? `${Math.round(score)}` : formatLeaderboardScore(score);
+}
+
 /** Format milliseconds as m:ss (e.g. 75300 → "1:15") */
 function formatDuration(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -254,6 +259,7 @@ interface LeaderboardViewProps {
   isLoading: boolean;
   bgStyle: React.CSSProperties;
   leaderboardMode?: 'points' | 'time' | 'both';
+  leaderboardAsGrade?: boolean;
   onBack: () => void;
   onLogout: () => void;
   t: Record<string, string>;
@@ -265,6 +271,7 @@ export default function LeaderboardView({
   currentParticipantName,
   isLoading,
   leaderboardMode = 'points',
+  leaderboardAsGrade = false,
   onBack,
   onLogout,
   t,
@@ -334,7 +341,7 @@ export default function LeaderboardView({
                     <ScoreValue>
                       {leaderboardMode === 'both' ? (
                         <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.15, gap: 2 }}>
-                          <span>{formatLeaderboardScore(entry.score)}</span>
+                          <span>{formatScore(entry.score, leaderboardAsGrade)}</span>
                           {entry.durationMs != null && (
                             <span style={{ fontSize: '0.72em', opacity: 0.78, fontWeight: 600 }}>
                               {formatDuration(entry.durationMs)}
@@ -343,7 +350,7 @@ export default function LeaderboardView({
                         </span>
                       ) : leaderboardMode === 'time' && entry.durationMs != null
                         ? formatDuration(entry.durationMs)
-                        : formatLeaderboardScore(entry.score)}
+                        : formatScore(entry.score, leaderboardAsGrade)}
                     </ScoreValue>
                   </PlayerCard>
                 );

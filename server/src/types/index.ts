@@ -270,6 +270,7 @@ export interface CreateActivityRequest {
   isContinuous?: boolean;
   portalId?: string;
   leaderboardMode?: 'points' | 'time' | 'both';
+  leaderboardAsGrade?: boolean;
   hideLeaderboardInHeader?: boolean;
   leaderboardCurrentDayOnly?: boolean;
   activityDurationMinutes?: number;

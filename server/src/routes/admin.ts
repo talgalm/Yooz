@@ -74,7 +74,7 @@ async function buildActivityData(
   existingPasswordHash?: string,
   existing?: IActivity,
 ): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, hideLeaderboardInHeader, leaderboardCurrentDayOnly, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
+  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -201,6 +201,7 @@ async function buildActivityData(
     : leaderboardMode === 'both'
       ? 'both'
       : 'points';
+  data.leaderboardAsGrade = leaderboardAsGrade === true;
   data.hideLeaderboardInHeader = hideLeaderboardInHeader === true;
   data.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly !== false;
   // Time limit is only meaningful in modes that show the timer (time/both).

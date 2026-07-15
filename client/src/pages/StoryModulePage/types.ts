@@ -132,6 +132,7 @@ export interface ActivityModuleResponse {
   customInstructions?: CustomInstructionsData;
   isContinuous?: boolean;
   leaderboardMode?: 'points' | 'time' | 'both';
+  leaderboardAsGrade?: boolean;
   hideLeaderboardInHeader?: boolean;
   activityDurationMinutes?: number;
   roadmapTimerMinutes?: number;

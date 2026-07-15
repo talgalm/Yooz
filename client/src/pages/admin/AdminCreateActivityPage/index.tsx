@@ -378,6 +378,7 @@ export default function AdminCreateActivityPage() {
   const [showItemTitleNumbers, setShowItemTitleNumbers] = useState(false);
 
   const [leaderboardMode, setLeaderboardMode] = useState<'points' | 'time' | 'both'>('points');
+  const [leaderboardAsGrade, setLeaderboardAsGrade] = useState(false);
   const [displayLeaderboardInHeader, setDisplayLeaderboardInHeader] = useState(false);
   const [leaderboardCurrentDayOnly, setLeaderboardCurrentDayOnly] = useState(true);
   const [activityDurationMinutes, setActivityDurationMinutes] = useState('');
@@ -526,6 +527,7 @@ export default function AdminCreateActivityPage() {
           if (a.portalId) setPortalId(a.portalId);
         }
         if (a.leaderboardMode) setLeaderboardMode(a.leaderboardMode as 'points' | 'time' | 'both');
+        setLeaderboardAsGrade(a.leaderboardAsGrade === true);
         setDisplayLeaderboardInHeader(!a.hideLeaderboardInHeader);
         setLeaderboardCurrentDayOnly(a.leaderboardCurrentDayOnly !== false);
         if (a.activityDurationMinutes) setActivityDurationMinutes(String(a.activityDurationMinutes));
@@ -995,6 +997,7 @@ export default function AdminCreateActivityPage() {
         if (scheduledEnd) payload.scheduledEnd = new Date(scheduledEnd).toISOString();
       }
       payload.leaderboardMode = leaderboardMode;
+      payload.leaderboardAsGrade = leaderboardMode !== 'time' && leaderboardAsGrade;
       payload.hideLeaderboardInHeader = !displayLeaderboardInHeader;
       payload.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly;
       // Time limit field is shown for both 'time' and 'both' modes — it drives
@@ -1571,6 +1574,22 @@ export default function AdminCreateActivityPage() {
                           {t.activityDurationHint}
                         </SectionDescription>
                       )}
+                    </>
+                  )}
+                  {leaderboardMode !== 'time' && (
+                    <>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, cursor: 'pointer', fontSize: 14, color: '#444' }}>
+                        <input
+                          type="checkbox"
+                          checked={leaderboardAsGrade}
+                          onChange={(e) => setLeaderboardAsGrade(e.target.checked)}
+                          style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                        />
+                        {t.leaderboardAsGrade}
+                      </label>
+                      <SectionDescription style={{ margin: '4px 0 0', color: '#888', fontSize: 12 }}>
+                        {t.leaderboardAsGradeDesc}
+                      </SectionDescription>
                     </>
                   )}
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, cursor: 'pointer', fontSize: 14, color: '#444' }}>

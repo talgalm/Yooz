@@ -1525,6 +1525,7 @@ export default function StoryModulePage() {
           countdownSeconds={GAME_CONSTANTS.FINISH_COUNTDOWN_SECONDS}
           bgStyle={bgStyle}
           leaderboardMode={data.leaderboardMode}
+          hideLeaderboardInHeader={data.hideLeaderboardInHeader}
           finalDurationMs={finalDurationMs}
           onStay={() => {
             userStayedRef.current = true;
@@ -1559,6 +1560,7 @@ export default function StoryModulePage() {
           isLoading={leaderboardLoading}
           bgStyle={bgStyle}
           leaderboardMode={data.leaderboardMode}
+          leaderboardAsGrade={data.leaderboardAsGrade}
           onBack={handleBackFromLeaderboard}
           onLogout={handleExit}
           t={t}
