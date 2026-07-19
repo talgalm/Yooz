@@ -337,9 +337,9 @@ export default function AdminCreateActivityPage() {
   const [groupRewardMessage, setGroupRewardMessage] = useState('');
   const [groupRewardAttachmentUrl, setGroupRewardAttachmentUrl] = useState('');
   const [groupRewardAttachmentType, setGroupRewardAttachmentType] = useState<'image' | 'pdf'>('image');
-  const [groupRewardSharePage, setGroupRewardSharePage] = useState(false);
   const [smsForCollage, setSmsForCollage] = useState(false);
   const [smsForCollageMessage, setSmsForCollageMessage] = useState('');
+  const [smsForCollageShare, setSmsForCollageShare] = useState(false);
   const [smsTestPhone, setSmsTestPhone] = useState('');
   const [smsTestSending, setSmsTestSending] = useState(false);
   const [smsTestFeedback, setSmsTestFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -451,7 +451,6 @@ export default function AdminCreateActivityPage() {
             if (a.groupReward.attachmentUrl) {
               setGroupRewardAttachmentUrl(a.groupReward.attachmentUrl);
               setGroupRewardAttachmentType(a.groupReward.attachmentType === 'pdf' ? 'pdf' : 'image');
-              setGroupRewardSharePage(!!a.groupReward.sharePageEnabled);
             }
           }
           if (a.groups.length > 0) {
@@ -461,6 +460,7 @@ export default function AdminCreateActivityPage() {
         }
         setSmsForCollage(a.smsForCollage === true);
         setSmsForCollageMessage(a.smsForCollageMessage || '');
+        setSmsForCollageShare(a.smsForCollageShare === true);
         if (a.opening) {
           setOpeningType(a.opening.type as OpeningType);
           setOpeningUrl(a.opening.url || '');
@@ -864,7 +864,6 @@ export default function AdminCreateActivityPage() {
           message,
           attachmentUrl: groupRewardAttachmentUrl.trim() || undefined,
           couponCode: groupRewardCoupon.trim() || undefined,
-          sharePageEnabled: groupRewardSharePage && groupRewardAttachmentType === 'image',
         }),
       });
       setSmsTestFeedback({ ok: true, msg: t.smsTestSuccess });
@@ -919,6 +918,7 @@ export default function AdminCreateActivityPage() {
       if (payload.smsForCollage && smsForCollageMessage.trim()) {
         payload.smsForCollageMessage = smsForCollageMessage.trim();
       }
+      payload.smsForCollageShare = payload.smsForCollage && smsForCollageShare;
       if (connectionType === 'group') {
         payload.groupEntryMode = groupEntryMode;
         if (groupEntryMode === 'preset') {
@@ -933,7 +933,6 @@ export default function AdminCreateActivityPage() {
             ...(groupRewardAttachmentUrl.trim() && {
               attachmentUrl: groupRewardAttachmentUrl.trim(),
               attachmentType: groupRewardAttachmentType,
-              sharePageEnabled: groupRewardSharePage && groupRewardAttachmentType === 'image',
             }),
           };
         }
@@ -1816,6 +1815,18 @@ export default function AdminCreateActivityPage() {
                         value={smsForCollageMessage}
                         onChange={(e) => setSmsForCollageMessage(e.target.value)}
                       />
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 10 }}>
+                        <input
+                          type="checkbox"
+                          checked={smsForCollageShare}
+                          onChange={(e) => setSmsForCollageShare(e.target.checked)}
+                          style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                        />
+                        {t.smsSharePageLabel}
+                      </label>
+                      {smsForCollageShare && (
+                        <SectionDescription style={{ margin: '4px 0 0' }}>{t.smsSharePageDesc}</SectionDescription>
+                      )}
                     </div>
                   )}
 
@@ -1887,25 +1898,11 @@ export default function AdminCreateActivityPage() {
                           )}
                         </InlineRowGap12>
                         {groupRewardAttachmentUrl && groupRewardAttachmentType === 'image' && (
-                          <>
-                            <img
-                              src={groupRewardAttachmentUrl}
-                              alt=""
-                              style={{ marginTop: 10, maxWidth: 200, maxHeight: 120, borderRadius: 8, objectFit: 'cover' }}
-                            />
-                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 10 }}>
-                              <input
-                                type="checkbox"
-                                checked={groupRewardSharePage}
-                                onChange={(e) => setGroupRewardSharePage(e.target.checked)}
-                                style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
-                              />
-                              {t.smsSharePageLabel}
-                            </label>
-                            {groupRewardSharePage && (
-                              <SectionDescription style={{ margin: '4px 0 0' }}>{t.smsSharePageDesc}</SectionDescription>
-                            )}
-                          </>
+                          <img
+                            src={groupRewardAttachmentUrl}
+                            alt=""
+                            style={{ marginTop: 10, maxWidth: 200, maxHeight: 120, borderRadius: 8, objectFit: 'cover' }}
+                          />
                         )}
                         {groupRewardAttachmentUrl && groupRewardAttachmentType === 'pdf' && (
                           <SectionDescription style={{ margin: '8px 0 0' }}>{t.smsAttachmentPdfReady}</SectionDescription>

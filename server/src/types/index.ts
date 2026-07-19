@@ -25,8 +25,6 @@ export interface GroupRewardConfig {
   messageTemplate?: string;
   attachmentUrl?: string;
   attachmentType?: 'image' | 'pdf';
-  /** When true, the SMS link opens a share landing page instead of a direct download. */
-  sharePageEnabled?: boolean;
 }
 
 // Admin types
@@ -284,6 +282,7 @@ export interface CreateActivityRequest {
   groupReward?: GroupRewardConfig;
   smsForCollage?: boolean;
   smsForCollageMessage?: string;
+  smsForCollageShare?: boolean;
 }
 
 export interface ActivityConfigResponse {

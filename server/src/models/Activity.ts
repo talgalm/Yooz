@@ -162,6 +162,9 @@ export interface IActivity {
   /** Custom SMS body for collage-ready notification. Use {link} as a placeholder
    *  for the video URL; if absent the URL is appended on a new line. */
   smsForCollageMessage?: string;
+  /** When true, the collage SMS {link} opens a share landing page (video + share button)
+   *  instead of the raw video URL. */
+  smsForCollageShare?: boolean;
   /** When enabled, highest-scoring group member gets an SMS coupon after all members finish. */
   groupReward?: {
     enabled: boolean;
@@ -169,7 +172,6 @@ export interface IActivity {
     messageTemplate?: string;
     attachmentUrl?: string;
     attachmentType?: 'image' | 'pdf';
-    sharePageEnabled?: boolean;
     downloadToken?: string;
   };
 }
@@ -289,6 +291,7 @@ const activitySchema = new Schema<IActivity>({
   groupMaxMembers: { type: Number, default: null },
   smsForCollage: { type: Boolean, default: false },
   smsForCollageMessage: { type: String },
+  smsForCollageShare: { type: Boolean, default: false },
   groupReward: {
     type: new Schema({
       enabled: { type: Boolean, default: false },
@@ -296,7 +299,6 @@ const activitySchema = new Schema<IActivity>({
       messageTemplate: { type: String },
       attachmentUrl: { type: String },
       attachmentType: { type: String, enum: ['image', 'pdf'] },
-      sharePageEnabled: { type: Boolean, default: false },
       downloadToken: { type: String, index: true, sparse: true },
     }, { _id: false }),
     default: undefined,

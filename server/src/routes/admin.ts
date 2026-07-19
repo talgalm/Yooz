@@ -74,7 +74,7 @@ async function buildActivityData(
   existingPasswordHash?: string,
   existing?: IActivity,
 ): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
+  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -223,6 +223,7 @@ async function buildActivityData(
 
   data.smsForCollage = smsForCollage === true && Array.isArray(loginFields) && loginFields.includes('phoneNumber');
   data.smsForCollageMessage = data.smsForCollage && smsForCollageMessage?.trim() ? smsForCollageMessage.trim() : undefined;
+  data.smsForCollageShare = data.smsForCollage && smsForCollageShare === true;
 
   // Pass grade (normalized 0-100, or null for no pass grade). Only written when
   // present in the payload so a regular activity save from the editor (which
@@ -696,17 +697,16 @@ router.get('/random-items', authenticateAdmin, async (req: Request, res: Respons
 
 // Send a test SMS using the currently-configured provider — used by the
 // admin "test SMS" button on the activity creation page.
-router.post('/sms/test', authenticateAdmin, async (req: Request<{}, {}, { phoneNumber?: string; message?: string; attachmentUrl?: string; couponCode?: string; sharePageEnabled?: boolean }>, res: Response) => {
+router.post('/sms/test', authenticateAdmin, async (req: Request<{}, {}, { phoneNumber?: string; message?: string; attachmentUrl?: string; couponCode?: string }>, res: Response) => {
   const phone = (req.body.phoneNumber || '').trim();
   const template = (req.body.message || '').trim() || DEFAULT_SMS_TEMPLATE;
   if (!phone) return res.status(400).json({ error: 'phoneNumber is required' });
 
-  // ponytail: test SMS routes through the same /api/reward-download/:token proxy as the real winner link, using a self-contained test_<base64url(url)> token (no DB write needed pre-save). tests_ prefix = share page enabled.
+  // ponytail: test SMS routes through the same /api/reward-download/:token proxy as the real winner link, using a self-contained test_<base64url(url)> token (no DB write needed pre-save).
   const attachmentUrl = (req.body.attachmentUrl || '').trim();
   const siteBase = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '') || `${req.protocol}://${req.get('host')}`;
-  const tokenPrefix = req.body.sharePageEnabled ? 'tests' : 'test';
   const link = attachmentUrl
-    ? `${siteBase}/api/reward-download/${tokenPrefix}_${Buffer.from(attachmentUrl, 'utf8').toString('base64url')}`
+    ? `${siteBase}/api/reward-download/test_${Buffer.from(attachmentUrl, 'utf8').toString('base64url')}`
     : '';
   const message = renderWinnerSms(template, {
     name: 'בדיקה',
