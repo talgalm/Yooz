@@ -89,7 +89,7 @@ export interface Activity {
   groups: { name: string }[];
   groupMinMembers?: number;
   groupMaxMembers?: number;
-  groupReward?: { enabled: boolean; couponCode: string; messageTemplate?: string; attachmentUrl?: string; attachmentType?: 'image' | 'pdf' };
+  groupReward?: { enabled: boolean; couponCode: string; messageTemplate?: string; attachmentUrl?: string; attachmentType?: 'image' | 'pdf'; sharePageEnabled?: boolean };
   smsForCollage?: boolean;
   smsForCollageMessage?: string;
   opening?: { type: 'video' | 'image'; url: string };

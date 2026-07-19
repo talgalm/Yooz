@@ -21,15 +21,25 @@ function israelDateToday(): string {
   return `${Number(parts.day)}.${Number(parts.month)}.${parts.year}`;
 }
 
-export function cloudinaryAttachmentUrl(url: string): string {
+function withCloudinaryTransform(url: string, extra: string): string {
   if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
-  if (url.includes('/upload/fl_attachment')) return url;
+  if (url.includes('/upload/fl_attachment') || url.includes('/upload/l_text:')) return url;
   // ponytail: today's-date overlay font/position hardcoded for current coupon template; move to per-activity config if a second coupon design appears. PDFs skip the overlay.
   const isPdf = /\.pdf(\?|$)/i.test(url);
   const overlay = isPdf
     ? ''
     : `l_text:Arial_70_bold:${encodeURIComponent(israelDateToday())},co_white,g_south,y_60/`;
-  return url.replace('/upload/', `/upload/${overlay}fl_attachment/`);
+  return url.replace('/upload/', `/upload/${overlay}${extra}`);
+}
+
+/** Forced-download URL (date overlay + fl_attachment). */
+export function cloudinaryAttachmentUrl(url: string): string {
+  return withCloudinaryTransform(url, 'fl_attachment/');
+}
+
+/** Inline display URL (date overlay, no attachment flag) — for the share page. */
+export function cloudinaryDisplayUrl(url: string): string {
+  return withCloudinaryTransform(url, '');
 }
 
 export function renderWinnerSms(
@@ -64,6 +74,7 @@ export function resolveGroupRewardForSave(
   if (attachmentUrl) {
     result.attachmentUrl = attachmentUrl;
     result.attachmentType = groupReward.attachmentType === 'pdf' ? 'pdf' : 'image';
+    result.sharePageEnabled = result.attachmentType === 'image' && !!groupReward.sharePageEnabled;
     result.downloadToken =
       existing?.attachmentUrl === attachmentUrl && existing.downloadToken
         ? existing.downloadToken

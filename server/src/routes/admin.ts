@@ -696,16 +696,17 @@ router.get('/random-items', authenticateAdmin, async (req: Request, res: Respons
 
 // Send a test SMS using the currently-configured provider — used by the
 // admin "test SMS" button on the activity creation page.
-router.post('/sms/test', authenticateAdmin, async (req: Request<{}, {}, { phoneNumber?: string; message?: string; attachmentUrl?: string; couponCode?: string }>, res: Response) => {
+router.post('/sms/test', authenticateAdmin, async (req: Request<{}, {}, { phoneNumber?: string; message?: string; attachmentUrl?: string; couponCode?: string; sharePageEnabled?: boolean }>, res: Response) => {
   const phone = (req.body.phoneNumber || '').trim();
   const template = (req.body.message || '').trim() || DEFAULT_SMS_TEMPLATE;
   if (!phone) return res.status(400).json({ error: 'phoneNumber is required' });
 
-  // ponytail: test SMS routes through the same /api/reward-download/:token proxy as the real winner link, using a self-contained test_<base64url(url)> token (no DB write needed pre-save).
+  // ponytail: test SMS routes through the same /api/reward-download/:token proxy as the real winner link, using a self-contained test_<base64url(url)> token (no DB write needed pre-save). tests_ prefix = share page enabled.
   const attachmentUrl = (req.body.attachmentUrl || '').trim();
   const siteBase = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '') || `${req.protocol}://${req.get('host')}`;
+  const tokenPrefix = req.body.sharePageEnabled ? 'tests' : 'test';
   const link = attachmentUrl
-    ? `${siteBase}/api/reward-download/test_${Buffer.from(attachmentUrl, 'utf8').toString('base64url')}`
+    ? `${siteBase}/api/reward-download/${tokenPrefix}_${Buffer.from(attachmentUrl, 'utf8').toString('base64url')}`
     : '';
   const message = renderWinnerSms(template, {
     name: 'בדיקה',

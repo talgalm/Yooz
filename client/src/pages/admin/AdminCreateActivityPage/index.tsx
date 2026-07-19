@@ -337,6 +337,7 @@ export default function AdminCreateActivityPage() {
   const [groupRewardMessage, setGroupRewardMessage] = useState('');
   const [groupRewardAttachmentUrl, setGroupRewardAttachmentUrl] = useState('');
   const [groupRewardAttachmentType, setGroupRewardAttachmentType] = useState<'image' | 'pdf'>('image');
+  const [groupRewardSharePage, setGroupRewardSharePage] = useState(false);
   const [smsForCollage, setSmsForCollage] = useState(false);
   const [smsForCollageMessage, setSmsForCollageMessage] = useState('');
   const [smsTestPhone, setSmsTestPhone] = useState('');
@@ -450,6 +451,7 @@ export default function AdminCreateActivityPage() {
             if (a.groupReward.attachmentUrl) {
               setGroupRewardAttachmentUrl(a.groupReward.attachmentUrl);
               setGroupRewardAttachmentType(a.groupReward.attachmentType === 'pdf' ? 'pdf' : 'image');
+              setGroupRewardSharePage(!!a.groupReward.sharePageEnabled);
             }
           }
           if (a.groups.length > 0) {
@@ -862,6 +864,7 @@ export default function AdminCreateActivityPage() {
           message,
           attachmentUrl: groupRewardAttachmentUrl.trim() || undefined,
           couponCode: groupRewardCoupon.trim() || undefined,
+          sharePageEnabled: groupRewardSharePage && groupRewardAttachmentType === 'image',
         }),
       });
       setSmsTestFeedback({ ok: true, msg: t.smsTestSuccess });
@@ -930,6 +933,7 @@ export default function AdminCreateActivityPage() {
             ...(groupRewardAttachmentUrl.trim() && {
               attachmentUrl: groupRewardAttachmentUrl.trim(),
               attachmentType: groupRewardAttachmentType,
+              sharePageEnabled: groupRewardSharePage && groupRewardAttachmentType === 'image',
             }),
           };
         }
@@ -1883,11 +1887,25 @@ export default function AdminCreateActivityPage() {
                           )}
                         </InlineRowGap12>
                         {groupRewardAttachmentUrl && groupRewardAttachmentType === 'image' && (
-                          <img
-                            src={groupRewardAttachmentUrl}
-                            alt=""
-                            style={{ marginTop: 10, maxWidth: 200, maxHeight: 120, borderRadius: 8, objectFit: 'cover' }}
-                          />
+                          <>
+                            <img
+                              src={groupRewardAttachmentUrl}
+                              alt=""
+                              style={{ marginTop: 10, maxWidth: 200, maxHeight: 120, borderRadius: 8, objectFit: 'cover' }}
+                            />
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 10 }}>
+                              <input
+                                type="checkbox"
+                                checked={groupRewardSharePage}
+                                onChange={(e) => setGroupRewardSharePage(e.target.checked)}
+                                style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                              />
+                              {t.smsSharePageLabel}
+                            </label>
+                            {groupRewardSharePage && (
+                              <SectionDescription style={{ margin: '4px 0 0' }}>{t.smsSharePageDesc}</SectionDescription>
+                            )}
+                          </>
                         )}
                         {groupRewardAttachmentUrl && groupRewardAttachmentType === 'pdf' && (
                           <SectionDescription style={{ margin: '8px 0 0' }}>{t.smsAttachmentPdfReady}</SectionDescription>

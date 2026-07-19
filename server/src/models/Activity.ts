@@ -169,6 +169,7 @@ export interface IActivity {
     messageTemplate?: string;
     attachmentUrl?: string;
     attachmentType?: 'image' | 'pdf';
+    sharePageEnabled?: boolean;
     downloadToken?: string;
   };
 }
@@ -295,6 +296,7 @@ const activitySchema = new Schema<IActivity>({
       messageTemplate: { type: String },
       attachmentUrl: { type: String },
       attachmentType: { type: String, enum: ['image', 'pdf'] },
+      sharePageEnabled: { type: Boolean, default: false },
       downloadToken: { type: String, index: true, sparse: true },
     }, { _id: false }),
     default: undefined,
