@@ -206,7 +206,7 @@ Type list and what each is:
 5. badge — earned-badge / achievement screen.
 6. collage — participants take/upload photos to assemble a collage; supports missions array, multiSelect mode (multiSelectCount), and split-across-activity (collageSplit). Heavy server-side ffmpeg compositing.
 7. feedback — survey station with multiple text questions + optional notes; no scoring.
-8. riddle — clue + answer text, max score, success/failure messages, optional success image, "continue button" override text.
+8. riddle — clue + answer text, max score, guess limit (3 guesses by default, or unlimited via unlimitedAttempts), success/failure messages, optional success image, "continue button" override text.
 9. avatar — interactive AI avatar dialog. Has character name, character image, voice type (TTS), description-as-popup option, detective riddle, instructions, optional answers, forbidden phrases, videos, matching words, characters, clues, knowledge gates, hint strategy. Powered by /api/avatar-chat (Gemini) + /api/tts.
 10. enteringText — multi-field text-entry challenge with submit button, max attempts, success title/subtitle, success media (none/image/video), return button.
 

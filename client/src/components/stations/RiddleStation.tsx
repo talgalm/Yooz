@@ -18,6 +18,7 @@ interface RiddleSettings {
   failureMessage?: string;
   continueButtonText?: string;
   successImageUrl?: string;
+  unlimitedAttempts?: boolean;
 }
 
 // ─── Helpers ───
@@ -448,6 +449,7 @@ export default function RiddleStation({
   const clue = settings.clue || '';
   const answer = settings.answer || '';
   const maxScore = typeof settings.maxScore === 'number' ? settings.maxScore : 100;
+  const unlimitedAttempts = settings.unlimitedAttempts === true;
   const successMessage = settings.successMessage || (isHebrewText(clue + answer) ? 'כל הכבוד! ענית נכון!' : 'Correct! Well done!');
   const failureMessage = settings.failureMessage || (isHebrewText(clue + answer) ? 'לא הצלחת הפעם. נסה שוב בפעם הבאה!' : 'Better luck next time!');
   const isHebrew = isHebrewText(clue + answer);
@@ -509,7 +511,7 @@ export default function RiddleStation({
       const nextAttempt = attempt + 1;
       setShaking(true);
       setTimeout(() => setShaking(false), 500);
-      if (nextAttempt >= 3) {
+      if (!unlimitedAttempts && nextAttempt >= 3) {
         setAttempt(nextAttempt);
         setPhase('failure');
         setTimeout(() => {
@@ -523,7 +525,7 @@ export default function RiddleStation({
         }, 400);
       }
     }
-  }, [phase, inputs, answer, attempt, maxScore, totalChars, startTime, onComplete]);
+  }, [phase, inputs, answer, attempt, maxScore, totalChars, startTime, onComplete, unlimitedAttempts]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>, flatIndex: number) => {
     const val = e.target.value;
@@ -636,12 +638,20 @@ export default function RiddleStation({
         </BoxesArea>
 
         <AttemptsRow>
-          {[0, 1, 2].map((i) => (
-            <AttemptDot key={i} used={String(i < attempt)} />
-          ))}
-          <span style={{ marginInlineStart: 4 }}>
-            {isHebrew ? `ניסיון ${attempt + 1} מתוך 3` : `Attempt ${attempt + 1} of 3`}
-          </span>
+          {unlimitedAttempts ? (
+            <span style={{ marginInlineStart: 4 }}>
+              {isHebrew ? `ניסיון ${attempt + 1}` : `Attempt ${attempt + 1}`}
+            </span>
+          ) : (
+            <>
+              {[0, 1, 2].map((i) => (
+                <AttemptDot key={i} used={String(i < attempt)} />
+              ))}
+              <span style={{ marginInlineStart: 4 }}>
+                {isHebrew ? `ניסיון ${attempt + 1} מתוך 3` : `Attempt ${attempt + 1} of 3`}
+              </span>
+            </>
+          )}
         </AttemptsRow>
 
         <WrongHint>
