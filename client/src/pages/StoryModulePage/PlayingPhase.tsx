@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useMediaPreload } from '../../hooks/useMediaPreload';
 import { resolveVideoSource } from '../../utils/videoSource';
+import { linkifyText } from '../../utils/linkifyText';
 import ThemedBackground from '../../components/ThemedBackground';
 import OrderGame from '../../components/games/OrderGame';
 import type { OrderSurveySubmitPayload } from '../../components/games/OrderGame';
@@ -482,7 +483,7 @@ export default function PlayingPhase({
             />
             <StationWindow style={{ marginTop: 16 }}>
               <StationBodyText>
-                {(station.settings?.content as string) || ''}
+                {linkifyText((station.settings?.content as string) || '')}
               </StationBodyText>
             </StationWindow>
             <FixedContinueButton onClick={onStationContinue}>

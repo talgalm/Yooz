@@ -172,6 +172,7 @@ export default function AdminStationConfigPage() {
   const [riddleFailureMsg, setRiddleFailureMsg] = useState('');
   const [riddleContinueBtnText, setRiddleContinueBtnText] = useState('');
   const [riddleSuccessImageUrl, setRiddleSuccessImageUrl] = useState('');
+  const [riddleUnlimitedAttempts, setRiddleUnlimitedAttempts] = useState(false);
   // Avatar station
   const [avatarCharacterName, setAvatarCharacterName] = useState('');
   const [avatarCharacterImageUrl, setAvatarCharacterImageUrl] = useState('');
@@ -270,6 +271,7 @@ export default function AdminStationConfigPage() {
           if (settings.failureMessage) setRiddleFailureMsg(settings.failureMessage as string);
           if (settings.continueButtonText) setRiddleContinueBtnText(settings.continueButtonText as string);
           if (settings.successImageUrl) setRiddleSuccessImageUrl(settings.successImageUrl as string);
+          setRiddleUnlimitedAttempts(settings.unlimitedAttempts === true);
         }
         if (s.type === 'avatar') {
           if (settings.characterName) setAvatarCharacterName(settings.characterName as string);
@@ -384,6 +386,7 @@ export default function AdminStationConfigPage() {
       if (settings.failureMessage) setRiddleFailureMsg(settings.failureMessage as string);
       if (settings.continueButtonText) setRiddleContinueBtnText(settings.continueButtonText as string);
       if (settings.successImageUrl) setRiddleSuccessImageUrl(settings.successImageUrl as string);
+      setRiddleUnlimitedAttempts(settings.unlimitedAttempts === true);
     }
     if (lib.type === 'avatar') {
       if (settings.characterName) setAvatarCharacterName(settings.characterName as string);
@@ -493,6 +496,7 @@ export default function AdminStationConfigPage() {
         if (riddleFailureMsg.trim()) settings.failureMessage = riddleFailureMsg.trim();
         if (riddleContinueBtnText.trim()) settings.continueButtonText = riddleContinueBtnText.trim();
         if (riddleSuccessImageUrl.trim()) settings.successImageUrl = riddleSuccessImageUrl.trim();
+        settings.unlimitedAttempts = riddleUnlimitedAttempts;
       }
       if (stationType === 'avatar') {
         settings.characterName = avatarCharacterName.trim();
@@ -614,6 +618,7 @@ export default function AdminStationConfigPage() {
     setRiddleMaxScore('100');
     setRiddleSuccessMsg('');
     setRiddleFailureMsg('');
+    setRiddleUnlimitedAttempts(false);
     setAvatarCharacterName('');
     setAvatarCharacterImageUrl('');
     setAvatarDetectiveRiddle('');
@@ -1220,6 +1225,13 @@ export default function AdminStationConfigPage() {
                     onChange={(e) => setRiddleMaxScore(e.target.value)}
                     style={{ maxWidth: 120 }}
                   />
+
+                  <SectionLabel>{t.riddleAttempts}</SectionLabel>
+                  <SelectionGroup>
+                    <SelectionButton type="button" selected={!riddleUnlimitedAttempts} onClick={() => setRiddleUnlimitedAttempts(false)}>{t.riddleAttemptsLimited}</SelectionButton>
+                    <SelectionButton type="button" selected={riddleUnlimitedAttempts} onClick={() => setRiddleUnlimitedAttempts(true)}>{t.riddleAttemptsUnlimited}</SelectionButton>
+                  </SelectionGroup>
+                  <span style={{ fontSize: 12, color: '#999', marginTop: -8 }}>{t.riddleAttemptsHint}</span>
 
                   <SectionLabel>{t.riddleMedia}</SectionLabel>
                   <SelectionGroup>
