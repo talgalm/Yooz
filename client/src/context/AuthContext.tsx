@@ -54,10 +54,34 @@ function decodeToken(token: string): Participant | null {
   }
 }
 
+// Cookie mirror of the participant token: survives environments where an
+// in-app webview drops localStorage between opens. localStorage stays primary.
+const TOKEN_COOKIE_MAX_AGE = 7 * 24 * 3600; // matches server JWT expiry
+
+function readTokenCookie(): string | null {
+  const match = document.cookie.match(/(?:^|; )yooz_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function writeTokenCookie(token: string | null): void {
+  document.cookie = token
+    ? `yooz_token=${encodeURIComponent(token)}; max-age=${TOKEN_COOKIE_MAX_AGE}; path=/; SameSite=Lax`
+    : 'yooz_token=; max-age=0; path=/; SameSite=Lax';
+}
+
+function readStoredToken(): string | null {
+  const local = localStorage.getItem('yooz_token');
+  if (local) return local;
+  const fromCookie = readTokenCookie();
+  // Re-seed localStorage — api.ts reads the token from there directly.
+  if (fromCookie) localStorage.setItem('yooz_token', fromCookie);
+  return fromCookie;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   // Synchronous init from localStorage so ProtectedRoute works on first render (no redirect on refresh)
   const [token, setToken] = useState<string | null>(() => {
-    const saved = localStorage.getItem('yooz_token');
+    const saved = readStoredToken();
     if (saved) {
       const decoded = decodeToken(saved);
       if (decoded) {
@@ -65,11 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return saved;
       }
       localStorage.removeItem('yooz_token');
+      writeTokenCookie(null);
     }
     return null;
   });
   const [participant, setParticipant] = useState<Participant | null>(() => {
-    const saved = localStorage.getItem('yooz_token');
+    const saved = readStoredToken();
     if (saved) return decodeToken(saved);
     return null;
   });
@@ -78,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const decoded = decodeToken(newToken);
     if (!decoded) return;
     localStorage.setItem('yooz_token', newToken);
+    writeTokenCookie(newToken);
     rememberActivityCode(activityCode || decoded.activityCode);
     setToken(newToken);
     setParticipant(decoded);
@@ -137,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     rememberParticipantActivity(participant?.activityCode);
     localStorage.removeItem('yooz_token');
+    writeTokenCookie(null);
     for (let i = sessionStorage.length - 1; i >= 0; i -= 1) {
       const key = sessionStorage.key(i);
       if (

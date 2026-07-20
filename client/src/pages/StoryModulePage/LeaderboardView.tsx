@@ -4,7 +4,7 @@ import { HelpChatHeaderButton } from '../../components/HelpChat';
 import LangDrawer from '../../components/LangDrawer';
 import { styled, keyframes } from '@mui/material/styles';
 import { HeaderBar, HeaderActions, AccentText } from '../../components/styled';
-import type { LeaderboardEntry } from './types';
+import type { LeaderboardEntry, GroupLeaderboardEntry } from './types';
 
 // ─── Colors ───
 
@@ -93,6 +93,17 @@ const PageTitle = styled('h1')({
   letterSpacing: 1,
   textShadow: '0 2px 12px rgba(0,0,0,0.4)',
   animation: `${fadeUp} 0.4s ease-out both`,
+});
+
+const SectionTitle = styled('h2')({
+  width: '100%',
+  maxWidth: 420,
+  color: 'rgba(255,255,255,0.85)',
+  fontSize: 16,
+  fontWeight: 800,
+  textAlign: 'center',
+  margin: '0 0 10px',
+  animation: `${fadeUp} 0.35s ease-out both`,
 });
 
 const MainScroll = styled('div')({
@@ -255,6 +266,8 @@ function formatDuration(ms: number): string {
 interface LeaderboardViewProps {
   activityName: string;
   leaderboard: LeaderboardEntry[];
+  groupLeaderboard?: GroupLeaderboardEntry[];
+  currentGroup?: string;
   currentParticipantName?: string;
   isLoading: boolean;
   bgStyle: React.CSSProperties;
@@ -268,6 +281,8 @@ interface LeaderboardViewProps {
 export default function LeaderboardView({
   activityName,
   leaderboard,
+  groupLeaderboard = [],
+  currentGroup,
   currentParticipantName,
   isLoading,
   leaderboardMode = 'points',
@@ -302,6 +317,30 @@ export default function LeaderboardView({
         <MainScroll>
           <PageTitle>{t.leaderboardTitle}</PageTitle>
 
+          {!isLoading && groupLeaderboard.length > 0 && (
+            <>
+              <SectionTitle>{t.leaderboardGroupsTitle}</SectionTitle>
+              <PlayerList style={{ marginBottom: 20 }}>
+                {(() => {
+                  // Only my group's score (with its real rank among all groups).
+                  const mine = currentGroup ? groupLeaderboard.find((g) => g.name === currentGroup) : undefined;
+                  return mine ? [mine] : [];
+                })().map((entry, i) => (
+                  <PlayerCard
+                    key={`g-${entry.rank}-${entry.name}`}
+                    highlighted={currentGroup === entry.name}
+                    animDelay={i}
+                  >
+                    <HexBadge gold={entry.rank <= 3}>{entry.rank}</HexBadge>
+                    <PlayerName>{entry.name}</PlayerName>
+                    <ScoreValue>{formatLeaderboardScore(entry.score)}</ScoreValue>
+                  </PlayerCard>
+                ))}
+              </PlayerList>
+              <SectionTitle>{t.leaderboardPlayersTitle}</SectionTitle>
+            </>
+          )}
+
           {isLoading ? (
             <LoadingText>{t.leaderboardLoading}</LoadingText>
           ) : leaderboard.length === 0 ? (
@@ -309,6 +348,8 @@ export default function LeaderboardView({
           ) : (
             <PlayerList>
               {(() => {
+                // Group activity: top 5 users across all groups.
+                if (groupLeaderboard.length > 0) return leaderboard.slice(0, 5);
                 const myIdx = currentParticipantName
                   ? leaderboard.findIndex((e) => e.name === currentParticipantName)
                   : -1;

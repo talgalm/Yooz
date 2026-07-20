@@ -293,6 +293,30 @@ const ProgressSub = styled('p')({ fontSize: 13, color: 'rgba(255,255,255,0.5)', 
 const ProgressEta = styled('p')({ fontSize: 12, color: 'rgba(255,255,255,0.42)', margin: '4px 0 0', fontVariantNumeric: 'tabular-nums' });
 const ProgressOffline = styled('p')({ fontSize: 12, color: '#fde68a', margin: '8px 0 0', fontWeight: 700 });
 
+// SMS-when-ready callout — deliberately loud so nobody waits at this screen
+// without noticing they can leave and get the video by SMS.
+const smsPulse = keyframes`
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(236,94,156,0.55), 0 10px 24px rgba(236,94,156,0.35); }
+  50%      { transform: scale(1.05); box-shadow: 0 0 0 14px rgba(236,94,156,0), 0 10px 28px rgba(236,94,156,0.5); }
+`;
+const smsHintBounce = keyframes`
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(4px); }
+`;
+const SmsCalloutHint = styled('p')({
+  fontSize: 14, fontWeight: 800, color: '#fde68a',
+  margin: '20px 0 10px', textAlign: 'center', lineHeight: 1.4,
+  animation: `${smsHintBounce} 1.6s ease-in-out infinite`,
+});
+const SmsCalloutBtn = styled('button')({
+  width: '100%', padding: '16px 18px', borderRadius: 999, border: 'none',
+  background: 'linear-gradient(135deg,#f7a060,#ec5e9c)',
+  color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+  animation: `${smsPulse} 1.6s ease-in-out infinite`,
+  '&:disabled': { opacity: 0.6, cursor: 'wait', animation: 'none' },
+  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+});
+
 // Result phase
 const VideoWrap = styled('div')({ borderRadius: 16, overflow: 'hidden', width: '100%', marginBottom: 20, background: '#000', position: 'relative' });
 const ResultVideo = styled('video')({ width: '100%', display: 'block' });
@@ -1341,25 +1365,16 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
               <ProgressOffline>קליטה חלשה — ממתינים לחיבור...</ProgressOffline>
             )}
             {canRequestSms && smsRequestState !== 'sent' && (
-              <button
-                type="button"
-                onClick={() => void handleRequestSms()}
-                disabled={smsRequestState === 'sending'}
-                style={{
-                  marginTop: 14,
-                  background: 'none',
-                  border: '1px solid rgba(255,255,255,0.45)',
-                  color: '#fff',
-                  borderRadius: 999,
-                  padding: '10px 18px',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: smsRequestState === 'sending' ? 'wait' : 'pointer',
-                  fontFamily: 'inherit',
-                }}
-              >
-                {smsRequestState === 'sending' ? 'שולח...' : '📲 שלחו לי את הסרטון ב-SMS'}
-              </button>
+              <>
+                <SmsCalloutHint>לא חייבים לחכות כאן! 👇</SmsCalloutHint>
+                <SmsCalloutBtn
+                  type="button"
+                  onClick={() => void handleRequestSms()}
+                  disabled={smsRequestState === 'sending'}
+                >
+                  {smsRequestState === 'sending' ? 'שולח...' : '📲 שלחו לי את הסרטון ב-SMS כשהוא מוכן'}
+                </SmsCalloutBtn>
+              </>
             )}
             {smsRequestState === 'error' && (
               <p style={{ color: '#f87171', fontSize: 12, margin: '8px 0 0' }}>שגיאה — נסו שוב</p>

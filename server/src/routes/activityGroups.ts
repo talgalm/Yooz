@@ -4,6 +4,7 @@ import { CreateGroupRequest, CreateGroupResponse } from '../types';
 import { requestOrigin } from '../utils/shareOgPage';
 import { authenticateToken } from '../middleware/auth';
 import { getGroupStatus } from '../utils/groupStatus';
+import { startOfTodayIsrael } from '../utils/israelTime';
 import {
   validateGroupName,
   createParticipantSession,
@@ -63,6 +64,25 @@ router.get('/:code/groups/check-name', async (req: Request<{ code: string }>, re
   const normalized = normalizeGroupName(rawName);
   const existing = await ActivityGroup.findOne({ activityId: activity._id, nameNormalized: normalized });
   res.json({ available: !existing });
+});
+
+// Groups created today (Israel time) — for the join screen's pick-a-group list
+router.get('/:code/groups/today', async (req: Request<{ code: string }>, res: Response) => {
+  const activity = await Activity.findOne({ code: req.params.code });
+  if (!activity || activity.connectionType !== 'group' || activity.groupEntryMode !== 'selfService') {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  const groups = await ActivityGroup.find(
+    { activityId: activity._id, createdAt: { $gte: startOfTodayIsrael() } },
+    { name: 1, inviteToken: 1 },
+  )
+    .sort({ createdAt: -1 })
+    .limit(200)
+    .lean();
+
+  res.json({ groups: groups.map((g) => ({ name: g.name, inviteToken: g.inviteToken })) });
 });
 
 // Resolve group name → invite token (for join-by-name screen)

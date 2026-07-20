@@ -149,6 +149,13 @@ export interface LeaderboardEntry {
   durationMs?: number;
 }
 
+export interface GroupLeaderboardEntry {
+  rank: number;
+  name: string;
+  score: number;
+  members: number;
+}
+
 export type Phase = 'roadmap' | 'playing' | 'summary' | 'finish' | 'leaderboard';
 
 export interface GameScore {

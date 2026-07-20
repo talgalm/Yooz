@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
-import { HelpChatHeaderButton } from '../../components/HelpChat';
+import { HelpChatHeaderButton, useHelpChat, setHelpChatActivityContext } from '../../components/HelpChat';
 import { useAuth } from '../../context/AuthContext';
 import { ActivityPlayingHeaderProvider } from '../../context/activityPlayingHeaderContext';
 import { useTranslations } from '../../context/LanguageContext';
@@ -44,6 +44,7 @@ import type {
   ActivityModuleResponse,
   PopupData,
   LeaderboardEntry,
+  GroupLeaderboardEntry,
   Phase,
   GameScore,
   ModuleItemData,
@@ -56,6 +57,7 @@ import FinishScreen from './FinishScreen';
 import LeaderboardView from './LeaderboardView';
 import PlayingPhase from './PlayingPhase';
 import { useLockStream } from '../../hooks/useLockStream';
+import { useWakeLock } from '../../hooks/useWakeLock';
 
 // ─── Local styled components (only those used in this file) ───
 
@@ -268,6 +270,10 @@ export default function StoryModulePage() {
   // Live manager-controlled progress lock (SSE). Initial value comes from the
   // module fetch; SSE updates override it as soon as the manager toggles.
   const lockedFromIndex = useLockStream(code, data?.lockedFromIndex ?? null);
+  // Keep the screen awake for the whole activity session — a locked screen can
+  // get the tab discarded on mobile (Samsung Internet), losing mid-game state.
+  useWakeLock(true);
+  const { nudge: nudgeHelp } = useHelpChat();
 
   useEffect(() => {
     if (code) rememberActivityCode(code);
@@ -276,6 +282,20 @@ export default function StoryModulePage() {
   const [phase, setPhase] = useState<Phase>('roadmap');
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [scores, setScores] = useState<GameScore[]>([]);
+
+  // Keep the help chatbot aware of where the participant is right now.
+  useEffect(() => {
+    const item = data?.module?.items?.[currentItemIndex];
+    setHelpChatActivityContext({
+      activityName: data?.name,
+      phase,
+      itemIndex: currentItemIndex,
+      totalItems: data?.module?.items?.length,
+      itemName: item?.name,
+      itemType: item ? (item.type === 'game' ? item.gameType : item.stationType) : undefined,
+    });
+    return () => setHelpChatActivityContext(null);
+  }, [data, phase, currentItemIndex]);
   const [showFootsteps, setShowFootsteps] = useState(false);
   const [entryTransitionStage, setEntryTransitionStage] = useState<'idle' | 'closing' | 'opening'>('idle');
   const scoresSaved = useRef(false);
@@ -333,6 +353,7 @@ export default function StoryModulePage() {
 
   // Leaderboard state
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [groupLeaderboard, setGroupLeaderboard] = useState<GroupLeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
   // Live timer for time-mode leaderboard
@@ -745,6 +766,8 @@ export default function StoryModulePage() {
 
   const handleGuidelinesDismiss = () => {
     setShowGuidelines(false);
+    // Draw the eye to the header ? button now that the guidelines are gone.
+    nudgeHelp();
   };
 
   const advanceToNextItem = () => {
@@ -1213,6 +1236,7 @@ export default function StoryModulePage() {
           if (res.ok) {
             const d = await res.json();
             setLeaderboard(d.leaderboard || []);
+            setGroupLeaderboard(d.groups || []);
             return;
           }
         } catch (err) {
@@ -1556,6 +1580,8 @@ export default function StoryModulePage() {
         <LeaderboardView
           activityName={data.name}
           leaderboard={leaderboard}
+          groupLeaderboard={groupLeaderboard}
+          currentGroup={participant?.group}
           currentParticipantName={participant?.name}
           isLoading={leaderboardLoading}
           bgStyle={bgStyle}

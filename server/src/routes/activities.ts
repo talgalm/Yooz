@@ -10,6 +10,7 @@ import { getParticipantCount } from '../utils/participantCountCache';
 import { getOrderSurveyLiveState } from '../utils/orderSurveySession';
 import { getGroupStatus } from '../utils/groupStatus';
 import { resolveCeiling, normalizeScore } from '../utils/scoreNormalization';
+import { startOfTodayIsrael } from '../utils/israelTime';
 import { onGroupMemberCompleted } from '../services/groupRewardService';
 import activityGroupsRouter from './activityGroups';
 
@@ -341,22 +342,12 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
   const asGrade = activity.leaderboardAsGrade === true && !isTimeMode;
   const gradeScore = (raw: number, ceiling: number) => (asGrade ? normalizeScore(raw, ceiling) : raw);
 
-  // Israel-time start-of-today. Compute by subtracting Israel wall-clock H:M:S
-  // from `now` — the result is the UTC instant of midnight Israel time today.
   // Default ON (undefined → true) — matches the model default.
   const currentDayOnly = activity.leaderboardCurrentDayOnly !== false;
   const dateFilter: Record<string, unknown> = {};
   if (currentDayOnly) {
-    const now = new Date();
-    const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Asia/Jerusalem',
-      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-    }).formatToParts(now);
-    const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
-    const startOfTodayIsrael = new Date(
-      now.getTime() - (get('hour') * 3600 + get('minute') * 60 + get('second')) * 1000,
-    );
-    dateFilter.createdAt = { $gte: startOfTodayIsrael };
+    // Reports have no createdAt (schema has no timestamps) — joinedAt is the creation time.
+    dateFilter.joinedAt = { $gte: startOfTodayIsrael() };
   }
 
   let leaderboard;
@@ -414,7 +405,20 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
     }));
   }
 
-  res.json({ leaderboard, leaderboardMode: activity.leaderboardMode || 'points', leaderboardAsGrade: asGrade });
+  // Group activities: also return per-group standings (sum of member scores).
+  // ponytail: time-mode group ranking not supported — groups always rank by points.
+  let groups;
+  if (activity.connectionType === 'group') {
+    const agg = await Report.aggregate([
+      { $match: { activityId: activity._id, group: { $type: 'string', $ne: '' }, 'data.totalScore': { $exists: true }, ...dateFilter } },
+      { $group: { _id: '$group', score: { $sum: '$data.totalScore' }, members: { $sum: 1 } } },
+      { $sort: { score: -1 } },
+      { $limit: 50 },
+    ]);
+    groups = agg.map((g, i) => ({ rank: i + 1, name: g._id as string, score: g.score as number, members: g.members as number }));
+  }
+
+  res.json({ leaderboard, ...(groups && { groups }), leaderboardMode: activity.leaderboardMode || 'points', leaderboardAsGrade: asGrade });
 });
 
 // Save incremental progress after each game/station
