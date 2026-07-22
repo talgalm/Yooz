@@ -149,7 +149,7 @@ export default function AdminStationConfigPage() {
   const [collageHeader, setCollageHeader] = useState('');
   const [collageDescription, setCollageDescription] = useState('');
   const [collageLogoUrl, setCollageLogoUrl] = useState('');
-  const [collageMissions, setCollageMissions] = useState<{ title: string; description: string }[]>([
+  const [collageMissions, setCollageMissions] = useState<{ title: string; description: string; referenceImageUrl?: string }[]>([
     { title: '', description: '' },
   ]);
   const [collageMultiSelect, setCollageMultiSelect] = useState(false);
@@ -241,7 +241,7 @@ export default function AdminStationConfigPage() {
           if (settings.description) setCollageDescription(settings.description as string);
           if (settings.logoUrl) setCollageLogoUrl(settings.logoUrl as string);
           if (Array.isArray(settings.missions) && (settings.missions as unknown[]).length > 0) {
-            setCollageMissions(settings.missions as { title: string; description: string }[]);
+            setCollageMissions(settings.missions as { title: string; description: string; referenceImageUrl?: string }[]);
           }
           setCollageMultiSelect(!!settings.multiSelect);
           if (typeof settings.multiSelectCount === 'number') {
@@ -356,7 +356,7 @@ export default function AdminStationConfigPage() {
       if (settings.description) setCollageDescription(settings.description as string);
       if (settings.logoUrl) setCollageLogoUrl(settings.logoUrl as string);
       if (Array.isArray(settings.missions) && (settings.missions as unknown[]).length > 0) {
-        setCollageMissions(settings.missions as { title: string; description: string }[]);
+        setCollageMissions(settings.missions as { title: string; description: string; referenceImageUrl?: string }[]);
       }
       setCollageMultiSelect(!!settings.multiSelect);
       if (typeof settings.multiSelectCount === 'number') {
@@ -464,7 +464,11 @@ export default function AdminStationConfigPage() {
         if (collageLogoUrl.trim()) settings.logoUrl = collageLogoUrl.trim();
         settings.missions = collageMissions
           .filter((m) => m.title.trim())
-          .map((m) => ({ title: m.title.trim(), description: m.description.trim() }));
+          .map((m) => ({
+            title: m.title.trim(),
+            description: m.description.trim(),
+            ...(m.referenceImageUrl?.trim() ? { referenceImageUrl: m.referenceImageUrl.trim() } : {}),
+          }));
         settings.multiSelect = collageMultiSelect;
         if (collageMultiSelect) {
           const n = parseInt(collageMultiSelectCount, 10);
@@ -1105,7 +1109,21 @@ export default function AdminStationConfigPage() {
                         placeholder={t.collageMissionDesc}
                         value={mission.description}
                         onChange={(e) => setCollageMissions((ms) => ms.map((m, i) => i === idx ? { ...m, description: e.target.value } : m))}
+                        style={{ marginBottom: 8 }}
                       />
+                      <InlineRow>
+                        <FileUploadButton
+                          accept="image/*"
+                          onUploaded={(url) => setCollageMissions((ms) => ms.map((m, i) => i === idx ? { ...m, referenceImageUrl: url } : m))}
+                          label={t.upload}
+                          uploadingLabel={t.uploading}
+                        />
+                        <FlexInput
+                          placeholder={t.collageMissionRefImage}
+                          value={mission.referenceImageUrl || ''}
+                          onChange={(e) => setCollageMissions((ms) => ms.map((m, i) => i === idx ? { ...m, referenceImageUrl: e.target.value } : m))}
+                        />
+                      </InlineRow>
                     </div>
                   ))}
                   <button

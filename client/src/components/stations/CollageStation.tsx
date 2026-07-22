@@ -44,6 +44,8 @@ import { useAuth } from '../../context/AuthContext';
 interface CollageMission {
   title: string;
   description?: string;
+  /** Optional example/reference image shown inside the capture frame (70% opacity) before a photo is taken. */
+  referenceImageUrl?: string;
 }
 
 interface CapturedPhoto {
@@ -237,8 +239,13 @@ const CaptureArea = styled('div')({
   },
 });
 const CapturePreviewImg = styled('img')({ width: '100%', height: '100%', objectFit: 'cover' });
-const PlaceholderIcon = styled('div')({ fontSize: 56, marginBottom: 12, opacity: 0.55 });
-const PlaceholderText = styled('div')({ fontSize: 17, fontWeight: 700, color: 'rgba(255,255,255,0.78)', lineHeight: 1.4 });
+const ReferenceImg = styled('img')({
+  position: 'absolute', inset: 0, width: '100%', height: '100%',
+  objectFit: 'cover', opacity: 0.7, pointerEvents: 'none',
+});
+// position:relative so these paint above the absolutely-positioned ReferenceImg
+const PlaceholderIcon = styled('div')({ fontSize: 56, marginBottom: 12, opacity: 0.55, position: 'relative' });
+const PlaceholderText = styled('div')({ fontSize: 17, fontWeight: 700, color: 'rgba(255,255,255,0.78)', lineHeight: 1.4, position: 'relative' });
 
 const ButtonRow = styled('div')({ display: 'flex', gap: 8, marginBottom: 6 });
 const HalfBtn = styled('button')({
@@ -1261,7 +1268,10 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
               ? (previewIsVideo || currentPhotoForMission?.isVideo)
                 ? <video src={displayUrl} autoPlay muted playsInline loop style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 : <CapturePreviewImg src={displayUrl} alt="preview" />
-              : <><PlaceholderIcon>📷</PlaceholderIcon><PlaceholderText>צלמו תמונה או העלו מהגלריה</PlaceholderText></>
+              : <>
+                  {mission.referenceImageUrl && <ReferenceImg src={mission.referenceImageUrl} alt="" />}
+                  <PlaceholderIcon>📷</PlaceholderIcon><PlaceholderText>צלמו תמונה או העלו מהגלריה</PlaceholderText>
+                </>
             }
           </CaptureArea>
 
