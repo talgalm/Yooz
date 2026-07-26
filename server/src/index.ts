@@ -51,6 +51,7 @@ import activityFoldersRouter from './routes/activityFolders';
 import stationFoldersRouter from './routes/stationFolders';
 import gameFoldersRouter from './routes/gameFolders';
 import missionFoldersRouter from './routes/missionFolders';
+import siteContentRouter from './routes/siteContent';
 
 const app = express();
 
@@ -116,6 +117,8 @@ app.use('/api/admin/game-folders', gameFoldersRouter);
 app.use('/api/admin/mission-folders', missionFoldersRouter);
 app.use('/api/check-answer', checkAnswerRouter);
 app.use('/api/tts', ttsRouter);
+// Public marketing site content + admin editor (route-level admin guards inside)
+app.use('/api/site-content', siteContentRouter);
 
 // Open Graph HTML for Facebook / social crawlers (SPA has no OG tags)
 app.get('/play/:code', async (req, res, next) => {

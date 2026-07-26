@@ -132,6 +132,7 @@ export interface ActivityModuleResponse {
   customInstructions?: CustomInstructionsData;
   isContinuous?: boolean;
   leaderboardMode?: 'points' | 'time' | 'both';
+  leaderboardAsGrade?: boolean;
   hideLeaderboardInHeader?: boolean;
   activityDurationMinutes?: number;
   roadmapTimerMinutes?: number;
@@ -146,6 +147,13 @@ export interface LeaderboardEntry {
   group?: string;
   score: number;
   durationMs?: number;
+}
+
+export interface GroupLeaderboardEntry {
+  rank: number;
+  name: string;
+  score: number;
+  members: number;
 }
 
 export type Phase = 'roadmap' | 'playing' | 'summary' | 'finish' | 'leaderboard';

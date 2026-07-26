@@ -1,6 +1,7 @@
 export const texts = {
   en: {
     helpAria: 'Help and support',
+    nudgeText: 'Need help? Tap here 👆',
     headerTitle: 'Help & Support',
     greeting: 'Hi! Choose a topic below or type your question:',
     faq1Label: "I can't log in",
@@ -57,6 +58,7 @@ export const texts = {
   },
   he: {
     helpAria: 'עזרה ותמיכה',
+    nudgeText: 'צריכים עזרה? לחצו כאן 👆',
     headerTitle: 'עזרה ותמיכה',
     greeting: 'היי! בחרו נושא מהרשימה או כתבו שאלה חופשית:',
     faq1Label: 'לא מצליח/ה להתחבר',

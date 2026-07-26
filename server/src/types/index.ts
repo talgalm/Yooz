@@ -270,6 +270,7 @@ export interface CreateActivityRequest {
   isContinuous?: boolean;
   portalId?: string;
   leaderboardMode?: 'points' | 'time' | 'both';
+  leaderboardAsGrade?: boolean;
   hideLeaderboardInHeader?: boolean;
   leaderboardCurrentDayOnly?: boolean;
   activityDurationMinutes?: number;
@@ -281,6 +282,7 @@ export interface CreateActivityRequest {
   groupReward?: GroupRewardConfig;
   smsForCollage?: boolean;
   smsForCollageMessage?: string;
+  smsForCollageShare?: boolean;
 }
 
 export interface ActivityConfigResponse {

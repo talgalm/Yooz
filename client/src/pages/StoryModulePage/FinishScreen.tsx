@@ -434,6 +434,7 @@ interface FinishScreenProps {
   countdownSeconds: number;
   bgStyle: React.CSSProperties;
   leaderboardMode?: 'points' | 'time' | 'both';
+  hideLeaderboardInHeader?: boolean;
   finalDurationMs?: number | null;
   scoresSaveStatus?: 'pending' | 'saved' | 'queued';
   onRetrySaveScores?: () => void;
@@ -460,6 +461,7 @@ export default function FinishScreen({
   completedItems,
   countdown,
   leaderboardMode,
+  hideLeaderboardInHeader,
   finalDurationMs,
   scoresSaveStatus = 'saved',
   onRetrySaveScores,
@@ -592,9 +594,11 @@ export default function FinishScreen({
         )}
 
         <ActionsColumn>
-          <ContinueButton onClick={onViewLeaderboard}>
-            {t.viewLeaderboard}
-          </ContinueButton>
+          {!hideLeaderboardInHeader && (
+            <ContinueButton onClick={onViewLeaderboard}>
+              {t.viewLeaderboard}
+            </ContinueButton>
+          )}
           <SecondaryButton onClick={onStay}>
             {t.stayHere}
           </SecondaryButton>

@@ -92,6 +92,7 @@ export interface Activity {
   groupReward?: { enabled: boolean; couponCode: string; messageTemplate?: string; attachmentUrl?: string; attachmentType?: 'image' | 'pdf' };
   smsForCollage?: boolean;
   smsForCollageMessage?: string;
+  smsForCollageShare?: boolean;
   opening?: { type: 'video' | 'image'; url: string };
   module?: {
     type: string;
@@ -124,4 +125,5 @@ export interface Activity {
   includeOnRoadmap?: boolean;
   hideLeaderboardInHeader?: boolean;
   leaderboardCurrentDayOnly?: boolean;
+  leaderboardAsGrade?: boolean;
 }

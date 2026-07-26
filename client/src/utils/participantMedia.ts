@@ -15,6 +15,13 @@ export function shouldDeferVideoPrefetch(): boolean {
 }
 const MAX_MEDIA_RETRIES = 6;
 const RETRY_BASE_MS = 1500;
+// Some mobile browsers (notably iOS Safari) never fire load OR error for an
+// off-DOM <video>/<img> — they defer buffering until the element is in the DOM.
+// Without a watchdog the preload callback never resolves and the UI spins
+// forever. After this bound we treat the media as ready; the real in-DOM
+// element loads normally on render. ponytail: fixed 12s ceiling, no per-media
+// tuning — bump only if slow networks legitimately need longer.
+const MEDIA_WATCHDOG_MS = 12000;
 
 export function isVideoMediaUrl(url: string): boolean {
   return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(url) || url.includes('/video/upload/');
@@ -101,17 +108,22 @@ export function loadParticipantImage(
   let cancelled = false;
   let attempt = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  const clearTimers = () => {
+    if (timer) clearTimeout(timer);
+    if (watchdog) clearTimeout(watchdog);
+  };
 
   const tryLoad = () => {
     if (cancelled) return;
     const img = new Image();
     img.onload = () => {
-      if (!cancelled) onSuccess();
+      if (!cancelled) { clearTimers(); onSuccess(); }
     };
     img.onerror = () => {
       if (cancelled) return;
       attempt += 1;
       if (attempt >= MAX_MEDIA_RETRIES) {
+        clearTimers();
         onFailure();
         return;
       }
@@ -120,11 +132,15 @@ export function loadParticipantImage(
     img.src = participantImageUrl(url);
   };
 
+  const watchdog = setTimeout(() => {
+    if (!cancelled) { clearTimers(); onSuccess(); }
+  }, MEDIA_WATCHDOG_MS);
+
   tryLoad();
 
   return () => {
     cancelled = true;
-    if (timer) clearTimeout(timer);
+    clearTimers();
   };
 }
 
@@ -136,18 +152,27 @@ export function loadParticipantVideo(
   let cancelled = false;
   let attempt = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  const clearTimers = () => {
+    if (timer) clearTimeout(timer);
+    if (watchdog) clearTimeout(watchdog);
+  };
 
   const tryLoad = () => {
     if (cancelled) return;
     const vid = document.createElement('video');
     vid.preload = 'auto';
-    vid.onloadeddata = () => {
-      if (!cancelled) onSuccess();
+    vid.muted = true;
+    const succeed = () => {
+      if (!cancelled) { clearTimers(); onSuccess(); }
     };
+    // loadedmetadata fires earlier and more reliably than loadeddata on mobile.
+    vid.onloadedmetadata = succeed;
+    vid.onloadeddata = succeed;
     vid.onerror = () => {
       if (cancelled) return;
       attempt += 1;
       if (attempt >= MAX_MEDIA_RETRIES) {
+        clearTimers();
         onFailure();
         return;
       }
@@ -156,11 +181,15 @@ export function loadParticipantVideo(
     vid.src = participantVideoUrl(url);
   };
 
+  const watchdog = setTimeout(() => {
+    if (!cancelled) { clearTimers(); onSuccess(); }
+  }, MEDIA_WATCHDOG_MS);
+
   tryLoad();
 
   return () => {
     cancelled = true;
-    if (timer) clearTimeout(timer);
+    clearTimers();
   };
 }
 

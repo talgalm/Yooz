@@ -12,8 +12,10 @@ export interface MediaPreloadState {
 }
 
 /**
- * Waits until all provided media URLs have loaded. Retries on failure; never
- * gives up with a timeout — shows failed state so the UI can offer a retry.
+ * Waits until all provided media URLs have loaded. Retries on error and shows
+ * a failed state so the UI can offer a retry. A per-media watchdog (see
+ * participantMedia) resolves as ready if the browser never fires load/error —
+ * e.g. iOS Safari deferring an off-DOM <video> — so the UI can't hang forever.
  * URLs are captured on mount — changing the array after mount has no effect.
  */
 export function useMediaPreload(urls: (string | undefined | null)[]): MediaPreloadState {

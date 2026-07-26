@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ActivityLogoutButton from "../../components/ActivityLogoutButton";
-import { HelpChatHeaderButton } from "../../components/HelpChat";
+import {
+  HelpChatHeaderButton,
+  useHelpChat,
+  setHelpChatActivityContext,
+} from "../../components/HelpChat";
 import { useAuth } from "../../context/AuthContext";
 import { ActivityPlayingHeaderProvider } from "../../context/activityPlayingHeaderContext";
 import { useTranslations } from "../../context/LanguageContext";
@@ -66,6 +70,7 @@ import type {
   ActivityModuleResponse,
   PopupData,
   LeaderboardEntry,
+  GroupLeaderboardEntry,
   Phase,
   GameScore,
   ModuleItemData,
@@ -78,6 +83,7 @@ import FinishScreen from "./FinishScreen";
 import LeaderboardView from "./LeaderboardView";
 import PlayingPhase from "./PlayingPhase";
 import { useLockStream } from "../../hooks/useLockStream";
+import { useWakeLock } from "../../hooks/useWakeLock";
 
 // ─── Local styled components (only those used in this file) ───
 
@@ -296,6 +302,10 @@ export default function StoryModulePage() {
   // Live manager-controlled progress lock (SSE). Initial value comes from the
   // module fetch; SSE updates override it as soon as the manager toggles.
   const lockedFromIndex = useLockStream(code, data?.lockedFromIndex ?? null);
+  // Keep the screen awake for the whole activity session — a locked screen can
+  // get the tab discarded on mobile (Samsung Internet), losing mid-game state.
+  useWakeLock(true);
+  const { nudge: nudgeHelp } = useHelpChat();
 
   useEffect(() => {
     if (code) rememberActivityCode(code);
@@ -304,6 +314,20 @@ export default function StoryModulePage() {
   const [phase, setPhase] = useState<Phase>("roadmap");
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [scores, setScores] = useState<GameScore[]>([]);
+
+  // Keep the help chatbot aware of where the participant is right now.
+  useEffect(() => {
+    const item = data?.module?.items?.[currentItemIndex];
+    setHelpChatActivityContext({
+      activityName: data?.name,
+      phase,
+      itemIndex: currentItemIndex,
+      totalItems: data?.module?.items?.length,
+      itemName: item?.name,
+      itemType: item ? (item.type === 'game' ? item.gameType : item.stationType) : undefined,
+    });
+    return () => setHelpChatActivityContext(null);
+  }, [data, phase, currentItemIndex]);
   const [showFootsteps, setShowFootsteps] = useState(false);
   const [entryTransitionStage, setEntryTransitionStage] = useState<
     "idle" | "closing" | "opening"
@@ -331,6 +355,10 @@ export default function StoryModulePage() {
 
   // Guidelines popup (shown once on first roadmap entry)
   const [showGuidelines, setShowGuidelines] = useState(true);
+  // Guidelines must wait for the server progress check — otherwise a participant
+  // who already started on another device sees them flash before my-progress
+  // comes back and hides them.
+  const [progressChecked, setProgressChecked] = useState(false);
   const hasProcessedEntry = useRef(false);
 
   // Spiders mode: track which items have been completed (any order)
@@ -367,6 +395,7 @@ export default function StoryModulePage() {
 
   // Leaderboard state
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [groupLeaderboard, setGroupLeaderboard] = useState<GroupLeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
   // Live timer for time-mode leaderboard
@@ -654,19 +683,22 @@ export default function StoryModulePage() {
     preloadActivityMedia(data, { priorityIndex: currentItemIndex });
   }, [data, currentItemIndex]);
 
-  // Restore progress from server so admin resets and cross-session resumes are authoritative.
+  // The server save is the source of truth. On every mount/refresh, pull the
+  // saved progress and adopt it; the local sessionStorage session (restored
+  // above) is only a fast-paint fallback used when the server has no progress
+  // yet. This is what makes a refreshed desktop tab jump to the station the
+  // participant advanced to on their phone.
   useEffect(() => {
     if (!sessionRestored || !data || !code || serverRestoreAttempted.current)
       return;
     serverRestoreAttempted.current = true;
-
     apiFetch<{
       completionStatus: string;
       lastActiveItemIndex: number;
       totalItemsCompleted: number;
       scores?: { gameName: string; score: number }[];
       itemResults?: { itemIndex: number; itemName: string; score: number }[];
-    }>(`/api/activities/${code}/my-progress`)
+    }>(`/api/activities/${code}/my-progress`, { headers: { 'Cache-Control': 'no-store' } })
       .then((progress) => {
         if (
           progress.completionStatus === "completed" &&
@@ -708,14 +740,19 @@ export default function StoryModulePage() {
             );
             setCurrentItemIndex(resumeIndex);
           }
+          if (progress.itemResults?.length) {
+            setScores(progress.itemResults.map((ir) => ({ itemIndex: ir.itemIndex, gameName: ir.itemName, score: ir.score })));
+          }
           setShowGuidelines(false);
         } else {
           resetToFreshStart();
         }
+        // No server progress → keep the restored local session as-is.
       })
       .catch(() => {
         resetToFreshStart();
-      });
+      })
+      .finally(() => setProgressChecked(true));
   }, [sessionRestored, data, code, resetToFreshStart]);
 
   const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -872,6 +909,8 @@ export default function StoryModulePage() {
 
   const handleGuidelinesDismiss = () => {
     setShowGuidelines(false);
+    // Draw the eye to the header ? button now that the guidelines are gone.
+    nudgeHelp();
   };
 
   const advanceToNextItem = () => {
@@ -1388,6 +1427,7 @@ export default function StoryModulePage() {
           if (res.ok) {
             const d = await res.json();
             setLeaderboard(d.leaderboard || []);
+            setGroupLeaderboard(d.groups || []);
             return;
           }
         } catch (err) {
@@ -1685,7 +1725,7 @@ export default function StoryModulePage() {
             }
             lockedFromIndex={lockedFromIndex}
           />
-          {showGuidelines && !currentPopup && (
+          {showGuidelines && progressChecked && !currentPopup && (
             <GuidelinesPopup
               itemCount={data.module.items.length}
               guidelines={data.guidelines}
@@ -1731,7 +1771,7 @@ export default function StoryModulePage() {
           lockedFromIndex={lockedFromIndex}
           activityNameOnRoadmap={data.includeOnRoadmap ? data.name : undefined}
         />
-        {showGuidelines && !currentPopup && (
+        {showGuidelines && progressChecked && !currentPopup && (
           <GuidelinesPopup
             itemCount={data.module.items.length}
             guidelines={data.guidelines}
@@ -1772,6 +1812,7 @@ export default function StoryModulePage() {
           countdownSeconds={GAME_CONSTANTS.FINISH_COUNTDOWN_SECONDS}
           bgStyle={bgStyle}
           leaderboardMode={data.leaderboardMode}
+          hideLeaderboardInHeader={data.hideLeaderboardInHeader}
           finalDurationMs={finalDurationMs}
           onStay={() => {
             userStayedRef.current = true;
@@ -1807,10 +1848,13 @@ export default function StoryModulePage() {
         <LeaderboardView
           activityName={data.name}
           leaderboard={leaderboard}
+          groupLeaderboard={groupLeaderboard}
+          currentGroup={participant?.group}
           currentParticipantName={participant?.name}
           isLoading={leaderboardLoading}
           bgStyle={bgStyle}
           leaderboardMode={data.leaderboardMode}
+          leaderboardAsGrade={data.leaderboardAsGrade}
           onBack={handleBackFromLeaderboard}
           onLogout={handleExit}
           t={t}
@@ -2004,7 +2048,7 @@ export default function StoryModulePage() {
         />
       )}
       {/* Guidelines overlay on top of station — for single-item activities */}
-      {showGuidelines && !currentPopup && data.module.items.length === 1 && (
+      {showGuidelines && progressChecked && !currentPopup && data.module.items.length === 1 && (
         <GuidelinesPopup
           itemCount={data.module.items.length}
           guidelines={data.guidelines}

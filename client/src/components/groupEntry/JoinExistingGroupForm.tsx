@@ -1,4 +1,5 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
+import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './groupEntry.i18n';
 import {
@@ -17,11 +18,63 @@ interface Props {
   onTokenResolved: (token: string) => void;
 }
 
+interface TodayGroup {
+  name: string;
+  inviteToken: string;
+}
+
+const TodayGroupsTitle = styled('p')({
+  margin: '12px 0 6px',
+  fontSize: 13,
+  fontWeight: 700,
+  color: '#666',
+  textAlign: 'center',
+});
+
+const TodayGroupsList = styled('div')({
+  maxHeight: 200,
+  overflowY: 'auto',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+  border: '1px solid #e0e0e0',
+  borderRadius: 12,
+  padding: 8,
+  WebkitOverflowScrolling: 'touch',
+});
+
+const TodayGroupItem = styled('button')({
+  padding: '10px 12px',
+  background: '#f7f5fb',
+  border: '1px solid #e6e0f0',
+  borderRadius: 10,
+  fontSize: 14,
+  fontWeight: 600,
+  color: '#333',
+  cursor: 'pointer',
+  textAlign: 'start',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  '&:hover': { background: '#efe9f8' },
+  '&:disabled': { opacity: 0.6, cursor: 'default' },
+});
+
 export default function JoinExistingGroupForm({ activityCode, onBack, onTokenResolved }: Props) {
   const t = useTranslations(texts);
   const [input, setInput] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [todayGroups, setTodayGroups] = useState<TodayGroup[]>([]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`/api/activities/${encodeURIComponent(activityCode)}/groups/today`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((d: { groups?: TodayGroup[] } | null) => setTodayGroups(d?.groups || []))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [activityCode]);
 
   const resolveByToken = async (token: string): Promise<boolean> => {
     const res = await fetch(
@@ -85,6 +138,35 @@ export default function JoinExistingGroupForm({ activityCode, onBack, onTokenRes
       <GroupEntryButton type="submit" disabled={loading || !input.trim()}>
         {loading ? t.joining : t.continue}
       </GroupEntryButton>
+
+      {todayGroups.length > 0 && (() => {
+        // Typing in the search box filters the list live.
+        const q = input.trim().toLowerCase();
+        const filtered = q
+          ? todayGroups.filter((g) => g.name.toLowerCase().includes(q))
+          : todayGroups;
+        return (
+          <>
+            <TodayGroupsTitle>{t.todayGroupsTitle}</TodayGroupsTitle>
+            <TodayGroupsList>
+              {filtered.length === 0 ? (
+                <TodayGroupItem type="button" disabled>{t.groupNotFound}</TodayGroupItem>
+              ) : (
+                filtered.map((g) => (
+                  <TodayGroupItem
+                    key={g.inviteToken}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => onTokenResolved(g.inviteToken)}
+                  >
+                    {g.name}
+                  </TodayGroupItem>
+                ))
+              )}
+            </TodayGroupsList>
+          </>
+        );
+      })()}
       <GroupEntryBackButton onBack={onBack} />
     </GroupEntryForm>
   );

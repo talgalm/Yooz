@@ -7,6 +7,7 @@ import { texts } from './PlayPage.i18n';
 import ActivityLogin from '../../components/login/ActivityLogin';
 import { apiFetch, apiFetchWithRetry } from '../../utils/api';
 import { participantMissionPath, participantStoryPath, rememberActivityCode } from '../../utils/participantActivity';
+import { escapeToDefaultBrowser } from '../../utils/inAppBrowserEscape';
 import { startEarlyModulePrefetch } from '../../utils/earlyModulePrefetch';
 import { participantImageUrl, participantVideoUrl } from '../../utils/participantMedia';
 import { useMediaPreload } from '../../hooks/useMediaPreload';
@@ -273,6 +274,12 @@ export default function PlayPage() {
   useEffect(() => {
     if (!isAuthenticated) resumeCheckedForCode.current = null;
   }, [isAuthenticated]);
+
+  // QR scanned inside an in-app webview (scanner app / Instagram / WhatsApp…) —
+  // bounce out to the user's default browser so the session lives there.
+  useEffect(() => {
+    escapeToDefaultBrowser();
+  }, []);
 
   // Remember activity as soon as the QR / link is opened (before login).
   useEffect(() => {

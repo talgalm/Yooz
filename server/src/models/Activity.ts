@@ -107,6 +107,9 @@ export interface IActivity {
   loginComponent?: string; // legacy
   /** Leaderboard scoring mode */
   leaderboardMode?: 'points' | 'time' | 'both';
+  /** When true, leaderboard points are shown as a 0-100 grade (normalized
+   *  against the activity's max possible score). Ignored in 'time' mode. */
+  leaderboardAsGrade?: boolean;
   /** When true, hide the leaderboard trophy button from the session header */
   hideLeaderboardInHeader?: boolean;
   /** When true (default), leaderboard only includes reports completed today in Israel time */
@@ -159,6 +162,9 @@ export interface IActivity {
   /** Custom SMS body for collage-ready notification. Use {link} as a placeholder
    *  for the video URL; if absent the URL is appended on a new line. */
   smsForCollageMessage?: string;
+  /** When true, the collage SMS {link} opens a share landing page (video + share button)
+   *  instead of the raw video URL. */
+  smsForCollageShare?: boolean;
   /** When enabled, highest-scoring group member gets an SMS coupon after all members finish. */
   groupReward?: {
     enabled: boolean;
@@ -265,6 +271,7 @@ const activitySchema = new Schema<IActivity>({
   isContinuous: { type: Boolean, default: false },
   loginComponent: { type: String }, // legacy
   leaderboardMode: { type: String, enum: ['points', 'time', 'both'], default: 'points' },
+  leaderboardAsGrade: { type: Boolean, default: false },
   hideLeaderboardInHeader: { type: Boolean, default: false },
   leaderboardCurrentDayOnly: { type: Boolean, default: true },
   activityDurationMinutes: { type: Number },
@@ -284,6 +291,7 @@ const activitySchema = new Schema<IActivity>({
   groupMaxMembers: { type: Number, default: null },
   smsForCollage: { type: Boolean, default: false },
   smsForCollageMessage: { type: String },
+  smsForCollageShare: { type: Boolean, default: false },
   groupReward: {
     type: new Schema({
       enabled: { type: Boolean, default: false },

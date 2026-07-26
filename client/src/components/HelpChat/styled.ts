@@ -363,3 +363,54 @@ export const HelpHeaderIconButtonLight = styled(HeaderActionIconButton)({
     background: 'rgba(108, 92, 231, 0.12)',
   },
 });
+
+// ─── Post-guidelines nudge: wiggle the ? button + "need help?" pindrop bubble ───
+
+const wiggle = keyframes`
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(-14deg) scale(1.1); }
+  30% { transform: rotate(12deg) scale(1.1); }
+  45% { transform: rotate(-10deg) scale(1.08); }
+  60% { transform: rotate(8deg) scale(1.05); }
+  75% { transform: rotate(-4deg); }
+`;
+
+/** Wraps the header ? button; anchors the bubble and applies the wiggle. */
+export const NudgeWrap = styled('span')<{ active?: boolean }>(({ active }) => ({
+  position: 'relative',
+  display: 'inline-flex',
+  '& > button': active
+    ? { animation: `${wiggle} 0.9s ease-in-out infinite`, transformOrigin: '50% 50%' }
+    : undefined,
+  '@media (prefers-reduced-motion: reduce)': { '& > button': { animation: 'none' } },
+}));
+
+export const NudgeBubble = styled('span')({
+  position: 'absolute',
+  top: 'calc(100% + 10px)',
+  insetInlineEnd: 0,
+  zIndex: 30,
+  background: '#fff',
+  color: '#333',
+  fontSize: 13,
+  fontWeight: 700,
+  lineHeight: 1.3,
+  padding: '8px 12px',
+  borderRadius: 12,
+  boxShadow: '0 6px 20px rgba(0,0,0,0.3)',
+  whiteSpace: 'nowrap',
+  pointerEvents: 'none',
+  animation: `${fadeIn} 0.25s ease-out both`,
+  // Pindrop arrow pointing up at the button
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: -6,
+    insetInlineEnd: 14,
+    width: 12,
+    height: 12,
+    background: '#fff',
+    transform: 'rotate(45deg)',
+    borderRadius: 2,
+  },
+});

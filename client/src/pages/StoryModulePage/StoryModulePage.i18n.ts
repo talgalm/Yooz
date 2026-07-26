@@ -58,6 +58,8 @@ export const texts = {
     leaderboardScore: 'Score',
     leaderboardEmpty: 'No scores yet',
     leaderboardLoading: 'Loading...',
+    leaderboardGroupsTitle: 'Group Scores',
+    leaderboardPlayersTitle: 'Players',
     // Roadmap
     tapToStart: 'Tap to start!',
     completed: 'Completed',
@@ -133,6 +135,8 @@ export const texts = {
     leaderboardScore: 'ניקוד',
     leaderboardEmpty: 'אין ניקוד עדיין',
     leaderboardLoading: 'טוען...',
+    leaderboardGroupsTitle: 'ניקוד קבוצות',
+    leaderboardPlayersTitle: 'שחקנים',
     // Roadmap
     tapToStart: 'לחצו להתחיל!',
     completed: 'הושלם',

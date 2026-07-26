@@ -160,6 +160,45 @@ RULES:
 - IMPORTANT: If the conversation history already contains an answer to this topic, do NOT repeat the same content. Instead, acknowledge what was already suggested and offer a different next step (e.g., contact the organizer, try a different browser, refresh again).`;
 }
 
+// ─── Live participant context (sent by the client with each message) ───
+
+interface HelpContext {
+  activityName?: string;
+  phase?: string;
+  itemIndex?: number;
+  totalItems?: number;
+  itemName?: string;
+  itemType?: string;
+}
+
+const str = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : undefined);
+const num = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : undefined);
+
+function sanitizeContext(raw: unknown): HelpContext | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const ctx: HelpContext = {
+    activityName: str(r.activityName, 100),
+    phase: str(r.phase, 30),
+    itemIndex: num(r.itemIndex),
+    totalItems: num(r.totalItems),
+    itemName: str(r.itemName, 100),
+    itemType: str(r.itemType, 30),
+  };
+  return Object.values(ctx).some((v) => v !== undefined) ? ctx : null;
+}
+
+function buildContextPrompt(ctx: HelpContext): string {
+  const lines: string[] = ['\nLIVE PARTICIPANT CONTEXT (where the user is right now — use it to give specific, relevant help):'];
+  if (ctx.activityName) lines.push(`- Activity: "${ctx.activityName}"`);
+  if (ctx.phase) lines.push(`- Current screen: ${ctx.phase} (roadmap = station map, playing = inside a station/game, leaderboard/finish = end screens)`);
+  if (ctx.itemIndex !== undefined && ctx.totalItems) lines.push(`- Current station: ${ctx.itemIndex + 1} of ${ctx.totalItems}`);
+  if (ctx.itemName) lines.push(`- Station name: "${ctx.itemName}"`);
+  if (ctx.itemType) lines.push(`- Station type: ${ctx.itemType}`);
+  lines.push('When the user asks for help, prefer answering about THIS station/screen (how it works, what to do, common issues) before generic troubleshooting. Never reveal answers to game questions — guide, don\'t solve.');
+  return lines.join('\n');
+}
+
 // ─── Gemini API call ───
 
 interface HistoryEntry {
@@ -167,7 +206,7 @@ interface HistoryEntry {
   text: string;
 }
 
-async function askGemini(message: string, lang: 'en' | 'he', history: HistoryEntry[] = []): Promise<string> {
+async function askGemini(message: string, lang: 'en' | 'he', history: HistoryEntry[] = [], context: HelpContext | null = null): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
   // Build multi-turn contents from history (max last 6 turns to stay concise)
@@ -183,7 +222,7 @@ async function askGemini(message: string, lang: 'en' | 'he', history: HistoryEnt
 
   const body = {
     contents,
-    systemInstruction: { parts: [{ text: buildSystemPrompt(lang) }] },
+    systemInstruction: { parts: [{ text: buildSystemPrompt(lang) + (context ? buildContextPrompt(context) : '') }] },
     generationConfig: {
       temperature: 0.3,
       maxOutputTokens: 300,
@@ -228,7 +267,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   // Validate input
-  const { message, lang, history } = req.body;
+  const { message, lang, history, context } = req.body;
   if (!message || typeof message !== 'string' || !message.trim()) {
     res.status(400).json({ error: 'Message is required' });
     return;
@@ -248,7 +287,7 @@ router.post('/', async (req: Request, res: Response) => {
 
   // Call Gemini
   try {
-    const response = await askGemini(safeMessage, safeLang, safeHistory);
+    const response = await askGemini(safeMessage, safeLang, safeHistory, sanitizeContext(context));
     res.json({ response, source: 'gemini' });
   } catch (err) {
     console.error('Gemini help endpoint error:', err);

@@ -34,6 +34,8 @@ import {
   HelpHeaderIconButton,
   HelpHeaderIconButtonLight,
   HelpHeaderIconButtonPuzzle,
+  NudgeWrap,
+  NudgeBubble,
 } from './styled';
 
 const SUPPORT_PHONE = '050-0000000';
@@ -41,6 +43,24 @@ const SUPPORT_PHONE = '050-0000000';
 interface ChatMessage {
   from: 'bot' | 'user';
   text: string;
+}
+
+/** Live "where is the participant right now" snapshot, sent with every /api/help
+ *  message so the bot can give station-specific answers. Set by StoryModulePage. */
+export interface HelpActivityContext {
+  activityName?: string;
+  phase?: string;
+  itemIndex?: number;
+  totalItems?: number;
+  itemName?: string;
+  itemType?: string;
+}
+
+// Module-level store — pages write it as the participant moves; the chat reads
+// it at send time. No re-render needed, so no state/context plumbing.
+let helpActivityContext: HelpActivityContext | null = null;
+export function setHelpChatActivityContext(ctx: HelpActivityContext | null): void {
+  helpActivityContext = ctx;
 }
 
 type View = 'menu' | 'faq' | 'other';
@@ -52,6 +72,10 @@ interface HelpChatContextValue {
   open: boolean;
   hiddenForBallGame: boolean;
   toggle: () => void;
+  /** True while the header ? button should wiggle + show its "need help?" bubble. */
+  nudgeActive: boolean;
+  /** Wiggle the ? button and show the bubble for `ms` (default 3000). */
+  nudge: (ms?: number) => void;
 }
 
 const HelpChatContext = createContext<HelpChatContextValue | null>(null);
@@ -134,6 +158,21 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
     });
   }, [resetChat]);
 
+  const [nudgeActive, setNudgeActive] = useState(false);
+  const nudgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nudge = useCallback((ms = 3000) => {
+    setNudgeActive(true);
+    if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
+    nudgeTimerRef.current = setTimeout(() => setNudgeActive(false), ms);
+  }, []);
+  useEffect(() => () => {
+    if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
+  }, []);
+  // Opening the chat dismisses the nudge immediately.
+  useEffect(() => {
+    if (open) setNudgeActive(false);
+  }, [open]);
+
   const handleFaqClick = (faqKey: 'responseFaq1' | 'responseFaq2' | 'responseFaq3' | 'responseFaq4', label: string) => {
     setView('faq');
     setMessages([{ from: 'user', text: label }]);
@@ -166,7 +205,7 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
       const res = await fetch('/api/help', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, lang, history }),
+        body: JSON.stringify({ message: text, lang, history, context: helpActivityContext ?? undefined }),
       });
 
       if (!res.ok) throw new Error('Server error');
@@ -200,8 +239,10 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
       open,
       hiddenForBallGame,
       toggle: handleToggle,
+      nudgeActive,
+      nudge,
     }),
-    [variant, open, hiddenForBallGame, handleToggle]
+    [variant, open, hiddenForBallGame, handleToggle, nudgeActive, nudge]
   );
 
   const showChrome = !hiddenForBallGame;
@@ -309,11 +350,14 @@ export function HelpChatFab() {
 
 export function HelpChatHeaderButton({ tone = 'dark', iconColor }: { tone?: 'dark' | 'light' | 'puzzle'; iconColor?: string }) {
   const t = useTranslations(texts);
-  const { toggle } = useHelpChat();
+  const { toggle, nudgeActive } = useHelpChat();
   const Btn = tone === 'light' ? HelpHeaderIconButtonLight : tone === 'puzzle' ? HelpHeaderIconButtonPuzzle : HelpHeaderIconButton;
   return (
-    <Btn type="button" onClick={toggle} aria-label={t.helpAria} title={t.helpAria} iconColor={iconColor}>
-      ?
-    </Btn>
+    <NudgeWrap active={nudgeActive}>
+      <Btn type="button" onClick={toggle} aria-label={t.helpAria} title={t.helpAria} iconColor={iconColor}>
+        ?
+      </Btn>
+      {nudgeActive && <NudgeBubble>{t.nudgeText}</NudgeBubble>}
+    </NudgeWrap>
   );
 }

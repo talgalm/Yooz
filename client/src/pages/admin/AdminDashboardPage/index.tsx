@@ -15,6 +15,7 @@ import AdminUsersTab from '../AdminUsersTab';
 import AdminLibraryTab from '../AdminLibraryTab';
 import AdminPortalsTab from '../AdminPortalsTab';
 import AdminTutorialsTab from '../AdminTutorialsTab';
+import AdminPublicityTab from '../AdminPublicityTab';
 import type { Portal } from '../AdminPortalsTab';
 import FolderFormModal from '../FolderFormModal';
 import { resolveFolderColor, DEFAULT_FOLDER_COLOR } from '../folderColors';
@@ -649,7 +650,7 @@ const TypeTileEmoji = styled('span')({
 
 // ─── Types ───
 
-type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'users' | 'portals' | 'tutorials';
+type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'users' | 'portals' | 'tutorials' | 'publicity';
 type StationsSection = 'stations' | 'games' | 'missions';
 type CreateStep = 'main' | 'game' | 'station';
 
@@ -725,7 +726,7 @@ export default function AdminDashboardPage() {
   const [missionFolders, setMissionFolders] = useState<Folder[]>([]);
   const [portals, setPortals] = useState<Portal[]>([]);
   const [activeTab, setActiveTab] = useState<MainTab>(
-    ['activities', 'statistics', 'stations', 'library', 'users', 'portals', 'tutorials'].includes(initialTab) ? initialTab : 'activities'
+    ['activities', 'statistics', 'stations', 'library', 'users', 'portals', 'tutorials', 'publicity'].includes(initialTab) ? initialTab : 'activities'
   );
   const [stationsSection, setStationsSection] = useState<StationsSection>('stations');
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -748,6 +749,9 @@ export default function AdminDashboardPage() {
     tabs.push({ key: 'stations', label: t.tabStations });
     tabs.push({ key: 'library', label: t.tabLibrary });
     tabs.push({ key: 'portals', label: t.tabPortals });
+    if (role === 'admin' || role === 'super_admin') {
+      tabs.push({ key: 'publicity', label: t.tabPublicity });
+    }
     if (role === 'super_admin') {
       tabs.push({ key: 'users', label: t.tabUsers });
       tabs.push({ key: 'tutorials', label: t.tabTutorials });
@@ -1005,6 +1009,11 @@ export default function AdminDashboardPage() {
         {/* ── Tutorials Tab (super_admin only) ── */}
         {activeTab === 'tutorials' && role === 'super_admin' && (
           <AdminTutorialsTab />
+        )}
+
+        {/* ── Publicity Tab (admin + super_admin) ── */}
+        {activeTab === 'publicity' && (role === 'admin' || role === 'super_admin') && (
+          <AdminPublicityTab />
         )}
       </DashContent>
 

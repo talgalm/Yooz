@@ -4,7 +4,7 @@ import { HelpChatHeaderButton } from '../../components/HelpChat';
 import LangDrawer from '../../components/LangDrawer';
 import { styled, keyframes } from '@mui/material/styles';
 import { HeaderBar, HeaderActions, AccentText } from '../../components/styled';
-import type { LeaderboardEntry } from './types';
+import type { LeaderboardEntry, GroupLeaderboardEntry } from './types';
 
 // ─── Colors ───
 
@@ -93,6 +93,17 @@ const PageTitle = styled('h1')({
   letterSpacing: 1,
   textShadow: '0 2px 12px rgba(0,0,0,0.4)',
   animation: `${fadeUp} 0.4s ease-out both`,
+});
+
+const SectionTitle = styled('h2')({
+  width: '100%',
+  maxWidth: 420,
+  color: 'rgba(255,255,255,0.85)',
+  fontSize: 16,
+  fontWeight: 800,
+  textAlign: 'center',
+  margin: '0 0 10px',
+  animation: `${fadeUp} 0.35s ease-out both`,
 });
 
 const MainScroll = styled('div')({
@@ -237,6 +248,11 @@ function formatLeaderboardScore(score: number): string {
   return Number.isInteger(t) ? String(t) : t.toFixed(1);
 }
 
+/** Points cell: a 0-100 grade (server-normalized) or the raw score. */
+function formatScore(score: number, asGrade: boolean): string {
+  return asGrade ? `${Math.round(score)}` : formatLeaderboardScore(score);
+}
+
 /** Format milliseconds as m:ss (e.g. 75300 → "1:15") */
 function formatDuration(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -250,10 +266,13 @@ function formatDuration(ms: number): string {
 interface LeaderboardViewProps {
   activityName: string;
   leaderboard: LeaderboardEntry[];
+  groupLeaderboard?: GroupLeaderboardEntry[];
+  currentGroup?: string;
   currentParticipantName?: string;
   isLoading: boolean;
   bgStyle: React.CSSProperties;
   leaderboardMode?: 'points' | 'time' | 'both';
+  leaderboardAsGrade?: boolean;
   onBack: () => void;
   onLogout: () => void;
   t: Record<string, string>;
@@ -262,9 +281,12 @@ interface LeaderboardViewProps {
 export default function LeaderboardView({
   activityName,
   leaderboard,
+  groupLeaderboard = [],
+  currentGroup,
   currentParticipantName,
   isLoading,
   leaderboardMode = 'points',
+  leaderboardAsGrade = false,
   onBack,
   onLogout,
   t,
@@ -295,6 +317,30 @@ export default function LeaderboardView({
         <MainScroll>
           <PageTitle>{t.leaderboardTitle}</PageTitle>
 
+          {!isLoading && groupLeaderboard.length > 0 && (
+            <>
+              <SectionTitle>{t.leaderboardGroupsTitle}</SectionTitle>
+              <PlayerList style={{ marginBottom: 20 }}>
+                {(() => {
+                  // Only my group's score (with its real rank among all groups).
+                  const mine = currentGroup ? groupLeaderboard.find((g) => g.name === currentGroup) : undefined;
+                  return mine ? [mine] : [];
+                })().map((entry, i) => (
+                  <PlayerCard
+                    key={`g-${entry.rank}-${entry.name}`}
+                    highlighted={currentGroup === entry.name}
+                    animDelay={i}
+                  >
+                    <HexBadge gold={entry.rank <= 3}>{entry.rank}</HexBadge>
+                    <PlayerName>{entry.name}</PlayerName>
+                    <ScoreValue>{formatLeaderboardScore(entry.score)}</ScoreValue>
+                  </PlayerCard>
+                ))}
+              </PlayerList>
+              <SectionTitle>{t.leaderboardPlayersTitle}</SectionTitle>
+            </>
+          )}
+
           {isLoading ? (
             <LoadingText>{t.leaderboardLoading}</LoadingText>
           ) : leaderboard.length === 0 ? (
@@ -302,6 +348,8 @@ export default function LeaderboardView({
           ) : (
             <PlayerList>
               {(() => {
+                // Group activity: top 5 users across all groups.
+                if (groupLeaderboard.length > 0) return leaderboard.slice(0, 5);
                 const myIdx = currentParticipantName
                   ? leaderboard.findIndex((e) => e.name === currentParticipantName)
                   : -1;
@@ -334,7 +382,7 @@ export default function LeaderboardView({
                     <ScoreValue>
                       {leaderboardMode === 'both' ? (
                         <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.15, gap: 2 }}>
-                          <span>{formatLeaderboardScore(entry.score)}</span>
+                          <span>{formatScore(entry.score, leaderboardAsGrade)}</span>
                           {entry.durationMs != null && (
                             <span style={{ fontSize: '0.72em', opacity: 0.78, fontWeight: 600 }}>
                               {formatDuration(entry.durationMs)}
@@ -343,7 +391,7 @@ export default function LeaderboardView({
                         </span>
                       ) : leaderboardMode === 'time' && entry.durationMs != null
                         ? formatDuration(entry.durationMs)
-                        : formatLeaderboardScore(entry.score)}
+                        : formatScore(entry.score, leaderboardAsGrade)}
                     </ScoreValue>
                   </PlayerCard>
                 );

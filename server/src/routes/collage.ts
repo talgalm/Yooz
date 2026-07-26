@@ -792,6 +792,85 @@ router.post('/jobs/:jobId/start', loadShed, async (req: Request<{ jobId: string 
   res.status(202).json(serializeCollageJob(job));
 });
 
+// ─── Share landing page ───────────────────────────────────────────────────────
+// Public: when smsForCollageShare is enabled, the SMS {link} points here instead
+// of the raw video URL — video player + native share sheet + download.
+
+function videoDownloadUrl(url: string): string {
+  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/') || url.includes('fl_attachment')) return url;
+  return url.replace('/upload/', '/upload/fl_attachment/');
+}
+
+function renderVideoSharePage(videoUrl: string, pageUrl: string): string {
+  // Cloudinary derives a poster frame by swapping the video extension for .jpg
+  const posterUrl = videoUrl.includes('res.cloudinary.com') ? videoUrl.replace(/\.\w+$/, '.jpg') : '';
+  return `<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>הסרטון שלכם</title>
+<meta property="og:title" content="הסרטון שלנו מהפעילות!">
+<meta property="og:description" content="לחצו לצפייה בסרטון">
+${posterUrl ? `<meta property="og:image" content="${posterUrl}">` : ''}
+<meta property="og:video" content="${videoUrl}">
+<meta property="og:url" content="${pageUrl}">
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #f5f3ff; display: flex; flex-direction: column; align-items: center; padding: 24px 16px; min-height: 100vh; box-sizing: border-box; }
+  video { max-width: min(440px, 100%); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,.15); }
+  .btns { display: flex; gap: 12px; margin-top: 20px; width: min(440px, 100%); }
+  a, button { flex: 1; padding: 14px 0; border-radius: 10px; font-size: 16px; font-weight: 700; text-align: center; text-decoration: none; border: none; cursor: pointer; font-family: inherit; }
+  #share { background: #6c5ce7; color: #fff; }
+  #share:disabled { opacity: .6; cursor: wait; }
+  #dl { background: #fff; color: #6c5ce7; border: 2px solid #6c5ce7; box-sizing: border-box; }
+</style>
+</head>
+<body>
+<video src="${videoUrl}" ${posterUrl ? `poster="${posterUrl}"` : ''} controls playsinline></video>
+<div class="btns">
+  <button id="share">שיתוף</button>
+  <a id="dl" href="${pageUrl}?dl=1">הורדה</a>
+</div>
+<script>
+const shareBtn = document.getElementById('share');
+shareBtn.onclick = async () => {
+  shareBtn.disabled = true;
+  const label = shareBtn.textContent;
+  shareBtn.textContent = 'מכינים את הסרטון…';
+  try {
+    const blob = await fetch(${JSON.stringify(videoUrl)}).then((r) => r.blob());
+    const file = new File([blob], 'video.mp4', { type: blob.type || 'video/mp4' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file] });
+      return;
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  finally { shareBtn.disabled = false; shareBtn.textContent = label; }
+  try {
+    if (navigator.share) { await navigator.share({ url: location.href }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  location.href = 'https://wa.me/?text=' + encodeURIComponent(location.href);
+};
+</script>
+</body>
+</html>`;
+}
+
+router.get('/share/:jobId', async (req: Request<{ jobId: string }>, res: Response) => {
+  const job = await CollageJob.findOne({ jobId: req.params.jobId }).lean();
+  if (!job?.resultUrl) {
+    res.status(404).send('Video not found');
+    return;
+  }
+  if (req.query.dl === '1') {
+    res.redirect(302, videoDownloadUrl(job.resultUrl));
+    return;
+  }
+  const base = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '')
+    || `${req.protocol}://${req.get('host')}`;
+  res.send(renderVideoSharePage(job.resultUrl, `${base}/api/collage/share/${job.jobId}`));
+});
+
 // Participant taps "send video by SMS" in the loading screen → save phone on
 // the job. The sweeper below picks it up once Lambda flips phase='done'.
 // If the job is already done, fire the SMS immediately.
@@ -1068,11 +1147,15 @@ export async function sendCollageReadySms(jobId: string): Promise<void> {
   );
   if (!claimed || !claimed.smsPhone || !claimed.resultUrl) return;
 
-  const activity = await Activity.findOne({ code: claimed.activityCode }).select('smsForCollageMessage').lean();
+  const activity = await Activity.findOne({ code: claimed.activityCode }).select('smsForCollageMessage smsForCollageShare').lean();
   const template = activity?.smsForCollageMessage?.trim() || 'הסרטון שלך מוכן! צפה והורד כאן: {link}';
+  const base = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '') || 'http://localhost:3000';
+  const link = activity?.smsForCollageShare
+    ? `${base}/api/collage/share/${claimed.jobId}`
+    : claimed.resultUrl;
   const message = template.includes('{link}')
-    ? template.replace(/\{link\}/g, claimed.resultUrl)
-    : `${template}\n${claimed.resultUrl}`;
+    ? template.replace(/\{link\}/g, link)
+    : `${template}\n${link}`;
 
   console.log(`[collage] SMS sending job=${jobId} to=${claimed.smsPhone}`);
   try {
