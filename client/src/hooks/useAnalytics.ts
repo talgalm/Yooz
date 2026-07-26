@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { adminApiFetch } from '../utils/adminApi';
-import { useAnalyticsSource } from '../pages/admin/AdminStatisticsTab/analyticsSource';
+import { useState, useEffect, useCallback } from "react";
+import { adminApiFetch } from "../utils/adminApi";
+import { useAnalyticsSource } from "../pages/admin/AdminStatisticsTab/analyticsSource";
 import type {
   OverviewData,
   TimelinePoint,
@@ -14,16 +14,24 @@ import type {
   ActivityPeriod,
   RosterParticipant,
   CombinedReportData,
-} from '../pages/admin/AdminStatisticsTab/types';
+} from "../pages/admin/AdminStatisticsTab/types";
 
-const selectTimeline = (response: { timeline: TimelinePoint[] }) => response.timeline;
+const selectTimeline = (response: { timeline: TimelinePoint[] }) =>
+  response.timeline;
 const selectFunnel = (response: { funnel: FunnelStep[] }) => response.funnel;
 const selectItems = (response: { items: ItemStats[] }) => response.items;
-const selectQuestions = (response: { questions: QuestionStats[] }) => response.questions;
+const selectQuestions = (response: { questions: QuestionStats[] }) =>
+  response.questions;
 const selectGroups = (response: { groups: GroupStats[] }) => response.groups;
 const selectAlerts = (response: { alerts: AnomalyAlert[] }) => response.alerts;
-const selectParticipants = (response: { participants: RosterParticipant[] }) => response.participants;
-const selectAuditLog = (response: { logs: AuditLogEntry[]; total: number; page: number; totalPages: number }) => ({
+const selectParticipants = (response: { participants: RosterParticipant[] }) =>
+  response.participants;
+const selectAuditLog = (response: {
+  logs: AuditLogEntry[];
+  total: number;
+  page: number;
+  totalPages: number;
+}) => ({
   entries: response.logs,
   total: response.total,
   page: response.page,
@@ -31,7 +39,7 @@ const selectAuditLog = (response: { logs: AuditLogEntry[]; total: number; page: 
 });
 
 function periodQuery(period?: ActivityPeriod) {
-  return period ? `?period=${period}` : '';
+  return period ? `?period=${period}` : "";
 }
 
 // ── Generic fetcher with loading / error ──
@@ -52,7 +60,7 @@ function useApiFetch<TResponse, TData = TResponse>(
       const res = await adminApiFetch<TResponse>(url);
       setData(select ? select(res) : (res as unknown as TData));
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
     }
@@ -68,7 +76,7 @@ function useApiFetch<TResponse, TData = TResponse>(
 // ── Specific hooks ──
 
 export function useOverview() {
-  return useApiFetch<OverviewData>('/api/admin/analytics/overview');
+  return useApiFetch<OverviewData>("/api/admin/analytics/overview");
 }
 
 export function useTimeline(days = 30) {
@@ -78,7 +86,10 @@ export function useTimeline(days = 30) {
   );
 }
 
-export function useActivityAnalytics(activityId: string | null, period?: ActivityPeriod) {
+export function useActivityAnalytics(
+  activityId: string | null,
+  period?: ActivityPeriod,
+) {
   const { base } = useAnalyticsSource();
   return useApiFetch<ActivityAnalyticsData>(
     activityId ? `${base(activityId)}${periodQuery(period)}` : null,
@@ -93,7 +104,10 @@ export function useFunnel(activityId: string | null, period?: ActivityPeriod) {
   );
 }
 
-export function useItemStats(activityId: string | null, period?: ActivityPeriod) {
+export function useItemStats(
+  activityId: string | null,
+  period?: ActivityPeriod,
+) {
   const { base } = useAnalyticsSource();
   return useApiFetch<{ items: ItemStats[] }, ItemStats[]>(
     activityId ? `${base(activityId)}/items${periodQuery(period)}` : null,
@@ -101,7 +115,11 @@ export function useItemStats(activityId: string | null, period?: ActivityPeriod)
   );
 }
 
-export function useQuestionStats(activityId: string | null, itemIndex: number | null, period?: ActivityPeriod) {
+export function useQuestionStats(
+  activityId: string | null,
+  itemIndex: number | null,
+  period?: ActivityPeriod,
+) {
   const { base } = useAnalyticsSource();
   return useApiFetch<{ questions: QuestionStats[] }, QuestionStats[]>(
     activityId && itemIndex !== null
@@ -111,7 +129,10 @@ export function useQuestionStats(activityId: string | null, itemIndex: number | 
   );
 }
 
-export function useGroupStats(activityId: string | null, period?: ActivityPeriod) {
+export function useGroupStats(
+  activityId: string | null,
+  period?: ActivityPeriod,
+) {
   const { base } = useAnalyticsSource();
   return useApiFetch<{ groups: GroupStats[] }, GroupStats[]>(
     activityId ? `${base(activityId)}/groups${periodQuery(period)}` : null,
@@ -119,7 +140,10 @@ export function useGroupStats(activityId: string | null, period?: ActivityPeriod
   );
 }
 
-export function useAnomalies(activityId: string | null, period?: ActivityPeriod) {
+export function useAnomalies(
+  activityId: string | null,
+  period?: ActivityPeriod,
+) {
   const { base } = useAnalyticsSource();
   return useApiFetch<{ alerts: AnomalyAlert[] }, AnomalyAlert[]>(
     activityId ? `${base(activityId)}/anomalies${periodQuery(period)}` : null,
@@ -142,15 +166,20 @@ export function useAuditLog(page = 1, limit = 20) {
 export function usePassThreshold(activityId: string | null) {
   // null = no pass grade configured.
   return useApiFetch<{ passThreshold: number | null }, number | null>(
-    activityId ? `/api/admin/analytics/activities/${activityId}/pass-threshold` : null,
+    activityId
+      ? `/api/admin/analytics/activities/${activityId}/pass-threshold`
+      : null,
     (response) => response.passThreshold,
   );
 }
 
-export async function savePassThreshold(activityId: string, value: number | null): Promise<number | null> {
+export async function savePassThreshold(
+  activityId: string,
+  value: number | null,
+): Promise<number | null> {
   const res = await adminApiFetch<{ passThreshold: number | null }>(
     `/api/admin/analytics/activities/${activityId}/pass-threshold`,
-    { method: 'PATCH', body: JSON.stringify({ passThreshold: value }) },
+    { method: "PATCH", body: JSON.stringify({ passThreshold: value }) },
   );
   return res.passThreshold;
 }
@@ -167,13 +196,15 @@ export function useShareLink(activityId: string | null) {
 export async function createShareLink(activityId: string): Promise<string> {
   const res = await adminApiFetch<{ token: string }>(
     `/api/admin/analytics/activities/${activityId}/share`,
-    { method: 'POST' },
+    { method: "POST" },
   );
   return res.token;
 }
 
 export async function revokeShareLink(activityId: string): Promise<void> {
-  await adminApiFetch(`/api/admin/analytics/activities/${activityId}/share`, { method: 'DELETE' });
+  await adminApiFetch(`/api/admin/analytics/activities/${activityId}/share`, {
+    method: "DELETE",
+  });
 }
 
 // ── Participants roster + exclusions (admin only) ──
@@ -182,36 +213,62 @@ export function useParticipantsRoster(activityId: string | null) {
   // NOTE: selector MUST be a stable module-level reference — an inline arrow makes
   // useApiFetch's useCallback([url, select]) change every render and, because this
   // returns a fresh array each fetch, loops forever.
-  return useApiFetch<{ participants: RosterParticipant[] }, RosterParticipant[]>(
-    activityId ? `/api/admin/analytics/activities/${activityId}/participants` : null,
+  return useApiFetch<
+    { participants: RosterParticipant[] },
+    RosterParticipant[]
+  >(
+    activityId
+      ? `/api/admin/analytics/activities/${activityId}/participants`
+      : null,
     selectParticipants,
   );
 }
 
-export async function saveExclusions(activityId: string, excludedReportIds: string[]): Promise<string[]> {
+export async function saveExclusions(
+  activityId: string,
+  excludedReportIds: string[],
+): Promise<string[]> {
   const res = await adminApiFetch<{ excludedReportIds: string[] }>(
     `/api/admin/analytics/activities/${activityId}/participants/exclusions`,
-    { method: 'PATCH', body: JSON.stringify({ excludedReportIds }) },
+    { method: "PATCH", body: JSON.stringify({ excludedReportIds }) },
   );
   return res.excludedReportIds;
 }
 
+export async function resetParticipantProgress(
+  activityId: string,
+  reportId: string,
+): Promise<void> {
+  await adminApiFetch(
+    `/api/admin/analytics/activities/${activityId}/participants/${reportId}/reset-progress`,
+    { method: "POST" },
+  );
+}
+
 // ── Export helper (triggers download) ──
 
-export type AnalyticsExportType = 'executive' | 'participants' | 'scores' | 'progress';
+export type AnalyticsExportType =
+  | "executive"
+  | "participants"
+  | "scores"
+  | "progress";
 
 // Resolve the server filename (RFC 5987 filename* first, then plain) and trigger
 // a browser download from a fetch Response.
 async function triggerBlobDownload(res: Response, fallbackName: string) {
-  if (!res.ok) throw new Error('Export failed');
+  if (!res.ok) throw new Error("Export failed");
   const blob = await res.blob();
-  const disposition = res.headers.get('content-disposition') || '';
+  const disposition = res.headers.get("content-disposition") || "";
   const utf8Match = disposition.match(/filename\*=UTF-8''(.+?)(?:;|$)/);
   const plainMatch = disposition.match(/filename="?([^";]+)"?/);
-  const filename = utf8Match ? decodeURIComponent(utf8Match[1]) : plainMatch ? plainMatch[1] : fallbackName;
+  const filename = utf8Match
+    ? decodeURIComponent(utf8Match[1])
+    : plainMatch
+      ? plainMatch[1]
+      : fallbackName;
 
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
@@ -221,26 +278,39 @@ async function triggerBlobDownload(res: Response, fallbackName: string) {
 }
 
 function authHeaders(): Record<string, string> {
-  const token = localStorage.getItem('yooz_admin_token');
+  const token = localStorage.getItem("yooz_admin_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function downloadExport(baseUrl: string, type: AnalyticsExportType, period?: ActivityPeriod) {
+export async function downloadExport(
+  baseUrl: string,
+  type: AnalyticsExportType,
+  period?: ActivityPeriod,
+) {
   const params = new URLSearchParams({ type });
-  if (period) params.set('period', period);
-  const res = await fetch(`${baseUrl}/export?${params.toString()}`, { headers: authHeaders() });
+  if (period) params.set("period", period);
+  const res = await fetch(`${baseUrl}/export?${params.toString()}`, {
+    headers: authHeaders(),
+  });
   await triggerBlobDownload(res, `${type}-export.xlsx`);
 }
 
 // ── Combined multi-activity report (admin only) ──
 
-function combinedQuery(activityIds: string[], period?: ActivityPeriod, extra?: Record<string, string>) {
-  const params = new URLSearchParams({ ids: activityIds.join(','), ...extra });
-  if (period) params.set('period', period);
+function combinedQuery(
+  activityIds: string[],
+  period?: ActivityPeriod,
+  extra?: Record<string, string>,
+) {
+  const params = new URLSearchParams({ ids: activityIds.join(","), ...extra });
+  if (period) params.set("period", period);
   return params.toString();
 }
 
-export function useCombinedReportCard(activityIds: string[], period?: ActivityPeriod) {
+export function useCombinedReportCard(
+  activityIds: string[],
+  period?: ActivityPeriod,
+) {
   // Response is already the data shape — no select function (and so no loop risk).
   return useApiFetch<CombinedReportData>(
     activityIds.length > 0
@@ -249,16 +319,23 @@ export function useCombinedReportCard(activityIds: string[], period?: ActivityPe
   );
 }
 
-export async function downloadCombinedReportCardExport(activityIds: string[], period?: ActivityPeriod) {
+export async function downloadCombinedReportCardExport(
+  activityIds: string[],
+  period?: ActivityPeriod,
+) {
   const res = await fetch(
     `/api/admin/analytics/combined/report-card/export?${combinedQuery(activityIds, period)}`,
     { headers: authHeaders() },
   );
-  await triggerBlobDownload(res, 'combined-report-card.xlsx');
+  await triggerBlobDownload(res, "combined-report-card.xlsx");
 }
 
 // Full combined report (executive/participants/scores/progress) across activities.
-export async function downloadCombinedExport(activityIds: string[], type: AnalyticsExportType, period?: ActivityPeriod) {
+export async function downloadCombinedExport(
+  activityIds: string[],
+  type: AnalyticsExportType,
+  period?: ActivityPeriod,
+) {
   const res = await fetch(
     `/api/admin/analytics/combined/export?${combinedQuery(activityIds, period, { type })}`,
     { headers: authHeaders() },
