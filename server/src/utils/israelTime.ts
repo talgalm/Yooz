@@ -10,3 +10,15 @@ export function startOfTodayIsrael(now = new Date()): Date {
   const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
   return new Date(now.getTime() - (get('hour') * 3600 + get('minute') * 60 + get('second')) * 1000);
 }
+
+/**
+ * Israel wall-clock calendar day as an `YYYY-MM-DD` string.
+ * Used to scope self-service groups to the day they were created — en-CA
+ * formats as ISO-like `YYYY-MM-DD`, so no manual assembly needed.
+ */
+export function israelDayString(date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jerusalem',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(date);
+}

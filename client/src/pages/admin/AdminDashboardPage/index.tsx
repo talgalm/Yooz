@@ -928,7 +928,7 @@ export default function AdminDashboardPage() {
         )}
 
         {/* ── Statistics Tab ── */}
-        {activeTab === 'statistics' && (role === 'admin' || role === 'super_admin') && (
+        {activeTab === 'statistics' && (role === 'admin' || role === 'super_admin' || role === 'customer') && (
           <AdminStatisticsTab activities={activities} initialActivityId={initialActivityId} />
         )}
 

@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
-import { Activity, User, Mission } from '../models';
+import { Activity, User, Mission, ActivityGroup } from '../models';
 import { ADMIN_EMAIL, ADMIN_PASSWORD } from '../config';
+import { israelDayString } from '../utils/israelTime';
 
 /**
  * Migrates old activities that used loginComponent (academy/story)
@@ -36,6 +37,43 @@ export async function migrateActivities(): Promise<void> {
   }
 
   console.log(`✅ Migrated ${count} activit${count === 1 ? 'y' : 'ies'}`);
+}
+
+/**
+ * Migrates self-service groups to day-scoped naming.
+ *  1. Backfills `activityDay` (Israel calendar day) from each group's createdAt.
+ *  2. Drops the legacy global-unique index {activityId, nameNormalized} so the
+ *     new day-scoped unique index {activityId, activityDay, nameNormalized}
+ *     (declared on the schema) can take effect and names can repeat across days.
+ * Existing groups are never deleted — they stay for reporting.
+ */
+export async function migrateActivityGroups(): Promise<void> {
+  const missing = await ActivityGroup.find({ activityDay: { $exists: false } }).select('createdAt');
+  if (missing.length > 0) {
+    const bulk = missing.map((g) => ({
+      updateOne: {
+        filter: { _id: g._id },
+        update: { $set: { activityDay: israelDayString(g.createdAt ?? new Date()) } },
+      },
+    }));
+    await ActivityGroup.bulkWrite(bulk);
+    console.log(`✅ Backfilled activityDay on ${missing.length} group(s)`);
+  }
+
+  // Drop the old global-unique index if it still exists.
+  try {
+    const indexes = await ActivityGroup.collection.indexes();
+    const legacy = indexes.find((i) => i.name === 'activityId_1_nameNormalized_1');
+    if (legacy) {
+      await ActivityGroup.collection.dropIndex('activityId_1_nameNormalized_1');
+      console.log('✅ Dropped legacy group name index (activityId_1_nameNormalized_1)');
+    }
+  } catch (err) {
+    console.warn('⚠️  Could not drop legacy group index:', (err as Error).message);
+  }
+
+  // Ensure the new day-scoped indexes exist even when autoIndex is off in prod.
+  await ActivityGroup.syncIndexes();
 }
 
 /**

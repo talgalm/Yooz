@@ -1016,10 +1016,16 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showReplay, setShowReplay] = useState(false);
+  const [videoEnded, setVideoEnded] = useState(false);
   const source = resolveVideoSource(station.settings?.mediaUrl as string);
+
+  // Embedded players (YouTube/Vimeo iframes) don't expose an 'ended' event, so we
+  // can't gate on them — only direct <video> playback blocks Continue until the end.
+  const canContinue = source.kind === 'iframe' || videoEnded;
 
   const handleEnded = useCallback(() => {
     setShowReplay(true);
+    setVideoEnded(true);
   }, []);
 
   const handleReplay = useCallback(() => {
@@ -1077,8 +1083,8 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
         compactDesktop
       />
       {mediaEl}
-      <FixedContinueButton onClick={onContinue}>
-        {t.continueButton}
+      <FixedContinueButton onClick={onContinue} disabled={!canContinue}>
+        {canContinue ? t.continueButton : (t.videoWatchToContinue || t.continueButton)}
       </FixedContinueButton>
     </MediaStationLayout>
   );

@@ -39,6 +39,7 @@
 30. [Admin — Game Configuration](#30-admin--game-configuration)
 31. [Admin — Station Configuration](#31-admin--station-configuration)
 32. [Admin — Statistics & Analytics](#32-admin--statistics--analytics)
+33. [Groups — Self-Service (Day-Scoped)](#33-groups--self-service-day-scoped)
 
 ---
 
@@ -281,7 +282,8 @@
 | SVID-04 | Clicking replay resets video to start and plays again |
 | SVID-05 | If `descPosition === 'before'` (default), description appears above video |
 | SVID-06 | If `descPosition === 'after'`, description appears below video |
-| SVID-07 | A fixed Continue button allows advancing at any time (video doesn't need to finish) |
+| SVID-07 | The Continue button is **disabled until the video finishes playing** (fires `onEnded`). Its label shows "Watch the video to continue" / "צפו בסרטון עד הסוף כדי להמשיך" while disabled, then reverts to "Continue". |
+| SVID-08 | Embedded players (YouTube/Vimeo `iframe` sources) cannot report an end event, so Continue stays enabled for them (no reliable gating possible). |
 
 ### Test Cases
 
@@ -291,7 +293,8 @@
 | T-SVID-02 | Replay | Let video end, click replay button | Video restarts from beginning |
 | T-SVID-03 | Desc before (default) | Open video station with descPosition=before | Description text above video player |
 | T-SVID-04 | Desc after | Open video station with descPosition=after | Description text below video player |
-| T-SVID-05 | Continue early | Click Continue before video ends | Advances to next item |
+| T-SVID-05 | Continue gated | Open a direct-file (non-iframe) video station | Continue is disabled and shows the "watch to continue" label; it becomes enabled only after the video reaches its end |
+| T-SVID-06 | Continue (iframe) | Open a video station whose mediaUrl is a YouTube/Vimeo link | Continue is enabled immediately (iframe end can't be detected) |
 
 ---
 
@@ -968,8 +971,9 @@
 | STAT-05 | **Activity analytics — Groups tab:** Group comparison (avg score, completion rate, member count) sorted by score |
 | STAT-06 | **Activity analytics — Export tab:** 3 export types (Participants, Scores, Progress) as Excel downloads |
 | STAT-07 | **Anomaly detection:** Auto-flags items with low completion rates, unusual durations |
-| STAT-08 | **Audit log:** Paginated admin action log (`GET /audit-log?page=1&limit=20`) |
+| STAT-08 | **Audit log:** Paginated admin action log (`GET /audit-log?page=1&limit=20`). Admin/super_admin only — the entry-point button is hidden for `customer` role and the endpoint returns 403 for them. |
 | STAT-09 | All API endpoints under `/api/admin/analytics/` |
+| STAT-10 | **Customer role scoping:** The `customer` role sees the Statistics tab and every analytics/report view (overview KPIs, timeline, activity analytics, participants roster, group comparison, exports), but **restricted to activities they created (`createdByEmail`) or manage (`managerEmail`)**. Backend enforces this on every analytics endpoint via `customerMongoFilter` / `customerOwnsDoc`; a customer requesting an activity they don't own gets 404. |
 
 ### Test Cases
 
@@ -983,7 +987,41 @@
 | T-STAT-06 | Export participants | Click export → Participants | Excel file downloads with participant data |
 | T-STAT-07 | Export scores | Click export → Scores | Excel file downloads with score data |
 | T-STAT-08 | Anomaly detection | View activity with items that have low completion | Anomaly warnings displayed |
-| T-STAT-09 | Audit log | Check audit log section | Paginated list of admin actions |
+| T-STAT-09 | Audit log | Check audit log section | Paginated list of admin actions (hidden entirely for customer role) |
+| T-STAT-10 | Customer report scoping | Log in as a `customer`, open the Statistics tab | Only the customer's own/managed activities appear in overview totals, the activities list, and analytics; audit-log button is absent |
+
+---
+
+## 33. Groups — Self-Service (Day-Scoped)
+
+Applies to group activities with `groupEntryMode === 'selfService'`, where participants
+create/join their own groups (as opposed to admin-defined static group names on the
+login screen). Backed by the `activity_groups` collection (`ActivityGroup` model) and
+`/api/activities/:code/groups/*` routes.
+
+### Requirements
+
+| ID | Requirement |
+|----|-------------|
+| GRP-01 | A participant can create a group (`POST /:code/groups`); the group is stamped with `activityDay` = the Israel calendar day (YYYY-MM-DD) it was created on. |
+| GRP-02 | **Groups are day-scoped.** A group is only visible/joinable on its own `activityDay`. On any later day it is treated as non-existent for creation, listing, name lookup, and invite links. |
+| GRP-03 | Group name uniqueness is **per activity per day** (unique index `{activityId, activityDay, nameNormalized}`), so the same name can be reused on a different day. |
+| GRP-04 | Groups are **never deleted** — previous days' documents (and all their reports) remain in the database for reporting/analytics. |
+| GRP-05 | `GET /:code/groups/today` returns only groups whose `activityDay` is today (the join-screen picker list). |
+| GRP-06 | `GET /:code/groups/check-name` and `/by-name` only consider today's groups — a name used only on a previous day reads as available/not-found today. |
+| GRP-07 | `GET /:code/groups/by-token/:token` returns `410 Gone` when the invite link's group belongs to a previous day (link expires with its day). |
+| GRP-08 | Group readiness (`getGroupStatus`: member count, min-members gate, completion) only counts participants who joined **today**, so a reused name doesn't inherit a previous day's members. |
+| GRP-09 | A one-time startup migration (`migrateActivityGroups`) backfills `activityDay` on legacy groups from `createdAt` and drops the old global-unique index `{activityId, nameNormalized}`. |
+
+### Test Cases
+
+| # | Test | Steps | Expected |
+|---|------|-------|----------|
+| T-GRP-01 | Create + same-day join | Create group "Alpha" today, then open the join screen | "Alpha" appears in today's list and can be joined via name/link |
+| T-GRP-02 | Next-day invisibility | Create "Alpha" on day 1; on day 2 open the join screen | "Alpha" is absent from today's list; by-name returns not-found; its invite link returns 410 |
+| T-GRP-03 | Name reuse | On day 2, create a new group also named "Alpha" | Creation succeeds (no "name already taken"); it is independent of day-1 "Alpha" |
+| T-GRP-04 | Reports preserved | After day rolls over, open Statistics → the day-1 activity's reports | Day-1 "Alpha" and its participant reports are still present in analytics/exports |
+| T-GRP-05 | Member count scoping | Reuse name "Alpha" on day 2 with 1 member | Group status shows 1 member (not day-1 members) |
 
 ---
 

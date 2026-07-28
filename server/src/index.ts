@@ -16,7 +16,7 @@ import {
   isSocialCrawler,
   requestOrigin,
 } from './utils/shareOgPage';
-import { migrateActivities, seedSuperAdmin, seedBuiltInMission } from './db/seed';
+import { migrateActivities, migrateActivityGroups, seedSuperAdmin, seedBuiltInMission } from './db/seed';
 import { processExpiredRewardTimers } from './services/groupRewardService';
 import { CollageJob } from './models/CollageJob';
 import { scheduleCollageEncode } from './services/collageProcessor';
@@ -177,6 +177,7 @@ process.on('unhandledRejection', (reason) => {
 async function start() {
   await connectDB();
   await migrateActivities();
+  await migrateActivityGroups();
   await seedSuperAdmin();
   await seedBuiltInMission();
 

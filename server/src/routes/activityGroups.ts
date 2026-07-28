@@ -4,7 +4,7 @@ import { CreateGroupRequest, CreateGroupResponse } from '../types';
 import { requestOrigin } from '../utils/shareOgPage';
 import { authenticateToken } from '../middleware/auth';
 import { getGroupStatus } from '../utils/groupStatus';
-import { startOfTodayIsrael } from '../utils/israelTime';
+import { israelDayString } from '../utils/israelTime';
 import {
   validateGroupName,
   createParticipantSession,
@@ -62,7 +62,11 @@ router.get('/:code/groups/check-name', async (req: Request<{ code: string }>, re
   }
 
   const normalized = normalizeGroupName(rawName);
-  const existing = await ActivityGroup.findOne({ activityId: activity._id, nameNormalized: normalized });
+  const existing = await ActivityGroup.findOne({
+    activityId: activity._id,
+    activityDay: israelDayString(),
+    nameNormalized: normalized,
+  });
   res.json({ available: !existing });
 });
 
@@ -75,7 +79,7 @@ router.get('/:code/groups/today', async (req: Request<{ code: string }>, res: Re
   }
 
   const groups = await ActivityGroup.find(
-    { activityId: activity._id, createdAt: { $gte: startOfTodayIsrael() } },
+    { activityId: activity._id, activityDay: israelDayString() },
     { name: 1, inviteToken: 1 },
   )
     .sort({ createdAt: -1 })
@@ -102,7 +106,13 @@ router.get('/:code/groups/by-name', async (req: Request<{ code: string }>, res: 
   }
 
   const normalized = normalizeGroupName(rawName);
-  const group = await ActivityGroup.findOne({ activityId: activity._id, nameNormalized: normalized });
+  // Only today's groups are joinable — a same-named group from a previous day
+  // is intentionally not resolved (it stays in the DB for reporting only).
+  const group = await ActivityGroup.findOne({
+    activityId: activity._id,
+    activityDay: israelDayString(),
+    nameNormalized: normalized,
+  });
   if (!group) {
     res.status(404).json({ error: 'Group not found' });
     return;
@@ -125,6 +135,11 @@ router.get('/:code/groups/by-token/:token', async (req: Request<{ code: string; 
   });
   if (!group) {
     res.status(404).json({ error: 'Invalid group invite link' });
+    return;
+  }
+  // Invite links expire with their day — a link from a previous day no longer joins.
+  if (group.activityDay !== israelDayString()) {
+    res.status(410).json({ error: 'This group invite link has expired' });
     return;
   }
 
@@ -199,6 +214,7 @@ router.post('/:code/groups', async (req: Request<{ code: string }, {}, CreateGro
       activityCode: code,
       name: trimmedName,
       nameNormalized: normalized,
+      activityDay: israelDayString(),
       createdByName: participantName?.trim(),
     });
   } catch (err: unknown) {
