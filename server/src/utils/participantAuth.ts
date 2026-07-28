@@ -5,6 +5,7 @@ import { IActivity } from '../models/Activity';
 import { ActivityGroup, normalizeGroupName } from '../models/ActivityGroup';
 import { Report } from '../models/Report';
 import { bumpParticipantCount } from './participantCountCache';
+import { israelDayString, startOfTodayIsrael } from './israelTime';
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -25,17 +26,25 @@ export async function resolveGroupName(
   const entryMode = activity.groupEntryMode || 'preset';
 
   if (entryMode === 'selfService') {
+    // Self-service groups are day-scoped: only a group created today can be joined.
+    // Previous days' groups stay in the DB (for reports) but are no longer joinable.
+    const today = israelDayString();
     if (opts.groupToken) {
       const found = await ActivityGroup.findOne({
         activityId: activity._id!,
         inviteToken: opts.groupToken.trim(),
       });
       if (!found) return { error: 'Invalid group invite link', status: 404 };
+      if (found.activityDay !== today) return { error: 'This group invite link has expired', status: 410 };
       return { groupName: found.name };
     }
     if (opts.group) {
       const normalized = normalizeGroupName(opts.group);
-      const found = await ActivityGroup.findOne({ activityId: activity._id!, nameNormalized: normalized });
+      const found = await ActivityGroup.findOne({
+        activityId: activity._id!,
+        activityDay: today,
+        nameNormalized: normalized,
+      });
       if (!found) return { error: 'Group not found', status: 404 };
       return { groupName: found.name };
     }
@@ -75,7 +84,13 @@ export async function checkGroupCapacity(
   // ponytail: read-then-write race could let two concurrent joins both squeak past
   // the cap. Family-group sizes are small / low-concurrency so acceptable; upgrade
   // to a unique-index or transactional join slot if it ever bites.
-  const memberCount = await Report.countDocuments({ activityId: activity._id, group: groupName });
+  // Day-scoped: only today's members count toward the cap (group names can repeat
+  // across days, so a previous day's members must not fill up today's group).
+  const memberCount = await Report.countDocuments({
+    activityId: activity._id,
+    group: groupName,
+    joinedAt: { $gte: startOfTodayIsrael() },
+  });
   if (memberCount >= max) return 'group_full';
   return null;
 }

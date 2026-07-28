@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTranslations, useLang } from '../../../context/LanguageContext';
+import { useAdminAuth } from '../../../context/AdminAuthContext';
 import { formatDuration as formatDurationLoc } from '../../../utils/formatDuration';
 import { useOverview, useTimeline } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
@@ -43,6 +44,10 @@ interface Props {
 export default function OverviewSection({ activities, onSelectActivity, onViewAuditLog, onCreateCombined }: Props) {
   const t = useTranslations(texts);
   const { lang } = useLang();
+  const { admin } = useAdminAuth();
+  // Customers only see their own activities' reports — the audit log is a
+  // cross-tenant, admin-only view, so hide its entry point for them.
+  const isCustomer = admin?.role === 'customer';
   const formatDuration = (ms: number) => formatDurationLoc(ms, lang);
   const { data: overview, loading: overviewLoading } = useOverview();
   const { data: timeline } = useTimeline(30);
@@ -150,9 +155,11 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
               {t.combinedReport} ({selected.size})
             </ActionButton>
           )}
-          <ActionButton type="button" onClick={onViewAuditLog}>
-            {t.viewAuditLog}
-          </ActionButton>
+          {!isCustomer && (
+            <ActionButton type="button" onClick={onViewAuditLog}>
+              {t.viewAuditLog}
+            </ActionButton>
+          )}
         </div>
       </SectionHeader>
 

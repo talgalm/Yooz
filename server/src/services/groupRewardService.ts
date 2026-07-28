@@ -4,6 +4,7 @@ import { IReport, Report } from '../models/Report';
 import { SmsNotification } from '../models/SmsNotification';
 import { getSmsProvider } from './sms/smsProvider';
 import { buildRewardDownloadUrl, renderWinnerSms } from '../utils/groupRewardConfig';
+import { israelDayString } from '../utils/israelTime';
 
 /** After the last finish in a group, wait this long before SMS (resets on each new finish). */
 export const GROUP_REWARD_IDLE_MS = 5 * 60 * 1000;
@@ -147,13 +148,21 @@ export async function onGroupMemberCompleted(
 ): Promise<void> {
   if (!isRewardEnabled(activity)) return;
 
+  // Day-scoped: resolve today's group doc (names can repeat across days) and only
+  // consider today's members, so a prior day's same-named group can't block or skew
+  // this day's reward.
   const activityGroup = await ActivityGroup.findOne({
     activityId: activity._id,
+    activityDay: israelDayString(),
     nameNormalized: normalizeGroupName(groupName),
   });
   if (!activityGroup || activityGroup.rewardProcessedAt) return;
 
-  const reports = await Report.find({ activityId: activity._id, group: groupName }).lean();
+  const reports = await Report.find({
+    activityId: activity._id,
+    group: groupName,
+    joinedAt: { $gte: activityGroup.createdAt },
+  }).lean();
   if (reports.length === 0) return;
 
   const allCompleted = reports.every((r) => r.completionStatus === 'completed');
@@ -184,10 +193,13 @@ export async function processExpiredRewardTimers(): Promise<void> {
       continue;
     }
 
+    // Only this group's own members (same-named groups on other days have a
+    // different createdAt, so their reports are excluded).
     const reports = await Report.find({
       activityId: activityGroup.activityId,
       group: activityGroup.name,
       completionStatus: 'completed',
+      joinedAt: { $gte: activityGroup.createdAt },
     }).lean();
 
     if (reports.length === 0) {

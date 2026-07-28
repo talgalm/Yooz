@@ -31,6 +31,7 @@ export const texts = {
     mediaLoadSlow: 'Still loading — check your connection.',
     mediaRetry: 'Try again',
     continueButton: 'Continue',
+    videoWatchToContinue: 'Watch the video to continue',
     // Finish page
     finishTitle: 'LESSON COMPLETE!',
     finishScore: 'Your Score',
@@ -108,6 +109,7 @@ export const texts = {
     mediaLoadSlow: 'עדיין טוען — בדקו את החיבור לאינטרנט.',
     mediaRetry: 'נסו שוב',
     continueButton: 'המשך',
+    videoWatchToContinue: 'צפו בסרטון עד הסוף כדי להמשיך',
     // Finish page
     finishTitle: 'השלמת את המסלול!',
     finishScore: 'הניקוד שלך',
