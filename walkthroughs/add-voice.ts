@@ -6,20 +6,28 @@
  *
  * Cross-platform TTS:
  *   - macOS: uses `say -v Carmit` (built-in Hebrew voice)
- *   - Linux: uses `espeak-ng` or downloads from Google Translate TTS
+ *   - Linux: uses `espeak-ng` if installed, else Google Translate TTS
+ *   - Windows: Google Translate TTS (no built-in Hebrew CLI voice)
  *
- * Requires: ffmpeg
+ * ffmpeg/ffprobe are bundled via ffmpeg-static/ffprobe-static — no system install required.
  */
 import { execSync } from 'child_process';
 import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'fs';
 import https from 'https';
 import path from 'path';
 import os from 'os';
+import ffmpegBin from 'ffmpeg-static';
+import ffprobeStatic from 'ffprobe-static';
 
 const PATH_ENV = `${process.env.PATH}:/opt/homebrew/bin:/usr/local/bin`;
 const env = { ...process.env, PATH: PATH_ENV };
 
 const isMac = os.platform() === 'darwin';
+const isWindows = os.platform() === 'win32';
+
+// Bundled binaries so this works without ffmpeg/ffprobe on the system PATH (esp. on Windows).
+const FFMPEG = `"${ffmpegBin}"`;
+const FFPROBE = `"${(ffprobeStatic as unknown as { path: string }).path}"`;
 
 interface Segment {
   text: string;
@@ -41,7 +49,11 @@ if (segments.length === 0) {
   process.exit(1);
 }
 
-const tmpDir = path.join(path.dirname(outputPath), '.narration-tmp');
+// Unique temp dir per invocation. A shared '.narration-tmp' collides when two videos are
+// narrated concurrently — one process's cleanup wipes the other's clips mid-encode, so the
+// loser silently falls back to an un-narrated video. Base it on the output name + pid.
+const outBase = path.basename(outputPath).replace(/\.[^.]+$/, '');
+const tmpDir = path.join(path.dirname(outputPath), `.narration-tmp-${outBase}-${process.pid}`);
 if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true });
 mkdirSync(tmpDir, { recursive: true });
 
@@ -51,7 +63,7 @@ function generateTTSMac(text: string, outputFile: string) {
   const safeText = text.replace(/"/g, '\\"');
   const aiffFile = outputFile.replace(/\.wav$/, '.aiff');
   execSync(`say -v Carmit -r 160 -o "${aiffFile}" "${safeText}"`, { env });
-  execSync(`ffmpeg -y -i "${aiffFile}" "${outputFile}" 2>/dev/null`, { env });
+  execSync(`${FFMPEG} -y -i "${aiffFile}" "${outputFile}"`, { env, stdio: 'ignore' });
 }
 
 function generateTTSLinux(text: string, outputFile: string): Promise<void> {
@@ -81,7 +93,7 @@ function downloadGoogleTTS(text: string, outputFile: string): Promise<void> {
           res2.on('end', () => {
             const mp3File = outputFile.replace(/\.wav$/, '.mp3');
             writeFileSync(mp3File, Buffer.concat(chunks));
-            execSync(`ffmpeg -y -i "${mp3File}" "${outputFile}" 2>/dev/null`, { env });
+            execSync(`${FFMPEG} -y -i "${mp3File}" "${outputFile}"`, { env, stdio: 'ignore' });
             resolve();
           });
           res2.on('error', reject);
@@ -93,7 +105,7 @@ function downloadGoogleTTS(text: string, outputFile: string): Promise<void> {
       res.on('end', () => {
         const mp3File = outputFile.replace(/\.wav$/, '.mp3');
         writeFileSync(mp3File, Buffer.concat(chunks));
-        execSync(`ffmpeg -y -i "${mp3File}" "${outputFile}" 2>/dev/null`, { env });
+        execSync(`${FFMPEG} -y -i "${mp3File}" "${outputFile}"`, { env, stdio: 'ignore' });
         resolve();
       });
       res.on('error', reject);
@@ -104,7 +116,8 @@ function downloadGoogleTTS(text: string, outputFile: string): Promise<void> {
 // --- Main ---
 
 async function main() {
-  console.log(`\n🎙️  Generating ${segments.length} Hebrew voice clips (${isMac ? 'macOS say' : 'Linux TTS'})...`);
+  const engineLabel = isMac ? 'macOS say' : isWindows ? 'Google Translate TTS' : 'Linux TTS';
+  console.log(`\n🎙️  Generating ${segments.length} Hebrew voice clips (${engineLabel})...`);
 
   const audioFiles: { file: string; offsetMs: number }[] = [];
 
@@ -114,6 +127,9 @@ async function main() {
 
     if (isMac) {
       generateTTSMac(seg.text, wavFile);
+    } else if (isWindows) {
+      // No built-in Hebrew CLI voice on Windows — go straight to the Google Translate fallback.
+      await downloadGoogleTTS(seg.text, wavFile);
     } else {
       await generateTTSLinux(seg.text, wavFile);
     }
@@ -124,7 +140,7 @@ async function main() {
 
   // Get video duration
   const durationStr = execSync(
-    `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoPath}"`,
+    `${FFPROBE} -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${videoPath}"`,
     { env },
   ).toString().trim();
   const videoDuration = parseFloat(durationStr);
@@ -154,7 +170,7 @@ async function main() {
   const outDir = path.dirname(outputPath);
   if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 
-  const cmd = `ffmpeg -y ${inputs} -filter_complex "${filterComplex}" -map 0:v -map "[aout]" -c:v libx264 -preset fast -crf 23 -c:a aac -shortest "${outputPath}"`;
+  const cmd = `${FFMPEG} -y ${inputs} -filter_complex "${filterComplex}" -map 0:v -map "[aout]" -c:v libx264 -preset fast -crf 23 -c:a aac -shortest "${outputPath}"`;
 
   try {
     execSync(cmd, { env, stdio: 'inherit' });

@@ -26,12 +26,25 @@ function loadFileIfExists(filePath: string): string {
   } catch { return ''; }
 }
 
+// A small, diverse example set. The walkthroughs dir is mostly create-* specs, and feeding
+// all of them biased every generation toward "create activity" regardless of the request.
+// These five cover distinct flow shapes (login, navigation, read-only viewing, a create, and
+// search) so Gemini learns the style + helper patterns without anchoring on one flow.
+const EXAMPLE_SPECS = [
+  '01-admin-login.spec.ts',
+  '06-navigate-dashboard-tabs.spec.ts',
+  '05-view-statistics.spec.ts',
+  '02-create-activity.spec.ts',
+  '22-search-content.spec.ts',
+];
+
 function loadExampleSpecs(): string {
   const walkthroughsDir = path.join(PROJECT_ROOT, 'walkthroughs');
   try {
-    const files = readdirSync(walkthroughsDir)
-      .filter((f) => f.endsWith('.spec.ts') && !f.startsWith('dynamic-'))
-      .sort();
+    const all = readdirSync(walkthroughsDir)
+      .filter((f) => f.endsWith('.spec.ts') && !f.startsWith('dynamic-'));
+    const chosen = EXAMPLE_SPECS.filter((f) => all.includes(f));
+    const files = chosen.length ? chosen : all.sort().slice(0, 5);
     return files.map((f) => {
       const content = readFileSync(path.join(walkthroughsDir, f), 'utf-8');
       const name = f.replace(/^\d+-/, '').replace('.spec.ts', '').replace(/-/g, ' ');
@@ -45,34 +58,40 @@ function buildSystemPrompt(): string {
   const examples = loadExampleSpecs();
 
   return `You are a Playwright spec generator for the Yooz system.
-The user will describe in Hebrew (or English) what walkthrough video they want.
+The user (in the next message) describes, in Hebrew or English, the walkthrough video they want.
 You must output ONLY valid TypeScript code — a complete Playwright test file. No markdown fences, no explanation, just code.
+
+=== #1 PRIORITY: MATCH THE REQUEST ===
+Build a walkthrough for EXACTLY the flow the user asked for, and nothing else.
+- If they ask to navigate tabs, the video navigates tabs. If they ask to view statistics, it views statistics. If they ask about the library, it shows the library.
+- Do NOT default to a "create activity" walkthrough. Only create/edit/delete something if the user explicitly asked to.
+- Pick the ONE example below whose flow is closest to the request and adapt it; ignore the others.
+- Log in first ONLY if the requested flow needs an authenticated admin page (most do). Keep login to the 4 quick lines shown in the login example — it is a means to reach the requested screen, not the subject of the video.
+The title/description are the source of truth for WHAT the video shows.
 
 Available imports from './helpers':
   - startNarration() — call once at the start
   - showCaption(page, text, durationMs?) — show a Hebrew caption overlay (default 3500ms). Also records timestamp for voice narration.
-  - highlightAndClick(page, selector, caption?) — highlight element, show caption, then click. Includes auto-pause for voice.
-  - highlightAndFill(page, selector, value, caption?) — highlight element, type slowly (char by char), show caption. Includes auto-pause.
+  - highlightAndClick(page, selector, caption?) — highlight element, show caption, then click. Resilient: if the selector matches nothing it skips the click but still narrates.
+  - highlightAndFill(page, selector, value, caption?) — highlight element, type slowly, show caption. Resilient like highlightAndClick.
   - pause(page, ms?) — wait (default 2000ms)
-  - saveNarrationLog(path) — save narration JSON for voice post-processing. Call at the end.
+  - saveNarrationLog(path) — save narration JSON. Call at the end.
 
-IMPORTANT RULES:
-1. Always start with: import { test } from '@playwright/test'; and import helpers.
+RESILIENCE — the video MUST be able to run to the end even if a step's element is missing:
+- PREFER the helpers (highlightAndClick / highlightAndFill) for every interaction — they never throw on a missing element.
+- If you must use a raw Playwright call (page.click / page.fill / page.goto / page.waitForURL), you MUST append .catch(() => {}) so it can never abort the test. Example: await page.click('...').catch(() => {});
+- The only raw calls without .catch allowed are the 4 login lines and the very first page.goto.
+
+OTHER RULES:
+1. Always start with: import { test } from '@playwright/test'; and import the helpers you use.
 2. Always call startNarration() first.
-3. Always call saveNarrationLog('NARRATION_OUTPUT_PATH') at the end.
-4. Login is almost always needed first — use the EXACT login flow from the UI map below.
-5. Use .catch(() => {}) on navigation waits and optional clicks to prevent failures.
-6. All captions MUST be in Hebrew.
-7. Use pause(page, 1500) between major actions so the video is watchable.
-8. For form fills, use highlightAndFill with descriptive Hebrew caption.
-9. For button clicks, use highlightAndClick with descriptive Hebrew caption.
-10. Keep the total video under 60 seconds — don't add too many steps.
-11. Use ONLY selectors documented in the UI MAP below. Do NOT guess selectors.
-12. For tab switching, always use both English and Hebrew selectors: button:has-text("English"), button:has-text("עברית")
-13. For clicking elements that may not exist, always add .catch(() => {}).
-14. After any navigation, use page.waitForURL() with .catch(() => {}) and then pause().
-15. NEVER chain .first() or .last() on a string selector inside highlightAndClick/highlightAndFill — those helpers already call .first() internally.
-16. For page.locator() calls, always use the pattern: await page.locator('selector').first().click().catch(() => {});
+3. Always call saveNarrationLog('NARRATION_OUTPUT_PATH') at the very end (narration is also auto-saved, but keep this line).
+4. All captions MUST be in Hebrew.
+5. Use pause(page, 1500) between major actions so the video is watchable.
+6. Keep the total video under 60 seconds — 4–8 focused steps, all on the requested flow.
+7. Use ONLY selectors documented in the UI MAP below. Do NOT invent selectors.
+8. For tab/button switching, use both English and Hebrew text: button:has-text("Stations"), button:has-text("תחנות").
+9. NEVER chain .first()/.last() on a string selector passed to highlightAndClick/highlightAndFill — they call .first() internally.
 
 === COMPLETE UI MAP (routes, selectors, Hebrew labels, navigation flows) ===
 
@@ -80,34 +99,41 @@ ${uiMap}
 
 === END UI MAP ===
 
-=== EXAMPLE SPECS (use these as reference for style, structure, and patterns) ===
+=== EXAMPLE SPECS (reference for STYLE and helper patterns — pick the closest ONE to adapt) ===
 
 ${examples}
 
 === END EXAMPLES ===
 
-Now generate the spec based on the user's request. Output ONLY the TypeScript code, nothing else.`;
+Output ONLY the TypeScript code for the requested walkthrough, nothing else.`;
 }
 
 // ─── Gemini LLM: free text → Playwright spec ───
 
-async function askGemini(userText: string): Promise<string> {
+async function askGemini(userText: string, systemPrompt?: string): Promise<string> {
   if (!GEMINI_API_KEY) {
     throw new Error('GEMINI_API_KEY not configured');
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-  const systemPrompt = buildSystemPrompt();
 
-  const body = {
-    contents: [
-      { role: 'user', parts: [{ text: systemPrompt + '\n\nUser request:\n' + userText }] },
-    ],
+  // Put the big instruction set in systemInstruction and keep the user request as its own
+  // turn. Structurally separating them stops the request from being "lost" at the tail of a
+  // huge prompt and drifting toward whatever the examples show.
+  const body: {
+    contents: { role: string; parts: { text: string }[] }[];
+    systemInstruction?: { parts: { text: string }[] };
+    generationConfig: { temperature: number; maxOutputTokens: number };
+  } = {
+    contents: [{ role: 'user', parts: [{ text: userText }] }],
     generationConfig: {
-      temperature: 0.3,
+      temperature: 0.2,
       maxOutputTokens: 4096,
     },
   };
+  if (systemPrompt) {
+    body.systemInstruction = { parts: [{ text: systemPrompt }] };
+  }
 
   // Retry up to 3 times with exponential backoff for rate limits (429)
   const maxRetries = 3;
@@ -149,6 +175,51 @@ async function askGemini(userText: string): Promise<string> {
   }
 
   throw new Error('Gemini rate limited after all retries');
+}
+
+// ─── Deterministic target hint: grounds the (weak) model on the requested screen ───
+
+/**
+ * Map the request's keywords to a concrete "which screen" instruction. The lite Gemini model
+ * tends to ignore a short request buried under a big system prompt and drift to a generic
+ * flow (create-activity / library). Injecting the detected target — the exact tab text and
+ * route — up front keeps the generated walkthrough on the screen the user actually asked for.
+ * Returns '' when no clear target is detected (open-ended request → let the model decide).
+ *
+ * NFC-normalize + match with String.includes rather than a regex: esbuild (via tsx) mangles
+ * non-ASCII characters inside REGEX literals, so Hebrew /…/ patterns silently never match at
+ * runtime — string literals survive transpilation intact. includes() also gives substring
+ * matching (משתמש ⊂ משתמשים).
+ */
+function detectTargetHint(title: string, description: string): string {
+  const text = (title + ' ' + description).normalize('NFC').toLowerCase();
+  const has = (words: string[]) => words.some((w) => text.includes(w));
+
+  const wantsDuplicate = has(['duplicate', 'clone', 'שכפול', 'שכפל', 'העתק', 'כפיל']);
+  const wantsParticipant = has(['play', 'לשחק', 'משתתף', 'להיכנס לפעילות', 'סריקת', 'qr']);
+  const wantsSearch = has(['search', 'חיפוש', 'לחפש', 'למצוא']);
+  const wantsUsers = has(['user', 'משתמש', 'הרשאות']);
+  const wantsStats = has(['statistic', 'report', 'סטטיסטיק', 'אנליטיק', 'נתונים', 'דוחות']);
+  const wantsLibrary = has(['library', 'ספרייה', 'ייבוא', 'ייצוא', 'שחזור']);
+  const wantsStations = has(['station', 'תחנה', 'תחנות']);
+  const wantsGames = has(['game', 'משחק', 'טריוויה', 'פאזל']);
+  const wantsCreate = !wantsDuplicate && has(['create', 'ליצור', 'יצירה', 'יצירת', 'צור', 'פעילות חדשה']);
+  const wantsTabs = has(['tab', 'לשוני', 'ניווט', 'סיור', 'navigat']);
+
+  const target = (name: string, extra: string) =>
+    `TARGET SCREEN: ${name}. After login, ${extra} The whole walkthrough must stay on this screen — do NOT drift to "create activity", "library/export", or any other flow the user did not ask for.`;
+
+  if (wantsParticipant) return `TARGET: the participant play flow (go to /play/<code>, enter a name, start). Do NOT show the admin dashboard.`;
+  if (wantsSearch) return target('the Activities tab search', 'use the search box in the activities list to find an activity by name.');
+  if (wantsUsers) return target('the Users tab', 'click button:has-text("Users"), button:has-text("משתמשים") and show user/permission management.');
+  if (wantsStats) return target('the Reports/Statistics tab', 'click button:has-text("Statistics"), button:has-text("דוחות") and show the statistics.');
+  if (wantsLibrary) return target('the Library tab', 'click button:has-text("Library"), button:has-text("ספרייה") and show the imported content.');
+  if (wantsStations) return target('the Stations tab', 'click button:has-text("Stations"), button:has-text("תחנות") and show stations/games management.');
+  if (wantsGames) return target('the Games management screen', 'open the Stations tab, then the Games sub-view, and show the games.');
+  if (wantsDuplicate) return target('an existing item you duplicate', 'open the row actions and use Duplicate / שכפול.');
+  if (wantsTabs) return target('the dashboard tabs', 'click through the top tabs (Stations/תחנות, Library/ספרייה, Statistics/דוחות, Users/משתמשים) one by one.');
+  if (wantsCreate) return target('the Create Activity flow', 'click Create Activity / צור פעילות and fill the form.');
+  return '';
 }
 
 // ─── Fallback: keyword-based template when Gemini is unavailable ───
@@ -346,6 +417,25 @@ ${steps.join('\n')}
 }
 
 /**
+ * Force the './helpers' import to include every helper, so a spec that CALLS a helper it
+ * forgot to import (Gemini frequently omits highlightAndFill) doesn't crash at runtime with
+ * "ReferenceError: X is not defined". Importing unused helpers is harmless.
+ */
+function normalizeHelperImport(spec: string): string {
+  const canonical = `import { showCaption, highlightAndClick, highlightAndFill, pause, startNarration, saveNarrationLog } from './helpers';`;
+  const helpersImportRe = /import\s*\{[^}]*\}\s*from\s*['"]\.\/helpers['"]\s*;?/;
+  if (helpersImportRe.test(spec)) {
+    return spec.replace(helpersImportRe, canonical);
+  }
+  // No helpers import present — add one right after the @playwright/test import.
+  const pwImportRe = /(import\s*\{[^}]*\}\s*from\s*['"]@playwright\/test['"]\s*;?)/;
+  if (pwImportRe.test(spec)) {
+    return spec.replace(pwImportRe, `$1\n${canonical}`);
+  }
+  return spec;
+}
+
+/**
  * Extract clean TypeScript code from Gemini's response.
  * Handles any leading explanation text before a fenced code block.
  */
@@ -460,6 +550,10 @@ async function generateVideo(tutorialId: string, title: string, description: str
   const specFile = path.join(PROJECT_ROOT, 'walkthroughs', `dynamic-${safeId}.spec.ts`);
   const narrationJson = path.join(PROJECT_ROOT, 'walkthrough-videos', `dynamic-${safeId}-narration.json`);
   const videoDir = path.join(PROJECT_ROOT, 'walkthrough-videos');
+  // Per-run Playwright output dir. Playwright wipes its outputDir at the start of every run,
+  // so concurrent generations sharing one dir stomp each other's freshly recorded videos
+  // (ENOENT on upload). An isolated dir per tutorial makes concurrent generation safe.
+  const runDir = path.join(videoDir, `run-${safeId}`);
 
   try {
     // Step 0: Generate the Playwright spec
@@ -467,9 +561,13 @@ async function generateVideo(tutorialId: string, title: string, description: str
     let specContent: string;
 
     console.log(`[Tutorial ${safeId}] Asking Gemini to generate spec for: "${description.slice(0, 80)}..."`);
-    const rawSpec = await askGemini(`${title}\n${description}`);
+    const hint = detectTargetHint(title, description);
+    if (hint) console.log(`[Tutorial ${safeId}] Target hint: ${hint.slice(0, 90)}...`);
+    const userRequest = `${hint ? hint + '\n\n' : ''}Generate the Playwright walkthrough spec for EXACTLY this request — build this specific flow, not a different one:\n\nTitle: ${title}\nDescription: ${description}`;
+    const rawSpec = await askGemini(userRequest, buildSystemPrompt());
     specContent = extractCode(rawSpec);
     specContent = specContent.replace(/NARRATION_OUTPUT_PATH/g, narrationJson.replace(/\\/g, '/'));
+    specContent = normalizeHelperImport(specContent);
 
     if (!specContent.includes('import') || !specContent.includes('test(')) {
       throw new Error('Gemini returned invalid spec — missing import or test()');
@@ -479,9 +577,15 @@ async function generateVideo(tutorialId: string, title: string, description: str
     // Syntax-check: write temp file and run Playwright --list to detect compile errors.
     // If it fails, send the errors back to Gemini for one correction attempt.
     const NODE_BIN = process.env.PLAYWRIGHT_NODE_BIN?.trim() || process.execPath;
-    const PW_BIN = path.join(PROJECT_ROOT, 'node_modules/.bin/playwright');
+    // Run Playwright's JS CLI entry directly via node. The node_modules/.bin/playwright
+    // shim is a POSIX shell script that `node` can't execute on Windows — cli.js is portable.
+    const PW_BIN = path.join(PROJECT_ROOT, 'node_modules', 'playwright', 'cli.js');
+    // Playwright treats the positional path as a regex filter matched against test files, so
+    // it must be relative with forward slashes. An absolute Windows path (C:\...) reads as an
+    // invalid regex and silently matches zero files ("No tests found"). cwd is PROJECT_ROOT.
+    const specArg = path.relative(PROJECT_ROOT, specFile).replace(/\\/g, '/');
     writeFileSync(specFile, specContent);
-    const listCmd = `cd "${PROJECT_ROOT}" && "${NODE_BIN}" "${PW_BIN}" test --list --project=walkthroughs "${specFile}" 2>&1`;
+    const listCmd = `"${NODE_BIN}" "${PW_BIN}" test --list --project=walkthroughs "${specArg}"`;
     const { output: listOutput, exitCode: listExit } = await runCommand(listCmd, 30_000);
     if (listExit !== 0) {
       if (/not found|ENOENT|No such file or directory|cannot execute/i.test(listOutput)) {
@@ -530,12 +634,18 @@ async function generateVideo(tutorialId: string, title: string, description: str
     console.log(`[Tutorial ${safeId}] Running Playwright...`);
     if (!existsSync(videoDir)) mkdirSync(videoDir, { recursive: true });
 
-    const playwrightCmd = `cd "${PROJECT_ROOT}" && PLAYWRIGHT_BASE_URL="${baseUrl}" "${NODE_BIN}" "${PW_BIN}" test --reporter=list --project=walkthroughs "${specFile}" 2>&1`;
-    const { output: playwrightOutput, exitCode } = await runCommand(playwrightCmd, 600_000);
+    const runDirArg = path.relative(PROJECT_ROOT, runDir).replace(/\\/g, '/');
+    const playwrightCmd = `"${NODE_BIN}" "${PW_BIN}" test --reporter=list --project=walkthroughs --output "${runDirArg}" "${specArg}"`;
+    const { output: playwrightOutput, exitCode } = await runCommand(playwrightCmd, 600_000, {
+      PLAYWRIGHT_BASE_URL: baseUrl,
+      // Helpers flush narration here after every caption, so a spec that throws partway
+      // still leaves a usable narration file and the video keeps its voiceover.
+      NARRATION_OUTPUT: narrationJson,
+    });
     console.log(`[Tutorial ${safeId}] Playwright output (exit ${exitCode}):\n${playwrightOutput.slice(-1500)}`);
 
     // Check for video even if Playwright exited non-zero (partial test may still record)
-    const videoFile = findVideoFile(videoDir, `dynamic-${safeId}`);
+    const videoFile = findVideoFile(runDir, `dynamic-${safeId}`);
     if (!videoFile) {
       const errDetail = playwrightOutput.slice(-500);
       await setStep(tutorialId, 1, 'failed', errDetail);
@@ -552,7 +662,7 @@ async function generateVideo(tutorialId: string, title: string, description: str
     const outputPath = path.join(videoDir, `tutorial-${safeId}-narrated.mp4`);
     if (existsSync(narrationJson)) {
       console.log(`[Tutorial ${safeId}] Adding voice narration...`);
-      const voiceCmd = `cd "${PROJECT_ROOT}" && npx tsx walkthroughs/add-voice.ts "${videoFile}" "${narrationJson}" "${outputPath}" 2>&1`;
+      const voiceCmd = `npx tsx "${path.join(PROJECT_ROOT, 'walkthroughs', 'add-voice.ts')}" "${videoFile}" "${narrationJson}" "${outputPath}"`;
       const { exitCode: voiceExit } = await runCommand(voiceCmd, 120_000);
       if (voiceExit !== 0) {
         console.log(`[Tutorial ${safeId}] ⚠ Voice narration failed — continuing without it`);
@@ -587,27 +697,21 @@ async function generateVideo(tutorialId: string, title: string, description: str
     });
   } finally {
     // Cleanup all local files — everything is in Cloudinary (or failed)
-    cleanupLocalFiles(safeId, specFile, narrationJson, videoDir);
+    cleanupLocalFiles(safeId, specFile, narrationJson, videoDir, runDir);
   }
 }
 
 /**
- * Remove all local files generated for a tutorial (spec, narration, video folder).
+ * Remove all local files generated for a tutorial (spec, narration, per-run video dir).
+ * Scoped to this tutorial's own paths so it never touches a concurrent generation's files.
  */
-function cleanupLocalFiles(safeId: string, specFile: string, narrationJson: string, videoDir: string) {
+function cleanupLocalFiles(safeId: string, specFile: string, narrationJson: string, videoDir: string, runDir: string) {
   try { unlinkSync(specFile); } catch {}
   try { unlinkSync(narrationJson); } catch {}
   // Remove narrated mp4
   try { unlinkSync(path.join(videoDir, `tutorial-${safeId}-narrated.mp4`)); } catch {}
-  // Remove Playwright video subfolder(s) matching this tutorial
-  try {
-    const entries = readdirSync(videoDir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (entry.isDirectory() && entry.name.includes(`dynamic-${safeId}`)) {
-        rmSync(path.join(videoDir, entry.name), { recursive: true, force: true });
-      }
-    }
-  } catch {}
+  // Remove this run's isolated Playwright output dir (holds the recorded video)
+  try { rmSync(runDir, { recursive: true, force: true }); } catch {}
   console.log(`[Tutorial ${safeId}] Local files cleaned up`);
 }
 
@@ -648,13 +752,30 @@ function findVideoFile(videoDir: string, prefix: string): string | null {
   return newestFile;
 }
 
-function runCommand(cmd: string, timeoutMs: number): Promise<{ output: string; exitCode: number }> {
+function runCommand(
+  cmd: string,
+  timeoutMs: number,
+  extraEnv?: Record<string, string>,
+): Promise<{ output: string; exitCode: number }> {
   return new Promise((resolve) => {
-    exec(cmd, { timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
-      const output = (stdout || '') + (stderr || '');
-      const exitCode = error ? (error as any).code ?? 1 : 0;
-      resolve({ output, exitCode });
-    });
+    // cwd + env are passed via exec options (cross-platform) rather than baked into the
+    // command string with `cd ... &&` / `VAR=value cmd` prefixes, which are POSIX-shell only
+    // and break under cmd.exe on Windows. stdout/stderr are captured separately below, so no
+    // `2>&1` redirect is needed either.
+    exec(
+      cmd,
+      {
+        cwd: PROJECT_ROOT,
+        timeout: timeoutMs,
+        maxBuffer: 10 * 1024 * 1024,
+        env: extraEnv ? { ...process.env, ...extraEnv } : process.env,
+      },
+      (error, stdout, stderr) => {
+        const output = (stdout || '') + (stderr || '');
+        const exitCode = error ? (error as any).code ?? 1 : 0;
+        resolve({ output, exitCode });
+      },
+    );
   });
 }
 
