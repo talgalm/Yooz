@@ -540,6 +540,49 @@ async function setStep(tutorialId: string, stepIndex: number, status: 'running' 
   await Tutorial.findByIdAndUpdate(tutorialId, { $set: update });
 }
 
+/**
+ * A Playwright `--list` invocation can exit non-zero for reasons that have nothing to do with
+ * the spec's TypeScript. Separate "the environment/setup is broken" (surface it, don't retry —
+ * retrying or falling back to another spec can't fix it) from "this particular spec doesn't
+ * compile" (worth a Gemini correction pass). Matched on lowercased output with plain includes.
+ */
+function classifyListFailure(output: string): { kind: 'env' | 'syntax'; hint: string } {
+  const o = output.toLowerCase();
+  if (
+    o.includes('cannot find module') ||
+    o.includes('cannot find package') ||
+    o.includes('err_module_not_found') ||
+    o.includes('enoent') ||
+    o.includes('no such file or directory') ||
+    o.includes('command not found') ||
+    o.includes('is not recognized') ||
+    o.includes('cannot execute')
+  ) {
+    return {
+      kind: 'env',
+      hint:
+        'Playwright could not run on the server (its CLI or a dependency is missing). ' +
+        'Install the project-root tooling: `npm install --include=dev` then ' +
+        '`npx playwright install --with-deps chromium` in the repo root.',
+    };
+  }
+  if (o.includes('no tests found')) {
+    return {
+      kind: 'env',
+      hint:
+        'Playwright found no tests to compile — the generated spec file did not match the test ' +
+        'filter. This is a path/config issue on the server, not a script error.',
+    };
+  }
+  if (o.includes('timed out') || o.includes('timeout')) {
+    return {
+      kind: 'env',
+      hint: 'The Playwright compile check timed out — the server may be overloaded. Try again.',
+    };
+  }
+  return { kind: 'syntax', hint: '' };
+}
+
 async function generateVideo(tutorialId: string, title: string, description: string) {
   // Initialize steps
   const steps = STEP_NAMES.map((name) => ({ name, status: 'pending' as const }));
@@ -555,7 +598,28 @@ async function generateVideo(tutorialId: string, title: string, description: str
   // (ENOENT on upload). An isolated dir per tutorial makes concurrent generation safe.
   const runDir = path.join(videoDir, `run-${safeId}`);
 
+  // The compile-check and recording shell out to Playwright's CLI via a real node process.
+  // These live in the PROJECT-ROOT node_modules (walkthroughs tooling) — a separate install
+  // from server/node_modules. In production the root deps must be installed (see
+  // .github/workflows/deploy.yml) or none of this can run.
+  const NODE_BIN = process.env.PLAYWRIGHT_NODE_BIN?.trim() || process.execPath;
+  // Run Playwright's JS CLI entry directly via node. The node_modules/.bin/playwright shim is
+  // a POSIX shell script that `node` can't execute on Windows — cli.js is portable.
+  const PW_BIN = path.join(PROJECT_ROOT, 'node_modules', 'playwright', 'cli.js');
+
   try {
+    // Preflight: make sure the walkthrough tooling is actually installed. Without this, the
+    // missing-module error from `node <missing cli.js>` gets misread downstream as a spec
+    // "syntax error" and produces a baffling message. Fail fast with an actionable one.
+    if (!existsSync(PW_BIN)) {
+      throw new Error(
+        'Tutorial generation is unavailable on this server: Playwright is not installed. ' +
+          'The pipeline needs the project-root dependencies (playwright, @playwright/test, tsx, ' +
+          'ffmpeg-static) and a browser. On the server, run in the repo root: ' +
+          '`npm install --include=dev` then `npx playwright install --with-deps chromium`.',
+      );
+    }
+
     // Step 0: Generate the Playwright spec
     await setStep(tutorialId, 0, 'running');
     let specContent: string;
@@ -576,10 +640,6 @@ async function generateVideo(tutorialId: string, title: string, description: str
 
     // Syntax-check: write temp file and run Playwright --list to detect compile errors.
     // If it fails, send the errors back to Gemini for one correction attempt.
-    const NODE_BIN = process.env.PLAYWRIGHT_NODE_BIN?.trim() || process.execPath;
-    // Run Playwright's JS CLI entry directly via node. The node_modules/.bin/playwright
-    // shim is a POSIX shell script that `node` can't execute on Windows — cli.js is portable.
-    const PW_BIN = path.join(PROJECT_ROOT, 'node_modules', 'playwright', 'cli.js');
     // Playwright treats the positional path as a regex filter matched against test files, so
     // it must be relative with forward slashes. An absolute Windows path (C:\...) reads as an
     // invalid regex and silently matches zero files ("No tests found"). cwd is PROJECT_ROOT.
@@ -588,17 +648,16 @@ async function generateVideo(tutorialId: string, title: string, description: str
     const listCmd = `"${NODE_BIN}" "${PW_BIN}" test --list --project=walkthroughs "${specArg}"`;
     const { output: listOutput, exitCode: listExit } = await runCommand(listCmd, 30_000);
     if (listExit !== 0) {
-      if (/not found|ENOENT|No such file or directory|cannot execute/i.test(listOutput)) {
+      const firstFail = classifyListFailure(listOutput);
+      // Environment/setup failure (Playwright missing, no tests matched, timeout) is NOT a spec
+      // problem — retrying or falling back to another spec can't help. Surface the real cause.
+      if (firstFail.kind === 'env') {
         try { unlinkSync(specFile); } catch {}
-        throw new Error(
-          `Playwright syntax-check command failed to start (node: ${NODE_BIN}). ${listOutput
-            .slice(-300)
-            .trim()}`,
-        );
+        throw new Error(`${firstFail.hint}\n\nPlaywright output:\n${listOutput.slice(-500).trim()}`);
       }
 
       const errSnippet = listOutput.slice(-800);
-      console.log(`[Tutorial ${safeId}] Gemini spec has syntax errors — asking Gemini to fix:\n${errSnippet}`);
+      console.log(`[Tutorial ${safeId}] Gemini spec has TypeScript errors — asking Gemini to fix:\n${errSnippet}`);
       try { unlinkSync(specFile); } catch {}
 
       // One correction pass: send original spec + compiler errors back to Gemini
@@ -606,18 +665,34 @@ async function generateVideo(tutorialId: string, title: string, description: str
       const fixedRaw = await askGemini(fixPrompt);
       specContent = extractCode(fixedRaw);
       specContent = specContent.replace(/NARRATION_OUTPUT_PATH/g, narrationJson.replace(/\\/g, '/'));
+      // Re-normalize: Gemini's fix often drops a helper import, which would ReferenceError at
+      // record time. The first pass did this too (see above) — keep the retry consistent.
+      specContent = normalizeHelperImport(specContent);
 
       writeFileSync(specFile, specContent);
       const { output: retryOutput, exitCode: retryExit } = await runCommand(listCmd, 30_000);
       if (retryExit !== 0) {
-        console.log(`[Tutorial ${safeId}] Corrected spec still has errors — falling back to keyword template:\n${retryOutput.slice(-600)}`);
+        const retryFail = classifyListFailure(retryOutput);
+        if (retryFail.kind === 'env') {
+          try { unlinkSync(specFile); } catch {}
+          throw new Error(`${retryFail.hint}\n\nPlaywright output:\n${retryOutput.slice(-500).trim()}`);
+        }
+        console.log(`[Tutorial ${safeId}] Corrected spec still has TS errors — falling back to keyword template:\n${retryOutput.slice(-600)}`);
         specContent = generateFallbackSpec(title, description, narrationJson);
         writeFileSync(specFile, specContent);
         const { output: fbOutput, exitCode: fbExit } = await runCommand(listCmd, 30_000);
         if (fbExit !== 0) {
           console.log(`[Tutorial ${safeId}] Fallback spec ALSO failed to compile:\n${fbOutput.slice(-600)}`);
           try { unlinkSync(specFile); } catch {}
-          throw new Error('Gemini spec has syntax errors — generation aborted');
+          const fbFail = classifyListFailure(fbOutput);
+          // The fallback is a fixed, known-good template. If it fails too, the problem is the
+          // environment (Playwright/helpers.ts/tsconfig), never the user's request — say so, and
+          // include the real compiler output instead of a vague "syntax error".
+          throw new Error(
+            fbFail.kind === 'env'
+              ? `${fbFail.hint}\n\nPlaywright output:\n${fbOutput.slice(-500).trim()}`
+              : `Could not build the tutorial script. The AI script and the built-in fallback both failed to compile, which points to a broken walkthrough setup (walkthroughs/helpers.ts or Playwright), not your request. Compiler output:\n${fbOutput.slice(-600).trim()}`,
+          );
         }
         console.log(`[Tutorial ${safeId}] Using keyword fallback spec`);
       } else {
@@ -691,6 +766,13 @@ async function generateVideo(tutorialId: string, title: string, description: str
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error(`[Tutorial ${safeId}] ❌ Error:`, errorMsg);
+    // Mark whichever step was in flight as failed so the UI shows the failure on the right step
+    // instead of leaving it stuck on "running".
+    try {
+      const t = await Tutorial.findById(tutorialId).lean();
+      const runningIdx = (t?.steps || []).findIndex((s: any) => s.status === 'running');
+      if (runningIdx >= 0) await setStep(tutorialId, runningIdx, 'failed', errorMsg.slice(0, 200));
+    } catch {}
     await Tutorial.findByIdAndUpdate(tutorialId, {
       status: 'failed',
       error: errorMsg.slice(0, 1000),
@@ -771,8 +853,11 @@ function runCommand(
         env: extraEnv ? { ...process.env, ...extraEnv } : process.env,
       },
       (error, stdout, stderr) => {
-        const output = (stdout || '') + (stderr || '');
-        const exitCode = error ? (error as any).code ?? 1 : 0;
+        let output = (stdout || '') + (stderr || '');
+        // exec kills the process on timeout (error.killed=true, code=null). Surface that in the
+        // output so the caller can tell a timeout apart from a real non-zero exit.
+        if (error && (error as any).killed) output += `\n[command timed out after ${timeoutMs}ms]`;
+        const exitCode = error ? ((error as any).code ?? 1) : 0;
         resolve({ output, exitCode });
       },
     );

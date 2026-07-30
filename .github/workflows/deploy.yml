@@ -120,6 +120,16 @@ jobs:
             npm install 2>&1 | tail -2
             npm run build
 
+            echo "=== Installing root tooling for tutorial generation (Playwright, tsx, ffmpeg) ==="
+            # The tutorial/walkthrough pipeline shells out to Playwright's CLI + tsx from the
+            # PROJECT-ROOT node_modules (separate from server/). rsync excludes node_modules and
+            # nothing else installs the root package, so without this the feature can't run and
+            # fails with a misleading "syntax error". --include=dev forces the tooling in even if
+            # NODE_ENV=production. The browser install is idempotent (skips if already present).
+            cd /opt/yooz
+            npm install --include=dev 2>&1 | tail -2
+            npx playwright install --with-deps chromium 2>&1 | tail -5 || echo "  ⚠ playwright browser install failed — tutorial recording may not work"
+
             echo "=== Building client ==="
             cd /opt/yooz/client
             npm install 2>&1 | tail -2
