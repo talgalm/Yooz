@@ -20,6 +20,8 @@ export interface IActivityFolder {
   _id: Types.ObjectId;
   name: string;
   color: string; // hex, one of FOLDER_COLOR_HEXES
+  /** Parent folder for nesting (sub-folders). null/undefined = top-level. */
+  parentId?: Types.ObjectId | null;
   /** Scopes the folder to its creator, mirroring Activity.createdByEmail. */
   createdByEmail?: string;
   /** Reserved for future manual folder ordering; currently sorted by name. */
@@ -37,6 +39,7 @@ const activityFolderSchema = new Schema<IActivityFolder>(
       enum: FOLDER_COLOR_HEXES as unknown as string[],
       default: DEFAULT_FOLDER_COLOR,
     },
+    parentId: { type: Schema.Types.ObjectId, ref: 'ActivityFolder', default: null, index: true },
     createdByEmail: { type: String, lowercase: true, trim: true, index: true },
     order: { type: Number, default: 0 },
   },

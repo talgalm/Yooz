@@ -670,6 +670,7 @@ interface Folder {
   _id: string;
   name: string;
   color: string;
+  parentId?: string | null;
   createdByEmail?: string;
   order?: number;
   createdAt?: string;
@@ -1215,9 +1216,10 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
         body: JSON.stringify({ name, color }),
       });
     } else {
+      // New folders are created inside the folder currently open (null = top level).
       await adminApiFetch('/api/admin/activity-folders', {
         method: 'POST',
-        body: JSON.stringify({ name, color }),
+        body: JSON.stringify({ name, color, parentId: openFolderId }),
       });
     }
     onRefresh();
@@ -1374,7 +1376,21 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
 
   const searching = search.trim().length > 0;
   const q = search.trim().toLowerCase();
-  const openFolder = openFolderId ? folders.find((f) => f._id === openFolderId) || null : null;
+  const folderById = useMemo(() => new Map(folders.map((f) => [f._id, f])), [folders]);
+  const openFolder = openFolderId ? folderById.get(openFolderId) || null : null;
+
+  // Ancestor chain of the open folder, root-first, including the open folder itself.
+  const ancestors = useMemo(() => {
+    const chain: Folder[] = [];
+    let cur: Folder | null = openFolder;
+    const seen = new Set<string>();
+    while (cur && !seen.has(cur._id)) {
+      seen.add(cur._id);
+      chain.unshift(cur);
+      cur = cur.parentId ? folderById.get(cur.parentId) || null : null;
+    }
+    return chain;
+  }, [openFolder, folderById]);
 
   const visibleActivities = useMemo(() => {
     const matches = (a: Activity) =>
@@ -1386,14 +1402,31 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
     return activities.filter((a) => !a.folderId); // root: ungrouped only
   }, [activities, searching, q, openFolderId]);
 
-  // Root (not searching): all folders. While searching: folders whose name matches.
-  // Inside an open folder (not searching): no folder rows.
+  // Root (not searching): top-level folders. Inside a folder: its direct sub-folders.
+  // While searching: any folder whose name matches (flat).
   const visibleFolders = useMemo(() => {
     if (searching) return folders.filter((f) => f.name.toLowerCase().includes(q));
-    if (openFolderId) return [];
-    return folders;
+    return folders.filter((f) => (f.parentId ?? null) === openFolderId);
   }, [folders, searching, q, openFolderId]);
   const countFor = (folderId: string) => activities.filter((a) => (a.folderId ?? null) === folderId).length;
+
+  // Flattened folder tree (DFS, alphabetical per level) with depth — for the indented "move to folder" menu.
+  const orderedFolders = useMemo(() => {
+    const byParent = new Map<string | null, Folder[]>();
+    for (const f of folders) {
+      const key = f.parentId ?? null;
+      (byParent.get(key) ?? byParent.set(key, []).get(key)!).push(f);
+    }
+    const out: { folder: Folder; depth: number }[] = [];
+    const walk = (parent: string | null, depth: number) => {
+      for (const f of (byParent.get(parent) ?? []).sort((a, b) => a.name.localeCompare(b.name))) {
+        out.push({ folder: f, depth });
+        walk(f._id, depth + 1);
+      }
+    };
+    walk(null, 0);
+    return out;
+  }, [folders]);
 
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(visibleActivities);
 
@@ -1467,14 +1500,14 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
             </>
           ) : (
             <>
-              {folders.map((f) => (
+              {orderedFolders.map(({ folder: f, depth }) => (
                 <RowActionMenuItem
                   key={f._id}
                   type="button"
                   disabled={(activity.folderId ?? null) === f._id}
                   onClick={() => { moveActivityToFolder(activity._id, f._id); closeActions(); }}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, paddingLeft: depth * 16 }}>
                     <FolderGlyph color={resolveFolderColor(f.color).accent} size={16} />
                     {f.name}
                   </span>
@@ -1545,11 +1578,34 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
           >
             ‹ {t.allActivities}
           </BreadcrumbLink>
-          <BreadcrumbSep>/</BreadcrumbSep>
-          <BreadcrumbCurrent>
-            <FolderGlyph color={resolveFolderColor(openFolder.color).accent} size={18} />
-            {openFolder.name}
-          </BreadcrumbCurrent>
+          {ancestors.map((f, i) => {
+            const isCurrent = i === ancestors.length - 1;
+            const accent = resolveFolderColor(f.color).accent;
+            return (
+              <span key={f._id} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <BreadcrumbSep>/</BreadcrumbSep>
+                {isCurrent ? (
+                  <BreadcrumbCurrent>
+                    <FolderGlyph color={accent} size={18} />
+                    {f.name}
+                  </BreadcrumbCurrent>
+                ) : (
+                  <BreadcrumbLink
+                    type="button"
+                    ref={registerDropTarget(f._id)}
+                    dragOver={dragOverKey === f._id}
+                    onClick={() => setOpenFolderId(f._id)}
+                    onDragOver={(e) => onTargetDragOver(e, f._id)}
+                    onDragLeave={() => onTargetDragLeave(f._id)}
+                    onDrop={(e) => onTargetDrop(e, f._id)}
+                  >
+                    <FolderGlyph color={accent} size={16} />
+                    {f.name}
+                  </BreadcrumbLink>
+                )}
+              </span>
+            );
+          })}
         </Breadcrumb>
       )}
 
@@ -1709,7 +1765,7 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
             </MobileList>
           </MobileOnlyDiv>
 
-          {openFolder && !searching && visibleActivities.length === 0 && (
+          {openFolder && !searching && visibleActivities.length === 0 && visibleFolders.length === 0 && (
             <TableCard style={{ padding: 28, marginTop: 12 }}>
               <EmptyText>{t.emptyFolder}</EmptyText>
             </TableCard>

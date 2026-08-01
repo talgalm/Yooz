@@ -21,7 +21,7 @@ router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
 
 // POST /api/admin/activity-folders — create a folder
 router.post('/', authenticateAdmin, async (req: Request, res: Response) => {
-  const { name, color } = req.body as { name?: unknown; color?: unknown };
+  const { name, color, parentId } = req.body as { name?: unknown; color?: unknown; parentId?: unknown };
   const trimmed = typeof name === 'string' ? name.trim() : '';
   if (!trimmed) {
     res.status(400).json({ error: 'Folder name is required' });
@@ -36,9 +36,20 @@ router.post('/', authenticateAdmin, async (req: Request, res: Response) => {
     folderColor = color;
   }
 
+  let parent: string | null = null;
+  if (parentId != null) {
+    const parentFolder = await ActivityFolder.findById(parentId);
+    if (!parentFolder || !customerOwnsDoc(req, parentFolder)) {
+      res.status(400).json({ error: 'Invalid parent folder' });
+      return;
+    }
+    parent = parentFolder._id.toString();
+  }
+
   const folder = await ActivityFolder.create({
     name: trimmed,
     color: folderColor,
+    parentId: parent,
     createdByEmail: createdByEmailForNewResource(req),
   });
   logAdminAction(req, 'create_folder', 'activity_folder', folder._id.toString(), folder.name);
@@ -86,6 +97,8 @@ router.delete('/:id', authenticateAdmin, async (req: Request<{ id: string }>, re
 
   await ActivityFolder.findByIdAndDelete(folder._id);
   await Activity.updateMany({ folderId: folder._id }, { $set: { folderId: null } });
+  // Promote child folders one level up (to the deleted folder's parent), never orphan them.
+  await ActivityFolder.updateMany({ parentId: folder._id }, { $set: { parentId: folder.parentId ?? null } });
   logAdminAction(req, 'delete_folder', 'activity_folder', folder._id.toString(), folder.name);
   res.json({ success: true });
 });
