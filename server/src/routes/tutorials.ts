@@ -191,7 +191,7 @@ async function askGemini(userText: string, systemPrompt?: string): Promise<strin
  * runtime — string literals survive transpilation intact. includes() also gives substring
  * matching (משתמש ⊂ משתמשים).
  */
-function detectTargetHint(title: string, description: string): string {
+export function detectTargetHint(title: string, description: string): string {
   const text = (title + ' ' + description).normalize('NFC').toLowerCase();
   const has = (words: string[]) => words.some((w) => text.includes(w));
 
@@ -201,42 +201,85 @@ function detectTargetHint(title: string, description: string): string {
   const wantsUsers = has(['user', 'משתמש', 'הרשאות']);
   const wantsStats = has(['statistic', 'report', 'סטטיסטיק', 'אנליטיק', 'נתונים', 'דוחות']);
   const wantsLibrary = has(['library', 'ספרייה', 'ייבוא', 'ייצוא', 'שחזור']);
-  const wantsStations = has(['station', 'תחנה', 'תחנות']);
-  const wantsGames = has(['game', 'משחק', 'טריוויה', 'פאזל']);
-  const wantsCreate = !wantsDuplicate && has(['create', 'ליצור', 'יצירה', 'יצירת', 'צור', 'פעילות חדשה']);
+  // 'תחנת' is the construct form used in "תחנת משחק" (game station); include it alongside תחנה/תחנות.
+  const wantsStations = has(['station', 'תחנה', 'תחנת', 'תחנות']);
+  const wantsGames = has(['game', 'משחק', 'טריוויה', 'trivia', 'פאזל', 'puzzle', 'שאל']); // שאלה/שאלות = questions
+  const wantsActivity = has(['activity', 'פעילות']);
+  const wantsCreate =
+    !wantsDuplicate &&
+    has(['create', 'build', 'set up', 'setup', 'new activity', 'ליצור', 'יצירה', 'יצירת', 'צור', 'צרו', 'להקים', 'מקימים', 'הקמת', 'בונים', 'פעילות חדשה']);
   const wantsTabs = has(['tab', 'לשוני', 'ניווט', 'סיור', 'navigat']);
 
   const target = (name: string, extra: string) =>
     `TARGET SCREEN: ${name}. After login, ${extra} The whole walkthrough must stay on this screen — do NOT drift to "create activity", "library/export", or any other flow the user did not ask for.`;
 
   if (wantsParticipant) return `TARGET: the participant play flow (go to /play/<code>, enter a name, start). Do NOT show the admin dashboard.`;
+  if (wantsDuplicate) return target('an existing item you duplicate', 'open the row actions and use Duplicate / שכפול.');
   if (wantsSearch) return target('the Activities tab search', 'use the search box in the activities list to find an activity by name.');
   if (wantsUsers) return target('the Users tab', 'click button:has-text("Users"), button:has-text("משתמשים") and show user/permission management.');
   if (wantsStats) return target('the Reports/Statistics tab', 'click button:has-text("Statistics"), button:has-text("דוחות") and show the statistics.');
   if (wantsLibrary) return target('the Library tab', 'click button:has-text("Library"), button:has-text("ספרייה") and show the imported content.');
+
+  // Create is the DOMINANT flow — check it before stations/games so a compound request like
+  // "create an activity WITH a game station" builds the whole create flow instead of getting
+  // hijacked by the "game" keyword into a games-tab-only walkthrough that forbids create.
+  if (wantsCreate) {
+    // Creating an activity: the multi-step flow that CAN embed games/stations. If the request
+    // also names a game/station, build (or at least select) it as part of the flow.
+    if (wantsActivity || (!wantsGames && !wantsStations)) {
+      const embed = wantsGames
+        ? 'a Trivia / טריוויה game'
+        : wantsStations
+          ? 'a station'
+          : 'at least one game or station';
+      const buildFirst = (wantsGames || wantsStations)
+        ? ` If the request describes a game/station with specific content (e.g. questions), FIRST build it: go to Stations → Games (or Stations), create it at /admin/games/new (or /admin/stations/new), name it, pick the type (e.g. Trivia / טריוויה), add the content, and Save / שמור. THEN create the activity and select it.`
+        : '';
+      return (
+        `TARGET: creating a NEW ACTIVITY — the full multi-step flow, NOT a single tab.${buildFirst} ` +
+        `Then: click Create Activity / צור פעילות (→ /admin/activities/new), fill the activity name in step 1, ` +
+        `click Next / הבא, in step 2 (Select Games / בחירת משחקים) pick ${embed}, and submit with Create Activity / צור פעילות. ` +
+        `Show the whole create flow end to end — do NOT stop after only opening a tab or the games list.`
+      );
+    }
+    // Creating a game (no activity mentioned).
+    if (wantsGames)
+      return target(
+        'the Create Game flow',
+        'open the Stations tab then the Games sub-view, start a new game (→ /admin/games/new), name it, pick the game type (e.g. Trivia / טריוויה), add its content and Save / שמור.',
+      );
+    // Creating a station (no activity mentioned).
+    return target(
+      'the Create Station flow',
+      'open the Stations tab, start a new station (→ /admin/stations/new), name it, pick a type, and Save / שמור.',
+    );
+  }
+
   if (wantsStations) return target('the Stations tab', 'click button:has-text("Stations"), button:has-text("תחנות") and show stations/games management.');
   if (wantsGames) return target('the Games management screen', 'open the Stations tab, then the Games sub-view, and show the games.');
-  if (wantsDuplicate) return target('an existing item you duplicate', 'open the row actions and use Duplicate / שכפול.');
   if (wantsTabs) return target('the dashboard tabs', 'click through the top tabs (Stations/תחנות, Library/ספרייה, Statistics/דוחות, Users/משתמשים) one by one.');
-  if (wantsCreate) return target('the Create Activity flow', 'click Create Activity / צור פעילות and fill the form.');
   return '';
 }
 
 // ─── Fallback: keyword-based template when Gemini is unavailable ───
 
-function generateFallbackSpec(title: string, description: string, narrationJsonPath: string): string {
-  const text = (title + ' ' + description).toLowerCase();
+export function generateFallbackSpec(title: string, description: string, narrationJsonPath: string): string {
+  // NFC-normalize + match with includes() (same as detectTargetHint). Hebrew inside REGEX
+  // literals is unreliable under esbuild/tsx and skips normalization — string includes() is
+  // transpilation-safe and handles the NFC/NFD variants the client can send.
+  const text = (title + ' ' + description).normalize('NFC').toLowerCase();
+  const has = (words: string[]) => words.some((w) => text.includes(w));
 
   // Detect what the user wants based on keywords
-  const wantsLogin = /login|התחברות|כניסה/.test(text);
-  const wantsDuplicate = /duplicate|copy|clone|שכפ|העתק|מעתיק|העתקה|כפיל/.test(text);
-  const wantsCreate = !wantsDuplicate && /create|יצירה|יצירת|ליצור|צור|פעילות חדשה/.test(text);
-  const wantsLibrary = /library|ספרייה|ייבוא|ייצוא|שחזור/.test(text);
-  const wantsStats = /statistic|סטטיסטיק|אנליטיק|נתונים|דוחות/.test(text);
-  const wantsGames = /game|משחק|משחקים/.test(text);
-  const wantsStations = /station|תחנה|תחנות/.test(text);
-  const wantsUsers = /user|משתמש|משתמשים/.test(text);
-  const wantsParticipant = /play|לשחק|משתתף|פעילות מסוימת|נכנסים לפעילות|להיכנס לפעילות/.test(text);
+  const wantsLogin = has(['login', 'התחברות', 'כניסה']);
+  const wantsDuplicate = has(['duplicate', 'copy', 'clone', 'שכפ', 'העתק', 'מעתיק', 'העתקה', 'כפיל']);
+  const wantsCreate = !wantsDuplicate && has(['create', 'build', 'set up', 'setup', 'new activity', 'יצירה', 'יצירת', 'ליצור', 'צור', 'צרו', 'להקים', 'מקימים', 'בונים', 'פעילות חדשה']);
+  const wantsLibrary = has(['library', 'ספרייה', 'ייבוא', 'ייצוא', 'שחזור']);
+  const wantsStats = has(['statistic', 'report', 'סטטיסטיק', 'אנליטיק', 'נתונים', 'דוחות']);
+  const wantsGames = has(['game', 'משחק', 'משחקים', 'טריוויה', 'trivia']);
+  const wantsStations = has(['station', 'תחנה', 'תחנת', 'תחנות']);
+  const wantsUsers = has(['user', 'משתמש', 'משתמשים']);
+  const wantsParticipant = has(['play', 'לשחק', 'משתתף', 'פעילות מסוימת', 'נכנסים לפעילות', 'להיכנס לפעילות']);
   const duplicateTarget: 'station' | 'activity' = wantsDuplicate && wantsStations ? 'station' : 'activity';
 
   const steps: string[] = [];
