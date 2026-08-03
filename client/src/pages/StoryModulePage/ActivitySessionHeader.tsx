@@ -49,6 +49,11 @@ const RoadmapHeaderItem = styled('div')({
   boxSizing: 'border-box',
   background: 'rgba(255,255,255,0.10)',
   borderRadius: 10,
+  // The help button is wrapped in an inline-flex NudgeWrap <span>; stretch it so
+  // its button fills the cell like the other (unwrapped) header buttons.
+  '& > span': {
+    width: '100%',
+  },
   '& button': {
     width: '100%',
     minWidth: 0,
