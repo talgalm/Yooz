@@ -581,6 +581,7 @@ export default function PlayPage() {
       if (groupFlow === 'join-login' && resolvedInvite) {
         return (
           <JoinGroupLogin
+            activityCode={activity.code}
             groupName={resolvedInvite.name}
             groupToken={resolvedInvite.token}
             loginFields={activity.loginFields}

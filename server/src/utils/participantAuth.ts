@@ -66,9 +66,17 @@ export async function checkGroupCapacity(
   groupName: string,
   identity: { email?: string; phoneNumber?: string; displayName: string },
 ): Promise<string | null> {
-  const max = activity.groupMaxMembers;
-  if (!max || max <= 0) return null;
   if (activity.connectionType !== 'group' || activity.groupEntryMode !== 'selfService') return null;
+
+  // A redeemed ticket code raises the cap for one group only (maxMembersOverride);
+  // otherwise the activity-wide cap applies.
+  const group = await ActivityGroup.findOne({
+    activityId: activity._id!,
+    activityDay: israelDayString(),
+    name: groupName,
+  }).lean();
+  const max = group?.maxMembersOverride ?? activity.groupMaxMembers;
+  if (!max || max <= 0) return null;
 
   const lookup = buildReportLookupQuery(
     activity.code,

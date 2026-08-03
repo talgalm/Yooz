@@ -11,10 +11,12 @@ import {
 } from './styled';
 import { GroupEntryBackButton } from './GroupEntryChoice';
 import SmsConsent from '../SmsConsent';
+import GroupFullPopup from './GroupFullPopup';
 
 type LoginField = 'email' | 'phoneNumber' | 'name';
 
 interface Props {
+  activityCode: string;
   groupName: string;
   groupToken: string;
   loginFields: LoginField[];
@@ -29,6 +31,7 @@ interface Props {
 }
 
 export default function JoinGroupLogin({
+  activityCode,
   groupName,
   groupToken,
   loginFields,
@@ -43,6 +46,7 @@ export default function JoinGroupLogin({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [smsConsent, setSmsConsent] = useState(false);
+  const [showFull, setShowFull] = useState(false);
 
   const hasName = loginFields.includes('name');
   const hasPhone = loginFields.includes('phoneNumber');
@@ -54,8 +58,7 @@ export default function JoinGroupLogin({
     (!hasPhone || (phoneNumber.length > 0 && smsConsent)) &&
     (!hasEmail || email.length > 0);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const doLogin = async () => {
     setError('');
     setLoading(true);
     try {
@@ -68,10 +71,19 @@ export default function JoinGroupLogin({
       onSuccess();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed';
-      setError(msg === 'not_portal_user' ? t.notPortalUser : msg);
+      if (msg === 'group_full') {
+        setShowFull(true);
+      } else {
+        setError(msg === 'not_portal_user' ? t.notPortalUser : msg);
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    void doLogin();
   };
 
   return (
@@ -115,6 +127,15 @@ export default function JoinGroupLogin({
         {loading ? t.joining : t.join}
       </GroupEntryButton>
       {onBack && <GroupEntryBackButton onBack={onBack} />}
+
+      {showFull && (
+        <GroupFullPopup
+          activityCode={activityCode}
+          groupToken={groupToken}
+          onClose={() => setShowFull(false)}
+          onSuccess={() => { setShowFull(false); void doLogin(); }}
+        />
+      )}
     </GroupEntryForm>
   );
 }

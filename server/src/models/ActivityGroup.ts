@@ -19,6 +19,10 @@ export interface IActivityGroup {
   winnerCouponCode?: string;
   /** When idle timer fires (5 min after last finish). Reset on each new finish. */
   rewardTimerEndsAt?: Date | null;
+  /** Per-group capacity override. Set when a ticket code is redeemed to raise
+   *  (double) the member cap for this group only. Falls back to
+   *  activity.groupMaxMembers when unset. */
+  maxMembersOverride?: number;
 }
 
 function generateInviteToken(): string {
@@ -42,6 +46,7 @@ const activityGroupSchema = new Schema<IActivityGroup>({
   winnerReportId: { type: Schema.Types.ObjectId, ref: 'Report' },
   winnerCouponCode: { type: String },
   rewardTimerEndsAt: { type: Date, default: null },
+  maxMembersOverride: { type: Number, default: null },
 });
 
 // Name uniqueness is per activity *per day* — the same group name can be reused

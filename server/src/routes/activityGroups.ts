@@ -169,6 +169,39 @@ router.get('/:code/groups/status', authenticateToken, async (req: Request<{ code
   res.json(status);
 });
 
+// Redeem a ticket code (from the cashier) to double this group's member cap.
+// ponytail: fixed shared code (default 2026) — the real gate is the cashier handing
+// it out. Set GROUP_CAPACITY_CODE (SM_GROUP_CAPACITY_CODE in prod) to change it.
+const TICKET_CODE = process.env.GROUP_CAPACITY_CODE || '2026';
+
+router.post('/:code/groups/redeem-capacity', async (req: Request<{ code: string }, {}, { groupToken?: string; code?: string }>, res: Response) => {
+  const activity = await Activity.findOne({ code: req.params.code });
+  if (!activity || activity.connectionType !== 'group' || activity.groupEntryMode !== 'selfService') {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  if (String(req.body.code ?? '').trim() !== TICKET_CODE) {
+    res.status(403).json({ error: 'invalid_code' });
+    return;
+  }
+
+  const group = await ActivityGroup.findOne({
+    activityId: activity._id,
+    inviteToken: String(req.body.groupToken ?? '').trim(),
+  });
+  if (!group || group.activityDay !== israelDayString()) {
+    res.status(404).json({ error: 'Group not found' });
+    return;
+  }
+
+  const currentMax = group.maxMembersOverride ?? activity.groupMaxMembers ?? 0;
+  if (currentMax > 0) {
+    group.maxMembersOverride = currentMax * 2;
+    await group.save();
+  }
+  res.json({ ok: true, maxMembers: group.maxMembersOverride ?? 0 });
+});
+
 // Create a new group + log in the creator
 router.post('/:code/groups', async (req: Request<{ code: string }, {}, CreateGroupRequest>, res: Response<CreateGroupResponse | { error: string }>) => {
   const { code } = req.params;
