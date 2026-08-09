@@ -32,6 +32,8 @@ import {
   TopBarItem,
   TopBarTimer,
   TriviaMainScroll,
+  TriviaScrollArea,
+  ScrollMoreHint,
   TriviaBottomBar,
   QuestionBox,
   QuestionContent,
@@ -276,6 +278,8 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   const [mediaFullscreen, setMediaFullscreen] = useState(false);
   /** Inside the full-screen viewer: 2× and pannable instead of fit-to-screen. */
   const [mediaPanning, setMediaPanning] = useState(false);
+  /** Drives the bottom fade + chevron; the scrollbar itself is hidden. */
+  const [canScrollDown, setCanScrollDown] = useState(false);
   /** The scrolling question column — reset to the top on every new question. */
   const mainScrollRef = useRef<HTMLDivElement | null>(null);
   const explanationsRef = useRef<HTMLDivElement | null>(null);
@@ -371,6 +375,26 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   useEffect(() => {
     if (!mediaFullscreen) setMediaPanning(false);
   }, [mediaFullscreen]);
+
+  // Show the "more below" hint only while there is actually more below.
+  // Children are observed too: explanations appear and lifelines remove
+  // answers, both of which change the content height without a scroll event.
+  useEffect(() => {
+    const el = mainScrollRef.current;
+    if (!el) return;
+    const update = () => {
+      setCanScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > 8);
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    for (const child of Array.from(el.children)) observer.observe(child);
+    return () => {
+      el.removeEventListener('scroll', update);
+      observer.disconnect();
+    };
+  }, [showInstructions, currentQuestion, checked, eliminatedIndices]);
 
   // Explanations render below the answers; auto-advance fires after 5s, so bring
   // them into view rather than leaving them below the fold.
@@ -689,7 +713,8 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
         )}
       </TopBar>
 
-      <TriviaMainScroll ref={mainScrollRef}>
+      <TriviaScrollArea>
+      <TriviaMainScroll ref={mainScrollRef} fadeBottom={canScrollDown}>
       {/* Question box */}
       <QuestionBox key={currentQuestion}>
         <QuestionContent>{question.text}</QuestionContent>
@@ -792,6 +817,14 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
       )}
 
       </TriviaMainScroll>
+      {canScrollDown && (
+        <ScrollMoreHint aria-hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 9l7 7 7-7" />
+          </svg>
+        </ScrollMoreHint>
+      )}
+      </TriviaScrollArea>
 
       <TriviaBottomBar>
         <ActionButton

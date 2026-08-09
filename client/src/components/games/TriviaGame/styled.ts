@@ -259,31 +259,80 @@ export const TriviaContainer = styled('div')({
  * `& > *` pins every child at its intrinsic height — in a scrolling flex
  * column children would otherwise still shrink to fit.
  */
-export const TriviaMainScroll = styled('div')({
+export const TriviaMainScroll = styled('div')<{ fadeBottom?: boolean }>(({ fadeBottom }) => {
+  // Masks the scroll viewport (not the content), so the fade stays pinned to
+  // the bottom edge while content passes under it. Colour-agnostic, which
+  // matters over the play background artwork.
+  const fade = 'linear-gradient(to bottom, #000 calc(100% - 34px), transparent 100%)';
+  return {
+    flex: 1,
+    minHeight: 0,
+    minWidth: 0,
+    width: '100%',
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    WebkitOverflowScrolling: 'touch',
+    overscrollBehavior: 'contain',
+    touchAction: 'pan-y',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 4,
+    paddingBottom: 10,
+    boxSizing: 'border-box',
+    // Bar itself is hidden — `ScrollMoreHint` + this fade carry the affordance.
+    scrollbarWidth: 'none' as const,
+    msOverflowStyle: 'none',
+    '&::-webkit-scrollbar': { display: 'none' },
+    '& > *': { flexShrink: 0 },
+    ...(fadeBottom ? { maskImage: fade, WebkitMaskImage: fade } : {}),
+  };
+});
+
+/** Positioning context for the scroll hint, which must not scroll with content. */
+export const TriviaScrollArea = styled('div')({
+  position: 'relative',
   flex: 1,
   minHeight: 0,
-  minWidth: 0,
   width: '100%',
-  overflowY: 'auto',
-  overflowX: 'hidden',
-  WebkitOverflowScrolling: 'touch',
-  overscrollBehavior: 'contain',
-  touchAction: 'pan-y',
   display: 'flex',
   flexDirection: 'column',
+});
+
+const scrollNudge = keyframes`
+  0%, 100% { transform: translateY(0); opacity: 0.75; }
+  50% { transform: translateY(4px); opacity: 1; }
+`;
+
+/**
+ * "More below" chevron. Centred with `inset-inline: 0; margin-inline: auto`
+ * rather than a translate, so it doesn't fight the nudge animation's transform.
+ * Non-interactive — it sits over the answer grid and must not eat taps.
+ */
+export const ScrollMoreHint = styled('div')({
+  position: 'absolute',
+  // Sits inside the 34px fade band, with room for the nudge animation so it
+  // never crosses into the Check/Next footer.
+  bottom: 6,
+  insetInline: 0,
+  marginInline: 'auto',
+  width: 28,
+  height: 28,
+  borderRadius: '50%',
+  display: 'flex',
   alignItems: 'center',
-  gap: 4,
-  paddingBottom: 10,
+  justifyContent: 'center',
+  // Near-solid with a light ring: the band behind it is faded white answer
+  // cards over purple artwork, so a translucent chip just reads as a smudge.
+  background: '#2d1e4b',
+  border: '2px solid rgba(255,255,255,0.9)',
+  color: '#fff',
   boxSizing: 'border-box',
-  scrollbarWidth: 'thin',
-  scrollbarColor: 'rgba(108,92,231,0.55) transparent',
-  '&::-webkit-scrollbar': { width: 6 },
-  '&::-webkit-scrollbar-track': { background: 'transparent' },
-  '&::-webkit-scrollbar-thumb': {
-    background: 'rgba(108,92,231,0.55)',
-    borderRadius: 3,
-  },
-  '& > *': { flexShrink: 0 },
+  pointerEvents: 'none',
+  zIndex: 3,
+  boxShadow: '0 2px 10px rgba(0,0,0,0.45)',
+  animation: `${scrollNudge} 1.5s ease-in-out infinite`,
+  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
 });
 
 /** Fixed footer for Check / Next / Continue — gap from bottom edge + safe area. */
