@@ -1,5 +1,5 @@
 import { styled, keyframes } from '@mui/material/styles';
-import { DESKTOP_STATION_WIDTH } from '../styled';
+import { DESKTOP_BREAKPOINT, DESKTOP_STATION_WIDTH } from '../styled';
 
 // ─── Colors ───
 
@@ -247,21 +247,43 @@ export const TriviaContainer = styled('div')({
   },
 });
 
-/** Question body; overflow hidden — no horizontal or vertical scroll in play view. */
+/**
+ * Question body — the single scroll surface of the play view.
+ *
+ * Previously `overflow: hidden`, which forced question + media + answers to be
+ * squeezed into whatever height was left: long questions got their first line
+ * clipped, tall media was cropped to a sliver, and answer labels were cut
+ * mid-word (QA Aug 2026). Content now keeps its natural size and this column
+ * scrolls; the top bar and the Check/Next footer stay pinned outside it.
+ *
+ * `& > *` pins every child at its intrinsic height — in a scrolling flex
+ * column children would otherwise still shrink to fit.
+ */
 export const TriviaMainScroll = styled('div')({
   flex: 1,
   minHeight: 0,
   minWidth: 0,
   width: '100%',
-  overflow: 'hidden',
-  overscrollBehavior: 'none',
-  touchAction: 'manipulation',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+  WebkitOverflowScrolling: 'touch',
+  overscrollBehavior: 'contain',
+  touchAction: 'pan-y',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: 2,
-  paddingBottom: 8,
+  gap: 4,
+  paddingBottom: 10,
   boxSizing: 'border-box',
+  scrollbarWidth: 'thin',
+  scrollbarColor: 'rgba(108,92,231,0.55) transparent',
+  '&::-webkit-scrollbar': { width: 6 },
+  '&::-webkit-scrollbar-track': { background: 'transparent' },
+  '&::-webkit-scrollbar-thumb': {
+    background: 'rgba(108,92,231,0.55)',
+    borderRadius: 3,
+  },
+  '& > *': { flexShrink: 0 },
 });
 
 /** Fixed footer for Check / Next / Continue — gap from bottom edge + safe area. */
@@ -331,20 +353,19 @@ export const TopBarTimer = styled('span')<{ critical?: boolean }>(({ critical })
 
 // ─── Question Box ───
 
+/** Grows with the question text — never clipped; `TriviaMainScroll` scrolls instead. */
 export const QuestionBox = styled('div')({
   background: BOX_BG,
   border: `3px solid ${BOX_BORDER}`,
   borderRadius: 12,
-  padding: '8px 14px',
+  padding: '10px 14px',
   textAlign: 'center',
   boxShadow: `0 3px 0 ${BOX_SHADOW}`,
   width: '100%',
   boxSizing: 'border-box',
   position: 'relative',
   zIndex: 1,
-  flexShrink: 1,
-  minHeight: 0,
-  overflow: 'hidden',
+  flexShrink: 0,
   animation: `${slideUp} 0.3s ease-out`,
   display: 'flex',
   flexDirection: 'column',
@@ -367,17 +388,15 @@ export const QuestionBadge = styled('div')({
 });
 
 export const QuestionContent = styled('p')({
-  fontSize: 17,
+  fontSize: 'clamp(15px, 4.2vw, 18px)',
   fontWeight: 700,
   color: TEXT_DARK,
-  lineHeight: 1.3,
+  lineHeight: 1.35,
   margin: 0,
   width: '100%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
   textAlign: 'center',
-  wordBreak: 'break-word',
+  overflowWrap: 'break-word',
+  [DESKTOP_BREAKPOINT]: { fontSize: 19 },
 });
 
 export const QuestionHintText = styled('p')({
@@ -494,15 +513,17 @@ export const HelperLifelineButton = styled('button')<{ disabled?: boolean; kind?
 
 // ─── Answer Grid (3 cols for >6, 2×2 for 4–6, single column for <4) ───
 
+/** Columns the grid renders for a given answer count — shared with `AnswerButton` sizing. */
+export function answerGridColumns(answerCount?: number): 1 | 2 | 3 {
+  if (!answerCount || answerCount < 4) return 1;
+  return answerCount > 6 ? 3 : 2;
+}
+
 export const AnswerGrid = styled('div')<{ answerCount?: number }>(({ answerCount }) => ({
   display: 'grid',
-  gridTemplateColumns:
-    answerCount && answerCount < 4
-      ? '1fr'
-      : answerCount && answerCount > 6
-        ? '1fr 1fr 1fr'
-        : '1fr 1fr',
-  gap: 6,
+  gridTemplateColumns: `repeat(${answerGridColumns(answerCount)}, minmax(0, 1fr))`,
+  alignItems: 'stretch',
+  gap: 8,
   width: '100%',
   position: 'relative',
   zIndex: 1,
@@ -515,7 +536,8 @@ export const AnswerButton = styled('button')<{
   checked?: boolean;
   isCorrect?: boolean;
   isSelected?: boolean;
-}>(({ selected, checked, isCorrect, isSelected }) => {
+  answerCount?: number;
+}>(({ selected, checked, isCorrect, isSelected, answerCount }) => {
   let bg = BOX_BG;
   let borderColor = BOX_BORDER;
   let textColor = TEXT_DARK;
@@ -548,13 +570,23 @@ export const AnswerButton = styled('button')<{
     shadow = `0 3px 0 ${BTN_PURPLE_DARK}`;
   }
 
+  // Tighter type at 3 columns so long Hebrew labels wrap instead of being
+  // clipped; the cell still grows vertically to fit whatever it wraps to.
+  const columns = answerGridColumns(answerCount);
+  const fontSize =
+    columns === 3 ? 'clamp(11px, 3.1vw, 14px)' : 'clamp(13px, 3.7vw, 16px)';
+  const minHeight = columns === 3 ? 68 : columns === 2 ? 76 : 56;
+
   return {
     background: bg,
     border: `3px solid ${borderColor}`,
     borderRadius: 10,
-    padding: '6px 6px',
-    minHeight: 84,
-    fontSize: 15,
+    padding: columns === 3 ? '8px 4px' : '8px 8px',
+    minHeight,
+    height: '100%',
+    boxSizing: 'border-box' as const,
+    minWidth: 0,
+    fontSize,
     fontWeight: 600,
     color: textColor,
     cursor: checked ? 'default' : 'pointer',
@@ -564,10 +596,16 @@ export const AnswerButton = styled('button')<{
     fontFamily: 'inherit',
     outline: 'none',
     textAlign: 'center' as const,
-    lineHeight: 1.2,
+    lineHeight: 1.25,
+    whiteSpace: 'normal' as const,
+    overflowWrap: 'break-word' as const,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    [DESKTOP_BREAKPOINT]: {
+      fontSize: columns === 3 ? 15 : 16,
+      padding: '10px 12px',
+    },
     '&:active': !checked ? {
       transform: 'translateY(3px)',
       boxShadow: `0 0 0 ${BTN_PURPLE_DARK}`,
@@ -684,17 +722,32 @@ export const TriviaExplanation = styled('div')({
 
 // ─── Media ───
 
-export const NatureMediaContainer = styled('div')({
-  textAlign: 'center',
-  position: 'relative',
-  zIndex: 1,
-  width: '100%',
+/**
+ * Tappable so the question image can be opened full screen — trivia images are
+ * often screenshots (phishing mails, forms) that are unreadable at column width.
+ */
+export const NatureMediaContainer = styled('button')({
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  border: 'none',
+  background: 'transparent',
+  font: 'inherit',
+  padding: 0,
   marginTop: 8,
   marginBottom: 8,
+  display: 'block',
+  position: 'relative',
+  zIndex: 1,
+  // Hugs the scaled image so the border and the zoom badge sit on the picture
+  // itself instead of around empty letterbox bands.
+  width: 'fit-content',
+  maxWidth: '100%',
+  alignSelf: 'center',
+  flexShrink: 0,
   borderRadius: 10,
-  flexShrink: 1,
-  minHeight: 0,
-  overflow: 'hidden',
+  lineHeight: 0,
+  cursor: 'zoom-in',
+  '&:active': { transform: 'scale(0.99)' },
 });
 
 export const NatureMediaSpacer = styled('div')({
@@ -704,14 +757,104 @@ export const NatureMediaSpacer = styled('div')({
 });
 
 export const NatureMediaImage = styled('img')({
-  width: '100%',
-  height: 'auto',
   display: 'block',
-  borderRadius: 10,
-  overflow: 'hidden',
-  clipPath: 'inset(0 round 10px)',
+  width: 'auto',
+  height: 'auto',
+  maxWidth: '100%',
+  // Capped so a tall image can't push the answers off the scroll surface —
+  // tap to open it full screen instead.
+  maxHeight: 'min(38vh, 300px)',
   objectFit: 'contain',
+  borderRadius: 10,
+  boxSizing: 'border-box',
   border: `2px solid rgba(74,101,114,0.3)`,
+  [DESKTOP_BREAKPOINT]: { maxHeight: 'min(32vh, 300px)' },
+});
+
+/** Magnifier affordance so the tap target reads as "enlarge". */
+export const MediaZoomBadge = styled('span')({
+  position: 'absolute',
+  bottom: 8,
+  insetInlineEnd: 8,
+  width: 30,
+  height: 30,
+  borderRadius: '50%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'rgba(30, 20, 50, 0.62)',
+  color: '#fff',
+  fontSize: 15,
+  lineHeight: 1,
+  pointerEvents: 'none',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.28)',
+});
+
+// ─── Full-screen media viewer (mirrors RiddleStation's image lightbox) ───
+
+export const MediaFullscreenOverlay = styled('div')<{ panning?: boolean }>(({ panning }) => ({
+  position: 'fixed',
+  inset: 0,
+  background: 'rgba(0,0,0,0.92)',
+  display: 'flex',
+  // `margin: auto` on the image (not `align/justify-content: center`) — a
+  // centred flex child that overflows its scroll container gets its top/start
+  // edge clipped and becomes unreachable.
+  overflow: panning ? 'auto' : 'hidden',
+  overscrollBehavior: 'contain',
+  touchAction: panning ? 'pan-x pan-y' : 'manipulation',
+  // Above the sticky session header (z 30) and the trivia feedback toast (z 200).
+  zIndex: 99999,
+  cursor: 'zoom-out',
+  padding: panning ? 0 : 16,
+  boxSizing: 'border-box',
+}));
+
+/**
+ * Tap toggles fit → 2× (the app sets `user-scalable=no`, so the browser's own
+ * pinch-zoom can't rescue a wide screenshot on a phone).
+ */
+export const MediaFullscreenImg = styled('img')<{ panning?: boolean }>(({ panning }) => (
+  panning
+    ? {
+        width: '200%',
+        maxWidth: 'none',
+        height: 'auto',
+        margin: 'auto',
+        flexShrink: 0,
+        cursor: 'zoom-out',
+      }
+    : {
+        maxWidth: '100%',
+        maxHeight: '100%',
+        objectFit: 'contain',
+        margin: 'auto',
+        borderRadius: 8,
+        cursor: 'zoom-in',
+      }
+));
+
+export const MediaFullscreenClose = styled('button')({
+  position: 'absolute',
+  top: 'max(16px, env(safe-area-inset-top, 16px))',
+  insetInlineEnd: 16,
+  width: 44,
+  height: 44,
+  borderRadius: '50%',
+  border: 'none',
+  background: 'rgba(255,255,255,0.15)',
+  color: '#fff',
+  fontSize: 28,
+  lineHeight: 1,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  fontFamily: 'inherit',
+  zIndex: 1,
+  '&:hover': { background: 'rgba(255,255,255,0.25)' },
+  '&:active': { transform: 'scale(0.94)' },
 });
 
 // ═══════════════════════════════════════════

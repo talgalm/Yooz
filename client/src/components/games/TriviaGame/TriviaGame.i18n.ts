@@ -34,6 +34,8 @@ export const texts = {
     helperHalf: '1/2',
     helperThreeQuarters: '3/4',
     helperCaption: 'Each helper once per game — removes wrong answers',
+    enlargeImage: 'Tap to enlarge the image',
+    closeImage: 'Close image',
   },
   he: {
     checkAnswer: 'בדיקת תשובה',
@@ -70,5 +72,7 @@ export const texts = {
     helperHalf: '1/2',
     helperThreeQuarters: '3/4',
     helperCaption: 'כל עוזר פעם אחת למשחק — הסרת תשובות שגויות',
+    enlargeImage: 'לחצו להגדלת התמונה',
+    closeImage: 'סגירת התמונה',
   },
 };
