@@ -32,6 +32,8 @@ import {
   TopBarItem,
   TopBarTimer,
   TriviaMainScroll,
+  TriviaScrollArea,
+  ScrollMoreHint,
   TriviaBottomBar,
   QuestionBox,
   QuestionContent,
@@ -51,6 +53,10 @@ import {
   NatureMediaContainer,
   NatureMediaImage,
   NatureMediaSpacer,
+  MediaZoomBadge,
+  MediaFullscreenOverlay,
+  MediaFullscreenImg,
+  MediaFullscreenClose,
   FinishContainer,
   FinishContent,
   FinishTitleBanner,
@@ -268,6 +274,16 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   /** Indices into current question's answers hidden after lifeline (cleared each question). */
   const [eliminatedIndices, setEliminatedIndices] = useState<Set<number>>(() => new Set());
 
+  /** Question image opened full screen (question images are often unreadable at column width). */
+  const [mediaFullscreen, setMediaFullscreen] = useState(false);
+  /** Inside the full-screen viewer: 2× and pannable instead of fit-to-screen. */
+  const [mediaPanning, setMediaPanning] = useState(false);
+  /** Drives the bottom fade + chevron; the scrollbar itself is hidden. */
+  const [canScrollDown, setCanScrollDown] = useState(false);
+  /** The scrolling question column — reset to the top on every new question. */
+  const mainScrollRef = useRef<HTMLDivElement | null>(null);
+  const explanationsRef = useRef<HTMLDivElement | null>(null);
+
   // Timer
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -348,6 +364,57 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
       handleCheck();
     }
   }, [timeLeft]);
+
+  // New question starts at the top of the scroll column, with any zoom closed
+  useEffect(() => {
+    setMediaFullscreen(false);
+    mainScrollRef.current?.scrollTo({ top: 0 });
+  }, [currentQuestion, showInstructions]);
+
+  // Reopening the viewer always starts fit-to-screen
+  useEffect(() => {
+    if (!mediaFullscreen) setMediaPanning(false);
+  }, [mediaFullscreen]);
+
+  // Show the "more below" hint only while there is actually more below.
+  // Children are observed too: explanations appear and lifelines remove
+  // answers, both of which change the content height without a scroll event.
+  useEffect(() => {
+    const el = mainScrollRef.current;
+    if (!el) return;
+    const update = () => {
+      setCanScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > 8);
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    for (const child of Array.from(el.children)) observer.observe(child);
+    return () => {
+      el.removeEventListener('scroll', update);
+      observer.disconnect();
+    };
+  }, [showInstructions, currentQuestion, checked, eliminatedIndices]);
+
+  // Explanations render below the answers; auto-advance fires after 5s, so bring
+  // them into view rather than leaving them below the fold.
+  useEffect(() => {
+    if (!checked) return;
+    const id = window.setTimeout(() => {
+      explanationsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 1100); // after the feedback toast clears
+    return () => clearTimeout(id);
+  }, [checked, currentQuestion]);
+
+  // Close the full-screen image on Escape
+  useEffect(() => {
+    if (!mediaFullscreen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMediaFullscreen(false);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [mediaFullscreen]);
 
   const applyLifeline = (targetVisible: 2 | 3, kind: 'half' | 'threeQuarters') => {
     if (checked) return;
@@ -646,7 +713,8 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
         )}
       </TopBar>
 
-      <TriviaMainScroll>
+      <TriviaScrollArea>
+      <TriviaMainScroll ref={mainScrollRef} fadeBottom={canScrollDown}>
       {/* Question box */}
       <QuestionBox key={currentQuestion}>
         <QuestionContent>{question.text}</QuestionContent>
@@ -656,10 +724,16 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
    
       </QuestionBox>
 
-      {/* Question media */}
+      {/* Question media — tap to open full screen */}
       {question.media && (
-        <NatureMediaContainer>
+        <NatureMediaContainer
+          type="button"
+          onClick={() => setMediaFullscreen(true)}
+          aria-label={t.enlargeImage}
+          title={t.enlargeImage}
+        >
           <NatureMediaImage src={question.media} alt="" />
+          <MediaZoomBadge aria-hidden>⤢</MediaZoomBadge>
         </NatureMediaContainer>
       )}
       {!question.media && <NatureMediaSpacer aria-hidden />}
@@ -685,6 +759,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
           return (
             <AnswerButton
               key={index}
+              answerCount={question.answers.length}
               selected={selectedAnswers.has(index)}
               checked={checked}
               isCorrect={answer.isCorrect}
@@ -702,7 +777,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
         question.answers.some(
           (a, i) => !!a.explanation && (selectedAnswers.has(i) || a.isCorrect)
         ) && (
-          <TriviaExplanationList>
+          <TriviaExplanationList ref={explanationsRef}>
             {question.answers.map((answer, index) =>
               answer.explanation && (selectedAnswers.has(index) || answer.isCorrect) ? (
                 <TriviaExplanation key={`exp-${index}`}>
@@ -742,6 +817,14 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
       )}
 
       </TriviaMainScroll>
+      {canScrollDown && (
+        <ScrollMoreHint aria-hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 9l7 7 7-7" />
+          </svg>
+        </ScrollMoreHint>
+      )}
+      </TriviaScrollArea>
 
       <TriviaBottomBar>
         <ActionButton
@@ -766,6 +849,36 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
                 : t.incorrect}
           </FeedbackOverlayCard>
         </FeedbackOverlayRoot>,
+        document.body,
+      )}
+
+      {mediaFullscreen && question.media && createPortal(
+        <MediaFullscreenOverlay
+          panning={mediaPanning}
+          onClick={() => setMediaFullscreen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <MediaFullscreenClose
+            type="button"
+            aria-label={t.closeImage}
+            onClick={(e) => {
+              e.stopPropagation();
+              setMediaFullscreen(false);
+            }}
+          >
+            ×
+          </MediaFullscreenClose>
+          <MediaFullscreenImg
+            src={question.media}
+            alt=""
+            panning={mediaPanning}
+            onClick={(e) => {
+              e.stopPropagation();
+              setMediaPanning((prev) => !prev);
+            }}
+          />
+        </MediaFullscreenOverlay>,
         document.body,
       )}
 
