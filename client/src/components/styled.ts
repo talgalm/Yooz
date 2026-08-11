@@ -208,8 +208,16 @@ export const DarkHeaderActionIconButton = styled(HeaderActionIconButton, {
   },
 }));
 
-/** Puzzle session header: **dark icons** on light pill, black outline (mint/light bg). */
-export const PuzzleDarkHeaderActionIconButton = styled(HeaderActionIconButton)({
+/**
+ * Puzzle session header: **dark icons** on light pill, black outline (mint/light bg).
+ *
+ * Filters `iconColor` like its sibling above: callers pass the same props to
+ * either variant, and without this the prop reached the DOM and React logged
+ * "does not recognize the `iconColor` prop on a DOM element".
+ */
+export const PuzzleDarkHeaderActionIconButton = styled(HeaderActionIconButton, {
+  shouldForwardProp: (prop) => prop !== 'iconColor',
+})<{ iconColor?: string }>({
   color: '#1a1a1a',
   border: '1px solid rgba(0,0,0,0.45)',
   background: 'rgba(255,255,255,0.92)',

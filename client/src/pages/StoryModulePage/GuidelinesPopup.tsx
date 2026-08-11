@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useModalBlur } from '../../utils/modalBlur';
 import { styled, keyframes } from '@mui/material/styles';
 import type { CustomInstructionsData } from './types';
 
@@ -45,8 +47,6 @@ const Overlay = styled('div')<{ exiting?: boolean }>(({ exiting }) => ({
   position: 'fixed',
   inset: 0,
   background: 'rgba(0, 0, 0, 0.45)',
-  backdropFilter: 'blur(5px)',
-  WebkitBackdropFilter: 'blur(5px)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -270,6 +270,7 @@ interface GuidelinesPopupProps {
 
 export default function GuidelinesPopup({ itemCount, guidelines, customInstructions, onDismiss, t }: GuidelinesPopupProps) {
   const [exiting, setExiting] = useState(false);
+  useModalBlur(true);
   const ci = customInstructions;
 
   const handleDismiss = () => {
@@ -288,7 +289,10 @@ export default function GuidelinesPopup({ itemCount, guidelines, customInstructi
     : [t.guidelineRule1, t.guidelineRule2];
   const buttonText = ci?.buttonText || t.startAdventure;
 
-  return (
+  // Portalled to <body>: this overlay blurs its backdrop, and rendering it
+  // inside the animated stage made the filter sample that composited layer
+  // instead of the page, painting a ghosted second copy behind the popup.
+  return createPortal(
     <Overlay exiting={exiting} onClick={handleDismiss}>
       <PopupFrame exiting={exiting} onClick={(e) => e.stopPropagation()}>
         <HeaderRow>
@@ -336,6 +340,7 @@ export default function GuidelinesPopup({ itemCount, guidelines, customInstructi
           </StartButton>
         </ContentArea>
       </PopupFrame>
-    </Overlay>
+    </Overlay>,
+    document.body,
   );
 }

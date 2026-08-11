@@ -1,6 +1,6 @@
 import { Schema, model, Types } from 'mongoose';
 
-export type StationType = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'enteringText';
+export type StationType = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText';
 
 export interface IStation {
   _id: Types.ObjectId;
@@ -19,7 +19,7 @@ export interface IStation {
 
 const stationSchema = new Schema<IStation>({
   name: { type: String, required: true },
-  type: { type: String, enum: ['text', 'video', 'image', 'narrative', 'badge', 'collage', 'feedback', 'riddle', 'avatar', 'enteringText'], default: 'text' },
+  type: { type: String, enum: ['text', 'video', 'image', 'narrative', 'badge', 'collage', 'feedback', 'riddle', 'avatar', 'avatarQuiz', 'enteringText'], default: 'text' },
   description: { type: String },
   customer: { type: String },
   theme: { type: String },

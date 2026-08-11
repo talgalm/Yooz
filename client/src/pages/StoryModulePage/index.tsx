@@ -1099,7 +1099,7 @@ export default function StoryModulePage() {
   const getStationHint = (item: ModuleItemData): { text: string; imageUrl: string; free: boolean } | null => {
     if (item.type !== 'station') return null;
     const station = item as StationItemData;
-    if (['feedback', 'avatar'].includes(station.stationType)) return null;
+    if (['feedback', 'avatar', 'avatarQuiz'].includes(station.stationType)) return null;
     const hint = item.settings?.hint as { enabled?: boolean; text?: string; imageUrl?: string; free?: boolean } | undefined;
     if (!hint?.enabled || (!hint.text && !hint.imageUrl)) return null;
     return { text: hint.text || '', imageUrl: hint.imageUrl || '', free: !!hint.free };

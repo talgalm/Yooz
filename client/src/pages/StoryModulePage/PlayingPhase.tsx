@@ -17,6 +17,7 @@ import CollageStation from '../../components/stations/CollageStation';
 import FeedbackStation, { type FeedbackResult } from '../../components/stations/FeedbackStation';
 import RiddleStation from '../../components/stations/RiddleStation';
 import AvatarStation from '../../components/stations/AvatarStation';
+import AvatarQuizStation from '../../components/stations/AvatarQuizStation';
 import EnteringTextStation from '../../components/stations/EnteringTextStation';
 import { styled, keyframes } from '@mui/material/styles';
 import {
@@ -444,7 +445,7 @@ export default function PlayingPhase({
   const isPuzzleGame = isGameStep && (currentItem as GameItemData).gameType === 'puzzle';
   const isOrderGame = isGameStep && (currentItem as GameItemData).gameType === 'order';
   const isBallGame = isGameStep && (currentItem as GameItemData).gameType === 'ballGame';
-  const isTextVideoImageStation = currentItem.type === 'station' && ['text', 'video', 'image', 'riddle', 'avatar', 'enteringText'].includes((currentItem as StationItemData).stationType);
+  const isTextVideoImageStation = currentItem.type === 'station' && ['text', 'video', 'image', 'riddle', 'avatar', 'avatarQuiz', 'enteringText'].includes((currentItem as StationItemData).stationType);
   const puzzleSessionChrome = (isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation) ? 'puzzle' : 'default';
   const useDarkChrome = isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation;
   const headerIconColor = getHeaderIconColor(theme, customTheme);
@@ -587,6 +588,27 @@ export default function PlayingPhase({
               continueLabel={t.continueButton}
               textColor={customTheme?.textColor}
               sessionStorageKey={code ? `yooz_avatar_chat_${code}_${station._id}` : undefined}
+            />
+          </MediaGateWrapper>
+        );
+      }
+
+      if (station.stationType === 'avatarQuiz') {
+        const quizSettings = station.settings as {
+          characterImageUrl?: string;
+          questions?: Array<{ mediaUrl?: string }>;
+        };
+        const quizMedia = [
+          quizSettings.characterImageUrl,
+          ...(quizSettings.questions || []).map((q) => q?.mediaUrl),
+        ];
+        return (
+          <MediaGateWrapper urls={quizMedia} t={t}>
+            <AvatarQuizStation
+              station={station}
+              onComplete={onGameComplete}
+              textColor={customTheme?.textColor}
+              sessionStorageKey={code ? `yooz_avatar_quiz_${code}_${station._id}` : undefined}
             />
           </MediaGateWrapper>
         );

@@ -592,6 +592,7 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
       case 'feedback': return t.typeFeedback;
       case 'riddle': return t.typeRiddle;
       case 'avatar': return t.typeAvatar;
+      case 'avatarQuiz': return t.typeAvatarQuiz;
       case 'enteringText': return t.typeEnteringText;
       default: return type || '—';
     }

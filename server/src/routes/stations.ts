@@ -21,7 +21,7 @@ router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateStationReq
     return;
   }
 
-  const stationType = type && ['text', 'video', 'image', 'narrative', 'badge', 'collage', 'feedback', 'riddle', 'avatar', 'enteringText'].includes(type) ? type : 'text';
+  const stationType = type && ['text', 'video', 'image', 'narrative', 'badge', 'collage', 'feedback', 'riddle', 'avatar', 'avatarQuiz', 'enteringText'].includes(type) ? type : 'text';
 
   const tags = req.body.tags;
   const station = await Station.create({
@@ -59,7 +59,7 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
   if (!existing) { res.status(404).json({ error: 'Station not found' }); return; }
   if (!customerOwnsDoc(req, existing)) { res.status(404).json({ error: 'Station not found' }); return; }
 
-  const stationType = type && ['text', 'video', 'image', 'narrative', 'badge', 'collage', 'feedback', 'riddle', 'avatar', 'enteringText'].includes(type) ? type : 'text';
+  const stationType = type && ['text', 'video', 'image', 'narrative', 'badge', 'collage', 'feedback', 'riddle', 'avatar', 'avatarQuiz', 'enteringText'].includes(type) ? type : 'text';
 
   const tags = req.body.tags;
   const station = await Station.findByIdAndUpdate(

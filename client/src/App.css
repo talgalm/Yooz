@@ -27,3 +27,17 @@ select {
   direction: rtl;
   text-align: right;
 }
+
+/*
+ * Modal blur.
+ *
+ * `backdrop-filter` on an overlay samples a composited copy of the page, and in
+ * this app that copy comes back offset and rescaled — the "doubled background"
+ * behind popups. Blurring the app content directly avoids the sampling step
+ * entirely. Overlays are portalled to <body>, so they sit outside #root and
+ * stay sharp.
+ */
+#root.yooz-modal-blur {
+  filter: blur(5px);
+  transition: filter 0.2s ease;
+}

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
+import { normalizeText, coverage, jaccardSimilarity } from '../utils/hebrewText';
 
 const router = Router();
 
@@ -207,55 +208,6 @@ async function askGemini(
 // ─── Snap-to-config: if Gemini's response is "very close" to one of the
 // configured optional answers, return the configured answer verbatim. This
 // keeps the chat text + TTS reading aligned with what the admin authored.
-
-function normalizeText(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[֑-ֽֿ-ׇ]/g, '') // strip Hebrew niqqud
-    .replace(/[׳״".,!?\-–—:;()'\[\]{}]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-const HEB_PREFIXES = ['ה', 'ו', 'ש', 'ב', 'כ', 'ל', 'מ'];
-
-function stripHebPrefixes(word: string): string {
-  let w = word;
-  // strip up to 2 layered prefixes (e.g. "וה", "שה")
-  for (let i = 0; i < 2; i++) {
-    if (w.length > 3 && HEB_PREFIXES.includes(w[0])) w = w.slice(1);
-    else break;
-  }
-  return w;
-}
-
-function tokens(s: string): string[] {
-  return normalizeText(s)
-    .split(' ')
-    .filter(Boolean)
-    .map(stripHebPrefixes);
-}
-
-function jaccardSimilarity(a: string, b: string): number {
-  const setA = new Set(tokens(a));
-  const setB = new Set(tokens(b));
-  if (setA.size === 0 || setB.size === 0) return 0;
-  let inter = 0;
-  for (const t of setA) if (setB.has(t)) inter++;
-  return inter / (setA.size + setB.size - inter);
-}
-
-/** How well is `answer` "covered" by `response`? (fraction of answer's tokens
- *  that also appear in the response). High coverage means the response said
- *  the answer plus some extra wording. */
-function coverage(answer: string, response: string): number {
-  const ans = tokens(answer);
-  if (ans.length === 0) return 0;
-  const resp = new Set(tokens(response));
-  let hit = 0;
-  for (const t of ans) if (resp.has(t)) hit++;
-  return hit / ans.length;
-}
 
 function snapToOptionalAnswer(response: string, optionalAnswers: string[] | undefined): string {
   const candidates = (optionalAnswers || []).map((a) => a.trim()).filter(Boolean);
