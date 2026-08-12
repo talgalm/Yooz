@@ -132,19 +132,22 @@ const DEFAULT_POINTS = 10;
 const DEFAULT_HINT_PENALTY = 2;
 /**
  * Safety net for TTS that never fires `onEnd` (iOS silent mode, blocked audio).
- * It must never expire while she is genuinely still talking, so it scales with
- * how long the line takes to say — a flat 8s cut off every long teaching point
- * mid-sentence and jumped to the next question.
+ *
+ * Once the clip is loaded we know its exact length and arm the watchdog against
+ * that (see `say`), so it only ever fires when playback has genuinely stalled.
+ * The word estimate below is just the opening guess covering the fetch, and the
+ * fallback for browser speech, which reports no duration.
  */
 const SPEECH_WATCHDOG_FLOOR_MS = 8000;
-const SPEECH_WATCHDOG_CEILING_MS = 90_000;
-/** Generous per-word speaking estimate (real Hebrew TTS is nearer 350ms). */
-const MS_PER_SPOKEN_WORD = 700;
+const SPEECH_WATCHDOG_CEILING_MS = 30_000;
+const MS_PER_SPOKEN_WORD = 450;
+/** Slack added to a known clip length before the watchdog gives up on it. */
+const SPEECH_WATCHDOG_SLACK_MS = 2500;
 
 function speechWatchdogMs(words: number): number {
   return Math.min(
     SPEECH_WATCHDOG_CEILING_MS,
-    Math.max(SPEECH_WATCHDOG_FLOOR_MS, words * MS_PER_SPOKEN_WORD + 4000)
+    Math.max(SPEECH_WATCHDOG_FLOOR_MS, words * MS_PER_SPOKEN_WORD + 3000)
   );
 }
 
@@ -220,6 +223,20 @@ const VerdictRow = styled('div')<{ variant: Verdict }>(({ variant }) => ({
   paddingBottom: 8,
   borderBottom: `1px solid ${VERDICT_COLOR[variant]}33`,
   animation: `${cardIn} 0.2s ease-out`,
+}));
+
+const VerdictScore = styled('span')<{ variant: Verdict }>(({ variant }) => ({
+  marginInlineStart: 'auto',
+  background: `${VERDICT_COLOR[variant]}1f`,
+  color: VERDICT_COLOR[variant],
+  border: `1px solid ${VERDICT_COLOR[variant]}59`,
+  borderRadius: 999,
+  padding: '2px 10px',
+  fontSize: 13,
+  fontWeight: 800,
+  fontVariantNumeric: 'tabular-nums',
+  whiteSpace: 'nowrap',
+  direction: 'ltr',
 }));
 
 const VerdictIcon = styled('span')<{ variant: Verdict }>(({ variant }) => ({
@@ -453,6 +470,12 @@ export default function AvatarQuizStation({
   const [hintUsedThisQuestion, setHintUsedThisQuestion] = useState(false);
   const [usedAnyHint, setUsedAnyHint] = useState(false);
   const [judgement, setJudgement] = useState<JudgeResponse | null>(null);
+  /**
+   * What this question was actually worth, normalised to 100 for display.
+   * Taken from the points really awarded, so the retry halving and any hint
+   * penalty are visible rather than hidden behind a raw verdict.
+   */
+  const [questionScore, setQuestionScore] = useState<{ earned: number; max: number } | null>(null);
   const [retryOffered, setRetryOffered] = useState(false);
   /** True once she has finished speaking — starts the quiet gap before moving on. */
   const [speechSettled, setSpeechSettled] = useState(false);
@@ -527,7 +550,10 @@ export default function AvatarQuizStation({
       // bubble was replaced by the first question before anyone could read it.
       const shownAt = Date.now();
       const words = text.trim().split(/\s+/).filter(Boolean).length;
-      const minDwellMs = Math.min(MAX_DWELL_MS, Math.max(MIN_DWELL_MS, words * MS_PER_WORD));
+      // Word-count guess at reading time. Used only while we don't know the
+      // real clip length — once audio is loaded its duration governs the pacing
+      // instead (see below), which is what the participant is actually hearing.
+      let minDwellMs = Math.min(MAX_DWELL_MS, Math.max(MIN_DWELL_MS, words * MS_PER_WORD));
 
       let finished = false;
       const finish = () => {
@@ -571,6 +597,20 @@ export default function AvatarQuizStation({
         return;
       }
 
+      // Real clip length beats every estimate: re-arm the watchdog against it,
+      // and drop the reading-time floor — the audio itself is now the pacing,
+      // so a short clip no longer sits on screen waiting out a word count.
+      if (speech.durationMs) {
+        minDwellMs = 0;
+        if (watchdogRef.current !== null) {
+          window.clearTimeout(watchdogRef.current);
+          watchdogRef.current = window.setTimeout(
+            release,
+            speech.durationMs + SPEECH_WATCHDOG_SLACK_MS
+          );
+        }
+      }
+
       if (videoUrl) setActiveVideoUrl(videoUrl);
       speechRef.current = speech;
       speech.play(() => {
@@ -611,6 +651,7 @@ export default function AvatarQuizStation({
     setAttempt(0);
     setDraft('');
     setJudgement(null);
+    setQuestionScore(null);
     setRetryOffered(false);
     setHintUsedThisQuestion(false);
     setSpeechSettled(false);
@@ -654,6 +695,7 @@ export default function AvatarQuizStation({
       let earned = Math.round(questionPoints * result.scoreRatio);
       if (attemptUsed === 1) earned = Math.floor(earned / 2);
       if (hintUsed) earned = Math.max(0, earned - hintPenalty);
+      setQuestionScore({ earned, max: questionPoints });
       setTotalEarned((prev) => prev + earned);
       setAnswers((prev) => [
         ...prev,
@@ -841,6 +883,7 @@ export default function AvatarQuizStation({
 
   const handleRetry = () => {
     setJudgement(null);
+    setQuestionScore(null);
     setRetryOffered(false);
     setSpeechSettled(false);
     setAttempt(1);
@@ -1004,6 +1047,11 @@ export default function AvatarQuizStation({
             <VerdictRow variant={judgement.verdict}>
               <VerdictIcon variant={judgement.verdict}>{verdictGlyph(judgement.verdict)}</VerdictIcon>
               {verdictLabel(judgement.verdict)}
+              {questionScore && questionScore.max > 0 && (
+                <VerdictScore variant={judgement.verdict}>
+                  {Math.round((questionScore.earned / questionScore.max) * 100)}/100
+                </VerdictScore>
+              )}
             </VerdictRow>
           )}
           {bubbleText}

@@ -2183,23 +2183,6 @@ export default function AdminStationConfigPage() {
                       </InlineRowGap12>
                     </div>
                   ))}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setQuizCharacterName('רונה מאבטחת המידע');
-                      setQuizVoiceType('woman');
-                      setQuizTopic('אבטחת מידע ארגונית');
-                      setQuizIntroText('היי, אני רונה מצוות אבטחת המידע. אני הולכת לזרוק עלייך כמה מצבים מהחיים - תענה/י מה היית עושה, ואני אגיד לך אם זה מה שהיה מציל אותנו.');
-                      setQuizOutroText('יפה. עכשיו בוא/י נראה איך זה נראה כשזה קורה באמת.');
-                      setQuizPersonaInstructions('דברי בגובה העיניים, בלי ז׳רגון טכני. אל תביכי את מי שטעה.');
-                      setQuizQuestions(infoSecurityQuizQuestions());
-                      setQuizInvalidRows([]);
-                    }}
-                    style={{ marginTop: 12, background: '#fef3c7', border: '1px solid #eec97a', borderRadius: 8, color: '#92400e', fontWeight: 700, fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit', alignSelf: 'flex-start' }}
-                  >
-                    {t.quizFillExample}
-                  </button>
                 </VerticalStack>
               )}
               {stationType === 'enteringText' && (
