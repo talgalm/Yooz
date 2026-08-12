@@ -130,8 +130,26 @@ interface SavedProgress {
 
 const DEFAULT_POINTS = 10;
 const DEFAULT_HINT_PENALTY = 2;
-/** TTS never firing onEnd (iOS silent mode) must not strand the participant. */
-const SPEECH_WATCHDOG_MS = 8000;
+/**
+ * Safety net for TTS that never fires `onEnd` (iOS silent mode, blocked audio).
+ * It must never expire while she is genuinely still talking, so it scales with
+ * how long the line takes to say — a flat 8s cut off every long teaching point
+ * mid-sentence and jumped to the next question.
+ */
+const SPEECH_WATCHDOG_FLOOR_MS = 8000;
+const SPEECH_WATCHDOG_CEILING_MS = 90_000;
+/** Generous per-word speaking estimate (real Hebrew TTS is nearer 350ms). */
+const MS_PER_SPOKEN_WORD = 700;
+
+function speechWatchdogMs(words: number): number {
+  return Math.min(
+    SPEECH_WATCHDOG_CEILING_MS,
+    Math.max(SPEECH_WATCHDOG_FLOOR_MS, words * MS_PER_SPOKEN_WORD + 4000)
+  );
+}
+
+/** Last-resort unblock if a callback is swallowed entirely — never during speech. */
+const FLOW_FAILSAFE_MS = SPEECH_WATCHDOG_CEILING_MS + 10_000;
 const TTS_MAX_CHARS = 600;
 /** Quiet gap after she finishes before she moves on — cancelled while typing. */
 const PAUSE_BEFORE_NEXT_MS = 6000;
@@ -535,7 +553,7 @@ export default function AvatarQuizStation({
         dwellRef.current = window.setTimeout(finish, remaining);
       };
 
-      watchdogRef.current = window.setTimeout(release, SPEECH_WATCHDOG_MS);
+      watchdogRef.current = window.setTimeout(release, speechWatchdogMs(words));
 
       let speech: PreparedSpeech;
       try {
@@ -623,7 +641,7 @@ export default function AvatarQuizStation({
     void say(intro, undefined, () => setIntroDone(true));
     const failsafe = window.setTimeout(
       () => setIntroDone(true),
-      SPEECH_WATCHDOG_MS + MAX_DWELL_MS + 2000,
+      FLOW_FAILSAFE_MS,
     );
     return () => window.clearTimeout(failsafe);
   }, [introDone, allQuestions.length, totalQuestions, resuming, settings.introText, say, appendCharacterLine]);
@@ -812,7 +830,7 @@ export default function AvatarQuizStation({
     // the question's speech callback is swallowed.
     const failsafe = window.setTimeout(
       () => setPhase((p) => (p === 'asking' ? 'answering' : p)),
-      SPEECH_WATCHDOG_MS + MAX_DWELL_MS + 2000
+      FLOW_FAILSAFE_MS
     );
     return () => {
       askedIndexRef.current = null;
