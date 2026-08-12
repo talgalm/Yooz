@@ -19,6 +19,38 @@ const router = Router();
 const activityConfigCache = new Map<string, { data: ActivityConfigResponse; expiresAt: number }>();
 const ACTIVITY_CONFIG_TTL_MS = 30_000;
 
+/**
+ * Strip answer keys before a station's settings go to the browser.
+ *
+ * avatarQuiz judges answers server-side (POST /api/avatar-quiz) precisely so
+ * `idealAnswer` never ships. Without this filter any participant could read
+ * every answer out of the Network tab before typing a word.
+ */
+function publicStationSettings(
+  stationType: string,
+  settings: Record<string, unknown>
+): Record<string, unknown> {
+  if (stationType !== 'avatarQuiz') return settings;
+  const questions = Array.isArray(settings.questions) ? settings.questions : [];
+  return {
+    ...settings,
+    questions: questions.map((raw) => {
+      const q = (raw || {}) as Record<string, unknown>;
+      // Allow-list, not a delete-list: a field added to the config later must
+      // be opted in here explicitly rather than leaking by default.
+      return {
+        text: q.text,
+        mediaUrl: q.mediaUrl,
+        mediaType: q.mediaType,
+        hint: q.hint,
+        points: q.points,
+        learnMoreUrl: q.learnMoreUrl,
+        level: q.level,
+      };
+    }),
+  };
+}
+
 // Group self-service routes — must be registered before /:code
 router.use(activityGroupsRouter);
 
@@ -208,7 +240,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         name: data.name,
         stationType: data.type, // 'text', 'video', 'image'
         description: data.description,
-        settings: data.settings || {},
+        settings: publicStationSettings(data.type, data.settings || {}),
         spiderSvg: item.spiderSvg,
         ...(item.isFinal && { isFinal: true }),
         ...(item.collageSplit && { collageSplit: item.collageSplit }),

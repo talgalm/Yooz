@@ -25,6 +25,7 @@ import {
   FormSectionCardWide,
   SectionLabel,
   SectionLabelNoMargin,
+  SectionDescription,
   SmallOutlineButton,
   ToggleButton,
   InlineRow,
@@ -32,6 +33,7 @@ import {
   FlexInput,
   VerticalStack,
   SelectionSubtextSmall,
+  SelectionGroupWrap,
 } from '../styled';
 
 const TextArea = styled('textarea')({
@@ -50,11 +52,44 @@ const TextArea = styled('textarea')({
   '&:focus': { borderColor: '#6c5ce7' },
 });
 
-type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'enteringText';
+type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText';
 
 interface AvatarVideoConfig {
   url: string;
   matchingWords: string[];
+}
+
+/** One entry in an avatarQuiz question bank (admin-side shape — strings for numeric inputs). */
+interface AvatarQuizQuestionConfig {
+  text: string;
+  idealAnswer: string;
+  teachingPoint: string;
+  acceptableKeywords: string[];
+  commonWrongAnswers: { text: string; rebuttal: string }[];
+  hintText: string;
+  hintImageUrl: string;
+  hintPenalty: string;
+  mediaUrl: string;
+  mediaType: 'image' | 'video';
+  points: string;
+  learnMoreUrl: string;
+}
+
+function emptyQuizQuestion(): AvatarQuizQuestionConfig {
+  return {
+    text: '',
+    idealAnswer: '',
+    teachingPoint: '',
+    acceptableKeywords: [],
+    commonWrongAnswers: [],
+    hintText: '',
+    hintImageUrl: '',
+    hintPenalty: '2',
+    mediaUrl: '',
+    mediaType: 'image',
+    points: '',
+    learnMoreUrl: '',
+  };
 }
 
 interface AvatarNamedEntry {
@@ -89,6 +124,24 @@ const HintToggleRow = styled(InlineRowGap12)({
   marginBottom: 8,
 });
 
+/**
+ * Station-type picker. The shared `SelectionGroup` is a non-wrapping flex row
+ * and `SelectionButton` is `flex: 1` with the default `min-width: auto`, so
+ * items can't shrink past their content — past ~8 types the row overflowed the
+ * card. Scoped here rather than changing the shared components, which other
+ * admin screens size around.
+ */
+const StationTypeGroup = styled(SelectionGroupWrap)({
+  // Grid rather than wrapping flex: with `flex: 1` the last row's leftover
+  // tile stretches to the full card width. Even columns keep every tile the
+  // same size no matter how many types exist.
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+  gap: 8,
+  rowGap: 10,
+  '& > button': { minWidth: 0 },
+});
+
 const RandomButton = styled('button')({
   background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
   color: '#fff',
@@ -111,14 +164,19 @@ export default function AdminStationConfigPage() {
   const location = useLocation();
   const t = useTranslations(texts);
 
-  const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle', 'avatar', 'enteringText'];
-  const stationTypesWithoutHint: StationTypeOption[] = ['feedback', 'avatar'];
+  const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle', 'avatar', 'avatarQuiz', 'enteringText'];
+  // avatarQuiz has a per-question hint (with its own point penalty); the
+  // station-level clue on top of that is redundant and surfaced a clue button
+  // in stations where nobody asked for one.
+  const stationTypesWithoutHint: StationTypeOption[] = ['feedback', 'avatar', 'avatarQuiz'];
   const typeFromUrl = searchParams.get('type') as StationTypeOption | null;
   const defaultType: StationTypeOption =
     typeFromUrl && creatableTypes.includes(typeFromUrl) ? typeFromUrl : 'text';
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  /** avatar + avatarQuiz only: render `description` as an arrival popup instead of static text. */
+  const [descriptionAsPopup, setDescriptionAsPopup] = useState(false);
   const [customer, setCustomer] = useState('');
   const [theme, setTheme] = useState('');
   const [tags, setTags] = useState<string[]>([]);
@@ -186,8 +244,28 @@ export default function AdminStationConfigPage() {
   const [avatarKnowledgeGates, setAvatarKnowledgeGates] = useState<AvatarKnowledgeGate[]>([]);
   const [avatarHintStrategy, setAvatarHintStrategy] = useState('');
   const [avatarVoiceType, setAvatarVoiceType] = useState<'man' | 'woman'>('man');
-  const [avatarDescriptionAsPopup, setAvatarDescriptionAsPopup] = useState(false);
   // Entering text station
+  const [quizCharacterName, setQuizCharacterName] = useState('');
+  const [quizCharacterImageUrl, setQuizCharacterImageUrl] = useState('');
+  const [quizVoiceType, setQuizVoiceType] = useState<'man' | 'woman'>('woman');
+  const [quizTopic, setQuizTopic] = useState('');
+  const [quizIntroText, setQuizIntroText] = useState('');
+  const [quizOutroText, setQuizOutroText] = useState('');
+  const [quizPersonaInstructions, setQuizPersonaInstructions] = useState('');
+  const [quizStrictness, setQuizStrictness] = useState<'lenient' | 'balanced' | 'strict'>('balanced');
+  const [quizPointsPerQuestion, setQuizPointsPerQuestion] = useState('10');
+  const [quizQuestionCount, setQuizQuestionCount] = useState('0');
+  const [quizShuffleQuestions, setQuizShuffleQuestions] = useState(false);
+  const [quizAllowRetry, setQuizAllowRetry] = useState(false);
+  const [quizAllowSkip, setQuizAllowSkip] = useState(false);
+  const [quizAutoAdvance, setQuizAutoAdvance] = useState(false);
+  const [quizQuestions, setQuizQuestions] = useState<AvatarQuizQuestionConfig[]>([emptyQuizQuestion()]);
+  const [quizVideoAsking, setQuizVideoAsking] = useState('');
+  const [quizVideoCorrect, setQuizVideoCorrect] = useState('');
+  const [quizVideoPartial, setQuizVideoPartial] = useState('');
+  const [quizVideoIncorrect, setQuizVideoIncorrect] = useState('');
+  const [quizInvalidRows, setQuizInvalidRows] = useState<number[]>([]);
+
   const [enteringTextTitle, setEnteringTextTitle] = useState('');
   const [enteringTextFields, setEnteringTextFields] = useState<EnteringTextField[]>([{ statement: '', placeholder: '', rightAnswer: '', keywordsBank: '' }]);
   const [enteringTextSubmitButtonText, setEnteringTextSubmitButtonText] = useState('');
@@ -204,6 +282,56 @@ export default function AdminStationConfigPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(!!id);
+
+  /** Shared by the edit-load and the library-prefill paths. */
+  const applyQuizSettings = (settings: Record<string, unknown>) => {
+    if (settings.characterName) setQuizCharacterName(settings.characterName as string);
+    if (settings.characterImageUrl) setQuizCharacterImageUrl(settings.characterImageUrl as string);
+    if (settings.voiceType === 'man' || settings.voiceType === 'woman') setQuizVoiceType(settings.voiceType);
+    setDescriptionAsPopup(!!settings.descriptionAsPopup);
+    if (settings.topic) setQuizTopic(settings.topic as string);
+    if (settings.introText) setQuizIntroText(settings.introText as string);
+    if (settings.outroText) setQuizOutroText(settings.outroText as string);
+    if (settings.personaInstructions) setQuizPersonaInstructions(settings.personaInstructions as string);
+    if (settings.strictness === 'lenient' || settings.strictness === 'balanced' || settings.strictness === 'strict') {
+      setQuizStrictness(settings.strictness);
+    }
+    if (typeof settings.pointsPerQuestion === 'number') setQuizPointsPerQuestion(String(settings.pointsPerQuestion));
+    if (typeof settings.questionCount === 'number') setQuizQuestionCount(String(settings.questionCount));
+    setQuizShuffleQuestions(settings.shuffleQuestions === true);
+    setQuizAllowRetry(settings.allowRetry === true);
+    setQuizAllowSkip(settings.allowSkip === true);
+    setQuizAutoAdvance(settings.autoAdvance === true);
+    const rv = (settings.reactionVideos || {}) as Record<string, unknown>;
+    if (rv.asking) setQuizVideoAsking(rv.asking as string);
+    if (rv.correct) setQuizVideoCorrect(rv.correct as string);
+    if (rv.partial) setQuizVideoPartial(rv.partial as string);
+    if (rv.incorrect) setQuizVideoIncorrect(rv.incorrect as string);
+    if (Array.isArray(settings.questions) && settings.questions.length > 0) {
+      setQuizQuestions((settings.questions as Array<Record<string, unknown>>).map((q) => {
+        const hint = (q.hint || {}) as Record<string, unknown>;
+        return {
+          text: (q.text as string) || '',
+          idealAnswer: (q.idealAnswer as string) || '',
+          teachingPoint: (q.teachingPoint as string) || '',
+          acceptableKeywords: Array.isArray(q.acceptableKeywords) ? (q.acceptableKeywords as string[]) : [],
+          commonWrongAnswers: Array.isArray(q.commonWrongAnswers)
+            ? (q.commonWrongAnswers as Array<Record<string, unknown>>).map((w) => ({
+                text: (w.text as string) || '',
+                rebuttal: (w.rebuttal as string) || '',
+              }))
+            : [],
+          hintText: (hint.text as string) || '',
+          hintImageUrl: (hint.imageUrl as string) || '',
+          hintPenalty: typeof hint.penalty === 'number' ? String(hint.penalty) : '2',
+          mediaUrl: (q.mediaUrl as string) || '',
+          mediaType: q.mediaType === 'video' ? 'video' : 'image',
+          points: typeof q.points === 'number' ? String(q.points) : '',
+          learnMoreUrl: (q.learnMoreUrl as string) || '',
+        };
+      }));
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -286,7 +414,10 @@ export default function AdminStationConfigPage() {
           if (Array.isArray(settings.knowledgeGates)) setAvatarKnowledgeGates(settings.knowledgeGates as AvatarKnowledgeGate[]);
           if (settings.hintStrategy) setAvatarHintStrategy(settings.hintStrategy as string);
           if (settings.voiceType === 'man' || settings.voiceType === 'woman') setAvatarVoiceType(settings.voiceType);
-          setAvatarDescriptionAsPopup(!!settings.descriptionAsPopup);
+          setDescriptionAsPopup(!!settings.descriptionAsPopup);
+        }
+        if (s.type === 'avatarQuiz') {
+          applyQuizSettings(settings);
         }
         if (s.type === 'enteringText') {
           if (settings.title) setEnteringTextTitle(settings.title as string);
@@ -388,6 +519,9 @@ export default function AdminStationConfigPage() {
       if (settings.successImageUrl) setRiddleSuccessImageUrl(settings.successImageUrl as string);
       setRiddleUnlimitedAttempts(settings.unlimitedAttempts === true);
     }
+    if (lib.type === 'avatarQuiz') {
+      applyQuizSettings(settings);
+    }
     if (lib.type === 'avatar') {
       if (settings.characterName) setAvatarCharacterName(settings.characterName as string);
       if (settings.characterImageUrl) setAvatarCharacterImageUrl(settings.characterImageUrl as string);
@@ -401,7 +535,7 @@ export default function AdminStationConfigPage() {
       if (Array.isArray(settings.knowledgeGates)) setAvatarKnowledgeGates(settings.knowledgeGates as AvatarKnowledgeGate[]);
       if (settings.hintStrategy) setAvatarHintStrategy(settings.hintStrategy as string);
       if (settings.voiceType === 'man' || settings.voiceType === 'woman') setAvatarVoiceType(settings.voiceType);
-      setAvatarDescriptionAsPopup(!!settings.descriptionAsPopup);
+      setDescriptionAsPopup(!!settings.descriptionAsPopup);
     }
     if (lib.type === 'enteringText') {
       if (settings.title) setEnteringTextTitle(settings.title as string);
@@ -526,7 +660,92 @@ export default function AdminStationConfigPage() {
           .filter((g) => g.trigger && g.reveal);
         settings.hintStrategy = avatarHintStrategy.trim();
         settings.voiceType = avatarVoiceType;
-        settings.descriptionAsPopup = avatarDescriptionAsPopup;
+        settings.descriptionAsPopup = descriptionAsPopup;
+      }
+      if (stationType === 'avatarQuiz') {
+        // A question is only usable if all three judging inputs are present —
+        // the server can't grade without an ideal answer, and the participant
+        // must learn something even when they answer correctly.
+        const filled = quizQuestions.filter(
+          (q) => q.text.trim() || q.idealAnswer.trim() || q.teachingPoint.trim()
+        );
+        const invalid = quizQuestions
+          .map((q, i) => ({ q, i }))
+          .filter(({ q }) => q.text.trim() || q.idealAnswer.trim() || q.teachingPoint.trim())
+          .filter(({ q }) => !q.text.trim() || !q.idealAnswer.trim() || !q.teachingPoint.trim())
+          .map(({ i }) => i);
+        if (invalid.length > 0) {
+          setQuizInvalidRows(invalid);
+          setError(t.quizErrorIncompleteQuestion);
+          setLoading(false);
+          return;
+        }
+        if (filled.length === 0) {
+          setQuizInvalidRows([]);
+          setError(t.quizErrorNoQuestions);
+          setLoading(false);
+          return;
+        }
+        setQuizInvalidRows([]);
+
+        settings.characterName = quizCharacterName.trim();
+        settings.characterImageUrl = quizCharacterImageUrl.trim();
+        settings.voiceType = quizVoiceType;
+        settings.descriptionAsPopup = descriptionAsPopup;
+        if (quizTopic.trim()) settings.topic = quizTopic.trim();
+        if (quizIntroText.trim()) settings.introText = quizIntroText.trim();
+        if (quizOutroText.trim()) settings.outroText = quizOutroText.trim();
+        if (quizPersonaInstructions.trim()) settings.personaInstructions = quizPersonaInstructions.trim();
+        settings.strictness = quizStrictness;
+        const parsedPoints = parseInt(quizPointsPerQuestion, 10);
+        settings.pointsPerQuestion = Number.isFinite(parsedPoints) && parsedPoints > 0 ? parsedPoints : 10;
+        const parsedCount = parseInt(quizQuestionCount, 10);
+        settings.questionCount = Number.isFinite(parsedCount) && parsedCount > 0 ? parsedCount : 0;
+        settings.shuffleQuestions = quizShuffleQuestions;
+        settings.allowRetry = quizAllowRetry;
+        settings.allowSkip = quizAllowSkip;
+        settings.autoAdvance = quizAutoAdvance;
+        const reactionVideos: Record<string, string> = {};
+        if (quizVideoAsking.trim()) reactionVideos.asking = quizVideoAsking.trim();
+        if (quizVideoCorrect.trim()) reactionVideos.correct = quizVideoCorrect.trim();
+        if (quizVideoPartial.trim()) reactionVideos.partial = quizVideoPartial.trim();
+        if (quizVideoIncorrect.trim()) reactionVideos.incorrect = quizVideoIncorrect.trim();
+        if (Object.keys(reactionVideos).length > 0) settings.reactionVideos = reactionVideos;
+
+        settings.questions = filled.map((q) => {
+          const penalty = parseInt(q.hintPenalty, 10);
+          const points = parseInt(q.points, 10);
+          return {
+            text: q.text.trim(),
+            idealAnswer: q.idealAnswer.trim(),
+            teachingPoint: q.teachingPoint.trim(),
+            ...(q.acceptableKeywords.map((k) => k.trim()).filter(Boolean).length > 0
+              ? { acceptableKeywords: q.acceptableKeywords.map((k) => k.trim()).filter(Boolean) }
+              : {}),
+            ...(q.commonWrongAnswers.filter((w) => w.text.trim()).length > 0
+              ? {
+                  commonWrongAnswers: q.commonWrongAnswers
+                    .filter((w) => w.text.trim())
+                    .map((w) => ({
+                      text: w.text.trim(),
+                      ...(w.rebuttal.trim() ? { rebuttal: w.rebuttal.trim() } : {}),
+                    })),
+                }
+              : {}),
+            ...(q.hintText.trim()
+              ? {
+                  hint: {
+                    text: q.hintText.trim(),
+                    ...(q.hintImageUrl.trim() ? { imageUrl: q.hintImageUrl.trim() } : {}),
+                    penalty: Number.isFinite(penalty) && penalty >= 0 ? penalty : 2,
+                  },
+                }
+              : {}),
+            ...(q.mediaUrl.trim() ? { mediaUrl: q.mediaUrl.trim(), mediaType: q.mediaType } : {}),
+            ...(Number.isFinite(points) && points > 0 ? { points } : {}),
+            ...(q.learnMoreUrl.trim() ? { learnMoreUrl: q.learnMoreUrl.trim() } : {}),
+          };
+        });
       }
       if (stationType === 'enteringText') {
         settings.title = enteringTextTitle.trim();
@@ -585,8 +804,45 @@ export default function AdminStationConfigPage() {
     feedback: 'תחנת משוב - טסט',
     riddle: 'תחנת חידה - טסט',
     avatar: 'תחנת אוואטר - טסט',
+    avatarQuiz: 'תחנת אוואטר מנחה - טסט',
     enteringText: 'תחנת מילוי טקסט - טסט',
   };
+
+  /** The information-security bank from the spec — a realistic starting point. */
+  const infoSecurityQuizQuestions = (): AvatarQuizQuestionConfig[] => [
+    {
+      ...emptyQuizQuestion(),
+      text: 'קיבלת מייל עם לינק ממישהו שאת/ה לא מכיר/ה. מה את/ה עושה?',
+      idealAnswer: 'לא לוחצים על הלינק. בודקים את כתובת השולח המלאה, מרחפים מעל הקישור כדי לראות לאן הוא באמת מוביל, ואם יש ספק - מדווחים לצוות אבטחת המידע ומוחקים.',
+      teachingPoint: 'לינק ממקור לא מוכר לא נפתח, גם לא "רק כדי לבדוק". לחיצה אחת מספיקה כדי להריץ קוד או לגנוב פרטי התחברות. הכלל: לא לוחצים, בודקים שולח, מדווחים.',
+      acceptableKeywords: ['לא לוחץ', 'לא פותח', 'מדווח', 'מוחק', 'בודק את השולח', 'IT', 'אבטחת מידע'],
+      commonWrongAnswers: [
+        { text: 'פותח לראות מה יש שם', rebuttal: 'זה בדיוק מה שהתוקף מקווה שתעשה/י.' },
+        { text: 'פותח מהטלפון כי זה בטוח יותר', rebuttal: 'גם טלפון נדבק - ובדרך כלל אין עליו הגנות ארגוניות.' },
+      ],
+      points: '10',
+    },
+    {
+      ...emptyQuizQuestion(),
+      text: 'מתקשר אלייך מישהו שמציג את עצמו כטכנאי מה-IT ומבקש את הסיסמה כדי "לתקן תקלה". מה את/ה עושה?',
+      idealAnswer: 'לא מוסרים סיסמה בטלפון לאף אחד, גם לא ל-IT. מנתקים, מתקשרים למספר הרשמי של ה-IT ומוודאים שהפנייה אמיתית.',
+      teachingPoint: 'צוות IT לעולם לא יבקש ממך סיסמה. כל בקשה כזו היא הנדסה חברתית עד שהוכח אחרת - מנתקים ומאמתים בערוץ עצמאי.',
+      acceptableKeywords: ['לא מוסר סיסמה', 'מנתק', 'מאמת', 'מתקשר בחזרה', 'מדווח'],
+      commonWrongAnswers: [
+        { text: 'נותן את הסיסמה כי זה מה-IT', rebuttal: 'אף טכנאי אמיתי לא יבקש את זה.' },
+      ],
+      points: '10',
+    },
+    {
+      ...emptyQuizQuestion(),
+      text: 'מצאת דיסק-און-קי בחניון של המשרד. מה את/ה עושה איתו?',
+      idealAnswer: 'לא מחברים אותו לשום מחשב. מוסרים אותו לצוות אבטחת המידע.',
+      teachingPoint: 'דיסק-און-קי נטוש הוא וקטור תקיפה מוכר - מספיק לחבר אותו כדי להדביק את התחנה. מוסרים לאבטחת מידע, לא מחברים.',
+      acceptableKeywords: ['לא מחבר', 'מוסר', 'אבטחת מידע', 'לא תוקע'],
+      commonWrongAnswers: [],
+      points: '10',
+    },
+  ];
 
   const handleFillRandom = () => {
     const ts = Date.now().toString().slice(-4);
@@ -631,7 +887,14 @@ export default function AdminStationConfigPage() {
     setAvatarForbiddenPhrases([]);
     setAvatarVideos([]);
     setAvatarVoiceType('man');
-    setAvatarDescriptionAsPopup(false);
+    setDescriptionAsPopup(false);
+    setQuizCharacterName('');
+    setQuizTopic('');
+    setQuizIntroText('');
+    setQuizOutroText('');
+    setQuizPersonaInstructions('');
+    setQuizQuestions([emptyQuizQuestion()]);
+    setQuizInvalidRows([]);
     setEnteringTextTitle('');
     setEnteringTextFields([{ statement: '', placeholder: '', rightAnswer: '', keywordsBank: '' }]);
     setEnteringTextSubmitButtonText('');
@@ -682,6 +945,19 @@ export default function AdminStationConfigPage() {
       setAvatarOptionalAnswers(['המשרת', 'הטבח', 'הגננת']);
       setAvatarForbiddenPhrases(['אני לא יודע', 'אין לי מושג']);
       setAvatarVideos([]);
+    } else if (randomType === 'avatarQuiz') {
+      setQuizCharacterName('רונה מאבטחת המידע');
+      setQuizVoiceType('woman');
+      setQuizTopic('אבטחת מידע ארגונית');
+      setQuizIntroText('היי, אני רונה מצוות אבטחת המידע. אני הולכת לזרוק עלייך כמה מצבים מהחיים - תענה/י מה היית עושה, ואני אגיד לך אם זה מה שהיה מציל אותנו.');
+      setQuizOutroText('יפה. עכשיו בוא/י נראה איך זה נראה כשזה קורה באמת.');
+      setQuizPersonaInstructions('דברי בגובה העיניים, בלי ז׳רגון טכני. אל תביכי את מי שטעה.');
+      setQuizStrictness('balanced');
+      setQuizPointsPerQuestion('10');
+      setQuizAllowRetry(false);
+      setQuizAllowSkip(false);
+      setQuizShuffleQuestions(false);
+      setQuizQuestions(infoSecurityQuizQuestions());
     } else if (randomType === 'enteringText') {
       setEnteringTextTitle('טופס פרטים קצרים');
       setEnteringTextFields([
@@ -721,7 +997,7 @@ export default function AdminStationConfigPage() {
                 />
                 <div>
                   <SectionLabel>{t.stationType}</SectionLabel>
-                  <SelectionGroup>
+                  <StationTypeGroup>
                     <SelectionButton type="button" selected={stationType === 'text'} onClick={() => setStationType('text')}>
                       <div>{t.typeText}</div>
                       <SelectionSubtextSmall>{t.typeTextDesc}</SelectionSubtextSmall>
@@ -756,17 +1032,36 @@ export default function AdminStationConfigPage() {
                       <div>{t.typeAvatar}</div>
                       <SelectionSubtextSmall>{t.typeAvatarDesc}</SelectionSubtextSmall>
                     </SelectionButton>
+                    <SelectionButton type="button" selected={stationType === 'avatarQuiz'} onClick={() => setStationType('avatarQuiz')}>
+                      <div>{t.typeAvatarQuiz}</div>
+                      <SelectionSubtextSmall>{t.typeAvatarQuizDesc}</SelectionSubtextSmall>
+                    </SelectionButton>
                     <SelectionButton type="button" selected={stationType === 'enteringText'} onClick={() => setStationType('enteringText')}>
                       <div>{t.typeEnteringText}</div>
                       <SelectionSubtextSmall>{t.typeEnteringTextDesc}</SelectionSubtextSmall>
                     </SelectionButton>
-                  </SelectionGroup>
+                  </StationTypeGroup>
                 </div>
                 <Input
                   placeholder={t.description}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
+                {(stationType === 'avatar' || stationType === 'avatarQuiz') && (
+                  <div>
+                    <HintToggleRow>
+                      <SectionLabelNoMargin>{t.avatarDescriptionAsPopup}</SectionLabelNoMargin>
+                      <ToggleButton
+                        type="button"
+                        selected={descriptionAsPopup}
+                        onClick={() => setDescriptionAsPopup((v) => !v)}
+                      >
+                        {descriptionAsPopup ? 'ON' : 'OFF'}
+                      </ToggleButton>
+                    </HintToggleRow>
+                    <SectionDescription>{t.avatarDescriptionAsPopupHelp}</SectionDescription>
+                  </div>
+                )}
                 <Input
                   placeholder={t.customer}
                   value={customer}
@@ -1084,7 +1379,7 @@ export default function AdminStationConfigPage() {
                   {!collageMultiSelect && (<>
                   <SectionLabelNoMargin>{t.collageMissions}</SectionLabelNoMargin>
                   {collageMissions.map((mission, idx) => (
-                    <div key={idx} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
+                    <div key={idx} style={{ background: '#ffffff', border: '1px solid #e6e6f0', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <SectionLabelNoMargin style={{ margin: 0 }}>
                           {t.collageMissionNum} {idx + 1}
@@ -1093,7 +1388,7 @@ export default function AdminStationConfigPage() {
                           <button
                             type="button"
                             onClick={() => setCollageMissions((ms) => ms.filter((_, i) => i !== idx))}
-                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
+                            style={{ background: 'none', border: 'none', color: '#c0392b', fontWeight: 600, cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
                           >
                             {t.collageMissionRemove}
                           </button>
@@ -1129,7 +1424,7 @@ export default function AdminStationConfigPage() {
                   <button
                     type="button"
                     onClick={() => setCollageMissions((ms) => [...ms, { title: '', description: '' }])}
-                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                    style={{ background: '#eef0ff', border: '1px solid #c7ccf7', borderRadius: 8, color: '#4338ca', fontWeight: 600, fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
                   >
                     + {t.collageMissionAdd}
                   </button>
@@ -1349,16 +1644,6 @@ export default function AdminStationConfigPage() {
                     </SelectionButton>
                   </InlineRow>
 
-                  <SectionLabel style={{ marginTop: 16 }}>{t.avatarDescriptionAsPopup}</SectionLabel>
-                  <InlineRowGap12>
-                    <ToggleButton
-                      type="button"
-                      selected={avatarDescriptionAsPopup}
-                      onClick={() => setAvatarDescriptionAsPopup((v) => !v)}
-                    >
-                      {avatarDescriptionAsPopup ? 'ON' : 'OFF'}
-                    </ToggleButton>
-                  </InlineRowGap12>
 
                   <SectionLabel>{t.avatarDetectiveRiddle}</SectionLabel>
                   <Input
@@ -1399,7 +1684,7 @@ export default function AdminStationConfigPage() {
                   <button
                     type="button"
                     onClick={() => setAvatarOptionalAnswers((xs) => [...xs, ''])}
-                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                    style={{ background: '#eef0ff', border: '1px solid #c7ccf7', borderRadius: 8, color: '#4338ca', fontWeight: 600, fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
                   >
                     + {t.avatarAddOptionalAnswer}
                   </button>
@@ -1429,14 +1714,14 @@ export default function AdminStationConfigPage() {
                   <button
                     type="button"
                     onClick={() => setAvatarForbiddenPhrases((xs) => [...xs, ''])}
-                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                    style={{ background: '#eef0ff', border: '1px solid #c7ccf7', borderRadius: 8, color: '#4338ca', fontWeight: 600, fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
                   >
                     + {t.avatarAddForbiddenPhrase}
                   </button>
 
                   <SectionLabel style={{ marginTop: 16 }}>{t.avatarVideos}</SectionLabel>
                   {avatarVideos.map((video, vi) => (
-                    <div key={vi} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
+                    <div key={vi} style={{ background: '#ffffff', border: '1px solid #e6e6f0', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <SectionLabelNoMargin style={{ margin: 0 }}>
                           {t.avatarVideoNum} {vi + 1}
@@ -1444,7 +1729,7 @@ export default function AdminStationConfigPage() {
                         <button
                           type="button"
                           onClick={() => setAvatarVideos(avatarVideos.filter((_, j) => j !== vi))}
-                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
+                          style={{ background: 'none', border: 'none', color: '#c0392b', fontWeight: 600, cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
                         >
                           {t.avatarRemove}
                         </button>
@@ -1496,20 +1781,20 @@ export default function AdminStationConfigPage() {
                   <button
                     type="button"
                     onClick={() => setAvatarVideos((xs) => [...xs, { url: '', matchingWords: [] }])}
-                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                    style={{ background: '#eef0ff', border: '1px solid #c7ccf7', borderRadius: 8, color: '#4338ca', fontWeight: 600, fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
                   >
                     + {t.avatarAddVideo}
                   </button>
 
                   <SectionLabel style={{ marginTop: 16 }}>{t.avatarCharacters}</SectionLabel>
                   {avatarCharacters.map((c, i) => (
-                    <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
+                    <div key={i} style={{ background: '#ffffff', border: '1px solid #e6e6f0', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <SectionLabelNoMargin style={{ margin: 0 }}>#{i + 1}</SectionLabelNoMargin>
                         <button
                           type="button"
                           onClick={() => setAvatarCharacters(avatarCharacters.filter((_, j) => j !== i))}
-                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
+                          style={{ background: 'none', border: 'none', color: '#c0392b', fontWeight: 600, cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
                         >
                           {t.avatarRemove}
                         </button>
@@ -1530,20 +1815,20 @@ export default function AdminStationConfigPage() {
                   <button
                     type="button"
                     onClick={() => setAvatarCharacters((xs) => [...xs, { name: '', description: '' }])}
-                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                    style={{ background: '#eef0ff', border: '1px solid #c7ccf7', borderRadius: 8, color: '#4338ca', fontWeight: 600, fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
                   >
                     + {t.avatarAddCharacter}
                   </button>
 
                   <SectionLabel style={{ marginTop: 16 }}>{t.avatarClues}</SectionLabel>
                   {avatarClues.map((c, i) => (
-                    <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
+                    <div key={i} style={{ background: '#ffffff', border: '1px solid #e6e6f0', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <SectionLabelNoMargin style={{ margin: 0 }}>#{i + 1}</SectionLabelNoMargin>
                         <button
                           type="button"
                           onClick={() => setAvatarClues(avatarClues.filter((_, j) => j !== i))}
-                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
+                          style={{ background: 'none', border: 'none', color: '#c0392b', fontWeight: 600, cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
                         >
                           {t.avatarRemove}
                         </button>
@@ -1564,20 +1849,20 @@ export default function AdminStationConfigPage() {
                   <button
                     type="button"
                     onClick={() => setAvatarClues((xs) => [...xs, { name: '', description: '' }])}
-                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                    style={{ background: '#eef0ff', border: '1px solid #c7ccf7', borderRadius: 8, color: '#4338ca', fontWeight: 600, fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
                   >
                     + {t.avatarAddClue}
                   </button>
 
                   <SectionLabel style={{ marginTop: 16 }}>{t.avatarKnowledgeGates}</SectionLabel>
                   {avatarKnowledgeGates.map((g, i) => (
-                    <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
+                    <div key={i} style={{ background: '#ffffff', border: '1px solid #e6e6f0', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <SectionLabelNoMargin style={{ margin: 0 }}>#{i + 1}</SectionLabelNoMargin>
                         <button
                           type="button"
                           onClick={() => setAvatarKnowledgeGates(avatarKnowledgeGates.filter((_, j) => j !== i))}
-                          style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
+                          style={{ background: 'none', border: 'none', color: '#c0392b', fontWeight: 600, cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
                         >
                           {t.avatarRemove}
                         </button>
@@ -1598,7 +1883,7 @@ export default function AdminStationConfigPage() {
                   <button
                     type="button"
                     onClick={() => setAvatarKnowledgeGates((xs) => [...xs, { trigger: '', reveal: '' }])}
-                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                    style={{ background: '#eef0ff', border: '1px solid #c7ccf7', borderRadius: 8, color: '#4338ca', fontWeight: 600, fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
                   >
                     + {t.avatarAddGate}
                   </button>
@@ -1611,6 +1896,312 @@ export default function AdminStationConfigPage() {
                   />
                 </VerticalStack>
               )}
+              {stationType === 'avatarQuiz' && (
+                <VerticalStack>
+                  {/* ─── Part A: the character ─── */}
+                  <SectionLabelNoMargin>{t.avatarCharacterName}</SectionLabelNoMargin>
+                  <Input
+                    placeholder={t.quizCharacterNamePlaceholder}
+                    value={quizCharacterName}
+                    onChange={(e) => setQuizCharacterName(e.target.value)}
+                  />
+
+                  <SectionLabel>{t.avatarCharacterImage}</SectionLabel>
+                  <InlineRowGap12>
+                    <FileUploadButton accept="image/*" onUploaded={(url) => setQuizCharacterImageUrl(url)} />
+                    <Input
+                      placeholder={t.avatarCharacterImage}
+                      value={quizCharacterImageUrl}
+                      onChange={(e) => setQuizCharacterImageUrl(e.target.value)}
+                    />
+                  </InlineRowGap12>
+
+                  <SectionLabel>{t.avatarVoiceType}</SectionLabel>
+                  <InlineRowGap12>
+                    <SelectionButton type="button" selected={quizVoiceType === 'man'} onClick={() => setQuizVoiceType('man')}>
+                      {t.avatarVoiceTypeMen}
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={quizVoiceType === 'woman'} onClick={() => setQuizVoiceType('woman')}>
+                      {t.avatarVoiceTypeWomen}
+                    </SelectionButton>
+                  </InlineRowGap12>
+
+                  {/* ─── Part B: the training ─── */}
+                  <SectionLabel style={{ marginTop: 20 }}>{t.quizTopic}</SectionLabel>
+                  <Input
+                    placeholder={t.quizTopicPlaceholder}
+                    value={quizTopic}
+                    onChange={(e) => setQuizTopic(e.target.value)}
+                  />
+
+                  <SectionLabel>{t.quizIntroText}</SectionLabel>
+                  <TextArea
+                    placeholder={t.quizIntroTextPlaceholder}
+                    value={quizIntroText}
+                    onChange={(e) => setQuizIntroText(e.target.value)}
+                  />
+
+                  <SectionLabel>{t.quizOutroText}</SectionLabel>
+                  <TextArea
+                    placeholder={t.quizOutroTextPlaceholder}
+                    value={quizOutroText}
+                    onChange={(e) => setQuizOutroText(e.target.value)}
+                  />
+
+                  <SectionLabel>{t.quizPersonaInstructions}</SectionLabel>
+                  <TextArea
+                    placeholder={t.quizPersonaInstructionsPlaceholder}
+                    value={quizPersonaInstructions}
+                    onChange={(e) => setQuizPersonaInstructions(e.target.value)}
+                  />
+
+                  <SectionLabel>{t.quizStrictness}</SectionLabel>
+                  <InlineRowGap12>
+                    <SelectionButton type="button" selected={quizStrictness === 'lenient'} onClick={() => setQuizStrictness('lenient')}>
+                      {t.quizStrictnessLenient}
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={quizStrictness === 'balanced'} onClick={() => setQuizStrictness('balanced')}>
+                      {t.quizStrictnessBalanced}
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={quizStrictness === 'strict'} onClick={() => setQuizStrictness('strict')}>
+                      {t.quizStrictnessStrict}
+                    </SelectionButton>
+                  </InlineRowGap12>
+
+                  <SectionLabel>{t.quizPointsPerQuestion}</SectionLabel>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={quizPointsPerQuestion}
+                    onChange={(e) => setQuizPointsPerQuestion(e.target.value)}
+                  />
+
+                  <SectionLabel>{t.quizQuestionCount}</SectionLabel>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={quizQuestionCount}
+                    onChange={(e) => setQuizQuestionCount(e.target.value)}
+                  />
+                  <SectionDescription>
+                    {t.quizQuestionCountHelp.replace(
+                      '{n}',
+                      String(quizQuestions.filter((q) => q.text.trim()).length)
+                    )}
+                  </SectionDescription>
+
+                  <SectionLabel style={{ marginTop: 16 }}>{t.quizBehaviour}</SectionLabel>
+                  <InlineRowGap12 style={{ flexWrap: 'wrap' }}>
+                    <SelectionButton type="button" selected={quizShuffleQuestions} onClick={() => setQuizShuffleQuestions((v) => !v)}>
+                      {t.quizShuffleQuestions}
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={quizAllowRetry} onClick={() => setQuizAllowRetry((v) => !v)}>
+                      {t.quizAllowRetry}
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={quizAllowSkip} onClick={() => setQuizAllowSkip((v) => !v)}>
+                      {t.quizAllowSkip}
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={quizAutoAdvance} onClick={() => setQuizAutoAdvance((v) => !v)}>
+                      {t.quizAutoAdvance}
+                    </SelectionButton>
+                  </InlineRowGap12>
+                  <SectionDescription>{t.quizBehaviourHelp}</SectionDescription>
+
+                  {/* ─── Part C: the question bank ─── */}
+                  <SectionLabel style={{ marginTop: 20 }}>{t.quizQuestions}</SectionLabel>
+                  {quizQuestions.map((q, qi) => {
+                    const invalid = quizInvalidRows.includes(qi);
+                    const update = (patch: Partial<AvatarQuizQuestionConfig>) =>
+                      setQuizQuestions((xs) => xs.map((x, j) => (j === qi ? { ...x, ...patch } : x)));
+                    return (
+                      <div
+                        key={qi}
+                        style={{
+                          border: `1px solid ${invalid ? '#ef4444' : '#d9dcf5'}`,
+                          borderRadius: 10,
+                          padding: 12,
+                          marginBottom: 12,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 8,
+                        }}
+                      >
+                        <InlineRowGap12 style={{ justifyContent: 'space-between' }}>
+                          <SectionLabelNoMargin>{t.quizQuestionNum} {qi + 1}</SectionLabelNoMargin>
+                          {quizQuestions.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setQuizQuestions((xs) => xs.filter((_, j) => j !== qi))}
+                              style={{ background: '#fdeaea', border: '1px solid #f3b4b4', borderRadius: 8, color: '#b91c1c', fontWeight: 600, fontSize: 12, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}
+                            >
+                              {t.avatarRemove}
+                            </button>
+                          )}
+                        </InlineRowGap12>
+
+                        <TextArea
+                          placeholder={t.quizQuestionText}
+                          value={q.text}
+                          onChange={(e) => update({ text: e.target.value })}
+                        />
+                        <TextArea
+                          placeholder={t.quizIdealAnswer}
+                          value={q.idealAnswer}
+                          onChange={(e) => update({ idealAnswer: e.target.value })}
+                        />
+                        <TextArea
+                          placeholder={t.quizTeachingPoint}
+                          value={q.teachingPoint}
+                          onChange={(e) => update({ teachingPoint: e.target.value })}
+                        />
+
+                        <SectionLabelNoMargin style={{ marginTop: 6 }}>{t.quizKeywords}</SectionLabelNoMargin>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {q.acceptableKeywords.map((kw, ki) => (
+                            <span
+                              key={ki}
+                              onClick={() => update({ acceptableKeywords: q.acceptableKeywords.filter((_, k) => k !== ki) })}
+                              style={{ background: '#eef0ff', border: '1px solid #c7ccf7', borderRadius: 999, padding: '4px 10px', fontSize: 12, fontWeight: 600, color: '#3730a3', cursor: 'pointer' }}
+                            >
+                              {kw} ✕
+                            </span>
+                          ))}
+                        </div>
+                        <Input
+                          placeholder={t.quizKeywordsPlaceholder}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') return;
+                            e.preventDefault();
+                            const input = e.currentTarget;
+                            const v = input.value.trim();
+                            if (v && !q.acceptableKeywords.includes(v)) {
+                              update({ acceptableKeywords: [...q.acceptableKeywords, v] });
+                            }
+                            input.value = '';
+                          }}
+                        />
+
+                        <SectionLabelNoMargin style={{ marginTop: 6 }}>{t.quizCommonWrong}</SectionLabelNoMargin>
+                        {q.commonWrongAnswers.map((w, wi) => (
+                          <InlineRowGap12 key={wi}>
+                            <Input
+                              placeholder={t.quizCommonWrongText}
+                              value={w.text}
+                              onChange={(e) => update({
+                                commonWrongAnswers: q.commonWrongAnswers.map((x, k) => (k === wi ? { ...x, text: e.target.value } : x)),
+                              })}
+                            />
+                            <Input
+                              placeholder={t.quizCommonWrongRebuttal}
+                              value={w.rebuttal}
+                              onChange={(e) => update({
+                                commonWrongAnswers: q.commonWrongAnswers.map((x, k) => (k === wi ? { ...x, rebuttal: e.target.value } : x)),
+                              })}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => update({ commonWrongAnswers: q.commonWrongAnswers.filter((_, k) => k !== wi) })}
+                              style={{ background: '#fdeaea', border: '1px solid #f3b4b4', borderRadius: 8, color: '#b91c1c', fontWeight: 600, fontSize: 12, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}
+                            >
+                              {t.avatarRemove}
+                            </button>
+                          </InlineRowGap12>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => update({ commonWrongAnswers: [...q.commonWrongAnswers, { text: '', rebuttal: '' }] })}
+                          style={{ background: '#eef0ff', border: '1px solid #c7ccf7', borderRadius: 8, color: '#4338ca', fontWeight: 600, fontSize: 13, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit', alignSelf: 'flex-start' }}
+                        >
+                          + {t.quizAddCommonWrong}
+                        </button>
+
+                        <SectionLabelNoMargin style={{ marginTop: 6 }}>{t.quizQuestionHint}</SectionLabelNoMargin>
+                        <InlineRowGap12>
+                          <Input
+                            placeholder={t.quizQuestionHintPlaceholder}
+                            value={q.hintText}
+                            onChange={(e) => update({ hintText: e.target.value })}
+                          />
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder={t.quizHintPenalty}
+                            value={q.hintPenalty}
+                            onChange={(e) => update({ hintPenalty: e.target.value })}
+                            style={{ maxWidth: 110 }}
+                          />
+                        </InlineRowGap12>
+
+                        <SectionLabelNoMargin style={{ marginTop: 6 }}>{t.quizQuestionMedia}</SectionLabelNoMargin>
+                        <InlineRowGap12>
+                          <FileUploadButton accept="image/*" onUploaded={(url) => update({ mediaUrl: url, mediaType: 'image' })} />
+                          <Input
+                            placeholder={t.quizQuestionMedia}
+                            value={q.mediaUrl}
+                            onChange={(e) => update({ mediaUrl: e.target.value })}
+                          />
+                        </InlineRowGap12>
+
+                        <InlineRowGap12>
+                          <Input
+                            type="number"
+                            min={1}
+                            placeholder={t.quizQuestionPoints}
+                            value={q.points}
+                            onChange={(e) => update({ points: e.target.value })}
+                          />
+                          <Input
+                            placeholder={t.quizLearnMoreUrl}
+                            value={q.learnMoreUrl}
+                            onChange={(e) => update({ learnMoreUrl: e.target.value })}
+                          />
+                        </InlineRowGap12>
+                      </div>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => setQuizQuestions((xs) => [...xs, emptyQuizQuestion()])}
+                    style={{ background: '#eef0ff', border: '1px solid #c7ccf7', borderRadius: 8, color: '#4338ca', fontWeight: 600, fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit', alignSelf: 'flex-start' }}
+                  >
+                    + {t.quizAddQuestion}
+                  </button>
+
+                  {/* ─── Part D: reaction videos ─── */}
+                  <SectionLabel style={{ marginTop: 20 }}>{t.quizReactionVideos}</SectionLabel>
+                  {([
+                    { label: t.quizVideoAsking, value: quizVideoAsking, set: setQuizVideoAsking },
+                    { label: t.quizVideoCorrect, value: quizVideoCorrect, set: setQuizVideoCorrect },
+                    { label: t.quizVideoPartial, value: quizVideoPartial, set: setQuizVideoPartial },
+                    { label: t.quizVideoIncorrect, value: quizVideoIncorrect, set: setQuizVideoIncorrect },
+                  ] as const).map(({ label, value, set }) => (
+                    <div key={label} style={{ marginBottom: 8 }}>
+                      <SectionLabelNoMargin>{label}</SectionLabelNoMargin>
+                      <InlineRowGap12 style={{ marginTop: 6 }}>
+                        <FileUploadButton accept="video/*" onUploaded={(url) => set(url)} />
+                        <Input placeholder={label} value={value} onChange={(e) => set(e.target.value)} />
+                      </InlineRowGap12>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuizCharacterName('רונה מאבטחת המידע');
+                      setQuizVoiceType('woman');
+                      setQuizTopic('אבטחת מידע ארגונית');
+                      setQuizIntroText('היי, אני רונה מצוות אבטחת המידע. אני הולכת לזרוק עלייך כמה מצבים מהחיים - תענה/י מה היית עושה, ואני אגיד לך אם זה מה שהיה מציל אותנו.');
+                      setQuizOutroText('יפה. עכשיו בוא/י נראה איך זה נראה כשזה קורה באמת.');
+                      setQuizPersonaInstructions('דברי בגובה העיניים, בלי ז׳רגון טכני. אל תביכי את מי שטעה.');
+                      setQuizQuestions(infoSecurityQuizQuestions());
+                      setQuizInvalidRows([]);
+                    }}
+                    style={{ marginTop: 12, background: '#fef3c7', border: '1px solid #eec97a', borderRadius: 8, color: '#92400e', fontWeight: 700, fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit', alignSelf: 'flex-start' }}
+                  >
+                    {t.quizFillExample}
+                  </button>
+                </VerticalStack>
+              )}
               {stationType === 'enteringText' && (
                 <VerticalStack>
                   <SectionLabelNoMargin>{t.enteringTextTitle}</SectionLabelNoMargin>
@@ -1621,7 +2212,7 @@ export default function AdminStationConfigPage() {
                   />
                   <SectionLabelNoMargin>{t.enteringTextFields}</SectionLabelNoMargin>
                   {enteringTextFields.map((field, idx) => (
-                    <div key={idx} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
+                    <div key={idx} style={{ background: '#ffffff', border: '1px solid #e6e6f0', borderRadius: 10, padding: '12px', marginBottom: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                         <SectionLabelNoMargin style={{ margin: 0 }}>
                           {t.enteringTextFieldNum} {idx + 1}
@@ -1630,7 +2221,7 @@ export default function AdminStationConfigPage() {
                           <button
                             type="button"
                             onClick={() => setEnteringTextFields((prev) => prev.filter((_, i) => i !== idx))}
-                            style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
+                            style={{ background: 'none', border: 'none', color: '#c0392b', fontWeight: 600, cursor: 'pointer', fontSize: 13, padding: '2px 6px' }}
                           >
                             {t.avatarRemove}
                           </button>
@@ -1664,7 +2255,7 @@ export default function AdminStationConfigPage() {
                   <button
                     type="button"
                     onClick={() => setEnteringTextFields((prev) => [...prev, { statement: '', placeholder: '', rightAnswer: '', keywordsBank: '' }])}
-                    style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 8, color: '#a5b4fc', fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
+                    style={{ background: '#eef0ff', border: '1px solid #c7ccf7', borderRadius: 8, color: '#4338ca', fontWeight: 600, fontSize: 13, padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit' }}
                   >
                     + {t.enteringTextFieldAdd}
                   </button>

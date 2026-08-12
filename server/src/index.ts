@@ -32,6 +32,7 @@ import managerRouter from './routes/manager';
 import uploadRouter from './routes/upload';
 import helpRouter from './routes/help';
 import avatarChatRouter from './routes/avatarChat';
+import avatarQuizRouter from './routes/avatarQuiz';
 import analyticsRouter from './routes/analytics';
 import usersRouter from './routes/users';
 import missionsRouter from './routes/missions';
@@ -97,6 +98,7 @@ app.use('/api/manager', managerRouter);
 app.use('/api/admin/upload', uploadRouter);
 app.use('/api/help', helpRouter);
 app.use('/api/avatar-chat', avatarChatRouter);
+app.use('/api/avatar-quiz', avatarQuizRouter);
 app.use('/api/admin/analytics', analyticsRouter);
 // Public, token-scoped, read-only statistics share links (no admin auth).
 app.use('/api/shared/stats', sharedStatsRouter);

@@ -31,7 +31,7 @@ export interface StationItemData {
   type: 'station';
   _id: string;
   name: string;
-  stationType: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'enteringText';
+  stationType: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText';
   description?: string;
   settings?: Record<string, unknown>;
   spiderSvg?: string;

@@ -227,7 +227,7 @@ export interface CreatePortalRequest {
 // Station API types
 export interface CreateStationRequest {
   name: string;
-  type?: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'enteringText';
+  type?: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText';
   description?: string;
   customer?: string;
   theme?: string;
