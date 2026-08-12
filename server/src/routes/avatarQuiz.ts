@@ -179,7 +179,9 @@ function buildSystemPrompt(settings: AvatarQuizSettings, question: AvatarQuizQue
   lines.push('   unrelated - לא ענה על השאלה / "לא יודע" / טקסט לא רלוונטי');
   lines.push('ב. reaction: משפט אחד קצר בדמות שמגיב לתשובה שלו ספציפית (לא תבניתי).');
   lines.push('ג. teaching: 1-3 משפטים שמנסחים מחדש את נקודת הלימוד, מותאמים למה שהוא כתב.');
-  lines.push('ד. scoreRatio: 1 ל-correct, 0.5 ל-partial, 0 לשאר.');
+  lines.push('ד. score: ציון 0-100 לתשובה הזו. אל תשתמש/י רק ב-0, 50, 100 - תן/י מספר שמשקף כמה מהתשובה הנכונה המשתתף באמת כיסה.');
+  lines.push('   הנחיה לטווחים: 85-100 כיסה את העיקר; 40-84 כיוון נכון עם חוסר מהותי; 1-39 בעיקר שגוי; 0 לא ענה או תשובה הפוכה.');
+  lines.push('   הציון חייב להתאים לפסק הדין: correct גבוה, partial אמצע, incorrect/unrelated נמוך.');
 
   lines.push('');
   lines.push('6. חוקים:');
@@ -223,11 +225,11 @@ async function judgeWithGemini(
         type: 'object',
         properties: {
           verdict: { type: 'string', enum: ['correct', 'partial', 'incorrect', 'unrelated'] },
-          scoreRatio: { type: 'number' },
+          score: { type: 'integer' },
           reaction: { type: 'string' },
           teaching: { type: 'string' },
         },
-        required: ['verdict', 'scoreRatio', 'reaction', 'teaching'],
+        required: ['verdict', 'score', 'reaction', 'teaching'],
       },
     },
   };
@@ -254,7 +256,7 @@ async function judgeWithGemini(
     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     if (!raw) throw new Error('Empty Gemini response');
 
-    const parsed = JSON.parse(raw) as Partial<Judgement>;
+    const parsed = JSON.parse(raw) as Partial<Judgement> & { score?: number };
     const verdict = parsed.verdict;
     if (verdict !== 'correct' && verdict !== 'partial' && verdict !== 'incorrect' && verdict !== 'unrelated') {
       throw new Error('Gemini returned an unknown verdict');
@@ -265,7 +267,10 @@ async function judgeWithGemini(
 
     return {
       verdict,
-      scoreRatio: clampRatio(parsed.scoreRatio, verdict),
+      scoreRatio: clampRatio(
+        typeof parsed.score === 'number' ? parsed.score / 100 : parsed.scoreRatio,
+        verdict
+      ),
       reaction: reaction.slice(0, MAX_FIELD_CHARS),
       // Never leave the participant without the lesson, even if the model
       // skipped it — that's the whole point of the station.
@@ -328,7 +333,9 @@ function judgeLocally(question: AvatarQuizQuestion, answer: string): Judgement {
   if (recall >= 0.25 || (answerLength >= 3 && onTopic >= 0.5)) {
     return {
       verdict: 'partial',
-      scoreRatio: 0.5,
+      // Coverage is already a continuous measure — surface it instead of a flat
+      // half mark, so the offline path also grades with some granularity.
+      scoreRatio: Math.min(0.8, Math.max(0.3, Math.max(recall, onTopic * 0.8))),
       reaction: stockReaction('partial', answer),
       teaching,
     };

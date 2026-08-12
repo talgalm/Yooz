@@ -225,6 +225,20 @@ const VerdictRow = styled('div')<{ variant: Verdict }>(({ variant }) => ({
   animation: `${cardIn} 0.2s ease-out`,
 }));
 
+const VerdictScore = styled('span')<{ variant: Verdict }>(({ variant }) => ({
+  marginInlineStart: 'auto',
+  background: `${VERDICT_COLOR[variant]}1f`,
+  color: VERDICT_COLOR[variant],
+  border: `1px solid ${VERDICT_COLOR[variant]}59`,
+  borderRadius: 999,
+  padding: '2px 10px',
+  fontSize: 13,
+  fontWeight: 800,
+  fontVariantNumeric: 'tabular-nums',
+  whiteSpace: 'nowrap',
+  direction: 'ltr',
+}));
+
 const VerdictIcon = styled('span')<{ variant: Verdict }>(({ variant }) => ({
   width: 24,
   height: 24,
@@ -456,6 +470,12 @@ export default function AvatarQuizStation({
   const [hintUsedThisQuestion, setHintUsedThisQuestion] = useState(false);
   const [usedAnyHint, setUsedAnyHint] = useState(false);
   const [judgement, setJudgement] = useState<JudgeResponse | null>(null);
+  /**
+   * What this question was actually worth, normalised to 100 for display.
+   * Taken from the points really awarded, so the retry halving and any hint
+   * penalty are visible rather than hidden behind a raw verdict.
+   */
+  const [questionScore, setQuestionScore] = useState<{ earned: number; max: number } | null>(null);
   const [retryOffered, setRetryOffered] = useState(false);
   /** True once she has finished speaking — starts the quiet gap before moving on. */
   const [speechSettled, setSpeechSettled] = useState(false);
@@ -631,6 +651,7 @@ export default function AvatarQuizStation({
     setAttempt(0);
     setDraft('');
     setJudgement(null);
+    setQuestionScore(null);
     setRetryOffered(false);
     setHintUsedThisQuestion(false);
     setSpeechSettled(false);
@@ -674,6 +695,7 @@ export default function AvatarQuizStation({
       let earned = Math.round(questionPoints * result.scoreRatio);
       if (attemptUsed === 1) earned = Math.floor(earned / 2);
       if (hintUsed) earned = Math.max(0, earned - hintPenalty);
+      setQuestionScore({ earned, max: questionPoints });
       setTotalEarned((prev) => prev + earned);
       setAnswers((prev) => [
         ...prev,
@@ -861,6 +883,7 @@ export default function AvatarQuizStation({
 
   const handleRetry = () => {
     setJudgement(null);
+    setQuestionScore(null);
     setRetryOffered(false);
     setSpeechSettled(false);
     setAttempt(1);
@@ -1024,6 +1047,11 @@ export default function AvatarQuizStation({
             <VerdictRow variant={judgement.verdict}>
               <VerdictIcon variant={judgement.verdict}>{verdictGlyph(judgement.verdict)}</VerdictIcon>
               {verdictLabel(judgement.verdict)}
+              {questionScore && questionScore.max > 0 && (
+                <VerdictScore variant={judgement.verdict}>
+                  {Math.round((questionScore.earned / questionScore.max) * 100)}/100
+                </VerdictScore>
+              )}
             </VerdictRow>
           )}
           {bubbleText}
