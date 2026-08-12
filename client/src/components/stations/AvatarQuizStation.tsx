@@ -132,19 +132,22 @@ const DEFAULT_POINTS = 10;
 const DEFAULT_HINT_PENALTY = 2;
 /**
  * Safety net for TTS that never fires `onEnd` (iOS silent mode, blocked audio).
- * It must never expire while she is genuinely still talking, so it scales with
- * how long the line takes to say — a flat 8s cut off every long teaching point
- * mid-sentence and jumped to the next question.
+ *
+ * Once the clip is loaded we know its exact length and arm the watchdog against
+ * that (see `say`), so it only ever fires when playback has genuinely stalled.
+ * The word estimate below is just the opening guess covering the fetch, and the
+ * fallback for browser speech, which reports no duration.
  */
 const SPEECH_WATCHDOG_FLOOR_MS = 8000;
-const SPEECH_WATCHDOG_CEILING_MS = 90_000;
-/** Generous per-word speaking estimate (real Hebrew TTS is nearer 350ms). */
-const MS_PER_SPOKEN_WORD = 700;
+const SPEECH_WATCHDOG_CEILING_MS = 30_000;
+const MS_PER_SPOKEN_WORD = 450;
+/** Slack added to a known clip length before the watchdog gives up on it. */
+const SPEECH_WATCHDOG_SLACK_MS = 2500;
 
 function speechWatchdogMs(words: number): number {
   return Math.min(
     SPEECH_WATCHDOG_CEILING_MS,
-    Math.max(SPEECH_WATCHDOG_FLOOR_MS, words * MS_PER_SPOKEN_WORD + 4000)
+    Math.max(SPEECH_WATCHDOG_FLOOR_MS, words * MS_PER_SPOKEN_WORD + 3000)
   );
 }
 
@@ -527,7 +530,10 @@ export default function AvatarQuizStation({
       // bubble was replaced by the first question before anyone could read it.
       const shownAt = Date.now();
       const words = text.trim().split(/\s+/).filter(Boolean).length;
-      const minDwellMs = Math.min(MAX_DWELL_MS, Math.max(MIN_DWELL_MS, words * MS_PER_WORD));
+      // Word-count guess at reading time. Used only while we don't know the
+      // real clip length — once audio is loaded its duration governs the pacing
+      // instead (see below), which is what the participant is actually hearing.
+      let minDwellMs = Math.min(MAX_DWELL_MS, Math.max(MIN_DWELL_MS, words * MS_PER_WORD));
 
       let finished = false;
       const finish = () => {
@@ -569,6 +575,20 @@ export default function AvatarQuizStation({
       if (!isMountedRef.current || speakTokenRef.current !== token) {
         speech.stop();
         return;
+      }
+
+      // Real clip length beats every estimate: re-arm the watchdog against it,
+      // and drop the reading-time floor — the audio itself is now the pacing,
+      // so a short clip no longer sits on screen waiting out a word count.
+      if (speech.durationMs) {
+        minDwellMs = 0;
+        if (watchdogRef.current !== null) {
+          window.clearTimeout(watchdogRef.current);
+          watchdogRef.current = window.setTimeout(
+            release,
+            speech.durationMs + SPEECH_WATCHDOG_SLACK_MS
+          );
+        }
       }
 
       if (videoUrl) setActiveVideoUrl(videoUrl);

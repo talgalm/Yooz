@@ -60,6 +60,12 @@ export function speakBrowser(
 export interface PreparedSpeech {
   play: (onEnd: () => void) => void;
   stop: () => void;
+  /**
+   * Clip length in ms when it is known (the TTS audio path). Undefined for the
+   * browser-speech fallback, which never reports a duration. Callers use it to
+   * time the UI against the real audio instead of guessing from word count.
+   */
+  durationMs?: number;
 }
 
 export async function fetchWithNetworkRetry(
@@ -112,7 +118,11 @@ export async function prepareSpeech(
     });
 
     let stopped = false;
+    const durationMs = Number.isFinite(audio.duration) && audio.duration > 0
+      ? audio.duration * 1000
+      : undefined;
     return {
+      durationMs,
       play: (onEnd) => {
         if (stopped) { onEnd(); return; }
         const finish = () => {
