@@ -10,6 +10,9 @@ type QueuedWrite = {
   method: string;
   body: string;
   queuedAt: number;
+  // Captured at enqueue time: exiting the activity clears yooz_token, and a
+  // queued write flushed after that would 401 forever and lose the scores.
+  token?: string;
 };
 
 const queueListeners = new Set<() => void>();
@@ -51,7 +54,7 @@ function writeQueue(queue: QueuedWrite[]): void {
 }
 
 async function sendQueuedRequest(item: QueuedWrite): Promise<void> {
-  const token = localStorage.getItem('yooz_token');
+  const token = item.token ?? localStorage.getItem('yooz_token');
   let lastError: unknown;
 
   for (let attempt = 0; attempt < 6; attempt++) {
@@ -93,7 +96,13 @@ export function enqueueOfflineRequest(url: string, options: RequestInit = {}): v
     queue = queue.filter((q) => !(q.url === url && q.method === method));
   }
 
-  queue.push({ url, method, body, queuedAt: Date.now() });
+  queue.push({
+    url,
+    method,
+    body,
+    queuedAt: Date.now(),
+    ...(localStorage.getItem('yooz_token') ? { token: localStorage.getItem('yooz_token')! } : {}),
+  });
   writeQueue(queue);
   notifyQueueListeners();
 }
@@ -122,8 +131,12 @@ export async function flushOfflineQueue(): Promise<void> {
     for (const item of queue) {
       try {
         await sendQueuedRequest(item);
-      } catch {
-        remaining.push(item);
+      } catch (err) {
+        // Only keep what can still succeed. A 4xx (bad payload, rejected token)
+        // fails identically forever — keeping it means retrying it every 20s for
+        // the life of the browser profile, and it keeps the finish screen's
+        // "save failed" banner up on every later run of the same activity.
+        if (isRetryableFetchError(err)) remaining.push(item);
       }
     }
     writeQueue(remaining);

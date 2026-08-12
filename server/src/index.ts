@@ -56,6 +56,11 @@ import siteContentRouter from './routes/siteContent';
 
 const app = express();
 
+// Behind nginx. Without this every req.ip is the proxy's own address, so the
+// per-IP rate limiters (avatar-chat, avatar-quiz, tts, help) share ONE bucket
+// across all participants — a single class hits the cap in seconds.
+app.set('trust proxy', 1);
+
 // CORS — restrict to known origins in production
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())

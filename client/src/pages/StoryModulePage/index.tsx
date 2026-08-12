@@ -1182,14 +1182,23 @@ export default function StoryModulePage() {
     }
   }, [code, scoresUrl]);
 
+  // True once the scores POST has been seen sitting in the offline queue. The
+  // only way out of that queue is a successful send, so leaving it means the
+  // scores landed — without this the banner stayed up forever after the queue
+  // flushed them, because scoresSaved was left false by the failed attempt.
+  const scoresWereQueued = useRef(false);
+
   useEffect(() => {
     if (!scoresUrl) return;
     return subscribeOfflineQueue(() => {
       if (phase !== 'finish') return;
       if (isRequestQueued(scoresUrl, 'POST')) {
         scoresSaved.current = false;
+        scoresWereQueued.current = true;
         setScoresSaveStatus('queued');
-      } else if (scoresSaved.current) {
+      } else if (scoresSaved.current || scoresWereQueued.current) {
+        scoresSaved.current = true;
+        scoresWereQueued.current = false;
         setScoresSaveStatus('saved');
       }
     });

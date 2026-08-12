@@ -486,18 +486,21 @@ router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: s
     updatePayload.$push = { 'data.itemResults': itemResult };
   }
 
+  // Never touch a report that already finished. A progress PATCH can land after
+  // the final save — replayed from the offline queue, or a second tab — and
+  // `completionStatus: 'in_progress'` would drag the finished run backwards,
+  // dropping the participant off the leaderboard (time mode counts only
+  // completed reports). Late progress is stale by definition; ignore it.
   const report = await Report.findOneAndUpdate(
-    { activityCode, participantName },
+    { activityCode, participantName, completionStatus: { $ne: 'completed' } },
     updatePayload,
     { new: true, sort: { joinedAt: -1 } },
   );
 
-  if (!report) {
-    res.status(404).json({ error: 'Report not found' });
-    return;
-  }
-
-  res.json({ success: true });
+  // No match = already completed, or the report is gone (the final save
+  // rebuilds it). Either way there is nothing a retry could fix, so don't hand
+  // the client a failure it would queue and replay forever.
+  res.json({ success: true, ...(report ? {} : { ignored: true }) });
 });
 
 // Delete participant's report (continuous activity early exit)
@@ -615,16 +618,30 @@ router.post('/:code/scores', authenticateToken, async (req: Request<{ code: stri
     updateOps.sessionDurationMs = sessionDurationMs;
   }
 
+  // Upsert, not update: the final save is the participant's only record of a
+  // finished run, and a 404 here is unrecoverable for them (the client retries
+  // the same failing request forever behind a "could not save" banner). The
+  // report can legitimately be gone — flipping the activity to `live` wipes all
+  // reports, and a continuous-activity early exit deletes the participant's —
+  // so rebuild it from the token rather than dropping the scores on the floor.
+  // ponytail: two concurrent saves for a participant with no report (retry timer
+  // racing an offline-queue flush) could each insert one. Both would carry the
+  // same scores, so the cost is a duplicate leaderboard row, not lost data —
+  // add a unique index on (activityCode, participantName) if it ever shows up.
   const report = await Report.findOneAndUpdate(
     { activityCode, participantName },
-    { $set: updateOps },
-    { new: true, sort: { joinedAt: -1 } },
+    {
+      $set: updateOps,
+      $setOnInsert: {
+        activityId: activity._id,
+        connectionType: req.participant!.connectionType || 'single',
+        ...(req.participant!.email && { email: req.participant!.email }),
+        ...(req.participant!.phoneNumber && { phoneNumber: req.participant!.phoneNumber }),
+        ...(req.participant!.group && { group: req.participant!.group }),
+      },
+    },
+    { new: true, sort: { joinedAt: -1 }, upsert: true, setDefaultsOnInsert: true },
   );
-
-  if (!report) {
-    res.status(404).json({ error: 'Report not found' });
-    return;
-  }
 
   if (report.group && activity.groupEntryMode === 'selfService') {
     onGroupMemberCompleted(activity, report.group).catch((err) => {

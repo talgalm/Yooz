@@ -56,9 +56,14 @@ export async function apiFetchPersistSilent(url: string, options: RequestInit = 
     await apiFetchWithRetry(url, options, 8);
     void flushOfflineQueue();
     return true;
-  } catch {
+  } catch (err) {
     const method = (options.method || 'GET').toUpperCase();
-    if (method === 'POST' || method === 'PATCH' || method === 'PUT' || method === 'DELETE') {
+    // Queue only what a later attempt could still deliver. A non-retryable 4xx
+    // is a permanent rejection — queueing it just replays the same failure.
+    if (
+      isRetryableFetchError(err)
+      && (method === 'POST' || method === 'PATCH' || method === 'PUT' || method === 'DELETE')
+    ) {
       enqueueOfflineRequest(url, options);
     }
     return false;
