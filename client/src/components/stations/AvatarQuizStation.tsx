@@ -192,6 +192,28 @@ const QuizSpeakingBubble = styled(SpeakingBubble)({
   '@media (min-width: 768px)': { maxWidth: 380 },
 });
 
+/**
+ * Scrollable variant of the shared Container.
+ *
+ * The page root is `height: 100dvh; overflow: hidden`, so this column was
+ * clipped rather than scrolled: on shorter viewports its 140px bottom padding
+ * fell off-screen and the chat bar ended up underneath the fixed action button
+ * (measured: 28px overlap at 393x600, 87px and fully hidden at 430x560).
+ */
+const QuizContainer = styled(Container)({
+  minHeight: 0,
+  overflowY: 'auto',
+  overscrollBehavior: 'contain',
+  scrollbarWidth: 'none',
+  '&::-webkit-scrollbar': { display: 'none' },
+});
+
+/** Capped so the figure can't push the answer input off a short screen. */
+const QuizCharacterImage = styled(CharacterImage)({
+  maxHeight: 'min(42vh, 340px)',
+  objectFit: 'cover',
+});
+
 const QuestionMedia = styled('img')({
   width: '100%',
   maxHeight: 'min(30vh, 220px)',
@@ -999,7 +1021,7 @@ export default function AvatarQuizStation({
   const canSend = draft.trim().length > 0 && phase !== 'evaluating';
 
   return (
-    <Container>
+    <QuizContainer>
       <StationHeader>
         <StationTitle style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitle>
         {station.description && !descriptionAsPopup && (
@@ -1013,7 +1035,7 @@ export default function AvatarQuizStation({
         {activeVideoUrl ? (
           <CharacterVideo key={activeVideoUrl} src={activeVideoUrl} autoPlay loop muted playsInline />
         ) : settings.characterImageUrl ? (
-          <CharacterImage src={settings.characterImageUrl} alt={settings.characterName || ''} />
+          <QuizCharacterImage src={settings.characterImageUrl} alt={settings.characterName || ''} />
         ) : null}
         {settings.characterName && <CharacterNameBadge>{settings.characterName}</CharacterNameBadge>}
         {descriptionAsPopup && (
@@ -1202,6 +1224,6 @@ export default function AvatarQuizStation({
           onDismiss={() => setDescriptionPopupOpen(false)}
         />
       )}
-    </Container>
+    </QuizContainer>
   );
 }

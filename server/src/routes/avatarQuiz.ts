@@ -179,9 +179,17 @@ function buildSystemPrompt(settings: AvatarQuizSettings, question: AvatarQuizQue
   lines.push('   unrelated - לא ענה על השאלה / "לא יודע" / טקסט לא רלוונטי');
   lines.push('ב. reaction: משפט אחד קצר בדמות שמגיב לתשובה שלו ספציפית (לא תבניתי).');
   lines.push('ג. teaching: 1-3 משפטים שמנסחים מחדש את נקודת הלימוד, מותאמים למה שהוא כתב.');
-  lines.push('ד. score: ציון 0-100 לתשובה הזו. אל תשתמש/י רק ב-0, 50, 100 - תן/י מספר שמשקף כמה מהתשובה הנכונה המשתתף באמת כיסה.');
-  lines.push('   הנחיה לטווחים: 85-100 כיסה את העיקר; 40-84 כיוון נכון עם חוסר מהותי; 1-39 בעיקר שגוי; 0 לא ענה או תשובה הפוכה.');
-  lines.push('   הציון חייב להתאים לפסק הדין: correct גבוה, partial אמצע, incorrect/unrelated נמוך.');
+  lines.push('ד. score: ציון 0-100 לתשובה הזו. אל תשתמש/י רק במספרים עגולים כמו 0, 50, 100.');
+  lines.push('   תשובה נכונה היא לא אוטומטית 100. שקלל/י שלושה דברים:');
+  lines.push('   (1) כמה ממרכיבי התשובה הנכונה הוא כיסה, (2) עד כמה זה מדויק, (3) אם הוא הסביר או רק זרק תשובה.');
+  lines.push('   טווחים:');
+  lines.push('   90-100 - כיסה את כל המרכיבים, מדויק, וגם הסביר למה.');
+  lines.push('   70-89  - נכון בבסיס, אבל תמציתי מדי / בלי הסבר / חסר ניואנס.');
+  lines.push('   40-69  - כיוון נכון עם חוסר מהותי אחד.');
+  lines.push('   10-39  - בעיקר שגוי, עם גרעין קטן של אמת.');
+  lines.push('   0      - לא ענה, לא רלוונטי, או תשובה הפוכה.');
+  lines.push('   דוגמה: אם התשובה הנכונה כוללת שלושה מרכיבים והמשתתף ציין רק אחד נכון בלי להסביר - זה סביב 70, לא 100.');
+  lines.push('   פסק הדין נגזר מהציון: 70 ומעלה correct, 40-69 partial, מתחת ל-40 incorrect (או unrelated אם לא ענה).');
 
   lines.push('');
   lines.push('6. חוקים:');
@@ -302,16 +310,6 @@ function judgeLocally(question: AvatarQuizQuestion, answer: string): Judgement {
     };
   }
 
-  const keywords = (question.acceptableKeywords || []).map((k) => k.trim()).filter(Boolean);
-  if (keywords.some((k) => containsPhraseNear(answer, k))) {
-    return {
-      verdict: 'correct',
-      scoreRatio: 1,
-      reaction: stockReaction('correct', answer),
-      teaching,
-    };
-  }
-
   // Two directions, because they answer different questions:
   //   recall    — how much of the ideal answer they reproduced
   //   onTopic   — how much of what they wrote also appears in the ideal answer
@@ -321,10 +319,16 @@ function judgeLocally(question: AvatarQuizQuestion, answer: string): Judgement {
   const onTopic = coverage(answer, question.idealAnswer);
   const answerLength = tokens(answer).length;
 
-  if (recall >= 0.5 || (answerLength >= 3 && onTopic >= 0.75)) {
+  const keywords = (question.acceptableKeywords || []).map((k) => k.trim()).filter(Boolean);
+  const keywordHit = keywords.some((k) => containsPhraseNear(answer, k));
+
+  if (keywordHit || recall >= 0.5 || (answerLength >= 3 && onTopic >= 0.75)) {
+    // Correct is a band, not a fixed 100. A bare keyword ("לא לוחץ") starts at
+    // 70; the score climbs toward 100 as more of the ideal answer is actually
+    // covered, so a terse right answer no longer scores the same as a full one.
     return {
       verdict: 'correct',
-      scoreRatio: 1,
+      scoreRatio: Math.min(1, Math.max(0.7, 0.7 + recall * 0.6)),
       reaction: stockReaction('correct', answer),
       teaching,
     };
