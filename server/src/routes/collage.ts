@@ -816,9 +816,12 @@ ${posterUrl ? `<meta property="og:image" content="${posterUrl}">` : ''}
 <meta property="og:video" content="${videoUrl}">
 <meta property="og:url" content="${pageUrl}">
 <style>
-  body { margin: 0; font-family: system-ui, sans-serif; background: #f5f3ff; display: flex; flex-direction: column; align-items: center; padding: 24px 16px; min-height: 100vh; box-sizing: border-box; }
-  video { max-width: min(440px, 100%); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,.15); }
-  .btns { display: flex; gap: 12px; margin-top: 20px; width: min(440px, 100%); }
+  /* Everything fits one screen — no scrolling. 100dvh so the mobile address
+     bar doesn't push the buttons off; the video flexes down to whatever is
+     left after them. */
+  body { margin: 0; font-family: system-ui, sans-serif; background: #f5f3ff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; height: 100vh; height: 100dvh; box-sizing: border-box; overflow: hidden; }
+  video { max-width: min(440px, 100%); flex: 1; min-height: 0; object-fit: contain; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,.15); }
+  .btns { display: flex; gap: 12px; margin-top: 16px; width: min(440px, 100%); flex: none; }
   a, button { flex: 1; padding: 14px 0; border-radius: 10px; font-size: 16px; font-weight: 700; text-align: center; text-decoration: none; border: none; cursor: pointer; font-family: inherit; }
   #share { background: #6c5ce7; color: #fff; }
   #share:disabled { opacity: .6; cursor: wait; }
