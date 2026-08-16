@@ -185,17 +185,50 @@ export function preloadVideoUrl(url: string): Promise<void> {
 }
 
 /**
- * Strip Hebrew gendered slash-suffixes before speaking.
+ * Rewrite Hebrew gendered slash-forms into neutral ones before speaking.
  *
- * Inclusive Hebrew writes "את/ה", "תענה/י", "מכיר/ה" — correct on screen, but
- * every TTS engine reads the slash out loud. Dropping the suffix leaves the
- * base word ("את", "תענה", "מכיר"), which is a real word and reads naturally.
- * Latin slashes are untouched, so URLs still survive.
+ * Inclusive Hebrew writes "את/ה", "תענה/י", "מכיר/ה" — fine on screen, but a
+ * TTS engine reads the slash out loud. Simply dropping the suffix isn't
+ * neutral either: "את/ה" would become "את", which is feminine singular.
  *
- * Display text keeps the slashes; only the spoken copy is rewritten.
+ * Hebrew has no true neuter, so the plural form is the usual stand-in — it
+ * reads naturally and commits to no gender. Anything not in the table falls
+ * back to the base word, which at least never pronounces the slash.
+ *
+ * Latin slashes are untouched, so URLs survive. Display text keeps its
+ * slashes; only the spoken copy is rewritten.
  */
+const NEUTRAL_SPEECH_FORMS: Record<string, string> = {
+  'את/ה': 'אתם',
+  'בוא/י': 'בואו',
+  'תענה/י': 'תענו',
+  'ענה/י': 'ענו',
+  'תוכל/י': 'תוכלו',
+  'כתוב/י': 'כתבו',
+  'שים/י': 'שימו',
+  'קח/י': 'קחו',
+  'בדוק/י': 'בדקו',
+  'תבחר/י': 'תבחרו',
+  'זכור/י': 'זכרו',
+  'שאל/י': 'שאלו',
+  'נסה/י': 'נסו',
+  'מכיר/ה': 'מכירים',
+  'יודע/ת': 'יודעים',
+  'יכול/ה': 'יכולים',
+  'צריך/ה': 'צריכים',
+  'רוצה/ה': 'רוצים',
+  'מדריך/ה': 'מדריכים',
+  'עובד/ת': 'עובדים',
+  'בטוח/ה': 'בטוחים',
+};
+
 export function speechText(text: string): string {
-  return text.replace(/\/[א-ת]{1,2}(?![א-ת])/g, '');
+  let out = text;
+  for (const [gendered, neutral] of Object.entries(NEUTRAL_SPEECH_FORMS)) {
+    out = out.split(gendered).join(neutral);
+  }
+  // Anything the table missed: drop the slash suffix so it is never spoken.
+  return out.replace(/\/[א-ת]{1,2}(?![א-ת])/g, '');
 }
 
 /** Unlock speechSynthesis on iOS — must run inside a user gesture. */
