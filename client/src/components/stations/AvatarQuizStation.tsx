@@ -442,6 +442,10 @@ export default function AvatarQuizStation({
   const descriptionAsPopup = !!settings.descriptionAsPopup && !!station.description;
   const pointsPerQuestion = settings.pointsPerQuestion ?? DEFAULT_POINTS;
   const voiceType = settings.voiceType || 'man';
+  // The character's own gender is known from the chosen voice, so self-reference
+  // is gendered. Only how she addresses the *participant* stays neutral — we
+  // don't know their gender.
+  const thinkingLabel = voiceType === 'woman' ? t.thinkingFemale : t.thinkingMale;
 
   // Question order is decided once and persisted, so a refresh can't reshuffle
   // the participant into a different quiz mid-station.
@@ -1059,7 +1063,7 @@ export default function AvatarQuizStation({
 
       {phase === 'evaluating' ? (
         <QuizSpeakingBubble>
-          {t.thinking}
+          {thinkingLabel}
           <ThinkingDots aria-hidden><i /><i /><i /></ThinkingDots>
         </QuizSpeakingBubble>
       ) : bubbleText ? (
