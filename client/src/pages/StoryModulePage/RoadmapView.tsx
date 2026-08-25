@@ -1547,13 +1547,16 @@ export default function RoadmapView({
             const pos   = getNodePosition(index, W);
             const state = getNodeState(index);
             const managerLocked = state === 'locked' && isManagerLocked(index);
+            // Completed items the admin marked revisitable stay open for re-entry.
+            const canRevisit = state === 'completed' && !!item.revisitable && !isManagerLocked(index);
             return (
               <div key={item._id}
                 style={{ position: 'absolute', left: pos.x, top: pos.y, zIndex: 10 }}
                 ref={state === 'active' ? activeNodeRef : undefined}>
                 <NodeWrapper state={state}
                   animateIn={state === 'completed' && index === completedCount - 1 && showFootsteps}
-                  onClick={state === 'active' ? () => onNodeTap(index) : undefined}>
+                  style={canRevisit ? { cursor: 'pointer' } : undefined}
+                  onClick={state === 'active' || canRevisit ? () => onNodeTap(index) : undefined}>
                   <NodeNumber state={state}>{index + 1}</NodeNumber>
                   {managerLocked && (
                     <ManagerLockBadge aria-label="locked by manager" title="Locked by manager">

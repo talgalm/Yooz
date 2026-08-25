@@ -144,6 +144,7 @@ async function buildActivityData(
                 groups?: string[];
                 spiderSvg?: string;
                 isFinal?: boolean;
+                revisitable?: boolean;
                 collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number; videoPartIndex?: number | null; photoOrder?: number[] };
               }) => ({
                 type: item.type,
@@ -151,6 +152,7 @@ async function buildActivityData(
                 ...(Array.isArray(item.groups) && item.groups.length > 0 && { groups: item.groups }),
                 ...(item.spiderSvg && { spiderSvg: item.spiderSvg }),
                 ...(item.isFinal && { isFinal: true }),
+                ...(item.revisitable && { revisitable: true }),
                 ...(item.collageSplit && { collageSplit: item.collageSplit }),
               }))
           : [],
@@ -301,6 +303,7 @@ async function populateActivityItems(activities: any[]): Promise<any[]> {
           groups: item.groups,
           spiderSvg: item.spiderSvg,
           isFinal: item.isFinal,
+          revisitable: item.revisitable,
           collageSplit: item.collageSplit,
         };
       });

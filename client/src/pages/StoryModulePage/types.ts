@@ -14,6 +14,7 @@ export interface GameItemData {
   settings: Record<string, unknown>;
   spiderSvg?: string;
   isFinal?: boolean;
+  revisitable?: boolean;
 }
 
 export interface CollageSplitData {
@@ -36,6 +37,7 @@ export interface StationItemData {
   settings?: Record<string, unknown>;
   spiderSvg?: string;
   isFinal?: boolean;
+  revisitable?: boolean;
   collageSplit?: CollageSplitData;
 }
 
@@ -76,6 +78,7 @@ export interface MissionItemData {
   trashSortConfig?: MissionTrashSortConfig;
   spiderSvg?: string;
   isFinal?: boolean;
+  revisitable?: boolean;
 }
 
 export type ModuleItemData = GameItemData | StationItemData | MissionItemData;

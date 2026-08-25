@@ -67,6 +67,7 @@ export interface ModuleItem {
   groups?: string[]; // when set, only these groups see this item
   spiderSvg?: string; // optional SVG URL for spiders module display
   isFinal?: boolean; // spiders only: locked until all others are completed
+  revisitable?: boolean; // roadmap: allow re-entering this item after it is completed
   collageSplit?: CollageSplit; // collage stations only: split into N parts across the activity
 }
 

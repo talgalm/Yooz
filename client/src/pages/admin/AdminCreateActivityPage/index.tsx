@@ -487,6 +487,7 @@ export default function AdminCreateActivityPage() {
                 groups: item.groups,
                 spiderSvg: (item as { spiderSvg?: string }).spiderSvg,
                 isFinal: (item as { isFinal?: boolean }).isFinal || undefined,
+                revisitable: (item as { revisitable?: boolean }).revisitable || undefined,
                 collageSplit: (item as { collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number } }).collageSplit as ModuleItem['collageSplit'],
               }))
             );
@@ -798,6 +799,11 @@ export default function AdminCreateActivityPage() {
       }));
     });
   };
+  const toggleItemRevisitable = (index: number) => {
+    setSelectedItems((prev) => prev.map((item, i) => (
+      i === index ? { ...item, revisitable: item.revisitable ? undefined : true } : item
+    )));
+  };
   const moveItem = (index: number, direction: -1 | 1) => {
     setSelectedItems((prev) => {
       const next = [...prev];
@@ -953,6 +959,7 @@ export default function AdminCreateActivityPage() {
             ...(i.groups && i.groups.length > 0 && { groups: i.groups }),
             ...(moduleType === 'spiders' && i.spiderSvg && { spiderSvg: i.spiderSvg }),
             ...(moduleType === 'spiders' && i.isFinal && { isFinal: true }),
+            ...(i.revisitable && { revisitable: true }),
             ...(i.collageSplit && { collageSplit: i.collageSplit }),
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
@@ -1513,6 +1520,7 @@ export default function AdminCreateActivityPage() {
                     onUpdateItemGroups={(index, groups) => setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, groups } : item))}
                     onUpdateItemSvg={updateItemSvg}
                     onToggleItemFinal={toggleItemFinal}
+                    onToggleItemRevisitable={toggleItemRevisitable}
                     onConfigureCollageSplit={openSplitEditor}
                     moduleType={moduleType}
                     connectionType={connectionType}

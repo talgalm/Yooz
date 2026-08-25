@@ -26,6 +26,7 @@ export interface IModuleItem {
   groups?: string[]; // when set, only these groups see this item (empty/undefined = all groups)
   spiderSvg?: string; // optional SVG URL for spiders module display
   isFinal?: boolean; // spiders only: this item is locked until all others are completed
+  revisitable?: boolean; // roadmap: participants may re-open this item after completing it
   collageSplit?: ICollageSplit; // collage stations only: split into N parts across the activity
 }
 
@@ -217,6 +218,7 @@ const moduleItemSchema = new Schema<IModuleItem>({
   groups: { type: [String], default: undefined },
   spiderSvg: { type: String },
   isFinal: { type: Boolean },
+  revisitable: { type: Boolean },
   collageSplit: { type: collageSplitSchema },
 }, { _id: false });
 

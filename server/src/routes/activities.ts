@@ -216,6 +216,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         trashSortConfig: data.trashSortConfig,
         spiderSvg: item.spiderSvg,
         ...(item.isFinal && { isFinal: true }),
+        ...(item.revisitable && { revisitable: true }),
       };
     }
     const data = item.type === 'game'
@@ -232,6 +233,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         settings: data.settings || {},
         spiderSvg: item.spiderSvg,
         ...(item.isFinal && { isFinal: true }),
+        ...(item.revisitable && { revisitable: true }),
       };
     } else {
       return {
@@ -243,6 +245,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         settings: publicStationSettings(data.type, data.settings || {}),
         spiderSvg: item.spiderSvg,
         ...(item.isFinal && { isFinal: true }),
+        ...(item.revisitable && { revisitable: true }),
         ...(item.collageSplit && { collageSplit: item.collageSplit }),
       };
     }

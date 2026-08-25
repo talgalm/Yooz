@@ -362,6 +362,20 @@ function effectivePartSizes(item: ModuleItem, limit: number): number[] {
   return distributeEvenly(limit, n);
 }
 
+/** Per-item toggle: keep the node open on the roadmap after it is completed. */
+const RevisitLabel = styled('label')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 4,
+  flexShrink: 0,
+  fontSize: 12,
+  fontWeight: 600,
+  color: '#666',
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+  '& input': { cursor: 'pointer', margin: 0 },
+});
+
 const FinalButton = styled('button')<{ isFinal?: boolean }>(({ isFinal }) => ({
   background: isFinal ? '#f59e0b' : 'none',
   border: `1px solid ${isFinal ? '#f59e0b' : '#d0d0d0'}`,
@@ -505,6 +519,7 @@ interface ModuleItemsSectionProps {
   onUpdateItemGroups: (index: number, groups: string[]) => void;
   onUpdateItemSvg?: (index: number, svgUrl: string) => void;
   onToggleItemFinal?: (index: number) => void;
+  onToggleItemRevisitable?: (index: number) => void;
   onConfigureCollageSplit?: (index: number) => void;
   moduleType?: string;
   connectionType: string;
@@ -522,6 +537,7 @@ export default function ModuleItemsSection({
   onUpdateItemGroups,
   onUpdateItemSvg,
   onToggleItemFinal,
+  onToggleItemRevisitable,
   onConfigureCollageSplit,
   moduleType,
   connectionType,
@@ -969,6 +985,16 @@ export default function ModuleItemsSection({
                     </>
                   );
                 })()}
+                {onToggleItemRevisitable && (
+                  <RevisitLabel title={t.revisitableHint || 'Participants can re-open this item from the roadmap after completing it'}>
+                    <input
+                      type="checkbox"
+                      checked={!!item.revisitable}
+                      onChange={(e) => { e.stopPropagation(); onToggleItemRevisitable(index); }}
+                    />
+                    {t.revisitable || 'Re-entry'}
+                  </RevisitLabel>
+                )}
                 <PreviewButton type="button" onClick={(e) => { e.stopPropagation(); setPreviewItem(item); }}>
                   {t.preview}
                 </PreviewButton>

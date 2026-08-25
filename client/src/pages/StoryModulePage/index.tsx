@@ -281,6 +281,10 @@ export default function StoryModulePage() {
 
   const [phase, setPhase] = useState<Phase>('roadmap');
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
+  /** Set while re-entering an already-completed item (module item flagged
+   *  `revisitable`): holds the real progress index to restore on the way out.
+   *  A revisit never persists progress, re-awards points, or advances. */
+  const revisitReturnIndex = useRef<number | null>(null);
   const [scores, setScores] = useState<GameScore[]>([]);
 
   // Keep the help chatbot aware of where the participant is right now.
@@ -446,7 +450,7 @@ export default function StoryModulePage() {
   useEffect(() => {
     if (!code || !sessionRestored) return;
     const session = {
-      currentItemIndex,
+      currentItemIndex: revisitReturnIndex.current ?? currentItemIndex,
       scores,
       phase: phase === 'playing' ? 'roadmap' : phase,
       shownPopupIds: Array.from(shownPopupIds.current),
@@ -472,7 +476,7 @@ export default function StoryModulePage() {
       runningTotal?: number;
     },
   ) => {
-    if (!code || !data) return;
+    if (!code || !data || revisitReturnIndex.current !== null) return;
     const idx = overrides?.itemIndex ?? currentItemIndex;
     const currentItem = data.module.items[idx];
     const now = new Date();
@@ -770,8 +774,17 @@ export default function StoryModulePage() {
     nudgeHelp();
   };
 
+  const endRevisit = () => {
+    const back = revisitReturnIndex.current;
+    revisitReturnIndex.current = null;
+    if (back !== null) setCurrentItemIndex(back);
+    setShowFootsteps(false);
+    setPhase('roadmap');
+  };
+
   const advanceToNextItem = () => {
     if (!data) return;
+    if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const completedIdx = currentItemIndex;
 
     // Spiders mode: all items can be played in any order, track completed set
@@ -845,6 +858,14 @@ export default function StoryModulePage() {
     // Manager-controlled progress lock — block opening locked items.
     if (typeof lockedFromIndex === 'number' && index >= lockedFromIndex) return;
 
+    // Tapping anything other than the current node is a re-entry: only allowed
+    // for completed items the admin marked revisitable.
+    if (index !== currentItemIndex) {
+      if (index >= currentItemIndex || !data?.module.items[index]?.revisitable) return;
+      revisitReturnIndex.current = currentItemIndex;
+      setCurrentItemIndex(index);
+    }
+
     const goPlay = () => {
       setEntryTransitionStage('closing');
       const closeTimer = setTimeout(() => {
@@ -899,6 +920,7 @@ export default function StoryModulePage() {
 
   const handleGameComplete = async (result: GameResult) => {
     if (!data) return;
+    if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const currentItem = data.module.items[currentItemIndex];
     const now = new Date();
     const nextIdx = currentItemIndex + 1;
@@ -960,7 +982,7 @@ export default function StoryModulePage() {
   };
 
   const handleOrderSurveySubmit = async (payload: OrderSurveySubmitPayload) => {
-    if (!data || !code) return;
+    if (!data || !code || revisitReturnIndex.current !== null) return;
     const currentItem = data.module.items[currentItemIndex];
     const now = new Date();
     const runningTotal = Math.max(
@@ -1001,6 +1023,7 @@ export default function StoryModulePage() {
 
   const handleOrderSurveyComplete = (result: GameResult) => {
     if (!data) return;
+    if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const currentItem = data.module.items[currentItemIndex];
     const completedCount = currentItemIndex + 1;
     const runningTotal = Math.max(
@@ -1040,6 +1063,7 @@ export default function StoryModulePage() {
   /** Triggered by a "last step" station to end the activity immediately,
    *  skipping any remaining roadmap items and going straight to finish. */
   const handleStationFinishActivity = async () => {
+    if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     await saveItemProgress();
     showPopupsOrRun('afterItem', currentItemIndex, () => {
       showPopupsOrRun('endOfActivity', undefined, () => {
@@ -1050,6 +1074,7 @@ export default function StoryModulePage() {
 
   const handleFeedbackContinue = async (feedbackResult: { answers: { questionIndex: number; questionText: string; value: number; label: string }[]; notes: string }) => {
     if (!data) return;
+    if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const currentItem = data.module.items[currentItemIndex];
     // Save feedback answers as part of progress
     const now = new Date();
