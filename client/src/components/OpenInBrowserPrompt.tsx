@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import { useTranslations } from '../context/LanguageContext';
-import { isInAppBrowser, isUnverifiableIOS, escapeToDefaultBrowser } from '../utils/inAppBrowserEscape';
+import { isInAppBrowser, isUnverifiableIOS, escapeToDefaultBrowser, ESCAPED_PARAM } from '../utils/inAppBrowserEscape';
 import { ModalCard, PrimaryButton, OutlineButton, Title, BodyText } from './styled';
 
 // Above every other overlay (opening video, help chat, popups — max in app is 99999).
@@ -42,6 +42,24 @@ const texts = {
 };
 
 const DISMISSED_KEY = 'yooz_inapp_prompt_done';
+// localStorage, not session: this browser received a handoff, so it IS the real
+// browser and must never prompt again. An in-app webview has its own isolated
+// storage, so the flag cannot leak back and silence the prompt where it matters.
+const ESCAPED_KEY = 'yooz_escaped_to_browser';
+
+/** Consume the handoff marker: remember this browser, and drop the param from the URL. */
+function consumeEscapedParam(): boolean {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(ESCAPED_PARAM)) return false;
+  try {
+    localStorage.setItem(ESCAPED_KEY, '1');
+  } catch {
+    /* private mode */
+  }
+  url.searchParams.delete(ESCAPED_PARAM);
+  window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+  return true;
+}
 // Per page load, not per session — a failed escape must not silence the hint.
 let escapeTried = false;
 
@@ -63,6 +81,12 @@ export default function OpenInBrowserPrompt() {
   const inApp = typeof navigator !== 'undefined' && isInAppBrowser();
 
   useEffect(() => {
+    if (consumeEscapedParam()) return;
+    try {
+      if (localStorage.getItem(ESCAPED_KEY)) return;
+    } catch {
+      /* private mode */
+    }
     if (sessionStorage.getItem(DISMISSED_KEY)) return;
     if (!inApp && !isUnverifiableIOS()) return;
     if (inApp && !escapeTried) {

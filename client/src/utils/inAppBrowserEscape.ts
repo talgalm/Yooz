@@ -45,6 +45,25 @@ export function isUnverifiableIOS(): boolean {
 }
 
 /**
+ * Marks the handed-off URL so the receiving browser knows the escape already
+ * happened and never offers it again — without this, the real browser shows the
+ * same prompt and every tap spawns another tab.
+ */
+export const ESCAPED_PARAM = 'fromapp';
+
+/** The scheme URL that hands `href` to the default browser, or null if this platform has none. */
+export function externalBrowserUrl(ua: string, href: string): string | null {
+  const marked = new URL(href);
+  marked.searchParams.set(ESCAPED_PARAM, '1');
+  const noScheme = marked.toString().replace(/^https?:\/\//, '');
+  if (/Android/i.test(ua)) {
+    return `intent://${noScheme}#Intent;scheme=https;action=android.intent.action.VIEW;end`;
+  }
+  if (isIOS(ua)) return `x-safari-https://${noScheme}`;
+  return null;
+}
+
+/**
  * Attempt to reopen the current URL in the default browser. Returns true if a
  * redirect was attempted. `force` skips the webview check — for a button the
  * user tapped, where an iOS context we could not identify (isUnverifiableIOS)
@@ -52,19 +71,13 @@ export function isUnverifiableIOS(): boolean {
  */
 export function escapeToDefaultBrowser(force = false): boolean {
   if (!force && !isInAppBrowser()) return false;
-  const ua = navigator.userAgent;
-  const urlNoScheme = window.location.href.replace(/^https?:\/\//, '');
+  const target = externalBrowserUrl(navigator.userAgent, window.location.href);
+  if (!target) return false;
   try {
-    if (/Android/i.test(ua)) {
-      window.location.href = `intent://${urlNoScheme}#Intent;scheme=https;action=android.intent.action.VIEW;end`;
-      return true;
-    }
-    if (isIOS(ua)) {
-      window.location.href = `x-safari-https://${urlNoScheme}`;
-      return true;
-    }
+    window.location.href = target;
+    return true;
   } catch {
     // Webview blocked the custom scheme — stay where we are.
+    return false;
   }
-  return false;
 }

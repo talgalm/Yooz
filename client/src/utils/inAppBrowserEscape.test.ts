@@ -17,7 +17,7 @@ function setUA(ua: string, standalone?: boolean) {
   });
 }
 
-const { isInAppBrowser, isUnverifiableIOS } = await import('./inAppBrowserEscape.js');
+const { isInAppBrowser, isUnverifiableIOS, externalBrowserUrl } = await import('./inAppBrowserEscape.js');
 
 test('in-app webviews are detected', () => {
   for (const ua of [INSTAGRAM, IOS_WEBVIEW, ANDROID_WEBVIEW]) {
@@ -42,4 +42,14 @@ test('only unprovable iOS contexts get the soft hint', () => {
   assert.equal(isUnverifiableIOS(), false, 'installed PWA');
   setUA(ANDROID_CHROME);
   assert.equal(isUnverifiableIOS(), false, 'not iOS');
+});
+
+test('handoff URL carries the marker so the receiving browser stops prompting', () => {
+  const ios = externalBrowserUrl(SAFARI, 'https://yooz.org.il/play/abc123');
+  assert.equal(ios, 'x-safari-https://yooz.org.il/play/abc123?fromapp=1');
+
+  const android = externalBrowserUrl(ANDROID_WEBVIEW, 'https://yooz.org.il/play/abc123?lang=en');
+  assert.ok(android?.startsWith('intent://yooz.org.il/play/abc123?lang=en&fromapp=1#Intent;'), android!);
+
+  assert.equal(externalBrowserUrl('Mozilla/5.0 (Windows NT 10.0)', 'https://yooz.org.il/'), null);
 });
