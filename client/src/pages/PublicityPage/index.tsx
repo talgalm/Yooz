@@ -3,6 +3,7 @@ import { styled, keyframes } from '@mui/material/styles';
 import { useLang, useTranslations } from '../../context/LanguageContext';
 import { apiFetch } from '../../utils/api';
 import LangDrawer from '../../components/LangDrawer';
+import ActivityCodeEntry from '../../components/ActivityCodeEntry';
 import { texts } from './PublicityPage.i18n';
 import type { SiteContent, LocalizedText } from '../../types/publicity';
 
@@ -351,6 +352,8 @@ export default function PublicityPage() {
         </NavLinks>
         <NavLogo src={content.brandLogoUrl || '/images/logo-purple.png'} alt="Yooz" />
       </Nav>
+
+      <ActivityCodeEntry />
 
       {/* Hero */}
       <Hero>
