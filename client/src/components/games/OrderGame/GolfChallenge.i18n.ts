@@ -9,7 +9,7 @@ export const golfTexts = {
     bonus: 'Bonus',
     points: 'pts',
     continueBtn: 'Continue',
-    tapToHit: 'Swipe from the ball to hit',
+    tapToHit: 'Slide away from the ball in the opposite direction to the stroke',
   },
   he: {
     title: 'אתגר גולף',
@@ -21,6 +21,6 @@ export const golfTexts = {
     bonus: 'בונוס',
     points: 'נק׳',
     continueBtn: 'המשך',
-    tapToHit: 'החליקו מהכדור כדי לחבוט',
+    tapToHit: 'החליקו מהכדור בכיוון ההפוך לחבטה',
   },
 };

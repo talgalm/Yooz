@@ -479,6 +479,26 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
             </svg>
           )}
 
+          {/* Flashing drag hint — only before the first hit, and never while aiming */}
+          {gameState === 'playing' && hits === 0 && !aimLine && (() => {
+            const tailY = ballStart.y + BALL_R + 8;
+            const tipY = Math.min(ballStart.y + 100, COURSE_H - 8);
+            if (tipY - tailY < 20) return null;
+            const head = 13;
+            return (
+              <HintArrow width={COURSE_W} height={COURSE_H}>
+                <line
+                  x1={ballStart.x} y1={tailY} x2={ballStart.x} y2={tipY - head}
+                  stroke="#fff" strokeWidth={5} strokeLinecap="round"
+                />
+                <polygon
+                  points={`${ballStart.x},${tipY} ${ballStart.x - head * 0.7},${tipY - head} ${ballStart.x + head * 0.7},${tipY - head}`}
+                  fill="#fff"
+                />
+              </HintArrow>
+            );
+          })()}
+
           {/* Ball */}
           <BallEl ref={ballRef} />
         </CourseWrapper>
@@ -614,6 +634,21 @@ const HillImage = styled('img')({
   zIndex: 2,
   pointerEvents: 'none',
   objectFit: 'contain',
+});
+
+const flashHint = keyframes`
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+`;
+
+/** First-hit hint: points from the ball down-course — the way to drag, i.e. the
+ *  opposite of where the ball will fly. Hidden as soon as the player aims. */
+const HintArrow = styled('svg')({
+  position: 'absolute',
+  inset: 0,
+  zIndex: 6,
+  pointerEvents: 'none',
+  animation: `${flashHint} 1.1s ease-in-out infinite`,
 });
 
 const BallEl = styled('div')({
