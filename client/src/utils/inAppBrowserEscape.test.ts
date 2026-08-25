@@ -51,5 +51,9 @@ test('handoff URL carries the marker so the receiving browser stops prompting', 
   const android = externalBrowserUrl(ANDROID_WEBVIEW, 'https://yooz.org.il/play/abc123?lang=en');
   assert.ok(android?.startsWith('intent://yooz.org.il/play/abc123?lang=en&fromapp=1#Intent;'), android!);
 
+  // the scan marker must not ride along, or the handed-off tab would re-ask
+  const fromScan = externalBrowserUrl(SAFARI, 'https://yooz.org.il/play/abc123?qr=1');
+  assert.equal(fromScan, 'x-safari-https://yooz.org.il/play/abc123?fromapp=1');
+
   assert.equal(externalBrowserUrl('Mozilla/5.0 (Windows NT 10.0)', 'https://yooz.org.il/'), null);
 });

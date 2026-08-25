@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import { useTranslations } from '../context/LanguageContext';
-import { isInAppBrowser, isUnverifiableIOS, escapeToDefaultBrowser, ESCAPED_PARAM } from '../utils/inAppBrowserEscape';
+import { isInAppBrowser, isUnverifiableIOS, escapeToDefaultBrowser, ESCAPED_PARAM, QR_SCAN_PARAM } from '../utils/inAppBrowserEscape';
 import { ModalCard, PrimaryButton, OutlineButton, Title, BodyText } from './styled';
 
 // Above every other overlay (opening video, help chat, popups — max in app is 99999).
@@ -22,10 +22,6 @@ const texts = {
     inApp: 'This link opened inside an app. Open it in your phone browser so you keep your place.',
     maybeInApp: 'If this opened from inside an app, that window can close and take your game with it. Open it in your browser to keep your place.',
     open: 'Open in browser',
-    ios: 'Didn’t open? Tap the compass icon at the bottom, or share → "Open in Safari".',
-    android: 'Didn’t open? Tap the ••• icon at the top and choose "Open in browser".',
-    copy: 'Copy link',
-    copied: 'Link copied',
     stay: 'Continue',
   },
   he: {
@@ -33,10 +29,6 @@ const texts = {
     inApp: 'הקישור נפתח בתוך אפליקציה. פתחו אותו בדפדפן של הטלפון כדי לא לאבד את המקום שלכם.',
     maybeInApp: 'אם הדף נפתח מתוך אפליקציה, החלון הזה עלול להיסגר ולקחת איתו את המשחק. פתחו אותו בדפדפן כדי לשמור את המקום שלכם.',
     open: 'פתחו בדפדפן',
-    ios: 'לא נפתח? לחצו על אייקון המצפן בתחתית המסך, או על השיתוף ← "פתח בספארי".',
-    android: 'לא נפתח? לחצו על ••• בחלק העליון ובחרו "פתח בדפדפן".',
-    copy: 'העתקת הקישור',
-    copied: 'הקישור הועתק',
     stay: 'המשך',
   },
 };
@@ -65,18 +57,17 @@ let escapeTried = false;
 
 /**
  * QR scanners and social apps open links in an in-app browser that closes with
- * the host app. Two cases:
- *  - Detected webview (Instagram, WhatsApp, scanner apps): bounce out automatically,
- *    and if the webview blocks that, show the manual instructions.
- *  - iOS where we can't tell Safari from SFSafariViewController: never redirect
- *    (it might be real Safari) — just hint, once.
- * Either way, show the activity code so a participant who does get thrown out
- * can walk back in from any browser.
+ * the host app, taking the participant's tab with it. Two cases:
+ *  - Detected webview (Instagram, WhatsApp, Android scanner apps): bounce out
+ *    automatically, and offer the button if the webview blocked the redirect.
+ *  - iOS, where SFSafariViewController is indistinguishable from Safari: only
+ *    ask when the URL came from the QR, and never redirect on our own — the
+ *    same check would fire on someone who simply typed the address.
+ * Shown at most once; the browser that receives a handoff never asks again.
  */
 export default function OpenInBrowserPrompt() {
   const t = useTranslations(texts);
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const inApp = typeof navigator !== 'undefined' && isInAppBrowser();
 
@@ -88,7 +79,10 @@ export default function OpenInBrowserPrompt() {
       /* private mode */
     }
     if (sessionStorage.getItem(DISMISSED_KEY)) return;
-    if (!inApp && !isUnverifiableIOS()) return;
+    // Safari and SFSafariViewController are indistinguishable, so on iOS we only
+    // ask when the URL came from a QR — a link opened by hand is left alone.
+    const fromQr = new URLSearchParams(window.location.search).has(QR_SCAN_PARAM);
+    if (!inApp && !(fromQr && isUnverifiableIOS())) return;
     if (inApp && !escapeTried) {
       escapeTried = true;
       escapeToDefaultBrowser();
@@ -101,20 +95,9 @@ export default function OpenInBrowserPrompt() {
 
   if (!open) return null;
 
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
   const dismiss = () => {
     sessionStorage.setItem(DISMISSED_KEY, '1');
     setOpen(false);
-  };
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
   };
 
   return (
@@ -126,10 +109,6 @@ export default function OpenInBrowserPrompt() {
             but the user asked for it — a tap is also what unblocks scheme
             redirects in webviews that ignore them without a gesture. */}
         <PrimaryButton type="button" onClick={() => escapeToDefaultBrowser(true)}>{t.open}</PrimaryButton>
-        <BodyText style={{ fontSize: 13, marginTop: 10 }}>{isIOS ? t.ios : t.android}</BodyText>
-        <OutlineButton type="button" onClick={copy} style={{ marginTop: 8 }}>
-          {copied ? t.copied : t.copy}
-        </OutlineButton>
         <OutlineButton type="button" onClick={dismiss} style={{ marginTop: 8 }}>{t.stay}</OutlineButton>
       </ModalCard>
     </Overlay>

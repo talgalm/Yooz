@@ -51,10 +51,14 @@ export function isUnverifiableIOS(): boolean {
  */
 export const ESCAPED_PARAM = 'fromapp';
 
+/** Set on the URL inside the QR code — the only entry point we know is a scan. */
+export const QR_SCAN_PARAM = 'qr';
+
 /** The scheme URL that hands `href` to the default browser, or null if this platform has none. */
 export function externalBrowserUrl(ua: string, href: string): string | null {
   const marked = new URL(href);
   marked.searchParams.set(ESCAPED_PARAM, '1');
+  marked.searchParams.delete(QR_SCAN_PARAM);
   const noScheme = marked.toString().replace(/^https?:\/\//, '');
   if (/Android/i.test(ua)) {
     return `intent://${noScheme}#Intent;scheme=https;action=android.intent.action.VIEW;end`;

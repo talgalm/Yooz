@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { QRCodeCanvas } from 'qrcode.react';
+import { QR_SCAN_PARAM } from '../../../utils/inAppBrowserEscape';
 import { useTranslations } from '../../../context/LanguageContext';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
 import { texts } from './AdminViewActivityPage.i18n';
@@ -529,6 +530,10 @@ export default function AdminViewActivityPage() {
   }, [id, navigate]);
 
   const playUrl = activity ? `${window.location.origin}/play/${activity.code}` : '';
+  // Only the QR carries ?qr=1 — it is the one entry point we know lands in a
+  // scanner app, and it is what tells the participant page to offer the browser
+  // handoff. A link opened by hand must stay silent.
+  const qrUrl = playUrl ? `${playUrl}?${QR_SCAN_PARAM}=1` : '';
 
   const handleDownloadQr = useCallback(() => {
     const canvas = qrRef.current?.querySelector('canvas');
@@ -734,7 +739,7 @@ export default function AdminViewActivityPage() {
           </QrTextSection>
           <QrImageWrapper ref={qrRef}>
             <QRCodeCanvas
-              value={playUrl}
+              value={qrUrl}
               size={120}
               level="H"
               marginSize={1}
