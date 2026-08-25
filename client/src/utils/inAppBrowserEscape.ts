@@ -44,9 +44,14 @@ export function isUnverifiableIOS(): boolean {
   return true;
 }
 
-/** Attempt to reopen the current URL in the default browser. Returns true if a redirect was attempted. */
-export function escapeToDefaultBrowser(): boolean {
-  if (!isInAppBrowser()) return false;
+/**
+ * Attempt to reopen the current URL in the default browser. Returns true if a
+ * redirect was attempted. `force` skips the webview check — for a button the
+ * user tapped, where an iOS context we could not identify (isUnverifiableIOS)
+ * is worth a try even though we never redirect it on our own.
+ */
+export function escapeToDefaultBrowser(force = false): boolean {
+  if (!force && !isInAppBrowser()) return false;
   const ua = navigator.userAgent;
   const urlNoScheme = window.location.href.replace(/^https?:\/\//, '');
   try {
