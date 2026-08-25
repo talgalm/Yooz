@@ -207,6 +207,7 @@ export default function AdminStationConfigPage() {
   const [collageHeader, setCollageHeader] = useState('');
   const [collageDescription, setCollageDescription] = useState('');
   const [collageLogoUrl, setCollageLogoUrl] = useState('');
+  const [collageLogoRightUrl, setCollageLogoRightUrl] = useState('');
   const [collageMissions, setCollageMissions] = useState<{ title: string; description: string; referenceImageUrl?: string }[]>([
     { title: '', description: '' },
   ]);
@@ -368,6 +369,7 @@ export default function AdminStationConfigPage() {
           if (settings.header) setCollageHeader(settings.header as string);
           if (settings.description) setCollageDescription(settings.description as string);
           if (settings.logoUrl) setCollageLogoUrl(settings.logoUrl as string);
+          if (settings.logoRightUrl) setCollageLogoRightUrl(settings.logoRightUrl as string);
           if (Array.isArray(settings.missions) && (settings.missions as unknown[]).length > 0) {
             setCollageMissions(settings.missions as { title: string; description: string; referenceImageUrl?: string }[]);
           }
@@ -486,6 +488,7 @@ export default function AdminStationConfigPage() {
       if (settings.header) setCollageHeader(settings.header as string);
       if (settings.description) setCollageDescription(settings.description as string);
       if (settings.logoUrl) setCollageLogoUrl(settings.logoUrl as string);
+      if (settings.logoRightUrl) setCollageLogoRightUrl(settings.logoRightUrl as string);
       if (Array.isArray(settings.missions) && (settings.missions as unknown[]).length > 0) {
         setCollageMissions(settings.missions as { title: string; description: string; referenceImageUrl?: string }[]);
       }
@@ -596,6 +599,7 @@ export default function AdminStationConfigPage() {
         settings.header = collageHeader.trim();
         settings.description = collageDescription.trim();
         if (collageLogoUrl.trim()) settings.logoUrl = collageLogoUrl.trim();
+        if (collageLogoRightUrl.trim()) settings.logoRightUrl = collageLogoRightUrl.trim();
         settings.missions = collageMissions
           .filter((m) => m.title.trim())
           .map((m) => ({
@@ -1350,6 +1354,22 @@ export default function AdminStationConfigPage() {
                       placeholder="https://..."
                       value={collageLogoUrl}
                       onChange={(e) => setCollageLogoUrl(e.target.value)}
+                    />
+                  </InlineRow>
+
+                  <SectionLabelNoMargin>{t.collageLogoRight}</SectionLabelNoMargin>
+                  <div style={{ fontSize: 12, color: '#888', marginTop: -4, marginBottom: 4 }}>{t.collageLogoRightDesc}</div>
+                  <InlineRow>
+                    <FileUploadButton
+                      accept="image/*"
+                      onUploaded={(url) => setCollageLogoRightUrl(url)}
+                      label={t.upload}
+                      uploadingLabel={t.uploading}
+                    />
+                    <FlexInput
+                      placeholder="https://..."
+                      value={collageLogoRightUrl}
+                      onChange={(e) => setCollageLogoRightUrl(e.target.value)}
                     />
                   </InlineRow>
 

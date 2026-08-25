@@ -133,12 +133,14 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
     console.log(`[lambda-collage] encoding job=${jobId}`);
     await patchJob(jobId, { phase: 'encoding', percent: 15, message: 'מתחיל קידוד וידאו...' });
 
-    const [logoPath, titlePath] = await Promise.all([
-      (async (): Promise<string | undefined> => {
-        if (!(job.logoUrl && /^https?:\/\//i.test(job.logoUrl))) return undefined;
-        const p = path.join(tmpDir, 'logo.png');
-        try { await downloadToFile(job.logoUrl, p); return p; } catch { return undefined; }
-      })(),
+    const fetchLogo = async (url: string | undefined, file: string): Promise<string | undefined> => {
+      if (!(url && /^https?:\/\//i.test(url))) return undefined;
+      const p = path.join(tmpDir, file);
+      try { await downloadToFile(url, p); return p; } catch { return undefined; }
+    };
+    const [logoPath, logoRightPath, titlePath] = await Promise.all([
+      fetchLogo(job.logoUrl, 'logo.png'),
+      fetchLogo(job.logoRightUrl, 'logo-right.png'),
       (async (): Promise<string | undefined> => {
         if (!(job.titleImageUrl && /^https?:\/\//i.test(job.titleImageUrl))) return undefined;
         const p = path.join(tmpDir, 'title.png');
@@ -154,6 +156,7 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
       imagePaths,
       {
         logoPath,
+        logoRightPath,
         titlePath,
         onProgress: (frame) => {
           const ratio = Math.min(1, frame / totalFrames);

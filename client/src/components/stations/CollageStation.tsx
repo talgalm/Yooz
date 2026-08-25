@@ -375,6 +375,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   const description = (settings.description as string) || station.description || '';
   const disclaimer = (settings.disclaimer as string) || '';
   const logoUrl = (settings.logoUrl as string) || '';
+  const logoRightUrl = (settings.logoRightUrl as string) || '';
   const template = (settings.template as string) || 'default';
   const multiSelect = !!settings.multiSelect;
   const multiSelectCount = typeof settings.multiSelectCount === 'number' && settings.multiSelectCount > 0
@@ -623,6 +624,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
             {
               template,
               logoUrl,
+              logoRightUrl,
               requiredImages: totalImages,
             },
             '',
@@ -715,6 +717,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
         photoIndices: orderedPhotos.map((p) => p.missionIndex),
         title: effectiveTitle,
         logoUrl,
+        logoRightUrl,
         activityCode,
         template,
         splitGroupId: splitMeta ? splitGroupId : undefined,

@@ -15,6 +15,7 @@ export interface ICollageJob {
   splitGroupId?: string;
   template: string;
   logoUrl?: string;
+  logoRightUrl?: string;
   title?: string;
   titleImageUrl?: string;
   requiredImages: number;
@@ -40,6 +41,7 @@ const collageJobSchema = new Schema<ICollageJob>(
     splitGroupId: { type: String, index: true },
     template: { type: String, required: true, default: 'default' },
     logoUrl: { type: String },
+    logoRightUrl: { type: String },
     title: { type: String },
     titleImageUrl: { type: String },
     requiredImages: { type: Number, required: true },

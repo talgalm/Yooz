@@ -449,6 +449,13 @@ delivery of the finished video (`smsForCollage*`, polled every 15s). Client:
 `components/stations/CollageStation.tsx` + `collageJobStorage`/`collageSplitStorage`/
 `backgroundCollageJob` + `utils/collageApi`/`collagePhotoCompress`.
 
+**Logos** (station `settings.logoUrl` / `settings.logoRightUrl`, both optional). The left logo
+is drawn *behind* the template and shows through the template's yellow placeholder box
+(`TEMPLATES[id].logo`), which is chromakey'd out. The right logo is drawn *on top* of the
+composited foreground at the mirrored box (`width - logo.x - logo.w`) since no second yellow
+region exists in the source MP4. Templates with `logo: null` (e.g. `gan-yehoshua`) draw neither.
+Self-check: `npx tsx server/src/routes/collageFilter.check.ts`.
+
 ---
 
 ## 13. Client architecture

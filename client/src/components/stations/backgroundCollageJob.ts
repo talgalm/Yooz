@@ -40,6 +40,7 @@ export interface CollageUploadParams {
   photoIndices: number[];
   title: string;
   logoUrl: string;
+  logoRightUrl: string;
   activityCode: string;
   template: string;
   splitGroupId?: string;
@@ -112,6 +113,7 @@ async function runAsyncCollageJob(
     template: params.template,
     splitGroupId: params.splitGroupId,
     logoUrl: params.logoUrl,
+    logoRightUrl: params.logoRightUrl,
     requiredImages: params.requiredImages,
     title: params.title,
   };

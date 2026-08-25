@@ -174,10 +174,10 @@ function piecewiseLinearExpr(keyframes: number[][], axis: 'x' | 'y'): string {
 
 export function buildFilterComplex(
   template: TemplateMeta,
-  opts: { logoIdx: number | null; titleIdx: number | null },
+  opts: { logoIdx: number | null; logoRightIdx: number | null; titleIdx: number | null },
 ): string {
   const { width, height, chroma, startPad, buffer, logo, scenes } = template;
-  const { logoIdx, titleIdx } = opts;
+  const { logoIdx, logoRightIdx, titleIdx } = opts;
   const parts: string[] = [];
 
   // Pad the template's start with a clone of its first frame, then drop the
@@ -250,14 +250,26 @@ export function buildFilterComplex(
   // Composite the chromakey'd template over the photo + logo stack.
   // The composite is built at the template's native resolution (1080×1350
   // or 1080×1920) for keyframe-pixel precision, then downscaled at the end.
+  parts.push(`[comp][fg]overlay=0:0:format=auto[withFg]`);
+  let stacked = 'withFg';
+
+  // Right logo: mirrored position of the left logo placeholder. The template
+  // has no second yellow region to key out, so this one is overlaid ON TOP of
+  // the foreground rather than behind it.
+  if (logoRightIdx !== null && logo) {
+    const rx = width - logo.x - logo.w;
+    parts.push(`[${logoRightIdx}:v]scale=${logo.w}:${logo.h}:force_original_aspect_ratio=decrease,pad=${logo.w}:${logo.h}:(ow-iw)/2:(oh-ih)/2:color=0x00000000,setsar=1[logoR]`);
+    parts.push(`[${stacked}][logoR]overlay=x=${rx}:y=${logo.y}:format=auto[withLogoR]`);
+    stacked = 'withLogoR';
+  }
+
   if (titleIdx !== null) {
-    parts.push(`[comp][fg]overlay=0:0:format=auto[withFg]`);
     // Title image is rendered client-side at native resolution. Center it
     // horizontally; place near top with a small margin.
     parts.push(`[${titleIdx}:v]format=rgba,setsar=1[title]`);
-    parts.push(`[withFg][title]overlay=x=(W-w)/2:y=40:format=auto[vraw]`);
+    parts.push(`[${stacked}][title]overlay=x=(W-w)/2:y=40:format=auto[vraw]`);
   } else {
-    parts.push(`[comp][fg]overlay=0:0:format=auto[vraw]`);
+    parts.push(`[${stacked}]null[vraw]`);
   }
 
   // Optional baked-icon recolor (e.g. yellow "SKY PARK TLV" text → white in
@@ -281,8 +293,7 @@ export function buildFilterComplex(
   // 1080→540 cuts pixel count by ~75% and roughly halves encode time vs 720.
   parts.push(`[${scaleIn}]scale=540:-2[vout]`);
 
-  // Quiet the unused dimension lints
-  void width;
+  // Quiet the unused dimension lint
   void height;
 
   return parts.join(';');
@@ -297,7 +308,7 @@ export function runFfmpeg(
   template: TemplateMeta,
   templatePath: string,
   imagePaths: string[],
-  extras: { logoPath?: string; titlePath?: string; onProgress?: (frame: number) => void },
+  extras: { logoPath?: string; logoRightPath?: string; titlePath?: string; onProgress?: (frame: number) => void },
 ): { stdout: Readable; done: Promise<void> } {
   // Progress moved to fd 3 so stdout is exclusively for the MP4 bytes. Without
   // this, the upload stream would receive interleaved `frame=...\n` text and
@@ -310,6 +321,7 @@ export function runFfmpeg(
 
   let nextIdx = 1 + imagePaths.length;
   let logoIdx: number | null = null;
+  let logoRightIdx: number | null = null;
   let titleIdx: number | null = null;
   // Only feed the logo input when the template supports a logo placeholder;
   // otherwise the chromakey-yellow chain would never key it out and the logo
@@ -318,13 +330,17 @@ export function runFfmpeg(
     args.push('-loop', '1', '-t', String(template.duration), '-i', extras.logoPath);
     logoIdx = nextIdx++;
   }
+  if (extras.logoRightPath && template.logo) {
+    args.push('-loop', '1', '-t', String(template.duration), '-i', extras.logoRightPath);
+    logoRightIdx = nextIdx++;
+  }
   if (extras.titlePath) {
     args.push('-loop', '1', '-t', String(template.duration), '-i', extras.titlePath);
     titleIdx = nextIdx++;
   }
 
   args.push(
-    '-filter_complex', buildFilterComplex(template, { logoIdx, titleIdx }),
+    '-filter_complex', buildFilterComplex(template, { logoIdx, logoRightIdx, titleIdx }),
     '-map', '[vout]',
     '-map', '0:a?',  // pass through original soundtrack if present
     '-t', String(template.duration),
@@ -681,6 +697,7 @@ router.post('/jobs', async (req: Request, res: Response) => {
     template: templateId,
     splitGroupId,
     logoUrl,
+    logoRightUrl,
     title,
     requiredImages: requiredImagesBody,
   } = req.body as {
@@ -689,6 +706,7 @@ router.post('/jobs', async (req: Request, res: Response) => {
     template?: string;
     splitGroupId?: string;
     logoUrl?: string;
+    logoRightUrl?: string;
     title?: string;
     requiredImages?: number;
   };
@@ -717,6 +735,7 @@ router.post('/jobs', async (req: Request, res: Response) => {
     splitGroupId,
     template: templateId && TEMPLATES[templateId] ? templateId : DEFAULT_TEMPLATE_ID,
     logoUrl,
+    logoRightUrl,
     title,
     requiredImages,
     imageUrls: [],
@@ -933,9 +952,10 @@ router.post(
     { name: 'titleImage', maxCount: 1 },
   ]),
   async (req: Request, res: Response) => {
-    const { activityCode, logoUrl, template: templateId, jobId } = req.body as {
+    const { activityCode, logoUrl, logoRightUrl, template: templateId, jobId } = req.body as {
       activityCode?: string;
       logoUrl?: string;
+      logoRightUrl?: string;
       template?: string;
       jobId?: string;
     };
@@ -1031,18 +1051,20 @@ router.post(
       // Prepare logo + title in parallel. Logo is a network fetch (Cloudinary)
       // and was previously blocking the title disk write behind it for no
       // reason — they're independent inputs to ffmpeg.
-      const [logoPath, titlePath] = await Promise.all([
-        (async (): Promise<string | undefined> => {
-          if (!(logoUrl && /^https?:\/\//i.test(logoUrl))) return undefined;
-          const p = path.join(tmpDir, 'logo.png');
-          try {
-            await downloadToFile(logoUrl, p);
-            return p;
-          } catch (e) {
-            console.warn('[collage] logo download failed, skipping:', e);
-            return undefined;
-          }
-        })(),
+      const fetchLogo = async (url: string | undefined, file: string): Promise<string | undefined> => {
+        if (!(url && /^https?:\/\//i.test(url))) return undefined;
+        const p = path.join(tmpDir, file);
+        try {
+          await downloadToFile(url, p);
+          return p;
+        } catch (e) {
+          console.warn(`[collage] ${file} download failed, skipping:`, e);
+          return undefined;
+        }
+      };
+      const [logoPath, logoRightPath, titlePath] = await Promise.all([
+        fetchLogo(logoUrl, 'logo.png'),
+        fetchLogo(logoRightUrl, 'logo-right.png'),
         (async (): Promise<string | undefined> => {
           if (titleFiles.length === 0) return undefined;
           const p = path.join(tmpDir, 'title.png');
@@ -1066,6 +1088,7 @@ router.post(
         imagePaths,
         {
           logoPath,
+          logoRightPath,
           titlePath,
           onProgress: (frame) => {
             const ratio = Math.min(1, frame / totalFrames);

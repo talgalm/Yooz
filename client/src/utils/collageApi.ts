@@ -24,6 +24,7 @@ export interface CollageJobParams {
   template: string;
   splitGroupId?: string;
   logoUrl?: string;
+  logoRightUrl?: string;
   requiredImages: number;
   title?: string;
 }
@@ -60,6 +61,7 @@ export async function ensureCollageJob(params: CollageJobParams): Promise<Collag
       template: params.template,
       splitGroupId: params.splitGroupId,
       logoUrl: params.logoUrl,
+      logoRightUrl: params.logoRightUrl,
       title: params.title,
       requiredImages: params.requiredImages,
     }),
