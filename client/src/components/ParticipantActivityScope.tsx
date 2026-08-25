@@ -1,6 +1,7 @@
 import { ReactNode, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { activityCodeFromPathname, rememberActivityCode } from '../utils/participantActivity';
+import OpenInBrowserPrompt from './OpenInBrowserPrompt';
 
 /**
  * Wraps participant play routes — pins the activity code on every mount/navigation
@@ -15,5 +16,5 @@ export default function ParticipantActivityScope({ children }: { children: React
     if (code) rememberActivityCode(code);
   }, [paramCode, pathname]);
 
-  return <>{children}</>;
+  return <>{children}<OpenInBrowserPrompt /></>;
 }
