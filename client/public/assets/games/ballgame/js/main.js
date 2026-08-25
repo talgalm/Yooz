@@ -193,7 +193,7 @@ let selBall = null;
 let dragStartPoints = { x: 0, y: 0 };
 let dragEndPoints = { x: 0, y: 0 };
 let objCustomizedTimer = null;
-let nTimerDuration = 30;
+let nTimerDuration = Number(window.__ballgameTimeLimit) || 30;
 let isGameLoaded = false;
 let isStartClicked = false;
 let hasGameStarted = false;
@@ -1243,6 +1243,47 @@ function addQuestion() {
     textLayer.appendChild(qEl);
     scheduleFitText(qEl, 22, 10);
   }
+  ensureTimerBadge();
+}
+
+/**
+ * Adds (or repositions) the countdown badge above the question card. The score
+ * box that used to hold the timer is drawn with alpha 0, so the countdown was
+ * running but invisible.
+ *
+ * ponytail: the badge straddles the card's top border rather than sitting in a
+ * row of its own — the card starts ~15px below the top of the stage and moving
+ * it down would cascade into the option boxes, which are laid out from its
+ * bottom edge.
+ */
+function ensureTimerBadge() {
+  var layer = document.getElementById('text-layer');
+  if (!layer || !questionBox) return;
+  var el = document.getElementById('timer-text-html');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'timer-text-html';
+    layer.appendChild(el);
+  }
+  var h = 30;
+  el.style.cssText =
+    'position:absolute;left:50%;transform:translateX(-50%);' +
+    'top:' + Math.max(2, Math.round(questionBox.y - h / 2)) + 'px;height:' + h + 'px;' +
+    'min-width:74px;padding:0 12px;box-sizing:border-box;display:flex;align-items:center;' +
+    'justify-content:center;gap:5px;border-radius:' + h / 2 + 'px;' +
+    'border:2px solid ' + NATURE.BOX_BORDER + ';background:rgba(255,255,255,0.96);' +
+    'font-size:17px;font-weight:800;font-family:"Encode Sans Expanded",Arial,sans-serif;' +
+    'direction:ltr;line-height:1;white-space:nowrap;pointer-events:none;' +
+    'box-shadow:0 2px 6px rgba(74,101,114,0.35);';
+  renderTimerBadge(nTimerDuration);
+}
+
+/** Paints the remaining seconds into the badge; red for the last 5. */
+function renderTimerBadge(nTime) {
+  var el = document.getElementById('timer-text-html');
+  if (!el) return;
+  el.textContent = '⏱ ' + (nTime < 10 ? '0' + nTime : nTime);
+  el.style.color = nTime <= 5 ? NATURE.BTN_RED_DARK : NATURE.TEXT_DARK;
 }
 
 /**
@@ -1570,6 +1611,8 @@ function nextQuestion() {
   if (currentQuestionIndex > arrQuestions.length - 1) {
     if (!bIsMuted) audio_applause.play();
     if (objCustomizedTimer) objCustomizedTimer.destoryTimer();
+    var timerEl = document.getElementById('timer-text-html');
+    if (timerEl) timerEl.remove();
     updateDataOnGameCompleted();
     return;
   }
@@ -2084,6 +2127,7 @@ function makeDraggable({ item, startCallback, stopCallback, updateCallback }) {
  */
 var updatePerSec = (nTime) => {
   timerText.text = nTime < 10 ? "0" + nTime : nTime;
+  renderTimerBadge(nTime);
 
   if (nTime == 0) {
     objCustomizedTimer.destoryTimer();
