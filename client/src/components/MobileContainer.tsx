@@ -1,6 +1,34 @@
 import { styled } from '@mui/material/styles';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { isStorageHealthy } from '../utils/storageHealth';
+
+// ponytail: Network Information API is Chrome/Android only — on iOS this falls
+// back to the online/offline flag, so the banner shows there only when the
+// connection drops entirely. Poll a ping endpoint if that proves too coarse.
+const connection = (navigator as Navigator & {
+  connection?: EventTarget & { effectiveType?: string };
+}).connection;
+
+function isReceptionWeak(): boolean {
+  if (!navigator.onLine) return true;
+  return connection?.effectiveType === 'slow-2g' || connection?.effectiveType === '2g';
+}
+
+function useWeakReception(): boolean {
+  const [weak, setWeak] = useState(isReceptionWeak);
+  useEffect(() => {
+    const update = () => setWeak(isReceptionWeak());
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    connection?.addEventListener('change', update);
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+      connection?.removeEventListener('change', update);
+    };
+  }, []);
+  return weak;
+}
 
 const DESKTOP_BREAKPOINT = '@media (min-width: 768px)';
 
@@ -34,10 +62,34 @@ const StorageBanner = styled('div')({
   lineHeight: 1.35,
 });
 
+const ReceptionBanner = styled('div')({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  zIndex: 2000,
+  margin: '0 auto',
+  maxWidth: 480,
+  background: '#dc2626',
+  color: '#fff',
+  fontSize: 13,
+  fontWeight: 700,
+  padding: '8px 12px',
+  textAlign: 'center',
+  lineHeight: 1.35,
+  [DESKTOP_BREAKPOINT]: {
+    maxWidth: 'none',
+  },
+});
+
 export function MobileContainer({ children }: { children: ReactNode }) {
+  const weakReception = useWeakReception();
   return (
     <Outer>
       <Inner>
+        {weakReception && (
+          <ReceptionBanner>קליטה חלשה — ההתקדמות תישמר ותסתנכרן כשהחיבור יחזור</ReceptionBanner>
+        )}
         {!isStorageHealthy() && (
           <StorageBanner>
             שמירה מקומית חסומה — צאו ממצב גלישה פרטית כדי לא לאבד התקדמות
