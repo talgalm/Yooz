@@ -15,7 +15,11 @@ export function customerMongoFilter(req: Request): Record<string, unknown> {
   if (!isCustomerRole(req)) return {};
   const email = customerOwnerEmail(req);
   if (!email) return { _id: { $exists: false } };
-  return { $or: [{ createdByEmail: email }, { managerEmail: email }] };
+  // managerEmail is saved as typed (no lowercase in the schema), so match it
+  // case-insensitively — otherwise a customer loses every activity they only
+  // manage, stats included. customerOwnsDoc already compares case-insensitively.
+  const managerEmail = new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+  return { $or: [{ createdByEmail: email }, { managerEmail }] };
 }
 
 export function customerOwnsDoc(

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
+import { useAdminAuth } from '../../../context/AdminAuthContext';
 import { texts } from './AdminTutorialsTab.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
 import {
@@ -325,6 +326,8 @@ function stepIcon(status: string): string {
 
 export default function AdminTutorialsTab() {
   const t = useTranslations(texts);
+  // Admins and customers watch the library; only super_admins generate/delete.
+  const canManage = useAdminAuth().admin?.role === 'super_admin';
   const [tutorials, setTutorials] = useState<Tutorial[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -418,6 +421,7 @@ export default function AdminTutorialsTab() {
       <PageTitle>{t.title}</PageTitle>
 
       {/* Generate form */}
+      {canManage && (
       <GenerateForm>
         <FormField>
           <SectionLabel>{t.videoTitle}</SectionLabel>
@@ -445,6 +449,7 @@ export default function AdminTutorialsTab() {
           {loading ? t.generating : t.generate}
         </PrimaryButton>
       </GenerateForm>
+      )}
 
       {error && <ErrorText>{error}</ErrorText>}
 
@@ -504,9 +509,11 @@ export default function AdminTutorialsTab() {
                       {t.download}
                     </ActionButton>
                   )}
-                  <ActionButton variant="danger" onClick={() => handleDelete(tutorial._id)}>
-                    {t.delete}
-                  </ActionButton>
+                  {canManage && (
+                    <ActionButton variant="danger" onClick={() => handleDelete(tutorial._id)}>
+                      {t.delete}
+                    </ActionButton>
+                  )}
                 </CardActions>
               </CardBody>
             </VideoCard>

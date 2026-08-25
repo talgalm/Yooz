@@ -755,6 +755,8 @@ export default function AdminDashboardPage() {
     }
     if (role === 'super_admin') {
       tabs.push({ key: 'users', label: t.tabUsers });
+    }
+    if (role === 'admin' || role === 'super_admin' || role === 'customer') {
       tabs.push({ key: 'tutorials', label: t.tabTutorials });
     }
     return tabs;
@@ -1007,8 +1009,8 @@ export default function AdminDashboardPage() {
           <AdminUsersTab />
         )}
 
-        {/* ── Tutorials Tab (super_admin only) ── */}
-        {activeTab === 'tutorials' && role === 'super_admin' && (
+        {/* ── Tutorials Tab (super_admin generates, admin/customer watch) ── */}
+        {activeTab === 'tutorials' && (role === 'admin' || role === 'super_admin' || role === 'customer') && (
           <AdminTutorialsTab />
         )}
 
