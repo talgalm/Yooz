@@ -794,14 +794,9 @@ router.post('/jobs/:jobId/start', loadShed, async (req: Request<{ jobId: string 
 
 // ─── Share landing page ───────────────────────────────────────────────────────
 // Public: when smsForCollageShare is enabled, the SMS {link} points here instead
-// of the raw video URL — video player + native share sheet + download.
+// of the raw video URL — video player + native share sheet + back-to-activity link.
 
-function videoDownloadUrl(url: string): string {
-  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/') || url.includes('fl_attachment')) return url;
-  return url.replace('/upload/', '/upload/fl_attachment/');
-}
-
-function renderVideoSharePage(videoUrl: string, pageUrl: string): string {
+function renderVideoSharePage(videoUrl: string, pageUrl: string, activityUrl: string): string {
   // Cloudinary derives a poster frame by swapping the video extension for .jpg
   const posterUrl = videoUrl.includes('res.cloudinary.com') ? videoUrl.replace(/\.\w+$/, '.jpg') : '';
   return `<!doctype html>
@@ -832,7 +827,7 @@ ${posterUrl ? `<meta property="og:image" content="${posterUrl}">` : ''}
 <video src="${videoUrl}" ${posterUrl ? `poster="${posterUrl}"` : ''} controls playsinline></video>
 <div class="btns">
   <button id="share">שיתוף</button>
-  <a id="dl" href="${pageUrl}?dl=1">הורדה</a>
+  <a id="dl" href="${activityUrl}">חזור לפעילות</a>
 </div>
 <script>
 const shareBtn = document.getElementById('share');
@@ -865,13 +860,9 @@ router.get('/share/:jobId', async (req: Request<{ jobId: string }>, res: Respons
     res.status(404).send('Video not found');
     return;
   }
-  if (req.query.dl === '1') {
-    res.redirect(302, videoDownloadUrl(job.resultUrl));
-    return;
-  }
   const base = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '')
     || `${req.protocol}://${req.get('host')}`;
-  res.send(renderVideoSharePage(job.resultUrl, `${base}/api/collage/share/${job.jobId}`));
+  res.send(renderVideoSharePage(job.resultUrl, `${base}/api/collage/share/${job.jobId}`, `${base}/play/${job.activityCode}`));
 });
 
 // Participant taps "send video by SMS" in the loading screen → save phone on
