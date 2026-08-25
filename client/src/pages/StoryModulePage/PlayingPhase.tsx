@@ -1030,6 +1030,28 @@ const ReplayIcon = styled('div')({
   boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
 });
 
+/** Escape hatch for the watch-to-the-end gate. Sits in the bottom-left corner —
+ *  the centre column is taken by Continue and, when a hint exists, the clue button. */
+const SkipVideoButton = styled('button')({
+  position: 'fixed',
+  bottom: 28,
+  left: 16,
+  zIndex: 41,
+  padding: '8px 18px',
+  borderRadius: 999,
+  border: 'none',
+  background: 'rgba(0,0,0,0.35)',
+  color: '#fff',
+  fontFamily: 'inherit',
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: 'pointer',
+  WebkitTapHighlightColor: 'transparent',
+  [DESKTOP_BREAKPOINT]: {
+    bottom: 36,
+  },
+});
+
 function VideoStationPlayer({ station, onContinue, t, textColor }: {
   station: StationItemData;
   onContinue: () => void;
@@ -1105,6 +1127,11 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
         compactDesktop
       />
       {mediaEl}
+      {!canContinue && (
+        <SkipVideoButton type="button" onClick={onContinue}>
+          {t.videoSkip}
+        </SkipVideoButton>
+      )}
       <FixedContinueButton onClick={onContinue} disabled={!canContinue}>
         {canContinue ? t.continueButton : (t.videoWatchToContinue || t.continueButton)}
       </FixedContinueButton>

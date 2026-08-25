@@ -524,7 +524,7 @@ present view (`OrderSurveyPresentPage` / `manager/present`).
   return **410**.
 - **Customers can view reports** (Statistics tab) scoped to their own/managed activities (§7);
   audit log stays admin-only.
-- **Video stations gate Continue** until the video ends (§10); iframes exempt.
+- **Video stations gate Continue** until the video ends (§10); iframes exempt. A bottom-left "skip the video" button (`SkipVideoButton`, PlayingPhase) bypasses the gate.
 - Collage encode is the main scaling pressure point (Lambda + load shedding + boot recovery).
 - AI features (help/report/avatar chat, answer check) use Gemini; TTS uses Azure; SMS uses TextMe
   (stub when creds absent).

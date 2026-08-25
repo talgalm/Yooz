@@ -32,6 +32,7 @@ export const texts = {
     mediaRetry: 'Try again',
     continueButton: 'Continue',
     videoWatchToContinue: 'Watch the video to continue',
+    videoSkip: 'Skip the video',
     // Finish page
     finishTitle: 'LESSON COMPLETE!',
     finishScore: 'Your Score',
@@ -110,6 +111,7 @@ export const texts = {
     mediaRetry: 'נסו שוב',
     continueButton: 'המשך',
     videoWatchToContinue: 'צפו בסרטון עד הסוף כדי להמשיך',
+    videoSkip: 'דלגו על הסרטון',
     // Finish page
     finishTitle: 'השלמת את המסלול!',
     finishScore: 'הניקוד שלך',
