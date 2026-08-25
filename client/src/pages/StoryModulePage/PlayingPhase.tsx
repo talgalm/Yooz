@@ -1,5 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useRef, useCallback } from 'react';
 import { useMediaPreload } from '../../hooks/useMediaPreload';
 import { resolveVideoSource } from '../../utils/videoSource';
 import { linkifyText } from '../../utils/linkifyText';
@@ -51,6 +50,7 @@ import {
   DESKTOP_MEDIA_STATION_WIDTH,
 } from '../../components/games/styled';
 import { StationStage } from '../../components/StationStage';
+import ImageZoomOverlay, { ZoomBadge, ZoomGlassIcon } from '../../components/ImageZoomOverlay';
 import MissionInlinePlayer from './MissionInlinePlayer';
 import ActivitySessionHeader, {
   SessionHeaderIconPlaceholder,
@@ -891,24 +891,20 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
   const descAfter = station.settings?.descPosition === 'after';
   const [fullscreen, setFullscreen] = useState(false);
 
-  useEffect(() => {
-    if (!fullscreen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setFullscreen(false);
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [fullscreen]);
-
   const mediaEl = ready ? (
     <MediaStationWindow style={{ marginTop: 16 }} isDynamic>
-      <MediaStationImageWrapper style={{ marginBottom: 0 }}>
+      <MediaStationImageWrapper style={{ marginBottom: 0, position: 'relative' }}>
         <MediaStationImage
           src={mediaUrl}
           alt=""
           style={{ cursor: 'zoom-in' }}
           onClick={() => setFullscreen(true)}
         />
+        <ZoomBadge type="button" aria-label={t.imageZoomHint || 'Enlarge image'}
+          title={t.imageZoomHint || 'Enlarge image'}
+          onClick={() => setFullscreen(true)}>
+          <ZoomGlassIcon zoomed={false} />
+        </ZoomBadge>
       </MediaStationImageWrapper>
     </MediaStationWindow>
   ) : failed ? (
@@ -935,72 +931,12 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
       <FixedContinueButton onClick={onContinue} disabled={!ready}>
         {t.continueButton}
       </FixedContinueButton>
-      {fullscreen && mediaUrl && createPortal(
-        // Portaled to body so the dark backdrop covers the session header
-        // bar (exit/help/mute/score) at the top of the page. Previously the
-        // overlay rendered inside MediaStationLayout, which sits below an
-        // animated/sticky stacking-context parent — z-index 2000 alone wasn't
-        // enough to escape it (QA Jun 2026 page 7).
-        <ImageFullscreenOverlay onClick={() => setFullscreen(false)} role="dialog" aria-modal="true">
-          <ImageFullscreenClose
-            type="button"
-            aria-label="Close"
-            onClick={(e) => { e.stopPropagation(); setFullscreen(false); }}
-          >
-            ×
-          </ImageFullscreenClose>
-          <ImageFullscreenImg src={mediaUrl} alt="" onClick={(e) => e.stopPropagation()} />
-        </ImageFullscreenOverlay>,
-        document.body
+      {fullscreen && mediaUrl && (
+        <ImageZoomOverlay src={mediaUrl} onClose={() => setFullscreen(false)} />
       )}
     </MediaStationLayout>
   );
 }
-
-const ImageFullscreenOverlay = styled('div')({
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(0,0,0,0.92)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  // Above the sticky session header (z-index 30) and any popup modal layers.
-  // Combined with the createPortal(...) target=document.body the backdrop
-  // now reliably blacks out the entire viewport including the top icon row.
-  zIndex: 99999,
-  cursor: 'zoom-out',
-  padding: 16,
-});
-
-const ImageFullscreenImg = styled('img')({
-  maxWidth: '100%',
-  maxHeight: '100%',
-  objectFit: 'contain',
-  borderRadius: 8,
-  cursor: 'default',
-});
-
-const ImageFullscreenClose = styled('button')({
-  position: 'absolute',
-  top: 16,
-  right: 16,
-  width: 44,
-  height: 44,
-  borderRadius: '50%',
-  border: 'none',
-  background: 'rgba(255,255,255,0.15)',
-  color: '#fff',
-  fontSize: 28,
-  lineHeight: 1,
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 1,
-  '&:hover': {
-    background: 'rgba(255,255,255,0.25)',
-  },
-});
 
 // ─── Video Station with replay + conditional continue ───
 

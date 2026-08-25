@@ -33,6 +33,7 @@ export const texts = {
     continueButton: 'Continue',
     videoWatchToContinue: 'Watch the video to continue',
     videoSkip: 'Skip the video',
+    imageZoomHint: 'Enlarge image',
     // Finish page
     finishTitle: 'LESSON COMPLETE!',
     finishScore: 'Your Score',
@@ -112,6 +113,7 @@ export const texts = {
     continueButton: 'המשך',
     videoWatchToContinue: 'צפו בסרטון עד הסוף כדי להמשיך',
     videoSkip: 'דלגו על הסרטון',
+    imageZoomHint: 'להגדלת התמונה',
     // Finish page
     finishTitle: 'השלמת את המסלול!',
     finishScore: 'הניקוד שלך',

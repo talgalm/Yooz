@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react'; // useEffect kept for initial focus
-import { createPortal } from 'react-dom';
 import { styled, keyframes } from '@mui/material/styles';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 import type { GameResult } from '../games/types';
 import { resolveVideoSource } from '../../utils/videoSource';
 import { StationContinueButton } from '../games/styled';
+import ImageZoomOverlay, { ZoomBadge, ZoomGlassIcon } from '../ImageZoomOverlay';
 
 // ─── Types ───
 
@@ -109,6 +109,7 @@ const ClueText = styled('p')({
 // Flex slot that absorbs all remaining vertical space; the image scales down
 // inside it (object-fit: contain) so the station never needs to scroll.
 const MediaSlot = styled('div')({
+  position: 'relative', // anchors the zoom badge to the media area's corner
   flex: '1 1 0',
   minHeight: 0,
   width: '100%',
@@ -147,51 +148,6 @@ const RiddleMediaImage = styled('img')({
   borderRadius: 14,
   boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
   cursor: 'zoom-in',
-});
-
-const ImageFullscreenOverlay = styled('div')({
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(0,0,0,0.92)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  // Sits above sticky session header (z 30) and the riddle's own success
-  // overlay. Used together with createPortal so the backdrop reliably covers
-  // the top icon row (QA Jun 2026 page 7).
-  zIndex: 99999,
-  cursor: 'zoom-out',
-  padding: 16,
-});
-
-const ImageFullscreenImg = styled('img')({
-  maxWidth: '100%',
-  maxHeight: '100%',
-  objectFit: 'contain',
-  borderRadius: 8,
-  cursor: 'default',
-});
-
-const ImageFullscreenClose = styled('button')({
-  position: 'absolute',
-  top: 16,
-  right: 16,
-  width: 44,
-  height: 44,
-  borderRadius: '50%',
-  border: 'none',
-  background: 'rgba(255,255,255,0.15)',
-  color: '#fff',
-  fontSize: 28,
-  lineHeight: 1,
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 1,
-  '&:hover': {
-    background: 'rgba(255,255,255,0.25)',
-  },
 });
 
 const BoxesArea = styled('div')<{ isrtl: string }>(({ isrtl }) => ({
@@ -489,16 +445,6 @@ export default function RiddleStation({
     return () => clearTimeout(t);
   }, []);
 
-  // Close fullscreen image on Escape
-  useEffect(() => {
-    if (!imageFullscreen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setImageFullscreen(false);
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [imageFullscreen]);
-
   const handleCheck = useCallback(() => {
     if (phase !== 'playing') return;
     const userAnswer = inputs.join('').toLowerCase();
@@ -588,6 +534,10 @@ export default function RiddleStation({
               onClick={() => setImageFullscreen(true)}
               onTouchStart={(e) => { if (e.touches.length >= 2) setImageFullscreen(true); }}
             />
+            <ZoomBadge type="button" aria-label="Enlarge image" title="Enlarge image"
+              onClick={() => setImageFullscreen(true)}>
+              <ZoomGlassIcon zoomed={false} />
+            </ZoomBadge>
           </MediaSlot>
         )}
 
@@ -674,18 +624,8 @@ export default function RiddleStation({
         )}
       </Container>
 
-      {imageFullscreen && settings.mediaUrl && settings.mediaType === 'image' && createPortal(
-        <ImageFullscreenOverlay onClick={() => setImageFullscreen(false)} role="dialog" aria-modal="true">
-          <ImageFullscreenClose
-            type="button"
-            aria-label="Close"
-            onClick={(e) => { e.stopPropagation(); setImageFullscreen(false); }}
-          >
-            ×
-          </ImageFullscreenClose>
-          <ImageFullscreenImg src={settings.mediaUrl} alt="" onClick={(e) => e.stopPropagation()} />
-        </ImageFullscreenOverlay>,
-        document.body
+      {imageFullscreen && settings.mediaUrl && settings.mediaType === 'image' && (
+        <ImageZoomOverlay src={settings.mediaUrl} onClose={() => setImageFullscreen(false)} />
       )}
 
       {phase === 'success' && (
