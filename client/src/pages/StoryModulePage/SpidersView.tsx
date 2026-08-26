@@ -148,6 +148,13 @@ const Container = styled('div')<{ bg?: string }>(({ bg }) => ({
   flexDirection: 'column',
   height: '100dvh',
   overflow: 'hidden',
+  // `contain: paint` clips the drifting scenery (balloons, clouds, tumbleweeds)
+  // to this box. They are `position: fixed` and start ~180px off the left edge,
+  // and `overflow: hidden` does not clip fixed descendants — so in this RTL
+  // document they were widening the page past the screen (scrollWidth 555 vs a
+  // 375 screen). Samsung Internet then let the page pan sideways, dragging the
+  // roadmap and the fixed popup overlay along with it.
+  contain: 'paint',
   position: 'relative',
   background: bg || '#8fb247',
 }));
