@@ -92,7 +92,7 @@ const tumbleweedSpin = keyframes`
 // ─── Styled Components ───
 
 const RoadmapContainer = styled('div')({
-  display: 'flex', flexDirection: 'column', height: '100dvh',
+  display: 'flex', flexDirection: 'column', height: '100svh',
   overflow: 'hidden',
 });
 
@@ -1289,23 +1289,31 @@ export default function RoadmapView({
     return () => clearInterval(interval);
   }, [kit.showTumbleweed]);
 
-  // Snap-scroll to active station before first paint
+  // Snap-scroll to active station before first paint.
+  //
+  // Deliberately not re-run on height changes: Android browsers resize the
+  // viewport while their address bar slides in and out, and re-centering on
+  // every one of those made the map jump around behind the guidelines popup.
+  // Height is read live off the element instead of the observed state.
+  const centerScrollRef = useRef(getCenteredScrollTop);
+  centerScrollRef.current = getCenteredScrollTop;
+
   useLayoutEffect(() => {
     const el = scrollRef.current;
-    if (!el || W <= 0 || scrollAreaH <= 0) return;
-    el.scrollTop = getCenteredScrollTop(currentItemIndex, W, scrollAreaH);
-  }, [currentItemIndex, W, scrollAreaH, getCenteredScrollTop]);
+    if (!el || W <= 0 || el.clientHeight <= 0) return;
+    el.scrollTop = centerScrollRef.current(currentItemIndex, W, el.clientHeight);
+  }, [currentItemIndex, W]);
 
   // Smooth-scroll to active station after footstep animation
   useEffect(() => {
     if (!showFootsteps) return;
     const t = setTimeout(() => {
       const el = scrollRef.current;
-      if (!el || W <= 0 || scrollAreaH <= 0) return;
-      el.scrollTo({ top: getCenteredScrollTop(currentItemIndex, W, scrollAreaH), behavior: 'smooth' });
+      if (!el || W <= 0 || el.clientHeight <= 0) return;
+      el.scrollTo({ top: centerScrollRef.current(currentItemIndex, W, el.clientHeight), behavior: 'smooth' });
     }, 1800);
     return () => clearTimeout(t);
-  }, [currentItemIndex, showFootsteps, W, scrollAreaH, getCenteredScrollTop]);
+  }, [currentItemIndex, showFootsteps, W]);
 
   useEffect(() => {
     if (!showFootsteps) return;
@@ -1371,7 +1379,7 @@ export default function RoadmapView({
           <RoadmapActivityName>{activityNameOnRoadmap}</RoadmapActivityName>
         ) : null}
         <ScrollArea ref={scrollRef}>
-          <div ref={canvasRef} style={{ width: '100%', minHeight: '100dvh' }} />
+          <div ref={canvasRef} style={{ width: '100%', minHeight: '100svh' }} />
         </ScrollArea>
       </RoadmapContainer>
     );

@@ -57,12 +57,14 @@ const Overlay = styled('div')<{ exiting?: boolean }>(({ exiting }) => ({
 const PopupFrame = styled('div')<{ exiting?: boolean }>(({ exiting }) => ({
   width: 'min(92vw, 380px)',
   maxWidth: 380,
-  maxHeight: 'calc(100dvh - 20px)',
+  maxHeight: 'calc(100svh - 20px)',
   overflow: 'hidden',
+  display: 'flex',
+  flexDirection: 'column',
   background: GUIDELINES_PURPLE,
   border: `3px solid ${FRAME_BORDER}`,
   borderRadius: 24,
-  padding: 'clamp(6px, 1.6vh, 10px)',
+  padding: 'clamp(6px, 1.6svh, 10px)',
   boxShadow: `0 12px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.3)`,
   animation: `${exiting ? popOut : popIn} ${exiting ? '0.3s' : '0.5s'} cubic-bezier(0.34, 1.56, 0.64, 1) forwards`,
 }));
@@ -73,10 +75,11 @@ const HeaderRow = styled('div')({
   alignItems: 'center',
   padding: '4px 8px 8px',
   position: 'relative',
+  flexShrink: 0,
 });
 
 const TitleText = styled('div')({
-  fontSize: 'clamp(17px, 2.5vh, 20px)',
+  fontSize: 'clamp(17px, 2.5svh, 20px)',
   fontWeight: 900,
   color: '#fff',
   letterSpacing: 1.2,
@@ -105,38 +108,43 @@ const ContentArea = styled('div')({
   background: '#fff',
   border: `3px solid ${FRAME_BORDER}`,
   borderRadius: 16,
-  padding: 'clamp(14px, 2.2vh, 20px) clamp(14px, 3vw, 18px)',
+  padding: 'clamp(14px, 2.2svh, 20px) clamp(14px, 3vw, 18px)',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  overflow: 'hidden',
+  // Scrollable, not clipped: on a short viewport the content can outgrow the
+  // frame, and hiding the overflow used to swallow the start button.
+  flex: 1,
+  minHeight: 0,
+  overflowY: 'auto',
+  overscrollBehavior: 'contain',
 });
 
 const IllustrationRow = styled('div')({
   display: 'flex',
   gap: 'clamp(12px, 3vw, 20px)',
   justifyContent: 'center',
-  marginBottom: 'clamp(10px, 1.8vh, 20px)',
+  marginBottom: 'clamp(10px, 1.8svh, 20px)',
   animation: `${bounceIn} 0.6s ease-out 0.3s both`,
   '& svg': {
-    width: 'clamp(52px, 8vh, 70px)',
-    height: 'clamp(52px, 8vh, 70px)',
+    width: 'clamp(52px, 8svh, 70px)',
+    height: 'clamp(52px, 8svh, 70px)',
   },
 });
 
 const SectionTitle = styled('div')({
   fontWeight: 800,
-  fontSize: 'clamp(15px, 2.3vh, 17px)',
+  fontSize: 'clamp(15px, 2.3svh, 17px)',
   color: GUIDELINES_PURPLE,
   textAlign: 'center',
-  marginBottom: 'clamp(6px, 1.2vh, 10px)',
+  marginBottom: 'clamp(6px, 1.2svh, 10px)',
   width: '100%',
 });
 
 const MissionList = styled('ul')({
   listStyle: 'none',
   padding: 0,
-  margin: '0 0 clamp(8px, 1.5vh, 14px) 0',
+  margin: '0 0 clamp(8px, 1.5svh, 14px) 0',
   width: '100%',
 });
 
@@ -144,8 +152,8 @@ const MissionItem = styled('li')<{ delay?: number }>(({ delay = 0 }) => ({
   display: 'flex',
   alignItems: 'flex-start',
   gap: 8,
-  marginBottom: 'clamp(6px, 1vh, 10px)',
-  fontSize: 'clamp(13px, 1.9vh, 14px)',
+  marginBottom: 'clamp(6px, 1svh, 10px)',
+  fontSize: 'clamp(13px, 1.9svh, 14px)',
   lineHeight: 1.4,
   color: '#3F3E2F',
   animation: `${bounceIn} 0.4s ease-out ${0.4 + delay * 0.1}s both`,
@@ -161,7 +169,7 @@ const MissionText = styled('span')({
 
 const StarBullet = styled('span')({
   color: '#632e7d',
-  fontSize: 'clamp(15px, 2.2vh, 18px)',
+  fontSize: 'clamp(15px, 2.2svh, 18px)',
   flexShrink: 0,
   marginTop: 0,
   animation: `${starSpin} 2s ease-in-out infinite`,
@@ -170,8 +178,8 @@ const StarBullet = styled('span')({
 const GuidelinesSection = styled('div')({
   width: '100%',
   marginTop: 4,
-  marginBottom: 'clamp(4px, 1vh, 8px)',
-  padding: 'clamp(10px, 1.6vh, 14px)',
+  marginBottom: 'clamp(4px, 1svh, 8px)',
+  padding: 'clamp(10px, 1.6svh, 14px)',
   background: '#f8f9e8',
   borderRadius: 12,
   border: `2px dashed ${FRAME_BORDER}44`,
@@ -183,13 +191,13 @@ const GuidelinesLabel = styled('div')({
   alignItems: 'center',
   gap: 6,
   fontWeight: 800,
-  fontSize: 'clamp(13px, 2vh, 15px)',
+  fontSize: 'clamp(13px, 2svh, 15px)',
   color: FRAME_BORDER,
-  marginBottom: 'clamp(6px, 1vh, 8px)',
+  marginBottom: 'clamp(6px, 1svh, 8px)',
 });
 
 const GuidelinesText = styled('div')({
-  fontSize: 'clamp(13px, 1.9vh, 14px)',
+  fontSize: 'clamp(13px, 1.9svh, 14px)',
   color: '#555',
   lineHeight: 1.5,
   whiteSpace: 'pre-wrap',
@@ -198,13 +206,13 @@ const GuidelinesText = styled('div')({
 const StartButton = styled('button')<{ exiting?: boolean }>(({ exiting }) => ({
   display: 'block',
   width: '75%',
-  margin: 'clamp(10px, 1.7vh, 16px) auto 2px',
-  padding: 'clamp(10px, 1.8vh, 13px) 28px',
+  margin: 'clamp(10px, 1.7svh, 16px) auto 2px',
+  padding: 'clamp(10px, 1.8svh, 13px) 28px',
   background: GUIDELINES_PURPLE,
   color: '#fff',
   border: `3px solid ${FRAME_BORDER}`,
   borderRadius: 50,
-  fontSize: 'clamp(15px, 2.2vh, 17px)',
+  fontSize: 'clamp(15px, 2.2svh, 17px)',
   fontWeight: 800,
   cursor: 'pointer',
   letterSpacing: 1,
