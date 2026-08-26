@@ -41,3 +41,18 @@ select {
   filter: blur(5px);
   transition: filter 0.2s ease;
 }
+
+/*
+ * Freeze the page while it is blurred.
+ *
+ * The blur turns all of #root into one composited layer, and anything still
+ * animating inside it — the roadmap's drifting balloons and clouds, which are
+ * `position: fixed` and cross the whole viewport — forces that whole layer to
+ * be re-blurred every frame. On weaker Android GPUs that shows up as the map
+ * visibly shifting and wobbling behind the popup. Nothing behind a modal needs
+ * to animate anyway.
+ */
+#root.yooz-modal-blur,
+#root.yooz-modal-blur * {
+  animation-play-state: paused !important;
+}
