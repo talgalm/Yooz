@@ -918,7 +918,7 @@ export default function StoryModulePage() {
     }
   }, [phase, data]);
 
-  const handleGameComplete = async (result: GameResult) => {
+  const handleGameComplete = (result: GameResult) => {
     if (!data) return;
     if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const currentItem = data.module.items[currentItemIndex];
@@ -967,7 +967,10 @@ export default function StoryModulePage() {
     );
 
     if (code) {
-      await apiFetchPersistSilent(`/api/activities/${code}/progress`, {
+      // Fire-and-forget: this is a best-effort write that retries for ~a minute and
+      // falls back to the offline queue. Awaiting it made the continue button look
+      // dead whenever the request was slow — match handleOrderSurveyComplete below.
+      void apiFetchPersistSilent(`/api/activities/${code}/progress`, {
         method: 'PATCH',
         body: JSON.stringify({
           itemResult,
