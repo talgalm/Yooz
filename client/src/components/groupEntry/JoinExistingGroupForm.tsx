@@ -31,33 +31,19 @@ const TodayGroupsTitle = styled('p')({
   textAlign: 'center',
 });
 
-const TodayGroupsList = styled('div')({
-  maxHeight: 200,
-  overflowY: 'auto',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 6,
-  border: '1px solid #e0e0e0',
-  borderRadius: 12,
-  padding: 8,
-  WebkitOverflowScrolling: 'touch',
-});
-
-const TodayGroupItem = styled('button')({
-  padding: '10px 12px',
-  background: '#f7f5fb',
-  border: '1px solid #e6e0f0',
-  borderRadius: 10,
-  fontSize: 14,
+const TodayGroupsSelect = styled('select')({
+  width: '100%',
+  padding: '14px 16px',
+  fontSize: 16,
   fontWeight: 600,
   color: '#333',
-  cursor: 'pointer',
+  border: '1px solid #e6e0f0',
+  borderRadius: 12,
+  background: '#f7f5fb',
+  fontFamily: 'inherit',
   textAlign: 'start',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-  '&:hover': { background: '#efe9f8' },
-  '&:disabled': { opacity: 0.6, cursor: 'default' },
+  boxSizing: 'border-box',
+  cursor: 'pointer',
 });
 
 export default function JoinExistingGroupForm({ activityCode, onBack, onTokenResolved }: Props) {
@@ -139,34 +125,21 @@ export default function JoinExistingGroupForm({ activityCode, onBack, onTokenRes
         {loading ? t.joining : t.continue}
       </GroupEntryButton>
 
-      {todayGroups.length > 0 && (() => {
-        // Typing in the search box filters the list live.
-        const q = input.trim().toLowerCase();
-        const filtered = q
-          ? todayGroups.filter((g) => g.name.toLowerCase().includes(q))
-          : todayGroups;
-        return (
-          <>
-            <TodayGroupsTitle>{t.todayGroupsTitle}</TodayGroupsTitle>
-            <TodayGroupsList>
-              {filtered.length === 0 ? (
-                <TodayGroupItem type="button" disabled>{t.groupNotFound}</TodayGroupItem>
-              ) : (
-                filtered.map((g) => (
-                  <TodayGroupItem
-                    key={g.inviteToken}
-                    type="button"
-                    disabled={loading}
-                    onClick={() => onTokenResolved(g.inviteToken)}
-                  >
-                    {g.name}
-                  </TodayGroupItem>
-                ))
-              )}
-            </TodayGroupsList>
-          </>
-        );
-      })()}
+      {todayGroups.length > 0 && (
+        <>
+          <TodayGroupsTitle>{t.todayGroupsTitle}</TodayGroupsTitle>
+          <TodayGroupsSelect
+            defaultValue=""
+            disabled={loading}
+            onChange={(e) => e.target.value && onTokenResolved(e.target.value)}
+          >
+            <option value="" disabled>{t.todayGroupsSelect}</option>
+            {todayGroups.map((g) => (
+              <option key={g.inviteToken} value={g.inviteToken}>{g.name}</option>
+            ))}
+          </TodayGroupsSelect>
+        </>
+      )}
       <GroupEntryBackButton onBack={onBack} />
     </GroupEntryForm>
   );
