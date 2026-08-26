@@ -48,8 +48,12 @@ npm run dev:client       # Vite :5173, proxies /api → :3000   — terminal 2
 npm run build:client     # build React app into client/dist
 npm start                # production: Express serves API + built client on :3000
 ```
-No lint script, no unit-test runner. Only Playwright walkthroughs (`npm run walkthrough*`,
-`walkthroughs/*.spec.ts`) — UI-flow recordings, not assertions.
+No lint script, no test-runner script. Two `node:test` self-checks are run by hand
+(`npx tsx --test client/src/utils/inAppBrowserEscape.test.ts`,
+`npx tsx server/src/utils/groupRewardConfig.test.ts`). Everything else is Playwright
+walkthroughs (`npm run walkthrough*`, `walkthroughs/*.spec.ts`) — UI-flow recordings, not
+assertions. `npm run build --prefix client` is the only real typecheck: `client/tsconfig.json`
+is solution-style (`files: []`), so a bare `tsc --noEmit` there checks nothing and always passes.
 
 ### Deployment
 Push to `main` → `.github/workflows/deploy.yml`:
@@ -120,7 +124,8 @@ Login config: `loginFields: ('email'|'phoneNumber'|'name')[]`, `emailGoogle?`,
 - `type: 'story'|'mission'|'spiders'`, `theme?` (e.g. `'spy'`), `backgroundImage?`.
 - `items: IModuleItem[]` — ordered `{type:'game'|'station'|'mission', ref: ObjectId,
   groups?: string[] (only these groups see it), spiderSvg?, isFinal? (spiders lock),
-  collageSplit? (split a collage station into N parts across the activity)}`.
+  collageSplit? (split a collage station into N parts across the activity),
+  revisitable? (completed item stays re-openable from the roadmap — see §11)}`.
 - `missionRef?` (when `type='mission'`), `showStationNumbers?`, `showItemTitleNumbers?`.
 - `popups?: IPopupMessage[]` — see §11.
 
@@ -155,7 +160,7 @@ name/description/`settings.questions.text`.
 
 ### Station (`stations`) — info/media/interactive screen
 `type: StationType` = `'text'|'video'|'image'|'narrative'|'badge'|'collage'|'feedback'|
-'riddle'|'avatar'|'enteringText'`. Same shape as Game (`settings`, `customer`, `theme`,
+'riddle'|'avatar'|'avatarQuiz'|'enteringText'` (11 types; union lives in `models/Station.ts`). Same shape as Game (`settings`, `customer`, `theme`,
 `tags`, `folderId`). See §10.
 
 ### Mission (`missions`) — 3-part recycling-style activity
@@ -277,6 +282,7 @@ No admin auth — the `statsShareToken` is the credential.
 
 ### AI / media / misc
 - `/api/help` (participant help chat, Gemini), `/api/avatar-chat` (avatar station chat),
+  `/api/avatar-quiz` (avatarQuiz station answer grading + follow-ups),
   `/api/check-answer` (AI answer grading), `/api/tts` (Azure TTS),
   `/api/admin/report-assistant` (`/chat`+`/download`, analytics Q&A),
   `/api/admin/help-assistant` (`/chat`, admin how-to + dev-task creation).
@@ -385,7 +391,8 @@ hand-rolled (HTML5 drag API + tap-to-swap touch fallback) — no dnd library.
   `components/games/TrashSortGame/`.
 
 **Scoring summary** (full table in `QA_REQUIREMENTS_AND_TESTS.md` Appendix A): each game reports
-a per-item `score` + `maxPossibleScore`; hints deduct (typically −5). Cross-activity averages
+a per-item `score` + `maxPossibleScore`; hints deduct `GAME_CONSTANTS.HINT_PENALTY` (**4**, though
+the warning copy in the game `.i18n.ts` files still says 5 — known mismatch). Cross-activity averages
 normalize every report to 0-100 against its own achievable max (`scoreNormalization.ts`).
 
 Shared game UI: `GameInstructionsScreen`, `GameCompleteScreen`, `HintButton`/`HintModals`
@@ -411,6 +418,13 @@ Rendered in `pages/StoryModulePage/PlayingPhase.tsx` (story) / `StationStage` / 
 - **feedback** — feedback/survey capture (`FeedbackStation`).
 - **riddle** — riddle with media + checked answer (`RiddleStation`, may use `/api/check-answer`).
 - **avatar** — AI chat with a character (`AvatarStation` → `/api/avatar-chat`).
+- **avatarQuiz** — a character *asks* the participant questions and an AI grades each free-text
+  answer 0-100 (`AvatarQuizStation` → `/api/avatar-quiz`). Settings: `characterName`,
+  `characterImageUrl`, `voiceType:'man'|'woman'` (TTS), `topic`, `introText`/`outroText`,
+  `personaInstructions`, `strictness:'lenient'|'balanced'|'strict'`, `pointsPerQuestion`,
+  `questionCount` (drawn from the bank), behaviour toggles (shuffle / retry / skip / auto-advance),
+  `questions[]: {text, idealAnswer, keywords[], teachingPoint, hint?, points?, learnMoreUrl?,
+  level?1|2|3}`, and optional `reactionVideos{asking,correct,partial,incorrect}`.
 - **enteringText** — free-text entry station (`EnteringTextStation`).
 
 Shared: `StationDescriptionPopup`, floating clue button for info stations.
@@ -433,6 +447,11 @@ Shared: `StationDescriptionPopup`, floating clue button for info stations.
   default today-only. `LeaderboardView` (participant) + `ManagerDashboardPage/AnimatedLeaderboard`.
 - **Roadmap**: `RoadmapView` (story path) / `SpidersView` (graph, `isFinal` lock) — themed via
   `CustomTheme` (`ThemedBackground`, `themes/SpyThemeWrapper`).
+- **Re-entry** (`module.items[].revisitable`): a completed item stays tappable on the roadmap and
+  renders with a brighter, ringed node so it reads as still-open. A revisit is read-only —
+  `revisitReturnIndex` in `StoryModulePage` holds the real progress index, and `endRevisit()`
+  restores it without persisting progress, re-awarding points, or advancing. Toggled per item in
+  `AdminCreateActivityPage` → Module Items → "Re-entry / כניסה חוזרת".
 
 ---
 
@@ -532,6 +551,8 @@ present view (`OrderSurveyPresentPage` / `manager/present`).
 - **Customers can view reports** (Statistics tab) scoped to their own/managed activities (§7);
   audit log stays admin-only.
 - **Video stations gate Continue** until the video ends (§10); iframes exempt. A bottom-left "skip the video" button (`SkipVideoButton`, PlayingPhase) bypasses the gate.
+- **Per-item re-entry** (§11) — completed roadmap items flagged `revisitable` stay open and are
+  tinted brighter than locked-behind ones; revisits never re-score.
 - Collage encode is the main scaling pressure point (Lambda + load shedding + boot recovery).
 - AI features (help/report/avatar chat, answer check) use Gemini; TTS uses Azure; SMS uses TextMe
   (stub when creds absent).
@@ -843,6 +864,12 @@ optional logo placeholder + iconRecolor. `DEFAULT_TEMPLATE_ID='default'`. Source
 - **`routes/avatarChat.ts`** — `POST /api/avatar-chat` (public, rate-limited). In-character
   chat for the **avatar station**. Body `{message(≤500), history, settings(AvatarSettings —
   persona/voice)}`. Returns the character's reply (Gemini, persona system prompt).
+- **`routes/avatarQuiz.ts`** — `POST /api/avatar-quiz` (public, 20 req/min/IP). Grades one
+  avatarQuiz answer. Body `{stationId, questionIndex, answer, history(last 6), mode?}`; loads the
+  station server-side (the ideal answers never reach the client) and returns
+  `{verdict, scoreRatio, reaction, teaching}`. `mode:'followup'` sends `message` instead and
+  answers a follow-up in character; without a Gemini key follow-ups return a fixed "can't expand
+  right now" line while grading falls back to keyword matching.
 - **`routes/reportAssistant.ts`** — `/api/admin/report-assistant` (admin/super_admin/customer).
   `classifyExisting()` maps a question to a `ReportCatalogEntry` (pre-canned analytics answer);
   otherwise `askGemini(message, contextJson, lang, history)` with report context. `POST /chat`
@@ -1100,8 +1127,10 @@ Shared: `GameInstructionsScreen`, `GameCompleteScreen`, `HintButton`/`HintModals
 ### Stations (`components/stations/`)
 `AvatarStation` (AI chat → `/api/avatar-chat`), `BadgeStation`, `CollageStation` (photo capture
 → collage job; `collageJobStorage`/`collageSplitStorage`/`backgroundCollageJob` helpers),
-`EnteringTextStation`, `FeedbackStation`, `NarrativeStation` (TTS narration), `RiddleStation`
-(answer checked via `/api/check-answer`), `StationDescriptionPopup`. (text/video/image are
+`AvatarQuizStation` (character asks, AI grades → `/api/avatar-quiz`), `EnteringTextStation`,
+`FeedbackStation`, `NarrativeStation` (TTS narration), `RiddleStation`
+(answer checked via `/api/check-answer`), `StationDescriptionPopup`,
+`ImageZoomOverlay` (shared fullscreen image viewer — riddle + story media). (text/video/image are
 rendered inline in `PlayingPhase.tsx`.)
 
 ### Other components

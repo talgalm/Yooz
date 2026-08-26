@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Canonical reference
 
-`MEMORY.md` (~28KB at repo root) is the source of truth for data models, game configs, every API endpoint, every client route, the popup/hint/opening systems, and current feature status. **Read it before answering architectural questions or designing new features** — it documents schemas, defaults, and conventions that aren't obvious from the code.
+`MEMORY.md` (~73KB at repo root) is the source of truth for data models, game configs, every API endpoint, every client route, the popup/hint/opening systems, and current feature status. **Read it before answering architectural questions or designing new features** — it documents schemas, defaults, and conventions that aren't obvious from the code.
 
 ## Development commands
 
@@ -18,7 +18,19 @@ npm run build:client     # Build React app into client/dist
 npm start                # Production: Express serves API + built client on :3000
 ```
 
-There is no lint script and no unit test runner — the only tests are Playwright walkthroughs (UI flow recordings, not assertions):
+There is no lint script and no test runner script. Two `node:test` self-checks exist and are
+run by hand:
+
+```bash
+npx tsx --test client/src/utils/inAppBrowserEscape.test.ts
+npx tsx server/src/utils/groupRewardConfig.test.ts
+```
+
+To typecheck the client, run `npm run build --prefix client`. A bare `tsc --noEmit` inside
+`client/` checks **nothing** — `client/tsconfig.json` is solution-style (`"files": []`), so it
+always passes.
+
+Everything else is Playwright walkthroughs (UI flow recordings, not assertions):
 
 ```bash
 npm run walkthrough             # record all walkthroughs + add voice narration
@@ -31,7 +43,7 @@ When running a single Playwright spec: `npx playwright test walkthroughs/02-crea
 
 **Monorepo, single-host deployment.** `/server` and `/client` are two npm packages with their own `node_modules` and TS configs. In production, the Express server serves the built React app *and* the API from port 3000 — there is no separate frontend host.
 
-- **Server**: Express 4 + TypeScript (`tsx` for dev, `tsc` for build), Mongoose 9 on MongoDB Atlas (cluster `Yooz-Cluster`, db `yooz`). Entry point `server/src/index.ts` wires ~20 route modules under `/api/*`, then falls back to SPA `index.html` for any non-API path. Connects to DB → runs migrations + seeds super-admin + built-in mission → listens.
+- **Server**: Express 4 + TypeScript (`tsx` for dev, `tsc` for build), Mongoose 9 on MongoDB Atlas (cluster `Yooz-Cluster`, db `yooz`). Entry point `server/src/index.ts` wires ~30 route modules under `/api/*`, then falls back to SPA `index.html` for any non-API path. Connects to DB → runs migrations + seeds super-admin + built-in mission → listens.
 - **Client**: React 19 + Vite 6 + TypeScript, MUI v7 with `@emotion/styled` (no CSS files — only `App.css` for the global reset). React Router v7. No state library — context per auth realm.
 - **Storage**: Cloudinary for all uploaded media (images, video, audio). Uploaded via `POST /api/admin/upload` (multer memory storage → Cloudinary SDK). Reusable client component: `FileUploadButton`.
 
@@ -53,7 +65,7 @@ Each has its own React context (`AdminAuthContext`, `AuthContext`, `ManagerAuthC
 
 - **Use `_id`, not `id`**, for Mongoose document references on the client. Population is one level deep for activity module endpoints.
 - **i18n is co-located**: every page/component that has user-facing text has a sibling `.i18n.ts` file exporting Hebrew (default) + English strings, consumed via `useTranslations(texts)`. Hebrew is the *default* language and the app supports RTL.
-- **Game configs live in `game.settings`** as `Record<string, unknown>` server-side, typed per game type client-side. When adding a new game type, add the type union in `server/src/types/index.ts` and the matching client config form in `AdminGameConfigPage.tsx`.
+- **Game configs live in `game.settings`** as `Record<string, unknown>` server-side, typed per game type client-side. When adding a new game type, add the settings interface in `server/src/types/index.ts`, the type to `validTypes` in `AdminGameConfigPage/index.tsx`, and the matching config form beside it. (`StationType` is a real union, but it lives in `server/src/models/Station.ts`.)
 - **Drag-and-drop is hand-rolled** (HTML5 drag API + tap-to-swap fallback for touch). No dnd library — match this pattern if adding a new draggable game.
 - **API surface convention**: admin endpoints under `/api/admin/*` require admin JWT; manager endpoints under `/api/manager/*` require manager JWT; participant endpoints under `/api/activities/:code/*` are mostly public, except `/scores` which needs participant JWT.
 - **Public OG share page**: `server/src/index.ts` has a Facebook-crawler short-circuit before the SPA fallback (`/play/:code` returns server-rendered OG HTML to social crawlers). Don't move it.

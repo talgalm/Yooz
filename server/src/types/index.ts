@@ -101,12 +101,13 @@ export interface ModuleItemRequest {
   groups?: string[]; // when set, only these groups see this item
   spiderSvg?: string;
   isFinal?: boolean;
+  revisitable?: boolean; // completed item stays re-openable from the roadmap
   collageSplit?: CollageSplitRequest;
 }
 
 // Module config (sent from client)
 export interface ModuleConfigRequest {
-  type: 'story' | 'mission';
+  type: 'story' | 'mission' | 'spiders';
   backgroundImage?: string;
   items: ModuleItemRequest[]; // ordered mix of games and stations
   popups?: PopupMessageConfig[];

@@ -1,7 +1,7 @@
 # Yooz Platform — Software Requirements & Test Plan
 
 > Auto-generated documentation of client-side behavior and manual QA tests.
-> Last updated: 2026-04-03
+> Last updated: 2026-08-26
 
 ---
 
@@ -40,6 +40,10 @@
 31. [Admin — Station Configuration](#31-admin--station-configuration)
 32. [Admin — Statistics & Analytics](#32-admin--statistics--analytics)
 33. [Groups — Self-Service (Day-Scoped)](#33-groups--self-service-day-scoped)
+34. [Stations — Riddle](#34-stations--riddle)
+35. [Stations — Avatar (AI Chat)](#35-stations--avatar-ai-chat)
+36. [Stations — Avatar Quiz](#36-stations--avatar-quiz)
+37. [Stations — Entering Text](#37-stations--entering-text)
 
 ---
 
@@ -209,6 +213,9 @@
 | ROAD-07 | After completing an item, the roadmap shows a points-roll animation (from old total to new total, 2200ms) |
 | ROAD-08 | Theme decorations display based on configured theme (nature: fish + clouds, ocean: fish + clouds, desert: tumbleweeds) |
 | ROAD-09 | Nodes alternate in layout: rows of 2 then rows of 1, creating a snaking path |
+| ROAD-10 | An item flagged `revisitable` in the activity stays tappable after completion and renders brighter (saturated fill + light ring) than a normal completed node |
+| ROAD-11 | Re-entering a revisitable item is read-only: no score is awarded, no progress is saved, and leaving returns to the roadmap at the real progress index |
+| ROAD-12 | An item locked by the manager (`lockedFromIndex`) shows a lock badge and is not tappable even when `revisitable` |
 
 ### Test Cases
 
@@ -220,6 +227,9 @@
 | T-ROAD-04 | Points roll | Complete a game with score > 0, return to roadmap | Points counter animates from old to new total |
 | T-ROAD-05 | Locked node tap | Tap a locked (future) node | Nothing happens |
 | T-ROAD-06 | Theme decorations | Open activity with nature theme | Fish and cloud decorations visible |
+| T-ROAD-07 | Re-entry node style | Complete an item flagged Re-entry, return to roadmap | Its node is visibly brighter/ringed vs other completed nodes |
+| T-ROAD-08 | Re-entry replay | Tap the completed re-entry node, finish the item again | Returns to the roadmap; total points unchanged; the active item is still the real next one |
+| T-ROAD-09 | Re-entry vs manager lock | Lock the activity from an index at or below that item, tap it | Nothing happens; lock badge shown |
 
 ---
 
@@ -1025,6 +1035,119 @@ login screen). Backed by the `activity_groups` collection (`ActivityGroup` model
 
 ---
 
+## 34. Stations — Riddle
+
+### Requirements
+
+| ID | Requirement |
+|----|-------------|
+| SRID-01 | Shows the riddle text with optional media and a per-character answer input |
+| SRID-02 | The answer is graded by `/api/check-answer` (AI), so near-misses and spelling variants can still pass |
+| SRID-03 | Score decays by attempt: attempt 1 = `maxScore` (default 100), attempt 2 = half, attempt 3 = a quarter |
+| SRID-04 | After 3 wrong attempts the station ends with score 0 and `attempts: 3` |
+| SRID-05 | With `unlimitedAttempts` on, there is no 3-attempt cut-off and the participant keeps guessing |
+| SRID-06 | On success, shows the success screen (custom `successImageUrl` when set) and a continue button whose label can be overridden |
+| SRID-07 | Riddle media opens fullscreen via the shared `ImageZoomOverlay` |
+
+### Test Cases
+
+| # | Test | Steps | Expected |
+|---|------|-------|----------|
+| T-SRID-01 | First-try correct | Enter the exact answer | Success screen; full `maxScore` awarded |
+| T-SRID-02 | Score decay | Answer wrong twice, then correctly | Score is a quarter of `maxScore` |
+| T-SRID-03 | Attempt cut-off | Answer wrong 3 times | Station ends, 0 points, advances |
+| T-SRID-04 | Unlimited attempts | Enable `unlimitedAttempts`, answer wrong 4+ times | Still able to guess; no forced end |
+| T-SRID-05 | Fuzzy grading | Enter a correct answer with a typo / different phrasing | Accepted (AI grading) |
+| T-SRID-06 | Media zoom | Tap the riddle image | Fullscreen overlay opens; tap again closes |
+
+---
+
+## 35. Stations — Avatar (AI Chat)
+
+### Requirements
+
+| ID | Requirement |
+|----|-------------|
+| SAVA-01 | Shows a character (name + image) and a free-text chat box; replies come from `/api/avatar-chat` (Gemini) in the configured persona |
+| SAVA-02 | Optional TTS reads each reply aloud using the configured voice type |
+| SAVA-03 | The Continue button stays **disabled until the participant has asked at least one question** |
+| SAVA-04 | `forbiddenPhrases` are never produced by the character; knowledge gates/clues are revealed only per the configured strategy |
+| SAVA-05 | The station is unscored — it reports no points, it only gates progress |
+| SAVA-06 | The description can be shown as an arrival popup instead of static text |
+
+### Test Cases
+
+| # | Test | Steps | Expected |
+|---|------|-------|----------|
+| T-SAVA-01 | Continue gate | Open the station, immediately look at Continue | Disabled until the first question is sent |
+| T-SAVA-02 | In-character reply | Ask a question about the persona's topic | Reply is in character and in the activity language |
+| T-SAVA-03 | Off-topic | Ask something unrelated | Character deflects in-character; no system/prompt text leaks |
+| T-SAVA-04 | TTS | Enable voice, send a message | Reply is spoken with the configured voice type |
+| T-SAVA-05 | Rate limit | Send more than 20 messages in a minute | 429 handled gracefully (error message, no crash) |
+
+---
+
+## 36. Stations — Avatar Quiz
+
+### Requirements
+
+| ID | Requirement |
+|----|-------------|
+| SAVQ-01 | The character **asks** the participant questions; each free-text answer is graded by `/api/avatar-quiz` into `correct` / `partial` / `incorrect` with a 0–1 `scoreRatio` |
+| SAVQ-02 | Points per question = `pointsPerQuestion × scoreRatio`, rounded |
+| SAVQ-03 | Ideal answers and keywords are resolved **server-side from the station id** — they must never appear in a client response or network payload |
+| SAVQ-04 | `questionCount` draws that many questions from the bank; `shuffleQuestions` randomizes the order |
+| SAVQ-05 | `allowRetry` offers a second attempt only when the verdict is `incorrect` |
+| SAVQ-06 | `allowSkip` shows a skip control; `autoAdvance` moves on without a tap after the reaction |
+| SAVQ-07 | Each question can carry its own hint with its own penalty (default 2 points) — this station does **not** use the shared game hint UI |
+| SAVQ-08 | `strictness` (lenient / balanced / strict) changes how generously partial answers are graded |
+| SAVQ-09 | Reaction videos (asking / correct / partial / incorrect) play when configured; otherwise stock reactions are used, without repeating the same line every question |
+| SAVQ-10 | Follow-up questions (`mode: 'followup'`) answer in character; with no Gemini key they return a fixed "can't expand right now" line rather than replaying the teaching point |
+| SAVQ-11 | The outro screen summarises correct / partial counts and reports the total score |
+
+### Test Cases
+
+| # | Test | Steps | Expected |
+|---|------|-------|----------|
+| T-SAVQ-01 | Correct answer | Answer a question fully | `correct` verdict, full question points, positive reaction |
+| T-SAVQ-02 | Partial answer | Answer with only part of the ideal answer | `partial` verdict, proportional points, teaching point shown |
+| T-SAVQ-03 | Incorrect + retry | Answer wrongly with `allowRetry` on | Offered a second attempt; second grading replaces the first |
+| T-SAVQ-04 | No answer leak | Watch the network tab while answering | No response contains `idealAnswer` or `keywords` |
+| T-SAVQ-05 | Skip | Enable `allowSkip`, skip a question | Question scores 0 and the flow advances |
+| T-SAVQ-06 | Per-question hint | Take a question hint | Hint text shown; that question's points reduced by its penalty (default 2) |
+| T-SAVQ-07 | Strictness | Grade the same partial answer at lenient vs strict | Strict awards a lower `scoreRatio` |
+| T-SAVQ-08 | Follow-up without key | Unset `GEMINI_API_KEY`, ask a follow-up | Fixed "can't expand" reply; grading still works via keyword fallback |
+| T-SAVQ-09 | Summary | Finish all questions | Outro lists correct/partial counts; total matches the sum of awarded points |
+
+---
+
+## 37. Stations — Entering Text
+
+### Requirements
+
+| ID | Requirement |
+|----|-------------|
+| SENT-01 | Renders one input per configured field, with the configured submit button label (default "תשובה סופית") |
+| SENT-02 | Submit is blocked while any field is empty |
+| SENT-03 | `maxAttempts` defaults to 3; each wrong submit shows the remaining attempts |
+| SENT-04 | When attempts run out the station ends and advances |
+| SENT-05 | Fields with no `rightAnswer` are collect-only — the station succeeds without validation |
+| SENT-06 | On success, an optional popup shows `successTitle` / `successSubtitle` and success media (image or video), preloaded before it is shown |
+| SENT-07 | A return/continue button label can be overridden per station |
+
+### Test Cases
+
+| # | Test | Steps | Expected |
+|---|------|-------|----------|
+| T-SENT-01 | Empty guard | Leave one field blank and submit | Submit rejected; nothing consumed from the attempt count |
+| T-SENT-02 | Correct answers | Fill every field correctly and submit | Success popup (if configured) then advance |
+| T-SENT-03 | Attempt countdown | Submit wrong answers | Remaining-attempts message decrements each time |
+| T-SENT-04 | Attempts exhausted | Use all attempts | Station ends and advances |
+| T-SENT-05 | Collect-only | Configure fields with no right answers, submit | Always succeeds; values recorded |
+| T-SENT-06 | Success media | Configure success image/video | Media is preloaded and plays in the success popup without a blank frame |
+
+---
+
 ## Appendix A — Scoring Summary Table
 
 | Game | Points Formula | Timer | Hint | Max Score |
@@ -1037,6 +1160,8 @@ login screen). Backed by the `activity_groups` collection (`ActivityGroup` model
 | **Trash Sort** | correctPts per correct sort | Fall speed timer | N/A | correctPts × items |
 
 All scores capped at minimum 0.
+
+> **Known discrepancy:** the code deducts `GAME_CONSTANTS.HINT_PENALTY = 4` (`client/src/components/games/types.ts`), while the hint warning copy in every game's `.i18n.ts` still says 5 points. The tests below follow the on-screen copy — decide which number is correct and align the other side.
 
 ---
 

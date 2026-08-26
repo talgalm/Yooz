@@ -24,6 +24,13 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 | `/admin/portals/new` | Create Portal | Portal config |
 | `/admin/portals/:id` | Edit Portal | Edit existing portal |
 
+### Manager Routes
+| Route | Page | Description |
+|-------|------|-------------|
+| `/manager` | Manager Login | Per-activity manager login (email + password) |
+| `/manager/dashboard` | Manager Dashboard | Live session control, leaderboard, control flow |
+| `/manager/present` | Order Survey Present | Big-screen presenter view for Order survey games |
+
 ### Participant Routes
 | Route | Page | Description |
 |-------|------|-------------|
@@ -31,13 +38,15 @@ Use ONLY the selectors documented here. All captions must be in Hebrew.
 | `/story/:code` | Story Module | Roadmap + games + finish |
 | `/mission/:code` | Mission Page | Mission flow |
 | `/home` | Home Page | After login landing |
+| `/play/:code/join/:inviteToken` | Play Page (group invite) | Join a self-service group via invite link |
 
 ### Public Routes
 | Route | Page | Description |
 |-------|------|-------------|
 | `/` | Landing Page | Public landing (responsive — mobile stacked, desktop 3-column feature row) |
-| `/manager` | Manager Login | Manager login form |
-| `/portal/:code` | Portal Login | Portal login/register |
+| `/portal/:code` | Portal Login | Portal login/register (`?invite=<token>` for self-registration) |
+| `/privacy` | Privacy Page | Public privacy policy |
+| `/stats/:token` | Shared Stats | Public read-only activity statistics (no auth) |
 
 ---
 
