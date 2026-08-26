@@ -127,6 +127,7 @@ export default function BallGame({
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [headerHeight, setHeaderHeight] = useState(52);
   const completedRef = useRef(false);
+  const continuedRef = useRef(false);
   const detailedReportsRef = useRef<LegacyDetailedReport[]>([]);
   const lastScoreRef = useRef<{ gameScore?: number; gameTimeSecond?: number }>({});
   const [pendingResult, setPendingResult] = useState<GameResult | null>(null);
@@ -200,6 +201,7 @@ export default function BallGame({
 
   useEffect(() => {
     completedRef.current = false;
+    continuedRef.current = false;
     detailedReportsRef.current = [];
     lastScoreRef.current = {};
     setPendingResult(null);
@@ -292,6 +294,17 @@ export default function BallGame({
     );
   }, []);
 
+  // iOS Safari can swallow the `click` on the finish button even though the tap
+  // clearly lands (the :active transform fires): the screen mounts straight off a
+  // focused game iframe, and the Safari toolbar re-expanding reflows the button out
+  // from under the finger between touchstart and touchend. `pointerup` survives both,
+  // so listen for either — the ref keeps them from advancing twice.
+  const handleContinue = useCallback(() => {
+    if (continuedRef.current || !pendingResult) return;
+    continuedRef.current = true;
+    onComplete(pendingResult);
+  }, [onComplete, pendingResult]);
+
   const activityBallHost = Boolean(embeddedInActivity && onActivityBallMuteToggle);
   useRegisterActivityGameHeader(
     activityBallHost,
@@ -328,8 +341,10 @@ export default function BallGame({
 
             <IntroStartButton
               type="button"
-              onClick={() => onComplete(pendingResult)}
+              onClick={handleContinue}
+              onPointerUp={handleContinue}
               style={{
+                touchAction: 'manipulation',
                 marginTop: 'auto',
                 marginBottom: 'clamp(40px, 10vh, 80px)',
                 alignSelf: 'center',
