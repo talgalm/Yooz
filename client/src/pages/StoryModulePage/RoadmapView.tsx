@@ -132,8 +132,8 @@ const PathCanvas = styled('div')<{ height: number }>(({ height }) => ({
   position: 'relative', width: '100%', height, minHeight: '100%',
 }));
 
-const NodeWrapper = styled('div')<{ state: 'completed' | 'active' | 'locked'; animateIn?: boolean }>(
-  ({ state, animateIn }) => ({
+const NodeWrapper = styled('div')<{ state: 'completed' | 'active' | 'locked'; animateIn?: boolean; revisit?: boolean }>(
+  ({ state, animateIn, revisit }) => ({
     width: NODE_SIZE, height: NODE_SIZE, borderRadius: '50%',
     transform: 'translate(-50%,-50%)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -142,6 +142,11 @@ const NodeWrapper = styled('div')<{ state: 'completed' | 'active' | 'locked'; an
     border: `${state === 'active' ? 8 : 5}px solid var(--node-${state}-border)`,
     background: `var(--node-${state}-bg)`,
     boxShadow: state === 'active' ? '0 6px 20px rgba(0,0,0,.3)' : '0 4px 12px rgba(0,0,0,.2)',
+    // Revisitable completed nodes read as "still open": brighter, with a light ring.
+    ...(revisit && {
+      filter: 'saturate(1.5) brightness(1.18)',
+      boxShadow: '0 0 0 3px rgba(255,255,255,.6), 0 4px 14px rgba(0,0,0,.25)',
+    }),
     animation: state === 'active'
       ? `${pulse} 1.4s ease-in-out infinite`
       : animateIn ? `${nodePopIn} 0.4s ease-out` : 'none',
@@ -1569,6 +1574,7 @@ export default function RoadmapView({
                 style={{ position: 'absolute', left: pos.x, top: pos.y, zIndex: 10 }}
                 ref={state === 'active' ? activeNodeRef : undefined}>
                 <NodeWrapper state={state}
+                  revisit={canRevisit}
                   animateIn={state === 'completed' && index === completedCount - 1 && showFootsteps}
                   style={canRevisit ? { cursor: 'pointer' } : undefined}
                   onClick={state === 'active' || canRevisit ? () => onNodeTap(index) : undefined}>
