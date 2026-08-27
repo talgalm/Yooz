@@ -1194,7 +1194,10 @@ rendered inline in `PlayingPhase.tsx`.)
   back to the plain file dialog for non-admin roles), **`MediaBrowser`** (the grid itself:
   folder breadcrumb + subfolder chips, type filter, substring search, offset paging, and
   copy/pick/move/delete. **`allowManage`** (Media tab only) adds new-folder, delete-folder,
-  and per-asset move; the picker gets folder *browsing* but none of the mutations),
+  and moving. **Move = drag a card onto a folder chip or a breadcrumb crumb** (mouse/HTML5
+  Drag API, matching the dashboard's activity+station folder drag; dashed-purple drop
+  highlight, dragged card at 0.4 opacity). The Move *button* stays as the fallback — drag
+  events never fire on touch. The picker gets folder *browsing* but none of the mutations),
   **`LangDrawer`** (language switch), **`StationStage`**.
 - Backgrounds/themes: `ThemedBackground`, `DesertBackground`, `NatureBackground`,
   `OceanBackground`, `OfficeBackground`, `themes/SpyThemeWrapper`. `styled.ts` holds shared

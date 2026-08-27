@@ -29,9 +29,19 @@ npx tsx --test server/src/utils/mediaFolders.test.ts
 npx tsx server/src/utils/groupRewardConfig.test.ts
 ```
 
-To typecheck the client, run `npm run build --prefix client`. A bare `tsc --noEmit` inside
-`client/` checks **nothing** — `client/tsconfig.json` is solution-style (`"files": []`), so it
-always passes.
+**The client build does not typecheck.** `client`'s `build` script is a bare `vite build`, and
+esbuild strips types without checking them — a real type error ships. A bare `tsc --noEmit`
+inside `client/` is just as empty: `client/tsconfig.json` is solution-style (`"files": []`), so
+it always passes. The only real check is, from inside `client/`:
+
+```bash
+npx tsc -p tsconfig.app.json --noEmit
+```
+
+It must be run from `client/` (the root `typescript` is older and rejects
+`noUncheckedSideEffectImports`). This is **not** a clean gate: 45 errors pre-date it
+(mostly unused declarations, some genuine). Diff against that baseline and make sure the files
+you touched are not in the list.
 
 Everything else is Playwright walkthroughs (UI flow recordings, not assertions):
 

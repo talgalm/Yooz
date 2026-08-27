@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { useTranslations } from '../context/LanguageContext';
 import { adminApiFetch } from '../utils/adminApi';
@@ -16,6 +16,8 @@ export interface MediaItem {
   height?: number;
   duration?: number;
   fileName?: string;
+  /** Cloudinary `asset_folder` — where it lives, independent of the URL. */
+  folder?: string;
   createdAt?: string;
 }
 
@@ -122,7 +124,8 @@ const Grid = styled('div')({
   gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
 });
 
-const Cell = styled('div')<{ clickable?: boolean }>(({ clickable }) => ({
+const Cell = styled('div')<{ clickable?: boolean; dragging?: boolean }>(({ clickable, dragging }) => ({
+  opacity: dragging ? 0.4 : 1,
   border: `1px solid ${BORDER}`,
   borderRadius: 12,
   overflow: 'hidden',
@@ -192,9 +195,10 @@ const Center = styled('div')({ padding: 28, textAlign: 'center', color: TEXT_LIG
 
 const Breadcrumb = styled('div')({ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', fontSize: 13 });
 
-const CrumbBtn = styled('button')<{ current?: boolean }>(({ current }) => ({
-  border: 'none',
-  background: 'transparent',
+const CrumbBtn = styled('button')<{ current?: boolean; dragOver?: boolean }>(({ current, dragOver }) => ({
+  border: dragOver ? `1.5px dashed ${PRIMARY}` : '1.5px solid transparent',
+  borderRadius: 8,
+  background: dragOver ? '#efeafd' : 'transparent',
   padding: '2px 4px',
   fontSize: 13,
   fontFamily: 'inherit',
@@ -208,18 +212,19 @@ const CrumbSep = styled('span')({ color: TEXT_LIGHT, margin: '0 2px' });
 
 const FolderRow = styled('div')({ display: 'flex', gap: 8, flexWrap: 'wrap' });
 
-const FolderChip = styled('button')({
+const FolderChip = styled('button')<{ dragOver?: boolean }>(({ dragOver }) => ({
   padding: '8px 14px',
   borderRadius: 10,
   fontSize: 13,
   fontWeight: 600,
   cursor: 'pointer',
   fontFamily: 'inherit',
-  border: `1.5px solid ${BORDER}`,
-  background: '#fff',
-  color: '#555',
+  border: dragOver ? `1.5px dashed ${PRIMARY}` : `1.5px solid ${BORDER}`,
+  background: dragOver ? '#efeafd' : '#fff',
+  color: dragOver ? PRIMARY : '#555',
+  transition: 'background 0.15s',
   '&:hover': { borderColor: PRIMARY, color: PRIMARY, background: '#f7f6fd' },
-});
+}));
 
 const Overlay = styled('div')({
   position: 'fixed',
@@ -284,6 +289,8 @@ export default function MediaBrowser({ accept, onPick, allowManage, refreshKey =
   const [copied, setCopied] = useState('');
   const [pendingDelete, setPendingDelete] = useState<{ item: MediaItem; usage: { collection: string; name: string }[] } | null>(null);
   const [moving, setMoving] = useState<MediaItem | null>(null);
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   // Debounce the search box so typing does not fire a request per keystroke.
@@ -352,6 +359,38 @@ export default function MediaBrowser({ accept, onPick, allowManage, refreshKey =
     }
   };
 
+  // ── drag a file onto a folder (mouse / HTML5 Drag API, as the dashboard's
+  // activity and station folders do it). Touch does not fire drag events, so
+  // the Move button stays as the fallback there.
+  const dragIdRef = useRef<string | null>(null);
+  const onCellDragStart = (e: React.DragEvent, item: MediaItem) => {
+    dragIdRef.current = item.publicId;
+    setDragging(item.publicId);
+    try { e.dataTransfer.setData('text/plain', item.publicId); } catch { /* Firefox requires setData to start a drag */ }
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  const onCellDragEnd = () => {
+    dragIdRef.current = null;
+    setDragging(null);
+    setDragOver(null);
+  };
+  const onTargetDragOver = (e: React.DragEvent, path: string) => {
+    if (!dragIdRef.current || path === folder) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOver(path);
+  };
+  const onTargetDragLeave = (path: string) => {
+    setDragOver((cur) => (cur === path ? null : cur));
+  };
+  const onTargetDrop = (e: React.DragEvent, path: string) => {
+    e.preventDefault();
+    const publicId = dragIdRef.current;
+    onCellDragEnd();
+    const item = items.find((i) => i.publicId === publicId);
+    if (item && path !== folder) moveTo(item, path);
+  };
+
   const moveTo = async (item: MediaItem, target: string) => {
     setMoving(null);
     try {
@@ -415,7 +454,15 @@ export default function MediaBrowser({ accept, onPick, allowManage, refreshKey =
           return (
             <span key={path}>
               {i > 0 && <CrumbSep>/</CrumbSep>}
-              <CrumbBtn type="button" current={i === crumbs.length - 1} onClick={() => setFolder(path)}>
+              <CrumbBtn
+                type="button"
+                current={i === crumbs.length - 1}
+                dragOver={dragOver === path}
+                onClick={() => setFolder(path)}
+                onDragOver={(e) => onTargetDragOver(e, path)}
+                onDragLeave={() => onTargetDragLeave(path)}
+                onDrop={(e) => onTargetDrop(e, path)}
+              >
                 {i === 0 ? t.root : crumb}
               </CrumbBtn>
             </span>
@@ -434,7 +481,15 @@ export default function MediaBrowser({ accept, onPick, allowManage, refreshKey =
       {subFolders.length > 0 && (
         <FolderRow>
           {subFolders.map((node) => (
-            <FolderChip key={node.path} type="button" onClick={() => setFolder(node.path)}>
+            <FolderChip
+              key={node.path}
+              type="button"
+              dragOver={dragOver === node.path}
+              onClick={() => setFolder(node.path)}
+              onDragOver={(e) => onTargetDragOver(e, node.path)}
+              onDragLeave={() => onTargetDragLeave(node.path)}
+              onDrop={(e) => onTargetDrop(e, node.path)}
+            >
               📁 {node.name}
             </FolderChip>
           ))}
@@ -445,7 +500,15 @@ export default function MediaBrowser({ accept, onPick, allowManage, refreshKey =
 
       <Grid>
         {items.map((item) => (
-          <Cell key={item.publicId} clickable={!!onPick} onClick={onPick ? () => onPick(item) : undefined}>
+          <Cell
+            key={item.publicId}
+            clickable={!!onPick}
+            dragging={dragging === item.publicId}
+            draggable={allowManage}
+            onDragStart={allowManage ? (e) => onCellDragStart(e, item) : undefined}
+            onDragEnd={allowManage ? onCellDragEnd : undefined}
+            onClick={onPick ? () => onPick(item) : undefined}
+          >
             <Thumb>
               <img src={thumbUrl(item)} alt={item.fileName || item.publicId} loading="lazy" />
               {item.resourceType === 'video' && <PlayBadge>▶</PlayBadge>}
