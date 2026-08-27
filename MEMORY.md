@@ -34,7 +34,9 @@ API and the built React SPA — no separate frontend host.
 - **Client**: React 19 + Vite 6 + TS, MUI v7 with `@emotion/styled` (no CSS files except
   `App.css` global reset), React Router v7. No state library — React context per auth realm.
 - **Media**: Cloudinary for all uploads (image/video/audio), via `POST /api/admin/upload`
-  (multer memory → Cloudinary SDK). Client component: `FileUploadButton`.
+  (multer memory → Cloudinary SDK, `use_filename` so the public_id keeps the original name).
+  Client component: `FileUploadButton` (picker: computer *or* existing media). Browse/delete
+  the cloud from the **Media tab** → `/api/admin/media`.
 - **Video collages**: ffmpeg encode offloaded to AWS Lambda (see `LAMBDA_SETUP.md`,
   `server/src/lambda/collageHandler.ts`), with a local fallback processor.
 - **AI**: Google Gemini (`GEMINI_MODEL`, default `gemini-2.5-flash-lite`) for help/report/
@@ -259,6 +261,7 @@ lets async handlers throw. `/api/health` (DB check) and `/api/load-status` are p
   `GET /public/:code/history`.
 - `/api/admin/themes` (CustomTheme CRUD), `/api/admin/tutorials` (super_admin; AI video gen),
   `/api/admin/users` (super_admin only, CRUD), `/api/admin/upload` (Cloudinary),
+  `/api/admin/media` (admin/super_admin; browse + delete Cloudinary assets),
   `/api/admin/dev-tasks` (admin/super_admin).
 
 ### Admin analytics — `/api/admin/analytics` (`analytics.ts`, roles admin/super_admin/customer)
@@ -310,6 +313,10 @@ No admin auth — the `statsShareToken` is the credential.
 - **`utils/participantAuth.ts`** — `resolveGroupName` (day-scoped), `checkGroupCapacity`
   (day-scoped), `createParticipantSession`, `buildReportLookupQuery`, `ownReportFilter`,
   `validateGroupName`.
+- **`utils/mediaInUse.ts`** — `docMentions(doc, publicId)` (stringify-and-scan: media URLs
+  live in free-form bags like `game.settings`, so a field list would silently rot) and
+  `findMediaUsage(publicId)` → every activity/game/station/mission/theme/library/siteContent/
+  portal/layout/tutorial still pointing at the asset. Delete-time only, never on list.
 - **`utils/groupStatus.ts`** — `getGroupStatus` (member/completion counts, **scoped to today**),
   `resolveGroupMinMembers`.
 - **`utils/orderSurveyBorda.ts` / `orderSurveySession.ts`** — live order-game Borda aggregation.
@@ -746,6 +753,22 @@ pdf/office/text mimetypes → 400 otherwise. Chooses Cloudinary `resource_type` 
 docs, `video` for video/audio, `image` else), uploads to folder `yooz`, returns
 `{url, publicId, resourceType, format, size, fileName}`.
 
+### `routes/adminMedia.ts` — Cloudinary media library (`/api/admin/media`)
+`authenticateAdmin` + `requireRole('admin','super_admin')` on the whole router.
+- `GET /` — `?type=image|video&q=&offset=`. Loads **the whole `yooz/` folder once**
+  (`cloudinary.search`, 500/page, cursor loop, `HARD_CAP` 2000) into a 60s module cache, then
+  filters/paginates in memory (`PAGE_SIZE` 60) → `{items, nextOffset, total}`. Why not query
+  Cloudinary per page: the Admin API allows 500 calls/hour, its expression language has **no
+  substring match** and no leading wildcard (`filename:*x*` is a 400), and this keeps user
+  input out of the expression entirely.
+- `GET /usage?publicId=` — `findMediaUsage`, drives the delete warning.
+- `DELETE /?publicId=&resourceType=&force=` — refuses anything that is not a **direct child of
+  `yooz/`** (403: machine output in `yooz/collage-inputs|collages|tutorials` and `samples/` is
+  off limits), 409 `{error:'in_use', usage}` unless `force=true`, then `uploader.destroy`
+  (`invalidate: true`) and clears the cache.
+- `cloudinaryError(err)` — Cloudinary rejections embed `request_options.auth` (**api key +
+  secret in plain text**); only the message is ever logged.
+
 ### `routes/rewardDownload.ts` — public reward file proxy (`GET /api/reward-download/:token`)
 `test_<base64url(cloudinaryUrl)>` tokens decode + redirect (test SMS, no DB). Real tokens
 look up `Activity` by `groupReward.downloadToken` → 302 redirect to
@@ -1080,7 +1103,7 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 
 ### Admin pages (`pages/admin/`)
 - **`AdminLoginPage`** — email+password / Google. **`AdminDashboardPage/index.tsx`** — tab shell
-  (activities/statistics/stations/library/portals/publicity/users/tutorials by role); parallel-
+  (activities/statistics/stations/library/media/portals/publicity/users/tutorials by role); parallel-
   fetches activities/games/stations/missions/folders; folder UI (`FolderFormModal`,
   `PastelSwatchPicker`, `folderUi`).
 - **`AdminCreateActivityPage/`** — the big activity editor: `index.tsx` (steps: basic config →
@@ -1092,6 +1115,7 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 - **`AdminStationConfigPage`** — station editor (all 10 types). **`AdminMissionConfigPage`** —
   mission editor. **`AdminPortalConfigPage`** — portal editor (users, Excel import, activities).
 - Dashboard tabs: **`AdminGamesTab`**, **`AdminStationsTab`**, **`AdminLibraryTab`**,
+  **`AdminMediaTab`** (Cloudinary browser, admin/super_admin — `MediaBrowser` + upload),
   **`AdminPortalsTab`**, **`AdminPublicityTab`** (site content + leads), **`AdminUsersTab`**,
   **`AdminTutorialsTab`**, and **`AdminStatisticsTab/`** (see below).
 - **`AdminStatisticsTab/`** — `index` (view switch overview/activity/combined/audit),
@@ -1146,7 +1170,12 @@ rendered inline in `PlayingPhase.tsx`.)
   assistant`. **`AdminReportChat/`** — analytics Q&A → `/api/admin/report-assistant` (+ `markdown`).
 - **`MobileContainer`** (≤480px participant frame), **`ParticipantActivityScope`** (scopes a
   participant to one activity), **`ParticipantLandingRedirect`**, **`ActivityLogoutButton`**,
-  **`SmsConsent`**, **`Pagination`**, **`ErrorBoundary`**, **`FileUploadButton`** (Cloudinary),
+  **`SmsConsent`**, **`Pagination`**, **`ErrorBoundary`**, **`FileUploadButton`** (opens a
+  two-tab picker — upload from the computer, or pick an existing asset; **all 31 call sites got
+  the picker for free**, the props and `onUploaded(url, file?)` contract are unchanged. Falls
+  back to the plain file dialog for non-admin roles), **`MediaBrowser`** (the grid itself:
+  type filter, substring search, offset paging, copy/pick/delete — `allowDelete` only in the
+  Media tab, never in the picker),
   **`LangDrawer`** (language switch), **`StationStage`**.
 - Backgrounds/themes: `ThemedBackground`, `DesertBackground`, `NatureBackground`,
   `OceanBackground`, `OfficeBackground`, `themes/SpyThemeWrapper`. `styled.ts` holds shared

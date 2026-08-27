@@ -39,7 +39,7 @@ export function isParticipantImageUrl(url: string): boolean {
   return /\.(jpe?g|png|gif|webp|bmp|svg)(\?|$)/i.test(url);
 }
 
-function insertCloudinaryTransform(url: string, resourceType: 'image' | 'video', transform: string): string {
+export function insertCloudinaryTransform(url: string, resourceType: 'image' | 'video', transform: string): string {
   const marker = `/${resourceType}/upload/`;
   if (!url.includes('res.cloudinary.com') || !url.includes(marker)) return url;
 

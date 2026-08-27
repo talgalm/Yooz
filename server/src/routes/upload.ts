@@ -66,6 +66,11 @@ router.post('/', authenticateAdmin, upload.single('file'), async (req: Request, 
         {
           resource_type: resourceType,
           folder: 'yooz',
+          // Keep the original name in the public_id (suffixed to stay unique).
+          // Without it Cloudinary assigns a random string, which makes the
+          // media library a wall of `pws2bqxuslybrwmzyrsn` nobody can search.
+          use_filename: true,
+          unique_filename: true,
         },
         (error, result) => {
           if (error) reject(error);
