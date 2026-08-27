@@ -532,8 +532,13 @@ call `onRefresh` after mutations. Tabs by role: **activities** (all), **statisti
 **portals** (all); **publicity** (admin/super_admin), **users**+**tutorials** (super_admin).
 
 Shell is a sidebar layout, not a tab bar: `Sidebar` (nav grouped MENU/OTHERS, one inline-SVG
-icon per tab key in `NAV_ICONS`, logout in the footer) + sticky `Topbar` (section title, lang
-drawer, user chip). Under 900px the sidebar is an off-canvas drawer driven by `mobileMenuOpen`.
+icon per tab key in `NAV_ICONS`, logout in the footer) + sticky `Topbar` (section title).
+The sidebar is `position: fixed` at every size and `MainCol` reserves its width with
+`marginInlineStart` (RTL: the right edge); under 900px it becomes an off-canvas drawer driven
+by `mobileMenuOpen` and that margin drops to 0. **`PageBg` uses `overflow-x: clip`, never
+`hidden`** — `hidden` forces `overflow-y` to `auto`, which makes it a scroll container and
+silently kills `position: sticky` for every descendant (verified in Chrome: the sticky child
+scrolls away under `hidden`, stays pinned under `clip`).
 `DashContent` extends `AdminContent`, which carries the admin-only `h2`/`h3` scale.
 Tab look-and-feel comes from the shared primitives (`components/styled.ts` `Table`,
 `AdminCard`, `SegmentedControl`, `MobileCardItem`, …) — restyle there, not per tab.

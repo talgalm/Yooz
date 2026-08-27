@@ -48,26 +48,32 @@ const PageBg = styled('div')({
   display: 'flex',
   alignItems: 'stretch',
   background: '#f6f6fb',
-  overflowX: 'hidden',
+  // `clip`, not `hidden`: overflow-x:hidden forces overflow-y to auto, which makes this a
+  // scroll container and silently breaks position:sticky for everything inside it (the
+  // topbar, and the publicity tab's save bar). `clip` guards the same overflow without
+  // establishing one.
+  overflowX: 'clip',
 });
 
 // ─── Sidebar ───
 
+const SIDEBAR_WIDTH = 244;
+
 const Sidebar = styled('aside')<{ open?: boolean }>(({ open }) => ({
-  width: 244,
+  width: SIDEBAR_WIDTH,
   flexShrink: 0,
   display: 'flex',
   flexDirection: 'column',
   background: '#fff',
   borderInlineEnd: '1px solid #ece8f3',
-  position: 'sticky',
+  // Fixed on every size: the nav stays put while the content column scrolls.
+  // PageBg is not a containing block for fixed descendants, so this is not clipped.
+  position: 'fixed',
   top: 0,
-  height: '100vh',
+  right: 0,
+  height: '100dvh',
   zIndex: 200,
   '@media (max-width: 900px)': {
-    position: 'fixed',
-    top: 0,
-    right: 0,
     boxShadow: '-8px 0 32px rgba(40,30,70,0.14)',
     transform: open ? 'none' : 'translateX(100%)',
     transition: 'transform 0.22s ease',
@@ -169,6 +175,11 @@ const MainCol = styled('div')({
   minWidth: 0,
   display: 'flex',
   flexDirection: 'column',
+  // Reserve the fixed sidebar's width (RTL: inline-start is the right edge).
+  marginInlineStart: SIDEBAR_WIDTH,
+  '@media (max-width: 900px)': {
+    marginInlineStart: 0,
+  },
 });
 
 const Topbar = styled('header')({
