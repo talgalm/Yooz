@@ -3,7 +3,7 @@ import { styled } from '@mui/material/styles';
 const PRIMARY = '#6c5ce7';
 const TEXT_DARK = '#333';
 const TEXT_LIGHT = '#888';
-const BORDER = '#ececf3';
+const BORDER = '#ecebf4';
 
 // ─── KPI Cards ───
 
@@ -23,7 +23,7 @@ export const KpiCard = styled('div')({
   borderRadius: 16,
   padding: '20px 24px',
   border: `1px solid ${BORDER}`,
-  boxShadow: '0 4px 16px rgba(108,92,231,0.06)',
+  boxShadow: '0 1px 2px rgba(16,12,40,0.04), 0 10px 30px rgba(16,12,40,0.05)',
   '@media (max-width: 600px)': {
     padding: '14px 16px',
     borderRadius: 12,
@@ -61,7 +61,7 @@ export const ChartCard = styled('div')({
   padding: 24,
   border: `1px solid ${BORDER}`,
   marginBottom: 24,
-  boxShadow: '0 4px 16px rgba(108,92,231,0.06)',
+  boxShadow: '0 1px 2px rgba(16,12,40,0.04), 0 10px 30px rgba(16,12,40,0.05)',
   '@media (max-width: 600px)': {
     padding: 16,
     borderRadius: 12,
@@ -114,24 +114,30 @@ export const StatsTable = styled('table')({
   width: '100%',
   borderCollapse: 'collapse',
   '& th': {
-    textAlign: 'right',
-    fontSize: 13,
+    textAlign: 'start',
+    fontSize: 12.5,
     fontWeight: 600,
-    color: TEXT_LIGHT,
-    padding: '10px 14px',
-    borderBottom: `2px solid ${BORDER}`,
+    color: '#8d86a3',
+    padding: '12px 14px',
+    whiteSpace: 'nowrap',
+    background: '#faf9fd',
+    borderBottom: `1px solid ${BORDER}`,
   },
   '& td': {
+    textAlign: 'start',
     fontSize: 14,
     color: TEXT_DARK,
-    padding: '12px 14px',
-    borderBottom: `1px solid ${BORDER}`,
+    padding: '13px 14px',
+    borderBottom: '1px solid #f4f2f9',
   },
   '& tbody tr': {
     cursor: 'pointer',
     transition: 'background 0.15s',
     '&:hover': {
-      background: '#f8f7ff',
+      background: '#faf8fe',
+    },
+    '&:last-child td': {
+      borderBottom: 'none',
     },
   },
 });
@@ -336,12 +342,13 @@ export const FullPanel = styled('section')({
   gridColumn: '1 / -1',
   background: '#fff',
   border: `1px solid ${BORDER}`,
-  borderRadius: 8,
-  padding: 18,
-  boxShadow: '0 8px 24px rgba(39, 43, 58, 0.05)',
+  borderRadius: 16,
+  padding: 20,
+  boxShadow: '0 1px 2px rgba(16,12,40,0.04), 0 10px 30px rgba(16,12,40,0.05)',
   minWidth: 0,
   '@media (max-width: 600px)': {
     padding: 14,
+    borderRadius: 12,
   },
 });
 
@@ -641,10 +648,13 @@ export const SubTabBar = styled('div')({
   display: 'flex',
   gap: 0,
   marginBottom: 24,
-  background: '#f5f5f7',
-  borderRadius: 10,
-  padding: 3,
-  overflow: 'auto',
+  background: '#f2f0f9',
+  border: `1px solid ${BORDER}`,
+  borderRadius: 12,
+  padding: 4,
+  overflowX: 'auto',
+  scrollbarWidth: 'none',
+  '&::-webkit-scrollbar': { display: 'none' },
 });
 
 export const SubTab = styled('button')<{ active?: boolean }>(({ active }) => ({
@@ -657,8 +667,8 @@ export const SubTab = styled('button')<{ active?: boolean }>(({ active }) => ({
   borderRadius: 8,
   cursor: 'pointer',
   background: active ? '#fff' : 'transparent',
-  color: active ? PRIMARY : TEXT_LIGHT,
-  boxShadow: active ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+  color: active ? PRIMARY : '#6b6580',
+  boxShadow: active ? '0 1px 3px rgba(16,12,40,0.12)' : 'none',
   transition: 'all 0.15s',
   whiteSpace: 'nowrap',
   '&:hover': {

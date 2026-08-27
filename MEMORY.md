@@ -531,6 +531,13 @@ call `onRefresh` after mutations. Tabs by role: **activities** (all), **statisti
 (admin/super_admin/**customer**), **stations** (stations+games+missions), **library**,
 **portals** (all); **publicity** (admin/super_admin), **users**+**tutorials** (super_admin).
 
+Shell is a sidebar layout, not a tab bar: `Sidebar` (nav grouped MENU/OTHERS, one inline-SVG
+icon per tab key in `NAV_ICONS`, logout in the footer) + sticky `Topbar` (section title, lang
+drawer, user chip). Under 900px the sidebar is an off-canvas drawer driven by `mobileMenuOpen`.
+`DashContent` extends `AdminContent`, which carries the admin-only `h2`/`h3` scale.
+Tab look-and-feel comes from the shared primitives (`components/styled.ts` `Table`,
+`AdminCard`, `SegmentedControl`, `MobileCardItem`, …) — restyle there, not per tab.
+
 ### Manager dashboard (`pages/manager/ManagerDashboardPage`)
 Live session control: `AnimatedLeaderboard`, `ControlFlowTab` (progress lock), order-survey
 present view (`OrderSurveyPresentPage` / `manager/present`).

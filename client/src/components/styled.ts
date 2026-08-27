@@ -367,6 +367,17 @@ export const AdminContent = styled('main')({
   padding: '40px clamp(20px, 3vw, 40px) 48px',
   boxSizing: 'border-box',
   minWidth: 0,
+  '& h2': {
+    fontSize: 20,
+    fontWeight: 800,
+    color: '#241f38',
+    letterSpacing: '-0.01em',
+  },
+  '& h3': {
+    fontSize: 15.5,
+    fontWeight: 700,
+    color: '#3a3352',
+  },
   '@media (max-width: 960px)': {
     padding: '28px 20px 36px',
   },
@@ -378,10 +389,10 @@ export const AdminContent = styled('main')({
 export const AdminCard = styled('div')({
   width: '100%',
   background: '#fff',
-  border: '1px solid #ececf3',
-  borderRadius: 20,
-  padding: 28,
-  boxShadow: '0 14px 40px rgba(108,92,231,0.08)',
+  border: '1px solid #ecebf4',
+  borderRadius: 16,
+  padding: 24,
+  boxShadow: '0 1px 2px rgba(16,12,40,0.04), 0 10px 30px rgba(16,12,40,0.05)',
   boxSizing: 'border-box',
   minWidth: 0,
   '@media (max-width: 600px)': {
@@ -395,19 +406,31 @@ export const Table = styled('table')({
   borderCollapse: 'collapse',
   '& th, & td': {
     textAlign: 'start',
-    padding: '12px 16px',
-    borderBottom: '1px solid #f0f0f0',
+    padding: '13px 18px',
   },
   '& th': {
     fontWeight: 600,
-    color: TEXT_LIGHT,
-    fontSize: 13,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    color: '#8d86a3',
+    fontSize: 12.5,
+    letterSpacing: 0.2,
+    whiteSpace: 'nowrap',
+    background: '#faf9fd',
+    borderBottom: '1px solid #eeecf5',
+  },
+  '& td': {
+    fontSize: 14,
+    color: TEXT,
+    borderBottom: '1px solid #f4f2f9',
+  },
+  '& tbody tr': {
+    transition: 'background 0.15s',
   },
   '& tbody tr:hover': {
-    background: '#fafafa',
+    background: '#faf8fe',
     cursor: 'pointer',
+  },
+  '& tbody tr:last-child td': {
+    borderBottom: 'none',
   },
   '@media (max-width: 600px)': {
     '& th, & td': {
@@ -555,17 +578,18 @@ export const Tab = styled('button')<{ active?: boolean }>(({ active }) => ({
 
 export const SegmentedControl = styled('div')({
   display: 'inline-flex',
-  background: '#f0ecf8',
-  borderRadius: 28,
+  background: '#f2f0f9',
+  borderRadius: 999,
   padding: 4,
   margin: '0 auto 24px',
   width: 'auto',
   maxWidth: 620,
-  border: `2px solid #d4cae8`,
-  boxShadow: '0 2px 8px rgba(108,92,231,0.10)',
+  border: '1px solid #ecebf4',
   '@media (max-width: 600px)': {
     maxWidth: '100%',
     overflowX: 'auto',
+    scrollbarWidth: 'none',
+    '&::-webkit-scrollbar': { display: 'none' },
   },
 });
 
@@ -576,26 +600,26 @@ export const SegmentedControlCenter = styled('div')({
 });
 
 export const SegmentedButton = styled('button')<{ active?: boolean }>(({ active }) => ({
-  padding: '12px 22px',
+  padding: '10px 22px',
   fontSize: 14,
-  fontWeight: 700,
+  fontWeight: active ? 700 : 600,
   border: 'none',
-  borderRadius: 24,
+  borderRadius: 999,
   background: active ? PRIMARY : 'transparent',
-  color: active ? '#fff' : '#5a4e7a',
+  color: active ? '#fff' : '#6b6580',
   cursor: 'pointer',
   fontFamily: 'inherit',
-  transition: 'all 0.2s',
+  transition: 'background 0.18s, color 0.18s',
   flex: 1,
   whiteSpace: 'nowrap' as const,
-  boxShadow: active ? '0 3px 10px rgba(108,92,231,0.3)' : 'none',
+  boxShadow: active ? '0 4px 12px rgba(108,92,231,0.28)' : 'none',
   '&:hover': {
-    color: active ? '#fff' : TEXT,
-    background: active ? PRIMARY : 'rgba(108,92,231,0.08)',
+    color: active ? '#fff' : '#443c66',
+    background: active ? PRIMARY : 'rgba(108,92,231,0.07)',
   },
   '@media (max-width: 600px)': {
-    padding: '10px 14px',
-    fontSize: 12,
+    padding: '9px 14px',
+    fontSize: 12.5,
   },
 }));
 
@@ -609,9 +633,16 @@ export const GameTabBar = styled('div')({
 
 export const GameTabGroup = styled('div')({
   display: 'inline-flex',
-  borderRadius: 22,
+  borderRadius: 999,
   overflow: 'hidden',
-  border: `1.5px solid ${BORDER}`,
+  border: '1px solid #ecebf4',
+  background: '#fff',
+  maxWidth: '100%',
+  '@media (max-width: 600px)': {
+    overflowX: 'auto',
+    scrollbarWidth: 'none',
+    '&::-webkit-scrollbar': { display: 'none' },
+  },
 });
 
 export const GameTab = styled('button')<{ active?: boolean }>(({ active }) => ({
@@ -619,9 +650,9 @@ export const GameTab = styled('button')<{ active?: boolean }>(({ active }) => ({
   fontSize: 13,
   fontWeight: 600,
   border: 'none',
-  borderInlineEnd: `1px solid ${BORDER}`,
+  borderInlineEnd: '1px solid #f0eef7',
   background: active ? PRIMARY : '#fff',
-  color: active ? '#fff' : TEXT_LIGHT,
+  color: active ? '#fff' : '#7a7391',
   cursor: 'pointer',
   fontFamily: 'inherit',
   transition: 'all 0.2s',
@@ -630,12 +661,12 @@ export const GameTab = styled('button')<{ active?: boolean }>(({ active }) => ({
     borderInlineEnd: 'none',
   },
   '&:hover': {
-    color: active ? '#fff' : TEXT,
-    background: active ? PRIMARY : '#f5f5f7',
+    color: active ? '#fff' : '#443c66',
+    background: active ? PRIMARY : '#f7f5fc',
   },
   '@media (max-width: 600px)': {
-    padding: '8px 12px',
-    fontSize: 11,
+    padding: '8px 13px',
+    fontSize: 11.5,
   },
 }));
 
@@ -643,26 +674,27 @@ export const GameTab = styled('button')<{ active?: boolean }>(({ active }) => ({
 
 export const Chip = styled('span')({
   display: 'inline-block',
-  padding: '2px 8px',
-  fontSize: 11,
+  padding: '3px 9px',
+  fontSize: 11.5,
   fontWeight: 600,
-  borderRadius: 4,
-  background: '#f0f0f0',
-  color: TEXT_LIGHT,
-  textTransform: 'uppercase',
-  letterSpacing: 0.3,
+  borderRadius: 999,
+  background: '#f3f2f8',
+  color: '#7a7391',
+  letterSpacing: 0.2,
 });
 
 // ─── Status Badge ───
 
 export const StatusBadge = styled('span')<{ status?: 'preview' | 'live' }>(({ status }) => ({
   display: 'inline-block',
-  padding: '4px 10px',
-  fontSize: 12,
-  fontWeight: 600,
-  borderRadius: 6,
-  background: status === 'live' ? '#e8f5e9' : '#fff3e0',
-  color: status === 'live' ? '#2e7d32' : '#e65100',
+  padding: '4px 11px',
+  fontSize: 11.5,
+  fontWeight: 700,
+  borderRadius: 999,
+  whiteSpace: 'nowrap',
+  background: status === 'live' ? '#e7f6ea' : '#fff4e3',
+  color: status === 'live' ? '#22803c' : '#c9670a',
+  border: `1px solid ${status === 'live' ? '#c9e9d1' : '#f7dfbd'}`,
 }));
 
 // ─── Modal Overlay ───
@@ -776,18 +808,20 @@ export const DesktopOnly = styled('div')({
 export const MobileCardList = styled('div')({
   display: 'flex',
   flexDirection: 'column',
-  gap: 12,
+  gap: 10,
 });
 
 export const MobileCardItem = styled('div')({
   background: '#fff',
-  borderRadius: 12,
-  padding: 16,
-  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+  border: '1px solid #ecebf4',
+  borderRadius: 14,
+  padding: 14,
+  boxShadow: '0 1px 2px rgba(16,12,40,0.05)',
   cursor: 'pointer',
-  transition: 'background 0.15s',
+  transition: 'background 0.15s, border-color 0.15s',
   '&:active': {
-    background: '#fafafa',
+    background: '#faf8fe',
+    borderColor: '#ddd6f0',
   },
 });
 

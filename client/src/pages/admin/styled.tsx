@@ -12,6 +12,7 @@ import {
   SelectionGroup,
   MobileCardItem,
   PRIMARY,
+  PRIMARY_DISABLED,
   BORDER,
 } from '../../components/styled';
 
@@ -31,6 +32,12 @@ export const SectionHeaderRow = styled('div')({
   gap: 16,
   flexWrap: 'wrap',
   marginBottom: 24,
+  '@media (max-width: 600px)': {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 12,
+    marginBottom: 16,
+  },
 });
 
 export const SectionSubHeaderRow = styled('div')({
@@ -40,6 +47,11 @@ export const SectionSubHeaderRow = styled('div')({
   gap: 16,
   flexWrap: 'wrap',
   marginBottom: 12,
+  '@media (max-width: 600px)': {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 10,
+  },
 });
 
 export const PageTitle = styled('h2')({
@@ -110,11 +122,11 @@ export const SelectionSubtextSmall = styled('div')({
 // ─── Item Panel (used for rounds, questions, statements, popups, etc.) ───
 
 export const ItemPanel = styled('div')({
-  border: '1px solid #e8e8ec',
-  borderRadius: 10,
+  border: '1px solid #eeecf5',
+  borderRadius: 14,
   padding: 16,
   marginBottom: 12,
-  background: '#fafafa',
+  background: '#fbfaff',
   minWidth: 0,
   '@media (max-width: 600px)': {
     padding: 12,
@@ -273,8 +285,14 @@ export const ScoringToggleButton = styled(SelectionButton)({
 
 export const SmallActionButton = styled(PrimaryButton)({
   width: 'auto',
-  padding: '10px 24px',
+  padding: '10px 22px',
   fontSize: 14,
+  borderRadius: 10,
+  background: 'linear-gradient(135deg, #6c5ce7 0%, #8B2FC9 100%)',
+  boxShadow: '0 2px 8px rgba(108,92,231,0.3)',
+  transition: 'opacity 0.15s',
+  '&:hover': { opacity: 0.88 },
+  '&:disabled': { background: PRIMARY_DISABLED, boxShadow: 'none', opacity: 1 },
 });
 
 export const EditActionButton = styled(PrimaryButton)({
@@ -410,9 +428,9 @@ export const FormSectionCard = styled('section')({
   flexDirection: 'column',
   gap: 16,
   padding: 22,
-  borderRadius: 18,
-  border: '1px solid #ececf4',
-  background: '#fafafe',
+  borderRadius: 16,
+  border: '1px solid #eeecf7',
+  background: '#fbfaff',
   minWidth: 0,
   '@media (max-width: 600px)': {
     padding: 14,
@@ -489,8 +507,8 @@ export const DetailRow = styled('div')({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'flex-start',
-  padding: '12px 0',
-  borderBottom: '1px solid #f0f0f0',
+  padding: '14px 0',
+  borderBottom: '1px solid #f2f0f8',
   gap: 12,
   flexWrap: 'wrap',
 });
@@ -599,7 +617,7 @@ export const LoadingCenter = styled('div')({
 export const Spinner = styled('div')({
   width: 36,
   height: 36,
-  border: '3px solid #f0f0f0',
+  border: '3px solid #eeecf5',
   borderTopColor: PRIMARY,
   borderRadius: '50%',
   animation: 'spin 0.8s linear infinite',
@@ -750,10 +768,10 @@ export const ExplanationInput = styled(Input)({
 
 export const BadgeSpaced = styled('span')({
   display: 'inline-block',
-  padding: '4px 10px',
-  fontSize: 12,
+  padding: '4px 11px',
+  fontSize: 11.5,
   fontWeight: 600,
-  borderRadius: 6,
+  borderRadius: 999,
   background: '#f0eefa',
   color: PRIMARY,
   marginInlineEnd: 4,
@@ -762,10 +780,10 @@ export const BadgeSpaced = styled('span')({
 
 export const ScoreBadge = styled('span')({
   display: 'inline-block',
-  padding: '4px 10px',
+  padding: '4px 11px',
   fontSize: 11,
   fontWeight: 600,
-  borderRadius: 6,
+  borderRadius: 999,
   background: '#f0eefa',
   color: PRIMARY,
 });
@@ -796,6 +814,8 @@ export const JoinedDate = styled('td')({
 
 export const OverflowWrapper = styled('div')({
   overflowX: 'auto',
+  WebkitOverflowScrolling: 'touch',
+  scrollbarWidth: 'thin',
 });
 
 // ─── Section Info Block ───
@@ -1176,10 +1196,11 @@ export const RemoveItemButton = styled('button')({
 
 export const RoleBadge = styled('span')<{ role: 'viewer' | 'admin' | 'super_admin' | 'customer' }>(({ role }) => ({
   display: 'inline-block',
-  padding: '4px 10px',
+  padding: '4px 11px',
   fontSize: 11,
   fontWeight: 700,
-  borderRadius: 6,
+  borderRadius: 999,
+  whiteSpace: 'nowrap',
   background:
     role === 'super_admin' ? '#fde8e8'
       : role === 'admin' ? '#e8f5e9'

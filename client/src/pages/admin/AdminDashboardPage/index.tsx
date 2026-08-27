@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
@@ -21,8 +21,7 @@ import type { Portal } from '../AdminPortalsTab';
 import FolderFormModal from '../FolderFormModal';
 import { resolveFolderColor, DEFAULT_FOLDER_COLOR } from '../folderColors';
 import {
-  AdminHeader,
-  OutlineButton,
+  AdminContent,
   BodyText,
   StatusBadge,
   SegmentedControl,
@@ -30,7 +29,6 @@ import {
   SegmentedButton,
 } from '../../../components/styled';
 import {
-  HeaderActionsRow,
   SectionHeaderRow,
   PageTitleNoMargin,
   SmallActionButton,
@@ -49,119 +47,275 @@ import {
 const PageBg = styled('div')({
   minHeight: '100vh',
   direction: 'rtl',
-  background: 'linear-gradient(160deg, #f5edf4 0%, #eee8f8 40%, #f5f5f7 100%)',
+  display: 'flex',
+  alignItems: 'stretch',
+  background: '#f6f6fb',
   overflowX: 'hidden',
 });
 
-const DashContent = styled('main')({
-  maxWidth: 1400,
-  margin: '0 auto',
-  padding: '32px clamp(20px, 3vw, 40px) 48px',
-  boxSizing: 'border-box',
-  '@media (max-width: 960px)': {
-    padding: '24px 20px 36px',
-  },
-  '@media (max-width: 600px)': {
-    padding: '16px 16px 28px',
-  },
-});
+// ─── Sidebar ───
 
-const DashTabBar = styled('div')({
-  display: 'flex',
-  gap: 0,
-  borderBottom: '3px solid #c9bfe0',
-  marginBottom: 32,
-  '@media (max-width: 600px)': {
-    display: 'none',
-  },
-});
-
-const DashTab = styled('button')<{ active?: boolean }>(({ active }) => ({
-  flex: 1,
-  padding: '16px 24px',
-  fontSize: 16,
-  fontWeight: active ? 700 : 600,
-  border: 'none',
-  borderBottom: `3px solid ${active ? '#6c5ce7' : 'transparent'}`,
-  marginBottom: -3,
-  background: active ? 'rgba(108,92,231,0.06)' : 'none',
-  color: active ? '#6c5ce7' : '#777',
-  cursor: 'pointer',
-  fontFamily: 'inherit',
-  textAlign: 'center',
-  transition: 'all 0.2s',
-  '&:hover': {
-    color: active ? '#6c5ce7' : '#444',
-    background: active ? 'rgba(108,92,231,0.06)' : 'rgba(0,0,0,0.02)',
-  },
-}));
-
-// ─── Mobile tab header (hamburger) ───
-
-const MobileTabHeader = styled('div')({
-  display: 'none',
-  '@media (max-width: 600px)': {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    borderBottom: '3px solid #c9bfe0',
-    marginBottom: 20,
-    paddingBottom: 12,
-    position: 'relative',
-  },
-});
-
-const MobileHamburgerBtn = styled('button')({
+const Sidebar = styled('aside')<{ open?: boolean }>(({ open }) => ({
+  width: 244,
+  flexShrink: 0,
   display: 'flex',
   flexDirection: 'column',
-  gap: 5,
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  padding: '4px 6px',
-  borderRadius: 8,
-  '&:active': { background: 'rgba(108,92,231,0.08)' },
-  '& span': {
+  background: '#fff',
+  borderInlineEnd: '1px solid #ece8f3',
+  position: 'sticky',
+  top: 0,
+  height: '100vh',
+  zIndex: 200,
+  '@media (max-width: 900px)': {
+    position: 'fixed',
+    top: 0,
+    right: 0,
+    boxShadow: '-8px 0 32px rgba(40,30,70,0.14)',
+    transform: open ? 'none' : 'translateX(100%)',
+    transition: 'transform 0.22s ease',
+  },
+}));
+
+const SidebarScrim = styled('div')({
+  display: 'none',
+  '@media (max-width: 900px)': {
     display: 'block',
-    width: 22,
-    height: 2.5,
-    borderRadius: 2,
-    background: '#6c5ce7',
-    transition: 'all 0.2s',
+    position: 'fixed',
+    inset: 0,
+    zIndex: 199,
+    background: 'rgba(28,22,48,0.38)',
   },
 });
 
-const MobileTabDropdown = styled('div')<{ open: boolean }>(({ open }) => ({
-  display: open ? 'block' : 'none',
-  position: 'absolute',
-  top: '100%',
-  right: 0,
-  zIndex: 300,
-  background: '#fff',
-  border: '1px solid #e0d8f0',
-  borderRadius: 14,
-  boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
-  minWidth: 160,
-  overflow: 'hidden',
-  marginTop: 8,
+const SidebarBrand = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  padding: '22px 22px 14px',
+});
+
+const NavScroll = styled('nav')({
+  flex: 1,
+  overflowY: 'auto',
+  padding: '4px 12px 12px',
+});
+
+const NavGroupLabel = styled('div')({
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: '0.09em',
+  color: '#b4aec6',
+  padding: '16px 10px 8px',
+});
+
+const NavItem = styled('button')<{ active?: boolean; danger?: boolean }>(({ active, danger }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  width: '100%',
+  padding: '11px 12px',
+  marginBottom: 2,
+  border: 'none',
+  borderRadius: 10,
+  background: active ? '#6c5ce7' : 'transparent',
+  color: active ? '#fff' : danger ? '#c0392b' : '#6b6580',
+  fontSize: 14.5,
+  fontWeight: active ? 700 : 500,
+  fontFamily: 'inherit',
+  textAlign: 'start',
+  cursor: 'pointer',
+  transition: 'background 0.15s, color 0.15s',
+  boxShadow: active ? '0 6px 16px rgba(108,92,231,0.3)' : 'none',
+  '& svg': { flexShrink: 0, width: 19, height: 19 },
+  '&:hover': active ? {} : { background: danger ? '#fdeceb' : '#f4f2fb', color: danger ? '#c0392b' : '#443c66' },
 }));
 
-const MobileTabItem = styled('button')<{ active?: boolean }>(({ active }) => ({
-  display: 'block',
-  width: '100%',
-  padding: '14px 20px',
-  textAlign: 'right',
-  background: active ? 'rgba(108,92,231,0.07)' : 'none',
-  color: active ? '#6c5ce7' : '#333',
-  fontWeight: active ? 700 : 500,
-  fontSize: 15,
-  border: 'none',
-  borderBottom: '1px solid #f0ecfa',
-  cursor: 'pointer',
-  fontFamily: 'inherit',
-  '&:last-child': { borderBottom: 'none' },
-  '&:active': { background: 'rgba(108,92,231,0.1)' },
-}));
+const SidebarFooter = styled('div')({
+  padding: '10px 12px 18px',
+  borderTop: '1px solid #f1eef8',
+});
+
+// ─── Top bar + content column ───
+
+const MainCol = styled('div')({
+  flex: 1,
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+});
+
+const Topbar = styled('header')({
+  position: 'sticky',
+  top: 0,
+  zIndex: 150,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 14,
+  padding: '13px clamp(18px, 3vw, 36px)',
+  background: 'rgba(255,255,255,0.92)',
+  backdropFilter: 'blur(8px)',
+  borderBottom: '1px solid #ece8f3',
+  '@media (max-width: 600px)': { padding: '10px 14px' },
+});
+
+const TopbarTitle = styled('h1')({
+  margin: 0,
+  fontSize: 20,
+  fontWeight: 800,
+  color: '#241f38',
+  '@media (max-width: 600px)': { fontSize: 17 },
+});
+
+const TopbarSpacer = styled('div')({ flex: 1 });
+
+const HamburgerBtn = styled('button')({
+  display: 'none',
+  '@media (max-width: 900px)': {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 5,
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    padding: 6,
+    borderRadius: 8,
+    '& span': { display: 'block', width: 20, height: 2.5, borderRadius: 2, background: '#6c5ce7' },
+  },
+});
+
+const UserChip = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  padding: '4px 10px',
+  borderRadius: 999,
+  background: '#f5f3fb',
+  border: '1px solid #ece8f3',
+});
+
+const UserAvatar = styled('div')({
+  width: 32,
+  height: 32,
+  borderRadius: '50%',
+  flexShrink: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'linear-gradient(135deg, #6c5ce7 0%, #8B2FC9 100%)',
+  color: '#fff',
+  fontSize: 13,
+  fontWeight: 700,
+});
+
+const UserMeta = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  lineHeight: 1.25,
+  '@media (max-width: 780px)': { display: 'none' },
+});
+
+const UserName = styled('span')({
+  fontSize: 13.5,
+  fontWeight: 700,
+  color: '#2c2542',
+  maxWidth: 170,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+});
+
+const UserRole = styled('span')({ fontSize: 11.5, color: '#8d86a3' });
+
+const DashContent = styled(AdminContent)({
+  flex: 1,
+  maxWidth: 1400,
+  margin: '0 auto',
+  padding: '28px clamp(18px, 3vw, 36px) 48px',
+  boxSizing: 'border-box',
+  minWidth: 0,
+  '@media (max-width: 600px)': { padding: '18px 14px 32px' },
+});
+
+// ─── Nav icons ───
+
+const NAV_ICONS: Record<string, ReactNode> = {
+  activities: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="2" />
+      <rect x="14" y="3" width="7" height="7" rx="2" />
+      <rect x="3" y="14" width="7" height="7" rx="2" />
+      <rect x="14" y="14" width="7" height="7" rx="2" />
+    </>
+  ),
+  statistics: (
+    <>
+      <path d="M3 21h18" />
+      <rect x="5" y="11" width="3.5" height="7" rx="1" />
+      <rect x="10.25" y="5.5" width="3.5" height="12.5" rx="1" />
+      <rect x="15.5" y="14" width="3.5" height="4" rx="1" />
+    </>
+  ),
+  stations: (
+    <>
+      <path d="M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </>
+  ),
+  library: (
+    <>
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+    </>
+  ),
+  media: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2.5" />
+      <circle cx="8.5" cy="9.5" r="1.5" />
+      <path d="m21 16-5-5-6.5 6.5" />
+    </>
+  ),
+  portals: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z" />
+    </>
+  ),
+  publicity: (
+    <>
+      <path d="M3 10v4a1 1 0 0 0 1 1h3l5 4V5L7 9H4a1 1 0 0 0-1 1z" />
+      <path d="M17.5 8.5a5 5 0 0 1 0 7" />
+    </>
+  ),
+  users: (
+    <>
+      <path d="M16 21v-1.8a4 4 0 0 0-4-4H6.5a4 4 0 0 0-4 4V21" />
+      <circle cx="9.25" cy="7.5" r="3.5" />
+      <path d="M21.5 21v-1.8a4 4 0 0 0-3-3.87" />
+      <path d="M16.5 4.2a4 4 0 0 1 0 7.6" />
+    </>
+  ),
+  tutorials: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m10 8.5 6 3.5-6 3.5z" />
+    </>
+  ),
+  logout: (
+    <>
+      <path d="M15 17l5-5-5-5" />
+      <path d="M20 12H9" />
+      <path d="M12 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6" />
+    </>
+  ),
+};
+
+function NavIcon({ name }: { name: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {NAV_ICONS[name]}
+    </svg>
+  );
+}
 
 const TableCard = styled('div')({
   background: '#fff',
@@ -742,24 +896,24 @@ export default function AdminDashboardPage() {
   const role = admin?.role || 'viewer';
 
   const visibleTabs = useMemo(() => {
-    const tabs: { key: MainTab; label: string }[] = [
-      { key: 'activities', label: t.tabActivities },
+    const tabs: { key: MainTab; label: string; group: 'main' | 'other' }[] = [
+      { key: 'activities', label: t.tabActivities, group: 'main' },
     ];
     if (role === 'admin' || role === 'super_admin' || role === 'customer') {
-      tabs.push({ key: 'statistics', label: t.tabStatistics });
+      tabs.push({ key: 'statistics', label: t.tabStatistics, group: 'main' });
     }
-    tabs.push({ key: 'stations', label: t.tabStations });
-    tabs.push({ key: 'library', label: t.tabLibrary });
-    tabs.push({ key: 'portals', label: t.tabPortals });
+    tabs.push({ key: 'stations', label: t.tabStations, group: 'main' });
+    tabs.push({ key: 'library', label: t.tabLibrary, group: 'main' });
+    tabs.push({ key: 'portals', label: t.tabPortals, group: 'main' });
     if (role === 'admin' || role === 'super_admin') {
-      tabs.push({ key: 'media', label: t.tabMedia });
-      tabs.push({ key: 'publicity', label: t.tabPublicity });
+      tabs.push({ key: 'media', label: t.tabMedia, group: 'main' });
+      tabs.push({ key: 'publicity', label: t.tabPublicity, group: 'other' });
     }
     if (role === 'super_admin') {
-      tabs.push({ key: 'users', label: t.tabUsers });
+      tabs.push({ key: 'users', label: t.tabUsers, group: 'other' });
     }
     if (role === 'admin' || role === 'super_admin' || role === 'customer') {
-      tabs.push({ key: 'tutorials', label: t.tabTutorials });
+      tabs.push({ key: 'tutorials', label: t.tabTutorials, group: 'other' });
     }
     return tabs;
   }, [role, t]);
@@ -861,171 +1015,184 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <PageBg>
-        <AdminHeader>
-          <img src="/images/logo-purple.png" alt="Yooz" style={{ height: 32 }} />
-        </AdminHeader>
-        <DashContent>
-          <LoadingBox>
-            <LoadingContent>
-              <SpinnerEl />
-              <BodyText>{t.loading}</BodyText>
-            </LoadingContent>
-          </LoadingBox>
-        </DashContent>
+      <PageBg style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <LoadingBox>
+          <LoadingContent>
+            <SpinnerEl />
+            <BodyText>{t.loading}</BodyText>
+          </LoadingContent>
+        </LoadingBox>
       </PageBg>
     );
   }
 
+  const activeLabel = visibleTabs.find((tab) => tab.key === activeTab)?.label ?? t.title;
+  const displayName = admin?.name || admin?.email || '';
+  const initials = displayName.trim().charAt(0).toUpperCase() || '?';
+  const roleLabel = { viewer: t.roleViewer, admin: t.roleAdmin, super_admin: t.roleSuperAdmin, customer: t.roleCustomer }[role];
+
+  const navItems = (group: 'main' | 'other') =>
+    visibleTabs
+      .filter((tab) => tab.group === group)
+      .map((tab) => (
+        <NavItem
+          key={tab.key}
+          active={activeTab === tab.key}
+          onClick={() => {
+            setActiveTab(tab.key);
+            setSearchParams({});
+            setMobileMenuOpen(false);
+          }}
+        >
+          <NavIcon name={tab.key} />
+          {tab.label}
+        </NavItem>
+      ));
+
+  const otherNav = navItems('other');
+
   return (
     <PageBg>
-      <AdminHeader>
-        <img src="/images/logo-purple.png" alt="Yooz" style={{ height: 32 }} />
-        <HeaderActionsRow>
+      {mobileMenuOpen && <SidebarScrim onClick={() => setMobileMenuOpen(false)} />}
+
+      <Sidebar open={mobileMenuOpen}>
+        <SidebarBrand>
+          <img src="/images/logo-purple.png" alt="Yooz" style={{ height: 30 }} />
+        </SidebarBrand>
+
+        <NavScroll>
+          <NavGroupLabel>{t.navMain}</NavGroupLabel>
+          {navItems('main')}
+          {otherNav.length > 0 && <NavGroupLabel>{t.navOther}</NavGroupLabel>}
+          {otherNav}
+        </NavScroll>
+
+        <SidebarFooter>
+          <NavItem danger onClick={handleLogout}>
+            <NavIcon name="logout" />
+            {t.logout}
+          </NavItem>
+        </SidebarFooter>
+      </Sidebar>
+
+      <MainCol>
+        <Topbar>
+          <HamburgerBtn onClick={() => setMobileMenuOpen((v) => !v)} aria-label={t.navMain}>
+            <span /><span /><span />
+          </HamburgerBtn>
+          <TopbarTitle>{activeLabel}</TopbarTitle>
+          <TopbarSpacer />
           <LangDrawer />
-          <OutlineButton onClick={handleLogout}>{t.logout}</OutlineButton>
-        </HeaderActionsRow>
-      </AdminHeader>
+          <UserChip>
+            <UserAvatar>{initials}</UserAvatar>
+            <UserMeta>
+              <UserName>{displayName}</UserName>
+              <UserRole>{roleLabel}</UserRole>
+            </UserMeta>
+          </UserChip>
+        </Topbar>
 
-      <DashContent>
-        {/* ── Main Tabs — desktop ── */}
-        <DashTabBar>
-          {visibleTabs.map((tab) => (
-            <DashTab key={tab.key} active={activeTab === tab.key} onClick={() => {
-              setActiveTab(tab.key);
-              setSearchParams({});
-            }}>
-              {tab.label}
-            </DashTab>
-          ))}
-        </DashTabBar>
+        <DashContent>
+          {/* ── Activities Tab ── */}
+          {activeTab === 'activities' && (
+            <ActivitiesSection activities={activities} folders={folders} navigate={navigate} t={t} onRefresh={fetchAll} />
+          )}
 
-        {/* ── Main Tabs — mobile hamburger ── */}
-        <MobileTabHeader>
-          <div style={{ position: 'relative' }}>
-            <MobileHamburgerBtn
-              onClick={() => setMobileMenuOpen((v) => !v)}
-              aria-label="פתח תפריט"
-            >
-              <span /><span /><span />
-            </MobileHamburgerBtn>
-            <MobileTabDropdown open={mobileMenuOpen}>
-              {visibleTabs.map((tab) => (
-                <MobileTabItem
-                  key={tab.key}
-                  active={activeTab === tab.key}
-                  onClick={() => {
-                    setActiveTab(tab.key);
-                    setSearchParams({});
-                    setMobileMenuOpen(false);
+          {/* ── Statistics Tab ── */}
+          {activeTab === 'statistics' && (role === 'admin' || role === 'super_admin' || role === 'customer') && (
+            <AdminStatisticsTab activities={activities} initialActivityId={initialActivityId} />
+          )}
+
+          {/* ── Media Tab ── */}
+          {activeTab === 'media' && (role === 'admin' || role === 'super_admin') && (
+            <AdminMediaTab />
+          )}
+
+          {/* ── Stations Tab (stations + games + missions) ── */}
+          {activeTab === 'stations' && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                <button
+                  onClick={() => { setCreateStep('main'); setCreateModalOpen(true); }}
+                  style={{
+                    background: 'linear-gradient(135deg, #6c5ce7 0%, #8B2FC9 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 10,
+                    padding: '10px 22px',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    boxShadow: '0 2px 8px rgba(108,92,231,0.3)',
+                    transition: 'opacity 0.15s',
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
                 >
-                  {tab.label}
-                </MobileTabItem>
-              ))}
-            </MobileTabDropdown>
-          </div>
-        </MobileTabHeader>
+                  {t.createButtonLabel}
+                </button>
+              </div>
 
-        {/* ── Activities Tab ── */}
-        {activeTab === 'activities' && (
-          <ActivitiesSection activities={activities} folders={folders} navigate={navigate} t={t} onRefresh={fetchAll} />
-        )}
+              <SegmentedControlCenter>
+                <SegmentedControl>
+                  <SegmentedButton active={stationsSection === 'stations'} onClick={() => setStationsSection('stations')}>
+                    {t.sectionStations}
+                  </SegmentedButton>
+                  <SegmentedButton active={stationsSection === 'games'} onClick={() => setStationsSection('games')}>
+                    {t.sectionGames}
+                  </SegmentedButton>
+                  <SegmentedButton active={stationsSection === 'missions'} onClick={() => setStationsSection('missions')}>
+                    {t.sectionMissions}
+                  </SegmentedButton>
+                </SegmentedControl>
+              </SegmentedControlCenter>
 
-        {/* ── Statistics Tab ── */}
-        {activeTab === 'statistics' && (role === 'admin' || role === 'super_admin' || role === 'customer') && (
-          <AdminStatisticsTab activities={activities} initialActivityId={initialActivityId} />
-        )}
+              {stationsSection === 'stations' && (
+                <AdminStationsTab stations={stations} folders={stationFolders} onRefresh={refreshStations} hideCreateButton />
+              )}
 
-        {/* ── Media Tab ── */}
-        {activeTab === 'media' && (role === 'admin' || role === 'super_admin') && (
-          <AdminMediaTab />
-        )}
+              {stationsSection === 'games' && (
+                <AdminGamesTab
+                  games={games}
+                  folders={gameFolders}
+                  onRefresh={refreshGames}
+                  hideCreateButton
+                />
+              )}
 
-        {/* ── Stations Tab (stations + games + missions) ── */}
-        {activeTab === 'stations' && (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-              <button
-                onClick={() => { setCreateStep('main'); setCreateModalOpen(true); }}
-                style={{
-                  background: 'linear-gradient(135deg, #6c5ce7 0%, #8B2FC9 100%)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 10,
-                  padding: '10px 22px',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  boxShadow: '0 2px 8px rgba(108,92,231,0.3)',
-                  transition: 'opacity 0.15s',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-              >
-                {t.createButtonLabel}
-              </button>
-            </div>
+              {stationsSection === 'missions' && (
+                <MissionsSection missions={missions} folders={missionFolders} navigate={navigate} t={t} onRefresh={refreshMissions} />
+              )}
+            </>
+          )}
 
-            <SegmentedControlCenter>
-              <SegmentedControl>
-                <SegmentedButton active={stationsSection === 'stations'} onClick={() => setStationsSection('stations')}>
-                  {t.sectionStations}
-                </SegmentedButton>
-                <SegmentedButton active={stationsSection === 'games'} onClick={() => setStationsSection('games')}>
-                  {t.sectionGames}
-                </SegmentedButton>
-                <SegmentedButton active={stationsSection === 'missions'} onClick={() => setStationsSection('missions')}>
-                  {t.sectionMissions}
-                </SegmentedButton>
-              </SegmentedControl>
-            </SegmentedControlCenter>
+          {/* ── Portals Tab ── */}
+          {activeTab === 'portals' && (
+            <AdminPortalsTab portals={portals} onRefresh={refreshPortals} />
+          )}
 
-            {stationsSection === 'stations' && (
-              <AdminStationsTab stations={stations} folders={stationFolders} onRefresh={refreshStations} hideCreateButton />
-            )}
+          {/* ── Content Library Tab ── */}
+          {activeTab === 'library' && (
+            <AdminLibraryTab />
+          )}
 
-            {stationsSection === 'games' && (
-              <AdminGamesTab
-                games={games}
-                folders={gameFolders}
-                onRefresh={refreshGames}
-                hideCreateButton
-              />
-            )}
+          {/* ── Users Tab (super_admin only) ── */}
+          {activeTab === 'users' && role === 'super_admin' && (
+            <AdminUsersTab />
+          )}
 
-            {stationsSection === 'missions' && (
-              <MissionsSection missions={missions} folders={missionFolders} navigate={navigate} t={t} onRefresh={refreshMissions} />
-            )}
-          </>
-        )}
+          {/* ── Tutorials Tab (super_admin generates, admin/customer watch) ── */}
+          {activeTab === 'tutorials' && (role === 'admin' || role === 'super_admin' || role === 'customer') && (
+            <AdminTutorialsTab />
+          )}
 
-        {/* ── Portals Tab ── */}
-        {activeTab === 'portals' && (
-          <AdminPortalsTab portals={portals} onRefresh={refreshPortals} />
-        )}
-
-        {/* ── Content Library Tab ── */}
-        {activeTab === 'library' && (
-          <AdminLibraryTab />
-        )}
-
-        {/* ── Users Tab (super_admin only) ── */}
-        {activeTab === 'users' && role === 'super_admin' && (
-          <AdminUsersTab />
-        )}
-
-        {/* ── Tutorials Tab (super_admin generates, admin/customer watch) ── */}
-        {activeTab === 'tutorials' && (role === 'admin' || role === 'super_admin' || role === 'customer') && (
-          <AdminTutorialsTab />
-        )}
-
-        {/* ── Publicity Tab (admin + super_admin) ── */}
-        {activeTab === 'publicity' && (role === 'admin' || role === 'super_admin') && (
-          <AdminPublicityTab />
-        )}
-      </DashContent>
+          {/* ── Publicity Tab (admin + super_admin) ── */}
+          {activeTab === 'publicity' && (role === 'admin' || role === 'super_admin') && (
+            <AdminPublicityTab />
+          )}
+        </DashContent>
+      </MainCol>
 
       {/* ── Create Modal ── */}
       {createModalOpen && (
@@ -1540,8 +1707,7 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
 
   return (
     <>
-      <SectionHeaderRow>
-        <PageTitleNoMargin>{t.title}</PageTitleNoMargin>
+      <SectionHeaderRow style={{ justifyContent: 'flex-end' }}>
         <HeaderButtons>
           <SmallActionButton onClick={() => setFolderModal({ mode: 'create' })}>
             {t.newFolder}
