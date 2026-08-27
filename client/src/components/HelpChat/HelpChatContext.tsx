@@ -173,7 +173,17 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
     if (open) setNudgeActive(false);
   }, [open]);
 
-  const handleFaqClick = (faqKey: 'responseFaq1' | 'responseFaq2' | 'responseFaq3' | 'responseFaq4', label: string) => {
+  type FaqKey =
+    | 'responseFaq1'
+    | 'responseFaq2'
+    | 'responseFaq3'
+    | 'responseFaq4'
+    | 'responseKickedOut'
+    | 'responseButtonStuck'
+    | 'responseTaskStuck'
+    | 'responseVideoMissing';
+
+  const handleFaqClick = (faqKey: FaqKey, label: string) => {
     setView('faq');
     setMessages([{ from: 'user', text: label }]);
     setTyping(true);
@@ -280,6 +290,22 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
                   <OptionButton onClick={() => handleFaqClick('responseFaq4', t.faq4Label)}>
                     <OptionIcon>🔄</OptionIcon>
                     {t.faq4Label}
+                  </OptionButton>
+                  <OptionButton onClick={() => handleFaqClick('responseKickedOut', t.kickedOutLabel)}>
+                    <OptionIcon>🚪</OptionIcon>
+                    {t.kickedOutLabel}
+                  </OptionButton>
+                  <OptionButton onClick={() => handleFaqClick('responseButtonStuck', t.buttonStuckLabel)}>
+                    <OptionIcon>👆</OptionIcon>
+                    {t.buttonStuckLabel}
+                  </OptionButton>
+                  <OptionButton onClick={() => handleFaqClick('responseTaskStuck', t.taskStuckLabel)}>
+                    <OptionIcon>🧩</OptionIcon>
+                    {t.taskStuckLabel}
+                  </OptionButton>
+                  <OptionButton onClick={() => handleFaqClick('responseVideoMissing', t.videoMissingLabel)}>
+                    <OptionIcon>🎬</OptionIcon>
+                    {t.videoMissingLabel}
                   </OptionButton>
                   <OptionButton onClick={handleOtherClick}>
                     <OptionIcon>✏️</OptionIcon>

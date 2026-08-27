@@ -21,7 +21,7 @@ interface TopicDef {
   };
 }
 
-// ─── 10 Help Topics ───
+// ─── Help Topics ───
 
 const topics: TopicDef[] = [
   {
@@ -118,6 +118,39 @@ const topics: TopicDef[] = [
     keywords: {
       en: ['group', 'team', 'which group', 'wrong group', 'change group', 'my group', 'class', 'branch', 'department'],
       he: ['קבוצה', 'צוות', 'איזה קבוצה', 'קבוצה לא נכונה', 'לשנות קבוצה', 'הקבוצה שלי', 'כיתה', 'סניף', 'מחלקה'],
+    },
+  },
+  // ─── Field troubleshooting sheet (תקלות נפוצות בפעילות) ───
+  {
+    id: 'kickedOut',
+    responseKey: 'responseKickedOut',
+    keywords: {
+      en: ['kicked out', 'kicked', 'thrown out', 'threw me out', 'logged out', 'log out', 'lost the activity', 'lost my session', 'session expired', 'back to the start', 'have to log in again', 'lost the link', 'no link'],
+      he: ['נזרקתי', 'נזרקנו', 'נזרק', 'זרק אותי', 'יצאתי מהפעילות', 'איבדתי את הפעילות', 'חזרתי להתחלה', 'צריך להיכנס מחדש', 'להיכנס שוב', 'אין לי קישור', 'איבדתי את הקישור', 'הקישור לא עובד'],
+    },
+  },
+  {
+    id: 'buttonStuck',
+    responseKey: 'responseButtonStuck',
+    keywords: {
+      en: ['button not working', 'button does nothing', 'button doesnt work', 'button is stuck', 'cant press', 'cant tap', 'not responding', 'unresponsive', 'pressed nothing happens'],
+      he: ['כפתור לא עובד', 'הכפתור לא עובד', 'כפתור תקוע', 'לא מגיב', 'לחצתי ולא קורה כלום', 'לא מצליח ללחוץ', 'אי אפשר ללחוץ'],
+    },
+  },
+  {
+    id: 'taskStuck',
+    responseKey: 'responseTaskStuck',
+    keywords: {
+      en: ['cant solve', 'cannot solve', 'stuck on the task', 'stuck on a task', 'too hard', 'dont know the answer', 'need a hint', 'hint', 'the solution', 'give up'],
+      he: ['לא מצליח לפתור', 'לא מצליחים לפתור', 'תקוע במשימה', 'לא מצליח את המשימה', 'קשה מדי', 'לא יודע את התשובה', 'צריך רמז', 'רמז', 'הפתרון', 'לוותר'],
+    },
+  },
+  {
+    id: 'videoMissing',
+    responseKey: 'responseVideoMissing',
+    keywords: {
+      en: ['no video', 'video not created', 'video missing', 'video never', 'didnt get the video', 'where is the video', 'collage', 'sms'],
+      he: ['לא נוצר סרטון', 'אין סרטון', 'הסרטון לא', 'לא קיבלתי סרטון', 'איפה הסרטון', 'קולאז', 'סמס'],
     },
   },
   {

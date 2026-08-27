@@ -922,6 +922,8 @@ optional logo placeholder + iconRecolor. `DEFAULT_TEMPLATE_ID='default'`. Source
 
 ### AI / Gemini routes (all build a system prompt + call Gemini `generateContent`)
 - **`routes/help.ts`** — `POST /api/help` (public, per-IP rate-limited). Participant help chat.
+  Gemini prompt carries 18 numbered topics; 15-18 are the field troubleshooting sheet
+  (kicked out / dead button / stuck task / missing collage video).
   Body `{message, lang, history, context}`. FAQ/heuristic match first (`matcher`-style), then
   Gemini fallback. Returns an assistant reply.
 - **`routes/avatarChat.ts`** — `POST /api/avatar-chat` (public, rate-limited). In-character
@@ -1204,7 +1206,12 @@ Shared: `GameInstructionsScreen`, `GameCompleteScreen`, `HintButton`/`HintModals
 rendered inline in `PlayingPhase.tsx`.)
 
 ### Other components
-- **`HelpChat/`** — participant help FAB/drawer (`index`, `HelpChatContext`, `matcher`, styled)
+- **`HelpChat/`** — participant help FAB/drawer (`index`, `HelpChatContext`, `matcher`, styled).
+  The field troubleshooting sheet (תקלות נפוצות בפעילות) lives in **three** places that must
+  stay in sync: a menu chip + response string per item in `HelpChat.i18n.ts`, keyword topics in
+  `matcher.ts` (collisions guarded by `matcher.test.ts`), and topics 15-18 of the Gemini prompt
+  in `server/src/routes/help.ts`. The facilitator-voiced copy of the same sheet is in
+  `server/src/routes/adminHelpAssistant.ts`
   → `/api/help`. **`AdminHelpChat/`** — admin how-to chat (DumbDumbBot; FAB defaults
   bottom-left, draggable via `useFabPosition`, position kept in `yooz_bot_pos`, panel anchors
   to the FAB's corner) + `DevTasksPanel` → `/api/admin/help-

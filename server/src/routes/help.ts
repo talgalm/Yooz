@@ -146,9 +146,34 @@ ${lang === 'he'
 • If you're already inside the activity: tap a station card in the roadmap — each tap opens and starts that game.
 If nothing happens, try refreshing the page.`}
 
+15. KICKED_OUT — Thrown out of the activity, session lost, has to start over, lost the link
+${lang === 'he'
+    ? `Response: היכנסו שוב מהקישור שנשלח אליכם. אם אין לכם יותר את הקישור — בקשו מהמנחה קישור חדש לפעילות. בכניסה מחדש בחרו את שם הקבוצה מהרשימה, והזינו בדיוק את אותו השם שהזנתם קודם — כך ההתקדמות שלכם נמצאת שוב.`
+    : `Response: Open the activity again from the link you were sent. If you don't have the link any more, ask your facilitator for a new one. When you log back in, pick your group from the list and type exactly the same name you used before — that's how your progress is found again.`}
+
+16. BUTTON_STUCK — A button does nothing when pressed
+${lang === 'he'
+    ? 'Response: רעננו את הדף ונסו שוב. אם עדיין לא קורה כלום, זו בדרך כלל קליטה חלשה — עברו למקום עם קליטה טובה יותר ונסו פעם נוספת.'
+    : 'Response: Refresh the page and try again. If it still does nothing, it is usually weak reception — move somewhere with a better signal and try once more.'}
+
+17. TASK_STUCK — Cannot complete/solve a task, too hard, needs the answer
+${lang === 'he'
+    ? 'Response: נסו קודם את הרמז שבתוך המשחק (הוא עולה 5 נקודות). אם אין רמז, או שהוא לא מספיק — פנו למנחה, שיכול לחשוף לכם את הפתרון מדף התשובות.'
+    : "Response: Try the hint inside the game first (it costs 5 points). If there's no hint, or it isn't enough, ask your facilitator — they can reveal the solution from the answer sheet."}
+
+18. VIDEO_MISSING — The collage video never appeared
+${lang === 'he'
+    ? 'Response: אם המסך עדיין טוען — בחרו לקבל את הסרטון ב-SMS והוא יגיע אליכם בהודעה. אם כבר בחרתם SMS, או שאינכם מעוניינים — פשוט המתינו, הסרטון עדיין בהכנה. אם קפץ ישר מסך הסיום, כנראה שלא צולמו כל התמונות ולא ניתן ליצור סרטון הפעם.'
+    : "Response: If the screen is still loading, choose to receive it by SMS and the video will arrive as a message. If you already chose SMS, or you don't want it, just wait — the video is still being built. If the finish screen appeared straight away, some of the photos were probably never taken, and no video can be made this time."}
+
 RULES:
-- Classify the user's message into the most relevant topic above (topics 1-14)
+- Classify the user's message into the most relevant topic above (topics 1-18)
 - If the user asks how to start a game / what to press / nothing is happening → use GAME_START (topic 14)
+- Topics 15-18 are the field troubleshooting sheet. Prefer them over the generic
+  LOADING/CONNECTION answers when the participant describes one of those situations:
+  being thrown out of the activity (15), a dead button (16), a task they cannot finish (17),
+  or a missing collage video (18). Give the steps in the order listed — they are ordered by
+  what to try first.
 - If the user mentions portal/admin/manager login → clarify those are separate from participant login
 - Respond using the canonical response for that topic as a base, but feel free to slightly personalize it based on the specific question
 - Keep responses concise — 2-3 sentences max

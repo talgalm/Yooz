@@ -8,6 +8,10 @@ export const texts = {
     faq2Label: "The game isn't starting",
     faq3Label: 'My score is wrong',
     faq4Label: 'Page not loading / error',
+    kickedOutLabel: 'I got kicked out',
+    buttonStuckLabel: "A button isn't working",
+    taskStuckLabel: "I'm stuck on a task",
+    videoMissingLabel: 'The video never arrived',
     otherLabel: 'Something else',
     phoneLine: 'Or call us:',
     inputPlaceholder: 'Describe your issue...',
@@ -55,6 +59,16 @@ export const texts = {
       "Your group was selected when you logged in. If you're in the wrong group, log out and log in again selecting the correct one. Group/branch selection only appears in activities that require it.",
     responseGeneral:
       "If you're having trouble, try refreshing the page first. If the issue persists, contact the activity organizer or call our support line.",
+
+    // Field troubleshooting sheet
+    responseKickedOut:
+      "Open the activity again from the link you were sent. If you don't have the link any more, ask your facilitator for a new one.\n\nWhen you log back in, pick your group from the list and type exactly the same name you used before — that's how your progress is found again.",
+    responseButtonStuck:
+      'Refresh the page and try again. If it still does nothing, it is usually weak reception — move somewhere with a better signal and try once more.',
+    responseTaskStuck:
+      "Try the hint inside the game first (it costs 5 points). If there's no hint, or it isn't enough, ask your facilitator — they can reveal the solution from the answer sheet.",
+    responseVideoMissing:
+      "If the screen is still loading, choose to receive it by SMS and the video will arrive as a message.\n\nIf you already chose SMS, or you don't want it, just wait — the video is still being built. If the finish screen appeared straight away, some of the photos were probably never taken, and no video can be made this time.",
   },
   he: {
     helpAria: 'עזרה ותמיכה',
@@ -65,6 +79,10 @@ export const texts = {
     faq2Label: 'המשחק לא מתחיל',
     faq3Label: 'הניקוד שלי לא נכון',
     faq4Label: 'הדף תקוע / שגיאה',
+    kickedOutLabel: 'נזרקתי מהפעילות',
+    buttonStuckLabel: 'כפתור לא עובד',
+    taskStuckLabel: 'לא מצליח/ה לפתור משימה',
+    videoMissingLabel: 'לא נוצר סרטון',
     otherLabel: 'משהו אחר',
     phoneLine: 'או התקשרו:',
     inputPlaceholder: 'תארו את הבעיה...',
@@ -109,5 +127,15 @@ export const texts = {
       'הקבוצה שלכם נבחרה כשהתחברתם. אם אתם בקבוצה הלא נכונה, תצטרכו להתנתק ולהתחבר מחדש ולבחור את הקבוצה הנכונה. בחירת קבוצה או סניף מופיעה רק בפעילויות שבהן זה נדרש.',
     responseGeneral:
       'אם אתם חווים בעיות, נסו לרענן את הדף קודם. אם הבעיה ממשיכה, פנו למארגן הפעילות או התקשרו לקו התמיכה שלנו.',
+
+    // רשימת תקלות אפשריות ופתרונן
+    responseKickedOut:
+      'היכנסו שוב מהקישור שנשלח אליכם. אם אין לכם יותר את הקישור — בקשו מהמנחה קישור חדש לפעילות.\n\nבכניסה מחדש בחרו את שם הקבוצה מהרשימה, והזינו בדיוק את אותו השם שהזנתם קודם — כך ההתקדמות שלכם נמצאת שוב.',
+    responseButtonStuck:
+      'רעננו את הדף ונסו שוב. אם עדיין לא קורה כלום, זו בדרך כלל קליטה חלשה — עברו למקום עם קליטה טובה יותר ונסו פעם נוספת.',
+    responseTaskStuck:
+      'נסו קודם את הרמז שבתוך המשחק (הוא עולה 5 נקודות). אם אין רמז, או שהוא לא מספיק — פנו למנחה, שיכול לחשוף לכם את הפתרון מדף התשובות.',
+    responseVideoMissing:
+      'אם המסך עדיין טוען — בחרו לקבל את הסרטון ב-SMS והוא יגיע אליכם בהודעה.\n\nאם כבר בחרתם SMS, או שאינכם מעוניינים — פשוט המתינו, הסרטון עדיין בהכנה. אם קפץ ישר מסך הסיום, כנראה שלא צולמו כל התמונות ולא ניתן ליצור סרטון הפעם.',
   },
 };
