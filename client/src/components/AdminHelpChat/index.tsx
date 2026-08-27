@@ -1,14 +1,16 @@
 /**
  * DumbDumbBot — floating chatbot on all admin pages.
- * FAB fixed to the physical right side; opens a chat panel for how-to questions.
+ * FAB starts bottom-left, is draggable anywhere, and remembers where it was put
+ * (useFabPosition). The chat panel anchors to whichever corner the FAB sits in.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useLang, useTranslations } from '../../context/LanguageContext';
 import { adminApiFetch, adminUploadFile } from '../../utils/adminApi';
 import DevTasksPanel from './DevTasksPanel';
+import { FAB_SIZE, useFabPosition } from './useFabPosition';
 import {
   texts,
   isDevCommand,
@@ -69,6 +71,7 @@ export default function AdminHelpChat() {
   const { admin } = useAdminAuth();
   const location = useLocation();
 
+  const { pos, viewport, dragging, didDrag, dragHandlers } = useFabPosition();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -323,18 +326,44 @@ export default function AdminHelpChat() {
   const canSendDevTask =
     chatMode === 'dev_task_write' && (inputValue.trim().length > 0 || Boolean(pendingDocument));
 
+  const onLeftHalf = pos.left + FAB_SIZE / 2 < viewport.width / 2;
+
+  // Under 600px the panel is full-width via its own media query — leave it alone.
+  const panelStyle = useMemo<CSSProperties>(() => {
+    if (viewport.width <= 600) return {};
+    const inLowerHalf = pos.top + FAB_SIZE / 2 > viewport.height / 2;
+    return {
+      left: onLeftHalf ? pos.left : 'auto',
+      right: onLeftHalf ? 'auto' : Math.max(12, viewport.width - pos.left - FAB_SIZE),
+      top: inLowerHalf ? 'auto' : pos.top + FAB_SIZE + 10,
+      bottom: inLowerHalf ? Math.max(12, viewport.height - pos.top + 10) : 'auto',
+    };
+  }, [pos, viewport, onLeftHalf]);
+
   return (
     <>
-      <FabWrap className="help-fab-wrap">
-        <FabTooltip>{t.fabTooltip}</FabTooltip>
-        <HelpFab onClick={toggle} aria-label={t.fabAria} title={t.fabTooltip}>
+      <FabWrap
+        className="help-fab-wrap"
+        dragging={dragging}
+        style={{ left: pos.left, top: pos.top }}
+        {...dragHandlers}
+      >
+        <FabTooltip side={onLeftHalf ? 'left' : 'right'}>{t.fabTooltip}</FabTooltip>
+        <HelpFab
+          onClick={() => {
+            if (didDrag()) return;
+            toggle();
+          }}
+          aria-label={t.fabAria}
+          title={t.fabTooltip}
+        >
           {open ? '✕' : '🤖'}
         </HelpFab>
       </FabWrap>
 
       {open && <ChatBackdrop onClick={toggle} />}
       {open && (
-        <ChatPanel>
+        <ChatPanel style={panelStyle}>
           <ChatHeader>
             <ChatHeaderTitle>
               <span aria-hidden>🤖</span>

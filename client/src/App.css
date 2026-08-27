@@ -21,6 +21,66 @@ body {
   min-height: 100dvh;
 }
 
+/*
+ * Scrollbars.
+ *
+ * Firefox only takes the two `scrollbar-*` properties; WebKit only takes the
+ * pseudo-elements, and once you style one WebKit pseudo-element you own the
+ * whole scrollbar, so the corner and the (unused) buttons are reset too.
+ * Thumb keeps a transparent border so it reads as inset rather than edge-to-edge.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d5d1e4 transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #d5d1e4;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #b9b2d2;
+}
+
+::-webkit-scrollbar-corner,
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Content that fades in on tab / sub-tab switches. */
+@keyframes yoozTabIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 input,
 textarea,
 select {

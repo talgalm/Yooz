@@ -5,7 +5,6 @@ import { useAdminAuth } from '../../../context/AdminAuthContext';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminDashboardPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
-import LangDrawer from '../../../components/LangDrawer';
 import Pagination from '../../../components/Pagination';
 import { usePagination } from '../../../hooks/usePagination';
 import AdminGamesTab, { GAME_SUBTABS } from '../AdminGamesTab';
@@ -17,6 +16,7 @@ import AdminLibraryTab from '../AdminLibraryTab';
 import AdminPortalsTab from '../AdminPortalsTab';
 import AdminTutorialsTab from '../AdminTutorialsTab';
 import AdminPublicityTab from '../AdminPublicityTab';
+import AdminSettingsTab from '../AdminSettingsTab';
 import AdminMediaTab from '../AdminMediaTab';
 import type { Portal } from '../AdminPortalsTab';
 import FolderFormModal from '../FolderFormModal';
@@ -210,49 +210,6 @@ const HamburgerBtn = styled('button')({
   },
 });
 
-const UserChip = styled('div')({
-  display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  padding: '4px 10px',
-  borderRadius: 999,
-  background: '#f5f3fb',
-  border: '1px solid #ece8f3',
-});
-
-const UserAvatar = styled('div')({
-  width: 32,
-  height: 32,
-  borderRadius: '50%',
-  flexShrink: 0,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'linear-gradient(135deg, #6c5ce7 0%, #8B2FC9 100%)',
-  color: '#fff',
-  fontSize: 13,
-  fontWeight: 700,
-});
-
-const UserMeta = styled('div')({
-  display: 'flex',
-  flexDirection: 'column',
-  lineHeight: 1.25,
-  '@media (max-width: 780px)': { display: 'none' },
-});
-
-const UserName = styled('span')({
-  fontSize: 13.5,
-  fontWeight: 700,
-  color: '#2c2542',
-  maxWidth: 170,
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-});
-
-const UserRole = styled('span')({ fontSize: 11.5, color: '#8d86a3' });
-
 const DashContent = styled(AdminContent)({
   flex: 1,
   maxWidth: 1400,
@@ -261,6 +218,11 @@ const DashContent = styled(AdminContent)({
   boxSizing: 'border-box',
   minWidth: 0,
   '@media (max-width: 600px)': { padding: '18px 14px 32px' },
+});
+
+const TabFade = styled('div')({
+  animation: 'yoozTabIn 0.22s ease both',
+  minWidth: 0,
 });
 
 // ─── Nav icons ───
@@ -326,6 +288,12 @@ const NAV_ICONS: Record<string, ReactNode> = {
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="m10 8.5 6 3.5-6 3.5z" />
+    </>
+  ),
+  settings: (
+    <>
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.11a1.6 1.6 0 0 0-1.05-1.46 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.6 1.6 0 0 0 4.6 15a1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.11A1.6 1.6 0 0 0 4.6 8.9a1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.6 1.6 0 0 0 9 4.6a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.11a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.6 1.6 0 0 0 19.4 9v.09a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.11a1.6 1.6 0 0 0-1.49 1z" />
     </>
   ),
   logout: (
@@ -833,7 +801,7 @@ const TypeTileEmoji = styled('span')({
 
 // ─── Types ───
 
-type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'media' | 'users' | 'portals' | 'tutorials' | 'publicity';
+type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'media' | 'users' | 'portals' | 'tutorials' | 'publicity' | 'settings';
 type StationsSection = 'stations' | 'games' | 'missions';
 type CreateStep = 'main' | 'game' | 'station';
 
@@ -910,7 +878,7 @@ export default function AdminDashboardPage() {
   const [missionFolders, setMissionFolders] = useState<Folder[]>([]);
   const [portals, setPortals] = useState<Portal[]>([]);
   const [activeTab, setActiveTab] = useState<MainTab>(
-    ['activities', 'statistics', 'stations', 'library', 'media', 'users', 'portals', 'tutorials', 'publicity'].includes(initialTab) ? initialTab : 'activities'
+    ['activities', 'statistics', 'stations', 'library', 'media', 'users', 'portals', 'tutorials', 'publicity', 'settings'].includes(initialTab) ? initialTab : 'activities'
   );
   const [stationsSection, setStationsSection] = useState<StationsSection>('stations');
   const [stationTypeFilter, setStationTypeFilter] = useState<string>('all');
@@ -953,6 +921,7 @@ export default function AdminDashboardPage() {
     if (role === 'admin' || role === 'super_admin' || role === 'customer') {
       tabs.push({ key: 'tutorials', label: t.tabTutorials, group: 'other' });
     }
+    tabs.push({ key: 'settings', label: t.tabSettings, group: 'other' });
     return tabs;
   }, [role, t]);
 
@@ -1065,9 +1034,6 @@ export default function AdminDashboardPage() {
   }
 
   const activeLabel = visibleTabs.find((tab) => tab.key === activeTab)?.label ?? t.title;
-  const displayName = admin?.name || admin?.email || '';
-  const initials = displayName.trim().charAt(0).toUpperCase() || '?';
-  const roleLabel = { viewer: t.roleViewer, admin: t.roleAdmin, super_admin: t.roleSuperAdmin, customer: t.roleCustomer }[role];
 
   // Picking a leaf filter closes the mobile drawer; picking a section keeps it open
   // because a fresh list of types is about to appear underneath.
@@ -1181,17 +1147,10 @@ export default function AdminDashboardPage() {
           </HamburgerBtn>
           <TopbarTitle>{activeLabel}</TopbarTitle>
           <TopbarSpacer />
-          <LangDrawer />
-          <UserChip>
-            <UserAvatar>{initials}</UserAvatar>
-            <UserMeta>
-              <UserName>{displayName}</UserName>
-              <UserRole>{roleLabel}</UserRole>
-            </UserMeta>
-          </UserChip>
         </Topbar>
 
         <DashContent>
+          <TabFade key={`${activeTab}:${activeTab === 'stations' ? stationsSection : ''}`}>
           {/* ── Activities Tab ── */}
           {activeTab === 'activities' && (
             <ActivitiesSection activities={activities} folders={folders} navigate={navigate} t={t} onRefresh={fetchAll} />
@@ -1283,6 +1242,10 @@ export default function AdminDashboardPage() {
           {activeTab === 'publicity' && (role === 'admin' || role === 'super_admin') && (
             <AdminPublicityTab />
           )}
+
+          {/* ── Settings Tab ── */}
+          {activeTab === 'settings' && <AdminSettingsTab onLogout={handleLogout} />}
+          </TabFade>
         </DashContent>
       </MainCol>
 

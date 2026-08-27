@@ -53,9 +53,10 @@ export const HelpFab = styled('button')({
   },
 });
 
-export const FabTooltip = styled('span')({
+export const FabTooltip = styled('span')<{ side?: 'left' | 'right' }>(({ side = 'right' }) => ({
   position: 'absolute',
-  right: 'calc(100% + 10px)',
+  right: side === 'right' ? 'calc(100% + 10px)' : 'auto',
+  left: side === 'right' ? 'auto' : 'calc(100% + 10px)',
   top: '50%',
   transform: 'translateY(-50%)',
   background: '#2d2d3a',
@@ -75,15 +76,18 @@ export const FabTooltip = styled('span')({
   '@media (max-width: 600px)': {
     display: 'none',
   },
-});
+}));
 
-export const FabWrap = styled('div')({
+// Placed by inline left/top from useFabPosition — the bot is draggable.
+export const FabWrap = styled('div')<{ dragging?: boolean }>(({ dragging }) => ({
   position: 'fixed',
-  right: 24,
-  bottom: 24,
-  left: 'auto',
   zIndex: 901,
-});
+  touchAction: 'none',
+  userSelect: 'none',
+  cursor: dragging ? 'grabbing' : 'grab',
+  // A wobbling target is hard to drop precisely.
+  ...(dragging ? { '& button': { animation: 'none' } } : null),
+}));
 
 export const ChatBackdrop = styled('div')({
   position: 'fixed',
@@ -99,6 +103,7 @@ export const ChatPanel = styled('div')({
   left: 'auto',
   bottom: 92,
   width: 360,
+  maxWidth: 'calc(100vw - 24px)',
   background: '#fff',
   borderRadius: 20,
   boxShadow: '0 12px 48px rgba(0,0,0,0.18)',

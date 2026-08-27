@@ -538,6 +538,12 @@ drawer, user chip). Under 900px the sidebar is an off-canvas drawer driven by `m
 Tab look-and-feel comes from the shared primitives (`components/styled.ts` `Table`,
 `AdminCard`, `SegmentedControl`, `MobileCardItem`, …) — restyle there, not per tab.
 
+The topbar holds only the section title — language, account and logout live in the
+**settings** tab (`AdminSettingsTab`, visible to every role, `group: 'other'`); logout is also
+still in the sidebar footer. Tab bodies are wrapped in `TabFade`, keyed by tab + stations
+section, which replays the `yoozTabIn` keyframe (in `App.css`, alongside the custom
+scrollbars and the `prefers-reduced-motion` clamp) on every switch.
+
 The **stations** tab has no in-content section/type bars; both levels are sidebar sub-nav
 (`SubNav`/`SubNavItem`), auto-expanded for the active branch — no collapse state. The
 dashboard owns `stationsSection`, `stationTypeFilter` and `gameTypeFilter`, and passes the
@@ -1199,7 +1205,9 @@ rendered inline in `PlayingPhase.tsx`.)
 
 ### Other components
 - **`HelpChat/`** — participant help FAB/drawer (`index`, `HelpChatContext`, `matcher`, styled)
-  → `/api/help`. **`AdminHelpChat/`** — admin how-to chat + `DevTasksPanel` → `/api/admin/help-
+  → `/api/help`. **`AdminHelpChat/`** — admin how-to chat (DumbDumbBot; FAB defaults
+  bottom-left, draggable via `useFabPosition`, position kept in `yooz_bot_pos`, panel anchors
+  to the FAB's corner) + `DevTasksPanel` → `/api/admin/help-
   assistant`. **`AdminReportChat/`** — analytics Q&A → `/api/admin/report-assistant` (+ `markdown`).
 - **`MobileContainer`** (≤480px participant frame), **`ParticipantActivityScope`** (scopes a
   participant to one activity), **`ParticipantLandingRedirect`**, **`ActivityLogoutButton`**,
