@@ -304,6 +304,8 @@ export interface ActivityConfigResponse {
 export interface JwtPayload {
   participantName: string;
   activityCode: string;
+  /** The report this session owns. Absent on tokens issued before it existed. */
+  reportId?: string;
   connectionType: ConnectionType;
   email?: string;
   phoneNumber?: string;

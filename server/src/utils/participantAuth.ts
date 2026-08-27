@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { Types } from 'mongoose';
 import { JWT_SECRET } from '../config';
 import { LoginResponse, ConnectionType } from '../types';
 import { IActivity } from '../models/Activity';
@@ -158,8 +159,9 @@ export async function createParticipantSession(
   const existingReport = await Report.findOne(lookupQuery).sort({ joinedAt: -1 });
   const resolvedName = existingReport?.participantName || opts.displayName;
 
-  if (!existingReport) {
-    await Report.create({
+  let report = existingReport;
+  if (!report) {
+    report = await Report.create({
       activityId: activity._id!,
       activityCode: opts.activityCode,
       participantName: resolvedName,
@@ -175,6 +177,12 @@ export async function createParticipantSession(
     {
       participantName: resolvedName,
       activityCode: opts.activityCode,
+      // Pin the session to the report login just resolved. Everything after
+      // this (resume, progress saves, final scores) addresses it by id — name
+      // is not an identity: two people share one, and one person with two
+      // email addresses has two reports under the same name, so a name lookup
+      // resumes and overwrites whichever report happens to be newest.
+      reportId: String(report._id),
       connectionType,
       ...(opts.email && { email: opts.email }),
       ...(opts.phoneNumber && { phoneNumber: opts.phoneNumber }),
@@ -197,4 +205,20 @@ export async function createParticipantSession(
       ...(opts.group && { group: opts.group }),
     },
   };
+}
+
+/**
+ * The report a participant session owns. Tokens issued before `reportId`
+ * existed fall back to the old name lookup (`sort({joinedAt:-1})` still applies
+ * at the call site); they expire within 7 days of deploy.
+ */
+export function ownReportFilter(participant: {
+  reportId?: string;
+  activityCode: string;
+  participantName: string;
+}): Record<string, unknown> {
+  if (participant.reportId && Types.ObjectId.isValid(participant.reportId)) {
+    return { _id: new Types.ObjectId(participant.reportId) };
+  }
+  return { activityCode: participant.activityCode, participantName: participant.participantName };
 }

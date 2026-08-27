@@ -9,6 +9,7 @@ import { subscribe, sendLockEvent } from '../utils/lockBroadcaster';
 import { getParticipantCount } from '../utils/participantCountCache';
 import { getOrderSurveyLiveState } from '../utils/orderSurveySession';
 import { getGroupStatus } from '../utils/groupStatus';
+import { ownReportFilter } from '../utils/participantAuth';
 import { resolveCeiling, normalizeScore } from '../utils/scoreNormalization';
 import { startOfTodayIsrael } from '../utils/israelTime';
 import { onGroupMemberCompleted } from '../services/groupRewardService';
@@ -495,7 +496,7 @@ router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: s
   // dropping the participant off the leaderboard (time mode counts only
   // completed reports). Late progress is stale by definition; ignore it.
   const report = await Report.findOneAndUpdate(
-    { activityCode, participantName, completionStatus: { $ne: 'completed' } },
+    { ...ownReportFilter(req.participant!), completionStatus: { $ne: 'completed' } },
     updatePayload,
     { new: true, sort: { joinedAt: -1 } },
   );
@@ -520,7 +521,7 @@ router.delete('/:code/my-report', authenticateToken, async (req: Request<{ code:
     return;
   }
 
-  await Report.deleteMany({ activityCode, participantName });
+  await Report.deleteMany(ownReportFilter(req.participant!));
   res.json({ success: true });
 });
 
@@ -534,7 +535,7 @@ router.get('/:code/my-progress', authenticateToken, async (req: Request<{ code: 
   }
 
   const report = await Report.findOne(
-    { activityCode, participantName },
+    ownReportFilter(req.participant!),
     { completionStatus: 1, lastActiveItemIndex: 1, totalItemsCompleted: 1, data: 1 },
   ).sort({ joinedAt: -1 }).lean();
 
@@ -631,12 +632,17 @@ router.post('/:code/scores', authenticateToken, async (req: Request<{ code: stri
   // racing an offline-queue flush) could each insert one. Both would carry the
   // same scores, so the cost is a duplicate leaderboard row, not lost data —
   // add a unique index on (activityCode, participantName) if it ever shows up.
+  // Insert-only fields the filter no longer carries: an `_id` filter says
+  // nothing about who the report belongs to, so name them explicitly (they must
+  // NOT be repeated when the legacy filter already matches on them).
+  const ownFilter = ownReportFilter(req.participant!);
   const report = await Report.findOneAndUpdate(
-    { activityCode, participantName },
+    ownFilter,
     {
       $set: updateOps,
       $setOnInsert: {
         activityId: activity._id,
+        ...(ownFilter._id ? { activityCode, participantName } : {}),
         connectionType: req.participant!.connectionType || 'single',
         ...(req.participant!.email && { email: req.participant!.email }),
         ...(req.participant!.phoneNumber && { phoneNumber: req.participant!.phoneNumber }),

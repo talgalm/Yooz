@@ -308,7 +308,8 @@ No admin auth — the `statsShareToken` is the credential.
 - **`utils/scoreNormalization.ts`** — `normalizeScore`/`resolveCeiling`/`maxScoreForReport`/
   `clampPassThreshold` — the 0-100 grade normalization used across analytics + leaderboard grade mode.
 - **`utils/participantAuth.ts`** — `resolveGroupName` (day-scoped), `checkGroupCapacity`
-  (day-scoped), `createParticipantSession`, `buildReportLookupQuery`, `validateGroupName`.
+  (day-scoped), `createParticipantSession`, `buildReportLookupQuery`, `ownReportFilter`,
+  `validateGroupName`.
 - **`utils/groupStatus.ts`** — `getGroupStatus` (member/completion counts, **scoped to today**),
   `resolveGroupMinMembers`.
 - **`utils/orderSurveyBorda.ts` / `orderSurveySession.ts`** — live order-game Borda aggregation.
@@ -649,15 +650,16 @@ Module-level: `activityConfigCache` (Map, 30s TTL) memoizes `GET /:code`.
   For group activities also returns per-group standings (aggregate: sum of member scores).
 - `PATCH /:code/progress` *(JWT)* — incremental save. `$set` completionStatus=`in_progress`,
   `lastActiveItemIndex`, `totalItemsCompleted`, `data.totalScore` (runningTotal); `$push`
-  `data.itemResults` unless `progressOnly`. Matches latest report by `{activityCode,
-  participantName}` sorted by joinedAt desc. 403 on code mismatch.
-- `DELETE /:code/my-report` *(JWT)* — continuous activities only; `deleteMany` the
-  participant's reports (early-exit replay).
+  `data.itemResults` unless `progressOnly`. Matches the token's own report
+  (`ownReportFilter`). 403 on code mismatch.
+- `DELETE /:code/my-report` *(JWT)* — continuous activities only; `deleteMany` on
+  `ownReportFilter` (early-exit replay).
 - `GET /:code/my-progress` *(JWT)* — resume payload (completionStatus, lastActiveItemIndex,
-  totalItemsCompleted, scores, itemResults).
+  totalItemsCompleted, scores, itemResults) for the token's own report (`ownReportFilter`).
 - `GET /:code/order-survey/status` *(JWT)* — live order-survey state (`getOrderSurveyLiveState`).
 - `POST /:code/scores` *(JWT)* — **final submit**: validates `scores[{gameName,score}]`, sums
-  `totalScore`, `$set` completed + `sessionCompletedAt` + `sessionDurationMs`. Fires
+  `totalScore`, upserts on `ownReportFilter` (`$setOnInsert` adds activityCode/participantName
+  only when filtering by `_id`), `$set` completed + `sessionCompletedAt` + `sessionDurationMs`. Fires
   `onGroupMemberCompleted` (fire-and-forget) for self-service group members → reward flow.
 - `POST /:code/mission-event` — public counter `$inc` (`puzzle_completed` /
   `trashsort_completed` + score sum).
@@ -938,7 +940,12 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 - **`participantAuth.ts`** — `validateGroupName`, `resolveGroupName` (**day-scoped**, 410 on
   stale token), `checkGroupCapacity` (day-scoped member count vs `groupMaxMembers`),
   `buildReportLookupQuery`, `createParticipantSession` (issues JWT + upserts the Report,
-  `bumpParticipantCount`).
+  `bumpParticipantCount`; the JWT carries **`reportId`** — the report it just resolved),
+  `ownReportFilter(participant)` → `{_id}` from the token's `reportId`, falling back to
+  `{activityCode, participantName}` for tokens issued before `reportId` existed (7d TTL).
+  **Every participant report route addresses the report through it** — participant *name* is
+  not an identity (namesakes collide; one person with two email addresses has two reports
+  under one name, and a name lookup resumes/overwrites whichever is newest).
 - **`groupStatus.ts`** — `resolveGroupMinMembers`, `getGroupStatus` (member/completion counts
   **scoped to today**).
 - **`orderSurveyBorda.ts`** — `computeBordaRanking(rankings, referenceItems)` (rank 1 earns N
