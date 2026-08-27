@@ -31,9 +31,6 @@ import {
   MobileCardList,
   MobileCardItem,
   Input,
-  GameTabBar,
-  GameTabGroup,
-  GameTab,
 } from '../../../components/styled';
 import {
   SectionHeaderRow,
@@ -269,13 +266,6 @@ const FilterRow = styled('div')({
   flexWrap: 'wrap',
 });
 
-const ScrollableTabBar = styled(GameTabBar)({
-  overflowX: 'auto',
-  paddingBottom: 4,
-  '&::-webkit-scrollbar': { height: 4 },
-  '&::-webkit-scrollbar-thumb': { background: '#d0d0d8', borderRadius: 2 },
-});
-
 const TagGroupsContainer = styled('div')({
   display: 'flex',
   gap: 24,
@@ -348,15 +338,35 @@ function PencilIcon() {
   );
 }
 
+// Shared with the dashboard sidebar, which renders the same type list as sub-nav.
+export function stationTypeLabel(t: Record<string, string>, type?: string) {
+  switch (type) {
+    case 'text': return t.typeText;
+    case 'video': return t.typeVideo;
+    case 'image': return t.typeImage;
+    case 'narrative': return t.typeNarrative;
+    case 'badge': return t.typeBadge;
+    case 'collage': return t.typeCollage;
+    case 'feedback': return t.typeFeedback;
+    case 'riddle': return t.typeRiddle;
+    case 'avatar': return t.typeAvatar;
+    case 'avatarQuiz': return t.typeAvatarQuiz;
+    case 'enteringText': return t.typeEnteringText;
+    default: return type || '—';
+  }
+}
+
 interface AdminStationsTabProps {
   stations: Station[];
   folders: Folder[];
   onRefresh: () => void;
   defaultType?: string;
   hideCreateButton?: boolean;
+  /** Driven by the dashboard sidebar sub-nav. */
+  typeFilter?: string;
 }
 
-export default function AdminStationsTab({ stations, folders, onRefresh, defaultType, hideCreateButton }: AdminStationsTabProps) {
+export default function AdminStationsTab({ stations, folders, onRefresh, defaultType, hideCreateButton, typeFilter = 'all' }: AdminStationsTabProps) {
   const navigate = useNavigate();
   const t = useTranslations(texts);
 
@@ -364,7 +374,6 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
   const [search, setSearch] = useState('');
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [tagDrawerOpen, setTagDrawerOpen] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<string>('all');
 
   // folder view + row menus
   const [openFolderId, setOpenFolderId] = useState<string | null>(null);
@@ -581,22 +590,7 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
     else dropTargetRefs.current.delete(key);
   };
 
-  const typeLabel = (type?: string) => {
-    switch (type) {
-      case 'text': return t.typeText;
-      case 'video': return t.typeVideo;
-      case 'image': return t.typeImage;
-      case 'narrative': return t.typeNarrative;
-      case 'badge': return t.typeBadge;
-      case 'collage': return t.typeCollage;
-      case 'feedback': return t.typeFeedback;
-      case 'riddle': return t.typeRiddle;
-      case 'avatar': return t.typeAvatar;
-      case 'avatarQuiz': return t.typeAvatarQuiz;
-      case 'enteringText': return t.typeEnteringText;
-      default: return type || '—';
-    }
-  };
+  const typeLabel = (type?: string) => stationTypeLabel(t as Record<string, string>, type);
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -679,6 +673,12 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
   const openFolder = openFolderId ? folders.find((f) => f._id === openFolderId) || null : null;
 
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(visibleStations);
+
+  // usePagination only resets when the list length changes; switching between two
+  // equally-sized types would otherwise strand you on page 2.
+  useEffect(() => { setPage(1); },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [typeFilter]);
 
   useEffect(() => {
     if (!tagDrawerOpen) return;
@@ -835,21 +835,6 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
           )}
         </HeaderButtons>
       </SectionHeaderRow>
-
-      {allTypes.length > 1 && (
-        <ScrollableTabBar>
-          <GameTabGroup>
-            <GameTab active={typeFilter === 'all'} onClick={() => setTypeFilter('all')}>
-              {t.allTypes}
-            </GameTab>
-            {allTypes.map((type) => (
-              <GameTab key={type} active={typeFilter === type} onClick={() => setTypeFilter(type)}>
-                {typeLabel(type)}
-              </GameTab>
-            ))}
-          </GameTabGroup>
-        </ScrollableTabBar>
-      )}
 
       <FilterRow>
         {allTags.length > 0 && (

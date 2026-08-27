@@ -31,9 +31,6 @@ import {
   MobileCardList,
   MobileCardItem,
   Input,
-  GameTabBar,
-  GameTabGroup,
-  GameTab,
 } from '../../../components/styled';
 import {
   SectionHeaderRow,
@@ -268,14 +265,7 @@ const FilterRow = styled('div')({
   flexWrap: 'wrap',
 });
 
-const ScrollableTabBar = styled(GameTabBar)({
-  overflowX: 'auto',
-  paddingBottom: 4,
-  '&::-webkit-scrollbar': { height: 4 },
-  '&::-webkit-scrollbar-thumb': { background: '#d0d0d8', borderRadius: 2 },
-});
-
-const GAME_SUBTABS = ['all', 'order', 'trivia', 'puzzle', 'trueFalse', 'ballGame'] as const;
+export const GAME_SUBTABS = ['all', 'order', 'trivia', 'puzzle', 'trueFalse', 'ballGame'] as const;
 
 const TagGroupsContainer = styled('div')({
   display: 'flex',
@@ -354,14 +344,15 @@ interface AdminGamesTabProps {
   folders: Folder[];
   onRefresh: () => void;
   hideCreateButton?: boolean;
+  /** Driven by the dashboard sidebar sub-nav. */
+  gameType?: string;
 }
 
-export default function AdminGamesTab({ games, folders, onRefresh, hideCreateButton }: AdminGamesTabProps) {
+export default function AdminGamesTab({ games, folders, onRefresh, hideCreateButton, gameType = 'all' }: AdminGamesTabProps) {
   const navigate = useNavigate();
   const t = useTranslations(texts);
 
   // filters
-  const [gameType, setGameType] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [tagDrawerOpen, setTagDrawerOpen] = useState(false);
@@ -604,6 +595,12 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
 
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(visibleGames);
 
+  // usePagination only resets when the list length changes; switching between two
+  // equally-sized types would otherwise strand you on page 2.
+  useEffect(() => { setPage(1); },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [gameType]);
+
   useEffect(() => {
     if (!tagDrawerOpen) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setTagDrawerOpen(false); };
@@ -727,16 +724,6 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
           )}
         </HeaderButtons>
       </SectionHeaderRow>
-
-      <ScrollableTabBar>
-        <GameTabGroup>
-          {GAME_SUBTABS.map((st) => (
-            <GameTab key={st} active={gameType === st} onClick={() => { setGameType(st); setPage(1); }}>
-              {(t as Record<string, string>)[`subTab${st.charAt(0).toUpperCase()}${st.slice(1)}`]}
-            </GameTab>
-          ))}
-        </GameTabGroup>
-      </ScrollableTabBar>
 
       <FilterRow>
         {allTags.length > 0 && (

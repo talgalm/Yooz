@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, useState, useEffect, useCallback, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
@@ -8,8 +8,9 @@ import { adminApiFetch } from '../../../utils/adminApi';
 import LangDrawer from '../../../components/LangDrawer';
 import Pagination from '../../../components/Pagination';
 import { usePagination } from '../../../hooks/usePagination';
-import AdminGamesTab from '../AdminGamesTab';
-import AdminStationsTab from '../AdminStationsTab';
+import AdminGamesTab, { GAME_SUBTABS } from '../AdminGamesTab';
+import AdminStationsTab, { stationTypeLabel } from '../AdminStationsTab';
+import { texts as stationTexts } from '../AdminStationsTab/AdminStationsTab.i18n';
 import AdminStatisticsTab from '../AdminStatisticsTab';
 import AdminUsersTab from '../AdminUsersTab';
 import AdminLibraryTab from '../AdminLibraryTab';
@@ -24,9 +25,6 @@ import {
   AdminContent,
   BodyText,
   StatusBadge,
-  SegmentedControl,
-  SegmentedControlCenter,
-  SegmentedButton,
 } from '../../../components/styled';
 import {
   SectionHeaderRow,
@@ -127,6 +125,36 @@ const NavItem = styled('button')<{ active?: boolean; danger?: boolean }>(({ acti
   boxShadow: active ? '0 6px 16px rgba(108,92,231,0.3)' : 'none',
   '& svg': { flexShrink: 0, width: 19, height: 19 },
   '&:hover': active ? {} : { background: danger ? '#fdeceb' : '#f4f2fb', color: danger ? '#c0392b' : '#443c66' },
+}));
+
+const SubNav = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 1,
+  margin: '2px 0 6px',
+  marginInlineStart: 16,
+  paddingInlineStart: 12,
+  borderInlineStart: '2px solid #efecf8',
+});
+
+const SubNavItem = styled('button')<{ active?: boolean; leaf?: boolean }>(({ active, leaf }) => ({
+  display: 'block',
+  width: '100%',
+  padding: leaf ? '6px 10px' : '8px 10px',
+  border: 'none',
+  borderRadius: 8,
+  background: active ? '#f0edfb' : 'transparent',
+  color: active ? '#5b4bd6' : '#847e99',
+  fontSize: leaf ? 13 : 13.5,
+  fontWeight: active ? 700 : 500,
+  fontFamily: 'inherit',
+  textAlign: 'start',
+  cursor: 'pointer',
+  transition: 'background 0.15s, color 0.15s',
+  '&:hover': {
+    background: active ? '#f0edfb' : '#f6f4fc',
+    color: active ? '#5b4bd6' : '#443c66',
+  },
 }));
 
 const SidebarFooter = styled('div')({
@@ -885,6 +913,8 @@ export default function AdminDashboardPage() {
     ['activities', 'statistics', 'stations', 'library', 'media', 'users', 'portals', 'tutorials', 'publicity'].includes(initialTab) ? initialTab : 'activities'
   );
   const [stationsSection, setStationsSection] = useState<StationsSection>('stations');
+  const [stationTypeFilter, setStationTypeFilter] = useState<string>('all');
+  const [gameTypeFilter, setGameTypeFilter] = useState<string>('all');
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createStep, setCreateStep] = useState<CreateStep>('main');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -892,8 +922,16 @@ export default function AdminDashboardPage() {
   const { logout, admin } = useAdminAuth();
   const navigate = useNavigate();
   const t = useTranslations(texts);
+  const stationT = useTranslations(stationTexts) as Record<string, string>;
 
   const role = admin?.role || 'viewer';
+
+  // Same derivation the stations tab uses, so the sub-nav never offers an empty filter.
+  const stationTypes = useMemo(() => {
+    const set = new Set<string>();
+    stations.forEach((station) => { if (station.type) set.add(station.type); });
+    return [...set].sort();
+  }, [stations]);
 
   const visibleTabs = useMemo(() => {
     const tabs: { key: MainTab; label: string; group: 'main' | 'other' }[] = [
@@ -1031,22 +1069,83 @@ export default function AdminDashboardPage() {
   const initials = displayName.trim().charAt(0).toUpperCase() || '?';
   const roleLabel = { viewer: t.roleViewer, admin: t.roleAdmin, super_admin: t.roleSuperAdmin, customer: t.roleCustomer }[role];
 
+  // Picking a leaf filter closes the mobile drawer; picking a section keeps it open
+  // because a fresh list of types is about to appear underneath.
+  const pickSection = (section: StationsSection) => {
+    setStationsSection(section);
+    if (section === 'missions') setMobileMenuOpen(false);
+  };
+
+  const pickLeaf = (set: (value: string) => void, value: string) => {
+    set(value);
+    setMobileMenuOpen(false);
+  };
+
+  const stationsSubNav = (
+    <SubNav>
+      <SubNavItem active={stationsSection === 'stations'} onClick={() => pickSection('stations')}>
+        {t.sectionStations}
+      </SubNavItem>
+      {stationsSection === 'stations' && (
+        <SubNav>
+          <SubNavItem leaf active={stationTypeFilter === 'all'} onClick={() => pickLeaf(setStationTypeFilter, 'all')}>
+            {t.subTabAll}
+          </SubNavItem>
+          {stationTypes.map((type) => (
+            <SubNavItem
+              key={type}
+              leaf
+              active={stationTypeFilter === type}
+              onClick={() => pickLeaf(setStationTypeFilter, type)}
+            >
+              {stationTypeLabel(stationT, type)}
+            </SubNavItem>
+          ))}
+        </SubNav>
+      )}
+
+      <SubNavItem active={stationsSection === 'games'} onClick={() => pickSection('games')}>
+        {t.sectionGames}
+      </SubNavItem>
+      {stationsSection === 'games' && (
+        <SubNav>
+          {GAME_SUBTABS.map((type) => (
+            <SubNavItem
+              key={type}
+              leaf
+              active={gameTypeFilter === type}
+              onClick={() => pickLeaf(setGameTypeFilter, type)}
+            >
+              {(t as Record<string, string>)[`subTab${type.charAt(0).toUpperCase()}${type.slice(1)}`]}
+            </SubNavItem>
+          ))}
+        </SubNav>
+      )}
+
+      <SubNavItem active={stationsSection === 'missions'} onClick={() => pickSection('missions')}>
+        {t.sectionMissions}
+      </SubNavItem>
+    </SubNav>
+  );
+
   const navItems = (group: 'main' | 'other') =>
     visibleTabs
       .filter((tab) => tab.group === group)
       .map((tab) => (
-        <NavItem
-          key={tab.key}
-          active={activeTab === tab.key}
-          onClick={() => {
-            setActiveTab(tab.key);
-            setSearchParams({});
-            setMobileMenuOpen(false);
-          }}
-        >
-          <NavIcon name={tab.key} />
-          {tab.label}
-        </NavItem>
+        <Fragment key={tab.key}>
+          <NavItem
+            active={activeTab === tab.key}
+            onClick={() => {
+              setActiveTab(tab.key);
+              setSearchParams({});
+              if (tab.key !== 'stations') setMobileMenuOpen(false);
+            }}
+          >
+            <NavIcon name={tab.key} />
+            {tab.label}
+          </NavItem>
+          {tab.key === 'stations' && activeTab === 'stations' && stationsSubNav}
+        </Fragment>
       ));
 
   const otherNav = navItems('other');
@@ -1134,22 +1233,14 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
 
-              <SegmentedControlCenter>
-                <SegmentedControl>
-                  <SegmentedButton active={stationsSection === 'stations'} onClick={() => setStationsSection('stations')}>
-                    {t.sectionStations}
-                  </SegmentedButton>
-                  <SegmentedButton active={stationsSection === 'games'} onClick={() => setStationsSection('games')}>
-                    {t.sectionGames}
-                  </SegmentedButton>
-                  <SegmentedButton active={stationsSection === 'missions'} onClick={() => setStationsSection('missions')}>
-                    {t.sectionMissions}
-                  </SegmentedButton>
-                </SegmentedControl>
-              </SegmentedControlCenter>
-
               {stationsSection === 'stations' && (
-                <AdminStationsTab stations={stations} folders={stationFolders} onRefresh={refreshStations} hideCreateButton />
+                <AdminStationsTab
+                  stations={stations}
+                  folders={stationFolders}
+                  onRefresh={refreshStations}
+                  typeFilter={stationTypeFilter}
+                  hideCreateButton
+                />
               )}
 
               {stationsSection === 'games' && (
@@ -1157,6 +1248,7 @@ export default function AdminDashboardPage() {
                   games={games}
                   folders={gameFolders}
                   onRefresh={refreshGames}
+                  gameType={gameTypeFilter}
                   hideCreateButton
                 />
               )}

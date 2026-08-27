@@ -538,6 +538,14 @@ drawer, user chip). Under 900px the sidebar is an off-canvas drawer driven by `m
 Tab look-and-feel comes from the shared primitives (`components/styled.ts` `Table`,
 `AdminCard`, `SegmentedControl`, `MobileCardItem`, …) — restyle there, not per tab.
 
+The **stations** tab has no in-content section/type bars; both levels are sidebar sub-nav
+(`SubNav`/`SubNavItem`), auto-expanded for the active branch — no collapse state. The
+dashboard owns `stationsSection`, `stationTypeFilter` and `gameTypeFilter`, and passes the
+last two down as the controlled `typeFilter` / `gameType` props; `AdminStationsTab` and
+`AdminGamesTab` no longer hold that state. Station types are derived from the loaded
+stations (same `Set` + `sort` both sides) and labelled via `stationTypeLabel(t, type)`
+exported from `AdminStationsTab`; game types come from the exported `GAME_SUBTABS`.
+
 ### Manager dashboard (`pages/manager/ManagerDashboardPage`)
 Live session control: `AnimatedLeaderboard`, `ControlFlowTab` (progress lock), order-survey
 present view (`OrderSurveyPresentPage` / `manager/present`).
