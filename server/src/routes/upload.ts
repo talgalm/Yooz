@@ -3,6 +3,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
 import { authenticateAdmin } from '../middleware/adminAuth';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from '../config';
+import { resolveFolder } from '../utils/mediaFolders';
 
 const router = Router();
 
@@ -61,11 +62,16 @@ router.post('/', authenticateAdmin, upload.single('file'), async (req: Request, 
     const resourceType = isDocument ? 'raw' : isVideo || isAudio ? 'video' : 'image';
 
     // Upload buffer to Cloudinary
+    // Optional: land straight in the folder the media library has open.
+    // Anything unrecognised falls back to the root rather than failing an
+    // upload over a folder name.
+    const folder = resolveFolder(req.body?.folder) ?? 'yooz';
+
     const result = await new Promise<{ secure_url: string; public_id: string; resource_type: string; format: string; bytes: number }>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           resource_type: resourceType,
-          folder: 'yooz',
+          folder,
           // Keep the original name in the public_id (suffixed to stay unique).
           // Without it Cloudinary assigns a random string, which makes the
           // media library a wall of `pws2bqxuslybrwmzyrsn` nobody can search.

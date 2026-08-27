@@ -25,7 +25,40 @@ interface MediaListResponse {
   total: number;
 }
 
+export interface FolderNode {
+  path: string;
+  name: string;
+  children: FolderNode[];
+}
+
 type TypeFilter = '' | 'image' | 'video';
+
+const ROOT_FOLDER = 'yooz';
+
+/** `yooz/a/b` → `yooz/a`; the root is its own parent. */
+function parentOf(path: string): string {
+  const cut = path.lastIndexOf('/');
+  return cut > 0 ? path.slice(0, cut) : ROOT_FOLDER;
+}
+
+/** Depth-first flatten, for the "move to" list. */
+function flatten(nodes: FolderNode[], depth = 0): { path: string; label: string }[] {
+  return nodes.flatMap((node) => [
+    { path: node.path, label: `${'— '.repeat(depth)}${node.name}` },
+    ...flatten(node.children, depth + 1),
+  ]);
+}
+
+/** The folders directly inside `path`. */
+function childrenOf(nodes: FolderNode[], path: string): FolderNode[] {
+  if (path === ROOT_FOLDER) return nodes;
+  for (const node of nodes) {
+    if (node.path === path) return node.children;
+    const found = childrenOf(node.children, path);
+    if (found.length) return found;
+  }
+  return [];
+}
 
 /** A grid cell is 300px wide at most, so ask Cloudinary for that, not the original. */
 function thumbUrl(item: MediaItem): string {
@@ -157,6 +190,37 @@ const MiniBtn = styled('button')<{ danger?: boolean }>(({ danger }) => ({
 
 const Center = styled('div')({ padding: 28, textAlign: 'center', color: TEXT_LIGHT, fontSize: 13 });
 
+const Breadcrumb = styled('div')({ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', fontSize: 13 });
+
+const CrumbBtn = styled('button')<{ current?: boolean }>(({ current }) => ({
+  border: 'none',
+  background: 'transparent',
+  padding: '2px 4px',
+  fontSize: 13,
+  fontFamily: 'inherit',
+  cursor: current ? 'default' : 'pointer',
+  fontWeight: current ? 700 : 600,
+  color: current ? '#444' : PRIMARY,
+  textDecoration: current ? 'none' : 'underline',
+}));
+
+const CrumbSep = styled('span')({ color: TEXT_LIGHT, margin: '0 2px' });
+
+const FolderRow = styled('div')({ display: 'flex', gap: 8, flexWrap: 'wrap' });
+
+const FolderChip = styled('button')({
+  padding: '8px 14px',
+  borderRadius: 10,
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  border: `1.5px solid ${BORDER}`,
+  background: '#fff',
+  color: '#555',
+  '&:hover': { borderColor: PRIMARY, color: PRIMARY, background: '#f7f6fd' },
+});
+
 const Overlay = styled('div')({
   position: 'fixed',
   inset: 0,
@@ -197,17 +261,21 @@ interface MediaBrowserProps {
   accept?: string;
   /** Picker mode: called with the chosen asset. */
   onPick?: (item: MediaItem) => void;
-  /** Management mode: show the delete action. */
-  allowDelete?: boolean;
+  /** Management mode: show the folder, move and delete actions. */
+  allowManage?: boolean;
   /** Bump to force a reload (after an upload). */
   refreshKey?: number;
+  /** Lets the parent upload into whichever folder is open. */
+  onFolderChange?: (folder: string) => void;
 }
 
-export default function MediaBrowser({ accept, onPick, allowDelete, refreshKey = 0 }: MediaBrowserProps) {
+export default function MediaBrowser({ accept, onPick, allowManage, refreshKey = 0, onFolderChange }: MediaBrowserProps) {
   const t = useTranslations(texts);
   const [type, setType] = useState<TypeFilter>(initialFilter(accept));
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
+  const [folder, setFolder] = useState(ROOT_FOLDER);
+  const [folders, setFolders] = useState<FolderNode[]>([]);
   const [items, setItems] = useState<MediaItem[]>([]);
   const [nextOffset, setNextOffset] = useState<number | null>(null);
   const [total, setTotal] = useState(0);
@@ -215,6 +283,7 @@ export default function MediaBrowser({ accept, onPick, allowDelete, refreshKey =
   const [error, setError] = useState('');
   const [copied, setCopied] = useState('');
   const [pendingDelete, setPendingDelete] = useState<{ item: MediaItem; usage: { collection: string; name: string }[] } | null>(null);
+  const [moving, setMoving] = useState<MediaItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   // Debounce the search box so typing does not fire a request per keystroke.
@@ -223,11 +292,24 @@ export default function MediaBrowser({ accept, onPick, allowDelete, refreshKey =
     return () => clearTimeout(id);
   }, [search]);
 
+  useEffect(() => { onFolderChange?.(folder); }, [folder, onFolderChange]);
+
+  const loadFolders = useCallback(async () => {
+    try {
+      const res = await adminApiFetch<{ folders: FolderNode[] }>('/api/admin/media/folders');
+      setFolders(res.folders);
+    } catch {
+      setFolders([]);
+    }
+  }, []);
+
+  useEffect(() => { loadFolders(); }, [loadFolders, refreshKey]);
+
   const load = useCallback(async (offset?: number) => {
     setLoading(true);
     setError('');
     try {
-      const params = new URLSearchParams();
+      const params = new URLSearchParams({ folder });
       if (type) params.set('type', type);
       if (query) params.set('q', query);
       if (offset) params.set('offset', String(offset));
@@ -240,9 +322,50 @@ export default function MediaBrowser({ accept, onPick, allowDelete, refreshKey =
     } finally {
       setLoading(false);
     }
-  }, [type, query, t.failed]);
+  }, [folder, type, query, t.failed]);
 
   useEffect(() => { load(); }, [load, refreshKey]);
+
+  const createFolder = async () => {
+    const name = window.prompt(t.newFolderPrompt)?.trim();
+    if (!name) return;
+    try {
+      await adminApiFetch('/api/admin/media/folders', {
+        method: 'POST',
+        body: JSON.stringify({ parent: folder, name }),
+      });
+      await loadFolders();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.failed);
+    }
+  };
+
+  const deleteFolder = async () => {
+    if (!window.confirm(t.confirmDeleteFolder)) return;
+    try {
+      await adminApiFetch(`/api/admin/media/folders?folder=${encodeURIComponent(folder)}`, { method: 'DELETE' });
+      setFolder(parentOf(folder));
+      await loadFolders();
+    } catch (err) {
+      const body = (err as { body?: { error?: string } }).body;
+      setError(body?.error === 'folder_not_empty' ? t.folderNotEmpty : err instanceof Error ? err.message : t.failed);
+    }
+  };
+
+  const moveTo = async (item: MediaItem, target: string) => {
+    setMoving(null);
+    try {
+      await adminApiFetch('/api/admin/media/move', {
+        method: 'PATCH',
+        body: JSON.stringify({ publicId: item.publicId, folder: target }),
+      });
+      // It left this folder — drop it locally rather than refetching.
+      setItems((prev) => prev.filter((i) => i.publicId !== item.publicId));
+      setTotal((n) => Math.max(0, n - 1));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.failed);
+    }
+  };
 
   const copy = async (item: MediaItem) => {
     await navigator.clipboard.writeText(item.url).catch(() => {});
@@ -273,6 +396,9 @@ export default function MediaBrowser({ accept, onPick, allowDelete, refreshKey =
     }
   };
 
+  const crumbs = folder.split('/');
+  const subFolders = childrenOf(folders, folder);
+
   return (
     <Wrap>
       <Toolbar>
@@ -282,6 +408,38 @@ export default function MediaBrowser({ accept, onPick, allowDelete, refreshKey =
         <Chip type="button" active={type === 'video'} onClick={() => setType('video')}>{t.videos}</Chip>
         {total > 0 && <Sub>{total} {t.assets}</Sub>}
       </Toolbar>
+
+      <Breadcrumb>
+        {crumbs.map((crumb, i) => {
+          const path = crumbs.slice(0, i + 1).join('/');
+          return (
+            <span key={path}>
+              {i > 0 && <CrumbSep>/</CrumbSep>}
+              <CrumbBtn type="button" current={i === crumbs.length - 1} onClick={() => setFolder(path)}>
+                {i === 0 ? t.root : crumb}
+              </CrumbBtn>
+            </span>
+          );
+        })}
+        {allowManage && (
+          <>
+            <MiniBtn type="button" style={{ flex: 'none' }} onClick={createFolder}>＋ {t.newFolder}</MiniBtn>
+            {folder !== ROOT_FOLDER && (
+              <MiniBtn type="button" danger style={{ flex: 'none' }} onClick={deleteFolder}>{t.deleteFolder}</MiniBtn>
+            )}
+          </>
+        )}
+      </Breadcrumb>
+
+      {subFolders.length > 0 && (
+        <FolderRow>
+          {subFolders.map((node) => (
+            <FolderChip key={node.path} type="button" onClick={() => setFolder(node.path)}>
+              📁 {node.name}
+            </FolderChip>
+          ))}
+        </FolderRow>
+      )}
 
       {error && <Center style={{ color: ERROR }}>{error}</Center>}
 
@@ -299,7 +457,8 @@ export default function MediaBrowser({ accept, onPick, allowDelete, refreshKey =
             <CellActions onClick={(e) => e.stopPropagation()}>
               {onPick && <MiniBtn type="button" onClick={() => onPick(item)}>{t.select}</MiniBtn>}
               <MiniBtn type="button" onClick={() => copy(item)}>{copied === item.publicId ? t.copied : t.copy}</MiniBtn>
-              {allowDelete && (
+              {allowManage && <MiniBtn type="button" onClick={() => setMoving(item)}>{t.move}</MiniBtn>}
+              {allowManage && (
                 <MiniBtn
                   type="button"
                   danger
@@ -318,6 +477,28 @@ export default function MediaBrowser({ accept, onPick, allowDelete, refreshKey =
       {!loading && items.length === 0 && <Center>{t.empty}</Center>}
       {!loading && nextOffset !== null && (
         <Chip type="button" onClick={() => load(nextOffset)} style={{ alignSelf: 'center' }}>{t.loadMore}</Chip>
+      )}
+
+      {moving && (
+        <Overlay onClick={() => setMoving(null)}>
+          <Dialog onClick={(e) => e.stopPropagation()}>
+            <strong>{t.moveTitle}</strong>
+            <div style={{ fontSize: 13, color: '#555' }}>{t.moveHint}</div>
+            <UsageList as="div" style={{ paddingInlineStart: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {[{ path: ROOT_FOLDER, label: t.root }, ...flatten(folders)].map((option) => (
+                <MiniBtn
+                  key={option.path}
+                  type="button"
+                  disabled={option.path === moving.folder}
+                  onClick={() => moveTo(moving, option.path)}
+                >
+                  📁 {option.label}
+                </MiniBtn>
+              ))}
+            </UsageList>
+            <MiniBtn type="button" onClick={() => setMoving(null)}>{t.cancel}</MiniBtn>
+          </Dialog>
+        </Overlay>
       )}
 
       {pendingDelete && (

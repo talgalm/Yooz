@@ -109,9 +109,11 @@ interface FileUploadButtonProps {
   label?: string;
   /** Uploading label */
   uploadingLabel?: string;
+  /** Cloudinary folder to upload into (media library only; defaults to the root). */
+  folder?: string;
 }
 
-export default function FileUploadButton({ accept, onUploaded, label = 'Upload', uploadingLabel = 'Uploading...' }: FileUploadButtonProps) {
+export default function FileUploadButton({ accept, onUploaded, label = 'Upload', uploadingLabel = 'Uploading...', folder }: FileUploadButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -138,7 +140,7 @@ export default function FileUploadButton({ accept, onUploaded, label = 'Upload',
 
     setUploading(true);
     try {
-      const result = await adminUploadFile(file);
+      const result = await adminUploadFile(file, folder);
       setPickerOpen(false);
       onUploaded(result.url, file);
     } catch (err) {

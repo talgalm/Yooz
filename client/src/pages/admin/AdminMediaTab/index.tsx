@@ -29,6 +29,8 @@ const Subtitle = styled('div')({
 export default function AdminMediaTab() {
   const t = useTranslations(texts);
   const [refreshKey, setRefreshKey] = useState(0);
+  // Uploads land in whichever folder the browser has open.
+  const [folder, setFolder] = useState('yooz');
 
   return (
     <Container>
@@ -39,13 +41,14 @@ export default function AdminMediaTab() {
         </div>
         <FileUploadButton
           accept="image/*,video/*"
+          folder={folder}
           label={t.upload}
           uploadingLabel={t.uploading}
           onUploaded={() => setRefreshKey((n) => n + 1)}
         />
       </Head>
 
-      <MediaBrowser allowDelete refreshKey={refreshKey} />
+      <MediaBrowser allowManage refreshKey={refreshKey} onFolderChange={setFolder} />
     </Container>
   );
 }

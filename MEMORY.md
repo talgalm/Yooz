@@ -34,7 +34,8 @@ API and the built React SPA — no separate frontend host.
 - **Client**: React 19 + Vite 6 + TS, MUI v7 with `@emotion/styled` (no CSS files except
   `App.css` global reset), React Router v7. No state library — React context per auth realm.
 - **Media**: Cloudinary for all uploads (image/video/audio), via `POST /api/admin/upload`
-  (multer memory → Cloudinary SDK, `use_filename` so the public_id keeps the original name).
+  (multer memory → Cloudinary SDK, `use_filename` so the public_id keeps the original name,
+  optional `folder` field → upload straight into an open media-library folder).
   Client component: `FileUploadButton` (picker: computer *or* existing media). Browse/delete
   the cloud from the **Media tab** → `/api/admin/media`.
 - **Video collages**: ffmpeg encode offloaded to AWS Lambda (see `LAMBDA_SETUP.md`,
@@ -313,6 +314,12 @@ No admin auth — the `statsShareToken` is the credential.
 - **`utils/participantAuth.ts`** — `resolveGroupName` (day-scoped), `checkGroupCapacity`
   (day-scoped), `createParticipantSession`, `buildReportLookupQuery`, `ownReportFilter`,
   `validateGroupName`.
+- **`utils/mediaFolders.ts`** — `ROOT_FOLDER` (`yooz`), `MACHINE_FOLDERS`
+  (`collage-inputs`/`collages`/`face-swap`/`tutorials` — written by the app, never listed,
+  moved, deleted or nested into), `resolveFolder(input)` → normalized path or null (rejects
+  traversal, >3 levels, machine folders; bare names are root-relative),
+  `isDeletableAsset(publicId)` → may the library move/destroy it. In dynamic folder mode the
+  `public_id` never changes, so its prefix stays a reliable answer to "who created this".
 - **`utils/mediaInUse.ts`** — `docMentions(doc, publicId)` (stringify-and-scan: media URLs
   live in free-form bags like `game.settings`, so a field list would silently rot) and
   `findMediaUsage(publicId)` → every activity/game/station/mission/theme/library/siteContent/
@@ -754,18 +761,28 @@ docs, `video` for video/audio, `image` else), uploads to folder `yooz`, returns
 `{url, publicId, resourceType, format, size, fileName}`.
 
 ### `routes/adminMedia.ts` — Cloudinary media library (`/api/admin/media`)
-`authenticateAdmin` + `requireRole('admin','super_admin')` on the whole router.
-- `GET /` — `?type=image|video&q=&offset=`. Loads **the whole `yooz/` folder once**
-  (`cloudinary.search`, 500/page, cursor loop, `HARD_CAP` 2000) into a 60s module cache, then
-  filters/paginates in memory (`PAGE_SIZE` 60) → `{items, nextOffset, total}`. Why not query
-  Cloudinary per page: the Admin API allows 500 calls/hour, its expression language has **no
-  substring match** and no leading wildcard (`filename:*x*` is a 400), and this keeps user
-  input out of the expression entirely.
+`authenticateAdmin` + `requireRole('admin','super_admin')` on the whole router. Folders are
+**Cloudinary's own**, not a Mongo mirror — see `utils/mediaFolders.ts` for why that is safe.
+- `GET /` — `?folder=&type=image|video&q=&offset=`. Loads one folder via
+  **`api.resources_by_asset_folder`** (500/page, cursor loop) into a per-folder 60s cache, then
+  filters/paginates in memory (`PAGE_SIZE` 60) → `{folder, items, nextOffset, total}`.
+  **Not `cloudinary.search`**: that reads a search index which lags several seconds behind a
+  move or delete, it cannot express "not in these folders" (`-folder:x` is accepted and then
+  silently ignored), and it has **no substring match** (`filename:*x*` is a 400). Doing it this
+  way also keeps user input out of the expression entirely.
+- `GET /folders` — the tree under `yooz/`, 3 levels, machine folders removed (1 API call per
+  folder).
+- `POST /folders {parent,name}` / `DELETE /folders?folder=` — create / delete. Cloudinary
+  refuses to delete a non-empty folder → 409 `folder_not_empty`; no recursive wipe exists.
+- `PATCH /move {publicId,folder}` — `api.update(publicId,{asset_folder})`. **URL-safe only
+  because the account is in `dynamic` folder mode** (verified live): `asset_folder` is
+  metadata, `public_id` and every stored URL are untouched. On a `fixed`-mode account this
+  same call is a rename that breaks every reference — re-check the mode before reusing this.
 - `GET /usage?publicId=` — `findMediaUsage`, drives the delete warning.
-- `DELETE /?publicId=&resourceType=&force=` — refuses anything that is not a **direct child of
-  `yooz/`** (403: machine output in `yooz/collage-inputs|collages|tutorials` and `samples/` is
-  off limits), 409 `{error:'in_use', usage}` unless `force=true`, then `uploader.destroy`
-  (`invalidate: true`) and clears the cache.
+- `DELETE /?publicId=&resourceType=&force=` — `isDeletableAsset` guard (403), 409
+  `{error:'in_use', usage}` unless `force=true`, then `uploader.destroy` (`invalidate: true`)
+  and clears the cache. A destroyed file can still serve from Cloudinary's **CDN edge** for a
+  few seconds; the asset store is the source of truth.
 - `cloudinaryError(err)` — Cloudinary rejections embed `request_options.auth` (**api key +
   secret in plain text**); only the message is ever logged.
 
@@ -1115,7 +1132,8 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 - **`AdminStationConfigPage`** — station editor (all 10 types). **`AdminMissionConfigPage`** —
   mission editor. **`AdminPortalConfigPage`** — portal editor (users, Excel import, activities).
 - Dashboard tabs: **`AdminGamesTab`**, **`AdminStationsTab`**, **`AdminLibraryTab`**,
-  **`AdminMediaTab`** (Cloudinary browser, admin/super_admin — `MediaBrowser` + upload),
+  **`AdminMediaTab`** (Cloudinary browser, admin/super_admin — `MediaBrowser` + upload into
+  the open folder),
   **`AdminPortalsTab`**, **`AdminPublicityTab`** (site content + leads), **`AdminUsersTab`**,
   **`AdminTutorialsTab`**, and **`AdminStatisticsTab/`** (see below).
 - **`AdminStatisticsTab/`** — `index` (view switch overview/activity/combined/audit),
@@ -1174,8 +1192,9 @@ rendered inline in `PlayingPhase.tsx`.)
   two-tab picker — upload from the computer, or pick an existing asset; **all 31 call sites got
   the picker for free**, the props and `onUploaded(url, file?)` contract are unchanged. Falls
   back to the plain file dialog for non-admin roles), **`MediaBrowser`** (the grid itself:
-  type filter, substring search, offset paging, copy/pick/delete — `allowDelete` only in the
-  Media tab, never in the picker),
+  folder breadcrumb + subfolder chips, type filter, substring search, offset paging, and
+  copy/pick/move/delete. **`allowManage`** (Media tab only) adds new-folder, delete-folder,
+  and per-asset move; the picker gets folder *browsing* but none of the mutations),
   **`LangDrawer`** (language switch), **`StationStage`**.
 - Backgrounds/themes: `ThemedBackground`, `DesertBackground`, `NatureBackground`,
   `OceanBackground`, `OfficeBackground`, `themes/SpyThemeWrapper`. `styled.ts` holds shared

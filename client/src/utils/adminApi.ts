@@ -28,7 +28,7 @@ export async function adminApiFetch<T>(url: string, options: RequestInit = {}): 
 }
 
 // Upload a file via multipart/form-data (no Content-Type header — browser sets it with boundary)
-export async function adminUploadFile(file: File): Promise<{
+export async function adminUploadFile(file: File, folder?: string): Promise<{
   url: string;
   publicId: string;
   resourceType: string;
@@ -38,6 +38,7 @@ export async function adminUploadFile(file: File): Promise<{
   const token = localStorage.getItem('yooz_admin_token');
   const formData = new FormData();
   formData.append('file', file);
+  if (folder) formData.append('folder', folder);
 
   const res = await fetch('/api/admin/upload', {
     method: 'POST',
