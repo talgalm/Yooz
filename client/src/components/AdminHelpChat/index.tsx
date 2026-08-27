@@ -19,7 +19,6 @@ import {
 } from './AdminHelpChat.i18n';
 import {
   HelpFab,
-  FabTooltip,
   FabWrap,
   ChatBackdrop,
   ChatPanel,
@@ -346,17 +345,13 @@ export default function AdminHelpChat() {
         className="help-fab-wrap"
         dragging={dragging}
         style={{ left: pos.left, top: pos.top }}
+        onClick={() => {
+          if (didDrag()) return;
+          toggle();
+        }}
         {...dragHandlers}
       >
-        <FabTooltip side={onLeftHalf ? 'left' : 'right'}>{t.fabTooltip}</FabTooltip>
-        <HelpFab
-          onClick={() => {
-            if (didDrag()) return;
-            toggle();
-          }}
-          aria-label={t.fabAria}
-          title={t.fabTooltip}
-        >
+        <HelpFab type="button" aria-label={t.fabAria}>
           {open ? '✕' : '🤖'}
         </HelpFab>
       </FabWrap>

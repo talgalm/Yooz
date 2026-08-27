@@ -106,16 +106,26 @@ export function useFabPosition() {
       dy: e.clientY - rect.top,
       moved: false,
     };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    // Deliberately no setPointerCapture here: while a pointer is captured the
+    // browser retargets the follow-up click to the capturing element, which
+    // swallowed the plain click that opens the chat. Capture is taken in
+    // onPointerMove instead, once the press has become a real drag.
   }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
     const g = gesture.current;
     if (!g) return;
+    // Released outside the element before capture was taken — no button is down,
+    // so this is a stray hover, not a drag.
+    if (e.buttons === 0) {
+      gesture.current = null;
+      return;
+    }
     if (!g.moved) {
       if (Math.hypot(e.clientX - g.sx, e.clientY - g.sy) < DRAG_THRESHOLD) return;
       g.moved = true;
       setDragging(true);
+      e.currentTarget.setPointerCapture(e.pointerId);
     }
     setPos(clampFabPosition({ left: e.clientX - g.dx, top: e.clientY - g.dy }, currentViewport()));
   }, []);

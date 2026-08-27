@@ -32,7 +32,6 @@ export const HelpFab = styled('button')({
   background: PURPLE_GRADIENT,
   color: '#fff',
   border: '3px solid #fff',
-  cursor: 'pointer',
   boxShadow: '0 6px 24px rgba(108, 92, 231, 0.45)',
   display: 'flex',
   alignItems: 'center',
@@ -40,6 +39,8 @@ export const HelpFab = styled('button')({
   fontSize: 28,
   lineHeight: 1,
   zIndex: 901,
+  // The wrap owns grab/grabbing; the button covers all of it.
+  cursor: 'inherit',
   fontFamily: 'inherit',
   animation: `${float} 3s ease-in-out infinite`,
   transition: 'box-shadow 0.2s',
@@ -52,31 +53,6 @@ export const HelpFab = styled('button')({
     animation: 'none',
   },
 });
-
-export const FabTooltip = styled('span')<{ side?: 'left' | 'right' }>(({ side = 'right' }) => ({
-  position: 'absolute',
-  right: side === 'right' ? 'calc(100% + 10px)' : 'auto',
-  left: side === 'right' ? 'auto' : 'calc(100% + 10px)',
-  top: '50%',
-  transform: 'translateY(-50%)',
-  background: '#2d2d3a',
-  color: '#fff',
-  fontSize: 12,
-  fontWeight: 600,
-  padding: '6px 12px',
-  borderRadius: 8,
-  whiteSpace: 'nowrap',
-  pointerEvents: 'none',
-  opacity: 0,
-  transition: 'opacity 0.2s',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-  '.help-fab-wrap:hover &': {
-    opacity: 1,
-  },
-  '@media (max-width: 600px)': {
-    display: 'none',
-  },
-}));
 
 // Placed by inline left/top from useFabPosition — the bot is draggable.
 export const FabWrap = styled('div')<{ dragging?: boolean }>(({ dragging }) => ({
