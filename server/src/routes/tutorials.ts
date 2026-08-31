@@ -501,9 +501,9 @@ function extractCode(raw: string): string {
 
 // ─── Routes ───
 
-// GET /api/admin/tutorials — list tutorials. Admins/customers watch the library;
+// GET /api/admin/tutorials — list tutorials. Every admin-realm role watches the library;
 // only super_admins see videos that are still generating or failed.
-router.get('/', authenticateAdmin, requireRole('admin', 'super_admin', 'customer'), async (req: Request, res: Response) => {
+router.get('/', authenticateAdmin, requireRole('viewer', 'admin', 'super_admin', 'customer'), async (req: Request, res: Response) => {
   const filter = req.admin!.role === 'super_admin' ? {} : { status: 'ready' };
   const tutorials = await Tutorial.find(filter).sort({ createdAt: -1 }).lean();
   res.json({ tutorials });
