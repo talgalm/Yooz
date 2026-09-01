@@ -9,6 +9,8 @@
  * Storage key = `${activityCode}::${splitGroupId}`.
  */
 
+import { DB_NAME as JOBS_DB_NAME } from './collageJobStorage';
+
 export interface StoredCollagePart {
   partIndex: number;
   photos: { blob: Blob; isVideo?: boolean; cloudinaryUrl?: string }[];
@@ -137,5 +139,19 @@ export async function hasAnyCollagePhotos(activityCode: string): Promise<boolean
     return result;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Drop every stored part and job. Called when a new participant session starts
+ * on this device: the blobs belong to the previous session and are unreachable
+ * under the new scope id, so keeping them just fills up the phone.
+ */
+export function deleteCollageDatabases(): void {
+  try {
+    indexedDB.deleteDatabase(DB_NAME);
+    indexedDB.deleteDatabase(JOBS_DB_NAME);
+  } catch {
+    /* storage blocked — nothing stored to delete either */
   }
 }

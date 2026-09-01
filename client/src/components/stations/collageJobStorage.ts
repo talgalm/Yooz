@@ -13,7 +13,7 @@ export interface PersistedCollageJob {
   updatedAt: number;
 }
 
-const DB_NAME = 'yooz_collage_jobs';
+export const DB_NAME = 'yooz_collage_jobs';
 const STORE = 'jobs';
 const DB_VERSION = 1;
 

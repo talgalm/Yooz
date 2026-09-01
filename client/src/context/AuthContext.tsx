@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { apiFetchWithRetry } from '../utils/api';
 import { flushOfflineQueue } from '../utils/offlineQueue';
-import { rememberActivityCode, rememberParticipantActivity } from '../utils/participantActivity';
+import { newParticipantSessionId, rememberActivityCode, rememberParticipantActivity } from '../utils/participantActivity';
+import { deleteCollageDatabases } from '../components/stations/collageSplitStorage';
 import { decodeJwtPayload } from '../utils/jwt';
 
 type ConnectionType = 'single' | 'group';
@@ -102,6 +103,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const persistSession = (newToken: string, activityCode?: string) => {
     const decoded = decodeToken(newToken);
     if (!decoded) return;
+    // A login always starts a fresh collage scope. The previous session's
+    // photos/videos are unreachable under the new id, so drop the blobs too.
+    newParticipantSessionId();
+    deleteCollageDatabases();
     localStorage.setItem('yooz_token', newToken);
     writeTokenCookie(newToken);
     rememberActivityCode(activityCode || decoded.activityCode);

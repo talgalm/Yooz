@@ -478,7 +478,10 @@ Participant photos → Cloudinary → an ffmpeg collage (video or static). State
 `LAMBDA_SETUP.md`) with a local fallback (`services/collageProcessor.ts`), concurrency-limited
 and protected by `loadShed` (503 + Retry-After when event-loop lag / RSS / queue depth trips).
 Boot recovery in `index.ts` resurrects jobs 30s–15min stale, aborts older ones. A split collage
-(`module.items[].collageSplit`) spreads photo capture across several stations. Optional SMS
+(`module.items[].collageSplit`) spreads photo capture across several stations. Every collage
+storage/job key is scoped by `participantSessionId()` (`utils/participantActivity.ts`) — a random
+id minted on each login — so a second participant on the same phone can't be handed the previous
+one's finished video. Never derive that scope from name/email/phone: those collide. Optional SMS
 delivery of the finished video (`smsForCollage*`, polled every 15s). Client:
 `components/stations/CollageStation.tsx` + `collageJobStorage`/`collageSplitStorage`/
 `backgroundCollageJob` + `utils/collageApi`/`collagePhotoCompress`.

@@ -38,6 +38,7 @@ import {
 } from './backgroundCollageJob';
 import { fetchCollageProgress } from '../../utils/collageApi';
 import { useAuth } from '../../context/AuthContext';
+import { participantSessionId } from '../../utils/participantActivity';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -354,17 +355,14 @@ const VideoPlayIcon = styled('span')({
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CollageStation({ station, onContinue, code, smsForCollage }: Props) {
-  // User-scope every collage storage/server key so one participant's job
-  // can't be picked up by a different participant logging in on the same
-  // device (was: User B re-using the same activity code instantly got
-  // User A's already-encoded video).
+  // Scope every collage storage/server key to this login session so one
+  // participant's job can't be picked up by a different participant logging in
+  // on the same device (was: User B re-using the same activity code instantly
+  // got User A's already-encoded video). The tag used to be derived from
+  // email/phone/name, which collided whenever the phone number was reused or
+  // the name was Hebrew — see participantSessionId().
   const { participant } = useAuth();
-  const userTag = (
-    participant?.email?.trim().toLowerCase()
-    || participant?.phoneNumber?.trim()
-    || participant?.name?.trim().toLowerCase()
-    || 'anon'
-  ).replace(/[^a-z0-9_-]/g, '_').slice(0, 32);
+  const userTag = participantSessionId();
   const splitGroupId = station.collageSplit
     ? `${station.collageSplit.splitGroupId}_${userTag}`
     : '';

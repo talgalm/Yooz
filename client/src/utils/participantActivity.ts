@@ -80,3 +80,35 @@ export function participantStoryPath(code: string): string {
 export function participantMissionPath(code: string): string {
   return `/mission/${code.trim()}`;
 }
+
+const SESSION_ID_KEY = 'yooz_participant_session_id';
+
+/**
+ * Random id minted on every login. Scopes per-participant device storage (the
+ * collage IndexedDB stores and the server-side collage job id) so a second
+ * participant playing on the same phone starts from scratch.
+ *
+ * It used to be derived from email/phone/name, which collided in two ways:
+ * a shared phone number is identical by construction, and Hebrew names all
+ * sanitize down to underscores. Either way run #2 was handed run #1's job —
+ * already `done` on the server — and instantly got the first video back.
+ */
+export function newParticipantSessionId(): string {
+  const id = (crypto.randomUUID?.() ?? `${Date.now()}${Math.random()}`).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
+  try {
+    localStorage.setItem(SESSION_ID_KEY, id);
+  } catch {
+    /* private mode — caller still gets a usable (non-colliding) id */
+  }
+  return id;
+}
+
+export function participantSessionId(): string {
+  try {
+    const existing = localStorage.getItem(SESSION_ID_KEY);
+    if (existing) return existing;
+  } catch {
+    /* fall through to a fresh id */
+  }
+  return newParticipantSessionId();
+}
