@@ -1339,6 +1339,37 @@ export default function RoadmapView({
     [lockedFromIndex],
   );
 
+  // Same iOS Safari swallow the popup's dismiss button hits: coming off the ball
+  // game's focused iframe, the first tap on the map produces no `click` at all
+  // (a plain div gets none — the header's real <button>s still work, which is how
+  // this shows up: the map looks fine, the node just won't open until a refresh).
+  // Activate on pointerup too, but only for a real tap — the map scrolls by
+  // dragging, and a drag that ends over a node must not open it.
+  const tapStartRef = useRef<{ x: number; y: number; index: number } | null>(null);
+  const tapHandledRef = useRef(false);
+  const TAP_SLOP_PX = 10;
+
+  const nodeTapProps = (index: number) => ({
+    onPointerDown: (e: React.PointerEvent) => {
+      tapStartRef.current = { x: e.clientX, y: e.clientY, index };
+    },
+    onPointerUp: (e: React.PointerEvent) => {
+      const start = tapStartRef.current;
+      tapStartRef.current = null;
+      if (!start || start.index !== index) return;
+      if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > TAP_SLOP_PX) return;
+      tapHandledRef.current = true;
+      onNodeTap(index);
+    },
+    onClick: () => {
+      if (tapHandledRef.current) {
+        tapHandledRef.current = false;
+        return;
+      }
+      onNodeTap(index);
+    },
+  });
+
   const getNodeState = useCallback(
     (index: number): 'completed' | 'active' | 'locked' => {
       if (index < completedCount)               return 'completed';
@@ -1577,7 +1608,7 @@ export default function RoadmapView({
                   revisit={canRevisit}
                   animateIn={state === 'completed' && index === completedCount - 1 && showFootsteps}
                   style={canRevisit ? { cursor: 'pointer' } : undefined}
-                  onClick={state === 'active' || canRevisit ? () => onNodeTap(index) : undefined}>
+                  {...(state === 'active' || canRevisit ? nodeTapProps(index) : {})}>
                   <NodeNumber state={state}>{index + 1}</NodeNumber>
                   {managerLocked && (
                     <ManagerLockBadge aria-label="locked by manager" title="Locked by manager">
