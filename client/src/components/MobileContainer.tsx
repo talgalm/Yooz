@@ -1,7 +1,6 @@
 import { styled } from '@mui/material/styles';
 import { useEffect, useState, type ReactNode } from 'react';
 import { isStorageHealthy } from '../utils/storageHealth';
-import TapDebugOverlay from './TapDebugOverlay';
 import { installIosTapRescue } from '../utils/iosTapRescue';
 
 // ponytail: Network Information API is Chrome/Android only — on iOS this falls
@@ -101,7 +100,6 @@ export function MobileContainer({ children }: { children: ReactNode }) {
         )}
         {children}
       </Inner>
-      <TapDebugOverlay />
     </Outer>
   );
 }
