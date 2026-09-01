@@ -754,6 +754,28 @@ export default function StoryModulePage() {
     }
   };
 
+  // iOS Safari can swallow the `click` on the dismiss button even though the tap
+  // lands (iPhone 13): this popup mounts straight off the ball game's focused
+  // iframe, and the Safari toolbar re-expanding reflows the button out from under
+  // the finger between touchstart and touchend — the same failure the ball game's
+  // own finish button hit. `pointerup` survives both, so dismiss on either; the
+  // flag drops the trailing click so one tap never clears two queued popups.
+  // (A keyboard Enter sends no pointerup, so it still dismisses via click.)
+  const dismissedByPointerRef = useRef(false);
+
+  const handleDismissPointerUp = () => {
+    dismissedByPointerRef.current = true;
+    dismissPopup();
+  };
+
+  const handleDismissClick = () => {
+    if (dismissedByPointerRef.current) {
+      dismissedByPointerRef.current = false;
+      return;
+    }
+    dismissPopup();
+  };
+
   // Process afterLogin popups on first data load (replaces welcome screen Start button)
   useEffect(() => {
     if (!data || hasProcessedEntry.current) return;
@@ -1465,7 +1487,7 @@ export default function StoryModulePage() {
             <PopupText>{currentPopup.text}</PopupText>
           </>
         )}
-        <PopupDismissButton type="button" onClick={dismissPopup}>
+        <PopupDismissButton type="button" onClick={handleDismissClick} onPointerUp={handleDismissPointerUp}>
           <span>{t.popupDismiss}</span>
         </PopupDismissButton>
       </PopupModalCard>
