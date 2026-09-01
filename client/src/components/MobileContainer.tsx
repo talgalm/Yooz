@@ -2,6 +2,7 @@ import { styled } from '@mui/material/styles';
 import { useEffect, useState, type ReactNode } from 'react';
 import { isStorageHealthy } from '../utils/storageHealth';
 import TapDebugOverlay from './TapDebugOverlay';
+import { installIosTapRescue } from '../utils/iosTapRescue';
 
 // ponytail: Network Information API is Chrome/Android only — on iOS this falls
 // back to the online/offline flag, so the banner shows there only when the
@@ -85,6 +86,8 @@ const ReceptionBanner = styled('div')({
 
 export function MobileContainer({ children }: { children: ReactNode }) {
   const weakReception = useWeakReception();
+  // iOS drops the click when the layout shifts under the finger — see iosTapRescue.
+  useEffect(installIosTapRescue, []);
   return (
     <Outer>
       <Inner>
