@@ -8,6 +8,7 @@
 
 import {
   ensureCollageJob,
+  fetchCollageJob,
   findCollageJob,
   makeSplitCollageJobId,
   startCollageJob,
