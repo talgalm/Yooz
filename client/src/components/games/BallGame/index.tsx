@@ -199,6 +199,29 @@ export default function BallGame({
     return () => window.removeEventListener('yooz:ballgame-audio-toggle', handleToggleMute as EventListener);
   }, []);
 
+  /**
+   * Hand focus back to the host document before the game iframe is destroyed.
+   *
+   * We `focus()` the iframe so Phaser gets the pointer events (see the mute
+   * handler above — the same "tap eaten while Safari re-engages the frame"
+   * problem). But when the game ends we unmount that focused iframe, and iOS
+   * leaves focus orphaned in the dead frame: from then on taps still fire
+   * touch/pointer events while no `click` reaches the page at all. Every
+   * click-driven control after this screen is dead until a reload — the finish
+   * button, the story popup's אישור, the next roadmap node, the station's
+   * continue button — which is why patching them one at a time just moved the
+   * problem to whichever one came next.
+   */
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const releaseIframeFocus = useCallback(() => {
+    iframeRef.current?.blur();
+    window.focus();
+    hostRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  // Leaving the station any other way (exit, timer) unmounts the iframe too.
+  useEffect(() => releaseIframeFocus, [releaseIframeFocus]);
+
   useEffect(() => {
     completedRef.current = false;
     continuedRef.current = false;
@@ -243,6 +266,7 @@ export default function BallGame({
 
       if (data.type === 'BALLGAME_BACK' && !completedRef.current) {
         completedRef.current = true;
+        releaseIframeFocus();
         const scoreReport = lastScoreRef.current || {};
         const score = Number(scoreReport.gameScore ?? 0);
         const durationMs = Number(scoreReport.gameTimeSecond ?? 0) * 1000;
@@ -259,6 +283,7 @@ export default function BallGame({
 
       if (data.type === 'BALLGAME_COMPLETE' && !completedRef.current) {
         completedRef.current = true;
+        releaseIframeFocus();
         const payload = (data.payload as LegacyCompletePayload) || {};
         const scoreReport = payload.scoreReport || lastScoreRef.current || {};
         const detailed = payload.detailedReports || detailedReportsRef.current || [];
@@ -284,7 +309,7 @@ export default function BallGame({
 
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [filteredQuestions.length, onComplete]);
+  }, [filteredQuestions.length, onComplete, releaseIframeFocus]);
 
   const handleCloseInstructionVideo = useCallback(() => {
     setShowInstructionVideo(false);
@@ -365,6 +390,8 @@ export default function BallGame({
 
   return (
     <div
+      ref={hostRef}
+      tabIndex={-1}
       style={{
         position: 'fixed',
         inset: 0,
@@ -373,6 +400,7 @@ export default function BallGame({
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
+        outline: 'none',
       }}
     >
       <BallGameRoomBackground>
