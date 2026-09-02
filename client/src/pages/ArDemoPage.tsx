@@ -9,18 +9,19 @@ import { angleDelta, bearingDegrees, distanceMeters, offsetMeters, type LatLng }
  */
 
 const FOV_DEGREES = 60; // rough horizontal FOV of a phone rear camera in portrait
-const COLLECT_RADIUS_M = 10;
+const COLLECT_RADIUS_M = 3;
+const HORIZON_M = 15; // distance at which a pickup is drawn at its smallest
 const HEADING_SMOOTHING = 0.25; // low-pass on the compass; raw readings jitter several degrees
 const HEADING_FPS_MS = 100; // commit heading to React 10x/sec, not on every sensor event
 
 // Default course: offsets in meters (north, east) from wherever the player starts,
 // so the demo is playable anywhere. Override with ?coins=lat,lng;lat,lng
 const DEFAULT_COURSE: Array<{ north: number; east: number; emoji: string }> = [
-  { north: 12, east: 0, emoji: '🪙' },
-  { north: 20, east: 18, emoji: '🪙' },
-  { north: 0, east: 30, emoji: '💎' },
-  { north: -18, east: 12, emoji: '🪙' },
-  { north: -8, east: -22, emoji: '👾' },
+  { north: 4, east: 0, emoji: '🪙' },
+  { north: 5, east: 5, emoji: '🪙' },
+  { north: 0, east: 7, emoji: '💎' },
+  { north: -5, east: 3, emoji: '🪙' },
+  { north: -3, east: -6, emoji: '👾' },
 ];
 
 interface Coin extends LatLng {
@@ -184,7 +185,7 @@ export default function ArDemoPage() {
       if (!position) return null;
       const distance = distanceMeters(position, coin);
       const offset = angleDelta(heading ?? 0, bearingDegrees(position, coin));
-      const far = Math.min(distance, 50) / 50;
+      const far = Math.min(distance, HORIZON_M) / HORIZON_M;
       return {
         coin,
         distance,
@@ -269,6 +270,11 @@ export default function ArDemoPage() {
         {compassNote && <div style={styles.warning}>{compassNote}</div>}
         {error && <div style={styles.warning}>{error}</div>}
         {!position && <div style={styles.warning}>מאתר מיקום…</div>}
+        {position && position.accuracy > COLLECT_RADIUS_M * 2 && (
+          <div style={styles.warning}>
+            דיוק המיקום ±{Math.round(position.accuracy)} מ׳ — גדול מטווח האיסוף. בתוך מבנה ה-GPS לא מספיק מדויק.
+          </div>
+        )}
       </div>
 
       {remaining === 0 && coins.length > 0 && (
