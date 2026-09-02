@@ -93,11 +93,13 @@ export default function ManageProjectsPage() {
           <option value="">{t.allTypes}</option>
           {PROJECT_TYPES.map((x) => <option key={x} value={x}>{t.types[x]}</option>)}
         </SmallSelect>
-        <SmallSelect value={billing} onChange={(e) => setBilling(e.target.value)}>
-          <option value="">{t.allBilling}</option>
-          <option value="one_time">{t.oneTime}</option>
-          <option value="recurring">{t.recurring}</option>
-        </SmallSelect>
+        {canEdit && (
+          <SmallSelect value={billing} onChange={(e) => setBilling(e.target.value)}>
+            <option value="">{t.allBilling}</option>
+            <option value="one_time">{t.oneTime}</option>
+            <option value="recurring">{t.recurring}</option>
+          </SmallSelect>
+        )}
       </Toolbar>
 
       {error && <ErrorNote>{error}</ErrorNote>}
@@ -131,7 +133,7 @@ export default function ManageProjectsPage() {
                     </DesktopCell>
                     <td>
                       <Pill tone={p.status === 'active' ? 'default' : 'muted'}>{t.statuses[p.status]}</Pill>
-                      {p.recurring?.enabled && <> <Pill tone="muted">{t.recurring}</Pill></>}
+                      {canEdit && p.recurring?.enabled && <> <Pill tone="muted">{t.recurring}</Pill></>}
                     </td>
                     <td>
                       {p.hours ? `${p.hours.actualHours} ${t.ofPlanned} ${p.hours.plannedHours}` : p.plannedHours}

@@ -205,10 +205,13 @@ export default function ManageProjectPage() {
               <ReadField>{t.start}<b>{p.startDate ? formatDate(p.startDate) : t.none}</b></ReadField>
               <ReadField>{t.target}<b>{p.targetDate ? formatDate(p.targetDate) : t.none}</b></ReadField>
               <ReadField>{t.goLive}<b>{p.goLiveDate ? formatDate(p.goLiveDate) : t.none}</b></ReadField>
-              <ReadField>
-                {t.billing}
-                <b>{p.recurring?.enabled ? t.recurring : t.oneTime}</b>
-              </ReadField>
+              {/* Billing model is money talk — members never see it. */}
+              {canEdit && (
+                <ReadField>
+                  {t.billing}
+                  <b>{p.recurring?.enabled ? t.recurring : t.oneTime}</b>
+                </ReadField>
+              )}
             </FieldGrid>
             {p.description && <div style={{ marginTop: 18, fontSize: 14, whiteSpace: 'pre-wrap' }}>{p.description}</div>}
           </Body>

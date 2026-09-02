@@ -19,6 +19,7 @@ interface Employee {
   role: 'owner' | 'pm' | 'member';
   active: boolean;
   tracksTime: boolean;
+  color?: string;
   weeklyCapacityHours: number;
   monthHours: number;
   email?: string;
@@ -34,6 +35,10 @@ const DesktopHead = styled('th')({ [MOBILE]: { display: 'none' } });
 const Inactive = styled('tr')<{ off?: boolean }>(({ off }) => ({ opacity: off ? 0.5 : 1 }));
 const Actions = styled('div')({ display: 'flex', gap: 10, flexWrap: 'wrap' });
 const Note = styled('div')({ fontSize: 12.5, color: TEXT_LIGHT, marginTop: 10 });
+const ColorDot = styled('span')<{ tone: string }>(({ tone }) => ({
+  display: 'inline-block', width: 9, height: 9, borderRadius: '50%',
+  background: tone, marginInlineEnd: 8, verticalAlign: 'middle',
+}));
 
 /** Owner manages people here; a pm sees the same table without any money. */
 export default function ManageEmployeesPage() {
@@ -115,6 +120,7 @@ export default function ManageEmployeesPage() {
                 {employees.map((e) => (
                   <Inactive key={e._id} off={!e.active} style={{ cursor: 'default' }}>
                     <td style={{ fontWeight: 600 }}>
+                      <ColorDot tone={e.color ?? '#8d86a3'} />
                       {e.name}
                       {!e.active && <> <Pill tone="muted">{t.inactive}</Pill></>}
                       {!e.tracksTime && <> <Pill tone="muted">{t.noTimeTracking}</Pill></>}
@@ -187,6 +193,7 @@ function EmployeeModal({ employee, onClose, onSaved }: {
   const [hourlyCost, setHourlyCost] = useState(String(employee?.hourlyCost ?? 0));
   const [employerCostFactor, setFactor] = useState(String(employee?.employerCostFactor ?? 0.25));
   const [tracksTime, setTracksTime] = useState(employee?.tracksTime ?? true);
+  const [color, setColor] = useState(employee?.color ?? '#6c5ce7');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -196,7 +203,7 @@ function EmployeeModal({ employee, onClose, onSaved }: {
     setSaving(true);
     try {
       const body: Record<string, unknown> = {
-        name, email, role, tracksTime,
+        name, email, role, tracksTime, color,
         weeklyCapacityHours: Number(weeklyCapacityHours) || 40,
         hourlyCost: Number(hourlyCost) || 0,
         employerCostFactor: Number(employerCostFactor) || 0,
@@ -253,6 +260,16 @@ function EmployeeModal({ employee, onClose, onSaved }: {
             <Field>
               {t.hourlyCost}
               <SmallInput type="number" min="0" value={hourlyCost} onChange={(e) => setHourlyCost(e.target.value)} />
+            </Field>
+            <Field>
+              {/* One colour per person — it is how their tasks read on every board. */}
+              {t.color}
+              <SmallInput
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                style={{ padding: 2, height: 36 }}
+              />
             </Field>
             <Field>
               {t.employerFactor}

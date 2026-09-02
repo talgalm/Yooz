@@ -2,8 +2,8 @@ import { Router, Request, Response } from 'express';
 import { Types } from 'mongoose';
 import { authenticateManage } from '../middleware/manageAuth';
 import { Task, TASK_STATUSES, TASK_PRIORITIES, TaskStatus, TaskPriority, PRIORITY_RANK } from '../models/manage/Task';
-import { Project } from '../models/manage/Project';
 import { ManageUser } from '../models/manage/ManageUser';
+import { taskVisibility } from '../utils/taskVisibility';
 
 const router = Router();
 router.use(authenticateManage);
@@ -14,26 +14,11 @@ function badId(res: Response, id: string): boolean {
   return true;
 }
 
-/**
- * A member sees tasks assigned to them, ones they watch, and anything on a
- * project they are on — the context they need to do the work, no more.
- */
-async function visibilityFilter(req: Request): Promise<Record<string, unknown>> {
-  const { role, userId } = req.manageUser!;
-  if (role === 'owner' || role === 'pm') return {};
-  const mine = new Types.ObjectId(userId);
-  const projectIds = await Project.find({ $or: [{ memberUserIds: mine }, { pmUserId: mine }] })
-    .select('_id').lean();
-  return {
-    $or: [
-      { assigneeUserId: mine },
-      { watcherUserIds: mine },
-      { projectId: { $in: projectIds.map((p) => p._id) } },
-    ],
-  };
+function visibilityFilter(req: Request): Record<string, unknown> {
+  return taskVisibility(req.manageUser!);
 }
 
-function pickTaskFields(body: Record<string, unknown>): Record<string, unknown> {
+function pickTaskFields(body: Record<string, unknown>, role: string): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const k of ['title', 'description', 'stageKey', 'plannedWeek']) {
     if (typeof body[k] === 'string') out[k] = (body[k] as string).trim();
@@ -41,6 +26,10 @@ function pickTaskFields(body: Record<string, unknown>): Record<string, unknown> 
   if (TASK_PRIORITIES.includes(body.priority as TaskPriority)) out.priority = body.priority;
   if (typeof body.plannedHours === 'number' && body.plannedHours >= 0) out.plannedHours = body.plannedHours;
   if (typeof body.archived === 'boolean') out.archived = body.archived;
+  // Publishing a task to the whole team is a management call, not a member's.
+  if (typeof body.visibleToAll === 'boolean' && (role === 'owner' || role === 'pm')) {
+    out.visibleToAll = body.visibleToAll;
+  }
 
   for (const k of ['startDate', 'dueDate']) {
     if (body[k] === null || body[k] === '') out[k] = undefined;
@@ -71,7 +60,7 @@ router.get('/', async (req: Request, res: Response) => {
   const { status, priority, assigneeUserId, projectId, clientId, needsOwner, scope, overdue } =
     req.query as Record<string, string | undefined>;
 
-  const filter: Record<string, unknown> = { ...(await visibilityFilter(req)), archived: false };
+  const filter: Record<string, unknown> = { ...visibilityFilter(req), archived: false };
   if (status && TASK_STATUSES.includes(status as TaskStatus)) filter.status = status;
   else if (scope === 'open') filter.status = { $ne: 'done' };
   if (priority && TASK_PRIORITIES.includes(priority as TaskPriority)) filter.priority = priority;
@@ -118,16 +107,19 @@ router.get('/needs-owner', async (req: Request, res: Response) => {
 });
 
 router.post('/', async (req: Request, res: Response) => {
+  const { role, userId } = req.manageUser!;
   const body = (req.body ?? {}) as Record<string, unknown>;
-  const fields = pickTaskFields(body);
+  const fields = pickTaskFields(body, role);
   if (!fields.title) {
     res.status(400).json({ error: 'title_required' });
     return;
   }
+  // A member creates work for themselves only; owner and pm assign to anyone.
+  if (role === 'member') fields.assigneeUserId = userId;
   const task = await Task.create({
     ...fields,
     // Unassigned work is nobody's work — default it to whoever created it.
-    assigneeUserId: fields.assigneeUserId ?? req.manageUser!.userId,
+    assigneeUserId: fields.assigneeUserId ?? userId,
     createdBy: req.manageUser!.userId,
   });
   res.status(201).json({ task });
@@ -135,7 +127,7 @@ router.post('/', async (req: Request, res: Response) => {
 
 router.get('/:id', async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
-  const task = await Task.findOne({ _id: String(req.params.id), ...(await visibilityFilter(req)) })
+  const task = await Task.findOne({ _id: String(req.params.id), ...visibilityFilter(req) })
     .populate('assigneeUserId', 'name color')
     .populate('projectId', 'name')
     .populate('clientId', 'name')
@@ -150,14 +142,19 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 router.patch('/:id', async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
-  const task = await Task.findById(String(req.params.id));
+  const { role } = req.manageUser!;
+  // Same gate as reading it: you cannot edit a task you are not allowed to see.
+  const task = await Task.findOne({ _id: String(req.params.id), ...visibilityFilter(req) });
   if (!task) {
     res.status(404).json({ error: 'not_found' });
     return;
   }
 
   const body = (req.body ?? {}) as Record<string, unknown>;
-  Object.assign(task, pickTaskFields(body));
+  const fields = pickTaskFields(body, role);
+  // A member cannot hand their task to someone else, or take someone else's.
+  if (role === 'member') delete fields.assigneeUserId;
+  Object.assign(task, fields);
 
   if (typeof body.status === 'string' && TASK_STATUSES.includes(body.status as TaskStatus)) {
     const next = body.status as TaskStatus;

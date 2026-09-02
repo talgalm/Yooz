@@ -2,7 +2,7 @@ import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './tasks.i18n';
 import {
-  Task, PRIORITY_COLORS, overdueDays, isDueToday, refName, formatDate,
+  Task, PRIORITY_COLORS, overdueDays, isDueToday, refName, refColor, formatDate,
 } from './manageTypes';
 import { Table, TEXT_LIGHT } from '../../components/styled';
 import { Panel, TableScroll, EmptyState, Pill, MOBILE } from './manageUi';
@@ -16,6 +16,15 @@ const PriorityBar = styled('span')<{ tone: string }>(({ tone }) => ({
   width: 4,
   height: 15,
   borderRadius: 2,
+  background: tone,
+  marginInlineEnd: 8,
+  verticalAlign: 'middle',
+}));
+
+/** Whose task it is, at a glance — the same colour follows the person everywhere. */
+const OwnerDot = styled('span')<{ tone: string }>(({ tone }) => ({
+  display: 'inline-block',
+  width: 9, height: 9, borderRadius: '50%',
   background: tone,
   marginInlineEnd: 8,
   verticalAlign: 'middle',
@@ -62,6 +71,10 @@ export default function TaskList({ tasks, loading, showProject = true, showAssig
               return (
                 <tr key={task._id} onClick={() => onOpen(task)}>
                   <TitleCell done={task.status === 'done'}>
+                    <OwnerDot
+                      tone={refColor(task.assigneeUserId) ?? '#8d86a3'}
+                      title={refName(task.assigneeUserId) ?? ''}
+                    />
                     <PriorityBar tone={PRIORITY_COLORS[task.priority]} title={t.priorities[task.priority]} />
                     {task.title}
                     {task.needsOwner && (

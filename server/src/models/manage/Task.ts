@@ -55,6 +55,12 @@ export interface ITask {
 
   plannedWeek?: string;
 
+  /**
+   * Off by default: a task belongs to its assignee. Only owner/pm can publish
+   * one to the whole team, which is what makes "my board" actually mine.
+   */
+  visibleToAll: boolean;
+
   checklist: { text: string; done: boolean }[];
   comments: ITaskComment[];
 
@@ -100,6 +106,8 @@ const taskSchema = new Schema<ITask>(
     needsOwnerResolvedAt: { type: Date },
 
     plannedWeek: { type: String },
+
+    visibleToAll: { type: Boolean, default: false },
 
     checklist: { type: [{ text: String, done: Boolean }], default: [] },
     comments: { type: [commentSchema], default: [] },

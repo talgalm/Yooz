@@ -21,6 +21,9 @@ export const texts = {
     startDate: 'תאריך התחלה',
     plannedHours: 'שעות מתוכננות',
 
+    visibleToAll: 'גלוי לכל הצוות',
+    visibleToAllOn: 'כל העובדים רואים את המשימה.',
+    visibleToAllOff: 'רק האחראי על המשימה (וההנהלה) רואים אותה.',
     needsOwner: 'דורש החלטת הנהלה',
     needsOwnerReason: 'מה צריך להחליט?',
     waitingDays: (n: number) => (n === 0 ? 'מהיום' : `מחכה ${n} ימים`),
@@ -85,6 +88,9 @@ export const texts = {
     startDate: 'Start date',
     plannedHours: 'Planned hours',
 
+    visibleToAll: 'Visible to the whole team',
+    visibleToAllOn: 'Everyone sees this task.',
+    visibleToAllOff: 'Only its assignee (and management) sees it.',
     needsOwner: 'Needs a decision',
     needsOwnerReason: 'What needs deciding?',
     waitingDays: (n: number) => (n === 0 ? 'since today' : `waiting ${n} days`),

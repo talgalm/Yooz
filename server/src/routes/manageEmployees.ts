@@ -14,6 +14,12 @@ router.use(requireManageRole('owner', 'pm'));
 
 const VALID_ROLES: ManageRole[] = ['owner', 'pm', 'member'];
 
+/**
+ * One colour per person, reused on every board. Handed out in order so two
+ * people are never born the same colour; the owner can still override it.
+ */
+const PALETTE = ['#6c5ce7', '#0984e3', '#00b894', '#e17055', '#fdcb6e', '#e84393', '#00cec9', '#636e72'];
+
 function badId(res: Response, id: string): boolean {
   if (Types.ObjectId.isValid(id)) return false;
   res.status(400).json({ error: 'invalid_id' });
@@ -94,7 +100,9 @@ router.post('/', requireManageRole('owner'), async (req: Request, res: Response)
     passwordHash: await bcrypt.hash(password, 10),
     role: body.role as ManageRole,
     phone: typeof body.phone === 'string' ? body.phone.trim() : undefined,
-    color: typeof body.color === 'string' ? body.color : '#6c5ce7',
+    color: typeof body.color === 'string' && body.color
+      ? body.color
+      : PALETTE[(await ManageUser.countDocuments()) % PALETTE.length],
     tracksTime: body.tracksTime !== false,
     weeklyCapacityHours: Number(body.weeklyCapacityHours) || defaults.weeklyCapacityHours,
     hourlyCost: Number(body.hourlyCost) || 0,

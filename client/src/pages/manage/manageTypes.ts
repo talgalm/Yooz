@@ -221,6 +221,12 @@ export function refName(v: unknown): string | undefined {
   return undefined;
 }
 
+/** The person's colour off a populated ref — one colour per employee, every board. */
+export function refColor(v: unknown): string | undefined {
+  if (v && typeof v === 'object' && 'color' in v) return (v as { color?: string }).color;
+  return undefined;
+}
+
 export function refId(v: unknown): string | undefined {
   if (!v) return undefined;
   if (typeof v === 'string') return v;
@@ -274,6 +280,8 @@ export interface Task {
   needsOwner: boolean;
   needsOwnerReason?: string;
   needsOwnerSince?: string;
+  /** Owner/pm flag: off means the task is the assignee's alone. */
+  visibleToAll?: boolean;
   checklist: { text: string; done: boolean }[];
   comments: TaskComment[];
   archived: boolean;
@@ -345,6 +353,7 @@ export interface CalendarEvent {
   entityType: string;
   entityId: string;
   href: string;
+  color?: string;
 }
 
 export const CALENDAR_COLORS: Record<CalendarKind, string> = {

@@ -19,13 +19,9 @@ import {
 const Section = styled('div')({ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${BORDER}` });
 const SectionTitle = styled('div')({ fontSize: 13, fontWeight: 700, color: TEXT_LIGHT, marginBottom: 10 });
 
-const DecisionBox = styled('div')<{ on?: boolean }>(({ on }) => ({
-  padding: 12,
-  borderRadius: 10,
-  background: on ? '#fdecea' : '#faf9fd',
-  border: `1px solid ${on ? '#f3c9c6' : BORDER}`,
-  marginTop: 14,
-}));
+const VisibilityBox = styled('div')({
+  padding: 12, borderRadius: 10, background: '#faf9fd', border: `1px solid ${BORDER}`, marginTop: 14,
+});
 
 const CheckLine = styled('label')({
   display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, cursor: 'pointer', fontWeight: 600,
@@ -60,8 +56,7 @@ export default function TaskModal({ task, defaultProjectId, defaultDueDate, onCl
   const [dueDate, setDueDate] = useState(task?.dueDate ? toDateInput(task.dueDate) : defaultDueDate ?? '');
   const [plannedHours, setPlannedHours] = useState(String(task?.plannedHours ?? ''));
 
-  const [needsOwner, setNeedsOwner] = useState(task?.needsOwner ?? false);
-  const [needsOwnerReason, setReason] = useState(task?.needsOwnerReason ?? '');
+  const [visibleToAll, setVisibleToAll] = useState(task?.visibleToAll ?? false);
 
   const [full, setFull] = useState<Task | undefined>(task);
   const [commentText, setCommentText] = useState('');
@@ -93,7 +88,7 @@ export default function TaskModal({ task, defaultProjectId, defaultDueDate, onCl
         body: JSON.stringify({
           title, description, assigneeUserId, projectId, clientId, status, priority, dueDate,
           plannedHours: Number(plannedHours) || 0,
-          needsOwner, needsOwnerReason,
+          visibleToAll,
         }),
       });
       onSaved();
@@ -198,27 +193,22 @@ export default function TaskModal({ task, defaultProjectId, defaultDueDate, onCl
               <SmallTextarea value={description} onChange={(e) => setDescription(e.target.value)} />
             </Field>
 
-            <DecisionBox on={needsOwner}>
-              <CheckLine>
-                <input type="checkbox" checked={needsOwner} onChange={(e) => setNeedsOwner(e.target.checked)} />
-                {t.needsOwner}
-              </CheckLine>
-              {needsOwner && (
-                <>
-                  <SmallInput
-                    value={needsOwnerReason}
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder={t.needsOwnerReason}
-                    style={{ width: '100%', marginTop: 10 }}
+            {/* Only management publishes a task; a member's task is their own. */}
+            {canSeeTeam && (
+              <VisibilityBox>
+                <CheckLine>
+                  <input
+                    type="checkbox"
+                    checked={visibleToAll}
+                    onChange={(e) => setVisibleToAll(e.target.checked)}
                   />
-                  {full?.needsOwnerSince && (
-                    <div style={{ fontSize: 12.5, color: TEXT_LIGHT, marginTop: 6 }}>
-                      {formatDate(full.needsOwnerSince)}
-                    </div>
-                  )}
-                </>
-              )}
-            </DecisionBox>
+                  {t.visibleToAll}
+                </CheckLine>
+                <div style={{ fontSize: 12.5, color: TEXT_LIGHT, marginTop: 6 }}>
+                  {visibleToAll ? t.visibleToAllOn : t.visibleToAllOff}
+                </div>
+              </VisibilityBox>
+            )}
 
             <ModalActions>
               {task && <DangerButton type="button" onClick={() => setConfirmingDelete(true)}>{t.delete}</DangerButton>}

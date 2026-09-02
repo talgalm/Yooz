@@ -5,6 +5,7 @@ import { Task } from '../models/manage/Task';
 import { Project } from '../models/manage/Project';
 import { Client } from '../models/manage/Client';
 import { Interaction } from '../models/manage/Interaction';
+import { taskVisibility } from '../utils/taskVisibility';
 
 const router = Router();
 router.use(authenticateManage);
@@ -20,6 +21,8 @@ export interface CalendarEvent {
   entityType: string;
   entityId: string;
   href: string;
+  /** Assignee colour for tasks — the same person reads the same colour on every board. */
+  color?: string;
 }
 
 /**
@@ -45,14 +48,16 @@ router.get('/', async (req: Request, res: Response) => {
   const mine = new Types.ObjectId(userId);
   const isMember = role === 'member';
 
-  const taskFilter: Record<string, unknown> = { archived: false, dueDate: range };
-  if (isMember) taskFilter.assigneeUserId = mine;
+  const taskFilter: Record<string, unknown> = {
+    archived: false, dueDate: range, ...taskVisibility(req.manageUser!),
+  };
 
   const projectFilter: Record<string, unknown> = { archived: false };
   if (isMember) projectFilter.$or = [{ memberUserIds: mine }, { pmUserId: mine }];
 
   const [tasks, projects, interactions, clients] = await Promise.all([
-    Task.find(taskFilter).select('title dueDate status projectId').populate('projectId', 'name').lean(),
+    Task.find(taskFilter).select('title dueDate status projectId assigneeUserId')
+      .populate('projectId', 'name').populate('assigneeUserId', 'name color').lean(),
     Project.find({
       ...projectFilter,
       $and: [{
@@ -68,13 +73,15 @@ router.get('/', async (req: Request, res: Response) => {
   const events: CalendarEvent[] = [];
 
   for (const t of tasks) {
+    const assignee = t.assigneeUserId as unknown as { name?: string; color?: string } | undefined;
     events.push({
       date: new Date(t.dueDate!).toISOString(),
       kind: 'task_due',
-      title: t.title,
+      title: assignee?.name ? `${t.title} · ${assignee.name}` : t.title,
       entityType: 'task',
       entityId: String(t._id),
       href: `/manage/tasks?task=${t._id}`,
+      color: assignee?.color,
     });
   }
 

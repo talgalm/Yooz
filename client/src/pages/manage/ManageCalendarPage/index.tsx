@@ -172,7 +172,7 @@ export default function ManageCalendarPage() {
                   <Dots>
                     {/* Cap the dots — a busy day should not blow the row height out. */}
                     {dayEvents.slice(0, 4).map((e, n) => (
-                      <Dot key={n} tone={CALENDAR_COLORS[e.kind]} title={e.title} />
+                      <Dot key={n} tone={e.color ?? CALENDAR_COLORS[e.kind]} title={e.title} />
                     ))}
                     {dayEvents.length > 4 && <span style={{ fontSize: 10, color: TEXT_LIGHT }}>+{dayEvents.length - 4}</span>}
                   </Dots>
@@ -209,7 +209,7 @@ export default function ManageCalendarPage() {
                 key={`${e.entityId}-${e.kind}-${i}`}
                 type="button"
                 onClick={() => openEvent(e)}
-                tone={CALENDAR_COLORS[e.kind]}
+                tone={e.color ?? CALENDAR_COLORS[e.kind]}
               >
                 <span>{e.title}</span>
                 <Kind>{t.kinds[e.kind]}</Kind>
