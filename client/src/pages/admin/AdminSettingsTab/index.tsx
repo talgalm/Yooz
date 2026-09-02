@@ -1,10 +1,9 @@
 import { styled } from '@mui/material/styles';
-import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
 import { useLang, useTranslations } from '../../../context/LanguageContext';
 import type { Lang } from '../../../context/LanguageContext';
 import { texts } from './AdminSettingsTab.i18n';
-import { AdminCard, SelectionButton, DangerButton, PrimaryButton } from '../../../components/styled';
+import { AdminCard, SelectionButton, DangerButton } from '../../../components/styled';
 import { SectionTitle, SmallMutedText, DetailRow, DetailLabel, RoleBadge } from '../styled';
 
 const Stack = styled('div')({
@@ -68,7 +67,6 @@ const DetailValueText = styled('div')({
 export default function AdminSettingsTab({ onLogout }: { onLogout: () => void }) {
   const t = useTranslations(texts);
   const { lang } = useLang();
-  const navigate = useNavigate();
   const { admin } = useAdminAuth();
 
   const role = admin?.role || 'viewer';
@@ -130,17 +128,6 @@ export default function AdminSettingsTab({ onLogout }: { onLogout: () => void })
             🇺🇸 {t.english}
           </LangButton>
         </LangRow>
-      </AdminCard>
-
-      <AdminCard>
-        <CardHead>
-          <SectionTitle>{t.clients}</SectionTitle>
-          <SmallMutedText>{t.clientsDesc}</SmallMutedText>
-        </CardHead>
-        {/* /manage is its own auth realm — this only opens it, it does not sign you in. */}
-        <PrimaryButton type="button" style={{ width: 'auto', padding: '12px 28px', fontSize: 16 }} onClick={() => navigate('/manage')}>
-          {t.clientsOpen}
-        </PrimaryButton>
       </AdminCard>
 
       <AdminCard>
