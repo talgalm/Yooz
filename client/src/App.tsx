@@ -39,6 +39,7 @@ import ManageEmployeesPage from './pages/manage/ManageEmployeesPage';
 import ManageSettingsPage from './pages/manage/ManageSettingsPage';
 import { ManageTimerProvider } from './pages/manage/TimerContext';
 import PrivacyPage from './pages/PrivacyPage';
+import PublicityPage from './pages/PublicityPage';
 import ArDemoPage from './pages/ArDemoPage';
 import SharedStatsPage from './pages/shared/SharedStatsPage';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -46,7 +47,6 @@ import { HelpChatProvider, HelpChatFab } from './components/HelpChat';
 import AdminHelpChat from './components/AdminHelpChat';
 import { MobileContainer } from './components/MobileContainer';
 import ParticipantActivityScope from './components/ParticipantActivityScope';
-import ParticipantLandingRedirect from './components/ParticipantLandingRedirect';
 import './App.css';
 import { participantPlayPath, resolveParticipantActivityCode } from './utils/participantActivity';
 
@@ -191,7 +191,7 @@ export default function App() {
                 <Route path="/stats/:token" element={<SharedStatsPage />} />
 
                 {/* Default: YOOZ landing page — responsive (mobile + desktop) */}
-                <Route path="/" element={<ParticipantLandingRedirect />} />
+                <Route path="/" element={<PublicityPage />} />
                 <Route path="*" element={<FallbackRedirect />} />
               </Routes>
             </BrowserRouter>
