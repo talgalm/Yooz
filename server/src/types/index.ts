@@ -48,6 +48,22 @@ export interface ManagerJwtPayload {
   exp?: number;
 }
 
+// Yooz-Manage types (/manage realm)
+export interface ManageJwtPayload {
+  userId: string;
+  name: string;
+  email: string;
+  role: 'owner' | 'pm' | 'member';
+  realm: 'manage';
+  iat?: number;
+  exp?: number;
+}
+
+export interface ManageLoginRequest {
+  email: string;
+  password: string;
+}
+
 export interface ManagerLoginRequest {
   activityCode: string;
   email?: string;
@@ -360,6 +376,7 @@ declare global {
       participant?: JwtPayload;
       admin?: AdminJwtPayload;
       manager?: ManagerJwtPayload;
+      manageUser?: ManageJwtPayload;
     }
   }
 }

@@ -1,0 +1,44 @@
+import { useLang } from '../../context/LanguageContext';
+import { ModalBackdrop, ModalCard, ModalTitle, ModalActions, GhostButton, DangerButton, Button } from './manageUi';
+
+interface Props {
+  title: string;
+  message?: string;
+  confirmLabel?: string;
+  danger?: boolean;
+  busy?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+/**
+ * In-app replacement for window.confirm.
+ *
+ * Native confirm() is suppressed in sandboxed and embedded browser contexts —
+ * it silently returns false, so the destructive action just never fires and the
+ * user sees nothing at all. Every destructive action in /manage goes through here.
+ */
+export default function ConfirmDialog({
+  title, message, confirmLabel, danger = true, busy = false, onConfirm, onCancel,
+}: Props) {
+  const { lang } = useLang();
+  const he = lang === 'he';
+  const ConfirmButton = danger ? DangerButton : Button;
+
+  return (
+    <ModalBackdrop onClick={onCancel}>
+      <ModalCard onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+        <ModalTitle>{title}</ModalTitle>
+        {message && <div style={{ fontSize: 14, lineHeight: 1.5 }}>{message}</div>}
+        <ModalActions>
+          <GhostButton onClick={onCancel} disabled={busy}>
+            {he ? 'ביטול' : 'Cancel'}
+          </GhostButton>
+          <ConfirmButton onClick={onConfirm} disabled={busy}>
+            {busy ? (he ? 'מוחק...' : 'Deleting...') : (confirmLabel ?? (he ? 'מחיקה' : 'Delete'))}
+          </ConfirmButton>
+        </ModalActions>
+      </ModalCard>
+    </ModalBackdrop>
+  );
+}

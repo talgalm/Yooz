@@ -126,3 +126,68 @@ export async function seedSuperAdmin(): Promise<void> {
   });
   console.log(`✅ Seeded super_admin user: ${ADMIN_EMAIL}`);
 }
+
+/**
+ * Yooz-Manage (/manage) — seeds the two real accounts on first boot.
+ * Idempotent: existing users are never touched, so a redeploy can't reset a password.
+ */
+export async function seedManageUsers(): Promise<void> {
+  const { ManageUser } = await import('../models/manage/ManageUser');
+  const {
+    MANAGE_OWNER_EMAIL, MANAGE_OWNER_PASSWORD, MANAGE_OWNER_NAME,
+    MANAGE_MEMBER_EMAIL, MANAGE_MEMBER_PASSWORD, MANAGE_MEMBER_NAME,
+  } = await import('../config');
+
+  const seedUser = async (
+    email: string,
+    password: string,
+    name: string,
+    role: 'owner' | 'pm' | 'member',
+    extra: Record<string, unknown> = {},
+  ) => {
+    const normalized = email.toLowerCase().trim();
+    if (await ManageUser.findOne({ email: normalized })) return;
+    await ManageUser.create({
+      email: normalized,
+      passwordHash: await bcrypt.hash(password, 10),
+      name,
+      role,
+      ...extra,
+    });
+    console.log(`✅ Seeded manage ${role}: ${normalized}`);
+  };
+
+  // The owner does not report hours — see spec ch.10 decision 2.
+  await seedUser(MANAGE_OWNER_EMAIL, MANAGE_OWNER_PASSWORD, MANAGE_OWNER_NAME, 'owner', {
+    tracksTime: false,
+    hourlyCost: 250,
+  });
+
+  await seedUser(MANAGE_MEMBER_EMAIL, MANAGE_MEMBER_PASSWORD, MANAGE_MEMBER_NAME, 'member', {
+    color: '#00b894',
+  });
+}
+
+/**
+ * Yooz-Manage: drops the legacy unique index on mng_projects.code.
+ *
+ * The code field was removed from the schema. A leftover unique index would then
+ * see every document as code:null and reject the SECOND project ever created
+ * with a duplicate-key error — a failure that looks nothing like its cause.
+ * Idempotent: a missing index is not an error.
+ */
+export async function dropManageProjectCodeIndex(): Promise<void> {
+  const mongoose = (await import('mongoose')).default;
+  const collection = mongoose.connection.db?.collection('mng_projects');
+  if (!collection) return;
+  try {
+    const indexes = await collection.indexes();
+    if (!indexes.some((i) => i.name === 'code_1')) return;
+    await collection.dropIndex('code_1');
+    console.log('✅ Dropped legacy mng_projects.code_1 index');
+  } catch {
+    /* collection may not exist yet on a fresh install — nothing to drop */
+  }
+  // Existing documents keep a stray `code` value; strip it so exports stay clean.
+  await collection.updateMany({ code: { $exists: true } }, { $unset: { code: '' } }).catch(() => {});
+}

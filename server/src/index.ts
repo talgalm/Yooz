@@ -16,7 +16,7 @@ import {
   isSocialCrawler,
   requestOrigin,
 } from './utils/shareOgPage';
-import { migrateActivities, migrateActivityGroups, seedSuperAdmin, seedBuiltInMission } from './db/seed';
+import { migrateActivities, migrateActivityGroups, seedSuperAdmin, seedBuiltInMission, seedManageUsers, dropManageProjectCodeIndex } from './db/seed';
 import { processExpiredRewardTimers } from './services/groupRewardService';
 import { CollageJob } from './models/CollageJob';
 import { scheduleCollageEncode } from './services/collageProcessor';
@@ -54,6 +54,18 @@ import stationFoldersRouter from './routes/stationFolders';
 import gameFoldersRouter from './routes/gameFolders';
 import missionFoldersRouter from './routes/missionFolders';
 import siteContentRouter from './routes/siteContent';
+import manageRouter from './routes/manage';
+import manageClientsRouter from './routes/manageClients';
+import manageProjectsRouter from './routes/manageProjects';
+import manageTimeRouter from './routes/manageTime';
+import manageTasksRouter from './routes/manageTasks';
+import manageDashboardRouter from './routes/manageDashboard';
+import manageCalendarRouter from './routes/manageCalendar';
+import manageFinanceRouter from './routes/manageFinance';
+import manageReportsRouter from './routes/manageReports';
+import manageEmployeesRouter from './routes/manageEmployees';
+import manageSettingsRouter from './routes/manageSettings';
+import { startManageScheduler } from './services/manageScheduler';
 
 const app = express();
 
@@ -101,6 +113,18 @@ app.use('/api/reward-download', rewardDownloadRouter);
 app.use('/api/admin/games', gamesRouter);
 app.use('/api/admin/stations', stationsRouter);
 app.use('/api/manager', managerRouter);
+// Yooz-Manage — internal business management. Own realm, own JWT claim.
+app.use('/api/manage', manageRouter);
+app.use('/api/manage/clients', manageClientsRouter);
+app.use('/api/manage/projects', manageProjectsRouter);
+app.use('/api/manage/time', manageTimeRouter);
+app.use('/api/manage/tasks', manageTasksRouter);
+app.use('/api/manage/dashboard', manageDashboardRouter);
+app.use('/api/manage/calendar', manageCalendarRouter);
+app.use('/api/manage/finance', manageFinanceRouter);
+app.use('/api/manage/reports', manageReportsRouter);
+app.use('/api/manage/employees', manageEmployeesRouter);
+app.use('/api/manage/settings', manageSettingsRouter);
 app.use('/api/admin/upload', uploadRouter);
 app.use('/api/admin/media', adminMediaRouter);
 app.use('/api/help', helpRouter);
@@ -188,6 +212,9 @@ async function start() {
   await migrateActivities();
   await migrateActivityGroups();
   await seedSuperAdmin();
+  await seedManageUsers();
+  await dropManageProjectCodeIndex();
+  startManageScheduler();
   await seedBuiltInMission();
 
   if (TEXTME_API_TOKEN && TEXTME_USERNAME) {
