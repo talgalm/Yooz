@@ -1,14 +1,15 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { manageApiFetch } from '../../../utils/manageApi';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './ManageCalendarPage.i18n';
-import { CalendarEvent, CALENDAR_COLORS, toDateInput } from '../manageTypes';
+import { CalendarEvent, CALENDAR_COLORS, Task, toDateInput } from '../manageTypes';
 import { PRIMARY, PRIMARY_LIGHT, BORDER, TEXT_LIGHT } from '../../../components/styled';
 import {
-  PageHeader, SectionTitle, Panel, EmptyState, ErrorNote, Toolbar, GhostButton, MOBILE,
+  PageHeader, SectionTitle, Panel, EmptyState, ErrorNote, Toolbar, Button, GhostButton, MOBILE,
 } from '../manageUi';
+import TaskModal from '../TaskModal';
 
 const MonthInput = styled('input')({
   padding: '8px 10px', fontSize: 14, border: `1px solid ${BORDER}`, borderRadius: 9,
@@ -46,12 +47,15 @@ const Dot = styled('span')<{ tone: string }>(({ tone }) => ({
 
 const DayPanel = styled('div')({ borderTop: `1px solid ${BORDER}` });
 const DayHead = styled('div')({
-  padding: '11px 16px', background: '#faf9fd', fontSize: 14, fontWeight: 600,
-});
-const EventRow = styled(Link)<{ tone: string }>(({ tone }) => ({
   display: 'flex', alignItems: 'center', gap: 10,
+  padding: '9px 16px', background: '#faf9fd', fontSize: 14, fontWeight: 600,
+});
+const EventRow = styled('button')<{ tone: string }>(({ tone }) => ({
+  display: 'flex', alignItems: 'center', gap: 10, width: '100%',
   padding: '10px 16px', borderBottom: `1px solid ${BORDER}`,
-  textDecoration: 'none', color: 'inherit', fontSize: 14,
+  borderTop: 'none', borderInline: 'none', background: 'none',
+  textAlign: 'start', cursor: 'pointer', fontFamily: 'inherit',
+  color: 'inherit', fontSize: 14,
   '&:last-child': { borderBottom: 'none' },
   '&:hover': { background: '#fafaff' },
   '&::before': {
@@ -67,9 +71,10 @@ const Legend = styled('div')({
 const LegendItem = styled('span')({ display: 'flex', alignItems: 'center', gap: 6 });
 
 /**
- * Read-only month view over records that already carry a date — task due dates,
- * logged meetings, client follow-ups, project start / target / go-live.
- * Nothing is entered here, so nothing can drift from its source record.
+ * Month view over records that already carry a date — task due dates, logged
+ * meetings, client follow-ups, project start / target / go-live. The only thing
+ * creatable here is a task, and it is a real task (same modal as the tasks page)
+ * due on the selected day — there is no calendar-only entity to drift.
  */
 export default function ManageCalendarPage() {
   const t = useTranslations(texts);
@@ -79,6 +84,9 @@ export default function ManageCalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Task | null>(null);
+  const navigate = useNavigate();
 
   const load = useCallback(async () => {
     setError('');
@@ -98,6 +106,17 @@ export default function ManageCalendarPage() {
   }, [month]);
 
   useEffect(() => { load(); }, [load]);
+
+  /** A task opens in place; everything else lives on another page. */
+  const openEvent = async (e: CalendarEvent) => {
+    if (e.kind !== 'task_due') { navigate(e.href); return; }
+    try {
+      const r = await manageApiFetch<{ task: Task }>(`/api/manage/tasks/${e.entityId}`);
+      setEditing(r.task);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed');
+    }
+  };
 
   const shiftMonth = (delta: number) => {
     const [y, m] = month.split('-').map(Number);
@@ -172,12 +191,26 @@ export default function ManageCalendarPage() {
             {new Date(selected).toLocaleDateString('he-IL', {
               weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
             })}
+            {selectedEvents.length > 0 && (
+              <GhostButton style={{ marginInlineStart: 'auto' }} onClick={() => setCreating(true)}>
+                {t.addTaskThisDay}
+              </GhostButton>
+            )}
           </DayHead>
           {selectedEvents.length === 0 ? (
-            <EmptyState>{t.nothingOnThisDay}</EmptyState>
+            /* An empty day has one sensible action, so offer it instead of a dead end. */
+            <EmptyState>
+              <div>{t.nothingOnThisDay}</div>
+              <Button style={{ marginTop: 12 }} onClick={() => setCreating(true)}>{t.addTaskThisDay}</Button>
+            </EmptyState>
           ) : (
             selectedEvents.map((e, i) => (
-              <EventRow key={`${e.entityId}-${e.kind}-${i}`} to={e.href} tone={CALENDAR_COLORS[e.kind]}>
+              <EventRow
+                key={`${e.entityId}-${e.kind}-${i}`}
+                type="button"
+                onClick={() => openEvent(e)}
+                tone={CALENDAR_COLORS[e.kind]}
+              >
                 <span>{e.title}</span>
                 <Kind>{t.kinds[e.kind]}</Kind>
               </EventRow>
@@ -193,6 +226,15 @@ export default function ManageCalendarPage() {
       </Panel>
 
       <div style={{ fontSize: 12.5, color: TEXT_LIGHT, marginTop: 12 }}>{t.readOnlyNote}</div>
+
+      {(creating || editing) && (
+        <TaskModal
+          task={editing ?? undefined}
+          defaultDueDate={selected}
+          onClose={() => { setCreating(false); setEditing(null); }}
+          onSaved={() => { setCreating(false); setEditing(null); load(); }}
+        />
+      )}
     </>
   );
 }

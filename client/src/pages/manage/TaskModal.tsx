@@ -40,11 +40,12 @@ const CommentRow = styled('div')({ display: 'flex', gap: 8, marginTop: 10 });
 interface Props {
   task?: Task;
   defaultProjectId?: string;
+  defaultDueDate?: string;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export default function TaskModal({ task, defaultProjectId, onClose, onSaved }: Props) {
+export default function TaskModal({ task, defaultProjectId, defaultDueDate, onClose, onSaved }: Props) {
   const t = useTranslations(texts);
   const { user } = useManageAuth();
   const canSeeTeam = user?.role === 'owner' || user?.role === 'pm';
@@ -56,7 +57,7 @@ export default function TaskModal({ task, defaultProjectId, onClose, onSaved }: 
   const [clientId, setClientId] = useState(refId(task?.clientId) ?? '');
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? 'not_started');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? 'normal');
-  const [dueDate, setDueDate] = useState(task?.dueDate ? toDateInput(task.dueDate) : '');
+  const [dueDate, setDueDate] = useState(task?.dueDate ? toDateInput(task.dueDate) : defaultDueDate ?? '');
   const [plannedHours, setPlannedHours] = useState(String(task?.plannedHours ?? ''));
 
   const [needsOwner, setNeedsOwner] = useState(task?.needsOwner ?? false);
