@@ -57,7 +57,7 @@ function pickTaskFields(body: Record<string, unknown>, role: string): Record<str
 // ─── Tasks ───
 
 router.get('/', async (req: Request, res: Response) => {
-  const { status, priority, assigneeUserId, projectId, clientId, needsOwner, scope, overdue } =
+  const { status, priority, assigneeUserId, projectId, clientId, scope, overdue } =
     req.query as Record<string, string | undefined>;
 
   const filter: Record<string, unknown> = { ...visibilityFilter(req), archived: false };
@@ -67,7 +67,6 @@ router.get('/', async (req: Request, res: Response) => {
   if (assigneeUserId && Types.ObjectId.isValid(assigneeUserId)) filter.assigneeUserId = assigneeUserId;
   if (projectId && Types.ObjectId.isValid(projectId)) filter.projectId = projectId;
   if (clientId && Types.ObjectId.isValid(clientId)) filter.clientId = clientId;
-  if (needsOwner === 'true') filter.needsOwner = true;
   // Tasks with no project at all — the standalone todo list.
   if (scope === 'standalone') filter.projectId = { $exists: false };
   if (overdue === 'true') {
@@ -85,7 +84,6 @@ router.get('/', async (req: Request, res: Response) => {
   // Sorted in code, not Mongo: priority is a string enum whose alphabetical
   // order is meaningless ("high" < "low" < "normal" < "urgent").
   tasks.sort((a, b) => {
-    if (a.needsOwner !== b.needsOwner) return a.needsOwner ? -1 : 1;
     const pr = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
     if (pr !== 0) return pr;
     const ad = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
@@ -93,16 +91,6 @@ router.get('/', async (req: Request, res: Response) => {
     return ad - bd;
   });
 
-  res.json({ tasks });
-});
-
-/** The owner's action queue: everything flagged as needing a decision. */
-router.get('/needs-owner', async (req: Request, res: Response) => {
-  const tasks = await Task.find({ needsOwner: true, archived: false, status: { $ne: 'done' } })
-    .populate('assigneeUserId', 'name color')
-    .populate('projectId', 'name')
-    .sort({ needsOwnerSince: 1 })
-    .lean();
   res.json({ tasks });
 });
 
@@ -162,25 +150,6 @@ router.patch('/:id', async (req: Request, res: Response) => {
     if (next === 'done' && task.status !== 'done') task.completedAt = new Date();
     if (next !== 'done') task.completedAt = undefined;
     task.status = next;
-  }
-
-  /**
-   * The decision flag. Raising it stamps the clock; lowering it stamps the
-   * resolution and STOPS the clock — without both timestamps the dashboard
-   * cannot say how long anyone actually waited.
-   */
-  if (typeof body.needsOwner === 'boolean' && body.needsOwner !== task.needsOwner) {
-    if (body.needsOwner) {
-      task.needsOwner = true;
-      task.needsOwnerSince = new Date();
-      task.needsOwnerResolvedAt = undefined;
-      if (typeof body.needsOwnerReason === 'string') task.needsOwnerReason = body.needsOwnerReason.trim();
-    } else {
-      task.needsOwner = false;
-      task.needsOwnerResolvedAt = new Date();
-    }
-  } else if (task.needsOwner && typeof body.needsOwnerReason === 'string') {
-    task.needsOwnerReason = body.needsOwnerReason.trim();
   }
 
   await task.save();

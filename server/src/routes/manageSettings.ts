@@ -72,7 +72,6 @@ router.patch('/', async (req: Request, res: Response) => {
       overBudget: Number(t.overBudget ?? current.overBudget),
       lowProgress: Number(t.lowProgress ?? current.lowProgress),
       staleClientDays: Math.round(Number(t.staleClientDays ?? current.staleClientDays)),
-      needsOwnerCriticalDays: Math.round(Number(t.needsOwnerCriticalDays ?? current.needsOwnerCriticalDays)),
       contractEndingDays: Math.round(Number(t.contractEndingDays ?? current.contractEndingDays)),
     };
     if (Object.values(next).some((v) => !Number.isFinite(v) || v < 0)) {

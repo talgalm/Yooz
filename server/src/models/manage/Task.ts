@@ -43,16 +43,6 @@ export interface ITask {
 
   blockedByTaskIds: Types.ObjectId[];
 
-  /**
-   * The flag the whole system is built around: "this is stuck until Eran decides".
-   * A separate boolean and NOT a status, because a task can be in progress AND
-   * waiting on a decision — collapsing them into one field loses one of the two.
-   */
-  needsOwner: boolean;
-  needsOwnerReason?: string;
-  needsOwnerSince?: Date;
-  needsOwnerResolvedAt?: Date;
-
   plannedWeek?: string;
 
   /**
@@ -98,13 +88,6 @@ const taskSchema = new Schema<ITask>(
 
     blockedByTaskIds: { type: [Schema.Types.ObjectId], ref: 'ManageTask', default: [] },
 
-    needsOwner: { type: Boolean, default: false },
-    needsOwnerReason: { type: String, trim: true },
-    // Stamped by the server when the flag goes up — this is what powers the
-    // "waiting 4 days" column, which is the number that actually creates pressure.
-    needsOwnerSince: { type: Date },
-    needsOwnerResolvedAt: { type: Date },
-
     plannedWeek: { type: String },
 
     visibleToAll: { type: Boolean, default: false },
@@ -121,7 +104,6 @@ const taskSchema = new Schema<ITask>(
 taskSchema.index({ assigneeUserId: 1, status: 1, dueDate: 1 });
 taskSchema.index({ projectId: 1, status: 1 });
 taskSchema.index({ clientId: 1, status: 1 });
-taskSchema.index({ needsOwner: 1, needsOwnerSince: 1 });
 taskSchema.index({ dueDate: 1, status: 1 });
 taskSchema.index({ plannedWeek: 1 });
 

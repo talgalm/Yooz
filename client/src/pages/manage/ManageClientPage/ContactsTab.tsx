@@ -77,9 +77,11 @@ export default function ContactsTab({ client, canEdit, onClientChange }: Props) 
                 {c.role && <Meta>{c.role}</Meta>}
                 <Meta>
                   {c.phone && <a href={`tel:${c.phone}`}>{c.phone}</a>}
-                  {c.phone && c.email && ' · '}
+                  {c.phone && (c.officePhone || c.email) && ' · '}
+                  {c.officePhone && <a href={`tel:${c.officePhone}`}>{c.officePhone}</a>}
+                  {c.officePhone && c.email && ' · '}
                   {c.email && <a href={`mailto:${c.email}`}>{c.email}</a>}
-                  {!c.phone && !c.email && t.none}
+                  {!c.phone && !c.officePhone && !c.email && t.none}
                 </Meta>
               </div>
               {canEdit && <LinkButton onClick={() => setRemovingId(c._id)}>{t.remove}</LinkButton>}
@@ -115,6 +117,7 @@ function AddContactModal({ client, onClose, onSaved }: {
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [phone, setPhone] = useState('');
+  const [officePhone, setOfficePhone] = useState('');
   const [email, setEmail] = useState('');
   const [isPrimary, setIsPrimary] = useState(client.contacts.length === 0);
   const [saving, setSaving] = useState(false);
@@ -127,7 +130,7 @@ function AddContactModal({ client, onClose, onSaved }: {
     try {
       const res = await manageApiFetch<{ client: Client }>(`/api/manage/clients/${client._id}/contacts`, {
         method: 'POST',
-        body: JSON.stringify({ name, role, phone, email, isPrimary }),
+        body: JSON.stringify({ name, role, phone, officePhone, email, isPrimary }),
       });
       onSaved(res.client);
     } catch (err) {
@@ -154,6 +157,10 @@ function AddContactModal({ client, onClose, onSaved }: {
             <Field>
               {t.contactPhone}
               <SmallInput value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" />
+            </Field>
+            <Field>
+              {t.contactOffice}
+              <SmallInput value={officePhone} onChange={(e) => setOfficePhone(e.target.value)} type="tel" />
             </Field>
             <Field>
               {t.contactEmail}

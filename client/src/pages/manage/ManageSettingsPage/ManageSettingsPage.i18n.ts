@@ -25,7 +25,6 @@ export const texts = {
     overBudget: 'ניצול שמסמן אדום',
     lowProgress: 'התקדמות נמוכה שבוע לפני היעד',
     staleClientDays: 'ימים עד שלקוח נחשב נטוש',
-    needsOwnerCriticalDays: 'ימי המתנה להחלטה עד שהיא קריטית',
     contractEndingDays: 'ימים מראש להתראת סיום חוזה',
 
     defaults: 'ברירות מחדל',
@@ -76,7 +75,6 @@ export const texts = {
     overBudget: 'Utilization that turns red',
     lowProgress: 'Low progress a week before target',
     staleClientDays: 'Days before a client counts as quiet',
-    needsOwnerCriticalDays: 'Days a decision waits before it is critical',
     contractEndingDays: 'Days of notice for a contract ending',
 
     defaults: 'Defaults',

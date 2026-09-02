@@ -61,26 +61,11 @@ export async function buildAlerts(
   if (isMember) taskScope.assigneeUserId = mine;
 
   const openTasks = await Task.find(taskScope)
-    .select('title assigneeUserId projectId dueDate needsOwner needsOwnerSince status')
+    .select('title assigneeUserId projectId dueDate status')
     .lean();
 
   for (const t of openTasks) {
     const href = `/manage/tasks?task=${t._id}`;
-
-    if (t.needsOwner) {
-      const age = t.needsOwnerSince ? daysBetween(startOfToday(new Date(t.needsOwnerSince)), today) : 0;
-      alerts.push({
-        key: 'needs_owner',
-        severity: age > thresholds.needsOwnerCriticalDays ? 'critical' : 'warning',
-        title: `משימה מחכה להחלטה${age > 0 ? ` ${age} ימים` : ''}: ${t.title}`,
-        entityType: 'task',
-        entityId: String(t._id),
-        href,
-        ageDays: age,
-        // The owner must see every one of these; the assignee sees their own.
-        audience: ['owner', 'pm'],
-      });
-    }
 
     if (t.dueDate) {
       const due = startOfToday(new Date(t.dueDate));

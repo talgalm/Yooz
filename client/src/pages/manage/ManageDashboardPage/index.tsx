@@ -5,11 +5,9 @@ import { manageApiFetch } from '../../../utils/manageApi';
 import { useManageAuth } from '../../../context/ManageAuthContext';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './ManageDashboardPage.i18n';
-import { DashboardData, AlertSeverity, HEALTH_COLORS, formatDate } from '../manageTypes';
+import { DashboardData, AlertSeverity, HEALTH_COLORS } from '../manageTypes';
 import { BORDER, TEXT_LIGHT } from '../../../components/styled';
-import {
-  PageHeader, SectionTitle, Panel, EmptyState, ErrorNote, MOBILE,
-} from '../manageUi';
+import { PageHeader, SectionTitle, Panel, EmptyState, ErrorNote } from '../manageUi';
 
 const Stats = styled('div')({
   display: 'grid',
@@ -58,20 +56,11 @@ const Waiting = styled('span')<{ hot?: boolean }>(({ hot }) => ({
   whiteSpace: 'nowrap',
 }));
 
-const QueueRow = styled(Link)({
-  display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
-  padding: '11px 16px', borderBottom: `1px solid ${BORDER}`,
-  textDecoration: 'none', color: 'inherit', fontSize: 14,
-  '&:last-child': { borderBottom: 'none' },
-  '&:hover': { background: '#fafaff' },
-});
-const QueueTitle = styled('b')({ flex: 1, minWidth: 140 });
-const Meta = styled('span')({ fontSize: 12.5, color: TEXT_LIGHT, [MOBILE]: { width: '100%' } });
 
 /**
  * "Not what is happening — what I need to act on."
- * Exceptions first, then the decision queue, then counts. Anything that does not
- * lead to an action belongs in a report, not here.
+ * Counts first, then the exceptions. Anything that does not lead to an action
+ * belongs in a report, not here.
  */
 export default function ManageDashboardPage() {
   const t = useTranslations(texts);
@@ -90,8 +79,6 @@ export default function ManageDashboardPage() {
   if (loading) return <EmptyState>{t.loading}</EmptyState>;
   if (error) return <ErrorNote>{error}</ErrorNote>;
   if (!data) return <EmptyState>{t.empty}</EmptyState>;
-
-  const queue = data.business?.decisionQueue ?? [];
 
   return (
     <>
@@ -133,30 +120,6 @@ export default function ManageDashboardPage() {
           </>
         )}
       </Stats>
-
-      {/* The table the brief asked for by name: what is waiting on me. */}
-      {data.business && (
-        <Block>
-          <BlockTitle>{t.decisionQueue}</BlockTitle>
-          <Panel>
-            {queue.length === 0 ? (
-              <EmptyState>{t.noDecisions}</EmptyState>
-            ) : (
-              queue.map((q) => (
-                <QueueRow key={q._id} to={`/manage/tasks?task=${q._id}`}>
-                  <QueueTitle>{q.title}</QueueTitle>
-                  <Meta>
-                    {q.assignee?.name ?? ''}
-                    {q.project?.name ? ` · ${q.project.name}` : ''}
-                    {q.since ? ` · ${formatDate(q.since)}` : ''}
-                  </Meta>
-                  <Waiting hot={q.waitingDays > 2}>{t.waiting(q.waitingDays)}</Waiting>
-                </QueueRow>
-              ))
-            )}
-          </Panel>
-        </Block>
-      )}
 
       <Block>
         <BlockTitle>{t.needsAttention} ({data.alerts.length})</BlockTitle>

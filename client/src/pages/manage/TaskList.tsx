@@ -4,7 +4,7 @@ import { texts } from './tasks.i18n';
 import {
   Task, PRIORITY_COLORS, overdueDays, isDueToday, refName, refColor, formatDate,
 } from './manageTypes';
-import { Table, TEXT_LIGHT } from '../../components/styled';
+import { Table } from '../../components/styled';
 import { Panel, TableScroll, EmptyState, Pill, MOBILE } from './manageUi';
 
 const DesktopCell = styled('td')({ [MOBILE]: { display: 'none' } });
@@ -35,8 +35,6 @@ const TitleCell = styled('td')<{ done?: boolean }>(({ done }) => ({
   opacity: done ? 0.5 : 1,
   textDecoration: done ? 'line-through' : 'none',
 }));
-
-const Sub = styled('div')({ fontSize: 12.5, color: TEXT_LIGHT, fontWeight: 400, marginTop: 2 });
 
 interface Props {
   tasks: Task[];
@@ -77,12 +75,6 @@ export default function TaskList({ tasks, loading, showProject = true, showAssig
                     />
                     <PriorityBar tone={PRIORITY_COLORS[task.priority]} title={t.priorities[task.priority]} />
                     {task.title}
-                    {task.needsOwner && (
-                      <Sub>
-                        <Pill tone="warn">{t.needsOwner}</Pill>
-                        {task.needsOwnerReason ? ` ${task.needsOwnerReason}` : ''}
-                      </Sub>
-                    )}
                   </TitleCell>
                   <td><Pill tone={task.status === 'done' ? 'muted' : 'default'}>{t.statuses[task.status]}</Pill></td>
                   {showAssignee && <DesktopCell>{refName(task.assigneeUserId) ?? '—'}</DesktopCell>}

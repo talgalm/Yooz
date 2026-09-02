@@ -35,7 +35,6 @@ export default function ManageTasksPage() {
       if (status) q.set('status', status);
       else if (scope === 'open') q.set('scope', 'open');
       if (scope === 'standalone') q.set('scope', 'standalone');
-      if (scope === 'needsOwner') q.set('needsOwner', 'true');
       if (priority) q.set('priority', priority);
       if (assignee) q.set('assigneeUserId', assignee);
       const r = await manageApiFetch<{ tasks: Task[] }>(`/api/manage/tasks?${q}`);
@@ -75,7 +74,6 @@ export default function ManageTasksPage() {
         <SmallSelect value={scope} onChange={(e) => setScope(e.target.value)}>
           <option value="open">{t.openOnly}</option>
           <option value="">{t.allStatuses}</option>
-          <option value="needsOwner">{t.needsOwnerOnly}</option>
           <option value="standalone">{t.standaloneOnly}</option>
         </SmallSelect>
         <SmallSelect value={status} onChange={(e) => setStatus(e.target.value)}>

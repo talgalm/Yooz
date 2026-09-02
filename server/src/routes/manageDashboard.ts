@@ -30,10 +30,9 @@ router.get('/', async (req: Request, res: Response) => {
 
   // My own open work, always scoped to the requester.
   const myTaskFilter = { assigneeUserId: mine, archived: false, status: { $ne: 'done' } };
-  const [myOpenTasks, myOverdueTasks, myNeedsOwner] = await Promise.all([
+  const [myOpenTasks, myOverdueTasks] = await Promise.all([
     Task.countDocuments(myTaskFilter),
     Task.countDocuments({ ...myTaskFilter, dueDate: { $lt: today } }),
-    Task.countDocuments({ assigneeUserId: mine, needsOwner: true, archived: false, status: { $ne: 'done' } }),
   ]);
 
   // Hours logged this week by the requester.
@@ -47,7 +46,6 @@ router.get('/', async (req: Request, res: Response) => {
   const mySummary = {
     openTasks: myOpenTasks,
     overdueTasks: myOverdueTasks,
-    needsOwner: myNeedsOwner,
     weekHours: Math.round(((weekAgg?.total ?? 0) / 60) * 10) / 10,
   };
 
@@ -57,18 +55,12 @@ router.get('/', async (req: Request, res: Response) => {
   }
 
   // pm and owner also get the business view.
-  const [activeProjects, health, decisionQueue, staleClients, openTasksAll] = await Promise.all([
+  const [activeProjects, health, staleClients, openTasksAll] = await Promise.all([
     Project.countDocuments({ archived: false, status: { $in: ['active', 'maintenance'] } }),
     Project.aggregate<{ _id: string; n: number }>([
       { $match: { archived: false, status: { $nin: ['done', 'cancelled'] } } },
       { $group: { _id: '$health', n: { $sum: 1 } } },
     ]),
-    Task.find({ needsOwner: true, archived: false, status: { $ne: 'done' } })
-      .select('title needsOwnerSince assigneeUserId projectId')
-      .populate('assigneeUserId', 'name color')
-      .populate('projectId', 'name')
-      .sort({ needsOwnerSince: 1 })
-      .lean(),
     Client.countDocuments({ archived: false, status: 'active' }),
     Task.countDocuments({ archived: false, status: { $ne: 'done' } }),
   ]);
@@ -88,16 +80,6 @@ router.get('/', async (req: Request, res: Response) => {
       activeClients: staleClients,
       openTasks: openTasksAll,
       // "What is waiting for me" — the table the brief asked for by name.
-      decisionQueue: decisionQueue.map((t) => ({
-        _id: t._id,
-        title: t.title,
-        assignee: t.assigneeUserId,
-        project: t.projectId,
-        since: t.needsOwnerSince,
-        waitingDays: t.needsOwnerSince
-          ? Math.floor((today.getTime() - new Date(t.needsOwnerSince).setHours(0, 0, 0, 0)) / 86_400_000)
-          : 0,
-      })),
     },
   });
 });

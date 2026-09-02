@@ -15,6 +15,7 @@ export interface Contact {
   name: string;
   role?: string;
   phone?: string;
+  officePhone?: string;
   email?: string;
   isPrimary: boolean;
   notes?: string;
@@ -27,7 +28,17 @@ export interface Client {
   status: ClientStatus;
   leadSource: LeadSource;
   website?: string;
+  /** First-meeting brief on the organisation — every employee can read it. */
+  brief?: string;
   contacts: Contact[];
+  /** Owner-only — the server strips it for everyone else. */
+  contract?: {
+    startDate?: string;
+    endDate?: string;
+    initialFee?: number;
+    monthlyFee?: number;
+    notes?: string;
+  };
   lastContactDate?: string;
   nextActionText?: string;
   nextActionDate?: string;
@@ -277,9 +288,6 @@ export interface Task {
   startDate?: string;
   dueDate?: string;
   completedAt?: string;
-  needsOwner: boolean;
-  needsOwnerReason?: string;
-  needsOwnerSince?: string;
   /** Owner/pm flag: off means the task is the assignee's alone. */
   visibleToAll?: boolean;
   checklist: { text: string; done: boolean }[];
@@ -323,20 +331,12 @@ export interface Alert {
 export interface DashboardData {
   role: string;
   alerts: Alert[];
-  my: { openTasks: number; overdueTasks: number; needsOwner: number; weekHours: number };
+  my: { openTasks: number; overdueTasks: number; weekHours: number };
   business?: {
     activeProjects: number;
     health: { green: number; orange: number; red: number };
     activeClients: number;
     openTasks: number;
-    decisionQueue: {
-      _id: string;
-      title: string;
-      assignee?: { name: string };
-      project?: { name: string };
-      since?: string;
-      waitingDays: number;
-    }[];
   };
 }
 

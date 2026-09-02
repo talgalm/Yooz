@@ -33,7 +33,6 @@ export interface ISettings {
     /** An active client unspoken-to for this long is flagged. */
     staleClientDays: number;
     /** A decision waiting longer than this turns critical. */
-    needsOwnerCriticalDays: number;
     /** Contracts inside this window show on the finance screen. */
     contractEndingDays: number;
   };
@@ -70,7 +69,6 @@ const settingsSchema = new Schema<ISettings>(
       overBudget: { type: Number, default: 1.0 },
       lowProgress: { type: Number, default: 0.7 },
       staleClientDays: { type: Number, default: 30 },
-      needsOwnerCriticalDays: { type: Number, default: 2 },
       contractEndingDays: { type: Number, default: 90 },
     },
 

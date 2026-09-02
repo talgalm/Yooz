@@ -16,7 +16,7 @@ interface SettingsData {
   timeCategories: CategorySetting[];
   thresholds: {
     nearBudget: number; overBudget: number; lowProgress: number;
-    staleClientDays: number; needsOwnerCriticalDays: number; contractEndingDays: number;
+    staleClientDays: number; contractEndingDays: number;
   };
   defaults: { weeklyCapacityHours: number; employerCostFactor: number; maxHoursPerDay: number };
 }
@@ -214,7 +214,6 @@ export default function ManageSettingsPage() {
             ['overBudget', t.overBudget, 0.01, '%'],
             ['lowProgress', t.lowProgress, 0.01, '%'],
             ['staleClientDays', t.staleClientDays, 1, 'd'],
-            ['needsOwnerCriticalDays', t.needsOwnerCriticalDays, 1, 'd'],
             ['contractEndingDays', t.contractEndingDays, 1, 'd'],
           ] as [keyof SettingsData['thresholds'], string, number, string][]).map(([key, label, step, unit]) => (
             <Row key={key}>

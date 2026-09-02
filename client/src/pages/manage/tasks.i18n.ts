@@ -24,11 +24,6 @@ export const texts = {
     visibleToAll: 'גלוי לכל הצוות',
     visibleToAllOn: 'כל העובדים רואים את המשימה.',
     visibleToAllOff: 'רק האחראי על המשימה (וההנהלה) רואים אותה.',
-    needsOwner: 'דורש החלטת הנהלה',
-    needsOwnerReason: 'מה צריך להחליט?',
-    waitingDays: (n: number) => (n === 0 ? 'מהיום' : `מחכה ${n} ימים`),
-    markNeedsOwner: 'סימון כדורש החלטה',
-    resolveNeedsOwner: 'ההחלטה התקבלה',
 
     overdue: (n: number) => `באיחור ${n} ימים`,
     dueToday: 'להיום',
@@ -45,7 +40,6 @@ export const texts = {
     allAssignees: 'כל האחראים',
     openOnly: 'פתוחות בלבד',
     standaloneOnly: 'ללא פרויקט',
-    needsOwnerOnly: 'ממתינות להחלטה',
 
     save: 'שמירה',
     saving: 'שומר...',
@@ -91,11 +85,6 @@ export const texts = {
     visibleToAll: 'Visible to the whole team',
     visibleToAllOn: 'Everyone sees this task.',
     visibleToAllOff: 'Only its assignee (and management) sees it.',
-    needsOwner: 'Needs a decision',
-    needsOwnerReason: 'What needs deciding?',
-    waitingDays: (n: number) => (n === 0 ? 'since today' : `waiting ${n} days`),
-    markNeedsOwner: 'Flag for decision',
-    resolveNeedsOwner: 'Decision made',
 
     overdue: (n: number) => `${n} days late`,
     dueToday: 'Due today',
@@ -112,7 +101,6 @@ export const texts = {
     allAssignees: 'Everyone',
     openOnly: 'Open only',
     standaloneOnly: 'No project',
-    needsOwnerOnly: 'Awaiting decision',
 
     save: 'Save',
     saving: 'Saving...',

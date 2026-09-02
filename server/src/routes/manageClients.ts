@@ -12,6 +12,7 @@ import {
 } from '../models/manage/Client';
 import { Interaction, INTERACTION_TYPES, InteractionType } from '../models/manage/Interaction';
 import { Project } from '../models/manage/Project';
+import { serializeClient } from '../serializers/manageClient';
 
 const router = Router();
 
@@ -32,9 +33,9 @@ function escapeRegex(s: string): string {
 }
 
 /** Whitelist of client-writable fields — never spread req.body into a document. */
-function pickClientFields(body: Record<string, unknown>): Record<string, unknown> {
+function pickClientFields(body: Record<string, unknown>, role: string): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  for (const k of ['name', 'website', 'driveUrl', 'notes', 'nextActionText']) {
+  for (const k of ['name', 'website', 'driveUrl', 'notes', 'brief', 'nextActionText']) {
     if (typeof body[k] === 'string') out[k] = (body[k] as string).trim();
   }
 
@@ -50,12 +51,29 @@ function pickClientFields(body: Record<string, unknown>): Record<string, unknown
   if (typeof body.ownerUserId === 'string' && Types.ObjectId.isValid(body.ownerUserId)) {
     out.ownerUserId = body.ownerUserId;
   }
+
+  // Agreement terms are owner-only on the way IN as well as on the way out.
+  if (role === 'owner' && typeof body.contract === 'object' && body.contract !== null) {
+    const c = body.contract as Record<string, unknown>;
+    const contract: Record<string, unknown> = {};
+    for (const k of ['startDate', 'endDate']) {
+      if (typeof c[k] === 'string' && c[k]) {
+        const d = new Date(c[k] as string);
+        if (!Number.isNaN(d.getTime())) contract[k] = d;
+      }
+    }
+    for (const k of ['initialFee', 'monthlyFee']) {
+      if (Number.isFinite(Number(c[k])) && Number(c[k]) >= 0) contract[k] = Number(c[k]);
+    }
+    if (typeof c.notes === 'string') contract.notes = c.notes.trim();
+    out.contract = contract;
+  }
   return out;
 }
 
 function pickContactFields(body: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
-  for (const k of ['name', 'role', 'phone', 'email', 'notes']) {
+  for (const k of ['name', 'role', 'phone', 'officePhone', 'email', 'notes']) {
     if (typeof body[k] === 'string') out[k] = (body[k] as string).trim();
   }
   if (typeof body.isPrimary === 'boolean') out.isPrimary = body.isPrimary;
@@ -74,17 +92,27 @@ router.get('/', async (req: Request, res: Response) => {
   // Oldest contact first — the list doubles as the "who have we forgotten" screen.
   // Never-contacted clients sort first, which is the correct kind of loud.
   const clients = await Client.find(filter).sort({ lastContactDate: 1, name: 1 }).lean();
-  res.json({ clients });
+  res.json({ clients: clients.map((c) => serializeClient(c as never, req.manageUser!.role)) });
 });
 
 router.post('/', canEdit, async (req: Request, res: Response) => {
-  const fields = pickClientFields(req.body ?? {});
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const fields = pickClientFields(body, req.manageUser!.role);
   if (!fields.name) {
     res.status(400).json({ error: 'Client name is required' });
     return;
   }
-  const client = await Client.create({ ...fields, createdBy: req.manageUser!.userId });
-  res.status(201).json({ client });
+  // Contacts can arrive with the client — the first two come out of the same
+  // conversation as the name, and a separate screen for them just loses them.
+  const contacts = Array.isArray(body.contacts)
+    ? (body.contacts as Record<string, unknown>[])
+      .map(pickContactFields)
+      .filter((c) => typeof c.name === 'string' && c.name)
+    : [];
+  if (contacts.length && !contacts.some((c) => c.isPrimary)) contacts[0].isPrimary = true;
+
+  const client = await Client.create({ ...fields, contacts, createdBy: req.manageUser!.userId });
+  res.status(201).json({ client: serializeClient(client as never, req.manageUser!.role) });
 });
 
 router.get('/:id', async (req: Request, res: Response) => {
@@ -94,12 +122,12 @@ router.get('/:id', async (req: Request, res: Response) => {
     res.status(404).json({ error: 'Client not found' });
     return;
   }
-  res.json({ client });
+  res.json({ client: serializeClient(client as never, req.manageUser!.role) });
 });
 
 router.patch('/:id', canEdit, async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
-  const fields = pickClientFields(req.body ?? {});
+  const fields = pickClientFields(req.body ?? {}, req.manageUser!.role);
   if ('name' in fields && !fields.name) {
     res.status(400).json({ error: 'Client name is required' });
     return;
@@ -109,7 +137,7 @@ router.patch('/:id', canEdit, async (req: Request, res: Response) => {
     res.status(404).json({ error: 'Client not found' });
     return;
   }
-  res.json({ client });
+  res.json({ client: serializeClient(client as never, req.manageUser!.role) });
 });
 
 // Owner only. Removes the client and the interactions that hang off it —
@@ -152,7 +180,7 @@ router.post('/:id/contacts', canEdit, async (req: Request, res: Response) => {
   if (fields.isPrimary) client.contacts.forEach((c) => { c.isPrimary = false; });
   client.contacts.push(fields as never);
   await client.save();
-  res.status(201).json({ client });
+  res.status(201).json({ client: serializeClient(client as never, req.manageUser!.role) });
 });
 
 router.patch('/:id/contacts/:contactId', canEdit, async (req: Request, res: Response) => {
@@ -171,7 +199,7 @@ router.patch('/:id/contacts/:contactId', canEdit, async (req: Request, res: Resp
   if (fields.isPrimary) client.contacts.forEach((c) => { c.isPrimary = false; });
   Object.assign(contact, fields);
   await client.save();
-  res.json({ client });
+  res.json({ client: serializeClient(client as never, req.manageUser!.role) });
 });
 
 router.delete('/:id/contacts/:contactId', canEdit, async (req: Request, res: Response) => {
@@ -183,7 +211,7 @@ router.delete('/:id/contacts/:contactId', canEdit, async (req: Request, res: Res
   }
   client.contacts = client.contacts.filter((c) => c._id.toString() !== String(req.params.contactId)) as never;
   await client.save();
-  res.json({ client });
+  res.json({ client: serializeClient(client as never, req.manageUser!.role) });
 });
 
 // ─── Interactions ───

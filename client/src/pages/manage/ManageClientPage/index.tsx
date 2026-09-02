@@ -10,7 +10,7 @@ import ClientFormModal from '../ManageClientsPage/ClientFormModal';
 import ContactsTab from './ContactsTab';
 import InteractionsTab from './InteractionsTab';
 import ConfirmDialog from '../ConfirmDialog';
-import { Client, daysSince, isStale, formatDate } from '../manageTypes';
+import { Client, daysSince, isStale, formatDate, formatMoney } from '../manageTypes';
 import { PRIMARY, TEXT_LIGHT } from '../../../components/styled';
 import {
   PageHeader, PageTitle, Panel, Tabs, Tab, GhostButton, DangerButton, Pill,
@@ -30,6 +30,7 @@ const TitleLine = styled('div')({ display: 'flex', alignItems: 'center', gap: 10
 const HeaderActions = styled('div')({ display: 'flex', gap: 8, flexWrap: 'wrap' });
 const DetailsBody = styled('div')({ padding: 20 });
 const Notes = styled('div')({ marginTop: 18, fontSize: 14, whiteSpace: 'pre-wrap' });
+const BriefTitle = styled('div')({ marginTop: 18, fontSize: 13, fontWeight: 700, color: TEXT_LIGHT });
 
 type TabKey = 'details' | 'contacts' | 'interactions';
 
@@ -128,6 +129,30 @@ export default function ManageClientPage() {
                 <b>{client.driveUrl ? <a href={client.driveUrl} target="_blank" rel="noreferrer">Drive</a> : t.none}</b>
               </ReadField>
             </FieldGrid>
+            {isOwner && client.contract && (
+              <>
+                <BriefTitle>{lt.contractTitle}</BriefTitle>
+                <FieldGrid style={{ marginTop: 8 }}>
+                  <ReadField>
+                    {lt.contractStart}
+                    <b>{client.contract.startDate ? formatDate(client.contract.startDate) : t.none}</b>
+                  </ReadField>
+                  <ReadField>
+                    {lt.contractEnd}
+                    <b>{client.contract.endDate ? formatDate(client.contract.endDate) : t.none}</b>
+                  </ReadField>
+                  <ReadField>{lt.initialFee}<b>{formatMoney(client.contract.initialFee ?? 0)}</b></ReadField>
+                  <ReadField>{lt.monthlyFee}<b>{formatMoney(client.contract.monthlyFee ?? 0)}</b></ReadField>
+                </FieldGrid>
+                {client.contract.notes && <Notes style={{ marginTop: 8 }}>{client.contract.notes}</Notes>}
+              </>
+            )}
+            {client.brief && (
+              <>
+                <BriefTitle>{t.brief}</BriefTitle>
+                <Notes style={{ marginTop: 6 }}>{client.brief}</Notes>
+              </>
+            )}
             {client.notes && <Notes>{client.notes}</Notes>}
           </DetailsBody>
         </Panel>

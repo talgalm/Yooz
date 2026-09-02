@@ -12,7 +12,9 @@ export interface IContact {
   _id: Types.ObjectId;
   name: string;
   role?: string;
+  /** Mobile. `officePhone` is the desk line — people ask for both. */
   phone?: string;
+  officePhone?: string;
   email?: string;
   isPrimary: boolean;
   notes?: string;
@@ -25,8 +27,27 @@ export interface IClient {
   status: ClientStatus;
   leadSource: LeadSource;
   website?: string;
+  /**
+   * What the first meeting taught us about the organisation. Open to every
+   * employee on purpose: whoever walks into the next meeting needs it.
+   */
+  brief?: string;
   contacts: IContact[];
   ownerUserId?: Types.ObjectId;
+
+  /**
+   * The commercial agreement. Owner-only — stripped by serializeClient for
+   * everyone else, exactly like a project's price.
+   */
+  contract?: {
+    startDate?: Date;
+    endDate?: Date;
+    /** One-off build fee agreed in the contract. */
+    initialFee?: number;
+    /** Recurring monthly charge. */
+    monthlyFee?: number;
+    notes?: string;
+  };
 
   lastContactDate?: Date;
   nextActionText?: string;
@@ -46,6 +67,7 @@ const contactSchema = new Schema<IContact>({
   name: { type: String, required: true, trim: true },
   role: { type: String, trim: true },
   phone: { type: String, trim: true },
+  officePhone: { type: String, trim: true },
   email: { type: String, trim: true, lowercase: true },
   isPrimary: { type: Boolean, default: false },
   notes: { type: String },
@@ -58,8 +80,17 @@ const clientSchema = new Schema<IClient>(
     status: { type: String, enum: CLIENT_STATUSES, default: 'prospect' },
     leadSource: { type: String, enum: LEAD_SOURCES, default: 'existing' },
     website: { type: String, trim: true },
+    brief: { type: String },
     contacts: { type: [contactSchema], default: [] },
     ownerUserId: { type: Schema.Types.ObjectId, ref: 'ManageUser' },
+
+    contract: {
+      startDate: { type: Date },
+      endDate: { type: Date },
+      initialFee: { type: Number },
+      monthlyFee: { type: Number },
+      notes: { type: String },
+    },
 
     // Maintained by the server on every Interaction write — never trust a client-sent value.
     lastContactDate: { type: Date },
