@@ -10,6 +10,8 @@ import { angleDelta, bearingDegrees, distanceMeters, offsetMeters, type LatLng }
 
 const FOV_DEGREES = 60; // rough horizontal FOV of a phone rear camera in portrait
 const COLLECT_RADIUS_M = 10;
+const HEADING_SMOOTHING = 0.25; // low-pass on the compass; raw readings jitter several degrees
+const HEADING_FPS_MS = 100; // commit heading to React 10x/sec, not on every sensor event
 
 // Default course: offsets in meters (north, east) from wherever the player starts,
 // so the demo is playable anywhere. Override with ?coins=lat,lng;lat,lng
@@ -43,10 +45,15 @@ function parseCoinsParam(raw: string | null): Coin[] | null {
 export default function ArDemoPage() {
   const [params] = useSearchParams();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const headingRef = useRef<number | null>(null);
+  const absoluteSeenRef = useRef(false);
+
   const [started, setStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [position, setPosition] = useState<(LatLng & { accuracy: number }) | null>(null);
   const [heading, setHeading] = useState<number | null>(null);
+  const [compassNote, setCompassNote] = useState<string | null>(null);
   const [coins, setCoins] = useState<Coin[]>([]);
   const [collected, setCollected] = useState<number[]>([]);
 
@@ -54,45 +61,85 @@ export default function ArDemoPage() {
 
   const start = useCallback(async () => {
     setError(null);
+    // iOS 13+ only grants motion access when requestPermission() is called inside the
+    // tap itself. Fire it FIRST — after an `await` the gesture is spent and it throws.
+    const requestPermission = (
+      DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }
+    ).requestPermission;
+    const compassPermission =
+      typeof requestPermission === 'function'
+        ? requestPermission().then(
+            (state) => state === 'granted',
+            () => false,
+          )
+        : Promise.resolve(true);
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      streamRef.current = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' } },
         audio: false,
       });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => undefined);
-      }
     } catch {
       setError('אין גישה למצלמה. אשרו את ההרשאה ונסו שוב (נדרש HTTPS).');
       return;
     }
-    // iOS 13+ gates the compass behind an explicit, gesture-triggered request.
-    const requestPermission = (
-      DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }
-    ).requestPermission;
-    if (typeof requestPermission === 'function') {
-      await requestPermission().catch(() => undefined);
-    }
     setStarted(true);
+    if (!(await compassPermission)) {
+      setCompassNote('הרשאת המצפן נדחתה — הגדרות ← Safari ← Motion & Orientation Access');
+    }
   }, []);
 
-  // Compass
+  // Attach the camera only once the <video> is actually mounted; the start screen
+  // does not render it, so assigning srcObject inside start() hit a null ref.
+  useEffect(() => {
+    if (!started || !videoRef.current || !streamRef.current) return;
+    videoRef.current.srcObject = streamRef.current;
+    videoRef.current.play().catch(() => setError('הדפדפן חסם את הווידאו. נסו לרענן.'));
+  }, [started]);
+
+  useEffect(
+    () => () => {
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    },
+    [],
+  );
+
+  // Compass. Absolute readings win; a relative `alpha` is only a last resort because
+  // it is measured from wherever the phone happened to boot, not from north.
   useEffect(() => {
     if (!started) return;
     const onOrientation = (event: Event) => {
       const e = event as OrientationEventWithCompass;
+      let next: number | null = null;
       if (typeof e.webkitCompassHeading === 'number') {
-        setHeading(e.webkitCompassHeading); // iOS: already degrees from north
-      } else if (e.alpha != null) {
-        setHeading((360 - e.alpha) % 360);
+        absoluteSeenRef.current = true;
+        next = e.webkitCompassHeading; // iOS: already degrees clockwise from north
+      } else if (e.absolute && e.alpha != null) {
+        absoluteSeenRef.current = true;
+        next = (360 - e.alpha) % 360;
+      } else if (!absoluteSeenRef.current && e.alpha != null) {
+        next = (360 - e.alpha) % 360;
       }
+      if (next === null) return;
+      // Landscape rotates the camera relative to the sensor frame.
+      next = (next + (screen.orientation?.angle ?? 0) + 360) % 360;
+      const previous = headingRef.current;
+      headingRef.current =
+        previous === null ? next : (previous + angleDelta(previous, next) * HEADING_SMOOTHING + 360) % 360;
     };
+
     window.addEventListener('deviceorientationabsolute', onOrientation);
     window.addEventListener('deviceorientation', onOrientation);
+    const commit = setInterval(() => setHeading(headingRef.current), HEADING_FPS_MS);
+    const noSensor = setTimeout(() => {
+      if (headingRef.current === null) setCompassNote('לא מתקבלת קריאת מצפן במכשיר הזה');
+    }, 3000);
+
     return () => {
       window.removeEventListener('deviceorientationabsolute', onOrientation);
       window.removeEventListener('deviceorientation', onOrientation);
+      clearInterval(commit);
+      clearTimeout(noSensor);
     };
   }, [started]);
 
@@ -110,6 +157,10 @@ export default function ArDemoPage() {
           lng: pos.coords.longitude,
           accuracy: pos.coords.accuracy,
         });
+        // No compass? GPS reports a course while you are actually walking.
+        if (headingRef.current === null && pos.coords.heading != null && !Number.isNaN(pos.coords.heading)) {
+          headingRef.current = pos.coords.heading;
+        }
         setCoins((current) => {
           if (current.length) return current;
           if (fixedCoins) return fixedCoins;
@@ -122,19 +173,10 @@ export default function ArDemoPage() {
         });
       },
       () => setError('אין גישה למיקום. אשרו את ההרשאה ונסו שוב.'),
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, [started, fixedCoins]);
-
-  // Stop the camera when leaving the page.
-  useEffect(
-    () => () => {
-      const stream = videoRef.current?.srcObject as MediaStream | null;
-      stream?.getTracks().forEach((track) => track.stop());
-    },
-    [],
-  );
 
   const visible = coins
     .filter((coin) => !collected.includes(coin.id))
@@ -146,6 +188,7 @@ export default function ArDemoPage() {
       return {
         coin,
         distance,
+        offset,
         onScreen: Math.abs(offset) <= FOV_DEGREES / 2,
         left: 50 + (offset / FOV_DEGREES) * 100,
         top: 70 - far * 35,
@@ -155,8 +198,8 @@ export default function ArDemoPage() {
     .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
   const remaining = coins.length - collected.length;
-  const nearest = visible.reduce<number | null>(
-    (min, entry) => (min === null || entry.distance < min ? entry.distance : min),
+  const nearest = visible.reduce<(typeof visible)[number] | null>(
+    (best, entry) => (best === null || entry.distance < best.distance ? entry : best),
     null,
   );
 
@@ -206,13 +249,24 @@ export default function ArDemoPage() {
           ),
       )}
 
+      {/* Nothing in frame is the confusing case — point at the nearest one. */}
+      {nearest && !nearest.onScreen && (
+        <div style={styles.arrowWrap}>
+          <div style={{ ...styles.arrow, transform: `rotate(${nearest.offset}deg)` }}>⬆</div>
+          <div>{Math.round(nearest.distance)} מ׳ — הסתובבו לכיוון החץ</div>
+        </div>
+      )}
+
       <div style={styles.hud}>
         <div style={styles.hudRow}>
           <span>נאספו {collected.length}</span>
           <span>נותרו {remaining}</span>
-          {nearest !== null && <span>הקרוב: {Math.round(nearest)} מ׳</span>}
+          {nearest && <span>הקרוב: {Math.round(nearest.distance)} מ׳</span>}
         </div>
-        {heading === null && <div style={styles.warning}>אין מצפן — הכיוון עשוי להיות לא מדויק</div>}
+        {heading !== null && !absoluteSeenRef.current && (
+          <div style={styles.warning}>מצפן יחסי — הכיוון עשוי לסטות</div>
+        )}
+        {compassNote && <div style={styles.warning}>{compassNote}</div>}
         {error && <div style={styles.warning}>{error}</div>}
         {!position && <div style={styles.warning}>מאתר מיקום…</div>}
       </div>
@@ -226,7 +280,7 @@ export default function ArDemoPage() {
 
       <div style={styles.debug}>
         {position
-          ? `±${Math.round(position.accuracy)}m · ${heading === null ? '--' : Math.round(heading)}° · ${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}`
+          ? `±${Math.round(position.accuracy)}m · ${heading === null ? 'no compass' : `${Math.round(heading)}°`} · ${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}`
           : 'waiting for GPS'}
       </div>
     </div>
@@ -274,6 +328,16 @@ const styles: Record<string, React.CSSProperties> = {
     filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.6))',
   },
   coinLabel: { fontSize: 14, marginTop: 6, textShadow: '0 1px 4px #000' },
+  arrowWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '45%',
+    textAlign: 'center',
+    fontSize: 15,
+    textShadow: '0 1px 6px #000',
+  },
+  arrow: { fontSize: 76, lineHeight: 1 },
   hud: {
     position: 'absolute',
     top: 0,
