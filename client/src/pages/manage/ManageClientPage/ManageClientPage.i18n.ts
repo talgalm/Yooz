@@ -20,7 +20,6 @@ export const texts = {
     notes: 'הערות',
     none: '—',
     never: 'מעולם לא',
-    stale: 'לא דוברנו',
 
     addContact: 'איש קשר חדש',
     contactName: 'שם',
@@ -79,7 +78,6 @@ export const texts = {
     notes: 'Notes',
     none: '—',
     never: 'Never',
-    stale: 'Gone quiet',
 
     addContact: 'New contact',
     contactName: 'Name',

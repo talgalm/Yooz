@@ -7,7 +7,7 @@ import { texts } from './ManageClientsPage.i18n';
 import ClientFormModal from './ClientFormModal';
 import { Table } from '../../../components/styled';
 import {
-  Client, CLIENT_STATUSES, CLIENT_DOMAINS, daysSince, isStale, formatDate,
+  Client, CLIENT_STATUSES, CLIENT_DOMAINS, daysSince, formatDate,
 } from '../manageTypes';
 import {
   PageHeader, SectionTitle, Panel, TableScroll, Toolbar, SmallInput, SmallSelect,
@@ -115,7 +115,6 @@ export default function ManageClientsPage() {
                     <DesktopCell>{c.contacts.length || '—'}</DesktopCell>
                     <td>
                       {lastContactLabel(c)}
-                      {isStale(c) && <> <Pill tone="warn">{t.stale}</Pill></>}
                     </td>
                     <DesktopCell>
                       {c.nextActionText

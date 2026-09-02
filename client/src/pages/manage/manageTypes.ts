@@ -61,24 +61,11 @@ export interface Interaction {
   nextActionDate?: string;
 }
 
-/**
- * An active client we have not spoken to in this many days is flagged.
- * Spec ch.05 §7 makes this configurable in Settings; until that screen exists
- * it lives here as one constant rather than a settings document nobody edits.
- */
-export const STALE_CLIENT_DAYS = 30;
-
 export function daysSince(iso?: string): number | null {
   if (!iso) return null;
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return null;
   return Math.floor((Date.now() - then) / 86_400_000);
-}
-
-export function isStale(client: Pick<Client, 'status' | 'lastContactDate'>): boolean {
-  if (client.status !== 'active') return false;
-  const days = daysSince(client.lastContactDate);
-  return days === null || days >= STALE_CLIENT_DAYS;
 }
 
 /** Israel-local date, the format every screen in this system displays. */

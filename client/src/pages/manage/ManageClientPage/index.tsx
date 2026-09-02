@@ -10,7 +10,7 @@ import ClientFormModal from '../ManageClientsPage/ClientFormModal';
 import ContactsTab from './ContactsTab';
 import InteractionsTab from './InteractionsTab';
 import ConfirmDialog from '../ConfirmDialog';
-import { Client, daysSince, isStale, formatDate, formatMoney } from '../manageTypes';
+import { Client, daysSince, formatDate, formatMoney } from '../manageTypes';
 import { PRIMARY, TEXT_LIGHT } from '../../../components/styled';
 import {
   PageHeader, PageTitle, Panel, Tabs, Tab, GhostButton, DangerButton, Pill,
@@ -86,7 +86,6 @@ export default function ManageClientPage() {
         <TitleLine>
           <PageTitle>{client.name}</PageTitle>
           <Pill tone={client.status === 'active' ? 'default' : 'muted'}>{lt.statuses[client.status]}</Pill>
-          {isStale(client) && <Pill tone="warn">{t.stale}</Pill>}
         </TitleLine>
         <HeaderActions>
           {canEdit && <GhostButton onClick={() => setEditing(true)}>{t.edit}</GhostButton>}

@@ -14,7 +14,6 @@ export const texts = {
     never: 'מעולם לא',
     daysAgo: (n: number) => `לפני ${n} ימים`,
     today: 'היום',
-    stale: 'לא דוברנו',
     empty: 'אין לקוחות עדיין.',
     loading: 'טוען...',
     // modal
@@ -84,7 +83,6 @@ export const texts = {
     never: 'Never',
     daysAgo: (n: number) => `${n} days ago`,
     today: 'Today',
-    stale: 'Gone quiet',
     empty: 'No clients yet.',
     loading: 'Loading...',
     createTitle: 'New client',
