@@ -39,6 +39,7 @@ import ManageEmployeesPage from './pages/manage/ManageEmployeesPage';
 import ManageSettingsPage from './pages/manage/ManageSettingsPage';
 import { ManageTimerProvider } from './pages/manage/TimerContext';
 import PrivacyPage from './pages/PrivacyPage';
+import ArDemoPage from './pages/ArDemoPage';
 import SharedStatsPage from './pages/shared/SharedStatsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpChatProvider, HelpChatFab } from './components/HelpChat';
@@ -182,6 +183,9 @@ export default function App() {
 
                 {/* Privacy policy — public, responsive */}
                 <Route path="/privacy" element={<PrivacyPage />} />
+
+                {/* AR demo (camera + GPS + compass) */}
+                <Route path="/ar-demo" element={<ArDemoPage />} />
 
                 {/* Public read-only statistics share link */}
                 <Route path="/stats/:token" element={<SharedStatsPage />} />
