@@ -17,8 +17,12 @@ const MIN_SIZE = 44;
 const MAX_SIZE = 210;
 const HEADING_SMOOTHING = 0.25; // low-pass on the compass; raw readings jitter several degrees
 const HEADING_FPS_MS = 100; // commit heading to React 10x/sec, not on every sensor event
-const POSITION_SMOOTHING = 0.5; // ease between fixes so distance counts down instead of hopping
+const POSITION_SMOOTHING = 0.25; // GPS corrects the dead-reckoned position gently, it does not yank it
 const POSITION_JUMP_M = 20; // past this, trust the new fix outright rather than easing toward it
+const STRIDE_M = 0.7; // average walking step
+const STEP_THRESHOLD = 1.5; // m/s² above the gravity baseline that counts as a footfall
+const STEP_MIN_MS = 300; // refractory period, i.e. at most ~3 steps/sec
+const STEP_BASELINE_EASE = 0.02; // slow enough not to track the step oscillation itself
 
 // Default course: offsets in meters (north, east) from wherever the player starts,
 // so the demo is playable anywhere. Override with ?coins=lat,lng;lat,lng
@@ -74,6 +78,9 @@ export default function ArDemoPage() {
   const [coins, setCoins] = useState<Coin[]>([]);
   const [collected, setCollected] = useState<number[]>([]);
   const [bursts, setBursts] = useState<Burst[]>([]);
+  const [steps, setSteps] = useState(0);
+  const [trend, setTrend] = useState<'closer' | 'farther' | null>(null);
+  const lastNearestRef = useRef<number | null>(null);
 
   const fixedCoins = useMemo(() => parseCoinsParam(params.get('coins')), [params]);
 
@@ -81,16 +88,18 @@ export default function ArDemoPage() {
     setError(null);
     // iOS 13+ only grants motion access when requestPermission() is called inside the
     // tap itself. Fire it FIRST — after an `await` the gesture is spent and it throws.
-    const requestPermission = (
-      DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }
-    ).requestPermission;
-    const compassPermission =
-      typeof requestPermission === 'function'
+    const ask = (sensor: unknown) => {
+      const requestPermission = (sensor as { requestPermission?: () => Promise<string> })
+        .requestPermission;
+      return typeof requestPermission === 'function'
         ? requestPermission().then(
             (state) => state === 'granted',
             () => false,
           )
         : Promise.resolve(true);
+    };
+    const compassPermission = ask(DeviceOrientationEvent);
+    ask(DeviceMotionEvent); // step counter; the compass note covers both if it is denied
 
     try {
       streamRef.current = await navigator.mediaDevices.getUserMedia({
@@ -160,6 +169,50 @@ export default function ArDemoPage() {
       clearTimeout(noSensor);
     };
   }, [started]);
+
+  // Dead reckoning. A step covers ~0.7m and GPS noise is several meters, so walking a
+  // couple of paces is invisible to the fix alone — count footfalls and move along the
+  // compass instead, letting each GPS fix pull the accumulated drift back.
+  // ponytail: fixed stride, no per-user calibration. Tune STRIDE_M if it over/undershoots.
+  const stepForward = useCallback(() => {
+    const bearing = headingRef.current;
+    const current = positionRef.current;
+    if (bearing === null || !current) return;
+    const radians = (bearing * Math.PI) / 180;
+    const moved: Fix = {
+      ...offsetMeters(current, Math.cos(radians) * STRIDE_M, Math.sin(radians) * STRIDE_M),
+      accuracy: current.accuracy,
+    };
+    positionRef.current = moved;
+    setPosition(moved);
+    setSteps((count) => count + 1);
+  }, []);
+
+  useEffect(() => {
+    if (!started) return;
+    let baseline = 9.81; // gravity, plus whatever slow tilt the phone is held at
+    let armed = false;
+    let lastStep = 0;
+
+    const onMotion = (event: DeviceMotionEvent) => {
+      const a = event.accelerationIncludingGravity;
+      if (!a || a.x == null || a.y == null || a.z == null) return;
+      const magnitude = Math.hypot(a.x, a.y, a.z);
+      baseline += (magnitude - baseline) * STEP_BASELINE_EASE;
+      const swing = magnitude - baseline;
+      const now = Date.now();
+      if (armed && swing > STEP_THRESHOLD && now - lastStep > STEP_MIN_MS) {
+        armed = false;
+        lastStep = now;
+        stepForward();
+      } else if (swing < STEP_THRESHOLD * 0.3) {
+        armed = true; // must fall back to rest before the next peak counts
+      }
+    };
+
+    window.addEventListener('devicemotion', onMotion);
+    return () => window.removeEventListener('devicemotion', onMotion);
+  }, [started, stepForward]);
 
   // GPS
   useEffect(() => {
@@ -242,6 +295,22 @@ export default function ArDemoPage() {
     null,
   );
 
+  // "Am I walking the right way?" — the single thing the distance number alone does not say.
+  const nearestDistance = nearest?.distance ?? null;
+  useEffect(() => {
+    if (nearestDistance === null) {
+      lastNearestRef.current = null;
+      return;
+    }
+    const previous = lastNearestRef.current;
+    if (previous === null) {
+      lastNearestRef.current = nearestDistance;
+    } else if (Math.abs(nearestDistance - previous) >= 0.3) {
+      setTrend(nearestDistance < previous ? 'closer' : 'farther');
+      lastNearestRef.current = nearestDistance;
+    }
+  }, [nearestDistance]);
+
   if (!started) {
     return (
       <Screen style={styles.gate}>
@@ -322,6 +391,11 @@ export default function ArDemoPage() {
           <span>נותרו {remaining}</span>
           {nearest && <span>הקרוב: {Math.round(nearest.distance)} מ׳</span>}
         </div>
+        {nearest && trend && (
+          <div style={{ ...styles.warning, color: trend === 'closer' ? '#69f0ae' : '#ff8a80' }}>
+            {trend === 'closer' ? '▼ מתקרבים' : '▲ מתרחקים'}
+          </div>
+        )}
         {heading !== null && !absoluteSeenRef.current && (
           <div style={styles.warning}>מצפן יחסי — הכיוון עשוי לסטות</div>
         )}
@@ -345,7 +419,7 @@ export default function ArDemoPage() {
 
       <div style={styles.debug}>
         {position
-          ? `±${Math.round(position.accuracy)}m · ${heading === null ? 'no compass' : `${Math.round(heading)}°`} · ${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}`
+          ? `±${Math.round(position.accuracy)}m · ${heading === null ? 'no compass' : `${Math.round(heading)}°`} · ${steps} steps · ${position.lat.toFixed(5)}, ${position.lng.toFixed(5)}`
           : 'waiting for GPS'}
       </div>
     </Screen>

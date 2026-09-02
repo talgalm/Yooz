@@ -504,7 +504,14 @@ Self-check: `npx tsx server/src/routes/collageFilter.check.ts`.
 - **Participant** (mobile, wrapped in `MobileContainer` max-width 480, `ParticipantActivityScope`
   + `HelpChatProvider`): `/play/:code`, `/play/:code/join/:inviteToken`, `/home`, `/story/:code`,
   `/mission/:code`. `ProtectedRoute` redirects unauthenticated participants back to `/play/:code`.
-- **Public**: `/portal/:code`, `/privacy`, `/stats/:token` (shared stats), `/` (landing/redirect).
+- **Public**: `/portal/:code`, `/privacy`, `/stats/:token` (shared stats), `/ar-demo`, and `/`
+  (the publicity site — it renders `PublicityPage` directly and never redirects).
+- **`/ar-demo`** (`pages/ArDemoPage.tsx`, standalone — no MobileContainer, no auth): GPS + camera
+  + compass treasure hunt. Pickups are real lat/lng points drawn over the rear camera feed at
+  their compass bearing, sized 1/distance, collected by tapping within 3m. Defaults to a
+  room-scale course around the player's first fix; `?coins=lat,lng;lat,lng` pins a real path.
+  Between GPS fixes it dead-reckons from `devicemotion` footfalls (0.7m stride) because GPS
+  noise swamps a two-step walk. Geometry helpers live in `utils/geo.ts` (+ `geo.test.ts`).
 - `FallbackRedirect` keeps unknown participant paths on their activity login (not the marketing page).
 
 ### Two layout worlds
