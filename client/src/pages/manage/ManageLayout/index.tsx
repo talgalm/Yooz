@@ -93,6 +93,23 @@ const NavItem = styled(NavLink)({
   [MOBILE]: { padding: '13px 18px' },
 });
 
+/**
+ * Leaves /manage for the Yooz admin dashboard — a different auth realm, so it
+ * never matches a route here and never picks up `.active`. Muted and fenced off
+ * below a rule so it doesn't read as one more /manage section.
+ */
+const BackItem = styled(NavItem)({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  marginTop: 8,
+  paddingTop: 14,
+  borderTop: `1px solid ${BORDER}`,
+  color: TEXT_LIGHT,
+  fontSize: 14,
+  '&:hover': { background: '#fafaff', color: PRIMARY },
+});
+
 const OwnerDivider = styled('div')({
   margin: '10px 18px 6px',
   paddingTop: 10,
@@ -210,6 +227,10 @@ export default function ManageLayout() {
               <NavItem to={`/manage/${item.path}`}>{label(item)}</NavItem>
             </div>
           ))}
+          <BackItem to="/admin/dashboard">
+            <span aria-hidden>{he ? '→' : '←'}</span>
+            {he ? 'פאנל ניהול' : 'Admin panel'}
+          </BackItem>
         </Nav>
         <UserBox>
           <UserName>{user?.name}</UserName>
