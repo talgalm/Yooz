@@ -26,12 +26,19 @@ const STEP_BASELINE_EASE = 0.02; // slow enough not to track the step oscillatio
 
 // Default course: offsets in meters (north, east) from wherever the player starts,
 // so the demo is playable anywhere. Override with ?coins=lat,lng;lat,lng
-const DEFAULT_COURSE: Array<{ north: number; east: number; emoji: string }> = [
+const DEFAULT_COURSE: Array<{ north: number; east: number; emoji: string; kind?: 'quiz' }> = [
   { north: 4, east: 0, emoji: '🪙' },
   { north: 5, east: 5, emoji: '🪙' },
-  { north: 0, east: 7, emoji: '💎' },
+  { north: 0, east: 7, emoji: '🪙' },
   { north: -5, east: 3, emoji: '🪙' },
-  { north: -3, east: -6, emoji: '👾' },
+  { north: -3, east: -6, emoji: '❓', kind: 'quiz' },
+];
+
+// The question station hands out the safe code; the safe ends the game.
+const SAFE_CODE = '7391';
+const QUIZ_QUESTIONS: Array<{ text: string; answer: boolean }> = [
+  { text: 'צעד ממוצע של אדם הולך הוא בערך 70 ס״מ.', answer: true },
+  { text: 'המצפן בטלפון מודד את המרחק אל היעד.', answer: false },
 ];
 
 const CONFETTI_COLORS = ['#ffd54f', '#7c4dff', '#2ec4b6', '#ff8a3d', '#2f9bd6'];
@@ -39,6 +46,7 @@ const CONFETTI_COLORS = ['#ffd54f', '#7c4dff', '#2ec4b6', '#ff8a3d', '#2f9bd6'];
 interface Coin extends LatLng {
   id: number;
   emoji: string;
+  kind?: 'quiz';
 }
 
 interface Burst {
@@ -80,6 +88,16 @@ export default function ArDemoPage() {
   const [bursts, setBursts] = useState<Burst[]>([]);
   const [steps, setSteps] = useState(0);
   const [trend, setTrend] = useState<'closer' | 'farther' | null>(null);
+  const [quiz, setQuiz] = useState<{
+    id: number;
+    left: number;
+    top: number;
+    step: number;
+    correct: boolean | null;
+  } | null>(null);
+  const [pin, setPin] = useState('');
+  const [pinError, setPinError] = useState(false);
+  const [safeOpen, setSafeOpen] = useState(false);
   const lastNearestRef = useRef<number | null>(null);
 
   const fixedCoins = useMemo(() => parseCoinsParam(params.get('coins')), [params]);
@@ -252,6 +270,7 @@ export default function ArDemoPage() {
           return DEFAULT_COURSE.map((spot, id) => ({
             id,
             emoji: spot.emoji,
+            kind: spot.kind,
             ...offsetMeters(fix, spot.north, spot.east),
           }));
         });
@@ -269,6 +288,43 @@ export default function ArDemoPage() {
     setBursts((prev) => [...prev, { key, left, top }]);
     setTimeout(() => setBursts((prev) => prev.filter((b) => b.key !== key)), 1100);
   }, []);
+
+  const tap = (coin: Coin, left: number, top: number) => {
+    if (coin.kind === 'quiz') setQuiz({ id: coin.id, left, top, step: 0, correct: null });
+    else collect(coin.id, left, top);
+  };
+
+  const answerQuiz = (value: boolean) => {
+    if (!quiz || quiz.correct !== null) return;
+    const correct = value === QUIZ_QUESTIONS[quiz.step].answer;
+    navigator.vibrate?.(correct ? 60 : [40, 60, 40]);
+    setQuiz({ ...quiz, correct });
+  };
+
+  const nextQuiz = () => {
+    if (!quiz) return;
+    if (quiz.step + 1 < QUIZ_QUESTIONS.length) {
+      setQuiz({ ...quiz, step: quiz.step + 1, correct: null });
+      return;
+    }
+    collect(quiz.id, quiz.left, quiz.top);
+    setQuiz(null);
+  };
+
+  const pressDigit = (digit: string) => {
+    setPinError(false);
+    const next = (pin.length >= 4 ? '' : pin) + digit;
+    setPin(next);
+    if (next.length < 4) return;
+    if (next === SAFE_CODE) {
+      setSafeOpen(true);
+      navigator.vibrate?.([60, 60, 160]);
+    } else {
+      setPinError(true);
+      navigator.vibrate?.(200);
+      setTimeout(() => setPin(''), 700);
+    }
+  };
 
   const visible = coins
     .filter((coin) => !collected.includes(coin.id))
@@ -315,10 +371,10 @@ export default function ArDemoPage() {
     return (
       <Screen style={styles.gate}>
         <div style={{ fontSize: 64 }}>🪙</div>
-        <h1 style={{ margin: 0, fontSize: 26 }}>ציד מטבעות AR</h1>
+        <h1 style={{ margin: 0, fontSize: 32, letterSpacing: 1 }}>Yooz Go</h1>
         <p style={{ opacity: 0.8, lineHeight: 1.6, maxWidth: 320 }}>
           כוונו את הטלפון סביבכם, מצאו את המטבעות שמסתתרים במרחב, והתקרבו עד {COLLECT_RADIUS_M} מטר
-          כדי לאסוף אותם. צריך שטח פתוח בחוץ.
+          כדי לאסוף אותם. בעמדת ❓ מחכות שאלות — והתשובות פותחות את הכספת. צריך שטח פתוח בחוץ.
         </p>
         {error && <p style={{ color: '#ff8a80' }}>{error}</p>}
         <button type="button" onClick={start} style={styles.startButton}>
@@ -339,7 +395,7 @@ export default function ArDemoPage() {
               type="button"
               key={entry.coin.id}
               inRange={entry.inRange}
-              onClick={() => entry.inRange && collect(entry.coin.id, entry.left, entry.top)}
+              onClick={() => entry.inRange && tap(entry.coin, entry.left, entry.top)}
               style={{ left: `${entry.left}%`, top: `${entry.top}%`, fontSize: entry.size }}
             >
               <span>{entry.coin.emoji}</span>
@@ -410,10 +466,82 @@ export default function ArDemoPage() {
         )}
       </div>
 
+      {quiz && (
+        <div style={styles.overlay}>
+          <div style={styles.card}>
+            <div style={{ fontSize: 40 }}>❓</div>
+            <div style={{ fontSize: 15, opacity: 0.7 }}>
+              שאלה {quiz.step + 1} מתוך {QUIZ_QUESTIONS.length}
+            </div>
+            <div style={{ fontSize: 19, lineHeight: 1.5 }}>{QUIZ_QUESTIONS[quiz.step].text}</div>
+            {quiz.correct === null ? (
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button type="button" onClick={() => answerQuiz(true)} style={styles.quizButton}>
+                  נכון
+                </button>
+                <button type="button" onClick={() => answerQuiz(false)} style={styles.quizButton}>
+                  לא נכון
+                </button>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: 20, color: quiz.correct ? '#69f0ae' : '#ff8a80' }}>
+                  {quiz.correct ? '✔ נכון!' : '✘ טעות'}
+                </div>
+                {quiz.step === QUIZ_QUESTIONS.length - 1 && (
+                  <div style={styles.codeReveal}>
+                    קוד הכספת: <b style={{ letterSpacing: 6 }}>{SAFE_CODE}</b>
+                  </div>
+                )}
+                <button type="button" onClick={nextQuiz} style={styles.startButton}>
+                  {quiz.step + 1 < QUIZ_QUESTIONS.length ? 'לשאלה הבאה' : 'סיום'}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {remaining === 0 && coins.length > 0 && (
-        <div style={styles.win}>
-          <div style={{ fontSize: 56 }}>🎉</div>
-          <div>אספתם הכול!</div>
+        <div style={styles.overlay}>
+          {safeOpen ? (
+            <div style={styles.card}>
+              <div style={{ fontSize: 72 }}>🔓</div>
+              <div style={{ fontSize: 22 }}>הכספת נפתחה!</div>
+              <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: 2 }}>Game Over</div>
+            </div>
+          ) : (
+            <div style={styles.card}>
+              <div style={{ fontSize: 64 }}>🔐</div>
+              <div style={{ fontSize: 18 }}>הקישו את הקוד בן 4 הספרות</div>
+              <div
+                style={{
+                  ...styles.pinRow,
+                  color: pinError ? '#ff8a80' : '#ffd54f',
+                }}
+              >
+                {[0, 1, 2, 3].map((i) => (
+                  <span key={i}>{pin[i] ?? '•'}</span>
+                ))}
+              </div>
+              {pinError && <div style={{ color: '#ff8a80', fontSize: 15 }}>קוד שגוי, נסו שוב</div>}
+              <div style={styles.keypad}>
+                {['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].map((digit) => (
+                  <button
+                    key={digit}
+                    type="button"
+                    onClick={() => pressDigit(digit)}
+                    style={styles.key}
+                  >
+                    {digit}
+                  </button>
+                ))}
+                <button type="button" onClick={() => setPin('')} style={styles.key}>
+                  ⌫
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -524,16 +652,54 @@ const styles: Record<string, React.CSSProperties> = {
   },
   hudRow: { display: 'flex', gap: 16, justifyContent: 'center', fontWeight: 700 },
   warning: { textAlign: 'center', marginTop: 6, fontSize: 13, color: '#ffd54f' },
-  win: {
+  overlay: {
     position: 'absolute',
     inset: 0,
     display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    background: 'rgba(0,0,0,0.6)',
+    background: 'rgba(0,0,0,0.75)',
+    padding: 20,
+  },
+  card: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 14,
+    textAlign: 'center',
+    maxWidth: 340,
+  },
+  quizButton: {
+    padding: '12px 26px',
+    fontSize: 17,
+    borderRadius: 999,
+    border: '1px solid rgba(255,255,255,0.4)',
+    background: 'rgba(255,255,255,0.1)',
+    color: '#fff',
+    fontWeight: 700,
+  },
+  codeReveal: {
+    fontSize: 19,
+    padding: '10px 18px',
+    borderRadius: 12,
+    background: 'rgba(255,213,79,0.15)',
+    color: '#ffd54f',
+  },
+  pinRow: { display: 'flex', gap: 18, fontSize: 40, fontWeight: 800, direction: 'ltr' },
+  keypad: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 72px)',
+    gap: 10,
+    justifyContent: 'center',
+    direction: 'ltr',
+  },
+  key: {
+    height: 62,
     fontSize: 24,
+    borderRadius: 16,
+    border: '1px solid rgba(255,255,255,0.25)',
+    background: 'rgba(255,255,255,0.12)',
+    color: '#fff',
     fontWeight: 700,
   },
   debug: {
