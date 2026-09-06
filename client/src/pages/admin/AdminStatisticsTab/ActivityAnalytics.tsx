@@ -82,7 +82,7 @@ import ItemAnalyticsTable from './ItemAnalyticsTable';
 import GroupComparison from './GroupComparison';
 import ParticipantsRoster from './ParticipantsRoster';
 import ExportSection from './ExportSection';
-import AdminReportChat from '../../../components/AdminReportChat';
+import { setReportActivity } from '../../../components/AdminHelpChat/reportScope';
 
 interface Props {
   activityId: string | null;
@@ -213,6 +213,13 @@ export default function ActivityAnalytics({ activityId }: Props) {
   const [subTab, setSubTab] = useState<ActivitySubTab>('overview');
   const [period, setPeriod] = useState<ActivityPeriod>('year');
   const [exclusionsDirty, setExclusionsDirty] = useState(false);
+
+  // Hand this activity to DumbDumbBot so it can answer report questions about it.
+  // (Not in shared mode — activityId is a public share token there, not an id.)
+  useEffect(() => {
+    setReportActivity(shared ? null : activityId);
+    return () => setReportActivity(null);
+  }, [activityId, shared]);
 
   const analyticsQuery = useActivityAnalytics(activityId, period);
   const anomaliesQuery = useAnomalies(activityId, period);
@@ -641,10 +648,6 @@ export default function ActivityAnalytics({ activityId }: Props) {
       )}
 
       {subTab === 'export' && <ExportSection activityId={activityId} period={period} />}
-
-      {activityId && !shared && (
-        <AdminReportChat activityId={activityId} onSwitchSubTab={setSubTab} />
-      )}
     </>
   );
 }

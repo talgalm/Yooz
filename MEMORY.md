@@ -288,8 +288,7 @@ No admin auth — the `statsShareToken` is the credential.
 - `/api/help` (participant help chat, Gemini), `/api/avatar-chat` (avatar station chat),
   `/api/avatar-quiz` (avatarQuiz station answer grading + follow-ups),
   `/api/check-answer` (AI answer grading), `/api/tts` (Azure TTS),
-  `/api/admin/report-assistant` (`/chat`+`/download`, analytics Q&A),
-  `/api/admin/help-assistant` (`/chat`, admin how-to + dev-task creation).
+  `/api/admin/help-assistant` (`/chat`, admin how-to + analytics Q&A + dev-task creation).
 - `/api/collage` — collage upload/encode/progress/share/SMS (§12; some routes `loadShed`-gated).
 - `/api/reward-download/:token`, `/api/site-content` (+ `/leads`), `/api/alerts/history`.
 
@@ -305,7 +304,7 @@ No admin auth — the `statsShareToken` is the credential.
 - **`services/sms/`** — `smsProvider` (stub default) / `textmeSmsProvider` (textme.co.il).
 - **`services/activityAnalyticsService.ts`** — analytics aggregations (funnel/items/questions/
   groups/anomalies/report-card/export builders).
-- **`services/reportContext.ts`** — builds LLM context for the report assistant.
+- **`services/reportContext.ts`** — builds LLM context for DumbDumbBot's report answers.
 - **`utils/customerScope`** is in `middleware/customerScope.ts` (§7).
 - **`utils/israelTime.ts`** — `startOfTodayIsrael()` (UTC instant of Israel midnight) and
   `israelDayString()` (`YYYY-MM-DD` in `Asia/Jerusalem`). Used for day-scoping (groups, leaderboard).
@@ -351,7 +350,7 @@ A `customer` admin sees **only activities they created (`createdByEmail`) or man
   (existing refs grandfathered).
 - `createdByEmailForNewResource(req)` — stamps ownership on create.
 
-Applied throughout `admin.ts`, `analytics.ts`, `reportAssistant.ts`, `adminHelpAssistant.ts`.
+Applied throughout `admin.ts`, `analytics.ts`, `adminHelpAssistant.ts`.
 **Client**: `AdminDashboardPage` shows the Statistics tab to customers; the activities list it
 passes to analytics is already the scoped set. The Audit Log button/endpoint is admin-only.
 
@@ -950,14 +949,14 @@ optional logo placeholder + iconRecolor. `DEFAULT_TEMPLATE_ID='default'`. Source
   `{verdict, scoreRatio, reaction, teaching}`. `mode:'followup'` sends `message` instead and
   answers a follow-up in character; without a Gemini key follow-ups return a fixed "can't expand
   right now" line while grading falls back to keyword matching.
-- **`routes/reportAssistant.ts`** — `/api/admin/report-assistant` (admin/super_admin/customer).
-  `classifyExisting()` maps a question to a `ReportCatalogEntry` (pre-canned analytics answer);
-  otherwise `askGemini(message, contextJson, lang, history)` with report context. `POST /chat`
-  (analytics Q&A over `reportContext`), `POST /download` (CSV export; `escapeCsvCell`).
 - **`routes/adminHelpAssistant.ts`** — `/api/admin/help-assistant` (admin roles incl. customer).
   `buildSystemPrompt(lang)` embeds a large how-to knowledge base of the admin UI (tabs, row
   actions, audit log, tutorials). `POST /chat` answers admin how-to questions and can create
-  DevTasks.
+  DevTasks. **Report mode**: when the body carries `context.activityId` (set while the admin is
+  in that activity's Statistics view) the route ownership-checks the activity, appends
+  `buildReportContext()`'s JSON snapshot (capped at 60k chars, participants trimmed first) to
+  the prompt as `ACTIVITY DATA (JSON)`, and the bot answers analytics questions from it. There
+  is no separate report-assistant route any more.
 - **`routes/tutorials.ts`** — `/api/admin/tutorials` (**super_admin**). AI-generated walkthrough
   videos: `POST /generate` creates a `Tutorial` doc then runs `generateVideo()` in the
   background — Gemini writes a Playwright spec (`buildSystemPrompt` + `loadExampleSpecs` +
@@ -1230,7 +1229,9 @@ rendered inline in `PlayingPhase.tsx`.)
   → `/api/help`. **`AdminHelpChat/`** — admin how-to chat (DumbDumbBot; FAB defaults
   bottom-left, draggable via `useFabPosition`, position kept in `yooz_bot_pos`, panel anchors
   to the FAB's corner) + `DevTasksPanel` → `/api/admin/help-
-  assistant`. **`AdminReportChat/`** — analytics Q&A → `/api/admin/report-assistant` (+ `markdown`).
+  assistant`. Analytics Q&A lives here too: `reportScope.ts` holds the activity id the admin
+  stats view is showing (module variable, read at send time) and it rides along as
+  `context.activityId`.
 - **`MobileContainer`** (≤480px participant frame), **`ParticipantActivityScope`** (scopes a
   participant to one activity), **`ParticipantLandingRedirect`**, **`ActivityLogoutButton`**,
   **`SmsConsent`**, **`Pagination`**, **`ErrorBoundary`**, **`FileUploadButton`** (opens a

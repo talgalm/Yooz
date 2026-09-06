@@ -11,7 +11,7 @@ import {
   isCustomerRole,
 } from '../middleware/customerScope';
 import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginField } from '../types';
-import { Activity, ActivityFolder, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
+import { Activity, ActivityFolder, ActivityGroup, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
 import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { IActivity } from '../models/Activity';
@@ -484,6 +484,7 @@ router.patch('/activities/:id/status', authenticateAdmin, async (req: Request<{ 
   // When going live, wipe all dynamic data (reports/participants/scores/session state)
   if (status === 'live') {
     await Report.deleteMany({ activityId: activity._id });
+    await ActivityGroup.deleteMany({ activityId: activity._id });
     activity.orderSurveySession = undefined;
     activity.shareClicks = undefined;
     activity.shareCompleted = undefined;
@@ -578,8 +579,9 @@ router.delete('/activities/:id', authenticateAdmin, async (req: Request<{ id: st
     return;
   }
   await Activity.findByIdAndDelete(req.params.id);
-  // Cascade-delete all reports linked to this activity
+  // Cascade-delete all reports and groups linked to this activity
   await Report.deleteMany({ activityId: existing._id });
+  await ActivityGroup.deleteMany({ activityId: existing._id });
   logAdminAction(req, 'delete_activity', 'activity', req.params.id, existing.name);
   res.json({ success: true });
 });

@@ -45,7 +45,6 @@ import tutorialsRouter from './routes/tutorials';
 import themesRouter from './routes/themes';
 import checkAnswerRouter from './routes/checkAnswer';
 import ttsRouter from './routes/tts';
-import reportAssistantRouter from './routes/reportAssistant';
 import adminHelpAssistantRouter from './routes/adminHelpAssistant';
 import devTasksRouter from './routes/devTasks';
 import sharedStatsRouter from './routes/sharedStats';
@@ -133,7 +132,6 @@ app.use('/api/avatar-quiz', avatarQuizRouter);
 app.use('/api/admin/analytics', analyticsRouter);
 // Public, token-scoped, read-only statistics share links (no admin auth).
 app.use('/api/shared/stats', sharedStatsRouter);
-app.use('/api/admin/report-assistant', reportAssistantRouter);
 app.use('/api/admin/help-assistant', adminHelpAssistantRouter);
 app.use('/api/admin/dev-tasks', devTasksRouter);
 app.use('/api/admin/users', usersRouter);

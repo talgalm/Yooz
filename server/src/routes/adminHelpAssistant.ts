@@ -1,13 +1,21 @@
 /**
- * Admin Help Assistant — how-to chatbot for the admin dashboard.
+ * Admin Help Assistant (DumbDumbBot) — how-to chatbot for the admin dashboard.
  *
  * POST /api/admin/help-assistant/chat
  * Admin JWT required. Uses Gemini with embedded admin knowledge.
+ *
+ * When the caller passes context.activityId (they're viewing that activity's
+ * statistics), the activity's full data snapshot is appended to the prompt so
+ * the bot doubles as the report assistant. PII is included by product decision.
  */
 
 import { Router, Request, Response } from 'express';
+import { Types } from 'mongoose';
 import { authenticateAdmin, requireRole } from '../middleware/adminAuth';
+import { customerOwnsDoc } from '../middleware/customerScope';
+import { Activity } from '../models';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
+import { buildReportContext } from '../services/reportContext';
 
 const router = Router();
 router.use(authenticateAdmin, requireRole('admin', 'super_admin', 'customer'));
@@ -81,7 +89,7 @@ Tab visibility:
 TOP-LEVEL DASHBOARD TABS (/admin/dashboard)
 ================================================================
 1. Activities (פעילויות) — list, create (Create Activity / צור פעילות button), edit, view, duplicate, delete; toggle Live (פעיל) ⇄ Preview (תצוגה מקדימה). Going Live RESETS participant data.
-2. Statistics (דוחות) — global Overview + per-activity drill-down + Audit Log + AI Report Assistant.
+2. Statistics (דוחות) — global Overview + per-activity drill-down + Audit Log. Report questions are answered by this chat (see LIVE ACTIVITY DATA below).
 3. Stations (תחנות) — this tab is actually a 3-section container with a segmented control: Stations / Games / Missions. Each section has its own type filter sub-tabs.
 4. Library (ספרייה) — reusable content templates (games or stations exported from other activities). Filter by kind / tags / customer / free-text search. Copy into a new game/station with one click.
 5. Portals (פורטלים) — public display + reusable login system. Each portal has a unique 8-char code, list of registered users, list of attached activities, and a secret invite token for auto-approve self-registration.
@@ -382,13 +390,20 @@ Report.data shape (per participant): {
 Report top-level: completionStatus ('joined'|'in_progress'|'completed'), sessionStartedAt, sessionCompletedAt, sessionDurationMs, totalItemsCompleted, totalItemsInModule, lastActiveItemIndex.
 
 ================================================================
-AI REPORT ASSISTANT (purple AI button on activity stats)
+LIVE ACTIVITY DATA — you answer report questions yourself
 ================================================================
-- Open from an activity's analytics view → purple AI button.
-- Chat interface; ask any analytics question in natural language (Hebrew or English).
-- Backend: /api/admin/report-assistant/chat. Builds a JSON context dump of the activity (all reports + item results + groups) and sends it to Gemini (GEMINI_MODEL) with maxOutputTokens 1500.
-- Response is structured JSON (parsed at the route layer) with optional downloadable artifact.
-- POST /api/admin/report-assistant/download to download the generated report.
+There is no separate AI report assistant any more — YOU are it.
+When the admin is looking at an activity's statistics, that activity's full data
+snapshot (all reports + item results + groups, participant names included) is
+appended to their message as "ACTIVITY DATA (JSON)".
+- Data present → answer the analytics question straight from it. Cite real numbers,
+  invent nothing, round to integers unless precision matters. Small markdown
+  tables are fine; keep them under 30 rows.
+- Data absent and they ask a data question → tell them to open
+  Statistics (דוחות) → pick the activity, then ask again here.
+- If a built-in export already covers the request (Executive / Participants /
+  Scores / Progress — all Excel), point them at Statistics → Export (ייצוא)
+  instead of hand-deriving it.
 
 ================================================================
 TUTORIALS (סרטוני הדרכה) — super_admin only
@@ -563,10 +578,12 @@ async function askGemini(
   lang: 'en' | 'he',
   history: HistoryEntry[],
   route?: string,
+  activityData?: string,
 ): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
   const contextNote = route ? `\n\nUser is currently on page: ${route}` : '';
+  const dataNote = activityData ? `\n\nACTIVITY DATA (JSON):\n${activityData}` : '';
 
   const priorTurns = history.slice(-6).map((h) => ({
     role: h.from === 'bot' ? 'model' : 'user',
@@ -576,17 +593,17 @@ async function askGemini(
   const body = {
     contents: [
       ...priorTurns,
-      { role: 'user', parts: [{ text: message + contextNote }] },
+      { role: 'user', parts: [{ text: message + contextNote + dataNote }] },
     ],
     systemInstruction: { parts: [{ text: buildSystemPrompt(lang) }] },
     generationConfig: {
       temperature: 0.3,
-      maxOutputTokens: 1200,
+      maxOutputTokens: 1500,
     },
   };
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15_000);
+  const timeout = setTimeout(() => controller.abort(), 20_000);
 
   try {
     const res = await fetch(url, {
@@ -623,7 +640,7 @@ router.post('/chat', async (req: Request, res: Response) => {
     message?: string;
     history?: HistoryEntry[];
     lang?: string;
-    context?: { route?: string };
+    context?: { route?: string; activityId?: string };
   };
 
   if (!message || typeof message !== 'string' || !message.trim()) {
@@ -644,13 +661,39 @@ router.post('/chat', async (req: Request, res: Response) => {
   const route =
     context && typeof context.route === 'string' ? context.route.slice(0, 200) : undefined;
 
+  // Report mode: caller is on an activity's stats — attach its data snapshot.
+  let activityData: string | undefined;
+  const activityId = context?.activityId;
+  if (activityId && Types.ObjectId.isValid(activityId)) {
+    const activity = await Activity.findById(activityId).lean();
+    if (activity && customerOwnsDoc(req, activity)) {
+      try {
+        const reportContext = await buildReportContext({
+          activityId,
+          includeParticipants: true,
+          maxParticipants: 200,
+        });
+        if (reportContext) {
+          activityData = JSON.stringify(reportContext);
+          if (activityData.length > 60_000 && reportContext.participants) {
+            reportContext.participants = reportContext.participants.slice(0, 50);
+            activityData = JSON.stringify(reportContext);
+          }
+          if (activityData.length > 60_000) activityData = activityData.slice(0, 60_000);
+        }
+      } catch (err) {
+        console.error('Help assistant report context error:', err);
+      }
+    }
+  }
+
   if (!GEMINI_API_KEY) {
     res.json({ response: FALLBACK[safeLang], source: 'fallback' });
     return;
   }
 
   try {
-    const response = await askGemini(safeMessage, safeLang, safeHistory, route);
+    const response = await askGemini(safeMessage, safeLang, safeHistory, route, activityData);
     res.json({ response, source: 'gemini' });
   } catch (err) {
     console.error('Admin help assistant error:', err);

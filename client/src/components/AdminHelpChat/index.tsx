@@ -10,6 +10,7 @@ import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useLang, useTranslations } from '../../context/LanguageContext';
 import { adminApiFetch, adminUploadFile } from '../../utils/adminApi';
 import DevTasksPanel from './DevTasksPanel';
+import { getReportActivity } from './reportScope';
 import { FAB_SIZE, useFabPosition } from './useFabPosition';
 import {
   texts,
@@ -264,7 +265,7 @@ export default function AdminHelpChat() {
             message: trimmed,
             history,
             lang,
-            context: { route: location.pathname },
+            context: { route: location.pathname, activityId: getReportActivity() },
           }),
         });
         setThinking(false);
