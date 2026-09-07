@@ -46,6 +46,9 @@ export function logAdminAction(
 
 const VALID_LOGIN_FIELDS: LoginField[] = ['email', 'phoneNumber', 'name'];
 
+// Keep in sync with the participant help-chat FAQ menu (client/src/components/HelpChat).
+const VALID_HELP_CATEGORIES = ['login', 'game_start', 'score', 'loading', 'kicked_out', 'button_stuck', 'task_stuck', 'video_missing'];
+
 // --- Shared validation helpers ---
 
 function validateActivityPayload(body: CreateActivityRequest, options?: { isCreate?: boolean }): string | null {
@@ -74,7 +77,7 @@ async function buildActivityData(
   existingPasswordHash?: string,
   existing?: IActivity,
 ): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
+  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, extraSupportInfo, organizerContactName, organizerContactPhone, helpCategoriesDisabled, helpCategoryResponses, helpOtherCategoryEnabled, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -177,7 +180,41 @@ async function buildActivityData(
   data.scheduledEnd = scheduledEnd ? new Date(scheduledEnd) : undefined;
 
   // Handle guidelines
-  data.guidelines = guidelines?.trim() || undefined;
+  // null (not undefined) so clearing the field actually clears the stored
+  // value on edit — Mongo's $set silently drops undefined-valued keys.
+  data.guidelines = guidelines?.trim() || null;
+
+  // Free-text context for the "something else" open free-text chat only,
+  // appended to the Gemini prompt for this activity.
+  data.extraSupportInfo = extraSupportInfo?.trim().slice(0, 2000) || null;
+
+  // Named contact the participant support bot points to instead of the
+  // generic "activity organizer"/"facilitator" wording. Both must be set
+  // together — a name with no phone (or vice versa) is treated as unset.
+  const contactName = organizerContactName?.trim();
+  const contactPhone = organizerContactPhone?.trim();
+  data.organizerContactName = contactName && contactPhone ? contactName.slice(0, 100) : null;
+  data.organizerContactPhone = contactName && contactPhone ? contactPhone.slice(0, 30) : null;
+
+  // Help-chat FAQ categories hidden for this activity (unset/empty = show all).
+  const disabledCategories = Array.isArray(helpCategoriesDisabled)
+    ? helpCategoriesDisabled.filter((c): c is string => typeof c === 'string' && VALID_HELP_CATEGORIES.includes(c))
+    : [];
+  data.helpCategoriesDisabled = disabledCategories.length > 0 ? disabledCategories : null;
+
+  // Per-category custom FAQ text overriding the default answer (empty = use default).
+  const cleanedResponses: Record<string, string> = {};
+  if (helpCategoryResponses && typeof helpCategoryResponses === 'object') {
+    for (const [key, value] of Object.entries(helpCategoryResponses)) {
+      if (VALID_HELP_CATEGORIES.includes(key) && typeof value === 'string' && value.trim()) {
+        cleanedResponses[key] = value.trim().slice(0, 1000);
+      }
+    }
+  }
+  data.helpCategoryResponses = Object.keys(cleanedResponses).length > 0 ? cleanedResponses : null;
+
+  // "Something else" open free-text chat — opt-in, off unless explicitly enabled.
+  data.helpOtherCategoryEnabled = helpOtherCategoryEnabled === true;
 
   // Handle custom instructions
   if (customInstructions && typeof customInstructions === 'object') {

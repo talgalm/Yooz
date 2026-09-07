@@ -8,8 +8,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useParams } from 'react-router-dom';
 import { useTranslations, useLang } from '../../context/LanguageContext';
-import { texts } from './HelpChat.i18n';
+import { texts, type OrganizerContact } from './HelpChat.i18n';
 import { matchTopic } from './matcher';
 import {
   HelpFab,
@@ -63,6 +64,13 @@ export function setHelpChatActivityContext(ctx: HelpActivityContext | null): voi
   helpActivityContext = ctx;
 }
 
+// Some canned responses are plain strings; the ones that mention "the
+// activity organizer"/"your facilitator" are functions of the contact so they
+// can name a real person instead. This resolves either shape to text.
+function resolveResponse(entry: string | ((contact?: OrganizerContact) => string), contact?: OrganizerContact): string {
+  return typeof entry === 'function' ? entry(contact) : entry;
+}
+
 type View = 'menu' | 'faq' | 'other';
 
 export type HelpChatVariant = 'fab' | 'header';
@@ -97,6 +105,7 @@ interface HelpChatProviderProps {
 export function HelpChatProvider({ variant, hideLogin = false, children }: HelpChatProviderProps) {
   const t = useTranslations(texts);
   const { lang } = useLang();
+  const { code } = useParams<{ code?: string }>();
 
   const [open, setOpen] = useState(false);
   const [hiddenForBallGame, setHiddenForBallGame] = useState(
@@ -106,9 +115,41 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [typing, setTyping] = useState(false);
+  const [organizerContact, setOrganizerContact] = useState<OrganizerContact | undefined>(undefined);
+  const [disabledCategories, setDisabledCategories] = useState<string[]>([]);
+  const [otherCategoryEnabled, setOtherCategoryEnabled] = useState(false);
+  const [categoryResponses, setCategoryResponses] = useState<Record<string, string>>({});
 
   const bodyRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // This activity's named support contact (if set) and hidden FAQ categories —
+  // both admin-configured per activity, fetched once from the public config.
+  useEffect(() => {
+    if (!code) return;
+    let cancelled = false;
+    fetch(`/api/activities/${encodeURIComponent(code)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (data.organizerContactName && data.organizerContactPhone) {
+          setOrganizerContact({ name: data.organizerContactName, phone: data.organizerContactPhone });
+        }
+        if (Array.isArray(data.helpCategoriesDisabled)) {
+          setDisabledCategories(data.helpCategoriesDisabled);
+        }
+        if (data.helpCategoryResponses && typeof data.helpCategoryResponses === 'object') {
+          setCategoryResponses(data.helpCategoryResponses);
+        }
+        if (data.helpOtherCategoryEnabled === true) {
+          setOtherCategoryEnabled(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [code]);
 
   useEffect(() => {
     if (bodyRef.current) {
@@ -183,13 +224,27 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
     | 'responseTaskStuck'
     | 'responseVideoMissing';
 
+  // Matches server VALID_HELP_CATEGORIES / AdminCreateActivityPage.i18n HELP_CATEGORIES keys.
+  const FAQ_KEY_TO_CATEGORY: Record<FaqKey, string> = {
+    responseFaq1: 'login',
+    responseFaq2: 'game_start',
+    responseFaq3: 'score',
+    responseFaq4: 'loading',
+    responseKickedOut: 'kicked_out',
+    responseButtonStuck: 'button_stuck',
+    responseTaskStuck: 'task_stuck',
+    responseVideoMissing: 'video_missing',
+  };
+
   const handleFaqClick = (faqKey: FaqKey, label: string) => {
     setView('faq');
     setMessages([{ from: 'user', text: label }]);
     setTyping(true);
     setTimeout(() => {
       setTyping(false);
-      setMessages((prev) => [...prev, { from: 'bot', text: t[faqKey] }]);
+      const override = categoryResponses[FAQ_KEY_TO_CATEGORY[faqKey]];
+      const text = override?.trim() || resolveResponse(t[faqKey], organizerContact);
+      setMessages((prev) => [...prev, { from: 'bot', text }]);
     }, 600);
   };
 
@@ -215,7 +270,12 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
       const res = await fetch('/api/help', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, lang, history, context: helpActivityContext ?? undefined }),
+        body: JSON.stringify({
+          message: text,
+          lang,
+          history,
+          context: (helpActivityContext || code) ? { ...helpActivityContext, code } : undefined,
+        }),
       });
 
       if (!res.ok) throw new Error('Server error');
@@ -228,8 +288,8 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
       setTyping(false);
 
       if (match) {
-        const responseText = t[match.responseKey as keyof typeof t] || t.responseGeneral;
-        setMessages((prev) => [...prev, { from: 'bot', text: responseText }]);
+        const entry = t[match.responseKey as keyof typeof t] || t.responseGeneral;
+        setMessages((prev) => [...prev, { from: 'bot', text: resolveResponse(entry, organizerContact) }]);
       } else {
         setMessages((prev) => [...prev, { from: 'bot', text: t.noMatch }]);
       }
@@ -273,44 +333,60 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
               <>
                 <BotMessage>{t.greeting}</BotMessage>
                 <OptionsGrid>
-                  <OptionButton onClick={() => handleFaqClick('responseFaq2', t.faq2Label)}>
-                    <OptionIcon>🎮</OptionIcon>
-                    {t.faq2Label}
-                  </OptionButton>
-                  {!hideLogin && (
+                  {!disabledCategories.includes('game_start') && (
+                    <OptionButton onClick={() => handleFaqClick('responseFaq2', t.faq2Label)}>
+                      <OptionIcon>🎮</OptionIcon>
+                      {t.faq2Label}
+                    </OptionButton>
+                  )}
+                  {!hideLogin && !disabledCategories.includes('login') && (
                     <OptionButton onClick={() => handleFaqClick('responseFaq1', t.faq1Label)}>
                       <OptionIcon>🔑</OptionIcon>
                       {t.faq1Label}
                     </OptionButton>
                   )}
-                  <OptionButton onClick={() => handleFaqClick('responseFaq3', t.faq3Label)}>
-                    <OptionIcon>📊</OptionIcon>
-                    {t.faq3Label}
-                  </OptionButton>
-                  <OptionButton onClick={() => handleFaqClick('responseFaq4', t.faq4Label)}>
-                    <OptionIcon>🔄</OptionIcon>
-                    {t.faq4Label}
-                  </OptionButton>
-                  <OptionButton onClick={() => handleFaqClick('responseKickedOut', t.kickedOutLabel)}>
-                    <OptionIcon>🚪</OptionIcon>
-                    {t.kickedOutLabel}
-                  </OptionButton>
-                  <OptionButton onClick={() => handleFaqClick('responseButtonStuck', t.buttonStuckLabel)}>
-                    <OptionIcon>👆</OptionIcon>
-                    {t.buttonStuckLabel}
-                  </OptionButton>
-                  <OptionButton onClick={() => handleFaqClick('responseTaskStuck', t.taskStuckLabel)}>
-                    <OptionIcon>🧩</OptionIcon>
-                    {t.taskStuckLabel}
-                  </OptionButton>
-                  <OptionButton onClick={() => handleFaqClick('responseVideoMissing', t.videoMissingLabel)}>
-                    <OptionIcon>🎬</OptionIcon>
-                    {t.videoMissingLabel}
-                  </OptionButton>
-                  <OptionButton onClick={handleOtherClick}>
-                    <OptionIcon>✏️</OptionIcon>
-                    {t.otherLabel}
-                  </OptionButton>
+                  {!disabledCategories.includes('score') && (
+                    <OptionButton onClick={() => handleFaqClick('responseFaq3', t.faq3Label)}>
+                      <OptionIcon>📊</OptionIcon>
+                      {t.faq3Label}
+                    </OptionButton>
+                  )}
+                  {!disabledCategories.includes('loading') && (
+                    <OptionButton onClick={() => handleFaqClick('responseFaq4', t.faq4Label)}>
+                      <OptionIcon>🔄</OptionIcon>
+                      {t.faq4Label}
+                    </OptionButton>
+                  )}
+                  {!disabledCategories.includes('kicked_out') && (
+                    <OptionButton onClick={() => handleFaqClick('responseKickedOut', t.kickedOutLabel)}>
+                      <OptionIcon>🚪</OptionIcon>
+                      {t.kickedOutLabel}
+                    </OptionButton>
+                  )}
+                  {!disabledCategories.includes('button_stuck') && (
+                    <OptionButton onClick={() => handleFaqClick('responseButtonStuck', t.buttonStuckLabel)}>
+                      <OptionIcon>👆</OptionIcon>
+                      {t.buttonStuckLabel}
+                    </OptionButton>
+                  )}
+                  {!disabledCategories.includes('task_stuck') && (
+                    <OptionButton onClick={() => handleFaqClick('responseTaskStuck', t.taskStuckLabel)}>
+                      <OptionIcon>🧩</OptionIcon>
+                      {t.taskStuckLabel}
+                    </OptionButton>
+                  )}
+                  {!disabledCategories.includes('video_missing') && (
+                    <OptionButton onClick={() => handleFaqClick('responseVideoMissing', t.videoMissingLabel)}>
+                      <OptionIcon>🎬</OptionIcon>
+                      {t.videoMissingLabel}
+                    </OptionButton>
+                  )}
+                  {otherCategoryEnabled && (
+                    <OptionButton onClick={handleOtherClick}>
+                      <OptionIcon>✏️</OptionIcon>
+                      {t.otherLabel}
+                    </OptionButton>
+                  )}
                 </OptionsGrid>
               </>
             )}
@@ -331,9 +407,6 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
                     <span />
                   </TypingDots>
                 )}
-                {view === 'faq' && !typing && messages.some((m) => m.from === 'bot') && (
-                  <BotMessage>{t.continuePrompt}</BotMessage>
-                )}
                 <BackButton onClick={resetChat}>
                   ← {t.backToMenu}
                 </BackButton>
@@ -341,7 +414,7 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
             )}
           </ChatBody>
 
-          {(view === 'other' || view === 'faq') && (
+          {view === 'other' && (
             <InputArea>
               <ChatInput
                 ref={inputRef}

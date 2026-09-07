@@ -1,3 +1,24 @@
+export interface OrganizerContact {
+  name: string;
+  phone: string;
+}
+
+/** "contact"-style clause: "contact the activity organizer" / "contact Dani at 050-...". */
+function contactClause(lang: 'en' | 'he', contact?: OrganizerContact): string {
+  if (contact) {
+    return lang === 'he' ? `פנו ל${contact.name} בטלפון ${contact.phone}` : `contact ${contact.name} at ${contact.phone}`;
+  }
+  return lang === 'he' ? 'פנו למארגן הפעילות' : 'contact the activity organizer';
+}
+
+/** "ask"-style clause: "ask your facilitator" / "ask Dani at 050-...". */
+function askClause(lang: 'en' | 'he', contact?: OrganizerContact): string {
+  if (contact) {
+    return lang === 'he' ? `בקשו מ${contact.name} בטלפון ${contact.phone}` : `ask ${contact.name} at ${contact.phone}`;
+  }
+  return lang === 'he' ? 'בקשו מהמנחה' : 'ask your facilitator';
+}
+
 export const texts = {
   en: {
     helpAria: 'Help and support',
@@ -41,8 +62,8 @@ export const texts = {
       "Enter the name you'd like to appear as in the system. The required fields (name, email, phone) vary per activity. Your name is shown on the leaderboard and visible to activity organizers. The login is not fully anonymous.",
     responseSecurity:
       'Yes, the login is secure. The system uses standard security measures to protect your information. Your data is not shared with external parties and is used only for activity purposes.',
-    responseScore:
-      'Scores are saved automatically when you finish a game. Hint usage deducts 5 points each. Check the leaderboard for your final ranking. If still wrong, contact the organizer.',
+    responseScore: (contact?: OrganizerContact) =>
+      `Scores are saved automatically when you finish a game. Hint usage deducts 5 points each. Check the leaderboard for your final ranking. If still wrong, ${contactClause('en', contact)}.`,
     responseLoading:
       'If the page is stuck or not loading: try refreshing, check your internet connection, or try a different browser. Clearing browser cache can also help.',
     responseLanguage:
@@ -57,16 +78,16 @@ export const texts = {
       'Some games have time limits for each question. Answer as quickly as you can for speed bonuses. If time runs out, the question is marked as unanswered (0 points) and moves to the next.',
     responseGroup:
       "Your group was selected when you logged in. If you're in the wrong group, log out and log in again selecting the correct one. Group/branch selection only appears in activities that require it.",
-    responseGeneral:
-      "If you're having trouble, try refreshing the page first. If the issue persists, contact the activity organizer or call our support line.",
+    responseGeneral: (contact?: OrganizerContact) =>
+      `If you're having trouble, try refreshing the page first. If the issue persists, ${contactClause('en', contact)} or call our support line.`,
 
     // Field troubleshooting sheet
-    responseKickedOut:
-      "Open the activity again from the link you were sent. If you don't have the link any more, ask your facilitator for a new one.\n\nWhen you log back in, pick your group from the list and type exactly the same name you used before — that's how your progress is found again.",
+    responseKickedOut: (contact?: OrganizerContact) =>
+      `Open the activity again from the link you were sent. If you don't have the link any more, ${askClause('en', contact)} for a new one.\n\nWhen you log back in, pick your group from the list and type exactly the same name you used before — that's how your progress is found again.`,
     responseButtonStuck:
       'Refresh the page and try again. If it still does nothing, it is usually weak reception — move somewhere with a better signal and try once more.',
-    responseTaskStuck:
-      "Try the hint inside the game first (it costs 5 points). If there's no hint, or it isn't enough, ask your facilitator — they can reveal the solution from the answer sheet.",
+    responseTaskStuck: (contact?: OrganizerContact) =>
+      `Try the hint inside the game first (it costs 5 points). If there's no hint, or it isn't enough, ${askClause('en', contact)} — they can reveal the solution from the answer sheet.`,
     responseVideoMissing:
       "If the screen is still loading, choose to receive it by SMS and the video will arrive as a message.\n\nIf you already chose SMS, or you don't want it, just wait — the video is still being built. If the finish screen appeared straight away, some of the photos were probably never taken, and no video can be made this time.",
   },
@@ -109,8 +130,8 @@ export const texts = {
       'הזינו את השם שבו תרצו להופיע במערכת. השדות הנדרשים (שם, מייל, טלפון) משתנים בין פעילויות לפי הגדרת המארגן. שמכם מוצג בטבלת המובילים ונגיש למנהלי הפעילות. ההתחברות אינה אנונימית לחלוטין.',
     responseSecurity:
       'כן, ההתחברות מאובטחת. המערכת משתמשת באמצעי אבטחה סטנדרטיים להגנה על המידע. המידע שלכם אינו מועבר לגורם חיצוני ומשמש לצורכי הפעילות בלבד.',
-    responseScore:
-      'ניקוד נשמר אוטומטית כשמסיימים משחק. שימוש ברמז מוריד 5 נקודות. בדקו את טבלת המובילים לדירוג הסופי. אם עדיין לא נכון, פנו למארגן.',
+    responseScore: (contact?: OrganizerContact) =>
+      `ניקוד נשמר אוטומטית כשמסיימים משחק. שימוש ברמז מוריד 5 נקודות. בדקו את טבלת המובילים לדירוג הסופי. אם עדיין לא נכון, ${contactClause('he', contact)}.`,
     responseLoading:
       'אם הדף תקוע או לא נטען: נסו לרענן, בדקו את חיבור האינטרנט, או נסו דפדפן אחר. ניקוי מטמון הדפדפן יכול גם לעזור.',
     responseLanguage:
@@ -125,16 +146,16 @@ export const texts = {
       'לחלק מהמשחקים יש מגבלת זמן לכל שאלה. ענו כמה שיותר מהר כדי לקבל בונוס מהירות. אם הזמן נגמר, השאלה נספרת כלא נענתה (0 נקודות) ועוברת הלאה.',
     responseGroup:
       'הקבוצה שלכם נבחרה כשהתחברתם. אם אתם בקבוצה הלא נכונה, תצטרכו להתנתק ולהתחבר מחדש ולבחור את הקבוצה הנכונה. בחירת קבוצה או סניף מופיעה רק בפעילויות שבהן זה נדרש.',
-    responseGeneral:
-      'אם אתם חווים בעיות, נסו לרענן את הדף קודם. אם הבעיה ממשיכה, פנו למארגן הפעילות או התקשרו לקו התמיכה שלנו.',
+    responseGeneral: (contact?: OrganizerContact) =>
+      `אם אתם חווים בעיות, נסו לרענן את הדף קודם. אם הבעיה ממשיכה, ${contactClause('he', contact)} או התקשרו לקו התמיכה שלנו.`,
 
     // רשימת תקלות אפשריות ופתרונן
-    responseKickedOut:
-      'היכנסו שוב מהקישור שנשלח אליכם. אם אין לכם יותר את הקישור — בקשו מהמנחה קישור חדש לפעילות.\n\nבכניסה מחדש בחרו את שם הקבוצה מהרשימה, והזינו בדיוק את אותו השם שהזנתם קודם — כך ההתקדמות שלכם נמצאת שוב.',
+    responseKickedOut: (contact?: OrganizerContact) =>
+      `היכנסו שוב מהקישור שנשלח אליכם. אם אין לכם יותר את הקישור — ${askClause('he', contact)} קישור חדש לפעילות.\n\nבכניסה מחדש בחרו את שם הקבוצה מהרשימה, והזינו בדיוק את אותו השם שהזנתם קודם — כך ההתקדמות שלכם נמצאת שוב.`,
     responseButtonStuck:
       'רעננו את הדף ונסו שוב. אם עדיין לא קורה כלום, זו בדרך כלל קליטה חלשה — עברו למקום עם קליטה טובה יותר ונסו פעם נוספת.',
-    responseTaskStuck:
-      'נסו קודם את הרמז שבתוך המשחק (הוא עולה 5 נקודות). אם אין רמז, או שהוא לא מספיק — פנו למנחה, שיכול לחשוף לכם את הפתרון מדף התשובות.',
+    responseTaskStuck: (contact?: OrganizerContact) =>
+      `נסו קודם את הרמז שבתוך המשחק (הוא עולה 5 נקודות). אם אין רמז, או שהוא לא מספיק — ${contactClause('he', contact)}, שיכול לחשוף לכם את הפתרון מדף התשובות.`,
     responseVideoMissing:
       'אם המסך עדיין טוען — בחרו לקבל את הסרטון ב-SMS והוא יגיע אליכם בהודעה.\n\nאם כבר בחרתם SMS, או שאינכם מעוניינים — פשוט המתינו, הסרטון עדיין בהכנה. אם קפץ ישר מסך הסיום, כנראה שלא צולמו כל התמונות ולא ניתן ליצור סרטון הפעם.',
   },

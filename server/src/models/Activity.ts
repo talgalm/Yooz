@@ -88,6 +88,27 @@ export interface IActivity {
   opening?: IOpening;
   module?: IModuleConfig;
   guidelines?: string;
+  /** Free-text context for the participant help chat's open "something else"
+   *  free-text Q&A only — appended to the Gemini prompt for this activity.
+   *  Never shown verbatim to participants. */
+  extraSupportInfo?: string;
+  /** Optional named contact (name + phone) for this activity's participant
+   *  support bot to point participants to. When unset, all "contact the
+   *  organizer"/"ask your facilitator" copy falls back to generic wording. */
+  organizerContactName?: string;
+  organizerContactPhone?: string;
+  /** Participant help-chat FAQ menu categories to hide for this activity
+   *  (e.g. 'video_missing' when the activity has no collage station).
+   *  Keys: login, game_start, score, loading, kicked_out, button_stuck,
+   *  task_stuck, video_missing. Unset/empty = show all categories. */
+  helpCategoriesDisabled?: string[];
+  /** Per-category custom text overriding the default FAQ menu answer, keyed by
+   *  the same category keys as helpCategoriesDisabled. Missing key = default. */
+  helpCategoryResponses?: Record<string, string>;
+  /** The "something else" open free-text chat is opt-in, off by default —
+   *  it's an edge case for activities needing a category/issue not covered
+   *  by the standard list, not shown otherwise. */
+  helpOtherCategoryEnabled?: boolean;
   customInstructions?: ICustomInstructions;
   scheduledStart?: Date;
   scheduledEnd?: Date;
@@ -259,6 +280,12 @@ const activitySchema = new Schema<IActivity>({
   opening: { type: openingSchema },
   module: { type: moduleConfigSchema },
   guidelines: { type: String },
+  extraSupportInfo: { type: String },
+  organizerContactName: { type: String },
+  organizerContactPhone: { type: String },
+  helpCategoriesDisabled: { type: [String], default: undefined },
+  helpCategoryResponses: { type: Schema.Types.Mixed, default: undefined },
+  helpOtherCategoryEnabled: { type: Boolean, default: false },
   customInstructions: { type: customInstructionsSchema },
   scheduledStart: { type: Date },
   scheduledEnd: { type: Date },

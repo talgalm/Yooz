@@ -116,6 +116,12 @@ export interface Activity {
     }[];
   };
   guidelines?: string;
+  extraSupportInfo?: string;
+  organizerContactName?: string;
+  organizerContactPhone?: string;
+  helpCategoriesDisabled?: string[];
+  helpCategoryResponses?: Record<string, string>;
+  helpOtherCategoryEnabled?: boolean;
   customInstructions?: CustomInstructions;
   scheduledStart?: string;
   scheduledEnd?: string;

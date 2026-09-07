@@ -98,6 +98,15 @@ router.get('/:code', async (req: Request<{ code: string }>, res: Response<Activi
     ...(activity.scheduledEnd && { scheduledEnd: activity.scheduledEnd.toISOString() }),
     ...(activity.module && { moduleType: activity.module.type }),
     ...(activity.isContinuous && { isContinuous: true }),
+    ...(activity.organizerContactName && activity.organizerContactPhone && {
+      organizerContactName: activity.organizerContactName,
+      organizerContactPhone: activity.organizerContactPhone,
+    }),
+    ...(activity.helpCategoriesDisabled?.length && { helpCategoriesDisabled: activity.helpCategoriesDisabled }),
+    ...(activity.helpCategoryResponses && Object.keys(activity.helpCategoryResponses).length > 0 && {
+      helpCategoryResponses: activity.helpCategoryResponses,
+    }),
+    ...(activity.helpOtherCategoryEnabled === true && { helpOtherCategoryEnabled: true }),
   };
 
   activityConfigCache.set(code, { data, expiresAt: Date.now() + ACTIVITY_CONFIG_TTL_MS });
