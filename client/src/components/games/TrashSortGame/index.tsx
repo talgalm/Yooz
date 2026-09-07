@@ -59,6 +59,9 @@ interface TrashSortSettings {
   fallSpeedMs?: number;
 }
 
+// Pause between one item leaving and the next starting to fall.
+const ITEM_GAP_MS = 900;
+
 export default function TrashSortGame({ game, onComplete }: GameProps) {
   const t = useTranslations(texts);
   const sounds = useGameSounds({});
@@ -177,7 +180,10 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
       finishGame();
     } else {
       setCurrentItemIdx(nextIdx);
-      setTimeout(() => startFalling(), 400);
+      // Park the next item back at the top for the whole gap — otherwise it
+      // renders at the previous item's drop position until startFalling runs.
+      setItemY(0);
+      setTimeout(() => startFalling(), ITEM_GAP_MS);
     }
   }, [currentItemIdx, allItems.length, startFalling]);
 
