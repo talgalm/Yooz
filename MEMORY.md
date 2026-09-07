@@ -138,6 +138,12 @@ Login config: `loginFields: ('email'|'phoneNumber'|'name')[]`, `emailGoogle?`,
 `activityDurationMinutes?` (time mode), `roadmapTimerMinutes?` (cosmetic count-up, turns red),
 `passThreshold?` (0-100, **default 70**; null = no pass grade), `includeOnRoadmap?`.
 
+**Daily reset**: `dailyReset?` (**default false**, checkbox in the Scheduling section of
+`AdminCreateActivityPage`) + `lastDailyResetDay?` (Israel `YYYY-MM-DD` stamp). When on, a
+5-minute sweep (`services/activityReset.ts`, started from `index.ts`) wipes the activity's
+data at Israel midnight. An activity with no stamp is only *armed*, never wiped, so ticking
+the box does not eat the current day. Same wipe as go-live — both call `wipeActivityData`.
+
 **Stats sharing**: `statsShareToken?` (public read-only link), `excludedReportIds?`
 (non-destructive exclusion from stats/exports).
 
@@ -589,8 +595,9 @@ present view (`OrderSurveyPresentPage` / `manager/present`).
   "today in Israel" logic.
 - **OG crawler short-circuit** in `index.ts` before the SPA fallback — don't move it.
 - Reports have **no timestamps** — use `joinedAt` as the creation/"today" field.
-- Going **live wipes dynamic data** (reports/scores/session state); deleting an activity
-  cascade-deletes its reports.
+- Going **live wipes dynamic data** (reports/scores/session state) via `wipeActivityData`
+  (`services/activityReset.ts`) — the same helper the `dailyReset` midnight sweep uses;
+  deleting an activity cascade-deletes its reports.
 
 ---
 

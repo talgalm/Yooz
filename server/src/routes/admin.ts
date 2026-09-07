@@ -19,6 +19,7 @@ import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/
 import { getSmsProvider } from '../services/sms/smsProvider';
 import { renderWinnerSms } from '../utils/groupRewardConfig';
 import { DEFAULT_SMS_TEMPLATE } from '../services/groupRewardService';
+import { wipeActivityData } from '../services/activityReset';
 
 const router = Router();
 
@@ -74,7 +75,7 @@ async function buildActivityData(
   existingPasswordHash?: string,
   existing?: IActivity,
 ): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
+  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, dailyReset, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -206,6 +207,7 @@ async function buildActivityData(
   data.leaderboardAsGrade = leaderboardAsGrade === true;
   data.hideLeaderboardInHeader = hideLeaderboardInHeader === true;
   data.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly !== false;
+  data.dailyReset = dailyReset === true;
   // Time limit is only meaningful in modes that show the timer (time/both).
   data.activityDurationMinutes = ((data.leaderboardMode === 'time' || data.leaderboardMode === 'both') && activityDurationMinutes && activityDurationMinutes > 0)
     ? activityDurationMinutes
@@ -482,16 +484,7 @@ router.patch('/activities/:id/status', authenticateAdmin, async (req: Request<{ 
   }
 
   // When going live, wipe all dynamic data (reports/participants/scores/session state)
-  if (status === 'live') {
-    await Report.deleteMany({ activityId: activity._id });
-    await ActivityGroup.deleteMany({ activityId: activity._id });
-    activity.orderSurveySession = undefined;
-    activity.shareClicks = undefined;
-    activity.shareCompleted = undefined;
-    activity.missionPuzzleCompletions = undefined;
-    activity.missionTrashSortCompletions = undefined;
-    activity.missionTrashSortScoreSum = undefined;
-  }
+  if (status === 'live') await wipeActivityData(activity);
 
   activity.status = status;
   await activity.save();

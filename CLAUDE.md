@@ -18,7 +18,7 @@ npm run build:client     # Build React app into client/dist
 npm start                # Production: Express serves API + built client on :3000
 ```
 
-There is no lint script and no test runner script. Eight `node:test` self-checks exist and are
+There is no lint script and no test runner script. Nine `node:test` self-checks exist and are
 run by hand:
 
 ```bash
@@ -29,6 +29,7 @@ npx tsx --test server/src/utils/participantAuth.test.ts
 npx tsx --test server/src/utils/taskVisibility.test.ts
 npx tsx --test server/src/utils/mediaInUse.test.ts
 npx tsx --test server/src/utils/mediaFolders.test.ts
+npx tsx --test server/src/services/activityReset.test.ts
 npx tsx server/src/utils/groupRewardConfig.test.ts
 ```
 

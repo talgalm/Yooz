@@ -290,6 +290,7 @@ export interface CreateActivityRequest {
   leaderboardAsGrade?: boolean;
   hideLeaderboardInHeader?: boolean;
   leaderboardCurrentDayOnly?: boolean;
+  dailyReset?: boolean;
   activityDurationMinutes?: number;
   roadmapTimerMinutes?: number;
   includeOnRoadmap?: boolean;
