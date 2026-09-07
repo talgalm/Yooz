@@ -132,5 +132,6 @@ export interface Activity {
   includeOnRoadmap?: boolean;
   hideLeaderboardInHeader?: boolean;
   leaderboardCurrentDayOnly?: boolean;
+  dailyReset?: boolean;
   leaderboardAsGrade?: boolean;
 }

@@ -7,7 +7,7 @@ import { AnalyticsSourceProvider, makeSharedSource } from '../../admin/AdminStat
  * Public, read-only statistics view reached via a share token (/stats/:token).
  * It reuses the admin ActivityAnalytics component but points every data hook at
  * the token-scoped public endpoints (no admin auth) and hides admin-only
- * controls (pass grade editing, share link, AI report chat).
+ * controls (pass grade editing, share link, participant roster).
  */
 export default function SharedStatsPage() {
   const { token = '' } = useParams<{ token: string }>();

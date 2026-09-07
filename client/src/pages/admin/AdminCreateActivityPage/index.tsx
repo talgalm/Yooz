@@ -396,6 +396,7 @@ export default function AdminCreateActivityPage() {
   const [helpChatSectionExpanded, setHelpChatSectionExpanded] = useState(false);
 
   const [alwaysOpen, setAlwaysOpen] = useState(true);
+  const [dailyReset, setDailyReset] = useState(false);
   const [scheduledStart, setScheduledStart] = useState('');
   const [scheduledEnd, setScheduledEnd] = useState('');
 
@@ -575,6 +576,7 @@ export default function AdminCreateActivityPage() {
         setLeaderboardAsGrade(a.leaderboardAsGrade === true);
         setDisplayLeaderboardInHeader(!a.hideLeaderboardInHeader);
         setLeaderboardCurrentDayOnly(a.leaderboardCurrentDayOnly !== false);
+        setDailyReset(a.dailyReset === true);
         if (a.activityDurationMinutes) setActivityDurationMinutes(String(a.activityDurationMinutes));
         if (a.roadmapTimerMinutes) {
           setRoadmapTimerEnabled(true);
@@ -1058,6 +1060,7 @@ export default function AdminCreateActivityPage() {
       payload.leaderboardAsGrade = leaderboardMode !== 'time' && leaderboardAsGrade;
       payload.hideLeaderboardInHeader = !displayLeaderboardInHeader;
       payload.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly;
+      payload.dailyReset = dailyReset;
       // Time limit field is shown for both 'time' and 'both' modes — it drives
       // the live timer + warning popup in either case.
       if ((leaderboardMode === 'time' || leaderboardMode === 'both') && activityDurationMinutes.trim()) {
@@ -1475,6 +1478,15 @@ export default function AdminCreateActivityPage() {
                           style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
                         />
                         {t.alwaysOpen}
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, cursor: 'pointer', fontSize: 14 }}>
+                        <input
+                          type="checkbox"
+                          checked={dailyReset}
+                          onChange={(e) => setDailyReset(e.target.checked)}
+                          style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                        />
+                        {t.dailyReset}
                       </label>
                       {!alwaysOpen && (
                         <VerticalStack>
