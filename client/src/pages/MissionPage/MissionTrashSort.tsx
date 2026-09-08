@@ -15,7 +15,6 @@ import {
 } from './MissionFrame';
 import MissionTopMenu from './MissionTopMenu';
 import { shareViaFacebookDialog } from '../../utils/facebookSdk';
-import { hasAnyCollagePhotos } from '../../components/stations/collageSplitStorage';
 import {
   BADGE_SHARE_LINE2,
   SHARE_CHALLENGE_LINE1,
@@ -520,7 +519,6 @@ export default function MissionTrashSort({
   badgeAwardText = 'מוענק בזאת',
   badgeAchievementText = 'על מציאת המזוודה והצלת הפארק!',
   shareButton = 'שתפו עם חברים',
-  continueButton,
   startButton = 'קדימה!',
   onContinue,
   participantName,
@@ -562,19 +560,6 @@ export default function MissionTrashSort({
   const [copiedLink, setCopiedLink] = useState(false);
   const [badgeBlob, setBadgeBlob] = useState<Blob | null>(null);
   const [badgePreviewUrl, setBadgePreviewUrl] = useState<string | null>(null);
-  // When collage photos were captured earlier in this activity, swap the
-  // share-with-friends CTA for a "create collage video" CTA that advances
-  // the activity (where the admin should have placed a video-only collage part).
-  const [hasCollagePhotos, setHasCollagePhotos] = useState(false);
-  useEffect(() => {
-    if (!activityCode) return;
-    let cancelled = false;
-    hasAnyCollagePhotos(activityCode).then((has) => {
-      if (!cancelled) setHasCollagePhotos(has);
-    });
-    return () => { cancelled = true; };
-  }, [activityCode]);
-
   const trackShareEvent = useCallback((event: 'click' | 'completed') => {
     if (!activityCode) return;
     fetch(`${API}/api/activities/${activityCode}/share-event`, {

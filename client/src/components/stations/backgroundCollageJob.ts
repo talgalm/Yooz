@@ -64,10 +64,6 @@ interface InternalJob extends BackgroundJob {
 
 const jobs = new Map<string, InternalJob>();
 
-function jobKey(activityCode: string, splitGroupId: string): string {
-  return `${activityCode}::${splitGroupId}`;
-}
-
 function snapshot(j: InternalJob): BackgroundJob {
   return {
     status: j.status,

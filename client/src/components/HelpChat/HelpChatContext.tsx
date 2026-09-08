@@ -24,8 +24,6 @@ import {
   OptionsGrid,
   OptionButton,
   OptionIcon,
-  PhoneBar,
-  PhoneLink,
   InputArea,
   ChatInput,
   SendButton,
@@ -38,7 +36,6 @@ import {
   NudgeBubble,
 } from './styled';
 
-const SUPPORT_PHONE = '050-0000000';
 
 interface ChatMessage {
   from: 'bot' | 'user';

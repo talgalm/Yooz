@@ -245,7 +245,6 @@ export default function ActivitySessionHeader({
   pointsRoll,
   onPointsRollComplete,
   chromeVariant = 'default',
-  transparentChrome = false,
   omitThirdSlot = false,
   leaderboardMode = 'points',
   elapsedSeconds = 0,

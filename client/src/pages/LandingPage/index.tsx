@@ -1,13 +1,10 @@
-import { useNavigate } from 'react-router-dom';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './LandingPage.i18n';
 import NatureBackground from '../../components/NatureBackground';
-import LangDrawer from '../../components/LangDrawer';
 import { styled, keyframes } from '@mui/material/styles';
 
 // ─── Colors ───
 
-const C_DARK_GREEN = '#33691e';
 const C_GREEN = '#689f38';
 const C_YELLOW = '#ffca28';
 
@@ -23,24 +20,12 @@ const float = keyframes`
   50% { transform: translateY(-8px); }
 `;
 
-const shimmer = keyframes`
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
-`;
-
 // ─── Styled Components ───
 
 const Page = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   minHeight: '100dvh',
-});
-
-const LangCorner = styled('div')({
-  position: 'absolute',
-  top: 12,
-  right: 12,
-  zIndex: 10,
 });
 
 const Content = styled('div')({

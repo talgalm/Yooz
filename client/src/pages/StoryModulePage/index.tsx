@@ -17,7 +17,7 @@ import { texts } from './StoryModulePage.i18n';
 import { GAME_CONSTANTS, type GameResult } from '../../components/games/types';
 import type { OrderSurveySubmitPayload } from '../../components/games/OrderGame';
 import LangDrawer from '../../components/LangDrawer';
-import ThemedBackground, { getThemeShellColor, getThemeTransitionBackground, getThemeSkyColor, getThemeGroundColor } from '../../components/ThemedBackground';
+import { getThemeShellColor, getThemeTransitionBackground, getThemeSkyColor, getThemeGroundColor } from '../../components/ThemedBackground';
 import { styled, keyframes } from '@mui/material/styles';
 import {
   PageContainer,
@@ -296,7 +296,7 @@ export default function StoryModulePage() {
       itemIndex: currentItemIndex,
       totalItems: data?.module?.items?.length,
       itemName: item?.name,
-      itemType: item ? (item.type === 'game' ? item.gameType : item.stationType) : undefined,
+      itemType: item ? (item.type === 'game' ? item.gameType : item.type === 'station' ? item.stationType : item.type) : undefined,
     });
     return () => setHelpChatActivityContext(null);
   }, [data, phase, currentItemIndex]);

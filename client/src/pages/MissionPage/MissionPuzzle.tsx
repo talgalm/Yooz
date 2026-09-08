@@ -239,15 +239,6 @@ const GhostContainer = styled('div')({
   opacity: 0.85,
 });
 
-const CompleteImage = styled('img')({
-  width: '85vw',
-  maxWidth: 380,
-  aspectRatio: '1 / 1',
-  objectFit: 'cover',
-  borderRadius: 4,
-  animation: `${fadeIn} 0.6s ease-out`,
-});
-
 // ─── Helpers ───
 
 function shuffle<T>(arr: T[]): T[] {

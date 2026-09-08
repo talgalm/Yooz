@@ -51,7 +51,6 @@ import {
   InstructionsCard,
   InstructionsTitle,
   InstructionsText,
-  GolfIntroOverlay,
   FinishContainer,
   FinishContent,
   FinishStumpStage,
@@ -88,30 +87,6 @@ type CardStatus = 'neutral' | 'correct' | 'incorrect';
 
 // ─── Nature SVG decorations ───
 
-
-/** Leaf vein pattern inside banners */
-function LeafVeinSvg() {
-  return (
-    <svg
-      width="100%" height="100%"
-      viewBox="0 0 340 60"
-      preserveAspectRatio="none"
-      style={{ position: 'absolute', inset: 0, zIndex: 0, opacity: 0.12 }}
-    >
-      <line x1="10" y1="30" x2="330" y2="30" stroke="#fff" strokeWidth="1.5" />
-      <line x1="60" y1="30" x2="30" y2="10" stroke="#fff" strokeWidth="1" />
-      <line x1="60" y1="30" x2="30" y2="50" stroke="#fff" strokeWidth="1" />
-      <line x1="120" y1="30" x2="85" y2="8" stroke="#fff" strokeWidth="1" />
-      <line x1="120" y1="30" x2="85" y2="52" stroke="#fff" strokeWidth="1" />
-      <line x1="180" y1="30" x2="150" y2="10" stroke="#fff" strokeWidth="1" />
-      <line x1="180" y1="30" x2="150" y2="50" stroke="#fff" strokeWidth="1" />
-      <line x1="240" y1="30" x2="210" y2="8" stroke="#fff" strokeWidth="1" />
-      <line x1="240" y1="30" x2="210" y2="52" stroke="#fff" strokeWidth="1" />
-      <line x1="300" y1="30" x2="270" y2="12" stroke="#fff" strokeWidth="1" />
-      <line x1="300" y1="30" x2="270" y2="48" stroke="#fff" strokeWidth="1" />
-    </svg>
-  );
-}
 
 /** Tree ring lines inside stump score circle */
 function StumpRingsSvg() {

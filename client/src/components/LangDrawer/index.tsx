@@ -7,7 +7,7 @@ interface LangDrawerProps {
 }
 
 export default function LangDrawer({ variant = 'default' }: LangDrawerProps) {
-  const { lang, setLang } = useLang();
+  const { lang } = useLang();
 
   const toggle = () => {
     localStorage.setItem('yooz_lang', lang === 'he' ? 'en' : 'he');
