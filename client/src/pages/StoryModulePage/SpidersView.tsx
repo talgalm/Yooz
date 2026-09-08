@@ -452,7 +452,7 @@ interface SpidersViewProps {
   theme?: string;
   customTheme?: CustomThemeData;
   showStationNumbers?: boolean;
-  leaderboardMode?: 'points' | 'time';
+  leaderboardMode?: 'points' | 'time' | 'both';
   elapsedSeconds?: number;
   activityDurationMinutes?: number;
   /** Cosmetic roadmap timer: turns red after this many minutes (counts up from 0). */

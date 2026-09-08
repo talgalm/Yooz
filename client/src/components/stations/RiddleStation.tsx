@@ -9,8 +9,8 @@ import ImageZoomOverlay, { ZoomBadge, ZoomGlassIcon } from '../ImageZoomOverlay'
 // ─── Types ───
 
 interface RiddleSettings {
-  clue: string;
-  answer: string;
+  clue?: string;
+  answer?: string;
   mediaUrl?: string;
   mediaType?: 'image' | 'video';
   maxScore?: number;
@@ -370,12 +370,6 @@ const ResultMessage = styled('div')({
   marginBottom: 12,
 });
 
-const ResultScore = styled('div')({
-  fontSize: 17,
-  fontWeight: 700,
-  color: '#6c5ce7',
-});
-
 // ─── Component ───
 
 interface RiddleStationProps {
@@ -396,7 +390,6 @@ export default function RiddleStation({
   textColor,
   stationHintText,
   stationHintImageUrl,
-  stationHintUsed,
   onStationHintClick,
   hintLabel,
 }: RiddleStationProps) {
@@ -406,7 +399,6 @@ export default function RiddleStation({
   const answer = settings.answer || '';
   const maxScore = typeof settings.maxScore === 'number' ? settings.maxScore : 100;
   const unlimitedAttempts = settings.unlimitedAttempts === true;
-  const successMessage = settings.successMessage || (isHebrewText(clue + answer) ? 'כל הכבוד! ענית נכון!' : 'Correct! Well done!');
   const failureMessage = settings.failureMessage || (isHebrewText(clue + answer) ? 'לא הצלחת הפעם. נסה שוב בפעם הבאה!' : 'Better luck next time!');
   const isHebrew = isHebrewText(clue + answer);
   const isRTL = isHebrewText(answer);

@@ -305,17 +305,6 @@ const DeleteThemeBtn = styled('button')({
   },
 });
 
-const ColorDot = styled('span')<{ color: string }>(({ color }) => ({
-  display: 'inline-block',
-  width: 10,
-  height: 10,
-  borderRadius: '50%',
-  background: color,
-  border: '1px solid rgba(0,0,0,0.12)',
-  marginRight: 4,
-  verticalAlign: 'middle',
-}));
-
 export default function AdminCreateActivityPage() {
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
@@ -532,7 +521,7 @@ export default function AdminCreateActivityPage() {
           setIsContinuous(true);
           if (a.portalId) setPortalId(a.portalId);
         }
-        if (a.leaderboardMode) setLeaderboardMode(a.leaderboardMode as 'points' | 'time' | 'both');
+        if (a.leaderboardMode) setLeaderboardMode(a.leaderboardMode);
         setLeaderboardAsGrade(a.leaderboardAsGrade === true);
         setDisplayLeaderboardInHeader(!a.hideLeaderboardInHeader);
         setLeaderboardCurrentDayOnly(a.leaderboardCurrentDayOnly !== false);

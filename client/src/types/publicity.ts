@@ -1,6 +1,12 @@
 // Mirrors server/src/models/SiteContent.ts
 
-export interface LocalizedText {
+import type { Lang } from '../context/LanguageContext';
+
+/**
+ * Admin-authored copy. The server stores Hebrew and English; a UI language the
+ * server has no column for reads as undefined, and callers fall back to Hebrew.
+ */
+export interface LocalizedText extends Partial<Record<Lang, string>> {
   he: string;
   en: string;
 }

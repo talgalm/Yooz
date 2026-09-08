@@ -16,7 +16,6 @@ const HOLE_SPEED = 4;
 const BALL_R = 15;
 const SPEED_FACTOR = 0.28;
 const MAX_SPEED = 14;
-const BONUS_PER_SAVED = 5;
 const MAX_DRAG_DIST = MAX_SPEED / SPEED_FACTOR; // ~50px
 
 const COURSE_W = 340;
@@ -528,7 +527,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
 
 const LEAF_BANNER_BG = '#3d6b4f';
 const LEAF_BANNER_DARK = '#2e5a3e';
-const FINISH_PURPLE = '#6c5ce7';
 
 const GolfContainer = styled('div')({
   flex: 1,
@@ -708,11 +706,6 @@ const ResultTitle = styled('div')({
   animation: `${floatIn} 0.5s ease-out`,
 });
 
-const feedbackPop = keyframes`
-  0% { transform: scale(0.8); opacity: 0; }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); opacity: 1; }
-`;
 
 
 const GoldContinueBtn = styled('button')({

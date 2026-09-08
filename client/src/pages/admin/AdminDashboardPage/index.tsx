@@ -734,12 +734,6 @@ const ModalBackBtn = styled('button')({
   '&:hover': { textDecoration: 'underline' },
 });
 
-const ModalSubtitle = styled('div')({
-  fontSize: 14,
-  color: '#888',
-  marginBottom: 20,
-  marginTop: -12,
-});
 
 const CreateGrid = styled('div')({
   display: 'grid',

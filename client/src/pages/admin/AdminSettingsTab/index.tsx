@@ -1,6 +1,6 @@
 import { styled } from '@mui/material/styles';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
-import { useLang, useTranslations } from '../../../context/LanguageContext';
+import { LANGS, useLang, useTranslations } from '../../../context/LanguageContext';
 import type { Lang } from '../../../context/LanguageContext';
 import { texts } from './AdminSettingsTab.i18n';
 import { AdminCard, SelectionButton, DangerButton } from '../../../components/styled';
@@ -121,12 +121,11 @@ export default function AdminSettingsTab({ onLogout }: { onLogout: () => void })
         </CardHead>
 
         <LangRow>
-          <LangButton type="button" selected={lang === 'he'} onClick={() => pickLang('he')}>
-            🇮🇱 {t.hebrew}
-          </LangButton>
-          <LangButton type="button" selected={lang === 'en'} onClick={() => pickLang('en')}>
-            🇺🇸 {t.english}
-          </LangButton>
+          {LANGS.map((l) => (
+            <LangButton key={l.code} type="button" selected={lang === l.code} onClick={() => pickLang(l.code)}>
+              {l.flag} {l.label}
+            </LangButton>
+          ))}
         </LangRow>
       </AdminCard>
 

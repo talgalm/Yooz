@@ -129,4 +129,8 @@ export interface Activity {
   leaderboardCurrentDayOnly?: boolean;
   dailyReset?: boolean;
   leaderboardAsGrade?: boolean;
+  leaderboardMode?: 'points' | 'time' | 'both';
+  /** Optional time limit in minutes (only relevant when leaderboardMode is 'time'). */
+  activityDurationMinutes?: number;
+  roadmapTimerMinutes?: number | null;
 }

@@ -28,7 +28,7 @@ const ManagerAuthContext = createContext<ManagerAuthContextType | null>(null);
 function decodeToken(token: string): Manager | null {
   try {
     const payload = decodeJwtPayload<{ role?: string; email?: string; activityCode?: string }>(token);
-    if (payload.role !== 'manager') return null;
+    if (payload.role !== 'manager' || !payload.email || !payload.activityCode) return null;
     return {
       email: payload.email,
       activityCode: payload.activityCode,

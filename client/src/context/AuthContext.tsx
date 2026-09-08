@@ -41,10 +41,12 @@ const AuthContext = createContext<AuthContextType | null>(null);
 function decodeToken(token: string): Participant | null {
   try {
     const payload = decodeJwtPayload<{ participantName?: string; activityCode?: string; connectionType?: string; email?: string; phoneNumber?: string; group?: string; age?: number }>(token);
+    // A token without an activity code can't address anything — treat it as no session.
+    if (!payload.activityCode) return null;
     return {
-      name: payload.participantName,
+      name: payload.participantName || '',
       activityCode: payload.activityCode,
-      connectionType: payload.connectionType || 'single',
+      connectionType: payload.connectionType === 'group' ? 'group' : 'single',
       email: payload.email,
       phoneNumber: payload.phoneNumber,
       group: payload.group,

@@ -3,8 +3,10 @@
  *
  * Architecture: This is a pluggable module. To upgrade to LLM-based responses,
  * replace this file's `matchTopic` function with an API call to your LLM endpoint.
- * The interface stays the same: (input: string, lang: 'en'|'he') => MatchResult | null
+ * The interface stays the same: (input: string, lang: Lang) => MatchResult | null
  */
+
+import type { Lang } from '../../context/LanguageContext';
 
 export interface MatchResult {
   topicId: string;
@@ -167,7 +169,11 @@ const topics: TopicDef[] = [
  * Match user input against predefined topics using keyword scoring.
  * Returns the best match if confidence is above threshold.
  */
-export function matchTopic(input: string, lang: 'en' | 'he'): MatchResult | null {
+export function matchTopic(input: string, lang: Lang): MatchResult | null {
+  // ponytail: keywords are only authored in Hebrew and English; any other
+  // language matches against the English set. Add a keyword list per language
+  // here if the help bot ever needs to match one directly.
+  const kw: 'en' | 'he' = lang === 'he' ? 'he' : 'en';
   const normalized = input.toLowerCase().trim();
   if (!normalized) return null;
 
@@ -175,7 +181,7 @@ export function matchTopic(input: string, lang: 'en' | 'he'): MatchResult | null
   let bestScore = 0;
 
   for (const topic of topics) {
-    const keywords = [...topic.keywords[lang], ...topic.keywords[lang === 'en' ? 'he' : 'en']];
+    const keywords = [...topic.keywords[kw], ...topic.keywords[kw === 'en' ? 'he' : 'en']];
     let score = 0;
     let matchCount = 0;
 
