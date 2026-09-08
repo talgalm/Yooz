@@ -153,7 +153,12 @@ participant-facing read of Reports must honour it:
   returning the next morning resumes *and overwrites* yesterday's finished report;
 - `GET /:code/leaderboard` — `dailyReset` forces `currentDayOnly` on regardless of the
   `leaderboardCurrentDayOnly` flag;
-- `getParticipantCount(id, dayScoped)` — participant-count popup thresholds.
+- `getParticipantCount(id, dayScoped)` — participant-count popup thresholds;
+- **the session itself**: the JWT carries `dailyReset: true`, and `authenticateToken` 401s a
+  token issued before today's Israel midnight. Without it a token kept overnight (7-day JWT,
+  mirrored in a cookie) still addresses yesterday's report *by id*, and the `/scores` upsert
+  would overwrite it. `isStaleDailyResetToken` drops the same token client-side at restore
+  (`AuthContext.readStoredToken`) so the participant meets the login screen, not an error.
 
 Go-live is still a real wipe (`wipeActivityData`, deletes reports) — a deliberate "clear the
 test runs" action, not the daily rollover.

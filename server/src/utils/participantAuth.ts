@@ -193,6 +193,7 @@ export async function createParticipantSession(
       // email addresses has two reports under the same name, so a name lookup
       // resumes and overwrites whichever report happens to be newest.
       reportId: String(report._id),
+      ...(activity.dailyReset && { dailyReset: true }),
       connectionType,
       ...(opts.email && { email: opts.email }),
       ...(opts.phoneNumber && { phoneNumber: opts.phoneNumber }),
