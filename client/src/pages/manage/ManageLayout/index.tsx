@@ -5,6 +5,7 @@ import { useManageAuth } from '../../../context/ManageAuthContext';
 import { useLang } from '../../../context/LanguageContext';
 import { MANAGE_NAV } from '../nav';
 import TimerBar from '../TimerBar';
+import ChangePasswordModal from '../ChangePasswordModal';
 import { PRIMARY, PRIMARY_LIGHT, BORDER, TEXT, TEXT_LIGHT } from '../../../components/styled';
 
 /** Below this the sidebar becomes an off-canvas drawer behind a hamburger. */
@@ -203,6 +204,7 @@ export default function ManageLayout() {
   const { lang } = useLang();
   const { pathname } = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const he = lang === 'he';
 
   // Navigating inside the drawer must close it, or the new screen stays covered.
@@ -213,11 +215,14 @@ export default function ManageLayout() {
   const firstOwnerOnly = visible.find((i) => i.ownerOnly);
   const current = visible.find((i) => pathname === `/manage/${i.path}`);
 
+  // A generated password gets you in and no further: nothing else is reachable
+  // until it is replaced.
+  if (user?.mustChangePassword) return <ChangePasswordModal forced />;
+
   // Hiding the link is not a gate — a typed URL mounted the page anyway, which
   // then just failed on 403s. The server is still the real gate.
-  if (MANAGE_NAV.some((i) => i.ownerOnly && !isOwner && pathname === `/manage/${i.path}`)) {
-    return <Navigate to="/manage/my-work" replace />;
-  }
+  const blocked = MANAGE_NAV.some((i) => i.ownerOnly && !isOwner && pathname === `/manage/${i.path}`);
+  if (blocked) return <Navigate to="/manage/my-work" replace />;
 
   return (
     <Shell>
@@ -241,6 +246,9 @@ export default function ManageLayout() {
         <UserBox>
           <UserName>{user?.name}</UserName>
           <UserRole>{user ? ROLE_LABEL[user.role][he ? 'he' : 'en'] : ''}</UserRole>
+          <LogoutButton onClick={() => setChangingPassword(true)}>
+            {he ? 'שינוי סיסמה' : 'Change password'}
+          </LogoutButton>
           <LogoutButton onClick={logout}>{he ? 'התנתקות' : 'Sign out'}</LogoutButton>
         </UserBox>
       </Sidebar>
@@ -262,6 +270,7 @@ export default function ManageLayout() {
           <Outlet />
         </Main>
       </Content>
+      {changingPassword && <ChangePasswordModal onClose={() => setChangingPassword(false)} />}
     </Shell>
   );
 }

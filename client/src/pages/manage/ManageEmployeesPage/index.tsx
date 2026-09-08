@@ -53,6 +53,8 @@ export default function ManageEmployeesPage() {
   const [editing, setEditing] = useState<Employee | null>(null);
   const [creating, setCreating] = useState(false);
   const [resetting, setResetting] = useState<Employee | null>(null);
+  // Plaintext lives only here, only until the dialog closes.
+  const [issued, setIssued] = useState<{ name: string; password: string } | null>(null);
   const [deactivating, setDeactivating] = useState<Employee | null>(null);
 
   const load = useCallback(async () => {
@@ -70,6 +72,21 @@ export default function ManageEmployeesPage() {
   }, [showInactive]);
 
   useEffect(() => { load(); }, [load]);
+
+  const resetPassword = async () => {
+    if (!resetting) return;
+    try {
+      const r = await manageApiFetch<{ password: string }>(
+        `/api/manage/employees/${resetting._id}/reset-password`, { method: 'POST' },
+      );
+      setIssued({ name: resetting.name, password: r.password });
+      setResetting(null);
+    } catch (err) {
+      const code = err instanceof Error ? err.message : '';
+      setError(t.errors[code as keyof typeof t.errors] ?? code);
+      setResetting(null);
+    }
+  };
 
   const deactivate = async () => {
     if (!deactivating) return;
@@ -158,14 +175,29 @@ export default function ManageEmployeesPage() {
         <EmployeeModal
           employee={editing ?? undefined}
           onClose={() => { setCreating(false); setEditing(null); }}
-          onSaved={() => { setCreating(false); setEditing(null); load(); }}
+          onSaved={(password, name) => {
+            setCreating(false);
+            setEditing(null);
+            if (password && name) setIssued({ name, password });
+            load();
+          }}
         />
       )}
       {resetting && (
-        <ResetPasswordModal
-          employee={resetting}
-          onClose={() => setResetting(null)}
-          onSaved={() => setResetting(null)}
+        <ConfirmDialog
+          title={t.resetPassword}
+          message={t.confirmReset(resetting.name)}
+          confirmLabel={t.resetPassword}
+          danger={false}
+          onCancel={() => setResetting(null)}
+          onConfirm={resetPassword}
+        />
+      )}
+      {issued && (
+        <PasswordIssuedModal
+          name={issued.name}
+          password={issued.password}
+          onClose={() => setIssued(null)}
         />
       )}
       {deactivating && (
@@ -182,12 +214,14 @@ export default function ManageEmployeesPage() {
 }
 
 function EmployeeModal({ employee, onClose, onSaved }: {
-  employee?: Employee; onClose: () => void; onSaved: () => void;
+  employee?: Employee;
+  onClose: () => void;
+  /** On create, hands back the generated password so the owner can pass it on. */
+  onSaved: (password?: string, name?: string) => void;
 }) {
   const t = useTranslations(texts);
   const [name, setName] = useState(employee?.name ?? '');
   const [email, setEmail] = useState(employee?.email ?? '');
-  const [password, setPassword] = useState('');
   const [role, setRole] = useState(employee?.role ?? 'member');
   const [weeklyCapacityHours, setCapacity] = useState(String(employee?.weeklyCapacityHours ?? 40));
   const [hourlyCost, setHourlyCost] = useState(String(employee?.hourlyCost ?? 0));
@@ -206,12 +240,11 @@ function EmployeeModal({ employee, onClose, onSaved }: {
         weeklyCapacityHours: Number(weeklyCapacityHours) || 40,
         hourlyCost: Number(hourlyCost) || 0,
       };
-      if (!employee) body.password = password;
-      await manageApiFetch(employee ? `/api/manage/employees/${employee._id}` : '/api/manage/employees', {
-        method: employee ? 'PATCH' : 'POST',
-        body: JSON.stringify(body),
-      });
-      onSaved();
+      const r = await manageApiFetch<{ password?: string }>(
+        employee ? `/api/manage/employees/${employee._id}` : '/api/manage/employees',
+        { method: employee ? 'PATCH' : 'POST', body: JSON.stringify(body) },
+      );
+      onSaved(r.password, name);
     } catch (err) {
       const code = err instanceof Error ? err.message : '';
       setError(t.errors[code as keyof typeof t.errors] ?? code);
@@ -234,15 +267,6 @@ function EmployeeModal({ employee, onClose, onSaved }: {
               {t.email}
               <SmallInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </Field>
-            {!employee && (
-              <Field>
-                {t.password}
-                <SmallInput
-                  type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                  minLength={8} required autoComplete="new-password"
-                />
-              </Field>
-            )}
             <Field>
               {t.role}
               <SmallSelect value={role} onChange={(e) => setRole(e.target.value as Employee['role'])}>
@@ -275,6 +299,7 @@ function EmployeeModal({ employee, onClose, onSaved }: {
             {t.tracksTime}
           </label>
           <Note>{t.tracksTimeNote}</Note>
+          {!employee && <Note>{t.generatedPasswordNote}</Note>}
           <ModalActions>
             <GhostButton type="button" onClick={onClose}>{t.cancel}</GhostButton>
             <Button type="submit" disabled={saving || !name.trim() || !email.trim()}>
@@ -287,49 +312,37 @@ function EmployeeModal({ employee, onClose, onSaved }: {
   );
 }
 
-function ResetPasswordModal({ employee, onClose, onSaved }: {
-  employee: Employee; onClose: () => void; onSaved: () => void;
+/**
+ * Shows a generated password exactly once — it is never stored in plaintext and
+ * cannot be looked up again. The employee is asked to change it on first login.
+ */
+function PasswordIssuedModal({ name, password, onClose }: {
+  name: string; password: string; onClose: () => void;
 }) {
   const t = useTranslations(texts);
-  const [password, setPassword] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSaving(true);
-    try {
-      await manageApiFetch(`/api/manage/employees/${employee._id}/reset-password`, {
-        method: 'POST', body: JSON.stringify({ password }),
-      });
-      onSaved();
-    } catch (err) {
-      const code = err instanceof Error ? err.message : '';
-      setError(t.errors[code as keyof typeof t.errors] ?? code);
-      setSaving(false);
-    }
-  };
+  const [copied, setCopied] = useState(false);
 
   return (
     <ModalBackdrop onClick={onClose}>
-      <ModalCard onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
-        <ModalTitle>{t.resetPassword} — {employee.name}</ModalTitle>
-        {error && <ErrorNote>{error}</ErrorNote>}
-        <form onSubmit={submit}>
-          <Field>
-            {t.newPassword}
-            <SmallInput
-              type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              minLength={8} required autoFocus autoComplete="new-password"
-            />
-          </Field>
-          <Note>{t.passwordNote}</Note>
-          <ModalActions>
-            <GhostButton type="button" onClick={onClose}>{t.cancel}</GhostButton>
-            <Button type="submit" disabled={saving || password.length < 8}>{saving ? t.saving : t.save}</Button>
-          </ModalActions>
-        </form>
+      <ModalCard onClick={(e) => e.stopPropagation()} style={{ maxWidth: 440 }}>
+        <ModalTitle>{t.passwordIssued} — {name}</ModalTitle>
+        <div style={{ fontSize: 14, lineHeight: 1.6 }}>{t.passwordIssuedNote}</div>
+        <div style={{
+          margin: '14px 0', padding: '12px 14px', borderRadius: 10, background: '#f4f3fb',
+          fontFamily: 'monospace', fontSize: 20, letterSpacing: 1, textAlign: 'center',
+          direction: 'ltr', userSelect: 'all',
+        }}>
+          {password}
+        </div>
+        <ModalActions>
+          <GhostButton
+            type="button"
+            onClick={() => { navigator.clipboard?.writeText(password); setCopied(true); }}
+          >
+            {copied ? t.copied : t.copy}
+          </GhostButton>
+          <Button type="button" onClick={onClose}>{t.done}</Button>
+        </ModalActions>
       </ModalCard>
     </ModalBackdrop>
   );

@@ -11,6 +11,8 @@ export interface ManageUser {
   role: ManageRole;
   color: string;
   tracksTime: boolean;
+  /** Owner handed out a generated password — /manage stays blocked until it is changed. */
+  mustChangePassword?: boolean;
 }
 
 interface ManageAuthContextType {
@@ -20,6 +22,8 @@ interface ManageAuthContextType {
   isOwner: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  /** Persist a fresh user payload (after a password change) without re-logging in. */
+  updateUser: (user: ManageUser) => void;
 }
 
 const ManageAuthContext = createContext<ManageAuthContextType | null>(null);
@@ -76,6 +80,11 @@ export function ManageAuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
   };
 
+  const updateUser = (u: ManageUser) => {
+    localStorage.setItem(USER_KEY, JSON.stringify(u));
+    setUser(u);
+  };
+
   useEffect(() => {
     window.addEventListener('yz_manage_unauthorized', clear);
     return () => window.removeEventListener('yz_manage_unauthorized', clear);
@@ -90,6 +99,7 @@ export function ManageAuthProvider({ children }: { children: ReactNode }) {
         isOwner: user?.role === 'owner',
         login,
         logout: clear,
+        updateUser,
       }}
     >
       {children}

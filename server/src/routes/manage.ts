@@ -53,6 +53,7 @@ export function serializeManageUser(u: IManageUser, role: 'owner' | 'pm' | 'memb
     workDays: u.workDays,
     tracksTime: u.tracksTime,
     startDate: u.startDate,
+    mustChangePassword: u.mustChangePassword,
   };
   if (role !== 'owner') return base;
   return {
@@ -103,6 +104,33 @@ router.get('/auth/me', authenticateManage, async (req: Request, res: Response) =
     res.status(401).json({ error: 'User no longer active' });
     return;
   }
+  res.json({ user: serializeManageUser(user, user.role) });
+});
+
+/**
+ * Self-service password change. Everyone can do it, always; it is also the only
+ * way out of `mustChangePassword` after the owner hands out a generated password.
+ */
+router.post('/auth/change-password', authenticateManage, async (req: Request, res: Response) => {
+  const { currentPassword, newPassword } = (req.body ?? {}) as Record<string, unknown>;
+  if (typeof newPassword !== 'string' || newPassword.length < 8) {
+    res.status(400).json({ error: 'password_too_short' });
+    return;
+  }
+  const user = await ManageUser.findById(req.manageUser!.userId);
+  if (!user || !user.active) {
+    res.status(401).json({ error: 'User no longer active' });
+    return;
+  }
+  // Current password is required even on the forced first change — the token
+  // alone must not be enough to take over an account left open on a screen.
+  if (typeof currentPassword !== 'string' || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    res.status(401).json({ error: 'wrong_current_password' });
+    return;
+  }
+  user.passwordHash = await bcrypt.hash(newPassword, 10);
+  user.mustChangePassword = false;
+  await user.save();
   res.json({ user: serializeManageUser(user, user.role) });
 });
 
