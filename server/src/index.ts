@@ -16,7 +16,7 @@ import {
   isSocialCrawler,
   requestOrigin,
 } from './utils/shareOgPage';
-import { migrateActivities, migrateActivityGroups, seedSuperAdmin, seedBuiltInMission, seedManageUsers, dropManageProjectCodeIndex } from './db/seed';
+import { migrateActivities, migrateActivityGroups, seedSuperAdmin, seedBuiltInMission, seedManageUsers, seedInternalProject, dropManageProjectCodeIndex } from './db/seed';
 import { processExpiredRewardTimers } from './services/groupRewardService';
 import { CollageJob } from './models/CollageJob';
 import { scheduleCollageEncode } from './services/collageProcessor';
@@ -212,6 +212,7 @@ async function start() {
   await migrateActivityGroups();
   await seedSuperAdmin();
   await seedManageUsers();
+  await seedInternalProject();
   await dropManageProjectCodeIndex();
   startManageScheduler();
   startDailyResetScheduler();
