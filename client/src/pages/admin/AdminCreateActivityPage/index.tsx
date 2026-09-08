@@ -356,6 +356,7 @@ export default function AdminCreateActivityPage() {
 
   const [managerEmail, setManagerEmail] = useState('');
   const [managerPassword, setManagerPassword] = useState('');
+  const [userControl, setUserControl] = useState(false);
 
   const [guidelines, setGuidelines] = useState('');
 
@@ -495,6 +496,7 @@ export default function AdminCreateActivityPage() {
           }
         }
         if (a.managerEmail) setManagerEmail(a.managerEmail);
+        setUserControl(a.userControl === true);
         if (a.guidelines) setGuidelines(a.guidelines);
         if (a.customInstructions) {
           setUseDefaultInstructions(false);
@@ -1013,6 +1015,7 @@ export default function AdminCreateActivityPage() {
       payload.hideLeaderboardInHeader = !displayLeaderboardInHeader;
       payload.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly;
       payload.dailyReset = dailyReset;
+      payload.userControl = userControl;
       // Time limit field is shown for both 'time' and 'both' modes — it drives
       // the live timer + warning popup in either case.
       if ((leaderboardMode === 'time' || leaderboardMode === 'both') && activityDurationMinutes.trim()) {
@@ -1492,6 +1495,15 @@ export default function AdminCreateActivityPage() {
                           value={managerPassword}
                           onChange={(e) => setManagerPassword(e.target.value)}
                         />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14 }}>
+                          <input
+                            type="checkbox"
+                            checked={userControl}
+                            onChange={(e) => setUserControl(e.target.checked)}
+                            style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                          />
+                          {t.userControl}
+                        </label>
                       </VerticalStack>
                     </SectionCard>
                   </div>

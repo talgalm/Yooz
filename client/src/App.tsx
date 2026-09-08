@@ -19,6 +19,7 @@ import AdminStationConfigPage from './pages/admin/AdminStationConfigPage';
 import AdminPortalConfigPage from './pages/admin/AdminPortalConfigPage';
 import PortalPage from './pages/portal/PortalPage';
 import ManagerLoginPage from './pages/manager/ManagerLoginPage';
+import ControlPage from './pages/ControlPage';
 import ManagerDashboardPage from './pages/manager/ManagerDashboardPage';
 import OrderSurveyPresentPage from './pages/manager/OrderSurveyPresentPage';
 import ManageLoginPage from './pages/manage/ManageLoginPage';
@@ -140,6 +141,7 @@ export default function App() {
                 <Route path="/admin/portals/:id" element={<AdminProtectedRoute><AdminPortalConfigPage /></AdminProtectedRoute>} />
 
                 {/* Manager routes — full width desktop */}
+                <Route path="/control/:id" element={<ControlPage />} />
                 <Route path="/manager" element={<ManagerPublicRoute><ManagerLoginPage /></ManagerPublicRoute>} />
                 <Route path="/manager/dashboard" element={<ManagerProtectedRoute><ManagerDashboardPage /></ManagerProtectedRoute>} />
                 <Route path="/manager/present" element={<ManagerProtectedRoute><OrderSurveyPresentPage /></ManagerProtectedRoute>} />

@@ -1,10 +1,12 @@
 import { Router, Request, Response } from 'express';
+import { isValidObjectId } from 'mongoose';
 import { Activity, ActivityGroup, normalizeGroupName, Portal } from '../models';
 import { CreateGroupRequest, CreateGroupResponse } from '../types';
 import { requestOrigin } from '../utils/shareOgPage';
 import { authenticateToken } from '../middleware/auth';
 import { getGroupStatus } from '../utils/groupStatus';
 import { israelDayString } from '../utils/israelTime';
+import { normalizePhone } from '../utils/phone';
 import {
   validateGroupName,
   createParticipantSession,
@@ -44,6 +46,27 @@ async function validatePortalUser(activity: Awaited<ReturnType<typeof Activity.f
   if (!portalUser) return 'not_portal_user';
   return null;
 }
+
+// Cashier console (/control/:id): register a phone so its owner may open a group.
+// Unauthenticated by design for now — the console's credentials live on the client.
+router.post('/control/:id/register', async (req: Request<{ id: string }>, res: Response) => {
+  const phone = normalizePhone((req.body?.phone as string) || '');
+  if (phone.length < 6) {
+    res.status(400).json({ error: 'invalid_phone' });
+    return;
+  }
+  if (!isValidObjectId(req.params.id)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  const activity = await Activity.findOne({ _id: req.params.id, userControl: true });
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  await Activity.updateOne({ _id: activity._id }, { $addToSet: { registeredPhones: phone } });
+  res.json({ ok: true });
+});
 
 // Debounced uniqueness check for group name
 router.get('/:code/groups/check-name', async (req: Request<{ code: string }>, res: Response) => {
@@ -234,6 +257,14 @@ router.post('/:code/groups', async (req: Request<{ code: string }, {}, CreateGro
   const portalError = await validatePortalUser(activity, participantName, email);
   if (portalError) {
     res.status(403).json({ error: portalError });
+    return;
+  }
+
+  // Cashier gate: with user control on, only phones registered at the counter
+  // may open a group.
+  if (activity.userControl
+    && !(activity.registeredPhones || []).includes(normalizePhone(phoneNumber || ''))) {
+    res.status(403).json({ error: 'not_registered' });
     return;
   }
 

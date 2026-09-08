@@ -291,6 +291,7 @@ export interface CreateActivityRequest {
   hideLeaderboardInHeader?: boolean;
   leaderboardCurrentDayOnly?: boolean;
   dailyReset?: boolean;
+  userControl?: boolean;
   activityDurationMinutes?: number;
   roadmapTimerMinutes?: number;
   includeOnRoadmap?: boolean;

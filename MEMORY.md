@@ -173,6 +173,13 @@ test runs" action, not the daily rollover.
 `orderSurveySession?` (live order-game poll: itemIndex, gameId, roundIndex,
 phase `'voting'|'results'`, resultsRevealed, aggregatedRanking[Borda]).
 
+**Cashier gate**: `userControl?` (default false, checkbox "שליטה במשתשמשים" under the manager
+fields in activity create/edit) + `registeredPhones?: string[]` (normalized digits, see
+`utils/phone.ts`). When `userControl` is on, only a phone registered at `/control/:id` may create
+a self-service group — otherwise `POST /:code/groups` answers `403 {error:'not_registered'}` and
+the participant sees "כדי להשתתף בפעילות, צריך לשלם בקופה ולהירשם אצל הקופאי". Off = no check
+anywhere. Phones are an array on the activity doc and are never cleared (not even by daily reset).
+
 **Groups (self-service)**: `groupMinMembers?` (default 1), `groupMaxMembers?` (0/null = no cap).
 **Group reward**: `groupReward?: {enabled, couponCode, messageTemplate?, attachmentUrl?,
 attachmentType?:'image'|'pdf', downloadToken?}` — top scorer gets an SMS coupon after all finish.
@@ -541,7 +548,10 @@ Self-check: `npx tsx server/src/routes/collageFilter.check.ts`.
 - **Participant** (mobile, wrapped in `MobileContainer` max-width 480, `ParticipantActivityScope`
   + `HelpChatProvider`): `/play/:code`, `/play/:code/join/:inviteToken`, `/home`, `/story/:code`,
   `/mission/:code`. `ProtectedRoute` redirects unauthenticated participants back to `/play/:code`.
-- **Public**: `/portal/:code`, `/privacy`, `/stats/:token` (shared stats), `/ar-demo`, and `/`
+- **Public**: `/control/:id` (`pages/ControlPage`, desktop cashier console — hardcoded
+  `register`/`123456` login in the component, then a phone field + "הכנס למערכת" that POSTs to
+  `/api/activities/control/:id/register`), `/portal/:code`, `/privacy`, `/stats/:token`
+  (shared stats), `/ar-demo`, and `/`
   (the publicity site — it renders `PublicityPage` directly and never redirects).
 - **`/ar-demo`** (`pages/ArDemoPage.tsx`, standalone — no MobileContainer, no auth): GPS + camera
   + compass treasure hunt. Pickups are real lat/lng points drawn over the rear camera feed at
@@ -705,8 +715,13 @@ All require `connectionType==='group'` && `groupEntryMode==='selfService'` (else
   **410** if the group's `activityDay` ≠ today (expired link).
 - `GET /:code/groups/status` *(participant JWT)* — current participant's `getGroupStatus`
   (memberCount/minMembers/canProceed/completedCount/allMembersCompleted). 403 on code mismatch.
+- `POST /control/:id/register` — **not** group-mode-gated; cashier console endpoint, keyed on
+  activity `_id`, 404 unless that activity has `userControl:true`. `$addToSet`s
+  `normalizePhone(body.phone)` into `registeredPhones`. Unauthenticated by design for now (the
+  console's credentials live on the client).
 - `POST /:code/groups` — create group + log in creator. Validates name + login fields + portal
-  membership; creates `ActivityGroup` (stamps `activityDay`), 409 on duplicate-name-today;
+  membership; when `userControl` is on, rejects a creator phone missing from `registeredPhones`
+  with `403 {error:'not_registered'}`; creates `ActivityGroup` (stamps `activityDay`), 409 on duplicate-name-today;
   `createParticipantSession`; returns `{token, participant, group:{name,inviteToken,inviteUrl},
   groupStatus?}`. `inviteUrl = <origin>/play/:code/join/:inviteToken`.
 

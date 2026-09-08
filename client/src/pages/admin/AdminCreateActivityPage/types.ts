@@ -120,6 +120,7 @@ export interface Activity {
   scheduledStart?: string;
   scheduledEnd?: string;
   managerEmail?: string;
+  userControl?: boolean;
   isContinuous?: boolean;
   portalId?: string;
   folderId?: string | null;

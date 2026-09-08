@@ -1,0 +1,26 @@
+export const texts = {
+  en: {
+    title: 'User Control',
+    subtitle: 'Log in to control users',
+    username: 'Username',
+    password: 'Password',
+    login: 'Log In',
+    badCredentials: 'Wrong username or password',
+    phone: 'Phone number',
+    enter: 'Enter system',
+    registered: '{phone} registered',
+    registerFailed: 'Could not register this phone',
+  },
+  he: {
+    title: 'שליטה במשתמשים',
+    subtitle: 'התחברו כדי לשלוט במשתמשים',
+    username: 'שם משתמש',
+    password: 'סיסמה',
+    login: 'כניסה',
+    badCredentials: 'שם משתמש או סיסמה שגויים',
+    phone: 'מספר טלפון',
+    enter: 'הכנס למערכת',
+    registered: 'המספר {phone} נרשם בהצלחה',
+    registerFailed: 'לא הצלחנו לרשום את המספר',
+  },
+};
