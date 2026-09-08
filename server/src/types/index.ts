@@ -321,8 +321,6 @@ export interface ActivityConfigResponse {
   scheduledStart?: string;
   scheduledEnd?: string;
   isContinuous?: boolean;
-  /** Set only when both are configured — the support bot's client-side static
-   *  copy substitutes this for the generic "activity organizer"/"facilitator". */
   organizerContactName?: string;
   organizerContactPhone?: string;
   /** Help-chat FAQ menu categories hidden for this activity. Absent/empty = show all. */

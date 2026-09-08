@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
 import { Activity } from '../models';
+import { type OrganizerContact, contactClause, askClause, buildFallbackMessage } from './help.i18n';
 
 const router = Router();
 
@@ -29,31 +30,6 @@ setInterval(() => {
   }
 }, 5 * 60_000);
 
-// ─── Named contact substitution ───
-// When an activity defines an organizerContactName/Phone, every "contact the
-// activity organizer" / "ask your facilitator" line names them instead.
-
-interface OrganizerContact {
-  name: string;
-  phone: string;
-}
-
-/** "contact"-style clause: "contact the activity organizer" / "contact Dani at 050-...". */
-function contactClause(lang: 'en' | 'he', contact?: OrganizerContact): string {
-  if (contact) {
-    return lang === 'he' ? `פנו ל${contact.name} בטלפון ${contact.phone}` : `contact ${contact.name} at ${contact.phone}`;
-  }
-  return lang === 'he' ? 'פנו למארגן הפעילות' : 'contact the activity organizer';
-}
-
-/** "ask"-style clause: "ask your facilitator" / "ask Dani at 050-...". */
-function askClause(lang: 'en' | 'he', contact?: OrganizerContact): string {
-  if (contact) {
-    return lang === 'he' ? `בקשו מ${contact.name} בטלפון ${contact.phone}` : `ask ${contact.name} at ${contact.phone}`;
-  }
-  return lang === 'he' ? 'בקשו מהמנחה' : 'ask your facilitator';
-}
-
 async function fetchActivityExtras(code?: string): Promise<{ extraSupportInfo?: string; contact?: OrganizerContact }> {
   if (!code) return {};
   const activity = await Activity.findOne({ code }).select('extraSupportInfo organizerContactName organizerContactPhone').lean();
@@ -62,14 +38,6 @@ async function fetchActivityExtras(code?: string): Promise<{ extraSupportInfo?: 
     ? { name: activity.organizerContactName, phone: activity.organizerContactPhone }
     : undefined;
   return { extraSupportInfo: activity.extraSupportInfo || undefined, contact };
-}
-
-// ─── Fallback messages ───
-
-function buildFallbackMessage(lang: 'en' | 'he', contact?: OrganizerContact): string {
-  return lang === 'he'
-    ? `אם אתם חווים בעיות, נסו לרענן את הדף קודם. אם הבעיה ממשיכה, ${contactClause(lang, contact)} או התקשרו לקו התמיכה שלנו.`
-    : `If you're having trouble, try refreshing the page first. If the issue persists, ${contactClause(lang, contact)} or call our support line.`;
 }
 
 // ─── System prompt for Gemini ───
@@ -231,8 +199,6 @@ interface HelpContext {
   totalItems?: number;
   itemName?: string;
   itemType?: string;
-  /** The activity's public 6-char code (from the /play/:code or /story/:code
-   *  URL) — used to look up this activity's organizer contact. */
   code?: string;
 }
 

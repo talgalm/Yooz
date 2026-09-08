@@ -181,8 +181,6 @@ async function buildActivityData(
   data.scheduledEnd = scheduledEnd ? new Date(scheduledEnd) : undefined;
 
   // Handle guidelines
-  // null (not undefined) so clearing the field actually clears the stored
-  // value on edit — Mongo's $set silently drops undefined-valued keys.
   data.guidelines = guidelines?.trim() || null;
 
   // Free-text context for the "something else" open free-text chat only,

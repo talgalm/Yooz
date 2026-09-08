@@ -88,9 +88,6 @@ export interface IActivity {
   opening?: IOpening;
   module?: IModuleConfig;
   guidelines?: string;
-  /** Free-text context for the participant help chat's open "something else"
-   *  free-text Q&A only — appended to the Gemini prompt for this activity.
-   *  Never shown verbatim to participants. */
   extraSupportInfo?: string;
   /** Optional named contact (name + phone) for this activity's participant
    *  support bot to point participants to. When unset, all "contact the
