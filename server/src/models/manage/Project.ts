@@ -10,6 +10,10 @@ export const PROJECT_TYPES: ProjectType[] = ['client', 'internal', 'demo'];
 export const PROJECT_STATUSES: ProjectStatus[] = [
   'planned', 'active', 'on_hold', 'waiting_client', 'done', 'cancelled', 'maintenance',
 ];
+/** The one shared internal project every employee can log to — "פנימי" in the
+ *  project pickers. Seeded on boot, matched by name so the seed stays idempotent. */
+export const INTERNAL_PROJECT_NAME = 'פנימי';
+
 export const STAGE_STATUSES: StageStatus[] = ['not_started', 'in_progress', 'done', 'skipped'];
 
 export interface IStage {
