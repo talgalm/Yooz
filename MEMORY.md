@@ -72,7 +72,9 @@ are first-time setup / manual ops. Lambda deploy: `.github/workflows/deploy-lamb
 ### Config / env (`server/src/config.ts`)
 `PORT`(3000) · `JWT_SECRET` · `MONGODB_URI` · `ADMIN_EMAIL`/`ADMIN_PASSWORD` (super-admin seed)
 · `CLOUDINARY_*` · `GEMINI_API_KEY`/`GEMINI_MODEL` · `AZURE_SPEECH_KEY`/`_REGION` ·
-`TEXTME_API_TOKEN`/`_USERNAME`/`_SOURCE` · `CORS_ORIGIN` (comma list; unset = allow all).
+`TEXTME_API_TOKEN`/`_USERNAME`/`_SOURCE` · `CORS_ORIGIN` (comma list; unset = allow all) ·
+`REGISTER_PHONE_KEY` (shared secret for the public register-phone API; unset = that one endpoint
+refuses every call, nothing else is affected).
 In production, `JWT_SECRET`/`ADMIN_EMAIL`/`ADMIN_PASSWORD` are **required** (throws otherwise).
 
 ---
@@ -723,8 +725,10 @@ All require `connectionType==='group'` && `groupEntryMode==='selfService'` (else
   **410** if the group's `activityDay` ≠ today (expired link).
 - `GET /:code/groups/status` *(participant JWT)* — current participant's `getGroupStatus`
   (memberCount/minMembers/canProceed/completedCount/allMembersCompleted). 403 on code mismatch.
-- `GET /register-phone?phone=&code=&date=` — **public, unauthenticated, and not group-mode-gated**
-  (a till/POS integration). `phone` required (≥6 digits after normalizing, else
+- `GET /register-phone?phone=&code=&date=` — public (no JWT) and not group-mode-gated: a till/POS
+  integration, guarded by the fixed shared secret `REGISTER_PHONE_KEY` sent as an `X-Api-Key`
+  header or a `?key=` param (`crypto.timingSafeEqual`). Unset secret → `503
+  register_key_not_configured` (fail closed); wrong/missing → `401 unauthorized`. `phone` required (≥6 digits after normalizing, else
   `400 invalid_phone`). `code` optional: given → that activity, 404 unless it has
   `userControl:true`; empty → `activityCode:null`, i.e. every user-control activity. `date`
   optional **`DD-MM-YYYY`** (`israelDayFromDdMmYyyy`, else `400 invalid_date`); empty → today in

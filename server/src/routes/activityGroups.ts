@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
 import { isValidObjectId } from 'mongoose';
 import { Activity, ActivityGroup, normalizeGroupName, PhoneRegistration, Portal } from '../models';
@@ -7,6 +8,7 @@ import { authenticateToken } from '../middleware/auth';
 import { getGroupStatus } from '../utils/groupStatus';
 import { israelDayFromDdMmYyyy, israelDayString } from '../utils/israelTime';
 import { normalizePhone } from '../utils/phone';
+import { REGISTER_PHONE_KEY } from '../config';
 import {
   validateGroupName,
   createParticipantSession,
@@ -96,10 +98,23 @@ async function registerPhone(rawPhone: string, rawCode: string, rawDay: string, 
  *   GET /api/activities/register-phone?phone=0501234567&code=ABC123&date=08-09-2026
  * `code` and `date` are both optional — see `registerPhone`.
  *
- * ponytail: open to anyone who can reach the server — put a shared secret in
- * front of it if the registration list has to mean "actually paid".
+ * Guarded by a fixed shared secret, sent either as an `X-Api-Key` header or a
+ * `?key=` query param — the header for anything that can set one, the param for
+ * a till that can only fire a bare URL.
  */
 router.get('/register-phone', async (req: Request, res: Response) => {
+  if (!REGISTER_PHONE_KEY) {
+    // Fail closed: an unset secret must not read as "no guard needed".
+    res.status(503).json({ error: 'register_key_not_configured' });
+    return;
+  }
+  const given = (req.get('x-api-key') || (req.query.key as string) || '').trim();
+  const a = Buffer.from(given);
+  const b = Buffer.from(REGISTER_PHONE_KEY);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    res.status(401).json({ error: 'unauthorized' });
+    return;
+  }
   await registerPhone(
     (req.query.phone as string) || '',
     (req.query.code as string) || '',

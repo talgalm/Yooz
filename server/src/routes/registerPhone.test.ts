@@ -1,10 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import express from 'express';
+import express, { type Router } from 'express';
 import type { AddressInfo } from 'node:net';
 import { Activity, PhoneRegistration } from '../models';
 import { israelDayString } from '../utils/israelTime';
-import activityGroupsRouter from './activityGroups';
+
+// The shared secret is read from config at import time, so it has to be in the
+// environment before the router (and the config it pulls in) is loaded — hence
+// require() here, whose order is guaranteed where a hoisted import's is not.
+process.env.REGISTER_PHONE_KEY = 'test-key';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const activityGroupsRouter: Router = require('./activityGroups').default;
 
 // The route only ever asks Mongo two things — "is there such a user-control
 // activity" and "upsert this registration" — so stubbing both keeps the test
@@ -24,9 +30,9 @@ const server = app.listen(0);
 const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api/activities/register-phone`;
 test.after(() => server.close());
 
-async function call(query: string) {
+async function call(query: string, key = 'test-key') {
   upserted = null;
-  const res = await fetch(`${base}${query}`);
+  const res = await fetch(`${base}${query}`, key ? { headers: { 'X-Api-Key': key } } : undefined);
   return { status: res.status, body: await res.json() as Record<string, unknown> };
 }
 
@@ -60,4 +66,13 @@ test('junk phone and junk date are rejected before any write', async () => {
   assert.deepEqual(await call('?phone=0501234567&date=31-02-2026'), { status: 400, body: { error: 'invalid_date' } });
   assert.deepEqual(await call('?phone=0501234567&date=2026-09-08'), { status: 400, body: { error: 'invalid_date' } });
   assert.equal(upserted, null);
+});
+
+test('the shared secret is required, by header or by query param', async () => {
+  assert.deepEqual(await call('?phone=0501234567', ''), { status: 401, body: { error: 'unauthorized' } });
+  assert.equal(upserted, null);
+  assert.deepEqual(await call('?phone=0501234567', 'wrong-key'), { status: 401, body: { error: 'unauthorized' } });
+  assert.equal(upserted, null);
+  // A till that can only fire a bare URL passes it as ?key= instead.
+  assert.equal((await call('?phone=0501234567&key=test-key', '')).status, 200);
 });
