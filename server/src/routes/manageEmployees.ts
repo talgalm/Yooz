@@ -10,7 +10,8 @@ import { getSettings } from '../services/manageSettings';
 const router = Router();
 router.use(authenticateManage);
 // pm gets a reduced view of the same screen; a member has no access.
-router.use(requireManageRole('owner', 'pm'));
+// Owner only: the team list is not something an employee needs to browse.
+router.use(requireManageRole('owner'));
 
 const VALID_ROLES: ManageRole[] = ['owner', 'pm', 'member'];
 

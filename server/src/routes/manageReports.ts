@@ -9,7 +9,8 @@ import {
 const router = Router();
 router.use(authenticateManage);
 // pm sees the reports without money; a member has no business here at all.
-router.use(requireManageRole('owner', 'pm'));
+// Owner only: reports carry money and everyone else's hours.
+router.use(requireManageRole('owner'));
 
 export const REPORT_KEYS = [
   'hours_by_category', 'hours_by_user', 'hours_by_project',
