@@ -191,7 +191,6 @@ function EmployeeModal({ employee, onClose, onSaved }: {
   const [role, setRole] = useState(employee?.role ?? 'member');
   const [weeklyCapacityHours, setCapacity] = useState(String(employee?.weeklyCapacityHours ?? 40));
   const [hourlyCost, setHourlyCost] = useState(String(employee?.hourlyCost ?? 0));
-  const [employerCostFactor, setFactor] = useState(String(employee?.employerCostFactor ?? 0.25));
   const [tracksTime, setTracksTime] = useState(employee?.tracksTime ?? true);
   const [color, setColor] = useState(employee?.color ?? '#6c5ce7');
   const [saving, setSaving] = useState(false);
@@ -206,7 +205,6 @@ function EmployeeModal({ employee, onClose, onSaved }: {
         name, email, role, tracksTime, color,
         weeklyCapacityHours: Number(weeklyCapacityHours) || 40,
         hourlyCost: Number(hourlyCost) || 0,
-        employerCostFactor: Number(employerCostFactor) || 0,
       };
       if (!employee) body.password = password;
       await manageApiFetch(employee ? `/api/manage/employees/${employee._id}` : '/api/manage/employees', {
@@ -270,10 +268,6 @@ function EmployeeModal({ employee, onClose, onSaved }: {
                 onChange={(e) => setColor(e.target.value)}
                 style={{ padding: 2, height: 36 }}
               />
-            </Field>
-            <Field>
-              {t.employerFactor}
-              <SmallInput type="number" min="0" step="0.01" value={employerCostFactor} onChange={(e) => setFactor(e.target.value)} />
             </Field>
           </FieldGrid>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, marginTop: 14, cursor: 'pointer' }}>

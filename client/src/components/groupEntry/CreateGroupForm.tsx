@@ -84,7 +84,7 @@ export default function CreateGroupForm({
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to create group');
+        throw new Error(data.error === 'not_registered' ? t.notRegistered : (data.error || 'Failed to create group'));
       }
       onEstablishSession(data.token);
       // Use the current browser origin so dev links work on :5173 (server returns :3000).

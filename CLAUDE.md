@@ -14,38 +14,30 @@ Run from the repo root unless noted:
 npm run install:all      # one-time: installs both server and client
 npm run dev              # Express on :3000 (tsx watch) — terminal 1
 npm run dev:client       # Vite on :5173, proxies /api → :3000 — terminal 2
-npm run build:client     # Build React app into client/dist
+npm run build:client     # Typecheck + build React app into client/dist
 npm start                # Production: Express serves API + built client on :3000
 ```
 
-There is no lint script and no test runner script. Nine `node:test` self-checks exist and are
-run by hand:
+**`npm run check` is the gate.** Run it before and after any change:
 
 ```bash
-npx tsx --test client/src/utils/inAppBrowserEscape.test.ts
-npx tsx --test client/src/components/AdminHelpChat/useFabPosition.test.ts
-npx tsx --test client/src/components/HelpChat/matcher.test.ts
-npx tsx --test server/src/utils/participantAuth.test.ts
-npx tsx --test server/src/utils/taskVisibility.test.ts
-npx tsx --test server/src/utils/mediaInUse.test.ts
-npx tsx --test server/src/utils/mediaFolders.test.ts
-npx tsx --test server/src/services/activityReset.test.ts
-npx tsx server/src/utils/groupRewardConfig.test.ts
+npm run check       # typecheck (server + client) then all node:test self-checks
+npm run typecheck   # types only
+npm test            # the node:test self-checks only
 ```
 
-**The client build does not typecheck.** `client`'s `build` script is a bare `vite build`, and
-esbuild strips types without checking them — a real type error ships. A bare `tsc --noEmit`
-inside `client/` is just as empty: `client/tsconfig.json` is solution-style (`"files": []`), so
-it always passes. The only real check is, from inside `client/`:
+Both are clean — **zero** type errors, all tests passing. Any error you see is yours; there
+is no baseline to diff against.
 
-```bash
-npx tsc -p tsconfig.app.json --noEmit
-```
+`npm test` globs `client/src/**/*.test.ts` and `server/src/**/*.test.ts`, so a new `.test.ts`
+file is picked up with no wiring. There is still no lint script.
 
-It must be run from `client/` (the root `typescript` is older and rejects
-`noUncheckedSideEffectImports`). This is **not** a clean gate: 45 errors pre-date it
-(mostly unused declarations, some genuine). Diff against that baseline and make sure the files
-you touched are not in the list.
+Client typechecking has one trap: a bare `tsc --noEmit` inside `client/` is empty, because
+`client/tsconfig.json` is solution-style (`"files": []`) and always passes. The real check is
+`tsc -p tsconfig.app.json --noEmit`, which is what `npm run typecheck --prefix client` runs. It
+must run from `client/` — the root `typescript` is older and rejects
+`noUncheckedSideEffectImports`. `client`'s `build` script now runs it before `vite build`, so a
+type error fails the build (and the deploy) instead of shipping silently.
 
 Everything else is Playwright walkthroughs (UI flow recordings, not assertions):
 
@@ -82,6 +74,14 @@ Each has its own React context (`AdminAuthContext`, `AuthContext`, `ManagerAuthC
 
 - **Use `_id`, not `id`**, for Mongoose document references on the client. Population is one level deep for activity module endpoints.
 - **i18n is co-located**: every page/component that has user-facing text has a sibling `.i18n.ts` file exporting Hebrew (default) + English strings, consumed via `useTranslations(texts)`. Hebrew is the *default* language and the app supports RTL.
+- **Adding a language is one line.** `LANGS` in `client/src/context/LanguageContext.tsx` is the
+  single registry (`code`, `label`, `flag`, `dir`); `Lang` is derived from it, and both language
+  switchers (`LangDrawer`, `AdminSettingsTab`) render from it. Add a row and the language is
+  selectable everywhere — **no edits to the ~59 existing `.i18n.ts` files**, which is verified
+  by typechecking with a third language added. Translate incrementally: `Texts<T>` requires a
+  complete `he` and accepts a *deep-partial* object for every other language, and
+  `useTranslations` fills the gaps from Hebrew per key (`fillFrom`, covered by
+  `LanguageContext.test.ts`). Functions and arrays are taken whole, never merged into.
 - **Game configs live in `game.settings`** as `Record<string, unknown>` server-side, typed per game type client-side. When adding a new game type, add the settings interface in `server/src/types/index.ts`, the type to `validTypes` in `AdminGameConfigPage/index.tsx`, and the matching config form beside it. (`StationType` is a real union, but it lives in `server/src/models/Station.ts`.)
 - **Drag-and-drop is hand-rolled** (HTML5 drag API + tap-to-swap fallback for touch). No dnd library — match this pattern if adding a new draggable game.
 - **API surface convention**: admin endpoints under `/api/admin/*` require admin JWT; manager endpoints under `/api/manager/*` require manager JWT; participant endpoints under `/api/activities/:code/*` are mostly public, except `/scores` which needs participant JWT.

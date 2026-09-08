@@ -63,6 +63,7 @@ export const texts = {
     leaderboardLoading: 'Loading...',
     leaderboardGroupsTitle: 'Group Scores',
     leaderboardPlayersTitle: 'Players',
+    leaderboardMyGroupTitle: 'My Group',
     // Roadmap
     tapToStart: 'Tap to start!',
     completed: 'Completed',
@@ -143,6 +144,7 @@ export const texts = {
     leaderboardLoading: 'טוען...',
     leaderboardGroupsTitle: 'ניקוד קבוצות',
     leaderboardPlayersTitle: 'שחקנים',
+    leaderboardMyGroupTitle: 'הקבוצה שלי',
     // Roadmap
     tapToStart: 'לחצו להתחיל!',
     completed: 'הושלם',

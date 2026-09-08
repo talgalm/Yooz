@@ -984,7 +984,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       }
 
       const bgKey = `${activityCode}::${splitGroupId}`;
-      const jobId = makeSplitCollageJobId(activityCode, splitGroupId);
       // Video-only part: user never sees the review screen, so there's no
       // title to set. Stay blank instead of falling back to the station header.
       const effectiveTitle = '';

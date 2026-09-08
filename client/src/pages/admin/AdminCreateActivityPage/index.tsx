@@ -332,17 +332,6 @@ const DeleteThemeBtn = styled('button')({
   },
 });
 
-const ColorDot = styled('span')<{ color: string }>(({ color }) => ({
-  display: 'inline-block',
-  width: 10,
-  height: 10,
-  borderRadius: '50%',
-  background: color,
-  border: '1px solid rgba(0,0,0,0.12)',
-  marginRight: 4,
-  verticalAlign: 'middle',
-}));
-
 export default function AdminCreateActivityPage() {
   const { id } = useParams<{ id: string }>();
   const isEditMode = Boolean(id);
@@ -384,6 +373,7 @@ export default function AdminCreateActivityPage() {
 
   const [managerEmail, setManagerEmail] = useState('');
   const [managerPassword, setManagerPassword] = useState('');
+  const [userControl, setUserControl] = useState(false);
 
   const [guidelines, setGuidelines] = useState('');
   const [extraSupportInfo, setExtraSupportInfo] = useState('');
@@ -531,6 +521,7 @@ export default function AdminCreateActivityPage() {
           }
         }
         if (a.managerEmail) setManagerEmail(a.managerEmail);
+        setUserControl(a.userControl === true);
         if (a.guidelines) setGuidelines(a.guidelines);
         if (a.organizerContactName) setOrganizerContactName(a.organizerContactName);
         if (a.organizerContactPhone) setOrganizerContactPhone(a.organizerContactPhone);
@@ -572,7 +563,7 @@ export default function AdminCreateActivityPage() {
           setIsContinuous(true);
           if (a.portalId) setPortalId(a.portalId);
         }
-        if (a.leaderboardMode) setLeaderboardMode(a.leaderboardMode as 'points' | 'time' | 'both');
+        if (a.leaderboardMode) setLeaderboardMode(a.leaderboardMode);
         setLeaderboardAsGrade(a.leaderboardAsGrade === true);
         setDisplayLeaderboardInHeader(!a.hideLeaderboardInHeader);
         setLeaderboardCurrentDayOnly(a.leaderboardCurrentDayOnly !== false);
@@ -1061,6 +1052,7 @@ export default function AdminCreateActivityPage() {
       payload.hideLeaderboardInHeader = !displayLeaderboardInHeader;
       payload.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly;
       payload.dailyReset = dailyReset;
+      payload.userControl = userControl;
       // Time limit field is shown for both 'time' and 'both' modes — it drives
       // the live timer + warning popup in either case.
       if ((leaderboardMode === 'time' || leaderboardMode === 'both') && activityDurationMinutes.trim()) {
@@ -1488,6 +1480,11 @@ export default function AdminCreateActivityPage() {
                         />
                         {t.dailyReset}
                       </label>
+                      {dailyReset && (
+                        <SectionDescription style={{ marginTop: 4, marginInlineStart: 26 }}>
+                          {t.dailyResetHint}
+                        </SectionDescription>
+                      )}
                       {!alwaysOpen && (
                         <VerticalStack>
                           <div>
@@ -1535,6 +1532,15 @@ export default function AdminCreateActivityPage() {
                           value={managerPassword}
                           onChange={(e) => setManagerPassword(e.target.value)}
                         />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14 }}>
+                          <input
+                            type="checkbox"
+                            checked={userControl}
+                            onChange={(e) => setUserControl(e.target.checked)}
+                            style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                          />
+                          {t.userControl}
+                        </label>
                       </VerticalStack>
                     </SectionCard>
                   </div>

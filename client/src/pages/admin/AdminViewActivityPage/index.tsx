@@ -459,6 +459,7 @@ interface Activity {
   customerEditLocked?: boolean;
   managerEmail?: string;
   managerHasPassword?: boolean;
+  userControl?: boolean;
 }
 
 // ─── Game/module icons ───
@@ -489,6 +490,7 @@ export default function AdminViewActivityPage() {
   const { id } = useParams<{ id: string }>();
   const [activity, setActivity] = useState<Activity | null>(null);
   const [copiedInline, setCopiedInline] = useState(false);
+  const [copiedControl, setCopiedControl] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showGoLiveModal, setShowGoLiveModal] = useState(false);
   const [togglingStatus, setTogglingStatus] = useState(false);
@@ -545,6 +547,14 @@ export default function AdminViewActivityPage() {
     link.click();
   }, [activity?.code]);
 
+
+  const controlUrl = activity?.userControl ? `${window.location.origin}/control/${activity._id}` : '';
+
+  const handleCopyControl = async () => {
+    await navigator.clipboard.writeText(controlUrl);
+    setCopiedControl(true);
+    setTimeout(() => setCopiedControl(false), 2000);
+  };
 
   const handleCopyInline = async () => {
     await navigator.clipboard.writeText(playUrl);
@@ -670,6 +680,19 @@ export default function AdminViewActivityPage() {
                   {copiedInline ? '✓' : '📋'}
                 </CopyIconBtn>
               </PlayLinkBox>
+              {controlUrl && (
+                <>
+                  <PlayLinkLabel style={{ marginTop: 12 }}>{t.controlLink}</PlayLinkLabel>
+                  <PlayLinkBox>
+                    <a href={controlUrl} target="_blank" rel="noreferrer" style={{ flex: 1, color: '#6c5ce7' }}>
+                      <PlayLinkUrl>{controlUrl}</PlayLinkUrl>
+                    </a>
+                    <CopyIconBtn onClick={handleCopyControl} title={t.copy}>
+                      {copiedControl ? '✓' : '📋'}
+                    </CopyIconBtn>
+                  </PlayLinkBox>
+                </>
+              )}
             </CardContent>
           </CardBox>
 

@@ -1,14 +1,35 @@
+const ISRAEL_PARTS = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Jerusalem',
+  year: 'numeric', month: '2-digit', day: '2-digit',
+  hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+});
+
+/** Israel's UTC offset (ms) at a given instant — +2h in winter, +3h in summer. */
+function israelOffsetMs(at: Date): number {
+  // "2026-03-27, 15:00:00" → reinterpret those wall-clock parts as if they were
+  // UTC; the gap to the real instant is the offset. Some ICU builds render
+  // midnight as 24:00, which Date.parse rejects.
+  const wall = ISRAEL_PARTS.format(at).replace(', ', 'T').replace('T24:', 'T00:');
+  return Date.parse(`${wall}Z`) - at.getTime();
+}
+
 /**
- * UTC instant of midnight (start of today) in Israel wall-clock time.
- * Computed by subtracting Israel H:M:S from `now` — no tz library needed.
+ * UTC instant of midnight starting an Israel calendar day (`YYYY-MM-DD`).
+ *
+ * Resolved in two passes: the first offset is read at the naive instant, the
+ * second at the candidate midnight. They differ only on the two DST-transition
+ * days, which is exactly when subtracting the elapsed wall-clock time — the
+ * obvious one-pass version — lands an hour inside the wrong day.
  */
+export function startOfIsraelDay(day: string): Date {
+  const naive = Date.parse(`${day}T00:00:00Z`);
+  const firstPass = new Date(naive - israelOffsetMs(new Date(naive)));
+  return new Date(naive - israelOffsetMs(firstPass));
+}
+
+/** UTC instant of midnight (start of today) in Israel wall-clock time. */
 export function startOfTodayIsrael(now = new Date()): Date {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Jerusalem',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-  }).formatToParts(now);
-  const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
-  return new Date(now.getTime() - (get('hour') * 3600 + get('minute') * 60 + get('second')) * 1000);
+  return startOfIsraelDay(israelDayString(now));
 }
 
 /**
@@ -21,4 +42,35 @@ export function israelDayString(date = new Date()): string {
     timeZone: 'Asia/Jerusalem',
     year: 'numeric', month: '2-digit', day: '2-digit',
   }).format(date);
+}
+
+/** UTC window `[start, end)` covering one Israel calendar day (`YYYY-MM-DD`). */
+export function israelDayRange(day: string): { start: Date; end: Date } {
+  const start = startOfIsraelDay(day);
+  // Step a day and a half forward, then snap back to that day's own midnight —
+  // never assume 24h, since a DST day is 23 or 25 hours long.
+  const nextDay = israelDayString(new Date(start.getTime() + 36 * 60 * 60 * 1000));
+  return { start, end: startOfIsraelDay(nextDay) };
+}
+
+/**
+ * True for a well-formed `YYYY-MM-DD` that names a real calendar day.
+ * Round-tripping through `startOfIsraelDay` is what rejects `2026-02-30`,
+ * which the regex alone happily accepts (Date rolls it into March).
+ */
+export function isIsraelDayString(day: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) && israelDayString(startOfIsraelDay(day)) === day;
+}
+
+/**
+ * `DD-MM-YYYY` (the format the public register-phone API takes) to the
+ * `YYYY-MM-DD` Israel day used everywhere internally. `null` when the input
+ * isn't a real calendar day — `31-02-2026` included, since `isIsraelDayString`
+ * rejects what `Date` would silently roll into March.
+ */
+export function israelDayFromDdMmYyyy(raw: string): string | null {
+  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec((raw || '').trim());
+  if (!m) return null;
+  const day = `${m[3]}-${m[2]}-${m[1]}`;
+  return isIsraelDayString(day) ? day : null;
 }

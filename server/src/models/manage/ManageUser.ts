@@ -59,7 +59,15 @@ manageUserSchema.index({ active: 1, name: 1 });
 
 export const ManageUser = model<IManageUser>('ManageUser', manageUserSchema, 'mng_users');
 
-/** Cost per hour including employer overhead. Derived, never stored. */
+/**
+ * Cost per hour. Derived, never stored.
+ *
+ * The employer-overhead factor is temporarily NOT applied — the field and its
+ * stored values are kept, so restoring it is putting the multiplier back here
+ * and re-showing the three inputs (employees modal, finance rates, settings
+ * defaults). Every cost path goes through this function, so this is the only
+ * place that decides.
+ */
 export function effectiveHourlyCost(u: Pick<IManageUser, 'hourlyCost' | 'employerCostFactor'>): number {
-  return Math.round(u.hourlyCost * (1 + u.employerCostFactor) * 100) / 100;
+  return Math.round(u.hourlyCost * 100) / 100;
 }

@@ -78,7 +78,7 @@ async function buildActivityData(
   existingPasswordHash?: string,
   existing?: IActivity,
 ): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, guidelines, extraSupportInfo, organizerContactName, organizerContactPhone, helpCategoriesDisabled, helpCategoryResponses, helpOtherCategoryEnabled, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, dailyReset, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
+  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, userControl, guidelines, extraSupportInfo, organizerContactName, organizerContactPhone, helpCategoriesDisabled, helpCategoryResponses, helpOtherCategoryEnabled, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, dailyReset, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -243,6 +243,7 @@ async function buildActivityData(
   data.hideLeaderboardInHeader = hideLeaderboardInHeader === true;
   data.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly !== false;
   data.dailyReset = dailyReset === true;
+  data.userControl = userControl === true;
   // Time limit is only meaningful in modes that show the timer (time/both).
   data.activityDurationMinutes = ((data.leaderboardMode === 'time' || data.leaderboardMode === 'both') && activityDurationMinutes && activityDurationMinutes > 0)
     ? activityDurationMinutes

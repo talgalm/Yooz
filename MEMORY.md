@@ -72,7 +72,9 @@ are first-time setup / manual ops. Lambda deploy: `.github/workflows/deploy-lamb
 ### Config / env (`server/src/config.ts`)
 `PORT`(3000) · `JWT_SECRET` · `MONGODB_URI` · `ADMIN_EMAIL`/`ADMIN_PASSWORD` (super-admin seed)
 · `CLOUDINARY_*` · `GEMINI_API_KEY`/`GEMINI_MODEL` · `AZURE_SPEECH_KEY`/`_REGION` ·
-`TEXTME_API_TOKEN`/`_USERNAME`/`_SOURCE` · `CORS_ORIGIN` (comma list; unset = allow all).
+`TEXTME_API_TOKEN`/`_USERNAME`/`_SOURCE` · `CORS_ORIGIN` (comma list; unset = allow all) ·
+`REGISTER_PHONE_KEY` (shared secret for the public register-phone API; unset = that one endpoint
+refuses every call, nothing else is affected).
 In production, `JWT_SECRET`/`ADMIN_EMAIL`/`ADMIN_PASSWORD` are **required** (throws otherwise).
 
 ---
@@ -139,10 +141,29 @@ Login config: `loginFields: ('email'|'phoneNumber'|'name')[]`, `emailGoogle?`,
 `passThreshold?` (0-100, **default 70**; null = no pass grade), `includeOnRoadmap?`.
 
 **Daily reset**: `dailyReset?` (**default false**, checkbox in the Scheduling section of
-`AdminCreateActivityPage`) + `lastDailyResetDay?` (Israel `YYYY-MM-DD` stamp). When on, a
-5-minute sweep (`services/activityReset.ts`, started from `index.ts`) wipes the activity's
-data at Israel midnight. An activity with no stamp is only *armed*, never wiped, so ticking
-the box does not eat the current day. Same wipe as go-live — both call `wipeActivityData`.
+`AdminCreateActivityPage`) + `lastDailyResetDay?` (Israel `YYYY-MM-DD` stamp). A 5-minute
+sweep (`services/activityReset.ts`, started from `index.ts`) rolls the activity over at
+Israel midnight. An activity with no stamp is only *armed*, never rolled over, so ticking
+the box does not disturb the current day.
+
+**It does not delete reports.** `rollOverActivityDay` clears only what would leak yesterday
+into today's *participant* experience — `ActivityGroup` rosters and `orderSurveySession`.
+Reports and the analytics counters are kept, and the admin reports slice them per day
+(`day:YYYY-MM-DD` period, §14). Hiding previous days is enforced at **read** time, and every
+participant-facing read of Reports must honour it:
+- login (`participantAuth.buildReportLookupQuery(..., dayScoped)`) — otherwise a participant
+  returning the next morning resumes *and overwrites* yesterday's finished report;
+- `GET /:code/leaderboard` — `dailyReset` forces `currentDayOnly` on regardless of the
+  `leaderboardCurrentDayOnly` flag;
+- `getParticipantCount(id, dayScoped)` — participant-count popup thresholds;
+- **the session itself**: the JWT carries `dailyReset: true`, and `authenticateToken` 401s a
+  token issued before today's Israel midnight. Without it a token kept overnight (7-day JWT,
+  mirrored in a cookie) still addresses yesterday's report *by id*, and the `/scores` upsert
+  would overwrite it. `isStaleDailyResetToken` drops the same token client-side at restore
+  (`AuthContext.readStoredToken`) so the participant meets the login screen, not an error.
+
+Go-live is still a real wipe (`wipeActivityData`, deletes reports) — a deliberate "clear the
+test runs" action, not the daily rollover.
 
 **Stats sharing**: `statsShareToken?` (public read-only link), `excludedReportIds?`
 (non-destructive exclusion from stats/exports).
@@ -153,6 +174,12 @@ the box does not eat the current day. Same wipe as go-live — both call `wipeAc
 **Live session**: `lockedFromIndex?` (manager progress lock — items ≥ this are blocked),
 `orderSurveySession?` (live order-game poll: itemIndex, gameId, roundIndex,
 phase `'voting'|'results'`, resultsRevealed, aggregatedRanking[Borda]).
+
+**Cashier gate**: `userControl?` (default false, checkbox "שליטה במשתשמשים" under the manager
+fields in activity create/edit). When on, only a phone with a `PhoneRegistration` for **today's
+Israel day** may create a self-service group — otherwise `POST /:code/groups` answers
+`403 {error:'not_registered'}` and the participant sees "כדי להשתתף בפעילות, צריך לשלם בקופה
+ולהירשם אצל הקופאי". Off = no check anywhere.
 
 **Groups (self-service)**: `groupMinMembers?` (default 1), `groupMaxMembers?` (0/null = no cap).
 **Group reward**: `groupReward?: {enabled, couponCode, messageTemplate?, attachmentUrl?,
@@ -196,6 +223,15 @@ activityId/Code + joinedAt + group + totalScore + completionStatus.
 `winnerReportId?`, `winnerCouponCode?`, `rewardTimerEndsAt?`). **Unique index
 `{activityId, activityDay, nameNormalized}`** — names repeat across days. See §8.
 
+### PhoneRegistration (`phone_registrations`) — cashier gate, day-scoped
+`{phone, activityCode, activityDay, createdAt}`, unique on all three (so a re-fired registration
+upserts instead of duplicating). `phone` is `normalizePhone()`d digits (`utils/phone.ts`:
+`+972`/`00972`/dashes/parens folded to `05…`, landlines too), so a till and a participant typing
+the same number match.
+`activityCode: null` means **every** activity with `userControl` on — including ones created
+after the registration — rather than a row per activity. `activityDay` is one Israel calendar day
+(`YYYY-MM-DD`); registrations are never deleted, they just stop matching once the day rolls over.
+
 ### Portal (`portals`) — gated multi-activity access
 `name`, `code` (8-char unique slug), `users: IPortalUser[]` (username, bcrypt password,
 `status: 'pending'|'approved'|'denied'`, `mustChangePassword?`), `activities: ObjectId[]`,
@@ -234,8 +270,10 @@ lets async handlers throw. `/api/health` (DB check) and `/api/load-status` are p
 - `GET /:code/module` — the ordered module (games/stations/missions populated); filters items
   by the participant's group (`item.groups`).
 - `GET /:code/lock-stream` — SSE of `lockedFromIndex` (manager live lock).
-- `GET /:code/leaderboard` — points/time/group standings; respects `leaderboardCurrentDayOnly`,
-  `leaderboardAsGrade`; group standings = summed member scores (Borda not used here).
+- `GET /:code/leaderboard` — points/time/group standings; respects `leaderboardCurrentDayOnly`
+  (forced on by `dailyReset`), `leaderboardAsGrade`; group standings = summed member scores
+  (Borda not used here). Row cap is 50, or 500 for group activities — the participant view
+  lists every teammate of the viewer's own group, so the cap must clear all groups combined.
 - `PATCH /:code/progress` *(participant JWT)* — incremental per-item progress save.
 - `POST /:code/scores` *(participant JWT)* — final score submit → completes the Report.
 - `DELETE /:code/my-report` / `GET /:code/my-progress` *(participant JWT)* — replay support.
@@ -275,7 +313,13 @@ lets async handlers throw. `/api/health` (DB check) and `/api/load-status` are p
 - `GET /overview`, `/overview/timeline` — global KPIs (customer-scoped).
 - Per activity: `/activities/:id`, `/funnel`, `/items`, `/items/:index/questions`, `/groups`,
   `/anomalies`, `/export` (Excel), `/participants`, `PATCH …/participants/exclusions`,
-  `GET/PATCH …/pass-threshold`, `GET/POST/DELETE …/share` (public share link).
+  `GET/PATCH …/pass-threshold`, `GET/POST/DELETE …/share` (public share link), `/days`.
+- `?period=` accepts `day|week|month|year` **or `day:YYYY-MM-DD`** for a single Israel day —
+  the reports' day breakdown. `GET /activities/:id/days` lists the days that have reports
+  (newest first, with participant counts) and fills the picker beside the period pills.
+  `/participants` (the roster) is deliberately **not** period-filtered: it is the exclusion
+  management surface and the PATCH replaces the *full* excluded set, so a filtered roster
+  would silently drop other days' exclusions. It shows `joinedAt` per row instead.
 - Combined: `/combined/report-card`, `/combined/report-card/export`, `/combined/export`.
 - `GET /audit-log` — **admin/super_admin only** (customers get 403).
 Every activity/report query is scoped to the customer's own activities (§7).
@@ -465,6 +509,11 @@ Shared: `StationDescriptionPopup`, floating clue button for info stations.
 - **Guidelines popup**: `guidelines` / `customInstructions` → `GuidelinesPopup`.
 - **Leaderboard**: `GET /:code/leaderboard`; modes points/time/both, optional 0-100 grade,
   default today-only. `LeaderboardView` (participant) + `ManagerDashboardPage/AnimatedLeaderboard`.
+  In a **group** activity the participant sees only their own group: one group card (with its
+  real rank among all groups) and their own teammates, re-ranked 1..n *within* the group —
+  never another group's players. Solo activities keep the top-3 + me-and-neighbours window.
+  The viewer's own row is bold pure white, everyone else 600/82% — that is the "which one is
+  me" cue, alongside the highlighted card.
 - **Roadmap**: `RoadmapView` (story path) / `SpidersView` (graph, `isFinal` lock) — themed via
   `CustomTheme` (`ThemedBackground`, `themes/SpyThemeWrapper`).
 - **Re-entry** (`module.items[].revisitable`): a completed item stays tappable on the roadmap and
@@ -509,7 +558,10 @@ Self-check: `npx tsx server/src/routes/collageFilter.check.ts`.
 - **Participant** (mobile, wrapped in `MobileContainer` max-width 480, `ParticipantActivityScope`
   + `HelpChatProvider`): `/play/:code`, `/play/:code/join/:inviteToken`, `/home`, `/story/:code`,
   `/mission/:code`. `ProtectedRoute` redirects unauthenticated participants back to `/play/:code`.
-- **Public**: `/portal/:code`, `/privacy`, `/stats/:token` (shared stats), `/ar-demo`, and `/`
+- **Public**: `/control/:id` (`pages/ControlPage`, desktop cashier console — hardcoded
+  `register`/`123456` login in the component, then a phone field + "הכנס למערכת" that POSTs to
+  `/api/activities/control/:id/register`), `/portal/:code`, `/privacy`, `/stats/:token`
+  (shared stats), `/ar-demo`, and `/`
   (the publicity site — it renders `PublicityPage` directly and never redirects).
 - **`/ar-demo`** (`pages/ArDemoPage.tsx`, standalone — no MobileContainer, no auth): GPS + camera
   + compass treasure hunt. Pickups are real lat/lng points drawn over the rear camera feed at
@@ -591,13 +643,15 @@ present view (`OrderSurveyPresentPage` / `manager/present`).
 - **New station type** → `StationType` union (model + client) + `AdminStationConfigPage` +
   `components/stations/*` + `PlayingPhase.tsx` branch.
 - **New popup trigger** → extend `trigger.point` union (model + client) + `StoryModulePage` call site.
-- **Day-scoping** uses `israelTime.ts` (`startOfTodayIsrael`, `israelDayString`) — reuse for any
-  "today in Israel" logic.
+- **Day-scoping** uses `israelTime.ts` (`startOfIsraelDay`, `startOfTodayIsrael`,
+  `israelDayString`, `israelDayRange`) — reuse for any "today in Israel" logic. Midnight is
+  resolved in two offset passes, not by subtracting elapsed wall-clock time, so the two DST
+  days land correctly (`israelTime.test.ts` covers them).
 - **OG crawler short-circuit** in `index.ts` before the SPA fallback — don't move it.
 - Reports have **no timestamps** — use `joinedAt` as the creation/"today" field.
 - Going **live wipes dynamic data** (reports/scores/session state) via `wipeActivityData`
-  (`services/activityReset.ts`) — the same helper the `dailyReset` midnight sweep uses;
-  deleting an activity cascade-deletes its reports.
+  (`services/activityReset.ts`); deleting an activity cascade-deletes its reports. The
+  `dailyReset` sweep is **not** this — it calls `rollOverActivityDay` and keeps every report.
 
 ---
 
@@ -671,8 +725,22 @@ All require `connectionType==='group'` && `groupEntryMode==='selfService'` (else
   **410** if the group's `activityDay` ≠ today (expired link).
 - `GET /:code/groups/status` *(participant JWT)* — current participant's `getGroupStatus`
   (memberCount/minMembers/canProceed/completedCount/allMembersCompleted). 403 on code mismatch.
+- `GET /register-phone?phone=&code=&date=` — public (no JWT) and not group-mode-gated: a till/POS
+  integration, guarded by the fixed shared secret `REGISTER_PHONE_KEY` sent as an `X-Api-Key`
+  header or a `?key=` param (`crypto.timingSafeEqual`). Unset secret → `503
+  register_key_not_configured` (fail closed); wrong/missing → `401 unauthorized`. `phone` required (≥6 digits after normalizing, else
+  `400 invalid_phone`). `code` optional: given → that activity, 404 unless it has
+  `userControl:true`; empty → `activityCode:null`, i.e. every user-control activity. `date`
+  optional **`DD-MM-YYYY`** (`israelDayFromDdMmYyyy`, else `400 invalid_date`); empty → today in
+  Israel. Upserts a `PhoneRegistration`, returns `{ok, phone, activityCode, date}` (date back in
+  DD-MM-YYYY; the stored `activityDay` stays internal YYYY-MM-DD).
+- `POST /control/:id/register` — cashier console endpoint, keyed on activity `_id`, 404 unless
+  that activity has `userControl:true`. Registers `body.phone` for that activity's code, today.
+  Unauthenticated by design for now (the console's credentials live on the client).
 - `POST /:code/groups` — create group + log in creator. Validates name + login fields + portal
-  membership; creates `ActivityGroup` (stamps `activityDay`), 409 on duplicate-name-today;
+  membership; when `userControl` is on, requires a `PhoneRegistration` matching the creator's
+  phone + today's Israel day + (this activity's code OR `null`), else `403
+  {error:'not_registered'}`; creates `ActivityGroup` (stamps `activityDay`), 409 on duplicate-name-today;
   `createParticipantSession`; returns `{token, participant, group:{name,inviteToken,inviteUrl},
   groupStatus?}`. `inviteUrl = <origin>/play/:code/join/:inviteToken`.
 
@@ -702,7 +770,8 @@ Module-level: `activityConfigCache` (Map, 30s TTL) memoizes `GET /:code`.
 - `GET /:code/leaderboard` — public. Three modes: **time** (completed reports by
   `sessionDurationMs` asc), **both** (by `data.totalScore` desc + duration shown), **points**
   (by totalScore desc). Top 50. Optional 0-100 grade (`leaderboardAsGrade`, monotonic
-  `normalizeScore`). Day-scoped by default (`leaderboardCurrentDayOnly`, `startOfTodayIsrael`).
+  `normalizeScore`). Day-scoped by default (`leaderboardCurrentDayOnly`, `startOfTodayIsrael`;
+  `dailyReset` forces it). Top 50, or top 500 for group activities.
   For group activities also returns per-group standings (aggregate: sum of member scores).
 - `PATCH /:code/progress` *(JWT)* — incremental save. `$set` completionStatus=`in_progress`,
   `lastActiveItemIndex`, `totalItemsCompleted`, `data.totalScore` (runningTotal); `$push`
@@ -994,8 +1063,13 @@ ffmpeg now runs in **Lambda**; the server just kicks the job and Lambda updates 
   `winnerReportId`/`winnerCouponCode`, writes an `SmsNotification`.
 
 ### `services/activityAnalyticsService.ts` — analytics aggregations
-`parsePeriod`/`periodStart` (day/week/month/year). Each fn takes `(activityId, period,
-excludeIds?)` and reads `Report`s, honoring `excludedReportIds`:
+`parsePeriod`/`periodStart`/`periodEnd`/`periodDay`. A period is a rolling window
+(`day|week|month|year`) **or `day:YYYY-MM-DD`** = one Israel calendar day (`israelDayRange`,
+the only form with an exclusive upper bound). The day rides *inside* the period value on
+purpose: every panel, export and share link already threads `period`, so single-day slicing
+needed no signature changes. `routes/analytics.ts` imports these — it used to keep its own
+duplicate copies, which silently downgraded `day:` to `year`. Each fn takes
+`(activityId, period, excludeIds?)` and reads `Report`s, honoring `excludedReportIds`:
 `getActivityAnalytics` (overview KPIs + score histogram), `getFunnel` (joined→started→halfway→
 completed), `getItems` (per-item avg score/duration/hint/completion), `getQuestions`
 (per-question correctness), `getGroups` (group comparison), `getAnomalies` (high-dropout /
@@ -1152,7 +1226,8 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
     narrative/badge/etc.), or an inline mission (`MissionInlinePlayer.tsx`). Applies theme chrome,
     station description popups, floating clue button, station hint warnings.
   - **`FinishScreen.tsx`** — final score/stars/time/items + share (video collage / badge) +
-    countdown. **`LeaderboardView.tsx`** — individual + group standings (`/leaderboard`).
+    countdown. **`LeaderboardView.tsx`** — individual + group standings (`/leaderboard`);
+    row selection is hoisted into `rows` so the empty state matches what actually renders.
   - **`ActivitySessionHeader.tsx`** — top bar (progress, leaderboard trophy, logout, mute).
 - **`MissionPage/index.tsx`** (`/mission/:code`) — standalone 3-part mission: explanation screens
   → `MissionPuzzle.tsx` → `MissionTrashSort.tsx` (+ `MissionFrame`, `MissionTopMenu`); posts

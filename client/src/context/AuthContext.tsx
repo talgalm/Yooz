@@ -3,7 +3,7 @@ import { apiFetchWithRetry } from '../utils/api';
 import { flushOfflineQueue } from '../utils/offlineQueue';
 import { newParticipantSessionId, rememberActivityCode, rememberParticipantActivity } from '../utils/participantActivity';
 import { deleteCollageDatabases } from '../components/stations/collageSplitStorage';
-import { decodeJwtPayload } from '../utils/jwt';
+import { decodeJwtPayload, isStaleDailyResetToken } from '../utils/jwt';
 
 type ConnectionType = 'single' | 'group';
 
@@ -41,10 +41,12 @@ const AuthContext = createContext<AuthContextType | null>(null);
 function decodeToken(token: string): Participant | null {
   try {
     const payload = decodeJwtPayload<{ participantName?: string; activityCode?: string; connectionType?: string; email?: string; phoneNumber?: string; group?: string; age?: number }>(token);
+    // A token without an activity code can't address anything — treat it as no session.
+    if (!payload.activityCode) return null;
     return {
-      name: payload.participantName,
+      name: payload.participantName || '',
       activityCode: payload.activityCode,
-      connectionType: payload.connectionType || 'single',
+      connectionType: payload.connectionType === 'group' ? 'group' : 'single',
       email: payload.email,
       phoneNumber: payload.phoneNumber,
       group: payload.group,
@@ -72,11 +74,16 @@ function writeTokenCookie(token: string | null): void {
 
 function readStoredToken(): string | null {
   const local = localStorage.getItem('yooz_token');
-  if (local) return local;
-  const fromCookie = readTokenCookie();
+  const stored = local ?? readTokenCookie();
+  if (!stored) return null;
+  if (isStaleDailyResetToken(stored)) {
+    localStorage.removeItem('yooz_token');
+    writeTokenCookie(null);
+    return null;
+  }
   // Re-seed localStorage — api.ts reads the token from there directly.
-  if (fromCookie) localStorage.setItem('yooz_token', fromCookie);
-  return fromCookie;
+  if (!local) localStorage.setItem('yooz_token', stored);
+  return stored;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

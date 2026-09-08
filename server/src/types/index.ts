@@ -297,6 +297,7 @@ export interface CreateActivityRequest {
   hideLeaderboardInHeader?: boolean;
   leaderboardCurrentDayOnly?: boolean;
   dailyReset?: boolean;
+  userControl?: boolean;
   activityDurationMinutes?: number;
   roadmapTimerMinutes?: number;
   includeOnRoadmap?: boolean;
@@ -337,6 +338,14 @@ export interface JwtPayload {
   activityCode: string;
   /** The report this session owns. Absent on tokens issued before it existed. */
   reportId?: string;
+  /**
+   * Set only for `dailyReset` activities. Their sessions must not outlive the
+   * Israel day: the session's report is now kept rather than deleted, so a
+   * token reused the next morning would resume — and `/scores` would upsert
+   * over — yesterday's finished report. Stamped here so `authenticateToken`
+   * can enforce it without loading the activity on every request.
+   */
+  dailyReset?: boolean;
   connectionType: ConnectionType;
   email?: string;
   phoneNumber?: string;

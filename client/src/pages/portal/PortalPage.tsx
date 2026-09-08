@@ -814,15 +814,6 @@ function getActivityStatus(a: PortalActivity): 'open' | 'closed' | 'inProgress' 
   return 'open';
 }
 
-function formatDuration(ms: number | null): string {
-  if (!ms) return '—';
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  if (m > 0) return `${m}m ${sec}s`;
-  return `${sec}s`;
-}
-
 export default function PortalPage() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();

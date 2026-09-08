@@ -171,6 +171,7 @@ export const texts = {
     count: 'Count',
 
     // Share stats
+    periodSpecificDay: 'Specific day',
     shareClicks: 'Share Clicks',
     shareCompleted: 'Actual Shares',
 
@@ -357,6 +358,7 @@ export const texts = {
     count: 'כמות',
 
     // Share stats
+    periodSpecificDay: 'יום מסוים',
     shareClicks: 'לחיצות שיתוף',
     shareCompleted: 'שיתופים בפועל',
 

@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './PlayPage.i18n';
 import ActivityLogin from '../../components/login/ActivityLogin';
-import { apiFetch, apiFetchWithRetry } from '../../utils/api';
+import { apiFetchWithRetry } from '../../utils/api';
 import { participantMissionPath, participantStoryPath, rememberActivityCode } from '../../utils/participantActivity';
 import { startEarlyModulePrefetch } from '../../utils/earlyModulePrefetch';
 import { participantImageUrl, participantVideoUrl } from '../../utils/participantMedia';

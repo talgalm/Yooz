@@ -45,6 +45,10 @@ export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 export const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY || '';
 export const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION || '';
 
+// Shared secret for the public register-phone API (the till/POS integration).
+// Unset = the endpoint refuses every call, rather than silently standing open.
+export const REGISTER_PHONE_KEY = process.env.REGISTER_PHONE_KEY || '';
+
 // TextMe (https://my.textme.co.il/api) SMS provider config
 export const TEXTME_API_TOKEN = process.env.TEXTME_API_TOKEN || '';
 export const TEXTME_USERNAME = process.env.TEXTME_USERNAME || '';

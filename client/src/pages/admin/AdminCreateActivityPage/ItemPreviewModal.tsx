@@ -216,7 +216,7 @@ export default function ItemPreviewModal({ item, onClose }: ItemPreviewModalProp
         const isRTL = /[\u0590-\u05FF]/.test(riddleAnswer);
         return (
           <StationContent>
-            {settings.clue && (
+            {!!settings.clue && (
               <StationText style={{ fontWeight: 600, marginBottom: 12 }}>{settings.clue as string}</StationText>
             )}
             {riddleAnswer && (

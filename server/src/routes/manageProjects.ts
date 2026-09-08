@@ -34,7 +34,7 @@ function badId(res: Response, id: string): boolean {
 function visibilityFilter(req: Request): Record<string, unknown> {
   const { role, userId } = req.manageUser!;
   if (role === 'owner' || role === 'pm') return {};
-  return { $or: [{ memberUserIds: userId }, { pmUserId: userId }] };
+  return { $or: [{ memberUserIds: userId }, { pmUserId: userId }, { type: 'internal' }] };
 }
 
 function pickProjectFields(body: Record<string, unknown>, role: string): Record<string, unknown> {

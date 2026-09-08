@@ -308,6 +308,23 @@ export const PeriodButton = styled('button')<{ active?: boolean }>(({ active }) 
   },
 }));
 
+/** Day picker beside the period pills — a year of days will not fit as buttons. */
+export const DaySelect = styled('select')<{ active?: boolean }>(({ active }) => ({
+  border: 'none',
+  borderRadius: 7,
+  minHeight: 30,
+  padding: '0 8px',
+  fontSize: 12,
+  fontWeight: 800,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+  color: active ? '#fff' : '#425466',
+  background: active ? PRIMARY : 'transparent',
+  boxShadow: active ? '0 1px 3px rgba(39, 43, 58, 0.16)' : 'none',
+  '&:hover': { background: active ? PRIMARY : '#fff' },
+  '& option': { color: '#425466', background: '#fff' },
+}));
+
 export const ActionButton = styled('button')<{ variant?: 'primary' | 'neutral' }>(({ variant = 'neutral' }) => ({
   border: variant === 'primary' ? `1px solid ${PRIMARY}` : `1px solid ${BORDER}`,
   borderRadius: 8,

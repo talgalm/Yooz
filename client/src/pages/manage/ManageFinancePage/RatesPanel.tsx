@@ -62,7 +62,7 @@ export default function RatesPanel() {
 
   useEffect(() => { load(); }, [load]);
 
-  const save = async (rate: Rate, field: 'hourlyCost' | 'employerCostFactor', raw: string) => {
+  const save = async (rate: Rate, field: 'hourlyCost', raw: string) => {
     const value = Number(raw);
     if (!Number.isFinite(value) || value < 0 || value === rate[field]) return;
     setError('');
@@ -100,16 +100,6 @@ export default function RatesPanel() {
                 disabled={savingId === r._id}
                 style={{ width: 90 }}
                 onBlur={(e) => save(r, 'hourlyCost', e.target.value)}
-              />
-            </Cell>
-            <Cell>
-              {t.employerFactor}
-              <SmallInput
-                type="number" min="0" step="0.01"
-                defaultValue={r.employerCostFactor}
-                disabled={savingId === r._id}
-                style={{ width: 80 }}
-                onBlur={(e) => save(r, 'employerCostFactor', e.target.value)}
               />
             </Cell>
             <Effective>

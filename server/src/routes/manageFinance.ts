@@ -8,6 +8,7 @@ import { Client } from '../models/manage/Client';
 import { TimeEntry } from '../models/manage/TimeEntry';
 import { ManageUser } from '../models/manage/ManageUser';
 import { actualHoursByProject, round2 } from '../services/manageMetrics';
+import { effectiveHourlyCost } from '../models/manage/ManageUser';
 import { getSettings } from '../services/manageSettings';
 import {
   projectMoney, projectMonthMoney, mrrOf,
@@ -359,7 +360,7 @@ router.get('/rates', async (_req: Request, res: Response) => {
       tracksTime: u.tracksTime,
       hourlyCost: u.hourlyCost,
       employerCostFactor: u.employerCostFactor,
-      effectiveHourlyCost: round2(u.hourlyCost * (1 + u.employerCostFactor)),
+      effectiveHourlyCost: effectiveHourlyCost(u),
     })),
   });
 });
@@ -391,7 +392,7 @@ router.patch('/rates/:userId', async (req: Request, res: Response) => {
       tracksTime: user.tracksTime,
       hourlyCost: user.hourlyCost,
       employerCostFactor: user.employerCostFactor,
-      effectiveHourlyCost: round2(user.hourlyCost * (1 + user.employerCostFactor)),
+      effectiveHourlyCost: effectiveHourlyCost(user),
     },
   });
 });

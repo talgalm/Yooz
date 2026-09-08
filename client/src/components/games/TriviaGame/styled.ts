@@ -25,7 +25,6 @@ const FINISH_PURPLE_DARK = '#5b4cd4';
 const BTN_PURPLE = FINISH_PURPLE;
 const BTN_PURPLE_DARK = FINISH_PURPLE_DARK;
 const BTN_PURPLE_LIGHT = '#ede7ff';
-const FINISH_TITLE_COLOR = '#ffff00';
 const FINISH_STUMP_TEXT_COLOR = '#fff';
 
 // ─── Animations ───

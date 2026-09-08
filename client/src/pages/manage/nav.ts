@@ -19,7 +19,7 @@ export const MANAGE_NAV: ManageNavItem[] = [
   { path: 'hours', labelHe: 'שעות', labelEn: 'Hours' },
   { path: 'calendar', labelHe: 'יומן', labelEn: 'Calendar' },
   { path: 'finance', labelHe: 'כספים', labelEn: 'Finance', ownerOnly: true },
-  { path: 'reports', labelHe: 'דוחות', labelEn: 'Reports' },
-  { path: 'employees', labelHe: 'עובדים', labelEn: 'Employees' },
+  { path: 'reports', labelHe: 'דוחות', labelEn: 'Reports', ownerOnly: true },
+  { path: 'employees', labelHe: 'עובדים', labelEn: 'Employees', ownerOnly: true },
   { path: 'settings', labelHe: 'הגדרות', labelEn: 'Settings', ownerOnly: true },
 ];

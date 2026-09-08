@@ -191,3 +191,27 @@ export async function dropManageProjectCodeIndex(): Promise<void> {
   // Existing documents keep a stray `code` value; strip it so exports stay clean.
   await collection.updateMany({ code: { $exists: true } }, { $unset: { code: '' } }).catch(() => {});
 }
+
+/**
+ * Yooz-Manage: the one shared internal project, so non-client work has somewhere
+ * to land. Categories like infrastructure and content require a project, and a
+ * member only sees projects they are on — without this there is nothing to pick.
+ * Idempotent: matched by name, and skipped entirely until an owner exists.
+ */
+export async function seedInternalProject(): Promise<void> {
+  const { Project, INTERNAL_PROJECT_NAME } = await import('../models/manage/Project');
+  const { ManageUser } = await import('../models/manage/ManageUser');
+
+  if (await Project.findOne({ type: 'internal', name: INTERNAL_PROJECT_NAME })) return;
+  const owner = await ManageUser.findOne({ role: 'owner' }).select('_id');
+  if (!owner) return;
+
+  await Project.create({
+    name: INTERNAL_PROJECT_NAME,
+    type: 'internal',
+    status: 'active',
+    pmUserId: owner._id,
+    createdBy: owner._id,
+  });
+  console.log(`✅ Seeded shared internal project: ${INTERNAL_PROJECT_NAME}`);
+}

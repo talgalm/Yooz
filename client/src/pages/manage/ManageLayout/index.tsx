@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useManageAuth } from '../../../context/ManageAuthContext';
 import { useLang } from '../../../context/LanguageContext';
@@ -212,6 +212,12 @@ export default function ManageLayout() {
   const visible = MANAGE_NAV.filter((i) => !i.ownerOnly || isOwner);
   const firstOwnerOnly = visible.find((i) => i.ownerOnly);
   const current = visible.find((i) => pathname === `/manage/${i.path}`);
+
+  // Hiding the link is not a gate — a typed URL mounted the page anyway, which
+  // then just failed on 403s. The server is still the real gate.
+  if (MANAGE_NAV.some((i) => i.ownerOnly && !isOwner && pathname === `/manage/${i.path}`)) {
+    return <Navigate to="/manage/my-work" replace />;
+  }
 
   return (
     <Shell>
