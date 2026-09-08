@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
-import { useTranslations } from '../../../context/LanguageContext';
-import { texts } from './AdminCreateActivityPage.i18n';
+import { useTranslations, useLang } from '../../../context/LanguageContext';
+import { texts, HELP_CATEGORIES } from './AdminCreateActivityPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
 import FileUploadButton from '../../../components/FileUploadButton';
 import {
@@ -88,6 +88,33 @@ const SectionHeaderTitle = styled('h3')({
   fontWeight: 700,
   color: '#333',
 });
+
+const CollapsibleSectionHeader = styled('button')({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  width: '100%',
+  gap: 10,
+  padding: 0,
+  paddingBottom: 10,
+  marginBottom: 2,
+  border: 'none',
+  borderBottom: '1px solid #f0f0f4',
+  background: 'transparent',
+  cursor: 'pointer',
+  textAlign: 'start',
+  font: 'inherit',
+  color: 'inherit',
+});
+
+const CollapseChevron = styled('span')<{ expanded?: boolean }>(({ expanded }) => ({
+  display: 'inline-block',
+  transition: 'transform 0.15s',
+  transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+  fontSize: 12,
+  color: '#888',
+  flexShrink: 0,
+}));
 
 const FormGrid = styled('div')({
   display: 'grid',
@@ -310,6 +337,7 @@ export default function AdminCreateActivityPage() {
   const isEditMode = Boolean(id);
   const navigate = useNavigate();
   const t = useTranslations(texts);
+  const { lang } = useLang();
 
   const defaultGroupName = (i: number) => `${t.groupDefault} ${i}`;
 
@@ -348,6 +376,14 @@ export default function AdminCreateActivityPage() {
   const [userControl, setUserControl] = useState(false);
 
   const [guidelines, setGuidelines] = useState('');
+  const [extraSupportInfo, setExtraSupportInfo] = useState('');
+  const [organizerContactName, setOrganizerContactName] = useState('');
+  const [organizerContactPhone, setOrganizerContactPhone] = useState('');
+  const [helpCategoriesDisabled, setHelpCategoriesDisabled] = useState<string[]>([]);
+  const [helpCategoryResponses, setHelpCategoryResponses] = useState<Record<string, string>>({});
+  const [helpOtherCategoryEnabled, setHelpOtherCategoryEnabled] = useState(false);
+  // UI-only — never sent to the server, never persisted on the activity.
+  const [helpChatSectionExpanded, setHelpChatSectionExpanded] = useState(false);
 
   const [alwaysOpen, setAlwaysOpen] = useState(true);
   const [dailyReset, setDailyReset] = useState(false);
@@ -487,6 +523,12 @@ export default function AdminCreateActivityPage() {
         if (a.managerEmail) setManagerEmail(a.managerEmail);
         setUserControl(a.userControl === true);
         if (a.guidelines) setGuidelines(a.guidelines);
+        if (a.organizerContactName) setOrganizerContactName(a.organizerContactName);
+        if (a.organizerContactPhone) setOrganizerContactPhone(a.organizerContactPhone);
+        if (a.extraSupportInfo) setExtraSupportInfo(a.extraSupportInfo);
+        if (a.helpCategoriesDisabled?.length) setHelpCategoriesDisabled(a.helpCategoriesDisabled);
+        if (a.helpCategoryResponses) setHelpCategoryResponses(a.helpCategoryResponses);
+        if (a.helpOtherCategoryEnabled) setHelpOtherCategoryEnabled(true);
         if (a.customInstructions) {
           setUseDefaultInstructions(false);
           setCustomInstructions({
@@ -985,6 +1027,12 @@ export default function AdminCreateActivityPage() {
         payload.module = modulePayload;
       }
       payload.guidelines = guidelines.trim() || undefined;
+      payload.organizerContactName = organizerContactName.trim() || undefined;
+      payload.organizerContactPhone = organizerContactPhone.trim() || undefined;
+      payload.extraSupportInfo = extraSupportInfo.trim() || undefined;
+      payload.helpCategoriesDisabled = helpCategoriesDisabled.length > 0 ? helpCategoriesDisabled : undefined;
+      payload.helpCategoryResponses = Object.keys(helpCategoryResponses).length > 0 ? helpCategoryResponses : undefined;
+      payload.helpOtherCategoryEnabled = helpOtherCategoryEnabled;
       if (!useDefaultInstructions) {
         payload.customInstructions = {
           title: customInstructions.title?.trim() || undefined,
@@ -1497,6 +1545,127 @@ export default function AdminCreateActivityPage() {
                     </SectionCard>
                   </div>
                 </FormGrid>
+
+                <SectionCardWide>
+                  <CollapsibleSectionHeader
+                    type="button"
+                    onClick={() => setHelpChatSectionExpanded((was) => !was)}
+                    aria-expanded={helpChatSectionExpanded}
+                  >
+                    <div>
+                      <SectionHeaderTitle>{t.helpChatSectionTitle}</SectionHeaderTitle>
+                      {!helpChatSectionExpanded && (
+                        <SectionDescription style={{ margin: '4px 0 0' }}>
+                          {t.helpChatSectionCollapsedDesc}
+                        </SectionDescription>
+                      )}
+                    </div>
+                    <CollapseChevron expanded={helpChatSectionExpanded}>▾</CollapseChevron>
+                  </CollapsibleSectionHeader>
+
+                  {helpChatSectionExpanded && (
+                    <>
+                      <SectionHeader>
+                        <SectionHeaderTitle>{t.organizerContactSection}</SectionHeaderTitle>
+                      </SectionHeader>
+                      <SectionDescription style={{ margin: 0 }}>{t.organizerContactDesc}</SectionDescription>
+                      <FormGrid style={{ marginTop: 8 }}>
+                        <Input
+                          placeholder={t.organizerContactNamePlaceholder}
+                          value={organizerContactName}
+                          onChange={(e) => setOrganizerContactName(e.target.value)}
+                        />
+                        <Input
+                          type="tel"
+                          placeholder={t.organizerContactPhonePlaceholder}
+                          value={organizerContactPhone}
+                          onChange={(e) => setOrganizerContactPhone(e.target.value)}
+                        />
+                      </FormGrid>
+
+                      <SectionHeader style={{ marginTop: 14 }}>
+                        <SectionHeaderTitle>{t.helpCategoriesSection}</SectionHeaderTitle>
+                      </SectionHeader>
+                      <SectionDescription style={{ margin: 0 }}>{t.helpCategoriesDesc}</SectionDescription>
+                      <VerticalStack style={{ marginTop: 8, gap: 14 }}>
+                    {HELP_CATEGORIES.map((cat) => {
+                      const checked = !helpCategoriesDisabled.includes(cat.key);
+                      return (
+                        <div
+                          key={cat.key}
+                          style={{ border: '1px solid #eee', borderRadius: 8, padding: 12, opacity: checked ? 1 : 0.5 }}
+                        >
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: '#444', fontWeight: 600 }}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) =>
+                                setHelpCategoriesDisabled((prev) =>
+                                  e.target.checked ? prev.filter((k) => k !== cat.key) : [...prev, cat.key]
+                                )
+                              }
+                              style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                            />
+                            {lang === 'he' ? cat.labelHe : cat.labelEn}
+                          </label>
+                          {checked && (
+                            <>
+                              <SectionDescription style={{ margin: '8px 0 4px', fontSize: 12 }}>
+                                {t.helpCategoryCustomLabel}
+                              </SectionDescription>
+                              <TextArea
+                                placeholder={cat.defaultHe}
+                                value={helpCategoryResponses[cat.key] || ''}
+                                onChange={(e) =>
+                                  setHelpCategoryResponses((prev) => {
+                                    const next = { ...prev };
+                                    if (e.target.value) next[cat.key] = e.target.value;
+                                    else delete next[cat.key];
+                                    return next;
+                                  })
+                                }
+                                rows={2}
+                              />
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    <div style={{ border: '1px solid #eee', borderRadius: 8, padding: 12 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, color: '#444', fontWeight: 600 }}>
+                        <input
+                          type="checkbox"
+                          checked={helpOtherCategoryEnabled}
+                          onChange={(e) => setHelpOtherCategoryEnabled(e.target.checked)}
+                          style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                        />
+                        {t.otherCategoryLabel}
+                      </label>
+                      <SectionDescription style={{ margin: '4px 0 0', fontSize: 12 }}>
+                        {t.otherCategoryDesc}
+                      </SectionDescription>
+                      {helpOtherCategoryEnabled && (
+                        <>
+                          <SectionDescription style={{ margin: '8px 0 4px', fontSize: 12 }}>
+                            {t.extraSupportInfoLabel}
+                          </SectionDescription>
+                          <SectionDescription style={{ margin: '0 0 4px', fontSize: 12, color: '#888' }}>
+                            {t.extraSupportInfoDesc}
+                          </SectionDescription>
+                          <TextArea
+                            placeholder={t.extraSupportInfoPlaceholder}
+                            value={extraSupportInfo}
+                            onChange={(e) => setExtraSupportInfo(e.target.value)}
+                            rows={4}
+                          />
+                        </>
+                      )}
+                    </div>
+                      </VerticalStack>
+                    </>
+                  )}
+                </SectionCardWide>
 
                 {/* Step 1 navigation */}
                 <SectionCardWide>

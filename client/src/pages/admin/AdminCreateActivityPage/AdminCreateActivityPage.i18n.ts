@@ -1,3 +1,44 @@
+// Keep keys/defaults in sync with server/src/routes/admin.ts VALID_HELP_CATEGORIES
+// and the participant help-chat FAQ menu defaults (client/src/components/HelpChat/HelpChat.i18n.ts).
+// defaultHe is shown as a reference placeholder in the admin editor; the actual
+// runtime default also substitutes the activity's organizer contact, if set.
+// "Something else" (the open free-text chat) is NOT in this list — it's an
+// opt-in escape hatch with its own dedicated toggle, not a default-on category.
+export const HELP_CATEGORIES: { key: string; labelEn: string; labelHe: string; defaultHe: string }[] = [
+  {
+    key: 'login', labelEn: "I can't log in", labelHe: 'לא מצליח/ה להתחבר',
+    defaultHe: 'הזינו שם, ואם נדרש — אימייל או טלפון. אין צורך בסיסמה או קוד. וודאו שהפרטים מאוייתים נכון. אם משתמשים בגוגל, אפשרו את הפופאפ. נסו לרענן את הדף ולהיכנס שוב.',
+  },
+  {
+    key: 'game_start', labelEn: "The game isn't starting", labelHe: 'המשחק לא מתחיל',
+    defaultHe: 'אם עדיין לא נכנסתם: מלאו את השם שלכם (ואם מופיעים שדות נוספים — אימייל או טלפון), ולחצו על הכפתור — כך נכנסים לפעילות. אם כבר בפנים: לחצו על כרטיסיית תחנה במפת הדרכים כדי לפתוח ולהתחיל משחק.',
+  },
+  {
+    key: 'score', labelEn: 'My score is wrong', labelHe: 'הניקוד שלי לא נכון',
+    defaultHe: 'ניקוד נשמר אוטומטית אחרי כל משחק. אם הניקוד נראה לא נכון, ייתכן שהוא כולל קנסות רמז (-5 נקודות כל אחד). טבלת המובילים מציגה את הניקוד העדכני — בדקו שם לאחר סיום.',
+  },
+  {
+    key: 'loading', labelEn: 'Page not loading / error', labelHe: 'הדף תקוע / שגיאה',
+    defaultHe: 'נסו לרענן את הדף. וודאו שיש לכם חיבור אינטרנט יציב. אם הבעיה ממשיכה, נסו דפדפן אחר או נקו את המטמון.',
+  },
+  {
+    key: 'kicked_out', labelEn: 'I got kicked out', labelHe: 'נזרקתי מהפעילות',
+    defaultHe: 'היכנסו שוב מהקישור שנשלח אליכם. אם אין לכם יותר את הקישור — בקשו מהמנחה קישור חדש לפעילות. בכניסה מחדש בחרו את שם הקבוצה מהרשימה, והזינו בדיוק את אותו השם שהזנתם קודם — כך ההתקדמות שלכם נמצאת שוב.',
+  },
+  {
+    key: 'button_stuck', labelEn: "A button isn't working", labelHe: 'כפתור לא עובד',
+    defaultHe: 'רעננו את הדף ונסו שוב. אם עדיין לא קורה כלום, זו בדרך כלל קליטה חלשה — עברו למקום עם קליטה טובה יותר ונסו פעם נוספת.',
+  },
+  {
+    key: 'task_stuck', labelEn: "I'm stuck on a task", labelHe: 'לא מצליח/ה לפתור משימה',
+    defaultHe: 'נסו קודם את הרמז שבתוך המשחק (הוא עולה 5 נקודות). אם אין רמז, או שהוא לא מספיק — פנו למנחה, שיכול לחשוף לכם את הפתרון מדף התשובות.',
+  },
+  {
+    key: 'video_missing', labelEn: 'The video never arrived', labelHe: 'לא נוצר סרטון',
+    defaultHe: 'אם המסך עדיין טוען — בחרו לקבל את הסרטון ב-SMS והוא יגיע אליכם בהודעה. אם כבר בחרתם SMS, או שאינכם מעוניינים — פשוט המתינו, הסרטון עדיין בהכנה. אם קפץ ישר מסך הסיום, כנראה שלא צולמו כל התמונות ולא ניתן ליצור סרטון הפעם.',
+  },
+];
+
 export const texts = {
   en: {
     title: 'Create Activity',
@@ -158,6 +199,20 @@ export const texts = {
     guidelinesSection: 'Guidelines (optional)',
     guidelinesDesc: 'Custom instructions shown to participants before starting',
     guidelinesPlaceholder: 'Enter custom guidelines for participants...',
+    helpChatSectionTitle: 'Participant help chat',
+    helpChatSectionCollapsedDesc: 'All standard categories are active, pointing to "the activity organizer". Expand to customize.',
+    organizerContactSection: 'Contact person (default: "the activity organizer")',
+    organizerContactDesc: 'Optional. When set, every place the participant help bot says "contact the activity organizer" or "ask your facilitator" will instead name this contact.',
+    organizerContactNamePlaceholder: 'Contact name',
+    organizerContactPhonePlaceholder: 'Phone number',
+    helpCategoriesSection: 'Participant help-chat categories',
+    helpCategoriesDesc: 'All categories show by default with the standard answer below. Uncheck any that don\'t apply to this activity (e.g. "The video never arrived" if it has no collage station), or edit the answer text to customize it for this activity.',
+    helpCategoryCustomLabel: 'Custom answer for this activity (leave empty to use the default above)',
+    extraSupportInfoLabel: 'Extra context for this open chat (optional)',
+    extraSupportInfoDesc: "Free text sent to the bot only when a participant asks a free-text question here — never shown to participants as-is.",
+    extraSupportInfoPlaceholder: 'e.g. known quirks, special setup, contacts for this activity...',
+    otherCategoryLabel: 'Also show "Something else" (open free-text chat)',
+    otherCategoryDesc: 'Off by default. Turn on only for an activity that needs a category or issue not covered by the list above.',
     themeLabel: 'Visual Theme',
     themeDefault: 'Default (Nature)',
     themeOcean: 'Ocean',
@@ -406,6 +461,20 @@ export const texts = {
     guidelinesSection: 'הנחיות (אופציונלי)',
     guidelinesDesc: 'הוראות מותאמות שיוצגו למשתתפים לפני תחילת הפעילות',
     guidelinesPlaceholder: 'הכניסו הנחיות למשתתפים...',
+    helpChatSectionTitle: 'עזרה למשתתפים',
+    helpChatSectionCollapsedDesc: 'כל הקטגוריות הסטנדרטיות פעילות, ומפנות ל"מארגן הפעילות". פתחו כדי להתאים אישית.',
+    organizerContactSection: 'איש קשר לפניות (ברירת מחדל: "מארגן הפעילות")',
+    organizerContactDesc: 'אופציונלי. כשממלאים, בכל מקום שבו בוט התמיכה של המשתתפים אומר "פנו למארגן הפעילות" או "בקשו מהמנחה" — הוא יפנה במקום זאת לאיש הקשר הזה.',
+    organizerContactNamePlaceholder: 'שם איש הקשר',
+    organizerContactPhonePlaceholder: 'מספר טלפון',
+    helpCategoriesSection: 'קטגוריות עזרה למשתתפים',
+    helpCategoriesDesc: 'כל הקטגוריות מוצגות כברירת מחדל עם התשובה הרגילה שמופיעה למטה. הסירו סימון מקטגוריות שלא רלוונטיות לפעילות הזו (למשל "לא נוצר סרטון" אם אין בפעילות תחנת קולאז\'), או ערכו את הטקסט כדי להתאים אותו לפעילות הזו.',
+    helpCategoryCustomLabel: 'תשובה מותאמת לפעילות הזו (השאירו ריק כדי להשתמש בברירת המחדל שלמעלה)',
+    extraSupportInfoLabel: 'מידע נוסף לצ\'אט הפתוח הזה (אופציונלי)',
+    extraSupportInfoDesc: 'טקסט חופשי שיישלח לבוט רק כשמשתתף שואל כאן שאלה בטקסט חופשי — לא מוצג למשתתפים כמו שהוא.',
+    extraSupportInfoPlaceholder: 'לדוגמה: תקלות ידועות, הגדרות מיוחדות, אנשי קשר לפעילות הזו...',
+    otherCategoryLabel: 'הצג גם "משהו אחר" (צ\'אט פתוח בטקסט חופשי)',
+    otherCategoryDesc: 'כבוי כברירת מחדל. הפעילו רק לפעילות שצריכה קטגוריה או תקלה שלא מכוסה ברשימה שלמעלה.',
     themeLabel: 'ערכת עיצוב',
     themeDefault: 'ברירת מחדל (טבע)',
     themeOcean: 'מים',

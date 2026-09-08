@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
+import { Activity } from '../models';
+import { type OrganizerContact, contactClause, askClause, buildFallbackMessage } from './help.i18n';
 
 const router = Router();
 
@@ -28,16 +30,19 @@ setInterval(() => {
   }
 }, 5 * 60_000);
 
-// ─── Fallback messages ───
-
-const FALLBACK_MESSAGES = {
-  en: "If you're having trouble, try refreshing the page first. If the issue persists, contact the activity organizer or call our support line.",
-  he: 'אם אתם חווים בעיות, נסו לרענן את הדף קודם. אם הבעיה ממשיכה, פנו למארגן הפעילות או התקשרו לקו התמיכה שלנו.',
-};
+async function fetchActivityExtras(code?: string): Promise<{ extraSupportInfo?: string; contact?: OrganizerContact }> {
+  if (!code) return {};
+  const activity = await Activity.findOne({ code }).select('extraSupportInfo organizerContactName organizerContactPhone').lean();
+  if (!activity) return {};
+  const contact = activity.organizerContactName && activity.organizerContactPhone
+    ? { name: activity.organizerContactName, phone: activity.organizerContactPhone }
+    : undefined;
+  return { extraSupportInfo: activity.extraSupportInfo || undefined, contact };
+}
 
 // ─── System prompt for Gemini ───
 
-function buildSystemPrompt(lang: 'en' | 'he'): string {
+function buildSystemPrompt(lang: 'en' | 'he', contact?: OrganizerContact): string {
   const langName = lang === 'he' ? 'Hebrew' : 'English';
 
   return `You are a helpful support assistant for Yooz, an interactive group activity platform. Participants join activities using a unique code, then see a roadmap of stations/items they must tap to open and play. Station types include: games (trivia, puzzles, ordering, true/false, ball-catch game, jigsaw, trash-sort), text/video/image content stations, and badge stations. Participants earn scores and appear on a leaderboard.
@@ -90,8 +95,8 @@ ${lang === 'he'
 
 5. SCORE — Questions about points, scoring, wrong score
 ${lang === 'he'
-    ? 'Response: ניקוד נשמר אוטומטית כשמסיימים משחק. שימוש ברמז מוריד 5 נקודות. בדקו את טבלת המובילים לדירוג הסופי. אם עדיין לא נכון, פנו למארגן.'
-    : 'Response: Scores are saved automatically when you finish a game. Hint usage deducts 5 points each. Check the leaderboard for your final ranking. If still wrong, contact the organizer.'}
+    ? `Response: ניקוד נשמר אוטומטית כשמסיימים משחק. שימוש ברמז מוריד 5 נקודות. בדקו את טבלת המובילים לדירוג הסופי. אם עדיין לא נכון, ${contactClause(lang, contact)}.`
+    : `Response: Scores are saved automatically when you finish a game. Hint usage deducts 5 points each. Check the leaderboard for your final ranking. If still wrong, ${contactClause(lang, contact)}.`}
 
 6. LOADING — Page stuck, not loading, errors, crashes
 ${lang === 'he'
@@ -132,8 +137,8 @@ Additional: Group/branch selection only appears in activities that require it. I
 
 13. GENERAL — Catch-all for other issues
 ${lang === 'he'
-    ? 'Response: אם אתם חווים בעיות, נסו לרענן את הדף קודם. אם הבעיה ממשיכה, פנו למארגן הפעילות או התקשרו לקו התמיכה שלנו.'
-    : "Response: If you're having trouble, try refreshing the page first. If the issue persists, contact the activity organizer or call our support line."}
+    ? `Response: אם אתם חווים בעיות, נסו לרענן את הדף קודם. אם הבעיה ממשיכה, ${contactClause(lang, contact)} או התקשרו לקו התמיכה שלנו.`
+    : `Response: If you're having trouble, try refreshing the page first. If the issue persists, ${contactClause(lang, contact)} or call our support line.`}
 
 14. GAME_START — Game not starting, don't know what to press, nothing happens, activity not beginning, how to start
 ${lang === 'he'
@@ -148,8 +153,8 @@ If nothing happens, try refreshing the page.`}
 
 15. KICKED_OUT — Thrown out of the activity, session lost, has to start over, lost the link
 ${lang === 'he'
-    ? `Response: היכנסו שוב מהקישור שנשלח אליכם. אם אין לכם יותר את הקישור — בקשו מהמנחה קישור חדש לפעילות. בכניסה מחדש בחרו את שם הקבוצה מהרשימה, והזינו בדיוק את אותו השם שהזנתם קודם — כך ההתקדמות שלכם נמצאת שוב.`
-    : `Response: Open the activity again from the link you were sent. If you don't have the link any more, ask your facilitator for a new one. When you log back in, pick your group from the list and type exactly the same name you used before — that's how your progress is found again.`}
+    ? `Response: היכנסו שוב מהקישור שנשלח אליכם. אם אין לכם יותר את הקישור — ${askClause(lang, contact)} קישור חדש לפעילות. בכניסה מחדש בחרו את שם הקבוצה מהרשימה, והזינו בדיוק את אותו השם שהזנתם קודם — כך ההתקדמות שלכם נמצאת שוב.`
+    : `Response: Open the activity again from the link you were sent. If you don't have the link any more, ${askClause(lang, contact)} for a new one. When you log back in, pick your group from the list and type exactly the same name you used before — that's how your progress is found again.`}
 
 16. BUTTON_STUCK — A button does nothing when pressed
 ${lang === 'he'
@@ -158,8 +163,8 @@ ${lang === 'he'
 
 17. TASK_STUCK — Cannot complete/solve a task, too hard, needs the answer
 ${lang === 'he'
-    ? 'Response: נסו קודם את הרמז שבתוך המשחק (הוא עולה 5 נקודות). אם אין רמז, או שהוא לא מספיק — פנו למנחה, שיכול לחשוף לכם את הפתרון מדף התשובות.'
-    : "Response: Try the hint inside the game first (it costs 5 points). If there's no hint, or it isn't enough, ask your facilitator — they can reveal the solution from the answer sheet."}
+    ? `Response: נסו קודם את הרמז שבתוך המשחק (הוא עולה 5 נקודות). אם אין רמז, או שהוא לא מספיק — ${contactClause(lang, contact)}, שיכול לחשוף לכם את הפתרון מדף התשובות.`
+    : `Response: Try the hint inside the game first (it costs 5 points). If there's no hint, or it isn't enough, ${askClause(lang, contact)} — they can reveal the solution from the answer sheet.`}
 
 18. VIDEO_MISSING — The collage video never appeared
 ${lang === 'he'
@@ -194,6 +199,7 @@ interface HelpContext {
   totalItems?: number;
   itemName?: string;
   itemType?: string;
+  code?: string;
 }
 
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : undefined);
@@ -209,8 +215,15 @@ function sanitizeContext(raw: unknown): HelpContext | null {
     totalItems: num(r.totalItems),
     itemName: str(r.itemName, 100),
     itemType: str(r.itemType, 30),
+    code: str(r.code, 10),
   };
   return Object.values(ctx).some((v) => v !== undefined) ? ctx : null;
+}
+
+// ─── Per-activity support info (admin-authored, feeds the open "something else" chat only) ───
+
+function buildActivitySupportPrompt(text: string): string {
+  return `\n\nADDITIONAL ACTIVITY-SPECIFIC SUPPORT INFO (provided by the organizer for this specific activity — applies ONLY here, do not apply it to any other activity or assume it's general platform behavior):\n${text}`;
 }
 
 function buildContextPrompt(ctx: HelpContext): string {
@@ -231,7 +244,7 @@ interface HistoryEntry {
   text: string;
 }
 
-async function askGemini(message: string, lang: 'en' | 'he', history: HistoryEntry[] = [], context: HelpContext | null = null): Promise<string> {
+async function askGemini(message: string, lang: 'en' | 'he', history: HistoryEntry[] = [], context: HelpContext | null = null, contact?: OrganizerContact, extraSupportInfo?: string): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
   // Build multi-turn contents from history (max last 6 turns to stay concise)
@@ -247,7 +260,7 @@ async function askGemini(message: string, lang: 'en' | 'he', history: HistoryEnt
 
   const body = {
     contents,
-    systemInstruction: { parts: [{ text: buildSystemPrompt(lang) + (context ? buildContextPrompt(context) : '') }] },
+    systemInstruction: { parts: [{ text: buildSystemPrompt(lang, contact) + (extraSupportInfo ? buildActivitySupportPrompt(extraSupportInfo) : '') + (context ? buildContextPrompt(context) : '') }] },
     generationConfig: {
       temperature: 0.3,
       maxOutputTokens: 300,
@@ -303,20 +316,22 @@ router.post('/', async (req: Request, res: Response) => {
   const safeHistory: HistoryEntry[] = Array.isArray(history)
     ? history.filter((h) => h && typeof h.text === 'string' && (h.from === 'bot' || h.from === 'user')).slice(0, 20)
     : [];
+  const safeContext = sanitizeContext(context);
+  const { extraSupportInfo, contact } = await fetchActivityExtras(safeContext?.code);
 
-  // If no API key, return fallback
+  // If no API key, return fallback (still using this activity's named contact, if set)
   if (!GEMINI_API_KEY) {
-    res.json({ response: FALLBACK_MESSAGES[safeLang], source: 'fallback' });
+    res.json({ response: buildFallbackMessage(safeLang, contact), source: 'fallback' });
     return;
   }
 
   // Call Gemini
   try {
-    const response = await askGemini(safeMessage, safeLang, safeHistory, sanitizeContext(context));
+    const response = await askGemini(safeMessage, safeLang, safeHistory, safeContext, contact, extraSupportInfo);
     res.json({ response, source: 'gemini' });
   } catch (err) {
     console.error('Gemini help endpoint error:', err);
-    res.json({ response: FALLBACK_MESSAGES[safeLang], source: 'fallback' });
+    res.json({ response: buildFallbackMessage(safeLang, contact), source: 'fallback' });
   }
 });
 

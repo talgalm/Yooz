@@ -279,6 +279,12 @@ export interface CreateActivityRequest {
   opening?: OpeningConfig | null;
   module?: ModuleConfigRequest;
   guidelines?: string;
+  extraSupportInfo?: string;
+  organizerContactName?: string;
+  organizerContactPhone?: string;
+  helpCategoriesDisabled?: string[];
+  helpCategoryResponses?: Record<string, string>;
+  helpOtherCategoryEnabled?: boolean;
   customInstructions?: CustomInstructionsConfig;
   scheduledStart?: string;
   scheduledEnd?: string;
@@ -316,6 +322,14 @@ export interface ActivityConfigResponse {
   scheduledStart?: string;
   scheduledEnd?: string;
   isContinuous?: boolean;
+  organizerContactName?: string;
+  organizerContactPhone?: string;
+  /** Help-chat FAQ menu categories hidden for this activity. Absent/empty = show all. */
+  helpCategoriesDisabled?: string[];
+  /** Per-category custom FAQ answer text, keyed the same as helpCategoriesDisabled. */
+  helpCategoryResponses?: Record<string, string>;
+  /** The "something else" open free-text chat — opt-in, absent/false = hidden. */
+  helpOtherCategoryEnabled?: boolean;
 }
 
 // Participant types
