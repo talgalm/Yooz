@@ -1,6 +1,51 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type Lang = 'en' | 'he';
+/**
+ * The one place a language is declared. Adding a language means adding a row
+ * here — nothing else is required. Existing `.i18n.ts` files keep working
+ * untouched; keys the new language does not carry fall back to Hebrew.
+ *
+ * `label` is the language's own name (never translated), so a new language
+ * needs no new i18n key to appear in the switchers.
+ */
+export const LANGS = [
+  { code: 'he', label: 'עברית', flag: '🇮🇱', dir: 'rtl' },
+  { code: 'en', label: 'English', flag: '🇺🇸', dir: 'ltr' },
+] as const;
+
+export type Lang = (typeof LANGS)[number]['code'];
+
+/** Hebrew is both the default and the fallback every other language fills in from. */
+export const DEFAULT_LANG = 'he';
+
+/**
+ * A language other than Hebrew may translate as much or as little as it likes —
+ * anything it leaves out is filled in from Hebrew at runtime. Functions and
+ * arrays are all-or-nothing, matching how `fillFrom` merges them.
+ */
+type PartialTexts<T> =
+  T extends (...args: never[]) => unknown ? T
+  : T extends readonly unknown[] ? T
+  : T extends object ? { [K in keyof T]?: PartialTexts<T[K]> }
+  : T;
+
+/**
+ * The shape of a component's `.i18n.ts` export. Hebrew is required and complete;
+ * every other language supplies whatever it has translated so far.
+ */
+export type Texts<T> = { he: T } & { [K in Exclude<Lang, typeof DEFAULT_LANG>]?: PartialTexts<T> };
+
+const STORAGE_KEY = 'yooz_lang';
+
+function langDir(lang: Lang): 'ltr' | 'rtl' {
+  return LANGS.find((l) => l.code === lang)?.dir ?? 'ltr';
+}
+
+function readStoredLang(): Lang {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  // Guards a stale value left behind by a language that no longer exists.
+  return LANGS.some((l) => l.code === stored) ? (stored as Lang) : DEFAULT_LANG;
+}
 
 interface LanguageContextType {
   lang: Lang;
@@ -11,16 +56,14 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>(() => {
-    return (localStorage.getItem('yooz_lang') as Lang) || 'he';
-  });
+  const [lang, setLang] = useState<Lang>(readStoredLang);
 
-  const dir = lang === 'he' ? 'rtl' : 'ltr';
+  const dir = langDir(lang);
 
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = dir;
-    localStorage.setItem('yooz_lang', lang);
+    localStorage.setItem(STORAGE_KEY, lang);
   }, [lang, dir]);
 
   return (
@@ -36,15 +79,39 @@ export function useLang() {
   return ctx;
 }
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+/** `override` wins wherever it says something; `fallback` fills in the rest. */
+export function fillFrom<T>(fallback: T, override: unknown): T {
+  if (override === undefined) return fallback;
+  if (!isPlainObject(fallback) || !isPlainObject(override)) return override as T;
+  const out: Record<string, unknown> = { ...fallback };
+  for (const key of Object.keys(override)) out[key] = fillFrom(fallback[key], override[key]);
+  return out as T;
+}
+
+// Keyed by the module-level `texts` object, so each (texts, lang) pair merges
+// once for the life of the page and `t` keeps a stable identity across renders
+// (some components list `t` in a hook dependency array).
+const mergedCache = new WeakMap<object, Partial<Record<Lang, unknown>>>();
+
 /**
  * Hook to get translations for a component.
- * Pass an object like `{ en: { ... }, he: { ... } }` and it returns the active language's texts.
+ * Pass an object like `{ he: { ... }, en: { ... } }` and it returns the active
+ * language's texts, with anything it is missing filled in from Hebrew.
  *
  * Usage:
  *   import { texts } from './MyComponent.i18n';
  *   const t = useTranslations(texts);
  */
-export function useTranslations<T>(texts: Record<Lang, T>): T {
+export function useTranslations<T>(texts: Texts<T>): T {
   const { lang } = useLang();
-  return texts[lang];
+  if (lang === DEFAULT_LANG) return texts.he;
+
+  let byLang = mergedCache.get(texts);
+  if (!byLang) mergedCache.set(texts, (byLang = {}));
+  if (!(lang in byLang)) byLang[lang] = fillFrom(texts.he, texts[lang]);
+  return byLang[lang] as T;
 }

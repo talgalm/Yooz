@@ -23,11 +23,11 @@ npm start                # Production: Express serves API + built client on :300
 ```bash
 npm run check       # typecheck (server + client) then all node:test self-checks
 npm run typecheck   # types only
-npm test            # the 52 node:test self-checks only
+npm test            # the node:test self-checks only
 ```
 
-Both are clean as of Phase 0 — **zero** type errors, 52/52 tests passing. Any error you see is
-yours; there is no baseline to diff against.
+Both are clean — **zero** type errors, all tests passing. Any error you see is yours; there
+is no baseline to diff against.
 
 `npm test` globs `client/src/**/*.test.ts` and `server/src/**/*.test.ts`, so a new `.test.ts`
 file is picked up with no wiring. There is still no lint script.
@@ -74,6 +74,14 @@ Each has its own React context (`AdminAuthContext`, `AuthContext`, `ManagerAuthC
 
 - **Use `_id`, not `id`**, for Mongoose document references on the client. Population is one level deep for activity module endpoints.
 - **i18n is co-located**: every page/component that has user-facing text has a sibling `.i18n.ts` file exporting Hebrew (default) + English strings, consumed via `useTranslations(texts)`. Hebrew is the *default* language and the app supports RTL.
+- **Adding a language is one line.** `LANGS` in `client/src/context/LanguageContext.tsx` is the
+  single registry (`code`, `label`, `flag`, `dir`); `Lang` is derived from it, and both language
+  switchers (`LangDrawer`, `AdminSettingsTab`) render from it. Add a row and the language is
+  selectable everywhere — **no edits to the ~59 existing `.i18n.ts` files**, which is verified
+  by typechecking with a third language added. Translate incrementally: `Texts<T>` requires a
+  complete `he` and accepts a *deep-partial* object for every other language, and
+  `useTranslations` fills the gaps from Hebrew per key (`fillFrom`, covered by
+  `LanguageContext.test.ts`). Functions and arrays are taken whole, never merged into.
 - **Game configs live in `game.settings`** as `Record<string, unknown>` server-side, typed per game type client-side. When adding a new game type, add the settings interface in `server/src/types/index.ts`, the type to `validTypes` in `AdminGameConfigPage/index.tsx`, and the matching config form beside it. (`StationType` is a real union, but it lives in `server/src/models/Station.ts`.)
 - **Drag-and-drop is hand-rolled** (HTML5 drag API + tap-to-swap fallback for touch). No dnd library — match this pattern if adding a new draggable game.
 - **API surface convention**: admin endpoints under `/api/admin/*` require admin JWT; manager endpoints under `/api/manager/*` require manager JWT; participant endpoints under `/api/activities/:code/*` are mostly public, except `/scores` which needs participant JWT.
