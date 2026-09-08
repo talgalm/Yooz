@@ -243,7 +243,6 @@ export default function ManageSettingsPage() {
         <Panel>
           {([
             ['weeklyCapacityHours', t.weeklyCapacity, 1],
-            ['employerCostFactor', t.employerFactor, 0.01],
             ['maxHoursPerDay', t.maxHoursPerDay, 1],
           ] as [keyof SettingsData['defaults'], string, number][]).map(([key, label, step]) => (
             <Row key={key}>
