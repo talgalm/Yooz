@@ -86,6 +86,7 @@ export async function checkGroupCapacity(
     identity.email,
     identity.phoneNumber,
     true,
+    activity.dailyReset === true,
   );
   const alreadyMember = await Report.exists(lookup);
   if (alreadyMember) return null;
@@ -104,6 +105,12 @@ export async function checkGroupCapacity(
   return null;
 }
 
+/**
+ * `dayScoped` is set for `dailyReset` activities. Their reports are no longer
+ * deleted overnight (the history feeds the admin reports), so without it a
+ * participant returning the next morning would resume — and overwrite —
+ * yesterday's finished run instead of starting fresh.
+ */
 export function buildReportLookupQuery(
   activityCode: string,
   displayName: string,
@@ -111,8 +118,10 @@ export function buildReportLookupQuery(
   email: string | undefined,
   phoneNumber: string | undefined,
   selfServiceGroup: boolean,
+  dayScoped = false,
 ): Record<string, unknown> {
   const lookupQuery: Record<string, unknown> = { activityCode };
+  if (dayScoped) lookupQuery.joinedAt = { $gte: startOfTodayIsrael() };
 
   if (selfServiceGroup && group) {
     lookupQuery.group = group;
@@ -154,6 +163,7 @@ export async function createParticipantSession(
     opts.email,
     opts.phoneNumber,
     selfServiceGroup,
+    activity.dailyReset === true,
   );
 
   const existingReport = await Report.findOne(lookupQuery).sort({ joinedAt: -1 });

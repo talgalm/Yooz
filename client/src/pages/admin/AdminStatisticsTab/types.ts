@@ -43,7 +43,14 @@ export interface DurationSummary {
   completedWithDuration: number;
 }
 
-export type ActivityPeriod = 'day' | 'week' | 'month' | 'year';
+/** A rolling window, or `day:YYYY-MM-DD` for one Israel calendar day. */
+export type ActivityPeriod = 'day' | 'week' | 'month' | 'year' | `day:${string}`;
+
+export interface ActivityDay {
+  /** Israel calendar day, `YYYY-MM-DD`. */
+  day: string;
+  participants: number;
+}
 
 export interface ParticipantInsight {
   name: string;

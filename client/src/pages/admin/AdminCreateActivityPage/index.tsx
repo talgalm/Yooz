@@ -1440,6 +1440,11 @@ export default function AdminCreateActivityPage() {
                         />
                         {t.dailyReset}
                       </label>
+                      {dailyReset && (
+                        <SectionDescription style={{ marginTop: 4, marginInlineStart: 26 }}>
+                          {t.dailyResetHint}
+                        </SectionDescription>
+                      )}
                       {!alwaysOpen && (
                         <VerticalStack>
                           <div>

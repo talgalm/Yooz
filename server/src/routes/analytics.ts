@@ -28,6 +28,10 @@ import {
   getAnomalies,
   getCombinedReportCard,
   getExportReports,
+  parsePeriod,
+  periodStart,
+  periodEnd,
+  type AnalyticsPeriod,
   type CombinedReportActivity,
 } from '../services/activityAnalyticsService';
 import crypto from 'crypto';
@@ -61,35 +65,14 @@ async function reportMatchForRequest(req: Request, extraMatch: Record<string, un
 
 // ─── Helper: compute median of sorted number array ───
 
-type AnalyticsPeriod = 'day' | 'week' | 'month' | 'year';
-
 function analyticsPeriod(req: Request): AnalyticsPeriod {
-  const period = req.query.period;
-  return period === 'day' || period === 'week' || period === 'month' || period === 'year'
-    ? period
-    : 'year';
-}
-
-function periodStart(period: AnalyticsPeriod): Date {
-  const now = new Date();
-  if (period === 'day') {
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }
-  if (period === 'week') {
-    const start = new Date(now);
-    start.setDate(start.getDate() - 7);
-    return start;
-  }
-  if (period === 'month') {
-    const start = new Date(now);
-    start.setMonth(start.getMonth() - 1);
-    return start;
-  }
-  return new Date(now.getFullYear(), 0, 1);
+  return parsePeriod(req.query.period);
 }
 
 function activityPeriodMatch(req: Request): Record<string, unknown> {
-  return { joinedAt: { $gte: periodStart(analyticsPeriod(req)) } };
+  const period = analyticsPeriod(req);
+  const end = periodEnd(period);
+  return { joinedAt: { $gte: periodStart(period), ...(end && { $lt: end }) } };
 }
 
 function activityReportMatch(activityId: string, req: Request): Record<string, unknown> {
@@ -489,6 +472,36 @@ router.get('/activities/:id/participants', async (req: Request<{ id: string }>, 
       excluded: excluded.has(String(r._id)),
     })),
   });
+});
+
+// Israel calendar days that actually have reports, newest first — the options
+// for the reports day picker. Matters most for `dailyReset` activities, whose
+// participants only ever see one day but whose history is kept in full.
+router.get('/activities/:id/days', async (req: Request<{ id: string }>, res: Response) => {
+  const activityId = req.params.id;
+  if (!Types.ObjectId.isValid(activityId)) {
+    res.status(400).json({ error: 'Invalid activity ID' });
+    return;
+  }
+  const activity = await Activity.findById(activityId, { createdByEmail: 1 }).lean();
+  if (!activity || !customerOwnsDoc(req, activity)) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  const agg = await Report.aggregate([
+    { $match: { activityId: new Types.ObjectId(activityId), joinedAt: { $exists: true } } },
+    {
+      $group: {
+        _id: { $dateToString: { date: '$joinedAt', format: '%Y-%m-%d', timezone: 'Asia/Jerusalem' } },
+        participants: { $sum: 1 },
+      },
+    },
+    { $sort: { _id: -1 } },
+    { $limit: 366 },
+  ]);
+
+  res.json({ days: agg.map((d) => ({ day: d._id as string, participants: d.participants as number })) });
 });
 
 // Replace the full set of excluded report ids for this activity.

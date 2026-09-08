@@ -174,17 +174,18 @@ const HexBadge = styled('div')<{ gold?: boolean }>(({ gold }) => ({
     : '0 2px 6px rgba(0,0,0,0.2)',
 }));
 
-const PlayerName = styled('div')({
+const PlayerName = styled('div')<{ me?: boolean }>(({ me }) => ({
   flex: 1,
   minWidth: 0,
   fontSize: 15,
-  fontWeight: 700,
-  color: '#fff',
+  fontWeight: me ? 900 : 600,
+  color: me ? '#fff' : 'rgba(255,255,255,0.82)',
+  textShadow: me ? '0 0 10px rgba(255,255,255,0.35)' : 'none',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
   textAlign: 'right',
-});
+}));
 
 const ScoreValue = styled('div')({
   fontSize: 22,
@@ -291,6 +292,27 @@ export default function LeaderboardView({
   onLogout,
   t,
 }: LeaderboardViewProps) {
+  const isGroupActivity = groupLeaderboard.length > 0;
+
+  const rows = isGroupActivity
+    // Group activity: my own teammates only, ranked within the group.
+    ? leaderboard.filter((e) => e.group === currentGroup).map((e, i) => ({ ...e, rank: i + 1 }))
+    : (() => {
+        const myIdx = currentParticipantName
+          ? leaderboard.findIndex((e) => e.name === currentParticipantName)
+          : -1;
+        const top = leaderboard.slice(0, 3);
+        const tail = myIdx > 2
+          ? leaderboard.slice(myIdx, myIdx + 4) // me + 3 below
+          : leaderboard.slice(3, 6);            // me in top 3 → just the next 3
+        const seen = new Set<number>();
+        return [...top, ...tail].filter((e) => {
+          if (seen.has(e.rank)) return false;
+          seen.add(e.rank);
+          return true;
+        });
+      })();
+
   return (
     <PageRoot>
       <SparklesBg />
@@ -337,33 +359,17 @@ export default function LeaderboardView({
                   </PlayerCard>
                 ))}
               </PlayerList>
-              <SectionTitle>{t.leaderboardPlayersTitle}</SectionTitle>
+              <SectionTitle>{t.leaderboardMyGroupTitle}</SectionTitle>
             </>
           )}
 
           {isLoading ? (
             <LoadingText>{t.leaderboardLoading}</LoadingText>
-          ) : leaderboard.length === 0 ? (
+          ) : rows.length === 0 ? (
             <EmptyText>{t.leaderboardEmpty}</EmptyText>
           ) : (
             <PlayerList>
-              {(() => {
-                // Group activity: top 5 users across all groups.
-                if (groupLeaderboard.length > 0) return leaderboard.slice(0, 5);
-                const myIdx = currentParticipantName
-                  ? leaderboard.findIndex((e) => e.name === currentParticipantName)
-                  : -1;
-                const top = leaderboard.slice(0, 3);
-                const tail = myIdx > 2
-                  ? leaderboard.slice(myIdx, myIdx + 4) // me + 3 below
-                  : leaderboard.slice(3, 6);            // me in top 3 → just the next 3
-                const seen = new Set<number>();
-                return [...top, ...tail].filter((e) => {
-                  if (seen.has(e.rank)) return false;
-                  seen.add(e.rank);
-                  return true;
-                });
-              })().map((entry, i) => {
+              {rows.map((entry, i) => {
                 const isMe = currentParticipantName === entry.name;
                 const isTop3 = entry.rank <= 3;
                 return (
@@ -376,7 +382,7 @@ export default function LeaderboardView({
                     <HexBadge gold={isTop3}>{entry.rank}</HexBadge>
 
                     {/* Name — center */}
-                    <PlayerName>{entry.name}</PlayerName>
+                    <PlayerName me={isMe}>{entry.name}</PlayerName>
 
                     {/* Score / time — left side in RTL */}
                     <ScoreValue>

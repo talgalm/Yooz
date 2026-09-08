@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import { Report } from '../models';
+import { israelDayRange } from '../utils/israelTime';
 import {
   resolvePassThreshold,
   maxScoreForReport,
@@ -16,15 +17,31 @@ import {
 // token) so the two views never diverge.
 // ─────────────────────────────────────────────────────────────
 
-export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'year';
+/**
+ * A rolling window, or `day:YYYY-MM-DD` for one Israel calendar day. The
+ * single-day form is what makes the reports readable for `dailyReset`
+ * activities: their history is kept, so the admin needs to slice it back into
+ * the days the participants actually experienced. Carrying the day inside the
+ * period value means every panel, export and share link already threads it.
+ */
+export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'year' | `day:${string}`;
+
+const SINGLE_DAY_RE = /^day:\d{4}-\d{2}-\d{2}$/;
 
 export function parsePeriod(value: unknown): AnalyticsPeriod {
-  return value === 'day' || value === 'week' || value === 'month' || value === 'year'
-    ? value
-    : 'year';
+  if (value === 'day' || value === 'week' || value === 'month' || value === 'year') return value;
+  if (typeof value === 'string' && SINGLE_DAY_RE.test(value)) return value as AnalyticsPeriod;
+  return 'year';
+}
+
+/** The `YYYY-MM-DD` of a `day:` period, or null for the rolling windows. */
+export function periodDay(period: AnalyticsPeriod): string | null {
+  return SINGLE_DAY_RE.test(period) ? period.slice(4) : null;
 }
 
 export function periodStart(period: AnalyticsPeriod): Date {
+  const day = periodDay(period);
+  if (day) return israelDayRange(day).start;
   const now = new Date();
   if (period === 'day') return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   if (period === 'week') {
@@ -40,6 +57,12 @@ export function periodStart(period: AnalyticsPeriod): Date {
   return new Date(now.getFullYear(), 0, 1);
 }
 
+/** Exclusive upper bound — only a single-day period has one. */
+export function periodEnd(period: AnalyticsPeriod): Date | null {
+  const day = periodDay(period);
+  return day ? israelDayRange(day).end : null;
+}
+
 export type ExcludeIds = (string | Types.ObjectId)[] | undefined;
 
 function reportMatch(
@@ -47,9 +70,10 @@ function reportMatch(
   period: AnalyticsPeriod,
   excludeIds?: ExcludeIds,
 ): Record<string, unknown> {
+  const end = periodEnd(period);
   const match: Record<string, unknown> = {
     activityId: new Types.ObjectId(activityId),
-    joinedAt: { $gte: periodStart(period) },
+    joinedAt: { $gte: periodStart(period), ...(end && { $lt: end }) },
   };
   if (excludeIds && excludeIds.length > 0) {
     match._id = { $nin: excludeIds.map((id) => new Types.ObjectId(id)) };

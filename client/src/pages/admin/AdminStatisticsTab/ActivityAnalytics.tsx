@@ -15,6 +15,7 @@ import {
   useAnomalies,
   useFunnel,
   useGroupStats,
+  useActivityDays,
   useItemStats,
 } from '../../../hooks/useAnalytics';
 import { texts } from './AdminStatisticsTab.i18n';
@@ -73,6 +74,7 @@ import {
   StatusSegment,
   StatusStack,
   SubTab,
+  DaySelect,
   SubTabBar,
   ValueBadge,
   WidePanel,
@@ -226,6 +228,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
   const funnelQuery = useFunnel(activityId, period);
   const itemsQuery = useItemStats(activityId, period);
   const groupsQuery = useGroupStats(activityId, period);
+  const daysQuery = useActivityDays(activityId);
 
   // Always-mounted overview queries; refetch them after exclusions change so the
   // panels reflect the new participant set (other sub-tabs refetch on mount).
@@ -273,6 +276,8 @@ export default function ActivityAnalytics({ activityId }: Props) {
     ...(shared ? [] : [{ key: 'participants' as ActivitySubTab, label: t.participantsTab }]),
     { key: 'export', label: t.exportTab },
   ];
+  const days = daysQuery.data ?? [];
+  const selectedDay = period.startsWith('day:') ? period.slice(4) : '';
   const periodOptions: { key: ActivityPeriod; label: string }[] = [
     { key: 'day', label: t.periodDay },
     { key: 'week', label: t.periodWeek },
@@ -347,6 +352,21 @@ export default function ActivityAnalytics({ activityId }: Props) {
                 {option.label}
               </PeriodButton>
             ))}
+            {days.length > 0 && (
+              <DaySelect
+                aria-label={t.periodSpecificDay}
+                active={selectedDay !== ''}
+                value={selectedDay}
+                onChange={(e) => setPeriod(e.target.value ? (`day:${e.target.value}` as ActivityPeriod) : 'year')}
+              >
+                <option value="">{t.periodSpecificDay}</option>
+                {days.map((d) => (
+                  <option key={d.day} value={d.day}>
+                    {d.day} ({d.participants})
+                  </option>
+                ))}
+              </DaySelect>
+            )}
           </PeriodControl>
         </HeaderActionGroup>
       </AnalyticsHeader>

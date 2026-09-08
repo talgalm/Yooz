@@ -12,6 +12,7 @@ import type {
   AnomalyAlert,
   AuditLogEntry,
   ActivityPeriod,
+  ActivityDay,
   RosterParticipant,
   CombinedReportData,
 } from '../pages/admin/AdminStatisticsTab/types';
@@ -29,6 +30,8 @@ const selectAuditLog = (response: { logs: AuditLogEntry[]; total: number; page: 
   page: response.page,
   pages: response.totalPages,
 });
+
+const selectDays = (response: { days: ActivityDay[] }) => response.days;
 
 function periodQuery(period?: ActivityPeriod) {
   return period ? `?period=${period}` : '';
@@ -108,6 +111,19 @@ export function useQuestionStats(activityId: string | null, itemIndex: number | 
       ? `${base(activityId)}/items/${itemIndex}/questions${periodQuery(period)}`
       : null,
     selectQuestions,
+  );
+}
+
+/**
+ * Israel days that have reports, newest first — admin only (share links do not
+ * expose it). Drives the reports day picker, which is the way a `dailyReset`
+ * activity's kept history is read back one day at a time.
+ */
+export function useActivityDays(activityId: string | null) {
+  const { base, shared } = useAnalyticsSource();
+  return useApiFetch<{ days: ActivityDay[] }, ActivityDay[]>(
+    activityId && !shared ? `${base(activityId)}/days` : null,
+    selectDays,
   );
 }
 

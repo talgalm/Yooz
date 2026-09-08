@@ -255,7 +255,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   // Filter popups by conditions (e.g. participant count threshold)
   let filteredPopups: typeof activity.module.popups = [];
   if (activity.module.popups && activity.module.popups.length > 0) {
-    const reportCount = await getParticipantCount(activity._id);
+    const reportCount = await getParticipantCount(activity._id, activity.dailyReset === true);
     filteredPopups = activity.module.popups.filter((p) => {
       if (!p.enabled) return false;
       if (p.condition && p.condition.type === 'participantCount') {
@@ -378,8 +378,15 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
   const asGrade = activity.leaderboardAsGrade === true && !isTimeMode;
   const gradeScore = (raw: number, ceiling: number) => (asGrade ? normalizeScore(raw, ceiling) : raw);
 
-  // Default ON (undefined → true) — matches the model default.
-  const currentDayOnly = activity.leaderboardCurrentDayOnly !== false;
+  // Group activities show every teammate of the viewer's group, so the row cap
+  // has to clear all groups combined — not just the top handful overall.
+  const rowLimit = activity.connectionType === 'group' ? 500 : 50;
+
+  // Default ON (undefined → true) — matches the model default. `dailyReset`
+  // forces it: that activity's whole promise is a board that starts empty each
+  // morning, and its reports are now kept rather than deleted, so nothing else
+  // hides yesterday from the participants.
+  const currentDayOnly = activity.dailyReset === true || activity.leaderboardCurrentDayOnly !== false;
   const dateFilter: Record<string, unknown> = {};
   if (currentDayOnly) {
     // Reports have no createdAt (schema has no timestamps) — joinedAt is the creation time.
@@ -393,7 +400,7 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
       { participantName: 1, group: 1, sessionDurationMs: 1 }
     )
       .sort({ sessionDurationMs: 1 })
-      .limit(50)
+      .limit(rowLimit)
       .lean();
 
     leaderboard = reports.map((r, i) => ({
@@ -412,7 +419,7 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
       { participantName: 1, group: 1, data: 1, sessionDurationMs: 1 }
     )
       .sort({ 'data.totalScore': -1 })
-      .limit(50)
+      .limit(rowLimit)
       .lean();
 
     const ceiling = asGrade ? resolveCeiling(reports, reports.map((r) => (r.data as { totalScore?: number }).totalScore ?? 0)) : 0;
@@ -429,7 +436,7 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
       { participantName: 1, group: 1, data: 1 }
     )
       .sort({ 'data.totalScore': -1 })
-      .limit(50)
+      .limit(rowLimit)
       .lean();
 
     const ceiling = asGrade ? resolveCeiling(reports, reports.map((r) => (r.data as { totalScore?: number }).totalScore ?? 0)) : 0;
