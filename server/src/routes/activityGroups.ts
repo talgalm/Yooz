@@ -1,11 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { isValidObjectId } from 'mongoose';
-import { Activity, ActivityGroup, normalizeGroupName, Portal } from '../models';
+import { Activity, ActivityGroup, normalizeGroupName, PhoneRegistration, Portal } from '../models';
 import { CreateGroupRequest, CreateGroupResponse } from '../types';
 import { requestOrigin } from '../utils/shareOgPage';
 import { authenticateToken } from '../middleware/auth';
 import { getGroupStatus } from '../utils/groupStatus';
-import { israelDayString } from '../utils/israelTime';
+import { israelDayFromDdMmYyyy, israelDayString } from '../utils/israelTime';
 import { normalizePhone } from '../utils/phone';
 import {
   validateGroupName,
@@ -47,25 +47,80 @@ async function validatePortalUser(activity: Awaited<ReturnType<typeof Activity.f
   return null;
 }
 
-// Cashier console (/control/:id): register a phone so its owner may open a group.
-// Unauthenticated by design for now — the console's credentials live on the client.
-router.post('/control/:id/register', async (req: Request<{ id: string }>, res: Response) => {
-  const phone = normalizePhone((req.body?.phone as string) || '');
+/**
+ * Register a phone so its owner may open a group.
+ *
+ * `code` empty = every activity whose "user control" checkbox is on, now and
+ * later — stored as `activityCode: null` rather than fanned out per activity,
+ * so an activity created tomorrow is covered too.
+ * `day` (DD-MM-YYYY) empty = today in Israel; the registration dies when that day
+ * rolls over.
+ */
+async function registerPhone(rawPhone: string, rawCode: string, rawDay: string, res: Response) {
+  const phone = normalizePhone(rawPhone || '');
   if (phone.length < 6) {
     res.status(400).json({ error: 'invalid_phone' });
     return;
   }
+
+  // Callers send DD-MM-YYYY; the stored day is the internal YYYY-MM-DD.
+  const day = (rawDay || '').trim() ? israelDayFromDdMmYyyy(rawDay) : israelDayString();
+  if (!day) {
+    res.status(400).json({ error: 'invalid_date' });
+    return;
+  }
+
+  const code = (rawCode || '').trim();
+  if (code) {
+    // Registering against an activity that ignores the list would silently do
+    // nothing, so say so instead.
+    const activity = await Activity.findOne({ code, userControl: true }, { _id: 1 });
+    if (!activity) {
+      res.status(404).json({ error: 'Activity not found' });
+      return;
+    }
+  }
+
+  const activityCode = code || null;
+  await PhoneRegistration.updateOne(
+    { phone, activityCode, activityDay: day },
+    { $setOnInsert: { createdAt: new Date() } },
+    { upsert: true },
+  );
+  const [y, m, d] = day.split('-');
+  res.json({ ok: true, phone, activityCode, date: `${d}-${m}-${y}` });
+}
+
+/**
+ * Public integration point (a till, a POS, a link the cashier taps):
+ *   GET /api/activities/register-phone?phone=0501234567&code=ABC123&date=08-09-2026
+ * `code` and `date` are both optional — see `registerPhone`.
+ *
+ * ponytail: open to anyone who can reach the server — put a shared secret in
+ * front of it if the registration list has to mean "actually paid".
+ */
+router.get('/register-phone', async (req: Request, res: Response) => {
+  await registerPhone(
+    (req.query.phone as string) || '',
+    (req.query.code as string) || '',
+    (req.query.date as string) || '',
+    res,
+  );
+});
+
+// Cashier console (/control/:id): registers for that activity, today.
+// Unauthenticated by design for now — the console's credentials live on the client.
+router.post('/control/:id/register', async (req: Request<{ id: string }>, res: Response) => {
   if (!isValidObjectId(req.params.id)) {
     res.status(404).json({ error: 'Activity not found' });
     return;
   }
-  const activity = await Activity.findOne({ _id: req.params.id, userControl: true });
+  const activity = await Activity.findOne({ _id: req.params.id, userControl: true }, { code: 1 });
   if (!activity) {
     res.status(404).json({ error: 'Activity not found' });
     return;
   }
-  await Activity.updateOne({ _id: activity._id }, { $addToSet: { registeredPhones: phone } });
-  res.json({ ok: true });
+  await registerPhone((req.body?.phone as string) || '', activity.code, '', res);
 });
 
 // Debounced uniqueness check for group name
@@ -262,10 +317,16 @@ router.post('/:code/groups', async (req: Request<{ code: string }, {}, CreateGro
 
   // Cashier gate: with user control on, only phones registered at the counter
   // may open a group.
-  if (activity.userControl
-    && !(activity.registeredPhones || []).includes(normalizePhone(phoneNumber || ''))) {
-    res.status(403).json({ error: 'not_registered' });
-    return;
+  if (activity.userControl) {
+    const registered = await PhoneRegistration.exists({
+      phone: normalizePhone(phoneNumber || ''),
+      activityDay: israelDayString(),
+      activityCode: { $in: [activity.code, null] },
+    });
+    if (!registered) {
+      res.status(403).json({ error: 'not_registered' });
+      return;
+    }
   }
 
   const trimmedName = name.trim();

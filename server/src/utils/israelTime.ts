@@ -52,3 +52,25 @@ export function israelDayRange(day: string): { start: Date; end: Date } {
   const nextDay = israelDayString(new Date(start.getTime() + 36 * 60 * 60 * 1000));
   return { start, end: startOfIsraelDay(nextDay) };
 }
+
+/**
+ * True for a well-formed `YYYY-MM-DD` that names a real calendar day.
+ * Round-tripping through `startOfIsraelDay` is what rejects `2026-02-30`,
+ * which the regex alone happily accepts (Date rolls it into March).
+ */
+export function isIsraelDayString(day: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) && israelDayString(startOfIsraelDay(day)) === day;
+}
+
+/**
+ * `DD-MM-YYYY` (the format the public register-phone API takes) to the
+ * `YYYY-MM-DD` Israel day used everywhere internally. `null` when the input
+ * isn't a real calendar day — `31-02-2026` included, since `isIsraelDayString`
+ * rejects what `Date` would silently roll into March.
+ */
+export function israelDayFromDdMmYyyy(raw: string): string | null {
+  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec((raw || '').trim());
+  if (!m) return null;
+  const day = `${m[3]}-${m[2]}-${m[1]}`;
+  return isIsraelDayString(day) ? day : null;
+}

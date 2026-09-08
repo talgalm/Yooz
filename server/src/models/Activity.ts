@@ -95,8 +95,6 @@ export interface IActivity {
   managerPassword?: string; // bcrypt hash
   /** When true, exposes the /control/:id operator console for this activity */
   userControl?: boolean;
-  /** Phones registered at the counter (normalized). Only consulted when userControl is on. */
-  registeredPhones?: string[];
   stations: string[]; // legacy
   createdAt: Date;
   /** Set when created via admin API — used to scope customer role */
@@ -273,9 +271,6 @@ const activitySchema = new Schema<IActivity>({
   managerEmail: { type: String },
   managerPassword: { type: String },
   userControl: { type: Boolean, default: false },
-  // ponytail: an array on the activity doc — move to its own collection if a
-  // single activity ever registers tens of thousands of phones.
-  registeredPhones: { type: [String], default: [] },
   stations: { type: [String], default: [] }, // legacy
   createdAt: { type: Date, default: Date.now },
   createdByEmail: { type: String, lowercase: true, trim: true },

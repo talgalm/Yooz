@@ -174,11 +174,10 @@ test runs" action, not the daily rollover.
 phase `'voting'|'results'`, resultsRevealed, aggregatedRanking[Borda]).
 
 **Cashier gate**: `userControl?` (default false, checkbox "שליטה במשתשמשים" under the manager
-fields in activity create/edit) + `registeredPhones?: string[]` (normalized digits, see
-`utils/phone.ts`). When `userControl` is on, only a phone registered at `/control/:id` may create
-a self-service group — otherwise `POST /:code/groups` answers `403 {error:'not_registered'}` and
-the participant sees "כדי להשתתף בפעילות, צריך לשלם בקופה ולהירשם אצל הקופאי". Off = no check
-anywhere. Phones are an array on the activity doc and are never cleared (not even by daily reset).
+fields in activity create/edit). When on, only a phone with a `PhoneRegistration` for **today's
+Israel day** may create a self-service group — otherwise `POST /:code/groups` answers
+`403 {error:'not_registered'}` and the participant sees "כדי להשתתף בפעילות, צריך לשלם בקופה
+ולהירשם אצל הקופאי". Off = no check anywhere.
 
 **Groups (self-service)**: `groupMinMembers?` (default 1), `groupMaxMembers?` (0/null = no cap).
 **Group reward**: `groupReward?: {enabled, couponCode, messageTemplate?, attachmentUrl?,
@@ -221,6 +220,15 @@ activityId/Code + joinedAt + group + totalScore + completionStatus.
 `inviteToken` (unique), `createdAt`, `createdByName?`, reward fields (`rewardProcessedAt?`,
 `winnerReportId?`, `winnerCouponCode?`, `rewardTimerEndsAt?`). **Unique index
 `{activityId, activityDay, nameNormalized}`** — names repeat across days. See §8.
+
+### PhoneRegistration (`phone_registrations`) — cashier gate, day-scoped
+`{phone, activityCode, activityDay, createdAt}`, unique on all three (so a re-fired registration
+upserts instead of duplicating). `phone` is `normalizePhone()`d digits (`utils/phone.ts`:
+`+972`/`00972`/dashes/parens folded to `05…`, landlines too), so a till and a participant typing
+the same number match.
+`activityCode: null` means **every** activity with `userControl` on — including ones created
+after the registration — rather than a row per activity. `activityDay` is one Israel calendar day
+(`YYYY-MM-DD`); registrations are never deleted, they just stop matching once the day rolls over.
 
 ### Portal (`portals`) — gated multi-activity access
 `name`, `code` (8-char unique slug), `users: IPortalUser[]` (username, bcrypt password,
@@ -715,13 +723,20 @@ All require `connectionType==='group'` && `groupEntryMode==='selfService'` (else
   **410** if the group's `activityDay` ≠ today (expired link).
 - `GET /:code/groups/status` *(participant JWT)* — current participant's `getGroupStatus`
   (memberCount/minMembers/canProceed/completedCount/allMembersCompleted). 403 on code mismatch.
-- `POST /control/:id/register` — **not** group-mode-gated; cashier console endpoint, keyed on
-  activity `_id`, 404 unless that activity has `userControl:true`. `$addToSet`s
-  `normalizePhone(body.phone)` into `registeredPhones`. Unauthenticated by design for now (the
-  console's credentials live on the client).
+- `GET /register-phone?phone=&code=&date=` — **public, unauthenticated, and not group-mode-gated**
+  (a till/POS integration). `phone` required (≥6 digits after normalizing, else
+  `400 invalid_phone`). `code` optional: given → that activity, 404 unless it has
+  `userControl:true`; empty → `activityCode:null`, i.e. every user-control activity. `date`
+  optional **`DD-MM-YYYY`** (`israelDayFromDdMmYyyy`, else `400 invalid_date`); empty → today in
+  Israel. Upserts a `PhoneRegistration`, returns `{ok, phone, activityCode, date}` (date back in
+  DD-MM-YYYY; the stored `activityDay` stays internal YYYY-MM-DD).
+- `POST /control/:id/register` — cashier console endpoint, keyed on activity `_id`, 404 unless
+  that activity has `userControl:true`. Registers `body.phone` for that activity's code, today.
+  Unauthenticated by design for now (the console's credentials live on the client).
 - `POST /:code/groups` — create group + log in creator. Validates name + login fields + portal
-  membership; when `userControl` is on, rejects a creator phone missing from `registeredPhones`
-  with `403 {error:'not_registered'}`; creates `ActivityGroup` (stamps `activityDay`), 409 on duplicate-name-today;
+  membership; when `userControl` is on, requires a `PhoneRegistration` matching the creator's
+  phone + today's Israel day + (this activity's code OR `null`), else `403
+  {error:'not_registered'}`; creates `ActivityGroup` (stamps `activityDay`), 409 on duplicate-name-today;
   `createParticipantSession`; returns `{token, participant, group:{name,inviteToken,inviteUrl},
   groupStatus?}`. `inviteUrl = <origin>/play/:code/join/:inviteToken`.
 

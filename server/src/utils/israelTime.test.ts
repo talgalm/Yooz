@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { israelDayRange, israelDayString } from './israelTime';
+import { israelDayRange, israelDayString, isIsraelDayString, israelDayFromDdMmYyyy } from './israelTime';
 
 /** A day window must start and end on that day's own Israel midnight. */
 test('covers exactly one Israel calendar day', () => {
@@ -20,4 +20,23 @@ test('holds across the DST boundary', () => {
     const hours = (end.getTime() - start.getTime()) / 3_600_000;
     assert.ok(hours >= 23 && hours <= 25, `${day} spans ${hours}h`);
   }
+});
+
+/** The registration API takes a caller-supplied day — it must reject junk. */
+test('isIsraelDayString accepts real days and rejects the rest', () => {
+  assert.equal(isIsraelDayString('2026-09-07'), true);
+  assert.equal(isIsraelDayString('2026-02-30'), false);
+  assert.equal(isIsraelDayString('2026-9-7'), false);
+  assert.equal(isIsraelDayString('07/09/2026'), false);
+  assert.equal(isIsraelDayString(''), false);
+});
+
+/** The public API takes DD-MM-YYYY; everything internal is YYYY-MM-DD. */
+test('israelDayFromDdMmYyyy converts and rejects junk', () => {
+  assert.equal(israelDayFromDdMmYyyy('08-09-2026'), '2026-09-08');
+  assert.equal(israelDayFromDdMmYyyy(' 31-12-2026 '), '2026-12-31');
+  assert.equal(israelDayFromDdMmYyyy('31-02-2026'), null);
+  assert.equal(israelDayFromDdMmYyyy('2026-09-08'), null);
+  assert.equal(israelDayFromDdMmYyyy('8-9-2026'), null);
+  assert.equal(israelDayFromDdMmYyyy(''), null);
 });
