@@ -1254,19 +1254,19 @@ export default function MissionTrashSort({
         )}
 
         <BinsRow>
-          <BinWrapper ref={orangeBinRef} onClick={() => handleGameBinClick('orange')}>
+          <BinWrapper role="button" ref={orangeBinRef} onClick={() => handleGameBinClick('orange')}>
             <BinImg
               src={openBinId === 'orange' ? BIN_OPEN_IMAGES.orange : '/images/bin-orange.svg'}
               alt="אריזות"
             />
           </BinWrapper>
-          <BinWrapper ref={blueBinRef} onClick={() => handleGameBinClick('blue')}>
+          <BinWrapper role="button" ref={blueBinRef} onClick={() => handleGameBinClick('blue')}>
             <BinImg
               src={openBinId === 'blue' ? BIN_OPEN_IMAGES.blue : '/images/bin-blue.svg'}
               alt="נייר"
             />
           </BinWrapper>
-          <BinWrapper ref={brownBinRef} onClick={() => handleGameBinClick('brown')}>
+          <BinWrapper role="button" ref={brownBinRef} onClick={() => handleGameBinClick('brown')}>
             <BinImg
               src={openBinId === 'brown' ? BIN_OPEN_IMAGES.brown : '/images/bin-brown.svg'}
               alt="אורגני"
@@ -1565,7 +1565,7 @@ export default function MissionTrashSort({
           <BinWrapper>
             <BinImg src="/images/bin-orange.svg" alt="אריזות" />
           </BinWrapper>
-          <BinWrapper ref={blueBinRef} onClick={handleBlueBinClick}>
+          <BinWrapper role="button" ref={blueBinRef} onClick={handleBlueBinClick}>
             <BinImg
               src={blueBinOpen ? '/images/bin-blue-open.svg' : '/images/bin-blue.svg'}
               alt="נייר"
