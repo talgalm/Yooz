@@ -18,14 +18,9 @@ const Notice = styled('p')({
 
 interface Props {
   children: ReactNode;
-  /** Show a "view only" line where the hidden control was (use for save buttons). */
   notice?: boolean;
 }
 
-/**
- * Renders its children only for roles that may change content. A `viewer` gets
- * nothing, or the notice. The server refuses their writes regardless.
- */
 export default function EditOnly({ children, notice = false }: Props) {
   const canEdit = useCanEditContent();
   const t = useTranslations(texts);

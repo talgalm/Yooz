@@ -6,7 +6,6 @@ import { AdminJwtPayload, AdminRole } from '../types';
 const VALID_ADMIN_ROLES: AdminRole[] = ['viewer', 'admin', 'super_admin', 'customer'];
 const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-/** Verifies the admin JWT and sets `req.admin`. Returns false once it has answered 401/403. */
 function verifyAdminToken(req: Request, res: Response): boolean {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -30,10 +29,6 @@ function verifyAdminToken(req: Request, res: Response): boolean {
   }
 }
 
-/**
- * Admin JWT gate. A `viewer` is read-only: anything but a read is refused here, in
- * the one gate every admin route passes, so a route added later can't forget to.
- */
 export function authenticateAdmin(req: Request, res: Response, next: NextFunction): void {
   if (!verifyAdminToken(req, res)) return;
   if (req.admin?.role === 'viewer' && !READ_METHODS.has(req.method)) {
@@ -43,7 +38,6 @@ export function authenticateAdmin(req: Request, res: Response, next: NextFunctio
   next();
 }
 
-/** The same gate without the viewer write block, for writes every role may make (reporting a problem). */
 export function authenticateAdminAllowViewerWrites(req: Request, res: Response, next: NextFunction): void {
   if (!verifyAdminToken(req, res)) return;
   next();

@@ -723,7 +723,6 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
     if (openFolderId && !folders.some((f) => f._id === openFolderId)) setOpenFolderId(null);
   }, [folders, openFolderId]);
 
-  // Both menus hold only writes (edit/delete folder; duplicate/move/delete station), so viewers get neither.
   const renderFolderMenu = (folder: Folder) => !canEdit ? null : (
     <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
       <RowActionIconButton

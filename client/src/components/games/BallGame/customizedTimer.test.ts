@@ -4,10 +4,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-// The ball game's countdown is a classic browser script (a global function, no
-// exports), so run it in a sandbox with a fake clock. Not node:test's mock timers:
-// those keep an interval alive when it is cleared from inside its own callback,
-// which is exactly how the countdown stops at 0.
 const source = readFileSync(
   new URL('../../../../public/assets/games/ballgame/js/customizedTimer.js', import.meta.url),
   'utf8'
@@ -62,14 +58,12 @@ function makeTimer(duration: number) {
 test('counts down once a second and stops at 0', () => {
   const { timer, ticks, advance } = makeTimer(3);
   timer.startTimer();
-  timer.startTimer(); // starting twice must not leave a second interval running
+  timer.startTimer();
   advance(10_000);
   assert.deepEqual(ticks, [3, 2, 1, 0]);
 });
 
 test('a destroyed timer stays stopped when the tab becomes visible again', () => {
-  // Answering destroys the countdown. The visibility handler used to revive it,
-  // run it down to 0 and play the fail sound over the bonus throw.
   const { timer, ticks, advance } = makeTimer(5);
   timer.startTimer();
   advance(2000);
@@ -87,7 +81,7 @@ test('pause and play resume from the remaining time', () => {
   timer.pauseTimer();
   advance(5000);
   timer.playTimer();
-  timer.playTimer(); // a second "visible" with no "hidden" in between
+  timer.playTimer();
   advance(10_000);
   assert.deepEqual(ticks, [4, 3, 2, 1, 0]);
 });

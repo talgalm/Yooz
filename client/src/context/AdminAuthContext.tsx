@@ -104,10 +104,6 @@ export function useAdminAuth() {
   return ctx;
 }
 
-/**
- * A `viewer` sees all content but may change none of it. The server enforces this
- * (`authenticateAdmin`); the UI uses this to hide actions that would only fail.
- */
 export function useCanEditContent(): boolean {
   return useAdminAuth().admin?.role !== 'viewer';
 }

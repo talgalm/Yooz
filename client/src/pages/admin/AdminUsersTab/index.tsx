@@ -199,7 +199,6 @@ export default function AdminUsersTab() {
             <div>
               <SectionLabel>{t.role}</SectionLabel>
               <SelectionGroup>
-                {/* Least access first: in RTL that's the right edge, growing to super admin on the left. */}
                 <SelectionButton type="button" selected={role === 'viewer'} onClick={() => setRole('viewer')}>
                   <div>{t.roleViewer}</div>
                   <SelectionSubtextSmall>{t.roleViewerDesc}</SelectionSubtextSmall>

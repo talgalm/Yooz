@@ -9,8 +9,6 @@ body {
   width: 100vw;
   height: 100dvh;
   background: transparent;
-  /* Same stack as the app (client/src/App.css). Rubik carries the Hebrew;
-     Encode Sans Expanded has no Hebrew glyphs at all. */
   font-family: 'Rubik', 'Encode Sans Expanded', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 

@@ -644,7 +644,6 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
     if (openFolderId && !folders.some((f) => f._id === openFolderId)) setOpenFolderId(null);
   }, [folders, openFolderId]);
 
-  // Both menus hold only writes (edit/delete folder; move/delete game), so viewers get neither.
   const renderFolderMenu = (folder: Folder) => !canEdit ? null : (
     <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
       <RowActionIconButton type="button" aria-label={t.actions} title={t.actions}

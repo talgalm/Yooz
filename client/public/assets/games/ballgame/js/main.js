@@ -193,8 +193,6 @@ let selBall = null;
 let dragStartPoints = { x: 0, y: 0 };
 let dragEndPoints = { x: 0, y: 0 };
 let objCustomizedTimer = null;
-// Whole seconds, never below the admin form's min of 5 (the input doesn't
-// enforce it, and a negative limit never counts down to 0). 0 means default.
 let nTimerDuration = Math.max(5, Math.floor(Number(window.__ballgameTimeLimit)) || 30);
 let isGameLoaded = false;
 let isStartClicked = false;
@@ -1288,10 +1286,6 @@ function renderTimerBadge(nTime) {
   el.style.color = nTime <= 5 ? NATURE.BTN_RED_DARK : NATURE.TEXT_DARK;
 }
 
-/**
- * Stops the answer countdown and takes its badge off the stage. The next
- * question puts both back (addQuestion re-adds the badge, resetTimer restarts).
- */
 function stopQuestionTimer() {
   if (objCustomizedTimer) objCustomizedTimer.destoryTimer();
   var timerEl = document.getElementById('timer-text-html');
@@ -1709,8 +1703,7 @@ function removeListeners() {
 }
 
 function showInstructionalVideo() {
-  // Pause the game. The countdown needs no pausing or resetting: the video only
-  // opens after an answer, and answering already stopped it.
+  // Pause the game
   game.paused = true;
 
   // Ask parent host to show the video overlay so it renders flush with the header
@@ -1758,8 +1751,6 @@ let bucketAnim;
  * @param {object} target - The option box that was clicked.
  */
 function onOptionClick(target) {
-  // The countdown is only for answering. Left running, it reached 0 during the
-  // bonus throw and played the fail sound over an already answered question.
   stopQuestionTimer();
 
   if (!this.videoShown) {
@@ -1770,7 +1761,6 @@ function onOptionClick(target) {
   }
   const answeredQuestionIndex = currentQuestionIndex;
   setTimeout(() => {
-    // Don't surface skip on the next question if this one already moved on.
     if (currentQuestionIndex === answeredQuestionIndex) skip.visible = true;
   }, 3000);
   if (!bIsMuted) audio_click.play();
@@ -2138,8 +2128,6 @@ var updatePerSec = (nTime) => {
 
   if (nTime == 0) {
     objCustomizedTimer.destoryTimer();
-    // The options take 2s to fade out; a tap in that window would still count
-    // as an answer to a question that already timed out.
     removeListeners();
     if (spritesArr[ballIndex]) spritesArr[ballIndex].destroy();
     balls.destroy();

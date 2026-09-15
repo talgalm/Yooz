@@ -14,7 +14,6 @@ export interface CustomTheme {
   roadmapActiveNodeColor?: string;
   roadmapPathColor?: string;
   headerIconColor?: string;
-  /** Lowercased; a customer may only edit or delete themes they created. */
   createdByEmail?: string;
 }
 
@@ -37,8 +36,6 @@ const Modal = styled('div')({
   padding: '28px 28px 24px',
   width: '100%',
   maxWidth: 440,
-  // The form is taller than a laptop screen: cap the modal and let ModalBody
-  // scroll, so the title and the save/cancel buttons always stay in view.
   maxHeight: '90dvh',
   boxShadow: '0 12px 48px rgba(0,0,0,0.18)',
   display: 'flex',
@@ -58,7 +55,6 @@ const ModalBody = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   gap: 20,
-  // Keep the fields off the scrollbar (on the left, in RTL).
   paddingInlineEnd: 6,
 });
 

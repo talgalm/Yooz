@@ -730,7 +730,7 @@ router.get('/random-items', authenticateAdmin, async (req: Request, res: Respons
 });
 
 // Send a test SMS using the currently-configured provider — used by the
-// admin "test SMS" button on the activity creation page. Admins only: each send costs money.
+// admin "test SMS" button on the activity creation page.
 router.post('/sms/test', authenticateAdmin, requireRole('admin', 'super_admin'), async (req: Request<{}, {}, { phoneNumber?: string; message?: string; attachmentUrl?: string; couponCode?: string }>, res: Response) => {
   const phone = (req.body.phoneNumber || '').trim();
   const template = (req.body.message || '').trim() || DEFAULT_SMS_TEMPLATE;

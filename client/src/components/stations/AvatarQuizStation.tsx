@@ -79,7 +79,6 @@ interface PublicQuestion {
 interface AvatarQuizSettings {
   characterName?: string;
   characterImageUrl?: string;
-  /** "x% y%" picked in admin: which part of the image survives the square crop. */
   characterImagePosition?: string;
   voiceType?: 'man' | 'woman';
   descriptionAsPopup?: boolean;

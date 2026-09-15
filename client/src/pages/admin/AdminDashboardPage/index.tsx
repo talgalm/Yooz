@@ -1448,7 +1448,7 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
 
   // Persist a folder move immediately (there is no surrounding save form on the dashboard).
   const moveActivityToFolder = useCallback(async (activityId: string, folderId: string | null) => {
-    if (!canEdit) return; // drag-to-folder is a write; viewers can still open folders
+    if (!canEdit) return;
     const current = activitiesRef.current.find((a) => a._id === activityId);
     if (!current) return;
     if ((current.folderId ?? null) === folderId) return; // already there — no-op
@@ -1684,7 +1684,6 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
 
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(visibleActivities);
 
-  // Folder actions are all writes (edit/delete), so viewers don't get the menu.
   const renderFolderMenu = (folder: Folder) => !canEdit ? null : (
     <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
       <RowActionIconButton
@@ -1717,7 +1716,6 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
     </RowActionWrapper>
   );
 
-  // Duplicate / move / delete: all writes.
   const renderActivityMenu = (activity: Activity) => !canEdit ? null : (
     <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
       <RowActionIconButton
@@ -2242,7 +2240,6 @@ function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missio
 
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(visibleMissions);
 
-  // Folder actions are all writes (edit/delete), so viewers don't get the menu.
   const renderFolderMenu = (folder: Folder) => !canEdit ? null : (
     <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
       <RowActionIconButton type="button" aria-label={t.actions} title={t.actions}
@@ -2266,7 +2263,7 @@ function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missio
   );
 
   const renderMissionMenu = (m: Mission) => {
-    if (!canEdit) return null; // moving is a write
+    if (!canEdit) return null;
     if (folders.length === 0 && !m.folderId) return null; // nothing to move to
     return (
       <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>

@@ -1,9 +1,8 @@
 /*
     Parameters: p_fnUpdatePerSec -> callback function and p_nTimerDuration -> Time duration
     startTimer() -> to start timer
-    resetTimer(duration) -> to restart timer from duration
-    pauseTimer() / playTimer() -> suspend and resume a running timer (tab hidden / visible)
-    destoryTimer() -> stop timer anytime; only resetTimer() starts it again
+    resetTimer() -> to reset timer
+    destoryTimer() -> stop timer anytime by using
     This will stop when timer will reach to 0 seconds
 */
 function CustomizedTimer (p_fnUpdatePerSec, p_nTimerDuration) {
@@ -19,8 +18,6 @@ function CustomizedTimer (p_fnUpdatePerSec, p_nTimerDuration) {
         objInterval = null;
     };
 
-    // Clears the previous interval first, so starting twice can't leave an
-    // orphan interval ticking alongside the new one.
     const start = () => {
         stop();
         if (nTimerDuration <= 0) return;
@@ -46,8 +43,6 @@ function CustomizedTimer (p_fnUpdatePerSec, p_nTimerDuration) {
             bIsPaused = true;
         },
 
-        // Resumes only what pauseTimer() stopped. A destroyed timer (question
-        // answered) must stay stopped when the tab becomes visible again.
         playTimer: () => {
             if (!bIsPaused) return;
             bIsPaused = false;

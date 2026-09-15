@@ -424,11 +424,9 @@ export default function AdminCreateActivityPage() {
   const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
   const { admin: currentAdmin } = useAdminAuth();
   const canEditContent = currentAdmin?.role !== 'viewer';
-  // Customers may use every theme but change only their own (server: routes/themes.ts).
   const canManageTheme = (theme: CustomTheme) =>
     canEditContent &&
     (currentAdmin?.role !== 'customer' || theme.createdByEmail === currentAdmin.email.toLowerCase());
-  // Each test SMS costs money; the server allows it for admins only.
   const canSendTestSms = currentAdmin?.role === 'admin' || currentAdmin?.role === 'super_admin';
 
   const [step, setStep] = useState<1 | 2 | 3>(1);

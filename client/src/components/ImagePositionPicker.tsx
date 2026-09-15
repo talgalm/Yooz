@@ -10,7 +10,6 @@ import {
   visibleRegion,
 } from './imagePosition';
 
-/** Participants see the character in a square (`CharacterImage`, aspect-ratio 1 / 1). */
 const FRAME_ASPECT = 1;
 const STAGE_MAX = 260;
 const PREVIEW_SIZE = 120;
@@ -51,7 +50,6 @@ const StageImage = styled('img')({
   maxHeight: STAGE_MAX,
 });
 
-/** The part that stays; its huge shadow dims everything the crop cuts away. */
 const VisibleFrame = styled('div')({
   position: 'absolute',
   boxShadow: '0 0 0 9999px rgba(20, 16, 40, 0.5)',
@@ -60,8 +58,6 @@ const VisibleFrame = styled('div')({
   transition: 'left 0.15s ease, top 0.15s ease',
 });
 
-// Cells map to the image, not the reading direction: the first column is the
-// image's left edge even on the Hebrew (RTL) admin.
 const Grid = styled('div')({
   position: 'absolute',
   inset: 0,
@@ -122,15 +118,10 @@ const PreviewLabel = styled('span')({
 
 interface Props {
   src: string;
-  /** Stored `"x% y%"`; empty means the centre. */
   value?: string;
   onChange: (value: string) => void;
 }
 
-/**
- * Lets the admin pick which part of an image survives the square crop participants
- * see: a 3x3 grid over the whole image, with the cropped-away part dimmed.
- */
 export default function ImagePositionPicker({ src, value, onChange }: Props) {
   const t = useTranslations(texts);
   const [natural, setNatural] = useState<{ src: string; width: number; height: number } | null>(null);

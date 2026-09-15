@@ -83,7 +83,6 @@ async function askAvatar(
 interface AvatarSettings {
   characterName?: string;
   characterImageUrl?: string;
-  /** "x% y%" picked in admin: which part of the image survives the square crop. */
   characterImagePosition?: string;
   detectiveRiddle?: string;
   instructions?: string;

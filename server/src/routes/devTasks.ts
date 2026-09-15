@@ -11,8 +11,6 @@ import { authenticateAdminAllowViewerWrites, requireRole } from '../middleware/a
 import { DevTask, type DevTaskStatus, type DevTaskType } from '../models/DevTask';
 
 const router = Router();
-// Viewers are read-only everywhere else, but anyone may report a problem; GET and PATCH
-// are admin-only below.
 router.use(authenticateAdminAllowViewerWrites);
 
 const VALID_TYPES: DevTaskType[] = ['feature', 'bug', 'change'];
