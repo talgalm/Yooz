@@ -643,6 +643,9 @@ export const FinishContent = styled('div')({
   textAlign: 'center',
   width: '100%',
   maxWidth: 400,
+  // Centre the capped box: the container stretches, so a box narrower than it
+  // would sit at the start edge (the right, in Hebrew) on phones wider than the cap.
+  marginInline: 'auto',
 });
 
 export const FinishTitleBanner = styled('div')({

@@ -806,6 +806,9 @@ export const FinishContent = styled('div', {
   zIndex: 1,
   textAlign: 'center',
   width: '100%',
+  // Centre the capped box: the container stretches, so a box narrower than it
+  // would sit at the start edge (the right, in Hebrew) on phones wider than the cap.
+  marginInline: 'auto',
   ...($stumpCentered
     ? {
         justifyContent: 'space-between',

@@ -1287,8 +1287,9 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 Each game: `index.tsx` player + `styled.ts` + `.i18n.ts`; reports `{score, maxPossibleScore,
 questionAnswers?}` up to `PlayingPhase`. **`TriviaGame`** (MCQ, timer, helpers, hint),
 **`OrderGame`** (`index` drag-order quiz + `OrderSurveyGame` live poll + `GolfChallenge`
-variant), **`PuzzleGame`**, **`TrueFalseGame`**, **`TrashSortGame`**, **`BallGame`** (Phaser:
-`BallGameCanvas`/`BallGamePlay`/`usePhysicsEngine`/`useBallGameSounds`/`levelConfigs`).
+variant), **`PuzzleGame`**, **`TrueFalseGame`**, **`TrashSortGame`**, **`BallGame`** (`index.tsx`
+iframes the Phaser game in `client/public/assets/games/ballgame/`: `js/main.js` + `js/customizedTimer.js`;
+`BallGameCanvas`/`BallGamePlay`/`usePhysicsEngine`/`useBallGameSounds` are not imported anywhere).
 Shared: `GameInstructionsScreen`, `GameCompleteScreen`, `HintButton`/`HintModals`, `MuteButton`,
 `types.ts`, `styled.ts`.
 
