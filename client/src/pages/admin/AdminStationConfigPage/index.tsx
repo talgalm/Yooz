@@ -5,6 +5,7 @@ import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminStationConfigPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
 import FileUploadButton from '../../../components/FileUploadButton';
+import ImagePositionPicker from '../../../components/ImagePositionPicker';
 import {
   AdminPage,
   AdminHeader,
@@ -235,6 +236,7 @@ export default function AdminStationConfigPage() {
   // Avatar station
   const [avatarCharacterName, setAvatarCharacterName] = useState('');
   const [avatarCharacterImageUrl, setAvatarCharacterImageUrl] = useState('');
+  const [avatarCharacterImagePosition, setAvatarCharacterImagePosition] = useState('');
   const [avatarDetectiveRiddle, setAvatarDetectiveRiddle] = useState('');
   const [avatarInstructions, setAvatarInstructions] = useState('');
   const [avatarOptionalAnswers, setAvatarOptionalAnswers] = useState<string[]>([]);
@@ -248,6 +250,7 @@ export default function AdminStationConfigPage() {
   // Entering text station
   const [quizCharacterName, setQuizCharacterName] = useState('');
   const [quizCharacterImageUrl, setQuizCharacterImageUrl] = useState('');
+  const [quizCharacterImagePosition, setQuizCharacterImagePosition] = useState('');
   const [quizVoiceType, setQuizVoiceType] = useState<'man' | 'woman'>('woman');
   const [quizTopic, setQuizTopic] = useState('');
   const [quizIntroText, setQuizIntroText] = useState('');
@@ -288,6 +291,7 @@ export default function AdminStationConfigPage() {
   const applyQuizSettings = (settings: Record<string, unknown>) => {
     if (settings.characterName) setQuizCharacterName(settings.characterName as string);
     if (settings.characterImageUrl) setQuizCharacterImageUrl(settings.characterImageUrl as string);
+    if (typeof settings.characterImagePosition === 'string') setQuizCharacterImagePosition(settings.characterImagePosition);
     if (settings.voiceType === 'man' || settings.voiceType === 'woman') setQuizVoiceType(settings.voiceType);
     setDescriptionAsPopup(!!settings.descriptionAsPopup);
     if (settings.topic) setQuizTopic(settings.topic as string);
@@ -406,6 +410,7 @@ export default function AdminStationConfigPage() {
         if (s.type === 'avatar') {
           if (settings.characterName) setAvatarCharacterName(settings.characterName as string);
           if (settings.characterImageUrl) setAvatarCharacterImageUrl(settings.characterImageUrl as string);
+          if (typeof settings.characterImagePosition === 'string') setAvatarCharacterImagePosition(settings.characterImagePosition);
           if (settings.detectiveRiddle) setAvatarDetectiveRiddle(settings.detectiveRiddle as string);
           if (settings.instructions) setAvatarInstructions(settings.instructions as string);
           if (Array.isArray(settings.optionalAnswers)) setAvatarOptionalAnswers(settings.optionalAnswers as string[]);
@@ -528,6 +533,7 @@ export default function AdminStationConfigPage() {
     if (lib.type === 'avatar') {
       if (settings.characterName) setAvatarCharacterName(settings.characterName as string);
       if (settings.characterImageUrl) setAvatarCharacterImageUrl(settings.characterImageUrl as string);
+      if (typeof settings.characterImagePosition === 'string') setAvatarCharacterImagePosition(settings.characterImagePosition);
       if (settings.detectiveRiddle) setAvatarDetectiveRiddle(settings.detectiveRiddle as string);
       if (settings.instructions) setAvatarInstructions(settings.instructions as string);
       if (Array.isArray(settings.optionalAnswers)) setAvatarOptionalAnswers(settings.optionalAnswers as string[]);
@@ -643,6 +649,7 @@ export default function AdminStationConfigPage() {
       if (stationType === 'avatar') {
         settings.characterName = avatarCharacterName.trim();
         settings.characterImageUrl = avatarCharacterImageUrl.trim();
+        if (avatarCharacterImagePosition) settings.characterImagePosition = avatarCharacterImagePosition;
         settings.detectiveRiddle = avatarDetectiveRiddle.trim();
         settings.instructions = avatarInstructions.trim();
         settings.optionalAnswers = avatarOptionalAnswers.map((a) => a.trim()).filter(Boolean);
@@ -694,6 +701,7 @@ export default function AdminStationConfigPage() {
 
         settings.characterName = quizCharacterName.trim();
         settings.characterImageUrl = quizCharacterImageUrl.trim();
+        if (quizCharacterImagePosition) settings.characterImagePosition = quizCharacterImagePosition;
         settings.voiceType = quizVoiceType;
         settings.descriptionAsPopup = descriptionAsPopup;
         if (quizTopic.trim()) settings.topic = quizTopic.trim();
@@ -885,6 +893,7 @@ export default function AdminStationConfigPage() {
     setRiddleUnlimitedAttempts(false);
     setAvatarCharacterName('');
     setAvatarCharacterImageUrl('');
+    setAvatarCharacterImagePosition('');
     setAvatarDetectiveRiddle('');
     setAvatarInstructions('');
     setAvatarOptionalAnswers([]);
@@ -1653,6 +1662,13 @@ export default function AdminStationConfigPage() {
                       onChange={(e) => setAvatarCharacterImageUrl(e.target.value)}
                     />
                   </InlineRow>
+                  {avatarCharacterImageUrl.trim() && (
+                    <ImagePositionPicker
+                      src={avatarCharacterImageUrl.trim()}
+                      value={avatarCharacterImagePosition}
+                      onChange={setAvatarCharacterImagePosition}
+                    />
+                  )}
 
                   <SectionLabel>{t.avatarVoiceType}</SectionLabel>
                   <InlineRow>
@@ -1935,6 +1951,13 @@ export default function AdminStationConfigPage() {
                       onChange={(e) => setQuizCharacterImageUrl(e.target.value)}
                     />
                   </InlineRowGap12>
+                  {quizCharacterImageUrl.trim() && (
+                    <ImagePositionPicker
+                      src={quizCharacterImageUrl.trim()}
+                      value={quizCharacterImagePosition}
+                      onChange={setQuizCharacterImagePosition}
+                    />
+                  )}
 
                   <SectionLabel>{t.avatarVoiceType}</SectionLabel>
                   <InlineRowGap12>

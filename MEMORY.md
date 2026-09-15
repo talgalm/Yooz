@@ -484,7 +484,8 @@ Rendered in `pages/StoryModulePage/PlayingPhase.tsx` (story) / `StationStage` / 
 - **avatar** — AI chat with a character (`AvatarStation` → `/api/avatar-chat`).
 - **avatarQuiz** — a character *asks* the participant questions and an AI grades each free-text
   answer 0-100 (`AvatarQuizStation` → `/api/avatar-quiz`). Settings: `characterName`,
-  `characterImageUrl`, `voiceType:'man'|'woman'` (TTS), `topic`, `introText`/`outroText`,
+  `characterImageUrl`, `characterImagePosition` (`"x% y%"` object-position picked in admin with
+  `ImagePositionPicker`; also on **avatar**), `voiceType:'man'|'woman'` (TTS), `topic`, `introText`/`outroText`,
   `personaInstructions`, `strictness:'lenient'|'balanced'|'strict'`, `pointsPerQuestion`,
   `questionCount` (drawn from the bank), behaviour toggles (shuffle / retry / skip / auto-advance),
   `questions[]: {text, idealAnswer, keywords[], teachingPoint, hint?, points?, learnMoreUrl?,
