@@ -1039,6 +1039,7 @@ export const FinishContent = styled('div')({
   textAlign: 'center',
   width: '100%',
   maxWidth: 400,
+  marginInline: 'auto',
   minHeight: '100%',
   boxSizing: 'border-box',
 });

@@ -643,6 +643,7 @@ export const FinishContent = styled('div')({
   textAlign: 'center',
   width: '100%',
   maxWidth: 400,
+  marginInline: 'auto',
 });
 
 export const FinishTitleBanner = styled('div')({

@@ -98,9 +98,12 @@ localStorage key. **Never mix them.**
   can drop localStorage between opens (`AuthContext.tsx`). On login as a *different* user,
   local progress keys (`yooz_session_*`, `yooz_game_progress_*`, `puzzle_progress_*`,
   `yooz_avatar_chat_*`, `yooz_entering_text_*`, `yooz_start_*`) are wiped.
-- **Admin roles**: `super_admin` = everything (users, tutorials, publicity, site content);
-  `admin` = content + all analytics + publicity; `customer` = **scoped to their own
-  activities** (see §7); `viewer` = minimal.
+- **Admin roles** (least to most): `viewer` = **read-only**, sees all content; `authenticateAdmin`
+  refuses any non-GET/HEAD/OPTIONS for it (`authenticateAdminAllowViewerWrites` only on dev-task
+  reporting), no analytics/media/publicity. `customer` = **scoped to their own activities** (see §7),
+  auto-provisioned from an activity's manager email; may use all custom themes but edit/delete only
+  their own (`CustomTheme.createdByEmail`); no test SMS. `admin` = all content + all analytics +
+  media + publicity + audit log + test SMS. `super_admin` = admin + users + tutorial create/delete.
 
 ---
 
@@ -484,7 +487,8 @@ Rendered in `pages/StoryModulePage/PlayingPhase.tsx` (story) / `StationStage` / 
 - **avatar** — AI chat with a character (`AvatarStation` → `/api/avatar-chat`).
 - **avatarQuiz** — a character *asks* the participant questions and an AI grades each free-text
   answer 0-100 (`AvatarQuizStation` → `/api/avatar-quiz`). Settings: `characterName`,
-  `characterImageUrl`, `voiceType:'man'|'woman'` (TTS), `topic`, `introText`/`outroText`,
+  `characterImageUrl`, `characterImagePosition` (`"x% y%"` object-position picked in admin with
+  `ImagePositionPicker`; also on **avatar**), `voiceType:'man'|'woman'` (TTS), `topic`, `introText`/`outroText`,
   `personaInstructions`, `strictness:'lenient'|'balanced'|'strict'`, `pointsPerQuestion`,
   `questionCount` (drawn from the bank), behaviour toggles (shuffle / retry / skip / auto-advance),
   `questions[]: {text, idealAnswer, keywords[], teachingPoint, hint?, points?, learnMoreUrl?,
@@ -1287,8 +1291,9 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 Each game: `index.tsx` player + `styled.ts` + `.i18n.ts`; reports `{score, maxPossibleScore,
 questionAnswers?}` up to `PlayingPhase`. **`TriviaGame`** (MCQ, timer, helpers, hint),
 **`OrderGame`** (`index` drag-order quiz + `OrderSurveyGame` live poll + `GolfChallenge`
-variant), **`PuzzleGame`**, **`TrueFalseGame`**, **`TrashSortGame`**, **`BallGame`** (Phaser:
-`BallGameCanvas`/`BallGamePlay`/`usePhysicsEngine`/`useBallGameSounds`/`levelConfigs`).
+variant), **`PuzzleGame`**, **`TrueFalseGame`**, **`TrashSortGame`**, **`BallGame`** (`index.tsx`
+iframes the Phaser game in `client/public/assets/games/ballgame/`: `js/main.js` + `js/customizedTimer.js`;
+`BallGameCanvas`/`BallGamePlay`/`usePhysicsEngine`/`useBallGameSounds` are not imported anywhere).
 Shared: `GameInstructionsScreen`, `GameCompleteScreen`, `HintButton`/`HintModals`, `MuteButton`,
 `types.ts`, `styled.ts`.
 

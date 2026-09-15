@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import StationDescriptionPopup from './StationDescriptionPopup';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
+import { objectPositionStyle } from '../imagePosition';
 import {
   type SpeechHandle,
   type PreparedSpeech,
@@ -82,6 +83,7 @@ async function askAvatar(
 interface AvatarSettings {
   characterName?: string;
   characterImageUrl?: string;
+  characterImagePosition?: string;
   detectiveRiddle?: string;
   instructions?: string;
   optionalAnswers?: string[];
@@ -298,7 +300,11 @@ export default function AvatarStation({
             playsInline
           />
         ) : settings.characterImageUrl ? (
-          <CharacterImage src={settings.characterImageUrl} alt={settings.characterName || ''} />
+          <CharacterImage
+            src={settings.characterImageUrl}
+            alt={settings.characterName || ''}
+            style={{ objectPosition: objectPositionStyle(settings.characterImagePosition) }}
+          />
         ) : null}
         {settings.characterName && <CharacterNameBadge>{settings.characterName}</CharacterNameBadge>}
         {descriptionAsPopup && (

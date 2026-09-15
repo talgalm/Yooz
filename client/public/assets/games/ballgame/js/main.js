@@ -193,7 +193,7 @@ let selBall = null;
 let dragStartPoints = { x: 0, y: 0 };
 let dragEndPoints = { x: 0, y: 0 };
 let objCustomizedTimer = null;
-let nTimerDuration = Number(window.__ballgameTimeLimit) || 30;
+let nTimerDuration = Math.max(5, Math.floor(Number(window.__ballgameTimeLimit)) || 30);
 let isGameLoaded = false;
 let isStartClicked = false;
 let hasGameStarted = false;
@@ -297,7 +297,7 @@ function onStartClicked() {
 onWindowFocusStatus = (windowVisibility) => {
   if (objCustomizedTimer) {
     if (windowVisibility == "hidden") objCustomizedTimer.pauseTimer();
-    else objCustomizedTimer.playTimer(objCustomizedTimer);
+    else objCustomizedTimer.playTimer();
   }
 };
 
@@ -1238,7 +1238,7 @@ function addQuestion() {
     var qEl = document.createElement('div');
     qEl.id = 'question-text-html';
     qEl.className = 'question-text-html';
-    qEl.style.cssText = 'position:absolute;left:' + questionBox.x + 'px;top:' + questionBox.y + 'px;width:' + questionBox.width + 'px;height:' + questionBox.height + 'px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:"Encode Sans Expanded",Arial,sans-serif;color:' + NATURE.QUESTION_TEXT + ';text-align:center;padding:0 10px;box-sizing:border-box;line-height:1.25;direction:rtl;pointer-events:none;overflow:hidden;';
+    qEl.style.cssText = 'position:absolute;left:' + questionBox.x + 'px;top:' + questionBox.y + 'px;width:' + questionBox.width + 'px;height:' + questionBox.height + 'px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;font-family:"Rubik","Encode Sans Expanded",Arial,sans-serif;color:' + NATURE.QUESTION_TEXT + ';text-align:center;padding:0 10px;box-sizing:border-box;line-height:1.25;direction:rtl;pointer-events:none;overflow:hidden;';
     qEl.textContent = normalizeLabelText(arrQuestions[currentQuestionIndex], true);
     textLayer.appendChild(qEl);
     scheduleFitText(qEl, 22, 10);
@@ -1272,7 +1272,7 @@ function ensureTimerBadge() {
     'min-width:74px;padding:0 12px;box-sizing:border-box;display:flex;align-items:center;' +
     'justify-content:center;gap:5px;border-radius:' + h / 2 + 'px;' +
     'border:2px solid ' + NATURE.BOX_BORDER + ';background:rgba(255,255,255,0.96);' +
-    'font-size:17px;font-weight:800;font-family:"Encode Sans Expanded",Arial,sans-serif;' +
+    'font-size:17px;font-weight:800;font-family:"Rubik","Encode Sans Expanded",Arial,sans-serif;' +
     'direction:ltr;line-height:1;white-space:nowrap;pointer-events:none;' +
     'box-shadow:0 2px 6px rgba(74,101,114,0.35);';
   renderTimerBadge(nTimerDuration);
@@ -1284,6 +1284,12 @@ function renderTimerBadge(nTime) {
   if (!el) return;
   el.textContent = '⏱ ' + (nTime < 10 ? '0' + nTime : nTime);
   el.style.color = nTime <= 5 ? NATURE.BTN_RED_DARK : NATURE.TEXT_DARK;
+}
+
+function stopQuestionTimer() {
+  if (objCustomizedTimer) objCustomizedTimer.destoryTimer();
+  var timerEl = document.getElementById('timer-text-html');
+  if (timerEl) timerEl.remove();
 }
 
 /**
@@ -1469,7 +1475,7 @@ function addOptions() {
     if (textLayer) {
       var oEl = document.createElement('div');
       oEl.className = 'option-text-html';
-      oEl.style.cssText = 'position:absolute;left:' + optionBox.x + 'px;top:' + optionBox.y + 'px;width:' + optionBox.width + 'px;height:' + optionBox.height + 'px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;font-family:"Encode Sans Expanded",Arial,sans-serif;color:#222;text-align:center;padding:0 8px;box-sizing:border-box;line-height:1.25;direction:rtl;pointer-events:none;overflow:hidden;';
+      oEl.style.cssText = 'position:absolute;left:' + optionBox.x + 'px;top:' + optionBox.y + 'px;width:' + optionBox.width + 'px;height:' + optionBox.height + 'px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;font-family:"Rubik","Encode Sans Expanded",Arial,sans-serif;color:#222;text-align:center;padding:0 8px;box-sizing:border-box;line-height:1.25;direction:rtl;pointer-events:none;overflow:hidden;';
       oEl.textContent = normalizeLabelText(arrOptions[currentQuestionIndex][i].text, false);
       textLayer.appendChild(oEl);
       scheduleFitText(oEl, 18, 10);
@@ -1610,9 +1616,7 @@ function nextQuestion() {
   skip.visible = false;
   if (currentQuestionIndex > arrQuestions.length - 1) {
     if (!bIsMuted) audio_applause.play();
-    if (objCustomizedTimer) objCustomizedTimer.destoryTimer();
-    var timerEl = document.getElementById('timer-text-html');
-    if (timerEl) timerEl.remove();
+    stopQuestionTimer();
     updateDataOnGameCompleted();
     return;
   }
@@ -1702,30 +1706,21 @@ function showInstructionalVideo() {
   // Pause the game
   game.paused = true;
 
-  // Pause the timer
-  if (objCustomizedTimer) {
-    objCustomizedTimer.pauseTimer();
-  }
-
   // Ask parent host to show the video overlay so it renders flush with the header
   if (window.parent && window.parent !== window) {
     window.parent.postMessage({ source: 'yooz-ballgame', type: 'BALLGAME_SHOW_VIDEO', payload: {} }, '*');
   }
 
-  function closeVideoAndResetTimer() {
+  function closeVideo() {
     cleanup();
     game.paused = false;
-    // Reset the timer
-    if (objCustomizedTimer) {
-      objCustomizedTimer.resetTimer();
-    }
   }
 
   function onParentMessage(event) {
     var data = event.data;
     if (!data || data.source !== 'yooz-host') return;
     if (data.type === 'BALLGAME_CLOSE_VIDEO') {
-      closeVideoAndResetTimer();
+      closeVideo();
     }
   }
 
@@ -1756,6 +1751,7 @@ let bucketAnim;
  * @param {object} target - The option box that was clicked.
  */
 function onOptionClick(target) {
+  stopQuestionTimer();
 
   if (!this.videoShown) {
     setTimeout(() => {
@@ -1763,8 +1759,9 @@ function onOptionClick(target) {
       this.videoShown = true;  // Prevent further showing
     }, 1000);  // Delay to ensure it doesn't overlap with other animations
   }
+  const answeredQuestionIndex = currentQuestionIndex;
   setTimeout(() => {
-    skip.visible = true;
+    if (currentQuestionIndex === answeredQuestionIndex) skip.visible = true;
   }, 3000);
   if (!bIsMuted) audio_click.play();
   removeListeners();
@@ -2131,6 +2128,7 @@ var updatePerSec = (nTime) => {
 
   if (nTime == 0) {
     objCustomizedTimer.destoryTimer();
+    removeListeners();
     if (spritesArr[ballIndex]) spritesArr[ballIndex].destroy();
     balls.destroy();
     if (!bIsMuted) audio_wrong.play();
@@ -2151,6 +2149,7 @@ var updatePerSec = (nTime) => {
  * Starts the timer for the game.
  */
 function startTimer() {
+  if (objCustomizedTimer) objCustomizedTimer.destoryTimer();
   objCustomizedTimer = new CustomizedTimer(updatePerSec, nTimerDuration);
   objCustomizedTimer.startTimer();
 }

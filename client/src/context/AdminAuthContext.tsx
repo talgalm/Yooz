@@ -103,3 +103,7 @@ export function useAdminAuth() {
   if (!ctx) throw new Error('useAdminAuth must be used within AdminAuthProvider');
   return ctx;
 }
+
+export function useCanEditContent(): boolean {
+  return useAdminAuth().admin?.role !== 'viewer';
+}

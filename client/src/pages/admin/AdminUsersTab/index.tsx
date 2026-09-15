@@ -203,6 +203,10 @@ export default function AdminUsersTab() {
                   <div>{t.roleViewer}</div>
                   <SelectionSubtextSmall>{t.roleViewerDesc}</SelectionSubtextSmall>
                 </SelectionButton>
+                <SelectionButton type="button" selected={role === 'customer'} onClick={() => setRole('customer')}>
+                  <div>{t.roleCustomer}</div>
+                  <SelectionSubtextSmall>{t.roleCustomerDesc}</SelectionSubtextSmall>
+                </SelectionButton>
                 <SelectionButton type="button" selected={role === 'admin'} onClick={() => setRole('admin')}>
                   <div>{t.roleAdmin}</div>
                   <SelectionSubtextSmall>{t.roleAdminDesc}</SelectionSubtextSmall>
@@ -210,10 +214,6 @@ export default function AdminUsersTab() {
                 <SelectionButton type="button" selected={role === 'super_admin'} onClick={() => setRole('super_admin')}>
                   <div>{t.roleSuperAdmin}</div>
                   <SelectionSubtextSmall>{t.roleSuperAdminDesc}</SelectionSubtextSmall>
-                </SelectionButton>
-                <SelectionButton type="button" selected={role === 'customer'} onClick={() => setRole('customer')}>
-                  <div>{t.roleCustomer}</div>
-                  <SelectionSubtextSmall>{t.roleCustomerDesc}</SelectionSubtextSmall>
                 </SelectionButton>
               </SelectionGroup>
             </div>

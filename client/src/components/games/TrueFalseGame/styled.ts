@@ -806,6 +806,7 @@ export const FinishContent = styled('div', {
   zIndex: 1,
   textAlign: 'center',
   width: '100%',
+  marginInline: 'auto',
   ...($stumpCentered
     ? {
         justifyContent: 'space-between',

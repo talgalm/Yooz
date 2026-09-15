@@ -1,43 +1,57 @@
-/*  
-    Parameters: p_fnUpdatePerSec -> callback function and p_nTimerDuration -> Time duration 
-    startTimer() -> to start timer 
+/*
+    Parameters: p_fnUpdatePerSec -> callback function and p_nTimerDuration -> Time duration
+    startTimer() -> to start timer
     resetTimer() -> to reset timer
-    destoryTimer() -> stop timer anytime by using 
+    destoryTimer() -> stop timer anytime by using
     This will stop when timer will reach to 0 seconds
 */
 function CustomizedTimer (p_fnUpdatePerSec, p_nTimerDuration) {
     let fnUpdatePerSec = p_fnUpdatePerSec;
     let nTimerDuration = p_nTimerDuration;
     let objInterval = null;
+    let bIsPaused = false;
 
     fnUpdatePerSec(nTimerDuration);
 
+    const stop = () => {
+        clearInterval(objInterval);
+        objInterval = null;
+    };
+
+    const start = () => {
+        stop();
+        if (nTimerDuration <= 0) return;
+        objInterval = setInterval(() => {
+            if (--nTimerDuration <= 0) stop();
+            fnUpdatePerSec(nTimerDuration);
+        }, 1000);
+    };
+
     return {
-        startTimer: () => {
-            objInterval = setInterval(() => {
-                fnUpdatePerSec(--nTimerDuration);
-        
-                if(nTimerDuration == 0)
-                    clearInterval(objInterval);
-            }, 1000);
-        },
+        startTimer: start,
 
         resetTimer: (p_nTimerDuration) => {
-            clearInterval(objInterval);
+            bIsPaused = false;
             nTimerDuration = p_nTimerDuration;
-            startTimer();
+            fnUpdatePerSec(nTimerDuration);
+            start();
         },
 
         pauseTimer: () => {
-            if(nTimerDuration != 0)
-                clearInterval(objInterval);
+            if (!objInterval) return;
+            stop();
+            bIsPaused = true;
         },
 
-        playTimer: (objCustomizedTimer) => {
-            if(nTimerDuration != 0)
-                objCustomizedTimer.startTimer();
+        playTimer: () => {
+            if (!bIsPaused) return;
+            bIsPaused = false;
+            start();
         },
 
-        destoryTimer: () => clearInterval(objInterval)
+        destoryTimer: () => {
+            bIsPaused = false;
+            stop();
+        }
     };
 }

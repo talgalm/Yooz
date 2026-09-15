@@ -14,6 +14,7 @@ export interface CustomTheme {
   roadmapActiveNodeColor?: string;
   roadmapPathColor?: string;
   headerIconColor?: string;
+  createdByEmail?: string;
 }
 
 // ─── Styled ───
@@ -35,6 +36,7 @@ const Modal = styled('div')({
   padding: '28px 28px 24px',
   width: '100%',
   maxWidth: 440,
+  maxHeight: '90dvh',
   boxShadow: '0 12px 48px rgba(0,0,0,0.18)',
   display: 'flex',
   flexDirection: 'column',
@@ -46,6 +48,14 @@ const ModalTitle = styled('h3')({
   fontSize: 17,
   fontWeight: 700,
   color: '#222',
+});
+
+const ModalBody = styled('div')({
+  overflowY: 'auto',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 20,
+  paddingInlineEnd: 6,
 });
 
 const Field = styled('div')({
@@ -279,149 +289,151 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
       <Modal>
         <ModalTitle>{isEdit ? 'עריכת ערכת עיצוב' : 'ערכת עיצוב חדשה'}</ModalTitle>
 
-        <Field>
-          <FieldLabel>שם הערכה *</FieldLabel>
-          <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="לדוגמה: חג המולד" />
-        </Field>
+        <ModalBody>
+          <Field>
+            <FieldLabel>שם הערכה *</FieldLabel>
+            <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="לדוגמה: חג המולד" />
+          </Field>
 
-        <Field>
-          <FieldLabel>צבע ראשי *</FieldLabel>
-          <ColorRow>
-            <ColorSwatch color={mainColor}>
-              <ColorInput type="color" value={mainColor} onChange={(e) => setMainColor(e.target.value)} />
-            </ColorSwatch>
-            <TextInput
-              value={hexInput}
-              onChange={(e) => handleHexInput(e.target.value)}
-              placeholder="#6c5ce7"
-              style={{ width: 120 }}
-            />
-          </ColorRow>
-        </Field>
-
-        <Field>
-          <FieldLabel>צבע טקסט תחנות</FieldLabel>
-          <ColorRow>
-            <ColorSwatch color={textColor}>
-              <ColorInput type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
-            </ColorSwatch>
-            <TextInput
-              value={textHexInput}
-              onChange={(e) => handleTextHexInput(e.target.value)}
-              placeholder="#111111"
-              style={{ width: 120 }}
-            />
-          </ColorRow>
-        </Field>
-
-        <Field>
-          <FieldLabel>צבע רקע דפדפן (מסלול + תחנות)</FieldLabel>
-          <ColorRow>
-            <ColorSwatch color={bgColor}>
-              <ColorInput type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} />
-            </ColorSwatch>
-            <TextInput
-              value={bgHexInput}
-              onChange={(e) => handleBgHexInput(e.target.value)}
-              placeholder="#8fb248"
-              style={{ width: 120 }}
-            />
-          </ColorRow>
-        </Field>
-
-        <Field>
-          <FieldLabel>צבע עיגול תחנה/משחק פעיל במסלול (אופציונלי)</FieldLabel>
-          <ColorRow>
-            <ColorSwatch color={roadmapActiveNodeColor || '#d4e84e'}>
-              <ColorInput
-                type="color"
-                value={roadmapActiveNodeColor || '#d4e84e'}
-                onChange={(e) => setRoadmapActiveNodeColor(e.target.value)}
+          <Field>
+            <FieldLabel>צבע ראשי *</FieldLabel>
+            <ColorRow>
+              <ColorSwatch color={mainColor}>
+                <ColorInput type="color" value={mainColor} onChange={(e) => setMainColor(e.target.value)} />
+              </ColorSwatch>
+              <TextInput
+                value={hexInput}
+                onChange={(e) => handleHexInput(e.target.value)}
+                placeholder="#6c5ce7"
+                style={{ width: 120 }}
               />
-            </ColorSwatch>
-            <TextInput
-              value={roadmapActiveNodeHexInput}
-              onChange={(e) => handleRoadmapActiveNodeHexInput(e.target.value)}
-              placeholder="default: nature"
-              style={{ width: 160 }}
-            />
-            {roadmapActiveNodeColor && <ClearBtn type="button" title="נקה צבע" onClick={() => setRoadmapActiveNodeColor('')}>×</ClearBtn>}
-          </ColorRow>
-        </Field>
+            </ColorRow>
+          </Field>
 
-        <Field>
-          <FieldLabel>צבע המסלול (אופציונלי)</FieldLabel>
-          <ColorRow>
-            <ColorSwatch color={roadmapPathColor || '#3A291A'}>
-              <ColorInput
-                type="color"
-                value={roadmapPathColor || '#3A291A'}
-                onChange={(e) => setRoadmapPathColor(e.target.value)}
+          <Field>
+            <FieldLabel>צבע טקסט תחנות</FieldLabel>
+            <ColorRow>
+              <ColorSwatch color={textColor}>
+                <ColorInput type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
+              </ColorSwatch>
+              <TextInput
+                value={textHexInput}
+                onChange={(e) => handleTextHexInput(e.target.value)}
+                placeholder="#111111"
+                style={{ width: 120 }}
               />
-            </ColorSwatch>
-            <TextInput
-              value={roadmapPathHexInput}
-              onChange={(e) => handleRoadmapPathHexInput(e.target.value)}
-              placeholder="default: nature"
-              style={{ width: 160 }}
-            />
-            {roadmapPathColor && <ClearBtn type="button" title="נקה צבע" onClick={() => setRoadmapPathColor('')}>×</ClearBtn>}
-          </ColorRow>
-        </Field>
+            </ColorRow>
+          </Field>
 
-        <Field>
-          <FieldLabel>צבע אייקונים בכותרת (אופציונלי)</FieldLabel>
-          <ColorRow>
-            <ColorSwatch color={headerIconColor || '#ffffff'}>
-              <ColorInput
-                type="color"
-                value={headerIconColor || '#ffffff'}
-                onChange={(e) => setHeaderIconColor(e.target.value)}
+          <Field>
+            <FieldLabel>צבע רקע דפדפן (מסלול + תחנות)</FieldLabel>
+            <ColorRow>
+              <ColorSwatch color={bgColor}>
+                <ColorInput type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} />
+              </ColorSwatch>
+              <TextInput
+                value={bgHexInput}
+                onChange={(e) => handleBgHexInput(e.target.value)}
+                placeholder="#8fb248"
+                style={{ width: 120 }}
               />
-            </ColorSwatch>
-            <TextInput
-              value={headerIconHexInput}
-              onChange={(e) => handleHeaderIconHexInput(e.target.value)}
-              placeholder="default: white"
-              style={{ width: 160 }}
-            />
-            {headerIconColor && <ClearBtn type="button" title="נקה צבע" onClick={() => setHeaderIconColor('')}>×</ClearBtn>}
-          </ColorRow>
-        </Field>
+            </ColorRow>
+          </Field>
 
-        <Field>
-          <FieldLabel>תמונת רקע למסלול (אופציונלי)</FieldLabel>
-          <ImageRow>
-            {roadmapImage && <ImageThumb src={roadmapImage} alt="" />}
-            <FileUploadButton accept="image/*" onUploaded={setRoadmapImage} label="העלה תמונה" uploadingLabel="מעלה..." />
-            {roadmapImage && <ClearBtn type="button" title="הסר תמונה" onClick={() => setRoadmapImage('')}>×</ClearBtn>}
-          </ImageRow>
-          {roadmapImage && (
-            <input
-              value={roadmapImage}
-              onChange={(e) => setRoadmapImage(e.target.value)}
-              placeholder="או הדביקו כתובת תמונה..."
-              style={{ padding: '8px 12px', fontSize: 12, borderRadius: 8, border: '1px solid #e0e0e0', marginTop: 4, width: '100%', boxSizing: 'border-box' }}
-            />
-          )}
-        </Field>
+          <Field>
+            <FieldLabel>צבע עיגול תחנה/משחק פעיל במסלול (אופציונלי)</FieldLabel>
+            <ColorRow>
+              <ColorSwatch color={roadmapActiveNodeColor || '#d4e84e'}>
+                <ColorInput
+                  type="color"
+                  value={roadmapActiveNodeColor || '#d4e84e'}
+                  onChange={(e) => setRoadmapActiveNodeColor(e.target.value)}
+                />
+              </ColorSwatch>
+              <TextInput
+                value={roadmapActiveNodeHexInput}
+                onChange={(e) => handleRoadmapActiveNodeHexInput(e.target.value)}
+                placeholder="default: nature"
+                style={{ width: 160 }}
+              />
+              {roadmapActiveNodeColor && <ClearBtn type="button" title="נקה צבע" onClick={() => setRoadmapActiveNodeColor('')}>×</ClearBtn>}
+            </ColorRow>
+          </Field>
 
-        <Field>
-          <FieldLabel>תמונת רקע לתחנות (אופציונלי)</FieldLabel>
-          <ImageRow>
-            {stationsImage && <ImageThumb src={stationsImage} alt="" />}
-            <FileUploadButton accept="image/*" onUploaded={setStationsImage} label="העלה תמונה" uploadingLabel="מעלה..." />
-            {stationsImage && <ClearBtn type="button" title="הסר תמונה" onClick={() => setStationsImage('')}>×</ClearBtn>}
-          </ImageRow>
-          {stationsImage && (
-            <input
-              value={stationsImage}
-              onChange={(e) => setStationsImage(e.target.value)}
-              placeholder="או הדביקו כתובת תמונה..."
-              style={{ padding: '8px 12px', fontSize: 12, borderRadius: 8, border: '1px solid #e0e0e0', marginTop: 4, width: '100%', boxSizing: 'border-box' }}
-            />
-          )}
-        </Field>
+          <Field>
+            <FieldLabel>צבע המסלול (אופציונלי)</FieldLabel>
+            <ColorRow>
+              <ColorSwatch color={roadmapPathColor || '#3A291A'}>
+                <ColorInput
+                  type="color"
+                  value={roadmapPathColor || '#3A291A'}
+                  onChange={(e) => setRoadmapPathColor(e.target.value)}
+                />
+              </ColorSwatch>
+              <TextInput
+                value={roadmapPathHexInput}
+                onChange={(e) => handleRoadmapPathHexInput(e.target.value)}
+                placeholder="default: nature"
+                style={{ width: 160 }}
+              />
+              {roadmapPathColor && <ClearBtn type="button" title="נקה צבע" onClick={() => setRoadmapPathColor('')}>×</ClearBtn>}
+            </ColorRow>
+          </Field>
+
+          <Field>
+            <FieldLabel>צבע אייקונים בכותרת (אופציונלי)</FieldLabel>
+            <ColorRow>
+              <ColorSwatch color={headerIconColor || '#ffffff'}>
+                <ColorInput
+                  type="color"
+                  value={headerIconColor || '#ffffff'}
+                  onChange={(e) => setHeaderIconColor(e.target.value)}
+                />
+              </ColorSwatch>
+              <TextInput
+                value={headerIconHexInput}
+                onChange={(e) => handleHeaderIconHexInput(e.target.value)}
+                placeholder="default: white"
+                style={{ width: 160 }}
+              />
+              {headerIconColor && <ClearBtn type="button" title="נקה צבע" onClick={() => setHeaderIconColor('')}>×</ClearBtn>}
+            </ColorRow>
+          </Field>
+
+          <Field>
+            <FieldLabel>תמונת רקע למסלול (אופציונלי)</FieldLabel>
+            <ImageRow>
+              {roadmapImage && <ImageThumb src={roadmapImage} alt="" />}
+              <FileUploadButton accept="image/*" onUploaded={setRoadmapImage} label="העלה תמונה" uploadingLabel="מעלה..." />
+              {roadmapImage && <ClearBtn type="button" title="הסר תמונה" onClick={() => setRoadmapImage('')}>×</ClearBtn>}
+            </ImageRow>
+            {roadmapImage && (
+              <input
+                value={roadmapImage}
+                onChange={(e) => setRoadmapImage(e.target.value)}
+                placeholder="או הדביקו כתובת תמונה..."
+                style={{ padding: '8px 12px', fontSize: 12, borderRadius: 8, border: '1px solid #e0e0e0', marginTop: 4, width: '100%', boxSizing: 'border-box' }}
+              />
+            )}
+          </Field>
+
+          <Field>
+            <FieldLabel>תמונת רקע לתחנות (אופציונלי)</FieldLabel>
+            <ImageRow>
+              {stationsImage && <ImageThumb src={stationsImage} alt="" />}
+              <FileUploadButton accept="image/*" onUploaded={setStationsImage} label="העלה תמונה" uploadingLabel="מעלה..." />
+              {stationsImage && <ClearBtn type="button" title="הסר תמונה" onClick={() => setStationsImage('')}>×</ClearBtn>}
+            </ImageRow>
+            {stationsImage && (
+              <input
+                value={stationsImage}
+                onChange={(e) => setStationsImage(e.target.value)}
+                placeholder="או הדביקו כתובת תמונה..."
+                style={{ padding: '8px 12px', fontSize: 12, borderRadius: 8, border: '1px solid #e0e0e0', marginTop: 4, width: '100%', boxSizing: 'border-box' }}
+              />
+            )}
+          </Field>
+        </ModalBody>
 
         {error && <div style={{ color: '#e74c3c', fontSize: 13 }}>{error}</div>}
 

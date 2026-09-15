@@ -7,11 +7,11 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authenticateAdmin, requireRole } from '../middleware/adminAuth';
+import { authenticateAdminAllowViewerWrites, requireRole } from '../middleware/adminAuth';
 import { DevTask, type DevTaskStatus, type DevTaskType } from '../models/DevTask';
 
 const router = Router();
-router.use(authenticateAdmin);
+router.use(authenticateAdminAllowViewerWrites);
 
 const VALID_TYPES: DevTaskType[] = ['feature', 'bug', 'change'];
 const VALID_STATUSES: DevTaskStatus[] = ['open', 'in_progress', 'done', 'closed'];

@@ -21,6 +21,7 @@ import { shuffleArray } from '../../utils/shuffleArray';
 import { useModalBlur } from '../../utils/modalBlur';
 import StationDescriptionPopup from './StationDescriptionPopup';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
+import { objectPositionStyle } from '../imagePosition';
 import type { GameResult } from '../games/types';
 import {
   type PreparedSpeech,
@@ -78,6 +79,7 @@ interface PublicQuestion {
 interface AvatarQuizSettings {
   characterName?: string;
   characterImageUrl?: string;
+  characterImagePosition?: string;
   voiceType?: 'man' | 'woman';
   descriptionAsPopup?: boolean;
   reactionVideos?: { asking?: string; correct?: string; partial?: string; incorrect?: string };
@@ -1039,7 +1041,11 @@ export default function AvatarQuizStation({
         {activeVideoUrl ? (
           <CharacterVideo key={activeVideoUrl} src={activeVideoUrl} autoPlay loop muted playsInline />
         ) : settings.characterImageUrl ? (
-          <QuizCharacterImage src={settings.characterImageUrl} alt={settings.characterName || ''} />
+          <QuizCharacterImage
+            src={settings.characterImageUrl}
+            alt={settings.characterName || ''}
+            style={{ objectPosition: objectPositionStyle(settings.characterImagePosition) }}
+          />
         ) : null}
         {settings.characterName && <CharacterNameBadge>{settings.characterName}</CharacterNameBadge>}
         {descriptionAsPopup && (

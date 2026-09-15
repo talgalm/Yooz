@@ -340,7 +340,7 @@ export default function BallGame({
     }
   );
 
-  const src = `/assets/games/ballgame/index.html?v=6&embedded=1&lang=${encodeURIComponent(lang)}&dir=${encodeURIComponent(dir)}&gameId=${encodeURIComponent(game._id)}&timeLimit=${encodeURIComponent(String(settings.scoring?.timeLimitSeconds ?? 30))}`;
+  const src = `/assets/games/ballgame/index.html?v=8&embedded=1&lang=${encodeURIComponent(lang)}&dir=${encodeURIComponent(dir)}&gameId=${encodeURIComponent(game._id)}&timeLimit=${encodeURIComponent(String(settings.scoring?.timeLimitSeconds ?? 30))}`;
   if (pendingResult) {
     // iOS Safari resolves `inset: 0` against the LARGE viewport, so the bottom
     // ~100px of a fixed box sits behind the bottom toolbar — exactly where the

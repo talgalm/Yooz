@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminMissionConfigPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
+import EditOnly from '../../../components/EditOnly';
 import FileUploadButton from '../../../components/FileUploadButton';
 import {
   AdminPage,
@@ -789,9 +790,11 @@ export default function AdminMissionConfigPage() {
 
           <ActionRow>
             <OutlineButton onClick={() => navigate('/admin/dashboard?tab=stations')}>{t.cancel}</OutlineButton>
-            <PrimaryButton onClick={handleSave} disabled={saving} style={{ width: 'auto', padding: '12px 32px' }}>
-              {saving ? t.saving : isEdit ? t.updateMission : t.createMission}
-            </PrimaryButton>
+            <EditOnly notice>
+              <PrimaryButton onClick={handleSave} disabled={saving} style={{ width: 'auto', padding: '12px 32px' }}>
+                {saving ? t.saving : isEdit ? t.updateMission : t.createMission}
+              </PrimaryButton>
+            </EditOnly>
           </ActionRow>
         </AdminCard>
       </AdminContent>
