@@ -6,6 +6,7 @@ import { texts } from './AdminStationConfigPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
 import FileUploadButton from '../../../components/FileUploadButton';
 import ImagePositionPicker from '../../../components/ImagePositionPicker';
+import EditOnly from '../../../components/EditOnly';
 import {
   AdminPage,
   AdminHeader,
@@ -2399,9 +2400,11 @@ export default function AdminStationConfigPage() {
 
             <FormSectionCardWide>
               {error && <ErrorText>{error}</ErrorText>}
-              <PrimaryButton type="submit" disabled={loading || !name.trim()}>
-                {loading ? t.saving : t.save}
-              </PrimaryButton>
+              <EditOnly notice>
+                <PrimaryButton type="submit" disabled={loading || !name.trim()}>
+                  {loading ? t.saving : t.save}
+                </PrimaryButton>
+              </EditOnly>
             </FormSectionCardWide>
           </Form>
         </AdminCardWide>

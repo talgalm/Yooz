@@ -75,13 +75,16 @@ PLATFORM OVERVIEW
 ================================================================
 ROLES & WHAT EACH SEES
 ================================================================
-4 admin roles: viewer / admin / super_admin / customer.
+4 admin roles, least to most access: viewer / customer / admin / super_admin.
+- viewer (צופה): sees all content but is read-only - the server refuses every change except reporting a problem. No Statistics, Media or Publicity.
+- customer (לקוח): only activities they created or manage (managerEmail), and games/stations/missions/portals they created; statistics for those only. Created automatically when an activity is given a manager email + password. Can use every custom theme but edit/delete only their own. No test SMS.
+- admin (מנהל): all content of every customer, all statistics, media library, publicity, audit log, customer edit lock, test SMS.
+- super_admin (סופר אדמין): everything admin has, plus Users and creating/deleting tutorials.
 Tab visibility:
-- Activities, Stations, Library, Portals → all roles.
+- Activities, Stations, Library, Portals, Tutorials (watching), Settings → all roles.
 - Statistics → admin + super_admin + customer (customers see only their own/managed activities).
-- Publicity (אתר פרסום) → admin + super_admin.
-- Users → super_admin only.
-- Tutorials → super_admin only.
+- Media, Publicity (אתר פרסום) → admin + super_admin.
+- Users, and creating/deleting tutorials → super_admin only.
 - DumbDumbBot dev-task reporting ("משימות פיתוח" chip inside this chat — there is NO /dev page) → admin + super_admin.
 "customer" role is scoped to the activities they created (createdByEmail) — they can be locked out of editing via customerEditLocked.
 

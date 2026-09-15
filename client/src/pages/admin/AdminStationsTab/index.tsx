@@ -4,6 +4,7 @@ import { styled, keyframes } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminStationsTab.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
+import { useCanEditContent } from '../../../context/AdminAuthContext';
 import Pagination from '../../../components/Pagination';
 import { usePagination } from '../../../hooks/usePagination';
 import type { Station } from '../AdminDashboardPage';
@@ -412,6 +413,7 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
     setActionsFolderId(null);
     setConfirmDeleteFolderId(null);
   }, []);
+  const canEdit = useCanEditContent();
   const openStationActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsStationId(id); };
   const openFolderActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsFolderId(id); };
 
@@ -450,6 +452,7 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
   };
 
   const moveStationToFolder = useCallback(async (stationId: string, folderId: string | null) => {
+    if (!canEdit) return;
     const current = stationsRef.current.find((s) => s._id === stationId);
     if (!current) return;
     if ((current.folderId ?? null) === folderId) return;
@@ -462,7 +465,7 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
     } catch {
       /* ignore — station stays where it was */
     }
-  }, [onRefresh]);
+  }, [canEdit, onRefresh]);
 
   const submitFolder = async (name: string, color: string) => {
     if (folderModal?.mode === 'edit' && folderModal.folder) {
@@ -720,7 +723,8 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
     if (openFolderId && !folders.some((f) => f._id === openFolderId)) setOpenFolderId(null);
   }, [folders, openFolderId]);
 
-  const renderFolderMenu = (folder: Folder) => (
+  // Both menus hold only writes (edit/delete folder; duplicate/move/delete station), so viewers get neither.
+  const renderFolderMenu = (folder: Folder) => !canEdit ? null : (
     <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
       <RowActionIconButton
         type="button"
@@ -752,7 +756,7 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
     </RowActionWrapper>
   );
 
-  const renderStationMenu = (station: Station) => (
+  const renderStationMenu = (station: Station) => !canEdit ? null : (
     <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
       <RowActionIconButton
         type="button"
@@ -825,10 +829,12 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
       <SectionHeaderRow>
         <PageTitleNoMargin>{t.title}</PageTitleNoMargin>
         <HeaderButtons>
-          <SmallActionButton onClick={() => setFolderModal({ mode: 'create' })}>
-            {t.newFolder}
-          </SmallActionButton>
-          {!hideCreateButton && (
+          {canEdit && (
+            <SmallActionButton onClick={() => setFolderModal({ mode: 'create' })}>
+              {t.newFolder}
+            </SmallActionButton>
+          )}
+          {canEdit && !hideCreateButton && (
             <SmallActionButton onClick={() => navigate(`/admin/stations/new${defaultType ? `?type=${defaultType}` : ''}`)}>
               {t.createNew}
             </SmallActionButton>
@@ -985,7 +991,7 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
                   {pageItems.map((station) => (
                     <tr
                       key={station._id}
-                      draggable
+                      draggable={canEdit}
                       onDragStart={(e) => onMouseDragStart(e, station._id)}
                       onDragEnd={onMouseDragEnd}
                       onPointerDown={(e) => onRowPointerDown(e, station._id)}
@@ -1049,7 +1055,7 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
               {pageItems.map((station) => (
                 <MobileCardItem
                   key={station._id}
-                  draggable
+                  draggable={canEdit}
                   onDragStart={(e) => onMouseDragStart(e, station._id)}
                   onDragEnd={onMouseDragEnd}
                   onPointerDown={(e) => onRowPointerDown(e, station._id)}

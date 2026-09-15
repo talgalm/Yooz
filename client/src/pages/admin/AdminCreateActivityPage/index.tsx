@@ -46,6 +46,8 @@ import type {
 import ModuleItemsSection from './ModuleItemsSection';
 import PopupMessagesSection from './PopupMessagesSection';
 import ThemeFormModal, { type CustomTheme } from './ThemeFormModal';
+import { useAdminAuth } from '../../../context/AdminAuthContext';
+import EditOnly from '../../../components/EditOnly';
 import CollageSplitEditor, { type SplitEditorResult } from './CollageSplitEditor';
 
 // ─── Clean section card with icon ───
@@ -420,6 +422,14 @@ export default function AdminCreateActivityPage() {
   const [customThemes, setCustomThemes] = useState<CustomTheme[]>([]);
   const [themeModalOpen, setThemeModalOpen] = useState(false);
   const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
+  const { admin: currentAdmin } = useAdminAuth();
+  const canEditContent = currentAdmin?.role !== 'viewer';
+  // Customers may use every theme but change only their own (server: routes/themes.ts).
+  const canManageTheme = (theme: CustomTheme) =>
+    canEditContent &&
+    (currentAdmin?.role !== 'customer' || theme.createdByEmail === currentAdmin.email.toLowerCase());
+  // Each test SMS costs money; the server allows it for admins only.
+  const canSendTestSms = currentAdmin?.role === 'admin' || currentAdmin?.role === 'super_admin';
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
@@ -1197,13 +1207,15 @@ export default function AdminCreateActivityPage() {
                         <div>
                           <SectionLabelSmall>{t.themeLabel}</SectionLabelSmall>
                           <ThemeGrid>
-                            <AddThemeBtn
-                              type="button"
-                              title={t.themeAddNew}
-                              onClick={() => { setEditingTheme(null); setThemeModalOpen(true); }}
-                            >
-                              +
-                            </AddThemeBtn>
+                            {canEditContent && (
+                              <AddThemeBtn
+                                type="button"
+                                title={t.themeAddNew}
+                                onClick={() => { setEditingTheme(null); setThemeModalOpen(true); }}
+                              >
+                                +
+                              </AddThemeBtn>
+                            )}
                             <ThemeBtn type="button" selected={moduleTheme === ''} onClick={() => setModuleTheme('')}>
                               {t.themeDefault}
                             </ThemeBtn>
@@ -1227,29 +1239,31 @@ export default function AdminCreateActivityPage() {
                                 onClick={() => setModuleTheme(ct._id)}
                               >
                                 {ct.name}
-                                <ThemeCardActions>
-                                  <EditThemeBtn
-                                    type="button"
-                                    title="ערוך ערכה"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditingTheme(ct);
-                                      setThemeModalOpen(true);
-                                    }}
-                                  >
-                                    ✎
-                                  </EditThemeBtn>
-                                  <DeleteThemeBtn
-                                    type="button"
-                                    title="מחק ערכה"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteTheme(ct._id);
-                                    }}
-                                  >
-                                    ×
-                                  </DeleteThemeBtn>
-                                </ThemeCardActions>
+                                {canManageTheme(ct) && (
+                                  <ThemeCardActions>
+                                    <EditThemeBtn
+                                      type="button"
+                                      title="ערוך ערכה"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingTheme(ct);
+                                        setThemeModalOpen(true);
+                                      }}
+                                    >
+                                      ✎
+                                    </EditThemeBtn>
+                                    <DeleteThemeBtn
+                                      type="button"
+                                      title="מחק ערכה"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteTheme(ct._id);
+                                      }}
+                                    >
+                                      ×
+                                    </DeleteThemeBtn>
+                                  </ThemeCardActions>
+                                )}
                               </CustomThemeCard>
                             ))}
                           </ThemeGrid>
@@ -1684,9 +1698,11 @@ export default function AdminCreateActivityPage() {
                   ) : (
                     <>
                       {error && <ErrorText>{error}</ErrorText>}
-                      <PrimaryButton type="submit" disabled={loading || !name || !hasAnyField}>
-                        {loading ? (isEditMode ? t.saving : t.creating) : (isEditMode ? t.save : t.create)}
-                      </PrimaryButton>
+                      <EditOnly notice>
+                        <PrimaryButton type="submit" disabled={loading || !name || !hasAnyField}>
+                          {loading ? (isEditMode ? t.saving : t.creating) : (isEditMode ? t.save : t.create)}
+                        </PrimaryButton>
+                      </EditOnly>
                     </>
                   )}
                 </SectionCardWide>
@@ -2124,6 +2140,7 @@ export default function AdminCreateActivityPage() {
                         {t.smsPreviewHint}
                       </SectionDescription>
 
+                      {canSendTestSms && (
                       <div style={{ marginTop: 8, padding: 14, borderRadius: 12, background: '#f1f8f4', border: '1px solid #cde9d6' }}>
                         <SectionLabelSmall style={{ marginBottom: 4 }}>{t.smsTestTitle}</SectionLabelSmall>
                         <SectionDescription style={{ margin: '0 0 10px' }}>{t.smsTestDesc}</SectionDescription>
@@ -2161,6 +2178,7 @@ export default function AdminCreateActivityPage() {
                           </SectionDescription>
                         )}
                       </div>
+                      )}
                     </VerticalStack>
                   )}
                 </SectionCardWide>
@@ -2171,9 +2189,11 @@ export default function AdminCreateActivityPage() {
                     <OutlineButton type="button" onClick={() => setStep(2)}>
                       {t.prevStep} →
                     </OutlineButton>
-                    <PrimaryButton type="submit" disabled={loading || !name || !hasAnyField} style={{ width: 'auto', padding: '12px 40px' }}>
-                      {loading ? (isEditMode ? t.saving : t.creating) : (isEditMode ? t.save : t.create)}
-                    </PrimaryButton>
+                    <EditOnly notice>
+                      <PrimaryButton type="submit" disabled={loading || !name || !hasAnyField} style={{ width: 'auto', padding: '12px 40px' }}>
+                        {loading ? (isEditMode ? t.saving : t.creating) : (isEditMode ? t.save : t.create)}
+                      </PrimaryButton>
+                    </EditOnly>
                   </StepNav>
                 </SectionCardWide>
               </>

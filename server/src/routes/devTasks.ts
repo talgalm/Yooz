@@ -7,11 +7,13 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authenticateAdmin, requireRole } from '../middleware/adminAuth';
+import { authenticateAdminAllowViewerWrites, requireRole } from '../middleware/adminAuth';
 import { DevTask, type DevTaskStatus, type DevTaskType } from '../models/DevTask';
 
 const router = Router();
-router.use(authenticateAdmin);
+// Viewers are read-only everywhere else, but anyone may report a problem; GET and PATCH
+// are admin-only below.
+router.use(authenticateAdminAllowViewerWrites);
 
 const VALID_TYPES: DevTaskType[] = ['feature', 'bug', 'change'];
 const VALID_STATUSES: DevTaskStatus[] = ['open', 'in_progress', 'done', 'closed'];

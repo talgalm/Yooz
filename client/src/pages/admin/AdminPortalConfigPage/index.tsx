@@ -4,6 +4,7 @@ import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminPortalConfigPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
+import EditOnly from '../../../components/EditOnly';
 import {
   AdminHeader,
   PrimaryButton,
@@ -732,9 +733,11 @@ export default function AdminPortalConfigPage() {
             </FormSectionCard>
 
             {/* Save */}
-            <PrimaryButton onClick={handleSave} disabled={saving || !name.trim()}>
-              {saving ? t.saving : t.save}
-            </PrimaryButton>
+            <EditOnly notice>
+              <PrimaryButton onClick={handleSave} disabled={saving || !name.trim()}>
+                {saving ? t.saving : t.save}
+              </PrimaryButton>
+            </EditOnly>
 
             {successMsg && <SuccessMsg>{successMsg}</SuccessMsg>}
             {errorMsg && <ErrorMsg>{errorMsg}</ErrorMsg>}

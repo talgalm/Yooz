@@ -4,6 +4,7 @@ import { styled, keyframes } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminLibraryTab.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
+import EditOnly from '../../../components/EditOnly';
 import Pagination from '../../../components/Pagination';
 import { usePagination } from '../../../hooks/usePagination';
 import {
@@ -901,15 +902,17 @@ function PaginatedLibrary({ items, confirmDeleteId, handleExport, handleDelete, 
                   </td>
                   <CellAlignEnd>
                     <div style={{ display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
-                      <CopyButton onClick={() => handleExport(item)}>
-                        {t.export}
-                      </CopyButton>
-                      <SmallDangerButton
-                        confirm={confirmDeleteId === item._id}
-                        onClick={() => handleDelete(item._id)}
-                      >
-                        {confirmDeleteId === item._id ? t.confirmDelete : t.delete}
-                      </SmallDangerButton>
+                      <EditOnly>
+                        <CopyButton onClick={() => handleExport(item)}>
+                          {t.export}
+                        </CopyButton>
+                        <SmallDangerButton
+                          confirm={confirmDeleteId === item._id}
+                          onClick={() => handleDelete(item._id)}
+                        >
+                          {confirmDeleteId === item._id ? t.confirmDelete : t.delete}
+                        </SmallDangerButton>
+                      </EditOnly>
                     </div>
                   </CellAlignEnd>
                 </tr>
@@ -945,15 +948,17 @@ function PaginatedLibrary({ items, confirmDeleteId, handleExport, handleDelete, 
                   </MobileCardRow>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }} onClick={(e) => e.stopPropagation()}>
-                  <CopyButton onClick={() => handleExport(item)}>
-                    {t.export}
-                  </CopyButton>
-                  <SmallDangerButton
-                    confirm={confirmDeleteId === item._id}
-                    onClick={() => handleDelete(item._id)}
-                  >
-                    {confirmDeleteId === item._id ? t.confirmDelete : t.delete}
-                  </SmallDangerButton>
+                  <EditOnly>
+                    <CopyButton onClick={() => handleExport(item)}>
+                      {t.export}
+                    </CopyButton>
+                    <SmallDangerButton
+                      confirm={confirmDeleteId === item._id}
+                      onClick={() => handleDelete(item._id)}
+                    >
+                      {confirmDeleteId === item._id ? t.confirmDelete : t.delete}
+                    </SmallDangerButton>
+                  </EditOnly>
                 </div>
               </MobileCardHeader>
             </MobileCardItem>

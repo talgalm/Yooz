@@ -1,7 +1,7 @@
 import { Fragment, useState, useEffect, useCallback, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
-import { useAdminAuth } from '../../../context/AdminAuthContext';
+import { useAdminAuth, useCanEditContent } from '../../../context/AdminAuthContext';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminDashboardPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
@@ -1189,7 +1189,7 @@ export default function AdminDashboardPage() {
           {/* ── Stations Tab (stations + games + missions) ── */}
           {activeTab === 'stations' && (
             <>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+              <div style={{ display: role === 'viewer' ? 'none' : 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
                 <button
                   onClick={() => { setCreateStep('main'); setCreateModalOpen(true); }}
                   style={{
@@ -1408,6 +1408,7 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
     setActionsFolderId(null);
     setConfirmDeleteFolderId(null);
   }, []);
+  const canEdit = useCanEditContent();
   const openActivityActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsActivityId(id); };
   const openFolderActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsFolderId(id); };
 
@@ -1447,6 +1448,7 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
 
   // Persist a folder move immediately (there is no surrounding save form on the dashboard).
   const moveActivityToFolder = useCallback(async (activityId: string, folderId: string | null) => {
+    if (!canEdit) return; // drag-to-folder is a write; viewers can still open folders
     const current = activitiesRef.current.find((a) => a._id === activityId);
     if (!current) return;
     if ((current.folderId ?? null) === folderId) return; // already there — no-op
@@ -1459,7 +1461,7 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
     } catch {
       /* ignore — activity stays where it was */
     }
-  }, [onRefresh]);
+  }, [canEdit, onRefresh]);
 
   const submitFolder = async (name: string, color: string) => {
     if (folderModal?.mode === 'edit' && folderModal.folder) {
@@ -1682,7 +1684,8 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
 
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(visibleActivities);
 
-  const renderFolderMenu = (folder: Folder) => (
+  // Folder actions are all writes (edit/delete), so viewers don't get the menu.
+  const renderFolderMenu = (folder: Folder) => !canEdit ? null : (
     <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
       <RowActionIconButton
         type="button"
@@ -1714,7 +1717,8 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
     </RowActionWrapper>
   );
 
-  const renderActivityMenu = (activity: Activity) => (
+  // Duplicate / move / delete: all writes.
+  const renderActivityMenu = (activity: Activity) => !canEdit ? null : (
     <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
       <RowActionIconButton
         type="button"
@@ -1783,14 +1787,16 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
   return (
     <>
       <SectionHeaderRow style={{ justifyContent: 'flex-end' }}>
-        <HeaderButtons>
-          <SmallActionButton onClick={() => setFolderModal({ mode: 'create' })}>
-            {t.newFolder}
-          </SmallActionButton>
-          <SmallActionButton onClick={() => navigate('/admin/activities/new')}>
-            + {t.createNew}
-          </SmallActionButton>
-        </HeaderButtons>
+        {canEdit && (
+          <HeaderButtons>
+            <SmallActionButton onClick={() => setFolderModal({ mode: 'create' })}>
+              {t.newFolder}
+            </SmallActionButton>
+            <SmallActionButton onClick={() => navigate('/admin/activities/new')}>
+              + {t.createNew}
+            </SmallActionButton>
+          </HeaderButtons>
+        )}
       </SectionHeaderRow>
       <div style={{ position: 'relative', marginBottom: 12 }}>
         <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#bbb', fontSize: 15, pointerEvents: 'none' }}>🔍</span>
@@ -1908,7 +1914,7 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
                   {pageItems.map((activity) => (
                     <tr
                       key={activity._id}
-                      draggable
+                      draggable={canEdit}
                       onDragStart={(e) => onMouseDragStart(e, activity._id)}
                       onDragEnd={onMouseDragEnd}
                       onPointerDown={(e) => onRowPointerDown(e, activity._id)}
@@ -1981,7 +1987,7 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
               {pageItems.map((activity) => (
                 <MobileCard
                   key={activity._id}
-                  draggable
+                  draggable={canEdit}
                   onDragStart={(e) => onMouseDragStart(e, activity._id)}
                   onDragEnd={onMouseDragEnd}
                   onPointerDown={(e) => onRowPointerDown(e, activity._id)}
@@ -2074,10 +2080,12 @@ function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missio
     setActionsFolderId(null);
     setConfirmDeleteFolderId(null);
   }, []);
+  const canEdit = useCanEditContent();
   const openMissionActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsMissionId(id); };
   const openFolderActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsFolderId(id); };
 
   const moveToFolder = useCallback(async (id: string, folderId: string | null) => {
+    if (!canEdit) return;
     const cur = missionsRef.current.find((m) => m._id === id);
     if (!cur) return;
     if ((cur.folderId ?? null) === folderId) return;
@@ -2085,7 +2093,7 @@ function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missio
       await adminApiFetch(`/api/admin/missions/${id}/folder`, { method: 'PATCH', body: JSON.stringify({ folderId }) });
       onRefresh();
     } catch { /* ignore */ }
-  }, [onRefresh]);
+  }, [canEdit, onRefresh]);
 
   const submitFolder = async (name: string, color: string) => {
     if (folderModal?.mode === 'edit' && folderModal.folder) {
@@ -2234,7 +2242,8 @@ function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missio
 
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(visibleMissions);
 
-  const renderFolderMenu = (folder: Folder) => (
+  // Folder actions are all writes (edit/delete), so viewers don't get the menu.
+  const renderFolderMenu = (folder: Folder) => !canEdit ? null : (
     <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
       <RowActionIconButton type="button" aria-label={t.actions} title={t.actions}
         onClick={(e) => (actionsFolderId === folder._id ? closeAllMenus() : openFolderActions(folder._id, e.currentTarget.getBoundingClientRect()))}
@@ -2257,6 +2266,7 @@ function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missio
   );
 
   const renderMissionMenu = (m: Mission) => {
+    if (!canEdit) return null; // moving is a write
     if (folders.length === 0 && !m.folderId) return null; // nothing to move to
     return (
       <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
@@ -2292,10 +2302,12 @@ function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missio
     <>
       <SectionHeaderRow>
         <PageTitleNoMargin>{t.missionsTitle}</PageTitleNoMargin>
-        <HeaderButtons>
-          <SmallActionButton onClick={() => setFolderModal({ mode: 'create' })}>{t.newFolder}</SmallActionButton>
-          <SmallActionButton onClick={() => navigate('/admin/missions/new')}>{t.newMission}</SmallActionButton>
-        </HeaderButtons>
+        {canEdit && (
+          <HeaderButtons>
+            <SmallActionButton onClick={() => setFolderModal({ mode: 'create' })}>{t.newFolder}</SmallActionButton>
+            <SmallActionButton onClick={() => navigate('/admin/missions/new')}>{t.newMission}</SmallActionButton>
+          </HeaderButtons>
+        )}
       </SectionHeaderRow>
 
       {openFolder && (
@@ -2360,7 +2372,7 @@ function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missio
                   })}
                   {pageItems.map((m) => (
                     <tr key={m._id}
-                      draggable
+                      draggable={canEdit}
                       onDragStart={(e) => onMouseDragStart(e, m._id)}
                       onDragEnd={onMouseDragEnd}
                       onPointerDown={(e) => onRowPointerDown(e, m._id)}
@@ -2414,7 +2426,7 @@ function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missio
               })}
               {pageItems.map((m) => (
                 <MobileCard key={m._id}
-                  draggable
+                  draggable={canEdit}
                   onDragStart={(e) => onMouseDragStart(e, m._id)}
                   onDragEnd={onMouseDragEnd}
                   onPointerDown={(e) => onRowPointerDown(e, m._id)}

@@ -98,9 +98,12 @@ localStorage key. **Never mix them.**
   can drop localStorage between opens (`AuthContext.tsx`). On login as a *different* user,
   local progress keys (`yooz_session_*`, `yooz_game_progress_*`, `puzzle_progress_*`,
   `yooz_avatar_chat_*`, `yooz_entering_text_*`, `yooz_start_*`) are wiped.
-- **Admin roles**: `super_admin` = everything (users, tutorials, publicity, site content);
-  `admin` = content + all analytics + publicity; `customer` = **scoped to their own
-  activities** (see §7); `viewer` = minimal.
+- **Admin roles** (least to most): `viewer` = **read-only**, sees all content; `authenticateAdmin`
+  refuses any non-GET/HEAD/OPTIONS for it (`authenticateAdminAllowViewerWrites` only on dev-task
+  reporting), no analytics/media/publicity. `customer` = **scoped to their own activities** (see §7),
+  auto-provisioned from an activity's manager email; may use all custom themes but edit/delete only
+  their own (`CustomTheme.createdByEmail`); no test SMS. `admin` = all content + all analytics +
+  media + publicity + audit log + test SMS. `super_admin` = admin + users + tutorial create/delete.
 
 ---
 

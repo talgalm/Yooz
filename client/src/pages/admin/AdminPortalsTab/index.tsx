@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminPortalsTab.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
+import EditOnly from '../../../components/EditOnly';
 import Pagination from '../../../components/Pagination';
 import { usePagination } from '../../../hooks/usePagination';
 import {
@@ -96,9 +97,11 @@ export default function AdminPortalsTab({ portals, onRefresh }: AdminPortalsTabP
     <>
       <SectionHeaderRow>
         <PageTitleNoMargin>{t.title}</PageTitleNoMargin>
-        <SmallActionButton onClick={() => navigate('/admin/portals/new')}>
-          {t.createNew}
-        </SmallActionButton>
+        <EditOnly>
+          <SmallActionButton onClick={() => navigate('/admin/portals/new')}>
+            {t.createNew}
+          </SmallActionButton>
+        </EditOnly>
       </SectionHeaderRow>
 
       <SearchInput
@@ -135,12 +138,14 @@ export default function AdminPortalsTab({ portals, onRefresh }: AdminPortalsTabP
                       <td><Chip>{portal.activities.length}</Chip></td>
                       <td><CellMuted>{new Date(portal.createdAt).toLocaleDateString()}</CellMuted></td>
                       <CellAlignEnd>
-                        <SmallDangerButton
-                          confirm={confirmDeleteId === portal._id}
-                          onClick={(e) => { e.stopPropagation(); handleDelete(portal._id); }}
-                        >
-                          {confirmDeleteId === portal._id ? t.confirmDelete : t.delete}
-                        </SmallDangerButton>
+                        <EditOnly>
+                          <SmallDangerButton
+                            confirm={confirmDeleteId === portal._id}
+                            onClick={(e) => { e.stopPropagation(); handleDelete(portal._id); }}
+                          >
+                            {confirmDeleteId === portal._id ? t.confirmDelete : t.delete}
+                          </SmallDangerButton>
+                        </EditOnly>
                       </CellAlignEnd>
                     </tr>
                   ))}
@@ -165,12 +170,14 @@ export default function AdminPortalsTab({ portals, onRefresh }: AdminPortalsTabP
                         <MobileCardDate>{new Date(portal.createdAt).toLocaleDateString()}</MobileCardDate>
                       </MobileCardRow>
                     </div>
-                    <SmallDangerButton
-                      confirm={confirmDeleteId === portal._id}
-                      onClick={(e) => { e.stopPropagation(); handleDelete(portal._id); }}
-                    >
-                      {confirmDeleteId === portal._id ? t.confirmDelete : t.delete}
-                    </SmallDangerButton>
+                    <EditOnly>
+                      <SmallDangerButton
+                        confirm={confirmDeleteId === portal._id}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(portal._id); }}
+                      >
+                        {confirmDeleteId === portal._id ? t.confirmDelete : t.delete}
+                      </SmallDangerButton>
+                    </EditOnly>
                   </MobileCardHeader>
                 </MobileCardItem>
               ))}

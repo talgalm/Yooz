@@ -11,6 +11,7 @@ export interface ICustomTheme {
   roadmapActiveNodeColor?: string; // hex — optional active roadmap node color
   roadmapPathColor?: string; // hex — optional roadmap path color
   headerIconColor?: string; // hex — optional session header icon color
+  createdByEmail?: string;  // lowercased; a customer may only edit/delete themes they created
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +27,7 @@ const customThemeSchema = new Schema<ICustomTheme>(
     roadmapActiveNodeColor: { type: String },
     roadmapPathColor: { type: String },
     headerIconColor: { type: String },
+    createdByEmail: { type: String },
   },
   { timestamps: true },
 );

@@ -4,6 +4,7 @@ import { styled, keyframes } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminGamesTab.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
+import { useCanEditContent } from '../../../context/AdminAuthContext';
 import Pagination from '../../../components/Pagination';
 import { usePagination } from '../../../hooks/usePagination';
 import type { Game } from '../AdminDashboardPage';
@@ -387,6 +388,7 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
     setActionsFolderId(null);
     setConfirmDeleteFolderId(null);
   }, []);
+  const canEdit = useCanEditContent();
   const openGameActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsGameId(id); };
   const openFolderActions = (id: string, rect: DOMRect) => { closeAllMenus(); setMenuAnchorRect(rect); setActionsFolderId(id); };
 
@@ -398,6 +400,7 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
   };
 
   const moveGameToFolder = useCallback(async (gameId: string, folderId: string | null) => {
+    if (!canEdit) return;
     const current = gamesRef.current.find((g) => g._id === gameId);
     if (!current) return;
     if ((current.folderId ?? null) === folderId) return;
@@ -405,7 +408,7 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
       await adminApiFetch(`/api/admin/games/${gameId}/folder`, { method: 'PATCH', body: JSON.stringify({ folderId }) });
       onRefresh();
     } catch { /* ignore */ }
-  }, [onRefresh]);
+  }, [canEdit, onRefresh]);
 
   const submitFolder = async (name: string, color: string) => {
     if (folderModal?.mode === 'edit' && folderModal.folder) {
@@ -641,7 +644,8 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
     if (openFolderId && !folders.some((f) => f._id === openFolderId)) setOpenFolderId(null);
   }, [folders, openFolderId]);
 
-  const renderFolderMenu = (folder: Folder) => (
+  // Both menus hold only writes (edit/delete folder; move/delete game), so viewers get neither.
+  const renderFolderMenu = (folder: Folder) => !canEdit ? null : (
     <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
       <RowActionIconButton type="button" aria-label={t.actions} title={t.actions}
         onClick={(e) => (actionsFolderId === folder._id ? closeAllMenus() : openFolderActions(folder._id, e.currentTarget.getBoundingClientRect()))}
@@ -663,7 +667,7 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
     </RowActionWrapper>
   );
 
-  const renderGameMenu = (game: Game) => (
+  const renderGameMenu = (game: Game) => !canEdit ? null : (
     <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
       <RowActionIconButton type="button" aria-label={t.actions} title={t.actions}
         onClick={(e) => (actionsGameId === game._id ? closeAllMenus() : openGameActions(game._id, e.currentTarget.getBoundingClientRect()))}
@@ -716,8 +720,10 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
       <SectionHeaderRow>
         <PageTitleNoMargin>{t.title}</PageTitleNoMargin>
         <HeaderButtons>
-          <SmallActionButton onClick={() => setFolderModal({ mode: 'create' })}>{t.newFolder}</SmallActionButton>
-          {!hideCreateButton && (
+          {canEdit && (
+            <SmallActionButton onClick={() => setFolderModal({ mode: 'create' })}>{t.newFolder}</SmallActionButton>
+          )}
+          {canEdit && !hideCreateButton && (
             <SmallActionButton onClick={() => navigate(`/admin/games/new?type=${gameType}`)}>
               {t.createNew}
             </SmallActionButton>
@@ -864,7 +870,7 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
                   })}
                   {pageItems.map((game) => (
                     <tr key={game._id}
-                      draggable
+                      draggable={canEdit}
                       onDragStart={(e) => onMouseDragStart(e, game._id)}
                       onDragEnd={onMouseDragEnd}
                       onPointerDown={(e) => onRowPointerDown(e, game._id)}
@@ -925,7 +931,7 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
               })}
               {pageItems.map((game) => (
                 <MobileCardItem key={game._id}
-                  draggable
+                  draggable={canEdit}
                   onDragStart={(e) => onMouseDragStart(e, game._id)}
                   onDragEnd={onMouseDragEnd}
                   onPointerDown={(e) => onRowPointerDown(e, game._id)}

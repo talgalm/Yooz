@@ -4,6 +4,7 @@ import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminGameConfigPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
+import EditOnly from '../../../components/EditOnly';
 import FileUploadButton from '../../../components/FileUploadButton';
 import {
   AdminPage,
@@ -465,9 +466,11 @@ export default function AdminGameConfigPage() {
 
             <FormSectionCardWide>
               {error && <ErrorText>{error}</ErrorText>}
-              <PrimaryButton type="submit" disabled={loading || !name.trim()}>
-                {loading ? t.saving : t.save}
-              </PrimaryButton>
+              <EditOnly notice>
+                <PrimaryButton type="submit" disabled={loading || !name.trim()}>
+                  {loading ? t.saving : t.save}
+                </PrimaryButton>
+              </EditOnly>
             </FormSectionCardWide>
           </Form>
         </AdminCardWide>

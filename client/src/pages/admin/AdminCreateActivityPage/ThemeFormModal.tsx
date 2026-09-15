@@ -14,6 +14,8 @@ export interface CustomTheme {
   roadmapActiveNodeColor?: string;
   roadmapPathColor?: string;
   headerIconColor?: string;
+  /** Lowercased; a customer may only edit or delete themes they created. */
+  createdByEmail?: string;
 }
 
 // ─── Styled ───

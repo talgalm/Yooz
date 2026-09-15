@@ -617,6 +617,7 @@ export default function AdminViewActivityPage() {
   if (!activity) return null;
   const canManageCustomerLock = admin?.role === 'admin' || admin?.role === 'super_admin';
   const customerBlockedByLock = admin?.role === 'customer' && !!activity.customerEditLocked;
+  const canEditContent = admin?.role !== 'viewer';
 
   const fieldLabels: Record<string, string> = { name: t.fieldName, email: t.email, phoneNumber: t.phone };
 
@@ -650,12 +651,14 @@ export default function AdminViewActivityPage() {
           <StatusBadge status={activity.status}>
             {activity.status === 'live' ? t.live : t.preview}
           </StatusBadge>
-          <StatusToggle
-            onClick={handleStatusToggle}
-            disabled={togglingStatus || customerBlockedByLock}
-          >
-            {activity.status === 'preview' ? t.goLive : t.goPreview}
-          </StatusToggle>
+          {canEditContent && (
+            <StatusToggle
+              onClick={handleStatusToggle}
+              disabled={togglingStatus || customerBlockedByLock}
+            >
+              {activity.status === 'preview' ? t.goLive : t.goPreview}
+            </StatusToggle>
+          )}
         </StatusRow>
         <PageDateText>{new Date(activity.createdAt).toLocaleDateString()}</PageDateText>
 
@@ -773,15 +776,17 @@ export default function AdminViewActivityPage() {
         {/* Action buttons */}
         <ButtonsRow>
           <ActionGroup>
-            <EditBtn
-              onClick={() => {
-                if (customerBlockedByLock) return;
-                navigate(`/admin/activities/${id}/edit`);
-              }}
-              style={customerBlockedByLock ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}
-            >
-              ✏️ {t.edit}
-            </EditBtn>
+            {canEditContent && (
+              <EditBtn
+                onClick={() => {
+                  if (customerBlockedByLock) return;
+                  navigate(`/admin/activities/${id}/edit`);
+                }}
+                style={customerBlockedByLock ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}
+              >
+                ✏️ {t.edit}
+              </EditBtn>
+            )}
             <StatsBtn onClick={() => navigate(`/admin/dashboard?tab=statistics&activityId=${id}`)}>
               📊 {t.stats}
             </StatsBtn>
@@ -791,13 +796,15 @@ export default function AdminViewActivityPage() {
               </LockBtn>
             )}
           </ActionGroup>
-          <DeleteBtn
-            confirm={confirmDelete}
-            onClick={handleDelete}
-            style={customerBlockedByLock ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}
-          >
-            🗑 {confirmDelete ? t.confirmDelete : t.delete}
-          </DeleteBtn>
+          {canEditContent && (
+            <DeleteBtn
+              confirm={confirmDelete}
+              onClick={handleDelete}
+              style={customerBlockedByLock ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}
+            >
+              🗑 {confirmDelete ? t.confirmDelete : t.delete}
+            </DeleteBtn>
+          )}
         </ButtonsRow>
         {customerBlockedByLock && (
           <PageDateText style={{ marginTop: 12, marginBottom: 0 }}>
