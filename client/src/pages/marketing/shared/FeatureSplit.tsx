@@ -197,12 +197,20 @@ export default function FeatureSplit({
   shape,
 }: FeatureSplitProps) {
   return (
-    <Band bg={bg}>
+    <>
+      {/*
+        In normal flow, not absolutely positioned above the band. At
+        `bottom: 100%` it has no layout height and draws over the preceding
+        section, clipping its copy - the same defect that put the Marketing
+        Engine chevron on top of the audience cards. The area above the curve is
+        transparent, so the previous section's ground still shows through.
+      */}
       {shape && (
-        <ShapeWrap style={{ position: 'absolute', insetInline: 0, bottom: '100%' }}>
+        <ShapeWrap>
           <SectionShape color={bg} variant={shape} height={96} />
         </ShapeWrap>
       )}
+      <Band bg={bg}>
       <Container>
         <Reveal>
           <Split reverse={reverse}>
@@ -237,6 +245,7 @@ export default function FeatureSplit({
           </Split>
         </Reveal>
       </Container>
-    </Band>
+      </Band>
+    </>
   );
 }

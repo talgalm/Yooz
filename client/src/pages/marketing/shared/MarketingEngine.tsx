@@ -20,7 +20,14 @@ const Band = styled('section')({
   [BP.mobile]: { paddingBottom: 16 },
 });
 
-const ShapeWrap = styled('div')({ position: 'absolute', insetInline: 0, bottom: '100%', lineHeight: 0 });
+/**
+ * In normal flow, deliberately. Positioning this absolutely at `bottom: 100%`
+ * gives it no layout height, so it draws over whatever section comes before and
+ * clips that copy. Sitting in flow, it occupies its own height and separates the
+ * two sections the way the frame does. Its area above the peak is transparent,
+ * so the previous section's ground shows through.
+ */
+const ShapeWrap = styled('div')({ lineHeight: 0 });
 
 const Frame = styled('div')({
   width: 'min(700px, 100%)',
@@ -136,11 +143,12 @@ export default function MarketingEngine({ videoUrl, posterUrl }: MarketingEngine
   const t = useTranslations(texts);
 
   return (
-    <Band>
+    <>
       <ShapeWrap>
         <SectionShape color={C.bandPeach} variant="chevron" height={130} />
       </ShapeWrap>
 
+      <Band>
       <Container>
         <H2>{t.title}</H2>
         <Reveal>
@@ -196,6 +204,7 @@ export default function MarketingEngine({ videoUrl, posterUrl }: MarketingEngine
           </Slot>
         </Stage>
       </Diamond>
-    </Band>
+      </Band>
+    </>
   );
 }
