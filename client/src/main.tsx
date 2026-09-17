@@ -15,6 +15,8 @@ import '@fontsource/encode-sans-expanded/900.css';
 import '@fontsource/rubik/400.css';
 import '@fontsource/rubik/500.css';
 import '@fontsource/rubik/700.css';
+import '@fontsource/rubik/800.css';
+import '@fontsource/rubik/900.css';
 import '@fontsource/rubik-one/400.css';
 import '@fontsource/secular-one/400.css';
 

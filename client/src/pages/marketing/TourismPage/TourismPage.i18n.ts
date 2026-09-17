@@ -1,0 +1,165 @@
+/**
+ * Copy read off the exported Figma frame `temp-imgs/אתר yooz/תיירות.png`.
+ *
+ * Card rows are listed in DOM order, which in RTL renders right-to-left - so the
+ * first entry is the rightmost column in the comp.
+ */
+export const texts = {
+  he: {
+    heroTitleTop: 'הופכים כל סיור',
+    heroTitleBottom: 'לחוויה אינטרקטיבית',
+    heroTitleThird: 'שמשאירה חותם',
+    heroLead:
+      'פתרונות גיימיפיקציה מתקדמים לאתרי תיירות, פארקים, מוזיאונים ומסלולי בטבע לשיפור החוויה והמעורבות.',
+    heroCta: 'הזמנת דמו',
+    heroSecondary: 'המודל העסקי',
+    heroMediaAlt: 'מטיילים מצלמים סלפי בעיר העתיקה',
+    stats: [
+      { value: '1.5x', label: 'זמן שהייה ממוצע באתר' },
+      { value: '+50%', label: 'השתתפות פעילה' },
+      { value: '2x', label: 'פרסום ברשתות החברתיות' },
+    ],
+
+    knowledgeTitle: 'להפוך ידע לחוויה',
+    knowledgeCards: [
+      { iconUrl: '/images/marketing/icon-fortress.png', title: 'חיבור למקום', body: 'הארכת זמן השהייה באתר על ידי יצירת עניין' },
+      { iconUrl: '/images/marketing/icon-landmark.png', title: 'הגדלת הכנסות', body: 'עידוד רכישות באתר על ידי תגמולים בצורת שוברים וקופונים' },
+      { iconUrl: '/images/marketing/icon-cityview.png', title: 'יחודיות', body: 'חיזוק הבידול והמיצוב החדשני של האתר' },
+      { iconUrl: '/images/marketing/icon-map.png', title: 'ידע שנגיש אחרת', body: 'הנגשת התכנים באמצעות טכניקות גיימיפיקציה והטמעת כלי AI' },
+      { iconUrl: '/images/marketing/icon-engagement.png', title: 'מעורבות', body: 'תוכן רב-כיווני ודינמי שיוצר חיבור ישיר בין המבקר, הידע והמרחב הפיזי.' },
+    ],
+    bottomLineLabel: 'השורה התחתונה:',
+    bottomLine: 'אנחנו לא רק מספרים את הסיפור של המקום - אנחנו גורמים למבקר לקחת בו חלק פעיל.',
+
+    fitTitle: 'לאיזה אתרים ופארקים Yooz מתאימה?',
+    fitIntro:
+      'ממרחב פתוח ורחב ידיים ועד לחלל סגור וממוזג - הפלטפורמה מנגישה כל מסלול ונקודת עניין ללא צורך בהורדת אפליקציה.',
+    fitCards: [
+      { iconUrl: '/images/marketing/icon-family.png', title: 'פארקים וגנים', body: 'מרחבים פתוחים, גנים בוטניים ופארקים עירוניים. הפעלת משפחות וקבוצות לאורך נקודות עניין, מדשאות ופינות חמד.', tag: 'משחקי ניווט וסריקה' },
+      { iconUrl: '/images/marketing/icon-museum.png', title: 'מוזיאונים ואתרי מורשת', body: 'הפיכת מוצגים סטטיים לחוויות אינטראקטיביות, פענוח כתבי חידה וסיפור היסטורי חי וסוחף לכל הגילאים.', tag: 'חדרי בריחה וטריוויה' },
+      { iconUrl: '/images/marketing/icon-explorer.png', title: 'מסלולים בטבע ואתגר', body: 'שבילי הליכה, תצפיות נוף ונחלים. אתגרי מיקום מבוססי GPS ותחנות מידע דיגיטליות שמעודדות תנועה וסקרנות.', tag: 'מסלול מבוסס נקודות ציון' },
+      { iconUrl: '/images/marketing/icon-child.png', title: 'מרכזי מבקרים וחוות', body: 'מפעלים, יקבים, חוות חקלאיות ומרכזי מדע. הנגשת תהליכי הייצור בדרך חווייתית ומתגמלת.', tag: 'משחקי משימות והדרכה' },
+    ],
+
+    caseTag: 'דוגמה מהשטח',
+    caseTitle: 'איך זה נראה בפועל?',
+    caseSubtitle: '״פארקוד״ בגני יהושוע',
+    caseIntro: '3 שלבים פשוטים שמחברים את המבקר לסיפור, מעלים מעורבות ומייצרים שיתופים ברשתות',
+    caseSteps: ['1. סרטון פתיחה לסדרה', '2. חידות שטח אינטראקטיביות', '3. סרטון מזכרת AI אישי'],
+    caseStepLabel: 'שלב 1: הצתה וחיבור ראשוני',
+    caseCardTitle: 'פתיחה סיפורית ששואבת את המבקר פנימה',
+    caseCardBody:
+      'סריקת QR מהירה בכניסה למצודה פותחת סרטון קצר של שומר הפארק שמציג את סיפור הרקע ומזמין את הקבוצה למצוא את המזוודה הגנובה.',
+    caseChecks: [
+      'ללא צורך בהורדת אפליקציה מחנות האפליקציות',
+      'זמן טעינה מהיר בכל מכשיר',
+      'התאמה לשפות מרובות (עברית, אנגלית, ערבית)',
+    ],
+    caseMediaAlt: 'וידאו פתיחה קולנועי מותאם אישית',
+
+    customersTitle: 'לקוחות מרוצים',
+    customers: [
+      { name: 'שדה אליהו', caption: 'פעילות מרכז מבקרים', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
+      { name: 'גני יהושוע', caption: 'פארקוד - פעילות קבועה לקבוצות', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
+      { name: 'תל קאקון', caption: 'תעלומת האוצר הממלכתי', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
+      { name: 'קופ״ח כללית', caption: 'פעילות גיבוש עובדים בפריסה רחבה' },
+    ],
+
+    testimonials: [
+      {
+        quote: '"המבקרים נשארים באתר הרבה יותר זמן, והמשפחות חוזרות שוב עם חברים. זה שינה לנו את כל הפעילות"',
+        author: 'מנהלת מרכז מבקרים',
+        initials: 'ר.כ',
+        avatarBg: '#CFEBD8',
+      },
+      {
+        quote: '"במקום הדרכה שכולם שוכחים, קיבלנו מסלול שהמבקרים מספרים עליו אחר כך ברשתות"',
+        author: 'מנהל פארק עירוני',
+        initials: 'י.ב',
+        avatarBg: '#E3D4F5',
+      },
+    ],
+
+    faqTitle: 'שאלות נפוצות',
+    faq: [
+      { q: 'האם צריך קליטה סלולרית לאורך כל המסלול?', a: 'לא. הפעילות נטענת מראש וממשיכה לעבוד גם באזורים ללא קליטה, ומסתנכרנת כשהחיבור חוזר.' },
+      { q: 'האם הפעילות מתאימה לכל הגילאים?', a: 'כן. רמת הקושי והתוכן מותאמים לקהל - משפחות, קבוצות בית ספר או מבוגרים.' },
+      { q: 'כמה זמן לוקח להקים מסלול באתר שלנו?', a: 'סיור מבוסס תבנית עולה לאוויר תוך ימים ספורים. מסלול מותאם עם צילומים ותוכן ייעודי נמשך מספר שבועות.' },
+      { q: 'איזה מידע ונתונים מקבלים בסיום או תוך כדי הפעילות?', a: 'מספר משתתפים, זמני שהייה בכל תחנה, נקודות נטישה, ציונים ושיתופים ברשתות - בזמן אמת ובייצוא.' },
+    ],
+  },
+
+  en: {
+    heroTitleTop: 'Turn every tour',
+    heroTitleBottom: 'into an interactive experience',
+    heroTitleThird: 'that leaves a mark',
+    heroLead:
+      'Advanced gamification for tourist sites, parks, museums and nature trails, to lift both the experience and involvement.',
+    heroCta: 'Book a demo',
+    heroSecondary: 'The business model',
+    heroMediaAlt: 'Travellers taking a selfie in the old city',
+    stats: [
+      { value: '1.5x', label: 'Average dwell time on site' },
+      { value: '+50%', label: 'Active participation' },
+      { value: '2x', label: 'Social network posting' },
+    ],
+
+    knowledgeTitle: 'Turn knowledge into experience',
+    knowledgeCards: [
+      { iconUrl: '/images/marketing/icon-fortress.png', title: 'Connection to place', body: 'Extends dwell time on site by creating genuine interest' },
+      { iconUrl: '/images/marketing/icon-landmark.png', title: 'Revenue growth', body: 'Encourages on-site purchases through vouchers and coupons' },
+      { iconUrl: '/images/marketing/icon-cityview.png', title: 'Distinctiveness', body: 'Strengthens the site’s differentiation and modern positioning' },
+      { iconUrl: '/images/marketing/icon-map.png', title: 'Knowledge made accessible', body: 'Content opened up through gamification techniques and embedded AI tools' },
+      { iconUrl: '/images/marketing/icon-engagement.png', title: 'Involvement', body: 'Multi-directional, dynamic content connecting the visitor, the knowledge and the physical space.' },
+    ],
+    bottomLineLabel: 'The bottom line:',
+    bottomLine: 'we do not just tell the story of the place - we make the visitor take an active part in it.',
+
+    fitTitle: 'Which sites and parks is Yooz for?',
+    fitIntro:
+      'From wide open ground to an enclosed, air-conditioned hall - the platform opens up every route and point of interest, with no app to download.',
+    fitCards: [
+      { iconUrl: '/images/marketing/icon-family.png', title: 'Parks and gardens', body: 'Open spaces, botanical gardens and urban parks. Activities for families and groups across points of interest and lawns.', tag: 'Navigation and scanning games' },
+      { iconUrl: '/images/marketing/icon-museum.png', title: 'Museums and heritage sites', body: 'Turns static displays into interactive experiences, with riddles to decode and living history for every age.', tag: 'Escape rooms and trivia' },
+      { iconUrl: '/images/marketing/icon-explorer.png', title: 'Nature and challenge trails', body: 'Walking paths, viewpoints and streams. GPS-based location challenges and digital info stations that reward curiosity.', tag: 'Waypoint-based route' },
+      { iconUrl: '/images/marketing/icon-child.png', title: 'Visitor centres and farms', body: 'Factories, wineries, farms and science centres. Production processes opened up in an experiential, rewarding way.', tag: 'Mission and guidance games' },
+    ],
+
+    caseTag: 'From the field',
+    caseTitle: 'What does it look like in practice?',
+    caseSubtitle: '"ParKod" at Ganei Yehoshua',
+    caseIntro: 'Three simple stages that connect the visitor to the story, raise involvement and generate social shares',
+    caseSteps: ['1. Opening clip for the series', '2. Interactive field riddles', '3. Personal AI keepsake clip'],
+    caseStepLabel: 'Stage 1: the spark and first connection',
+    caseCardTitle: 'A story opening that pulls the visitor in',
+    caseCardBody:
+      'A quick QR scan at the fortress entrance opens a short clip of the park keeper, setting up the background story and inviting the group to find the stolen case.',
+    caseChecks: [
+      'No app store download required',
+      'Fast load time on any device',
+      'Multi-language support (Hebrew, English, Arabic)',
+    ],
+    caseMediaAlt: 'Cinematic personalised opening video',
+
+    customersTitle: 'Happy customers',
+    customers: [
+      { name: 'Sde Eliyahu', caption: 'Visitor centre activity', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
+      { name: 'Ganei Yehoshua', caption: 'ParKod - a standing group activity', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
+      { name: 'Tel Qaqun', caption: 'The royal treasure mystery', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
+      { name: 'Clalit Health', caption: 'Employee engagement activity at scale' },
+    ],
+
+    testimonials: [
+      { quote: '"Visitors stay on site far longer, and families come back again with friends. It changed our whole programme."', author: 'Visitor centre manager', initials: 'R.K', avatarBg: '#CFEBD8' },
+      { quote: '"Instead of a guided tour everyone forgets, we got a route visitors post about afterwards."', author: 'Urban park manager', initials: 'Y.B', avatarBg: '#E3D4F5' },
+    ],
+
+    faqTitle: 'Frequently asked questions',
+    faq: [
+      { q: 'Is mobile reception needed along the whole route?', a: 'No. The activity is preloaded and keeps working in areas without reception, syncing when the connection returns.' },
+      { q: 'Does it suit every age group?', a: 'Yes. Difficulty and content are matched to the audience - families, school groups or adults.' },
+      { q: 'How long does it take to build a route at our site?', a: 'A template-based tour goes live within days. A custom route with dedicated photography and content takes a few weeks.' },
+      { q: 'What data do we get during and after the activity?', a: 'Participant numbers, dwell time per station, drop-off points, scores and social shares, live and as an export.' },
+    ],
+  },
+};
