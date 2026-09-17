@@ -37,8 +37,9 @@ export default function BusinessPage() {
             {t.salesCards.map((c, i) => (
               <Reveal key={c.title} delay={i * 80}>
                 <Card style={{ textAlign: 'center' }}>
-                  <IconDisc bg={C.vennEngage}>
-                    <span style={{ fontSize: 24 }}>{c.icon}</span>
+                  {/* 30px is the icons' own size in the frame. */}
+                  <IconDisc bg={C.vennEngage} imgSize={30}>
+                    <img src={c.icon} alt="" loading="lazy" />
                   </IconDisc>
                   <H3>{c.title}</H3>
                   <Body>{c.desc}</Body>
@@ -53,7 +54,7 @@ export default function BusinessPage() {
         <Container>
           <H2>{t.audienceTitle}</H2>
         </Container>
-        <IconCardRow items={t.audienceCards} min={240} align="start" />
+        <IconCardRow items={t.audienceCards} min={240} align="start" iconVariant="inline" />
       </Band>
 
       <MarketingEngine

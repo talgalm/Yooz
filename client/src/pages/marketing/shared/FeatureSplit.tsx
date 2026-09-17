@@ -95,6 +95,33 @@ const Item = styled('li')({
 
 const Bold = styled('strong')({ fontWeight: 800, color: C.heading });
 
+/**
+ * Drawn rather than typed, for the same reason as the hero's marker: an arrow
+ * character renders at whatever weight and baseline the fallback font decides.
+ * `currentColor` keeps it on the link's colour through the hover change.
+ */
+function ArrowGlyph() {
+  return (
+    <svg
+      width="15"
+      height="12"
+      viewBox="0 0 16 12"
+      fill="none"
+      aria-hidden
+      focusable="false"
+      style={{ flexShrink: 0 }}
+    >
+      <path
+        d="M15 6H1m0 0 4.6-4.6M1 6l4.6 4.6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const MoreLink = styled(Link)({
   display: 'inline-flex',
   alignItems: 'center',
@@ -194,7 +221,7 @@ export default function FeatureSplit({
               {linkLabel && linkTo && (
                 <MoreLink to={linkTo}>
                   {linkLabel}
-                  <span aria-hidden>←</span>
+                  <ArrowGlyph />
                 </MoreLink>
               )}
             </div>

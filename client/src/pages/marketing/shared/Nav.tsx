@@ -161,6 +161,26 @@ const sheetItemStyle = {
 const SheetItem = styled(NavLink)(sheetItemStyle);
 const SheetAnchor = styled('a')(sheetItemStyle);
 
+/** Hamburger and close, drawn so they keep a consistent weight with the globe. */
+function MenuIcon({ open }: { open: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden focusable="false">
+      {open ? (
+        <>
+          <path d="M3.5 3.5 14.5 14.5" />
+          <path d="M14.5 3.5 3.5 14.5" />
+        </>
+      ) : (
+        <>
+          <path d="M2.5 4.5h13" />
+          <path d="M2.5 9h13" />
+          <path d="M2.5 13.5h13" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function GlobeIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden focusable="false">
@@ -213,7 +233,7 @@ export default function Nav() {
             aria-expanded={open}
             aria-label={open ? t.closeMenu : t.openMenu}
           >
-            {open ? '✕' : '☰'}
+            <MenuIcon open={open} />
           </Burger>
         </Actions>
       </Inner>

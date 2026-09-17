@@ -48,9 +48,11 @@ const Root = styled('section')<{ tone: HeroTone }>(({ tone }) => ({
 }));
 
 /**
- * Not a 50/50 split: the art occupies x28..950 and the copy x950..1410 - roughly
- * two to one, with the copy (first child, so the right-hand side under RTL)
- * taking the narrower column.
+ * Not a 50/50 split - the art takes the wider column, with the copy (first
+ * child, so the right-hand side under RTL) narrower.
+ *
+ * Eased back from 1.95 to 1.6, which takes the art from ~66% of the row to ~62%
+ * and hands the difference to the copy, where the bullet list was wrapping hard.
  */
 const Split = styled('div')({
   position: 'relative',
@@ -59,7 +61,7 @@ const Split = styled('div')({
   gridTemplateColumns: '1fr',
   gap: 34,
   alignItems: 'center',
-  '@media (min-width: 901px)': { gridTemplateColumns: '1fr 1.95fr', gap: 28 },
+  '@media (min-width: 901px)': { gridTemplateColumns: '1fr 1.6fr', gap: 28 },
 });
 
 const Copy = styled('div')({
@@ -209,6 +211,34 @@ const WhiteCta = styled('a')({
   [REDUCED_MOTION]: { transition: 'none', '&:hover': { transform: 'none' } },
 });
 
+/**
+ * The marker on the secondary CTA. Drawn rather than typed: the `◁` character it
+ * replaced is a font glyph, so its weight, size and vertical alignment were at
+ * the mercy of whichever face happened to cover that codepoint. `currentColor`
+ * keeps it locked to the button's text colour, including on hover.
+ */
+function PlayGlyph() {
+  return (
+    <svg
+      width="16"
+      height="18"
+      viewBox="0 0 12 12"
+      fill="none"
+      aria-hidden
+      focusable="false"
+      style={{ flexShrink: 0 }}
+    >
+      <path
+        d="M9.2 1.8 2.9 6l6.3 4.2z"
+        stroke="currentColor"
+        strokeWidth="1.25"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export default function Hero({
   titleTop,
   titleBottom,
@@ -300,7 +330,7 @@ export default function Hero({
               <CtaButton href={primaryHref}>{primaryCta}</CtaButton>
               {secondaryCta && (
                 <GhostButton href={secondaryHref ?? primaryHref}>
-                  <span aria-hidden>◁</span>
+                  <PlayGlyph />
                   {secondaryCta}
                 </GhostButton>
               )}

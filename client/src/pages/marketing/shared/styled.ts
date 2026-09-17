@@ -256,8 +256,15 @@ export const DividedRow = styled('div')<{ min?: number }>(({ min = 220 }) => ({
   },
 }));
 
-/** Circular pastel disc behind a card icon or mascot. */
-export const IconDisc = styled('div')<{ bg?: string; size?: number }>(({ bg, size = 58 }) => ({
+/**
+ * Circular pastel disc behind a card icon or mascot.
+ *
+ * `imgSize` pins the child image to an exact px size. Without it the image fills
+ * 82% of the disc, which is right for the Tourism mascots but blows a 30px line
+ * icon up to ~47px - and because that is a class rule it silently overrides any
+ * `width`/`height` attribute the caller puts on the `img`.
+ */
+export const IconDisc = styled('div')<{ bg?: string; size?: number; imgSize?: number }>(({ bg, size = 58, imgSize }) => ({
   width: size,
   height: size,
   borderRadius: '50%',
@@ -269,7 +276,11 @@ export const IconDisc = styled('div')<{ bg?: string; size?: number }>(({ bg, siz
   marginBottom: 14,
   overflow: 'hidden',
   flexShrink: 0,
-  '& img': { width: '82%', height: '82%', objectFit: 'contain' },
+  '& img': {
+    width: imgSize ?? '82%',
+    height: imgSize ?? '82%',
+    objectFit: 'contain',
+  },
 }));
 
 /** Rounded-square icon tile - the Academy cards use these instead of discs. */

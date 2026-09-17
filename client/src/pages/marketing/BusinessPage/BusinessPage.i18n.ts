@@ -20,20 +20,27 @@ export const texts = {
     salesTitle: 'להפוך זמן המתנה למנוע מכירות',
     salesIntro:
       'הפכו את הדקות המתות שבין ההזמנה לקבלת המנה או השירות לחוויה ממכרת שמעלה רווחים ומחזירה לקוחות',
+    /**
+     * DOM order, which under RTL renders right-to-left - so the first entry is
+     * the RIGHTMOST card in the comp. In the frame the row reads (left to right)
+     * מותאם / ויראליות / קנייה חוזרת / הגדלת סל / קיצור זמן at x229..x1144, so
+     * that list is inverted here. Icons are the frame's own vectors.
+     */
     salesCards: [
-      { icon: '🏪', title: 'מותאם לכל ענף בקלות', desc: 'מסעדות והמבורגרים, פיצריות, בתי קפה, מכוני כושר, קליניקות וחנויות רחוב - התאמה מלאה למותג.' },
-      { icon: '📣', title: 'ויראליות ושיתוף ברשתות', desc: 'העלאת סטורי לאינסטגרם או לטיקטוק עם תיוג העסק, תמורת תגמול משחקי אטרקטיבי.' },
-      { icon: '🏷️', title: 'קנייה חוזרת ומועדון לקוחות', desc: 'צבירת נקודות וקופון אישי עבור הקנייה הבאה, המבטיחים ביקור חוזר.' },
-      { icon: '🛒', title: 'הגדלת סל הקנייה במקום', desc: 'שדרוג מנה, שתייה מוגדלת, קינוח או תוספת באמצעות זכייה בפרס מיידי תוך כדי שהלקוח יושב בעסק.' },
-      { icon: '⏱️', title: 'קיצור זמן המתנה סובייקטיבי', desc: 'חוויית לקוח כיפית בלי תסכול בזמן שהאוכל בהכנה, בתור לקופה או בהמתנה למאמן בסטודיו.' },
+      { icon: '/images/marketing/icons/biz-wait.svg', title: 'קיצור זמן המתנה סובייקטיבי', desc: 'חוויית לקוח כיפית בלי תסכול בזמן שהאוכל בהכנה, בתור לקופה או בהמתנה למאמן בסטודיו.' },
+      { icon: '/images/marketing/icons/biz-basket.svg', title: 'הגדלת סל הקנייה במקום', desc: 'שדרוג מנה, שתייה מוגדלת, קינוח או תוספת באמצעות זכייה בפרס מיידי תוך כדי שהלקוח יושב בעסק.' },
+      { icon: '/images/marketing/icons/biz-repeat.svg', title: 'קנייה חוזרת ומועדון לקוחות', desc: 'צבירת נקודות וקופון אישי עבור הקנייה הבאה, המבטיחים ביקור חוזר.' },
+      { icon: '/images/marketing/icons/biz-viral.svg', title: 'ויראליות ושיתוף ברשתות', desc: 'העלאת סטורי לאינסטגרם או לטיקטוק עם תיוג העסק, תמורת תגמול משחקי אטרקטיבי.' },
+      { icon: '/images/marketing/icons/biz-any-sector.svg', title: 'מותאם לכל ענף בקלות', desc: 'מסעדות והמבורגרים, פיצריות, בתי קפה, מכוני כושר, קליניקות וחנויות רחוב - התאמה מלאה למותג.' },
     ],
 
     audienceTitle: 'למי Yooz יתאים?',
+    /** Already in the frame's order: רשתות מזון is rightmost at x1093. */
     audienceCards: [
-      { label: 'רשתות מזון והמבורגרים', title: 'משחקים על המגש והשולחן', body: 'משחקונים מהירים מהטלפון בזמן צליית ההמבורגר, הגדלת ארוחה בחינם או הנחה על קינוח במימוש מיידי בקופה.' },
-      { label: 'פיצריות', title: 'טריוויה וכרטיסיית ניקוב', body: 'אתגרי טריוויה מהנים בזמן אפיית הפיצה, הזדמנות לתת ללקוחות ללמוד על העסק ולהתחבר אליו.' },
-      { label: 'חדרי כושר וסטודיו', title: 'אתגרי אימון ושייק-בר', body: 'אתגרי אימון יומיים, צבירת נקודות על התמדה, משחקונים בלובי המועדון והטבות שוות לרכישת שייקים וביגוד.' },
-      { label: 'קמעונאות וחנויות', title: 'סריקה בקופה ובמדף', body: 'סריקת קוד QR בעמדת התור או על גבי המדף מעניקה הנחה מפתיעה הממומשת ישירות בעמדת התשלום.' },
+      { iconUrl: '/images/marketing/icons/biz-food.svg', label: 'רשתות מזון והמבורגרים', title: 'משחקים על המגש והשולחן', body: 'משחקונים מהירים מהטלפון בזמן צליית ההמבורגר, הגדלת ארוחה בחינם או הנחה על קינוח במימוש מיידי בקופה.' },
+      { iconUrl: '/images/marketing/icons/biz-pizza.svg', label: 'פיצריות', title: 'טריוויה וכרטיסיית ניקוב', body: 'אתגרי טריוויה מהנים בזמן אפיית הפיצה, הזדמנות לתת ללקוחות ללמוד על העסק ולהתחבר אליו.' },
+      { iconUrl: '/images/marketing/icons/biz-gym.svg', label: 'חדרי כושר וסטודיו', title: 'אתגרי אימון ושייק-בר', body: 'אתגרי אימון יומיים, צבירת נקודות על התמדה, משחקונים בלובי המועדון והטבות שוות לרכישת שייקים וביגוד.' },
+      { iconUrl: '/images/marketing/icons/biz-retail.svg', label: 'קמעונאות וחנויות', title: 'סריקה בקופה ובמדף', body: 'סריקת קוד QR בעמדת התור או על גבי המדף מעניקה הנחה מפתיעה הממומשת ישירות בעמדת התשלום.' },
     ],
 
     customersTitle: 'לקוחות מרוצים',
@@ -85,20 +92,21 @@ export const texts = {
     salesTitle: 'Turn waiting time into a sales engine',
     salesIntro:
       'Turn the dead minutes between the order and the food into an experience that lifts profit and brings customers back',
+    /** Same DOM order as the Hebrew list - first entry is the rightmost card. */
     salesCards: [
-      { icon: '🏪', title: 'Fits any sector easily', desc: 'Restaurants, pizzerias, cafes, gyms, clinics and high-street shops - fully adapted per brand.' },
-      { icon: '📣', title: 'Virality and social sharing', desc: 'A story posted to Instagram or TikTok tagging the business, in exchange for an attractive in-game reward.' },
-      { icon: '🏷️', title: 'Repeat purchase and loyalty', desc: 'Points and a personal coupon toward the next purchase, which secures a return visit.' },
-      { icon: '🛒', title: 'Real basket growth on site', desc: 'A larger dish, an upsized drink or a dessert won as an instant prize while the customer is still seated.' },
-      { icon: '⏱️', title: 'Shorter perceived wait', desc: 'An enjoyable experience instead of frustration while food is prepared or a queue moves.' },
+      { icon: '/images/marketing/icons/biz-wait.svg', title: 'Shorter perceived wait', desc: 'An enjoyable experience instead of frustration while food is prepared or a queue moves.' },
+      { icon: '/images/marketing/icons/biz-basket.svg', title: 'Real basket growth on site', desc: 'A larger dish, an upsized drink or a dessert won as an instant prize while the customer is still seated.' },
+      { icon: '/images/marketing/icons/biz-repeat.svg', title: 'Repeat purchase and loyalty', desc: 'Points and a personal coupon toward the next purchase, which secures a return visit.' },
+      { icon: '/images/marketing/icons/biz-viral.svg', title: 'Virality and social sharing', desc: 'A story posted to Instagram or TikTok tagging the business, in exchange for an attractive in-game reward.' },
+      { icon: '/images/marketing/icons/biz-any-sector.svg', title: 'Fits any sector easily', desc: 'Restaurants, pizzerias, cafes, gyms, clinics and high-street shops - fully adapted per brand.' },
     ],
 
     audienceTitle: 'Who is Yooz for?',
     audienceCards: [
-      { label: 'Food and burger chains', title: 'Games on the tray and the table', body: 'Quick phone games while the burger grills, a free upsize or a dessert discount redeemed at the till.' },
-      { label: 'Pizzerias', title: 'Trivia and a punch card', body: 'Enjoyable trivia while the pizza bakes, a chance for customers to learn about the business and connect with it.' },
-      { label: 'Gyms and studios', title: 'Training challenges and the shake bar', body: 'Daily training challenges, points for consistency, lobby games and real rewards toward shakes and kit.' },
-      { label: 'Retail and stores', title: 'Scan at the till and the shelf', body: 'Scanning a QR in the queue or on the shelf gives a surprise discount redeemed straight at the checkout.' },
+      { iconUrl: '/images/marketing/icons/biz-food.svg', label: 'Food and burger chains', title: 'Games on the tray and the table', body: 'Quick phone games while the burger grills, a free upsize or a dessert discount redeemed at the till.' },
+      { iconUrl: '/images/marketing/icons/biz-pizza.svg', label: 'Pizzerias', title: 'Trivia and a punch card', body: 'Enjoyable trivia while the pizza bakes, a chance for customers to learn about the business and connect with it.' },
+      { iconUrl: '/images/marketing/icons/biz-gym.svg', label: 'Gyms and studios', title: 'Training challenges and the shake bar', body: 'Daily training challenges, points for consistency, lobby games and real rewards toward shakes and kit.' },
+      { iconUrl: '/images/marketing/icons/biz-retail.svg', label: 'Retail and stores', title: 'Scan at the till and the shelf', body: 'Scanning a QR in the queue or on the shelf gives a surprise discount redeemed straight at the checkout.' },
     ],
 
     customersTitle: 'Happy customers',
