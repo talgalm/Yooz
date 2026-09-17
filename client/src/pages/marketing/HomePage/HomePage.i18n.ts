@@ -64,14 +64,14 @@ export const texts = {
           '"מזה 5 שנים אני משתמש בפלטפורמת Yooz כדי לייצר חוויית למידה מעניינת ומאתגרת... תוצאות המחקר שערכתי במשך 3 שנים מצביעות על עלייה בהישגים ובמעורבות"',
         author: 'מרצה במכללה האקדמית בתל אביב יפו',
         initials: 'ד.ו',
-        avatarBg: '#CFEBD8',
+        avatarBg: '#D1FAE5',
       },
       {
         quote:
           '"פיתחנו סימולטור מתקדם לבדיקת מידת קבלת החלטות רפואיות על ידי הסטודנטים. הסימולטור מדמה מצבי אמת באמצעות כלי AI ותורם לחוויית ואפקטיביות הלמידה"',
         author: 'מרצה בחוג לסיעוד',
         initials: 'מ.ט',
-        avatarBg: '#E3D4F5',
+        avatarBg: '#F3E8FF',
       },
     ],
 
@@ -159,14 +159,14 @@ export const texts = {
           '"For five years I have used the Yooz platform to build an engaging, challenging learning experience... three years of research I ran show a rise in both achievement and involvement"',
         author: 'Lecturer, Academic College of Tel Aviv-Yafo',
         initials: 'D.V',
-        avatarBg: '#CFEBD8',
+        avatarBg: '#D1FAE5',
       },
       {
         quote:
           '"We built an advanced simulator to assess medical decision-making by students. It models real situations using AI tools and adds to both the experience and the effectiveness of the learning"',
         author: 'Lecturer, Nursing Department',
         initials: 'M.T',
-        avatarBg: '#E3D4F5',
+        avatarBg: '#F3E8FF',
       },
     ],
 

@@ -51,18 +51,21 @@ export const texts = {
       { name: 'שדה אליהו', caption: 'פעילות מרכז מבקרים', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
     ],
 
+    /** The same pair appears on all four frames - not page-specific. */
     testimonials: [
       {
-        quote: '"הפעילות הפכה את זמן ההמתנה מנטל לחלק מהחוויה. הלקוחות יוצאים מרוצים ומשתפים את זה ברשתות"',
-        author: 'מנהל רשת מסעדות',
-        initials: 'א.ל',
-        avatarBg: '#CFEBD8',
+        quote:
+          '"מזה 5 שנים אני משתמש בפלטפורמת Yooz כדי לייצר חוויית למידה מעניינת ומאתגרת... תוצאות המחקר שערכתי במשך 3 שנים מצביעות על עלייה בהישגים ובמעורבות"',
+        author: 'מרצה במכללה האקדמית בתל אביב יפו',
+        initials: 'ד.ו',
+        avatarBg: '#D1FAE5',
       },
       {
-        quote: '"ראינו עלייה מדידה בשווי ההזמנה הממוצעת כבר בחודש הראשון להפעלה, בלי להוסיף אף עובד"',
-        author: 'סמנכ״ל שיווק ברשת קמעונאית',
-        initials: 'ס.כ',
-        avatarBg: '#E3D4F5',
+        quote:
+          '"פיתחנו סימולטור מתקדם לבדיקת מידת קבלת החלטות רפואיות על ידי הסטודנטים. הסימולטור מדמה מצבי אמת באמצעות כלי AI ותורם לחוויית ואפקטיביות הלמידה"',
+        author: 'מרצה בחוג לסיעוד',
+        initials: 'מ.ט',
+        avatarBg: '#F3E8FF',
       },
     ],
 
@@ -118,8 +121,8 @@ export const texts = {
     ],
 
     testimonials: [
-      { quote: '"The activity turned waiting time from a burden into part of the experience. Customers leave happy and share it."', author: 'Restaurant chain manager', initials: 'A.L', avatarBg: '#CFEBD8' },
-      { quote: '"We saw a measurable rise in average order value within the first month, without adding a single member of staff."', author: 'VP Marketing, retail chain', initials: 'S.K', avatarBg: '#E3D4F5' },
+      { quote: '"For five years I have used the Yooz platform to build an engaging, challenging learning experience... three years of research I ran show a rise in both achievement and involvement"', author: 'Lecturer, Academic College of Tel Aviv-Yafo', initials: 'D.V', avatarBg: '#D1FAE5' },
+      { quote: '"We built an advanced simulator to assess medical decision-making by students. It models real situations using AI tools and adds to both the experience and the effectiveness of the learning"', author: 'Lecturer, Nursing Department', initials: 'M.T', avatarBg: '#F3E8FF' },
     ],
 
     faqTitle: 'Frequently asked questions',

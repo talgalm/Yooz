@@ -34,7 +34,8 @@ const Row = styled('div')({
  */
 const Quote = styled('figure')<{ tilt: number; lift: number }>(({ tilt, lift }) => ({
   margin: 0,
-  width: 372,
+  // Widened to carry the 24px quote without the cards turning into narrow columns.
+  width: 440,
   maxWidth: '100%',
   background: C.white,
   borderRadius: 18,
@@ -47,30 +48,45 @@ const Quote = styled('figure')<{ tilt: number; lift: number }>(({ tilt, lift }) 
   [REDUCED_MOTION]: { transform: 'none', transition: 'none' },
 }));
 
+/**
+ * Stars sit at the card's right edge. Under RTL `start` IS the right, so `end`
+ * was pushing them to the left - the opposite of the frame, where they run
+ * x1009..x1085 in a card ending at x1113.
+ */
 const Stars = styled('div')({
   color: C.gold,
   fontSize: 14,
   letterSpacing: 2,
   marginBottom: 12,
-  textAlign: 'end',
+  textAlign: 'start',
 });
 
+/** 24 / 400 in the file - an earlier pass had this at 15 / 500. */
 const Text = styled('blockquote')({
   margin: '0 0 20px',
-  fontSize: 15,
-  lineHeight: 1.75,
+  fontSize: 'clamp(16px, 1.5vw, 24px)',
+  lineHeight: 1.35,
   color: C.ink,
-  fontWeight: 500,
+  fontWeight: 400,
+  [BP.mobile]: { fontSize: 16, lineHeight: 1.5 },
 });
 
+/** Attribution is 20 / 300 in the file; the avatar monogram is 14 / 700. */
+/**
+ * The avatar sits to the RIGHT of the attribution text (avatar x705 against text
+ * x428 in the frame). Under RTL a plain `row` already places the first child on
+ * the right, so the `row-reverse` an earlier pass added was actively undoing the
+ * base direction and throwing the circle to the left.
+ */
 const Attribution = styled('figcaption')({
   display: 'flex',
   alignItems: 'center',
   gap: 10,
-  flexDirection: 'row-reverse',
   justifyContent: 'flex-start',
-  fontSize: 12,
+  fontSize: 'clamp(13px, 1.2vw, 20px)',
+  fontWeight: 300,
   color: C.inkSoft,
+  [BP.mobile]: { fontSize: 13 },
 });
 
 const Avatar = styled('span')<{ bg?: string }>(({ bg }) => ({
@@ -92,9 +108,15 @@ export default function Testimonials({ items }: TestimonialsProps) {
     <Root>
       <Container>
         <Row>
-          {items.map((item, i) => (
+          {/*
+            Reversed for RTL: the first child of a flex row lands on the RIGHT,
+            but in the frame items[0] is the LEFT card (Frame 29 at x372, the
+            college-lecturer quote). Rendering in array order mirrored the pair,
+            which reads as the wrong person saying each quote.
+          */}
+          {[...items].reverse().map((item, i) => (
             <Reveal key={item.author} delay={i * 90}>
-              <Quote tilt={i % 2 === 0 ? -3 : 3} lift={i % 2 === 0 ? 0 : 18}>
+              <Quote tilt={i % 2 === 0 ? 3 : -3} lift={i % 2 === 0 ? 18 : 0}>
                 <Stars aria-label="5/5">★★★★★</Stars>
                 <Text>{item.quote}</Text>
                 <Attribution>

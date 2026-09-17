@@ -55,8 +55,8 @@ export const C = {
   magenta: '#E9479A',
   /** FAQ toggle discs. */
   amber: '#FFC050',
-  /** Testimonial stars. */
-  gold: '#F8C020',
+  /** Testimonial stars - the frame's own FBBF24. */
+  gold: '#FBBF24',
   /** Numbered list discs on the peach band. */
   discPink: '#F8C8C8',
   /** Numbered list discs on the mint band. */

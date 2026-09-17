@@ -65,18 +65,21 @@ export const texts = {
       { name: 'קופ״ח כללית', caption: 'פעילות גיבוש עובדים בפריסה רחבה' },
     ],
 
+    /** The same pair appears on all four frames - not page-specific. */
     testimonials: [
       {
-        quote: '"המבקרים נשארים באתר הרבה יותר זמן, והמשפחות חוזרות שוב עם חברים. זה שינה לנו את כל הפעילות"',
-        author: 'מנהלת מרכז מבקרים',
-        initials: 'ר.כ',
-        avatarBg: '#CFEBD8',
+        quote:
+          '"מזה 5 שנים אני משתמש בפלטפורמת Yooz כדי לייצר חוויית למידה מעניינת ומאתגרת... תוצאות המחקר שערכתי במשך 3 שנים מצביעות על עלייה בהישגים ובמעורבות"',
+        author: 'מרצה במכללה האקדמית בתל אביב יפו',
+        initials: 'ד.ו',
+        avatarBg: '#D1FAE5',
       },
       {
-        quote: '"במקום הדרכה שכולם שוכחים, קיבלנו מסלול שהמבקרים מספרים עליו אחר כך ברשתות"',
-        author: 'מנהל פארק עירוני',
-        initials: 'י.ב',
-        avatarBg: '#E3D4F5',
+        quote:
+          '"פיתחנו סימולטור מתקדם לבדיקת מידת קבלת החלטות רפואיות על ידי הסטודנטים. הסימולטור מדמה מצבי אמת באמצעות כלי AI ותורם לחוויית ואפקטיביות הלמידה"',
+        author: 'מרצה בחוג לסיעוד',
+        initials: 'מ.ט',
+        avatarBg: '#F3E8FF',
       },
     ],
 
@@ -150,8 +153,8 @@ export const texts = {
     ],
 
     testimonials: [
-      { quote: '"Visitors stay on site far longer, and families come back again with friends. It changed our whole programme."', author: 'Visitor centre manager', initials: 'R.K', avatarBg: '#CFEBD8' },
-      { quote: '"Instead of a guided tour everyone forgets, we got a route visitors post about afterwards."', author: 'Urban park manager', initials: 'Y.B', avatarBg: '#E3D4F5' },
+      { quote: '"For five years I have used the Yooz platform to build an engaging, challenging learning experience... three years of research I ran show a rise in both achievement and involvement"', author: 'Lecturer, Academic College of Tel Aviv-Yafo', initials: 'D.V', avatarBg: '#D1FAE5' },
+      { quote: '"We built an advanced simulator to assess medical decision-making by students. It models real situations using AI tools and adds to both the experience and the effectiveness of the learning"', author: 'Lecturer, Nursing Department', initials: 'M.T', avatarBg: '#F3E8FF' },
     ],
 
     faqTitle: 'Frequently asked questions',

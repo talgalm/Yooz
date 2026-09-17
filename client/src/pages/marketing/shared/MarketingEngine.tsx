@@ -29,7 +29,14 @@ const Band = styled('section')({
  */
 const ShapeWrap = styled('div')({ lineHeight: 0 });
 
+/**
+ * Sits in front of the hexagon and overlaps into it. Without an explicit stacking
+ * context the positioned `Ground` below wins simply by coming later in the DOM,
+ * and the hexagon paints over the video.
+ */
 const Frame = styled('div')({
+  position: 'relative',
+  zIndex: 2,
   width: 'min(700px, 100%)',
   marginInline: 'auto',
   marginTop: 34,
@@ -47,28 +54,35 @@ const Media = styled('video')({ width: '100%', height: '100%', objectFit: 'cover
 const Still = styled('img')({ width: '100%', height: '100%', objectFit: 'cover', display: 'block' });
 
 /**
- * The cream diamond the engine sits on - a rotated square, so it scales cleanly
- * and picks up the token colour rather than shipping an image.
+ * The cream ground the engine sits on.
+ *
+ * It is a flat-topped hexagon (`REGULAR_POLYGON` 459:7787 in the file), 1691
+ * wide against a 1512 frame - so it bleeds past both edges - not the rotated
+ * square an earlier pass used, which read as a pointed diamond. Path exported
+ * from the file and inlined so it can stretch to any width.
  */
-const Diamond = styled('div')({
+const Ground = styled('div')({
   position: 'relative',
   width: '100%',
-  marginTop: -70,
-  paddingBlock: '120px 90px',
-  overflow: 'hidden',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    width: 'min(1180px, 128vw)',
-    height: 'min(1180px, 128vw)',
-    background: '#FBE2BC',
-    transform: 'translate(-50%, -50%) rotate(45deg)',
-    borderRadius: 90,
-    zIndex: 0,
-  },
-  [BP.mobile]: { marginTop: -30, paddingBlock: '60px 50px' },
+  /**
+   * Pulled up so the video's lower portion sits over the hexagon. In the frame
+   * the video ends at y2485 and the hexagon starts at y2230, so roughly 255px of
+   * the video overlaps it. The top padding then clears the video before the
+   * boosters begin.
+   */
+  marginTop: -255,
+  paddingBlock: '330px 120px',
+  [BP.mobile]: { marginTop: -90, paddingBlock: '130px 60px' },
+});
+
+const GroundSvg = styled('svg')({
+  position: 'absolute',
+  insetInline: '-6%',
+  top: 0,
+  width: '112%',
+  height: '100%',
+  zIndex: 0,
+  pointerEvents: 'none',
 });
 
 const Stage = styled('div')({
@@ -85,14 +99,20 @@ const Stage = styled('div')({
   [BP.mobile]: { gridTemplateColumns: '1fr', gap: 16 },
 });
 
-const Infinity8 = styled('svg')({
-  width: 'min(300px, 44vw)',
+/**
+ * Shipped as a file, not inlined: in the frame this is two stacked 43px strokes
+ * - a 20%-opacity #FFBF4D halo beneath a #721BA0 ribbon - plus inset and drop
+ * filters. A single stroked path cannot reproduce it, which is why earlier
+ * versions read as a plain ring. Native 428x199.
+ */
+const Infinity8 = styled('img')({
+  width: 'min(377px, 42vw)',
   height: 'auto',
   gridColumn: 2,
   gridRow: 1,
   animation: `${floatY} 6s ease-in-out infinite`,
   [REDUCED_MOTION]: { animation: 'none' },
-  [BP.mobile]: { gridColumn: 1, width: 'min(230px, 58vw)' },
+  [BP.mobile]: { gridColumn: 1, width: 'min(280px, 62vw)' },
 });
 
 /**
@@ -107,36 +127,45 @@ const Slot = styled(Reveal, { shouldForwardProp: (p) => p !== 'area' })<{ area: 
 }));
 
 const Booster = styled('div')({
-  width: 190,
-  height: 190,
+  /**
+   * The frame's ellipse is 192x163, but its text frame is 215 wide - i.e. the
+   * copy is allowed to run wider than the ellipse. Rendering both at 192 with
+   * generous padding left only 148px for a 24px title, so "Spend Booster"
+   * wrapped and the body overflowed. Enlarged, with the padding pulled in.
+   */
+  width: 228,
+  height: 194,
   borderRadius: '50%',
-  background: '#FBC65A',
+  background: '#FFBF4D',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
   textAlign: 'center',
-  padding: '20px 22px',
+  padding: '18px 16px',
   boxSizing: 'border-box',
   transition: 'transform 0.2s ease',
   '&:hover': { transform: 'scale(1.05)' },
   [REDUCED_MOTION]: { transition: 'none', '&:hover': { transform: 'none' } },
-  [BP.mobile]: { width: 164, height: 164, padding: '14px 16px' },
+  [BP.mobile]: { width: 168, height: 143, padding: '12px 14px' },
 });
 
+/** 24 / 500 / 28.4 in the file, with only a 2px gap to the body beneath it. */
 const BoosterTitle = styled('div')({
-  fontSize: 15,
-  fontWeight: 900,
+  fontSize: 24,
+  fontWeight: 500,
+  lineHeight: 1.18,
   color: C.heading,
-  marginBottom: 6,
-  [BP.mobile]: { fontSize: 13.5 },
+  marginBottom: 2,
+  [BP.mobile]: { fontSize: 18 },
 });
 
+/** 16 / 400 / 19. */
 const BoosterDesc = styled('div')({
-  fontSize: 11,
-  lineHeight: 1.55,
+  fontSize: 16,
+  lineHeight: 1.19,
   color: C.ink,
-  [BP.mobile]: { fontSize: 10.5 },
+  [BP.mobile]: { fontSize: 12.5 },
 });
 
 export default function MarketingEngine({ videoUrl, posterUrl }: MarketingEngineProps) {
@@ -162,34 +191,26 @@ export default function MarketingEngine({ videoUrl, posterUrl }: MarketingEngine
         </Reveal>
       </Container>
 
-      <Diamond>
+      <Ground>
+        <GroundSvg viewBox="0 0 1512 841" preserveAspectRatio="none" aria-hidden focusable="false">
+          <path
+            d="M722.515 8.00924C743.561 -2.66959 768.439 -2.66959 789.486 8.00924L1471.48 354.048C1525.51 381.46 1525.51 458.627 1471.48 486.039L789.486 832.078C768.439 842.757 743.561 842.757 722.515 832.078L40.5189 486.039C-13.5062 458.627 -13.5062 381.46 40.519 354.048L722.515 8.00924Z"
+            fill="#FDE0C0"
+          />
+        </GroundSvg>
+
         <Stage>
-          <Slot area="1 / 3 / 2 / 4" delay={60}>
+          {/* Stay sits left (instance at x222), Spend right (x968). */}
+          <Slot area="1 / 1 / 2 / 2" delay={0}>
             <Booster>
               <BoosterTitle>{t.stay}</BoosterTitle>
               <BoosterDesc>{t.stayDesc}</BoosterDesc>
             </Booster>
           </Slot>
 
-          <Infinity8 viewBox="0 0 200 100" aria-hidden focusable="false">
-            <defs>
-              <linearGradient id="yoozInfinity" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#8A2BC0" />
-                <stop offset="45%" stopColor="#6A0E9A" />
-                <stop offset="100%" stopColor="#4E0A74" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M50,50 C50,25 75,25 100,50 C125,75 150,75 150,50 C150,25 125,25 100,50 C75,75 50,75 50,50 Z"
-              fill="none"
-              stroke="url(#yoozInfinity)"
-              strokeWidth="23"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Infinity8>
+          <Infinity8 src="/images/marketing/engine-infinity.svg" alt="" aria-hidden />
 
-          <Slot area="1 / 1 / 2 / 2" delay={0}>
+          <Slot area="1 / 3 / 2 / 4" delay={60}>
             <Booster>
               <BoosterTitle>{t.spend}</BoosterTitle>
               <BoosterDesc>{t.spendDesc}</BoosterDesc>
@@ -203,7 +224,7 @@ export default function MarketingEngine({ videoUrl, posterUrl }: MarketingEngine
             </Booster>
           </Slot>
         </Stage>
-      </Diamond>
+      </Ground>
       </Band>
     </>
   );
