@@ -697,7 +697,9 @@ because a Station is a reusable template that can appear in several activities a
 addresses. Per module: `proximityMeters` (default 10) and `groupOrders` (group name → permutation
 of item indices, so each team walks its own order). Per-group order needs **preset** groups —
 self-service teams don't exist until the day, so they all walk the stored order. Admin UI:
-a 📍 button per item (`ModuleItemsSection` → `LocationPopup`, address geocode + manual lat/lng)
+a 📍 button per item (`ModuleItemsSection` → `LocationPopup`: address geocode **and** a
+click-to-drop map picker with a draggable pin, for spots no address describes — a gate, a
+courtyard, a tree; raw lat/lng inputs were removed in favour of it)
 and `GroupOrderEditor.tsx` (hand-rolled DnD + tap-to-swap, no library).
 
 **Shared group progress.** `MapGroupState` (`map_group_states`), day-scoped and unique on

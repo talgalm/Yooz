@@ -3,7 +3,7 @@ import { styled } from '@mui/material/styles';
 import { adminApiFetch } from '../../../utils/adminApi';
 import FileUploadButton from '../../../components/FileUploadButton';
 import type { ModuleItem, GameOption, StationOption, ItemLocation } from './types';
-import { geocodeAddress, isMapsAvailable } from '../../../utils/googleMaps';
+import { geocodeAddress, isMapsAvailable, loadGoogleMaps } from '../../../utils/googleMaps';
 import ItemPreviewModal from './ItemPreviewModal';
 import {
   SectionLabel,
@@ -287,6 +287,26 @@ const RemoveBtn = styled('button')({
   '&:hover': { color: '#c0392b' },
 });
 
+/** Where the picker opens when the station has no point yet (central Israel —
+ *  every Yooz activity so far is there; pan from here rather than from space). */
+const DEFAULT_PICKER_CENTER = { lat: 32.0853, lng: 34.7818 };
+
+const PickerCanvas = styled('div')({
+  width: '100%',
+  height: 260,
+  borderRadius: 10,
+  border: '1px solid #e0e0e0',
+  background: '#f4f4f4',
+});
+
+const PickedCoords = styled('div')({
+  fontSize: 12,
+  color: '#666',
+  fontFamily: 'monospace',
+  textAlign: 'center',
+  direction: 'ltr',
+});
+
 const LocationButton = styled('button')<{ hasLocation?: boolean }>(({ hasLocation }) => ({
   background: 'none',
   border: `1px solid ${hasLocation ? '#00b894' : '#d0d0d0'}`,
@@ -546,7 +566,64 @@ function LocationPopup({
   t: Record<string, string>;
 }) {
   const [address, setAddress] = useState(item.location?.address || '');
-  const [status, setStatus] = useState<'idle' | 'searching' | 'notFound' | 'noKey'>('idle');
+  const [status, setStatus] = useState<'idle' | 'searching' | 'notFound' | 'noKey' | 'mapFailed'>('idle');
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markerRef = useRef<google.maps.Marker | null>(null);
+  // The popup owns the pin; `onChange` writes it up to the item. Read through a
+  // ref inside map listeners, which are bound once and would otherwise close
+  // over the first render's props forever.
+  const commit = useRef(onChange);
+  commit.current = onChange;
+
+  const place = useCallback((lat: number, lng: number, addr?: string) => {
+    markerRef.current?.setPosition({ lat, lng });
+    mapRef.current?.panTo({ lat, lng });
+    commit.current({ lat, lng, address: addr });
+  }, []);
+
+  // Mount the picker once. Clicking anywhere drops the pin, and the pin itself
+  // drags — a courtyard, a gate or a tree often has no address a geocoder knows,
+  // and pointing at it is the only way to say where the station really is.
+  useEffect(() => {
+    if (!isMapsAvailable()) { setStatus('noKey'); return; }
+    let cancelled = false;
+    loadGoogleMaps()
+      .then((maps) => {
+        if (cancelled || !canvasRef.current) return;
+        const start = item.location ?? DEFAULT_PICKER_CENTER;
+        const map = new maps.Map(canvasRef.current, {
+          center: start,
+          zoom: item.location ? 17 : 12,
+          disableDefaultUI: true,
+          zoomControl: true,
+          clickableIcons: false,
+        });
+        const marker = new maps.Marker({
+          map,
+          position: start,
+          draggable: true,
+          visible: !!item.location,
+        });
+        map.addListener('click', (e: google.maps.MapMouseEvent) => {
+          if (!e.latLng) return;
+          marker.setVisible(true);
+          // A hand-placed pin keeps whatever address was typed as its label —
+          // the text is what the admin recognises the station by.
+          place(e.latLng.lat(), e.latLng.lng());
+        });
+        marker.addListener('dragend', () => {
+          const pos = marker.getPosition();
+          if (pos) place(pos.lat(), pos.lng());
+        });
+        mapRef.current = map;
+        markerRef.current = marker;
+      })
+      .catch(() => { if (!cancelled) setStatus('mapFailed'); });
+    return () => { cancelled = true; };
+    // Mount-only: re-running would rebuild the map under the admin's cursor.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const search = async () => {
     if (!address.trim()) return;
@@ -556,15 +633,19 @@ function LocationPopup({
     if (!found) { setStatus('notFound'); return; }
     setStatus('idle');
     setAddress(found.address);
-    onChange({ lat: found.lat, lng: found.lng, address: found.address });
+    markerRef.current?.setVisible(true);
+    mapRef.current?.setZoom(17);
+    place(found.lat, found.lng, found.address);
   };
 
-  const setCoord = (key: 'lat' | 'lng', raw: string) => {
-    const value = Number(raw);
-    if (!Number.isFinite(value)) return;
-    onChange({ lat: item.location?.lat ?? 0, lng: item.location?.lng ?? 0, address: item.location?.address, [key]: value });
+  const clear = () => {
+    markerRef.current?.setVisible(false);
+    setAddress('');
+    setStatus('idle');
+    onChange(undefined);
   };
 
+  const loc = item.location;
   return (
     <GroupPopupOverlay onClick={onClose}>
       <GroupPopupCard onClick={(e) => e.stopPropagation()}>
@@ -586,33 +667,21 @@ function LocationPopup({
             {status === 'searching' ? t.mapFinding : t.mapFind}
           </GroupPopupDone>
         </div>
+
+        <PickerCanvas ref={canvasRef} />
+        <GroupPopupHint>{t.mapPickHint}</GroupPopupHint>
+
         {status === 'notFound' && <GroupPopupHint style={{ color: '#d63031' }}>{t.mapNotFound}</GroupPopupHint>}
         {status === 'noKey' && <GroupPopupHint style={{ color: '#d63031' }}>{t.mapNoKey}</GroupPopupHint>}
+        {status === 'mapFailed' && <GroupPopupHint style={{ color: '#d63031' }}>{t.mapPickerFailed}</GroupPopupHint>}
 
-        <div style={{ display: 'flex', gap: 6 }}>
-          <label style={{ flex: 1, fontSize: 12, color: '#666' }}>
-            {t.mapLat}
-            <Input
-              type="number"
-              inputMode="decimal"
-              value={item.location?.lat ?? ''}
-              onChange={(e) => setCoord('lat', e.target.value)}
-            />
-          </label>
-          <label style={{ flex: 1, fontSize: 12, color: '#666' }}>
-            {t.mapLng}
-            <Input
-              type="number"
-              inputMode="decimal"
-              value={item.location?.lng ?? ''}
-              onChange={(e) => setCoord('lng', e.target.value)}
-            />
-          </label>
-        </div>
+        <PickedCoords>
+          {loc ? `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}` : t.mapNoPoint}
+        </PickedCoords>
 
         <GroupPopupActions>
-          <GroupPopupClear type="button" onClick={() => { onChange(undefined); setAddress(''); }}>
-            ✕
+          <GroupPopupClear type="button" onClick={clear}>
+            {t.mapClearPoint}
           </GroupPopupClear>
           <GroupPopupDone type="button" onClick={onClose}>
             {t.groupAssignDone || 'Done'}
