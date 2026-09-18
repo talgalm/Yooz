@@ -262,7 +262,17 @@ const PhotoWash = styled("div")({
    * longer than the Hebrew this was measured from, so LTR gets more room.
    */
   width: "min(56.9%, 860px)",
-  '[dir="ltr"] &': { width: "min(68%, 1040px)" },
+  /**
+   * The mobile reset is nested INSIDE this rule, not left to the `BP.mobile`
+   * block below. `[dir="ltr"] &` is an attribute plus a class - specificity
+   * (0,1,1) - while `BP.mobile` is a bare class, (0,1,0), and a media query adds
+   * none. The LTR rule would otherwise win at every width and hold the panel at
+   * its desktop width on phones.
+   */
+  '[dir="ltr"] &': {
+    width: "min(68%, 1040px)",
+    [BP.mobile]: { width: "100%" },
+  },
   height: "90%",
   background: "rgba(54,10,77,0.78)",
   /**
@@ -289,8 +299,15 @@ const PhotoCopy = styled("div")({
    * lines. A fixed px here let the panel outgrow the copy on wide screens.
    */
   maxWidth: "min(47.6%, 720px)",
-  /** Matches the panel's own LTR widening - English needs the longer measure. */
-  '[dir="ltr"] &': { maxWidth: "min(58%, 900px)" },
+  /**
+   * Matches the panel's own LTR widening - English needs the longer measure.
+   * The mobile reset is nested here for the same specificity reason as on
+   * `PhotoWash`: this selector outranks the `BP.mobile` block.
+   */
+  '[dir="ltr"] &': {
+    maxWidth: "min(58%, 900px)",
+    [BP.mobile]: { maxWidth: "none" },
+  },
   /**
    * `margin-inline-END: auto` to sit at the inline START, which under RTL is the
    * RIGHT edge - where the copy panel is. Using `margin-inline-start: auto` did
@@ -319,7 +336,16 @@ const PhotoCopy = styled("div")({
     lineHeight: 1.11,
   },
   /** The panel goes full-bleed at this width, so the copy has to as well. */
-  [BP.mobile]: { maxWidth: "none", paddingInlineStart: 24, paddingInlineEnd: 24 },
+  /**
+   * `paddingBlock` has to be reset here too - without it phones inherited the
+   * desktop `100px 70px`, which is 170px of vertical padding on a 360px stage.
+   */
+  [BP.mobile]: {
+    maxWidth: "none",
+    paddingInlineStart: 24,
+    paddingInlineEnd: 24,
+    paddingBlock: "56px 44px",
+  },
   [REDUCED_MOTION]: { animation: "none" },
 });
 

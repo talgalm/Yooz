@@ -159,7 +159,12 @@ const Booster = styled('div')({
   transition: 'transform 0.2s ease',
   '&:hover': { transform: 'scale(1.05)' },
   [REDUCED_MOTION]: { transition: 'none', '&:hover': { transform: 'none' } },
-  [BP.mobile]: { width: 168, height: 143, padding: '12px 14px' },
+  /**
+   * Scaled off the current base, not the old one. 168 was set against the 192
+   * ellipse this grew from; kept against 228 it reproduces exactly the wrap that
+   * forced the enlargement, since "Spend Booster" needs the width.
+   */
+  [BP.mobile]: { width: 200, height: 170, padding: '14px 15px' },
 });
 
 /** 24 / 500 / 28.4 in the file, with only a 2px gap to the body beneath it. */
