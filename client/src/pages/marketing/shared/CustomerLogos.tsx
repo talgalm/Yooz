@@ -24,8 +24,25 @@ interface CustomerLogosProps {
   marquee?: boolean;
 }
 
+/**
+ * `#RRGGBB` to the same colour at zero alpha. Fading to the `transparent`
+ * keyword instead would interpolate through `rgba(0, 0, 0, 0)` and grey the
+ * middle of the gradient out.
+ */
+const fadeOut = (hex: string) => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return 'transparent';
+  const n = parseInt(m[1], 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, 0)`;
+};
+
+/**
+ * The band dissolves into whatever follows rather than stopping on a ruled edge.
+ * It fades to nothing rather than to a named colour, so this component does not
+ * need to know what section comes next.
+ */
 const Root = styled('section')<{ bg?: string }>(({ bg }) => ({
-  background: bg ?? 'transparent',
+  background: bg ? `linear-gradient(to bottom, ${bg} 0%, ${bg} 70%, ${fadeOut(bg)} 100%)` : 'transparent',
   paddingBlock: 62,
   [BP.mobile]: { paddingBlock: 40 },
 }));
