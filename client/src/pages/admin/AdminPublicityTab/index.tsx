@@ -264,7 +264,7 @@ export default function AdminPublicityTab() {
                     <Td>{new Date(lead.createdAt).toLocaleDateString()}</Td>
                     <Td>{lead.name}</Td>
                     <Td>{lead.email}</Td>
-                    <Td>{lead.phone}</Td>
+                    <Td>{lead.phone || '—'}</Td>
                     <Td>{lead.company || '—'}</Td>
                     <Td>{lead.position || '—'}</Td>
                     <Td>{lead.message || '—'}</Td>
