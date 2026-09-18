@@ -45,14 +45,19 @@ export const Page = styled('div')({
   overflowX: 'clip',
 });
 
-export const Container = styled('div')({
+/**
+ * `max` overrides the shared column for one page. The Academy frame measures its
+ * content at 1216 (cards 147..1365) where `CONTAINER` gives 1308, so that page
+ * passes `max={1264}` - 1216 plus the 24 gutters. Left unset everywhere else.
+ */
+export const Container = styled('div', { shouldForwardProp: (p) => p !== 'max' })<{ max?: number }>(({ max }) => ({
   width: '100%',
-  maxWidth: CONTAINER,
+  maxWidth: max ?? CONTAINER,
   marginInline: 'auto',
   paddingInline: 24,
   boxSizing: 'border-box',
   [BP.mobile]: { paddingInline: 18 },
-});
+}));
 
 /**
  * A full-bleed band of colour. `Container` inside it holds the content column.
@@ -230,10 +235,13 @@ export const Card = styled('div')({
   [REDUCED_MOTION]: { transition: 'none', '&:hover': { transform: 'none' } },
 });
 
-export const CardGrid = styled('div')<{ min?: number }>(({ min = 210 }) => ({
+export const CardGrid = styled('div', { shouldForwardProp: (p) => p !== 'min' && p !== 'gap' })<{
+  min?: number;
+  gap?: number;
+}>(({ min = 210, gap = 20 }) => ({
   display: 'grid',
   gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`,
-  gap: 20,
+  gap,
   alignItems: 'stretch',
   [BP.mobile]: { gap: 14 },
 }));
@@ -284,10 +292,13 @@ export const IconDisc = styled('div')<{ bg?: string; size?: number; imgSize?: nu
 }));
 
 /** Rounded-square icon tile - the Academy cards use these instead of discs. */
-export const IconTile = styled('div')<{ bg?: string; fg?: string }>(({ bg, fg }) => ({
-  width: 44,
-  height: 44,
-  borderRadius: 12,
+/** Tiles measure 48 square with a ~14 radius in the Academy frame; 44/12 is the older default. */
+export const IconTile = styled('div', {
+  shouldForwardProp: (p) => p !== 'bg' && p !== 'fg' && p !== 'size' && p !== 'radius',
+})<{ bg?: string; fg?: string; size?: number; radius?: number }>(({ bg, fg, size = 44, radius = 12 }) => ({
+  width: size,
+  height: size,
+  borderRadius: radius,
   background: bg ?? C.shell,
   color: fg ?? C.purple,
   display: 'flex',

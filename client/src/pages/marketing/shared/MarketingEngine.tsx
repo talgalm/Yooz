@@ -10,6 +10,12 @@ interface MarketingEngineProps {
   /** Looping clip shown in the device frame. Falls back to a still. */
   videoUrl?: string;
   posterUrl?: string;
+  /**
+   * Colour of the section above, filling the chevron strip either side of the
+   * peak. Both call sites - Business and Tourism - put this after a `C.paper`
+   * band, which is the default.
+   */
+  shapeFrom?: string;
 }
 
 /** The band is entered through a wide point, not a curve. */
@@ -24,10 +30,16 @@ const Band = styled('section')({
  * In normal flow, deliberately. Positioning this absolutely at `bottom: 100%`
  * gives it no layout height, so it draws over whatever section comes before and
  * clips that copy. Sitting in flow, it occupies its own height and separates the
- * two sections the way the frame does. Its area above the peak is transparent,
- * so the previous section's ground shows through.
+ * two sections the way the frame does.
+ *
+ * In flow it overlays nothing, though, so the area above the peak shows the PAGE
+ * ground rather than the previous section - a white gap between the two bands.
+ * `from` carries the previous band's colour and closes it.
  */
-const ShapeWrap = styled('div')({ lineHeight: 0 });
+const ShapeWrap = styled('div', { shouldForwardProp: (p) => p !== 'from' })<{ from?: string }>(({ from }) => ({
+  lineHeight: 0,
+  background: from ?? 'transparent',
+}));
 
 /**
  * Sits in front of the hexagon and overlaps into it. Without an explicit stacking
@@ -168,12 +180,12 @@ const BoosterDesc = styled('div')({
   [BP.mobile]: { fontSize: 12.5 },
 });
 
-export default function MarketingEngine({ videoUrl, posterUrl }: MarketingEngineProps) {
+export default function MarketingEngine({ videoUrl, posterUrl, shapeFrom = C.paper }: MarketingEngineProps) {
   const t = useTranslations(texts);
 
   return (
     <>
-      <ShapeWrap>
+      <ShapeWrap from={shapeFrom}>
         <SectionShape color={C.bandPeach} variant="chevron" height={130} />
       </ShapeWrap>
 

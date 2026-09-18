@@ -9,7 +9,7 @@ import ContactForm from '../shared/ContactForm';
 import Faq from '../shared/Faq';
 import Reveal from '../shared/Reveal';
 import { Band, Container, H2 } from '../shared/styled';
-import { C, SECTORS_GRADIENT } from '../shared/tokens';
+import { C, SECTORS_GRADIENT, SECTORS_GRADIENT_END } from '../shared/tokens';
 import { CONTACT_ANCHOR } from '../shared/routes';
 
 export default function HomePage() {
@@ -66,6 +66,7 @@ export default function HomePage() {
         bg={C.bandPeach}
         discBg={C.discPink}
         shape="peach"
+        shapeFrom={SECTORS_GRADIENT_END}
       />
       <FeatureSplit
         title={t.academyTitle}
@@ -79,6 +80,7 @@ export default function HomePage() {
         discBg={C.vennEngage}
         reverse
         shape="lavender"
+        shapeFrom={C.bandPeach}
       />
       <FeatureSplit
         title={t.tourismTitle}
@@ -91,6 +93,7 @@ export default function HomePage() {
         bg={C.bandMint}
         discBg={C.discMint}
         shape="mint"
+        shapeFrom={C.bandLavender}
       />
 
       <CustomerLogos title={t.customersTitle} items={t.customers} bg={C.bandPink} />

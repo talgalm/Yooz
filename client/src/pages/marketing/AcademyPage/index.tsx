@@ -12,6 +12,13 @@ import { C, BP } from '../shared/tokens';
 import { CONTACT_ANCHOR } from '../shared/routes';
 
 /**
+ * The Academy frame lays its content out on a 1216 column (both card rows run
+ * 147..1365 of the 1512 frame), narrower than the shared 1356. 1216 + the two 24
+ * gutters gives the wrapper width.
+ */
+const ACADEMY_COLUMN = 1264;
+
+/**
  * Icon sits at the inline-START of the card in the comps, above the copy - which
  * under RTL is the top RIGHT corner, the same side the copy is aligned to.
  * `flex-end` is physical, so it put the tile on the left, opposite the comp.
@@ -54,16 +61,17 @@ function CheckIcon() {
 
 const TitleRow = styled('div')({ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 });
 
-const AiBadge = styled('span')({
+/** Tinted per card in the comp, with dark purple text - not white on solid purple. */
+const AiBadge = styled('span', { shouldForwardProp: (p) => p !== 'bg' })<{ bg?: string }>(({ bg }) => ({
   fontSize: 9.5,
   fontWeight: 800,
-  color: C.white,
-  background: C.purple,
+  color: '#2E1065',
+  background: bg ?? C.shell,
   borderRadius: 5,
   padding: '3px 6px',
   lineHeight: 1,
   flexShrink: 0,
-});
+}));
 
 const CardTitle = styled('h3')({
   fontSize: 17,
@@ -90,12 +98,11 @@ export default function AcademyPage() {
       />
 
       <Band bg={C.paperSoft}>
-        <Container>
+        <Container max={ACADEMY_COLUMN}>
           <H2>{t.valueTitle}</H2>
           <SectionIntro>{t.valueIntro}</SectionIntro>
-          {/* 2x2 in the comp. 360 auto-fit three across the 1308 content column,
-              leaving a fourth card stranded on its own row; 560 forces two-up. */}
-          <CardGrid min={560}>
+          {/* 2x2 in the comp: cards 147..745 and 767..1365, so 598 wide on a 22 gap. */}
+          <CardGrid min={560} gap={22}>
             {t.valueCards.map((c, i) => (
               <Reveal key={c.title} delay={i * 90}>
                 <Card>
@@ -119,19 +126,26 @@ export default function AcademyPage() {
       </Band>
 
       <Band bg={C.paper}>
-        <Container>
+        <Container max={ACADEMY_COLUMN}>
           <H2>{t.experienceTitle}</H2>
           <SectionIntro>{t.experienceIntro}</SectionIntro>
-          <CardGrid min={230}>
+          {/* Four across at 286 on a 24 gap - cards 148..434, 458..744, 768..1054, 1078..1364. */}
+          <CardGrid min={230} gap={24}>
             {t.experienceCards.map((c, i) => (
               <Reveal key={c.title} delay={i * 80}>
-                <Card style={{ background: C.paperSoft, boxShadow: 'none' }}>
+                <Card style={{ background: C.cardTint, boxShadow: 'none', border: `1px solid ${C.cardRule}` }}>
                   <CardHead>
-                    <IconTile bg={c.tileBg} fg={c.fg}>{c.icon}</IconTile>
+                    <IconTile bg={c.tileBg} size={48} radius={14}>
+                      <img src={c.icon} alt="" width={24} height={24} style={{ display: 'block' }} />
+                    </IconTile>
                   </CardHead>
+                  {/* Badge trails the title: first flex child lands rightmost under RTL,
+                      and the comp puts the pill on the title's left. */}
                   <TitleRow>
-                    {'badge' in c && c.badge ? <AiBadge>{c.badge}</AiBadge> : null}
                     <CardTitle>{c.title}</CardTitle>
+                    {'badge' in c && c.badge ? (
+                      <AiBadge bg={'badgeBg' in c ? c.badgeBg : undefined}>{c.badge}</AiBadge>
+                    ) : null}
                   </TitleRow>
                   <Body>{c.body}</Body>
                 </Card>

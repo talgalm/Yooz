@@ -18,6 +18,14 @@ export const C = {
   /** Near-white used by the "why choose" and FAQ sections. */
   paper: '#FFFAFF',
   paperSoft: '#FFF8FF',
+  /**
+   * The Academy experience cards: `#FAF7FD` fill on the `paper` band, held apart
+   * by a 1px `#F3E8FF` rule rather than by fill contrast. Painting the card in
+   * `paperSoft` on a `paper` band - two points of green apart, no shadow, no
+   * border - is why it read as having no background at all.
+   */
+  cardTint: '#FAF7FD',
+  cardRule: '#F3E8FF',
   /** Footer band. */
   footer: '#F8F2FD',
 
@@ -95,6 +103,13 @@ export const HERO_FADE =
  */
 export const SECTORS_GRADIENT =
   'linear-gradient(to bottom, #FFF8FF 0%, #FFF3FF 34%, #FFEDFF 66%, #FFE7FF 100%)';
+
+/**
+ * The colour `SECTORS_GRADIENT` lands on. The curve strip entering the peach band
+ * has to start from this - `paper` (#FFFAFF) is near-white and leaves a visible
+ * seam against the gradient's much pinker foot. Keep the two in step.
+ */
+export const SECTORS_GRADIENT_END = '#FFE7FF';
 
 /** The hero's second headline line carries the same sweep as ink. */
 export const TEXT_GRADIENT = 'linear-gradient(to right, #7727BA 0%, #B038D0 45%, #E9479A 100%)';
