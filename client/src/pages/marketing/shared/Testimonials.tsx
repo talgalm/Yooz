@@ -14,9 +14,58 @@ export interface Testimonial {
 
 interface TestimonialsProps {
   items: Testimonial[];
+  /**
+   * Paint the soft pink field behind the cards. Off by default: Business,
+   * Tourism and Academy share this component and sit on their own grounds.
+   */
+  wash?: boolean;
 }
 
-const Root = styled('section')({ paddingBlock: 56, [BP.mobile]: { paddingBlock: 36 } });
+/**
+ * The pink field behind the cards, traced column by column off the Home frame.
+ * Fill is #FFE8FF on #FFFAFF ground. Its top edge dips to a low around x660
+ * before climbing steeply to the right, and its underside bellies out to a
+ * maximum near x1127 - both edges curve, so this is a closed shape rather than
+ * one of `SectionShape`'s single-edge dividers.
+ *
+ * Columns x427..520 scan a false bottom around y4940 because the white cards
+ * occlude the fill there; those three are interpolated, not measured.
+ */
+const WASH_PATH =
+  'M0,68 C230,160 460,310 690,339 C920,335 1230,230 1512,0 L1512,795 C1400,820 1250,842 1127,843 C800,825 400,720 0,370 Z';
+
+const Wash = styled('svg')({
+  position: 'absolute',
+  inset: 0,
+  width: '100%',
+  height: '100%',
+  zIndex: 0,
+  pointerEvents: 'none',
+});
+
+/** Lifts the cards above the wash. Without it the SVG paints over them. */
+const Content = styled('div')({ position: 'relative', zIndex: 1 });
+
+/**
+ * In the frame the field runs y4517..5360 with the cards at y4940..5292 - far
+ * more room above them than below. The padding reproduces that proportion; the
+ * shape stays inside this section rather than reaching up behind the contact
+ * form, which is where it starts in the comp.
+ */
+const Root = styled('section', { shouldForwardProp: (p) => p !== 'wash' })<{ wash?: boolean }>(
+  ({ wash }) => ({
+    position: 'relative',
+    overflow: 'hidden',
+    /**
+     * No background here on purpose. `Page` already grounds everything in
+     * `paper`, which is what the wash reads against, so setting it again only
+     * made this section opaque - and it then painted over the contact form's
+     * drop shadow above it and cut it off along a hard horizontal line.
+     */
+    paddingBlock: wash ? '230px 90px' : 56,
+    [BP.mobile]: { paddingBlock: wash ? '105px 50px' : 36 },
+  }),
+);
 
 const Row = styled('div')({
   display: 'flex',
@@ -103,10 +152,16 @@ const Avatar = styled('span')<{ bg?: string }>(({ bg }) => ({
   flexShrink: 0,
 }));
 
-export default function Testimonials({ items }: TestimonialsProps) {
+export default function Testimonials({ items, wash }: TestimonialsProps) {
   return (
-    <Root>
-      <Container>
+    <Root wash={wash}>
+      {wash && (
+        <Wash viewBox="0 0 1512 843" preserveAspectRatio="none" aria-hidden focusable="false">
+          <path d={WASH_PATH} fill={C.shell} />
+        </Wash>
+      )}
+      <Content>
+        <Container>
         <Row>
           {/*
             Reversed for RTL: the first child of a flex row lands on the RIGHT,
@@ -126,8 +181,9 @@ export default function Testimonials({ items }: TestimonialsProps) {
               </Quote>
             </Reveal>
           ))}
-        </Row>
-      </Container>
+          </Row>
+        </Container>
+      </Content>
     </Root>
   );
 }

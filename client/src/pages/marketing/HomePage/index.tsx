@@ -99,7 +99,7 @@ export default function HomePage() {
       <CustomerLogos title={t.customersTitle} items={t.customers} bg={C.bandPink} marquee />
 
       <ContactForm tone="cream" />
-      <Testimonials items={t.testimonials} />
+      <Testimonials items={t.testimonials} wash />
       <Faq title={t.faqTitle} items={t.faq} />
     </>
   );
