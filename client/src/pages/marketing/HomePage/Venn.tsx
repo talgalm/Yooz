@@ -35,21 +35,36 @@ const Stage = styled('div')({
  * Below 780px they stop overlapping and stack - at phone width the intersections
  * swallow the copy entirely.
  */
-const Unit = styled('div')({
+const Unit = styled('div', { shouldForwardProp: (p) => p !== 'pos' })<{
+  pos: { left: string; top: string };
+}>(({ pos }) => ({
   position: 'absolute',
+  left: pos.left,
+  top: pos.top,
   width: '58%',
   aspectRatio: '1 / 0.94',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  /**
+   * `relative`, not `static`. `Fill` is absolutely positioned, so a static unit
+   * is not its containing block and all three fills resolved against `Stage`
+   * instead - each stretching the full section and stacking into one blob.
+   *
+   * The offsets have to live here rather than on an inline `style` for that to
+   * work: an inline style cannot be overridden by CSS, so `left: 21%` would
+   * survive into the stacked layout and shunt each card sideways.
+   */
   [STACK_BP]: {
-    position: 'static',
+    position: 'relative',
+    left: 'auto',
+    top: 'auto',
     width: '100%',
     aspectRatio: 'auto',
     padding: '26px 22px',
     borderRadius: 22,
   },
-});
+}));
 
 /**
  * `mix-blend-mode: multiply` darkens the intersections the way the comp does,
@@ -61,7 +76,18 @@ const Fill = styled(Blob)({
   height: '100%',
   mixBlendMode: 'multiply',
   filter: 'blur(2px)',
-  [STACK_BP]: { position: 'absolute', mixBlendMode: 'normal', filter: 'none', borderRadius: 22 },
+  /**
+   * `animation: none` matters as much as the radius: the morph keyframes animate
+   * `border-radius`, and an animated value beats a static one, so without this
+   * the fills keep their blob silhouette and the 22px card corners never apply.
+   */
+  [STACK_BP]: {
+    position: 'absolute',
+    mixBlendMode: 'normal',
+    filter: 'none',
+    borderRadius: 22,
+    animation: 'none',
+  },
 });
 
 const Copy = styled('div')({
@@ -114,7 +140,7 @@ export default function Venn({ items }: VennProps) {
   return (
     <Stage>
       {lobes.map(({ lobe, bg, shape, duration, delay, pos }) => (
-        <Unit key={lobe.label} style={pos}>
+        <Unit key={lobe.label} pos={pos}>
           <Fill shape={shape} duration={duration} delay={delay} style={{ background: bg }} />
           <Copy>
             <Label>{lobe.label}</Label>
