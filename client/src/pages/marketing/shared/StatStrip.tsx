@@ -34,6 +34,20 @@ const Value = styled('span')<{ onDark?: boolean }>(({ onDark }) => ({
   [BP.mobile]: { fontSize: 21 },
 }));
 
+/**
+ * The figure as an isolated LTR run. `+50%` carries no strong character - `+` and
+ * `%` are bidi-neutral and the digits are weak - so in the RTL page they resolve
+ * against the paragraph direction and the leading `+` is pushed to the visual
+ * right, rendering as `50%+`. The string is authored correctly; only the bidi
+ * resolution is wrong.
+ *
+ * This sits on an inner inline span rather than on `Value` itself on purpose:
+ * `direction: ltr` on the block would also resolve its `text-align: start` to the
+ * left, and since `Item` is a flex column sized by the 150px label, that would
+ * left-align the figure under a right-aligned Hebrew label.
+ */
+const Figure = styled('span')({ direction: 'ltr', unicodeBidi: 'isolate' });
+
 const Label = styled('span')<{ onDark?: boolean }>(({ onDark }) => ({
   fontSize: 12,
   lineHeight: 1.5,
@@ -49,7 +63,9 @@ export default function StatStrip({ items, onDark }: StatStripProps) {
       <Row>
         {items.map((s) => (
           <Item key={s.label}>
-            <Value onDark={onDark}>{s.value}</Value>
+            <Value onDark={onDark}>
+              <Figure>{s.value}</Figure>
+            </Value>
             <Label onDark={onDark}>{s.label}</Label>
           </Item>
         ))}
