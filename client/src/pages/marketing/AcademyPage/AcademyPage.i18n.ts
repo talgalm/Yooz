@@ -15,42 +15,52 @@ export const texts = {
 
     valueTitle: 'מה יוצא למוסד שלכם מהטמעת Yooz?',
     valueIntro: 'פתרון מקיף שמחבר בין פדגוגיה איכותית לתוצאות ארגוניות מדידות.',
+    /**
+     * Order matters twice over: the grid is 2x2 and RTL fills top-right,
+     * top-left, bottom-right, bottom-left. The comp puts Pedagogical
+     * Intelligence bottom-right and החזר השקעה bottom-left, so those two sit at
+     * indices 2 and 3 in that order - reversing them mirrors the block.
+     *
+     * Colours are sampled from the frame, not guessed. On the first card only,
+     * the tag is green while the tile and glyph are lavender; the other three
+     * share one hue across all three.
+     */
     valueCards: [
       {
         tag: 'מניעת נטישה פרואקטיבית',
-        tagColor: '#1E8A53',
-        tileBg: '#E4F6EA',
-        icon: '❓',
+        tagColor: '#059669',
+        tileBg: '#F3E8FF',
+        icon: '/images/marketing/icons/acad-head-question.svg',
         title: 'זינוק בשימור סטודנטים ומניעת נשירה מקורסים קשים',
-        body: 'קורסי סינון ומבואות גורמים לתסכול רב. בעזרת מיקרו-תגמולים, משוב מיידי ומנגנון "Level-Up", הסטודנטים מרגישים התקדמות רציפה ולא נכנעים לפערי למידה ראשוניים.',
-        proof: 'שיפור של 28% בממוצע ציוני מעבר קורסים ראשוניים',
+        body: 'קורסי סינון ומבואות גורמים לתסכול רב. בעזרת מיקרו-תגמולים, משוב מיידי ומנגנון "Level-Up", הסטודנט מרגיש התקדמות רציפה ולא נכנע לפערי למידה ראשוניים.',
+        proof: 'שיפור של 28% בממוצע ציוני מעבר קורסים סופיים',
       },
       {
         tag: 'Plug & Play אמיתי',
-        tagColor: '#6A0E9A',
-        tileBg: '#EEE2FA',
-        icon: '🧩',
+        tagColor: '#5A1B87',
+        tileBg: '#F3E8FF',
+        icon: '/images/marketing/icons/acad-puzzle.svg',
         title: 'מיצוב אקדמי חדשני',
         body: 'הובלת חדשנות בהוראה אקדמית והטמעת טכנולוגיות מתקדמות, המבדלות את המוסד ומושכות סטודנטים המחפשים למידה רלוונטית ומותאמת לעידן הדיגיטלי.',
         proof: 'הטמעת טכנולוגיות AI',
       },
       {
-        tag: 'החזר השקעה מובהק',
-        tagColor: '#1E8A53',
-        tileBg: '#E4F6EA',
-        icon: '🐷',
-        title: 'חיסכון בשעות תגבור ושיפור המוניטין',
-        body: 'שימור סטודנטים באקדמיה שווה מאות אלפי שקלים בשכר לימוד. הפחתת עומסי מרצים במענה לשאלות חוזרות, חיסכון במועדי ג׳ ושיפור משמעותי במשוב ההוראה המוסדי.',
-        proof: 'החזר השקעה מלא כבר בסמסטר הראשון',
-      },
-      {
         tag: 'Pedagogical Intelligence',
-        tagColor: '#D6337F',
-        tileBg: '#FBE2EE',
-        icon: '📈',
+        tagColor: '#EC4899',
+        tileBg: '#FCE7F3',
+        icon: '/images/marketing/icons/acad-chart-up.svg',
         title: 'דאטה ואנליטיקה התנהגותית בזמן אמת לסגל האקדמי',
         body: 'מערכת בינה מלאכותית מנטרת תבניות אינטראקציה, מזהה מראש נקודות חולשה של סטודנטים מתקשים, ומתריעה למרצה עוד לפני שהסטודנט שוקל לפרוש מהקורס.',
         proof: 'דוחות חיזוי הצלחה בדיוק של מעל 91%',
+      },
+      {
+        tag: 'החזר השקעה מובהק',
+        tagColor: '#047857',
+        tileBg: '#D1FAE5',
+        icon: '/images/marketing/icons/acad-piggy.svg',
+        title: 'חיסכון בשעות תגבור ושיפור המוניטין',
+        body: 'שימור סטודנטים באקדמיה שווה מאות אלפי שקלים בשכר לימוד. הפחתת עומסי מרצים במענה לשאלות חוזרות, חיסכון במועדי ג׳ ושיפור משמעותי במשוב ההוראה המוסדי.',
+        proof: 'החזר השקעה מלא כבר בסמסטר הראשון',
       },
     ],
 
@@ -108,10 +118,10 @@ export const texts = {
     valueTitle: 'What does your institution gain from Yooz?',
     valueIntro: 'A comprehensive solution connecting quality pedagogy to measurable institutional results.',
     valueCards: [
-      { tag: 'Proactive retention', tagColor: '#1E8A53', tileBg: '#E4F6EA', icon: '❓', title: 'A leap in retention, and fewer dropouts from hard courses', body: 'Gateway and foundation courses cause real frustration. With micro-rewards, instant feedback and a Level-Up mechanic, students feel continuous progress instead of surrendering to early gaps.', proof: '28% improvement in average foundation-course pass grades' },
-      { tag: 'Genuine Plug & Play', tagColor: '#6A0E9A', tileBg: '#EEE2FA', icon: '🧩', title: 'An innovative academic position', body: 'Leading innovation in academic teaching and embedding modern technology, differentiating the institution and attracting students who want learning fitted to the digital era.', proof: 'AI technology embedded' },
-      { tag: 'Clear return on investment', tagColor: '#1E8A53', tileBg: '#E4F6EA', icon: '🐷', title: 'Fewer support hours, a better reputation', body: 'Retaining students is worth hundreds of thousands in tuition. Less lecturer load answering repeat questions, fewer resit sittings, and a marked lift in institutional teaching feedback.', proof: 'Full payback within the first semester' },
-      { tag: 'Pedagogical Intelligence', tagColor: '#D6337F', tileBg: '#FBE2EE', icon: '📈', title: 'Real-time behavioural analytics for faculty', body: 'An AI system monitors interaction patterns, identifies weak points for struggling students in advance, and alerts the lecturer before the student considers leaving the course.', proof: 'Success-prediction reports accurate to over 91%' },
+      { tag: 'Proactive retention', tagColor: '#059669', tileBg: '#F3E8FF', icon: '/images/marketing/icons/acad-head-question.svg', title: 'A leap in retention, and fewer dropouts from hard courses', body: 'Gateway and foundation courses cause real frustration. With micro-rewards, instant feedback and a Level-Up mechanic, students feel continuous progress instead of surrendering to early gaps.', proof: '28% improvement in average final-course pass grades' },
+      { tag: 'Genuine Plug & Play', tagColor: '#5A1B87', tileBg: '#F3E8FF', icon: '/images/marketing/icons/acad-puzzle.svg', title: 'An innovative academic position', body: 'Leading innovation in academic teaching and embedding modern technology, differentiating the institution and attracting students who want learning fitted to the digital era.', proof: 'AI technology embedded' },
+      { tag: 'Pedagogical Intelligence', tagColor: '#EC4899', tileBg: '#FCE7F3', icon: '/images/marketing/icons/acad-chart-up.svg', title: 'Real-time behavioural analytics for faculty', body: 'An AI system monitors interaction patterns, identifies weak points for struggling students in advance, and alerts the lecturer before the student considers leaving the course.', proof: 'Success-prediction reports accurate to over 91%' },
+      { tag: 'Clear return on investment', tagColor: '#047857', tileBg: '#D1FAE5', icon: '/images/marketing/icons/acad-piggy.svg', title: 'Fewer support hours, a better reputation', body: 'Retaining students is worth hundreds of thousands in tuition. Less lecturer load answering repeat questions, fewer resit sittings, and a marked lift in institutional teaching feedback.', proof: 'Full payback within the first semester' },
     ],
 
     experienceTitle: 'The pedagogical experience',
