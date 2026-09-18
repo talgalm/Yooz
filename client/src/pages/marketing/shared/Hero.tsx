@@ -155,42 +155,96 @@ const MediaFallback = styled('div')({
 
 // ─── Photo (Academy) variant ───
 
+/** The hero frame is 1512 x 634 in the file. */
 const PhotoStage = styled('div')({
   position: 'relative',
-  minHeight: 520,
+  minHeight: 634,
   display: 'flex',
   alignItems: 'center',
-  [BP.mobile]: { minHeight: 400 },
+  overflow: 'hidden',
+  [BP.mobile]: { minHeight: 440 },
 });
 
+/**
+ * Two layers, not one. The photograph carries its own gradient fill, whose
+ * direction and strength both come from the file rather than being assumed:
+ *
+ *   handles  start=(0, 0.5) -> end=(1, 0.5)   i.e. horizontal, left to right
+ *   stops    FFFFFF a0.00  ->  5B005B a1.00
+ *   fill opacity 0.54                          i.e. never full strength
+ *
+ * So the end stop composites to 54% alpha, baked in here because CSS gradients
+ * have no layer-opacity equivalent. Running it `to bottom` at full strength (an
+ * earlier guess) darkened the foot of the hero and made the copy panel read as a
+ * hard-edged box against it.
+ */
 const PhotoBg = styled('div')<{ src?: string }>(({ src }) => ({
   position: 'absolute',
   inset: 0,
-  background: src ? `url(${src}) center/cover` : `linear-gradient(120deg, ${C.heading}, ${C.purpleDeep})`,
+  backgroundImage: src
+    ? `linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(91,0,91,0.54) 100%), url(${src})`
+    : `linear-gradient(120deg, ${C.heading}, ${C.purpleDeep})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
 }));
 
+/**
+ * The copy panel: `SOLID 360A4D` at 78% opacity, inset rather than full-bleed.
+ * In the file it runs x730..1512 and y224..723 of a hero starting at y89 - so it
+ * floats against the right edge, clear of the top and bottom.
+ */
 const PhotoWash = styled('div')({
   position: 'absolute',
-  inset: 0,
-  background: `linear-gradient(to left, ${C.heading} 4%, rgba(56,8,80,0.88) 34%, rgba(56,8,80,0.12) 72%, rgba(56,8,80,0) 100%)`,
+  right: 0,
+  top: '21.3%',
+  width: '51.7%',
+  height: '78.7%',
+  background: 'rgba(54,10,77,0.78)',
+  /**
+   * `radii=[75, 0, 0, 0]` in the file - only the top-left corner is rounded. The
+   * panel is flush to the right frame edge and to its own foot, so that is the
+   * one corner actually floating over the photograph.
+   */
+  borderStartEndRadius: 75,
+  [BP.mobile]: { top: 0, width: '100%', height: '100%', borderStartEndRadius: 40 },
 });
 
+/** Text is right-aligned in the file (H1 at x757, lead at x826), not centred. */
 const PhotoCopy = styled('div')({
   position: 'relative',
   zIndex: 1,
-  maxWidth: 560,
-  marginInlineStart: 'auto',
-  paddingBlock: 70,
+  maxWidth: 655,
+  /**
+   * `margin-inline-END: auto` to sit at the inline START, which under RTL is the
+   * RIGHT edge - where the copy panel is. Using `margin-inline-start: auto` did
+   * the opposite and threw the text to the left, away from its own panel.
+   */
+  marginInlineEnd: 'auto',
+  /**
+   * The panel's own padding in the file is `39/100/49/74`. Eased back to ~72 on
+   * the inline start and opened up at the top by request - both deliberate steps
+   * away from the measured values, so restore 100 / 39 if the file wins.
+   */
+  paddingInlineStart: 'clamp(24px, 4.8vw, 72px)',
+  paddingBlock: '104px 70px',
   color: C.white,
+  textAlign: 'start',
   animation: `${fadeUp} 0.6s ease-out both`,
-  '& h1': { color: C.white },
+  /** Academy sets its hero at 80/700/89 - larger and lighter than the shared H1. */
+  '& h1': {
+    color: C.white,
+    fontSize: 'clamp(34px, 5.3vw, 80px)',
+    fontWeight: 700,
+    lineHeight: 1.11,
+  },
   [REDUCED_MOTION]: { animation: 'none' },
 });
 
+/** 24 / 400 in the file - an earlier pass had this at 15.5. */
 const PhotoLead = styled('p')({
-  fontSize: 15.5,
-  lineHeight: 1.85,
-  color: 'rgba(255,255,255,0.9)',
+  fontSize: 'clamp(16px, 1.6vw, 24px)',
+  lineHeight: 1.35,
+  color: 'rgba(255,255,255,0.92)',
   margin: '0 0 28px',
 });
 
@@ -202,9 +256,12 @@ const WhiteCta = styled('a')({
   color: C.heading,
   textDecoration: 'none',
   borderRadius: RADIUS.button,
-  padding: '15px 46px',
-  fontSize: 16,
-  fontWeight: 800,
+  // Button box is 215 x 68 with 24 / 500 type.
+  padding: '20px 46px',
+  minWidth: 215,
+  boxSizing: 'border-box',
+  fontSize: 24,
+  fontWeight: 500,
   boxShadow: SHADOW.card,
   transition: 'transform 0.16s ease',
   '&:hover': { transform: 'translateY(-2px)' },
