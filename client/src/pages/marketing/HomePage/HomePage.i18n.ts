@@ -56,6 +56,7 @@ export const texts = {
       { name: 'שדה אליהו', caption: 'פעילות מרכז מבקרים', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
       { name: 'מכללת פרס', caption: 'הנחיית קורסים תואר ראשון ושני', logoUrl: '/images/marketing/logo-peres.png' },
       { name: 'האקדמית', caption: 'סימולטור לקבלת החלטות רפואיות', logoUrl: '/images/marketing/logo-academic-tlv.png' },
+      { name: 'קופ״ח כללית', caption: 'פעילות גיבוש עובדים בפריסה רחבה', logoUrl: '/images/marketing/logo-clalit.svg' },
     ],
 
     testimonials: [
@@ -151,6 +152,7 @@ export const texts = {
       { name: 'Sde Eliyahu', caption: 'Visitor centre activity', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
       { name: 'Peres College', caption: 'Bachelor and master course delivery', logoUrl: '/images/marketing/logo-peres.png' },
       { name: 'Academic TLV', caption: 'Medical decision-making simulator', logoUrl: '/images/marketing/logo-academic-tlv.png' },
+      { name: 'Clalit Health', caption: 'Employee engagement activity at scale', logoUrl: '/images/marketing/logo-clalit.svg' },
     ],
 
     testimonials: [

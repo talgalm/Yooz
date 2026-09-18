@@ -96,7 +96,7 @@ export default function HomePage() {
         shapeFrom={C.bandLavender}
       />
 
-      <CustomerLogos title={t.customersTitle} items={t.customers} bg={C.bandPink} />
+      <CustomerLogos title={t.customersTitle} items={t.customers} bg={C.bandPink} marquee />
 
       <ContactForm tone="cream" />
       <Testimonials items={t.testimonials} />
