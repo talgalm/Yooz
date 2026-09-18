@@ -93,10 +93,22 @@ const Text = styled('div')({
 export default function Venn({ items }: VennProps) {
   const [engage, grow, share] = items;
 
+  /**
+   * Physical `left`, deliberately - not `inset-inline-start`.
+   *
+   * These are the diagram's own coordinates, read off the frame left to right:
+   * Share outermost on the left, Engage overlapping above it, Grow to the right.
+   * `inset-inline-start` measures from the RIGHT under RTL, so it mirrored the
+   * whole figure - Share was pinned hard right and Grow ended up leftmost.
+   *
+   * A Venn's arrangement is not reading-direction dependent, so it stays physical
+   * and renders identically in Hebrew and English. The copy inside each lobe is
+   * centred, so nothing in here needs to flip.
+   */
   const lobes = [
-    { lobe: engage, bg: C.vennEngage, shape: 'a' as const, duration: 20, delay: 0, pos: { insetInlineStart: '21%', top: '0%' } },
-    { lobe: grow, bg: C.vennGrow, shape: 'b' as const, duration: 24, delay: -6, pos: { insetInlineStart: '42%', top: '30%' } },
-    { lobe: share, bg: C.vennShare, shape: 'c' as const, duration: 22, delay: -12, pos: { insetInlineStart: '1%', top: '32%' } },
+    { lobe: engage, bg: C.vennEngage, shape: 'a' as const, duration: 20, delay: 0, pos: { left: '21%', top: '0%' } },
+    { lobe: grow, bg: C.vennGrow, shape: 'b' as const, duration: 24, delay: -6, pos: { left: '42%', top: '30%' } },
+    { lobe: share, bg: C.vennShare, shape: 'c' as const, duration: 22, delay: -12, pos: { left: '1%', top: '32%' } },
   ];
 
   return (
