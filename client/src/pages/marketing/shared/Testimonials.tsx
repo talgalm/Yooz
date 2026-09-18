@@ -1,4 +1,5 @@
 import { styled } from '@mui/material/styles';
+import { useLang } from '../../../context/LanguageContext';
 import { C, SHADOW, BP, REDUCED_MOTION } from './tokens';
 import { Container } from './styled';
 import Reveal from './Reveal';
@@ -153,6 +154,15 @@ const Avatar = styled('span')<{ bg?: string }>(({ bg }) => ({
 }));
 
 export default function Testimonials({ items, wash }: TestimonialsProps) {
+  const { dir } = useLang();
+  /**
+   * Only reverse under RTL. A flex row puts its first child on the right there,
+   * but in the frame items[0] is the LEFT card, so the pair needs flipping to
+   * keep each quote with its own author. Under LTR the array order is already
+   * the visual order and reversing it re-introduces exactly that bug.
+   */
+  const ordered = dir === 'rtl' ? [...items].reverse() : items;
+
   return (
     <Root wash={wash}>
       {wash && (
@@ -169,7 +179,7 @@ export default function Testimonials({ items, wash }: TestimonialsProps) {
             college-lecturer quote). Rendering in array order mirrored the pair,
             which reads as the wrong person saying each quote.
           */}
-          {[...items].reverse().map((item, i) => (
+          {ordered.map((item, i) => (
             <Reveal key={item.author} delay={i * 90}>
               <Quote tilt={i % 2 === 0 ? 3 : -3} lift={i % 2 === 0 ? 18 : 0}>
                 <Stars aria-label="5/5">★★★★★</Stars>

@@ -17,6 +17,18 @@ body {
   text-align: right;
 }
 
+/*
+ * Hebrew is the default, so `body` above stays RTL - the participant and admin
+ * screens are Hebrew-only and assume it in places. `LanguageProvider` writes
+ * `dir` onto <html>, but the `dir` attribute only carries `direction`, never
+ * `text-align`. Without this the marketing site in English laid out
+ * left-to-right while every line stayed flushed right.
+ */
+html[dir='ltr'] body {
+  direction: ltr;
+  text-align: left;
+}
+
 #root {
   min-height: 100dvh;
 }
@@ -86,6 +98,14 @@ textarea,
 select {
   direction: rtl;
   text-align: right;
+}
+
+/* Same reasoning as `body`: fields are RTL by default, LTR only when asked. */
+html[dir='ltr'] input,
+html[dir='ltr'] textarea,
+html[dir='ltr'] select {
+  direction: ltr;
+  text-align: left;
 }
 
 /*

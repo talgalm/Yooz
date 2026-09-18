@@ -184,14 +184,19 @@ const MediaFallback = styled("div")({
 
 // ─── Photo (Academy) variant ───
 
-/** The hero frame is 1512 x 634 in the file. */
+/**
+ * The hero frame is 1512 x 634 in the file, cut back by ~35% here by request -
+ * at full height it ate most of the viewport on every screen size. The padding
+ * and type inside came down with it: the stage grows past `minHeight` whenever
+ * the copy is taller, so trimming this alone would have changed nothing.
+ */
 const PhotoStage = styled("div")({
   position: "relative",
-  minHeight: 634,
+  minHeight: 495,
   display: "flex",
   alignItems: "center",
   overflow: "hidden",
-  [BP.mobile]: { minHeight: 440 },
+  [BP.mobile]: { minHeight: 360 },
 });
 
 /**
@@ -215,6 +220,16 @@ const PhotoBg = styled("div")<{ src?: string }>(({ src }) => ({
     : `linear-gradient(120deg, ${C.heading}, ${C.purpleDeep})`,
   backgroundSize: "cover",
   backgroundPosition: "center",
+  /**
+   * CSS gradients have no logical direction, so this has to be mirrored by hand.
+   * The wash darkens toward whichever edge the copy panel sits on - the inline
+   * start, so the right under RTL and the left under LTR.
+   */
+  '[dir="ltr"] &': src
+    ? {
+        backgroundImage: `linear-gradient(to left, rgba(255,255,255,0) 0%, rgba(91,0,91,0.54) 100%), url(${src})`,
+      }
+    : {},
 }));
 
 /**
@@ -224,14 +239,31 @@ const PhotoBg = styled("div")<{ src?: string }>(({ src }) => ({
  */
 const PhotoWash = styled("div")({
   position: "absolute",
-  right: 0,
-  top: "21.3%",
+  /**
+   * Inline-START, matching the copy's `margin-inline-end: auto`, which puts the
+   * text at the inline start too. Under RTL that is the right edge, as the file
+   * has it; under LTR both flip to the left together. `inset-inline-END` is the
+   * opposite edge and split the two apart - panel on one side, its own text on
+   * the other.
+   */
+  insetInlineStart: 0,
+  /**
+   * The panel's top is a PERCENTAGE of the stage while the copy's is a fixed
+   * `padding-block` - so the two only agree at one stage height. At the file's
+   * 634 the frame's 21.3% sat above the copy's 200px padding; once that padding
+   * came down to 100 the panel started BELOW the heading and its first line
+   * spilled onto bare photograph. Raised to keep the copy inside its backdrop,
+   * and the height raised with it so the panel stays flush to the foot.
+   */
+  top: "10%",
   /**
    * 782px at the 1512 frame width, opened to 860 so the H1 sets on two lines
-   * instead of three. Capped so it stops growing on wide screens.
+   * instead of three. Capped so it stops growing on wide screens. English runs
+   * longer than the Hebrew this was measured from, so LTR gets more room.
    */
   width: "min(56.9%, 860px)",
-  height: "78.7%",
+  '[dir="ltr"] &': { width: "min(68%, 1040px)" },
+  height: "90%",
   background: "rgba(54,10,77,0.78)",
   /**
    * `radii=[75, 0, 0, 0]` in the file - only the top-left corner is rounded. The
@@ -257,6 +289,8 @@ const PhotoCopy = styled("div")({
    * lines. A fixed px here let the panel outgrow the copy on wide screens.
    */
   maxWidth: "min(47.6%, 720px)",
+  /** Matches the panel's own LTR widening - English needs the longer measure. */
+  '[dir="ltr"] &': { maxWidth: "min(58%, 900px)" },
   /**
    * `margin-inline-END: auto` to sit at the inline START, which under RTL is the
    * RIGHT edge - where the copy panel is. Using `margin-inline-start: auto` did
@@ -269,14 +303,18 @@ const PhotoCopy = styled("div")({
    * away from the measured values, so restore 100 / 39 if the file wins.
    */
   paddingInlineStart: 72,
-  paddingBlock: "200px 70px",
+  paddingBlock: "100px 70px",
   color: C.white,
   textAlign: "start",
   animation: `${fadeUp} 0.6s ease-out both`,
-  /** Academy sets its hero at 80/700/89 - larger and lighter than the shared H1. */
+  /**
+   * The file sets this at 80/700/89. Scaled back with the stage - the H1 is the
+   * single biggest contributor to the hero's height, so leaving it at 80 would
+   * have held the section tall no matter what `minHeight` said.
+   */
   "& h1": {
     color: C.white,
-    fontSize: "clamp(34px, 5.3vw, 80px)",
+    fontSize: "clamp(31px, 4.6vw, 68px)",
     fontWeight: 700,
     lineHeight: 1.11,
   },
@@ -354,17 +392,19 @@ const WhiteCta = styled("a")({
  * the mercy of whichever face happened to cover that codepoint. `currentColor`
  * keeps it locked to the button's text colour, including on hover.
  */
+/**
+ * The path puts its apex at x=2.9 and its base at x=9.2, so it points LEFT -
+ * correct for Hebrew. An SVG path carries no logical direction, so LTR has to
+ * mirror it by hand, the same as the `ArrowGlyph` in `FeatureSplit`.
+ */
+const Play = styled("svg")({
+  flexShrink: 0,
+  '[dir="ltr"] &': { transform: "scaleX(-1)" },
+});
+
 function PlayGlyph() {
   return (
-    <svg
-      width="16"
-      height="18"
-      viewBox="0 0 12 12"
-      fill="none"
-      aria-hidden
-      focusable="false"
-      style={{ flexShrink: 0 }}
-    >
+    <Play width="16" height="18" viewBox="0 0 12 12" fill="none" aria-hidden focusable="false">
       <path
         d="M9.2 1.8 2.9 6l6.3 4.2z"
         stroke="currentColor"
@@ -372,7 +412,7 @@ function PlayGlyph() {
         strokeLinejoin="round"
         strokeLinecap="round"
       />
-    </svg>
+    </Play>
   );
 }
 

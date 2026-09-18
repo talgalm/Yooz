@@ -116,18 +116,20 @@ const Bold = styled('strong')({ fontWeight: 800, color: C.heading });
  * Drawn rather than typed, for the same reason as the hero's marker: an arrow
  * character renders at whatever weight and baseline the fallback font decides.
  * `currentColor` keeps it on the link's colour through the hover change.
+ *
+ * The path puts its head at x=1, so it points LEFT - correct for Hebrew, where
+ * the arrow trails the label on the left and leads the eye onward. An SVG path
+ * has no logical direction, so LTR has to mirror it by hand; without this,
+ * English got a left-pointing arrow sitting to the right of the label.
  */
+const Arrow = styled('svg')({
+  flexShrink: 0,
+  '[dir="ltr"] &': { transform: 'scaleX(-1)' },
+});
+
 function ArrowGlyph() {
   return (
-    <svg
-      width="15"
-      height="12"
-      viewBox="0 0 16 12"
-      fill="none"
-      aria-hidden
-      focusable="false"
-      style={{ flexShrink: 0 }}
-    >
+    <Arrow width="15" height="12" viewBox="0 0 16 12" fill="none" aria-hidden focusable="false">
       <path
         d="M15 6H1m0 0 4.6-4.6M1 6l4.6 4.6"
         stroke="currentColor"
@@ -135,7 +137,7 @@ function ArrowGlyph() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
+    </Arrow>
   );
 }
 
