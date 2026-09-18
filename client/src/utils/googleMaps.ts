@@ -28,11 +28,26 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
     script.id = SCRIPT_ID;
     script.async = true;
     script.src =
-      `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(API_KEY)}` +
-      `&libraries=geometry&loading=async`;
+      `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(API_KEY)}&loading=async`;
     script.onload = () => {
-      if (window.google?.maps) resolve(window.google.maps);
-      else reject(new Error('maps_load_failed'));
+      const maps = window.google?.maps;
+      if (!maps) {
+        reject(new Error('maps_load_failed'));
+        return;
+      }
+      // Under `loading=async` the bootstrap resolves before the individual
+      // libraries are attached, so `new maps.Geocoder()` at this point throws
+      // "not a constructor". Awaiting them puts the classes on the namespace
+      // (importLibrary attaches them for compatibility), so every call site can
+      // keep using `new maps.X` instead of threading library handles around.
+      Promise.all([
+        maps.importLibrary('maps'),
+        maps.importLibrary('marker'),
+        maps.importLibrary('geocoding'),
+        maps.importLibrary('routes'),
+      ])
+        .then(() => resolve(maps))
+        .catch(() => reject(new Error('maps_load_failed')));
     };
     script.onerror = () => {
       // Let a later attempt retry instead of caching the failure forever.
