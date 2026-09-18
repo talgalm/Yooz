@@ -43,6 +43,24 @@ export const Page = styled('div')({
   color: C.ink,
   minHeight: '100dvh',
   overflowX: 'clip',
+  /**
+   * `MarketingLayout` puts `dir` on this element, and the `dir` attribute carries
+   * `direction` but never `text-align` - so without this the English site laid
+   * out left-to-right while every line stayed flushed right, inherited from the
+   * `body { text-align: right }` in `App.css`.
+   *
+   * `start` rather than a global `html[dir='ltr'] body` override: that rule is
+   * app-wide, and 61 of the 69 `.i18n.ts` files are outside marketing, so it
+   * would have flipped every translated participant, admin and manager screen to
+   * LTR as well. Scoped here, the rest of the app keeps exactly the behaviour it
+   * had, and this follows whatever direction the layout sets.
+   */
+  textAlign: 'start',
+  /**
+   * `App.css` pins every field to `direction: rtl; text-align: right` globally.
+   * Marketing fields follow the page instead - same reasoning, same scope.
+   */
+  '& input, & textarea, & select': { direction: 'inherit', textAlign: 'start' },
 });
 
 /**
