@@ -42,3 +42,50 @@ export function offsetMeters(origin: LatLng, north: number, east: number): LatLn
     lng: origin.lng + toDeg(east / (R * Math.cos(toRad(origin.lat)))),
   };
 }
+
+// ─── Arrival detection (map modules) ───────────────────────────────────────
+
+/** Trigger radius when the activity doesn't set one. */
+export const DEFAULT_PROXIMITY_METERS = 10;
+/** Fixes worse than this are wifi/cell-tower guesses, not GPS — ignore them. */
+export const MAX_USABLE_ACCURACY_M = 50;
+/** Cap on how much reported accuracy we'll forgive, so one bad fix can't put
+ *  the participant "at" every station at once. */
+const MAX_FORGIVEN_ACCURACY_M = 25;
+/** Arrived at `radius`, still arrived until `radius * this` — stops the marker
+ *  strobing as the fix jitters across the boundary. */
+const LEAVE_HYSTERESIS = 2.5;
+
+export interface Fix extends LatLng {
+  /** Browser-reported 68%-confidence radius, meters (`coords.accuracy`). */
+  accuracy: number;
+}
+
+/**
+ * Distance to `target` minus the fix's own error envelope, floored at 0.
+ *
+ * This is the whole trick behind a workable 10m radius: a phone standing at the
+ * sign routinely reads 12m out with ±15m accuracy, and comparing raw distance
+ * against the radius leaves that participant stuck. Comparing the optimistic
+ * edge of the error circle agrees with the person who can see the station.
+ */
+export function effectiveDistance(from: Fix, target: LatLng): number {
+  const forgiven = Math.min(Math.max(from.accuracy, 0), MAX_FORGIVEN_ACCURACY_M);
+  return Math.max(0, distanceMeters(from, target) - forgiven);
+}
+
+/**
+ * Whether the participant counts as standing at `target`.
+ *
+ * `wasArrived` applies the exit hysteresis: pass the previous result in so a
+ * jittering fix doesn't flip the station open and shut.
+ */
+export function hasArrived(
+  from: Fix,
+  target: LatLng,
+  radius = DEFAULT_PROXIMITY_METERS,
+  wasArrived = false,
+): boolean {
+  if (from.accuracy > MAX_USABLE_ACCURACY_M) return wasArrived; // junk fix: hold
+  return effectiveDistance(from, target) <= (wasArrived ? radius * LEAVE_HYSTERESIS : radius);
+}

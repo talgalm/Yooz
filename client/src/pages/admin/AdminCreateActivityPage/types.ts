@@ -1,7 +1,20 @@
 export type LoginField = 'email' | 'phoneNumber' | 'name';
 export type ConnectionType = 'single' | 'group';
 export type GroupEntryMode = 'preset' | 'selfService';
-export type ModuleType = 'none' | 'story' | 'spiders';
+export type ModuleType = 'none' | 'story' | 'spiders' | 'map';
+
+/** Module types built through the item-list wizard (steps 1-3). Every module
+ *  type except 'none' is one, so new types are covered without editing this. */
+export function isWizardModule(t: ModuleType): boolean {
+  return t !== 'none';
+}
+
+/** Where a map-module station physically is. */
+export interface ItemLocation {
+  lat: number;
+  lng: number;
+  address?: string;
+}
 export type OpeningType = 'none' | 'video' | 'image';
 export type TriggerPoint = 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
 export type ConditionType = 'none' | 'participantCount';
@@ -69,6 +82,7 @@ export interface ModuleItem {
   isFinal?: boolean; // spiders only: locked until all others are completed
   revisitable?: boolean; // roadmap: allow re-entering this item after it is completed
   collageSplit?: CollageSplit; // collage stations only: split into N parts across the activity
+  location?: ItemLocation; // map modules only: where this station is on the ground
 }
 
 export interface CustomInstructions {
@@ -102,7 +116,9 @@ export interface Activity {
     missionRef?: string;
     showStationNumbers?: boolean;
     showItemTitleNumbers?: boolean;
-    items: { type: 'game' | 'station'; ref: string; groups?: string[]; collageSplit?: CollageSplit; data?: { _id: string; name: string; type?: string; settings?: Record<string, unknown>; description?: string; customer?: string; theme?: string } }[];
+    groupOrders?: Record<string, number[]>;
+    proximityMeters?: number;
+    items: { type: 'game' | 'station'; ref: string; groups?: string[]; collageSplit?: CollageSplit; location?: ItemLocation; data?: { _id: string; name: string; type?: string; settings?: Record<string, unknown>; description?: string; customer?: string; theme?: string } }[];
     popups?: {
       _id?: string;
       title: string;

@@ -20,9 +20,20 @@ export interface ICollageSplit {
   photoOrder?: number[];
 }
 
+/** Where a `map` module item physically is. Lives on the module item, not on
+ *  the Station: a Station is a reusable template that can appear in several
+ *  activities at different addresses. */
+export interface IItemLocation {
+  lat: number;
+  lng: number;
+  /** What the admin typed / what geocoding resolved — display only. */
+  address?: string;
+}
+
 export interface IModuleItem {
   type: 'game' | 'station' | 'mission';
   ref: Types.ObjectId;
+  location?: IItemLocation; // map modules only
   groups?: string[]; // when set, only these groups see this item (empty/undefined = all groups)
   spiderSvg?: string; // optional SVG URL for spiders module display
   isFinal?: boolean; // spiders only: this item is locked until all others are completed
@@ -48,7 +59,7 @@ export interface IPopupMessage {
 }
 
 export interface IModuleConfig {
-  type: 'story' | 'mission' | 'spiders'; // module types
+  type: 'story' | 'mission' | 'spiders' | 'map'; // module types
   theme?: string; // e.g. 'spy' – visual theme wrapper
   backgroundImage?: string; // URL or empty
   items: IModuleItem[]; // ordered mix of games and stations
@@ -56,6 +67,13 @@ export interface IModuleConfig {
   missionRef?: Types.ObjectId; // reference to Mission document (when type='mission')
   showStationNumbers?: boolean; // spiders only: show station number in top-right of each node
   showItemTitleNumbers?: boolean; // show item index in in-station/game title (e.g. "3. ...")
+  /** Map only: per-group visiting order, group name -> permutation of `items`
+   *  indices. A group with no entry walks `items` in its stored order. */
+  groupOrders?: Record<string, number[]>;
+  /** Map only: how close (meters) a participant must be for a station to open.
+   *  Defaults to 10. Phone GPS is only good to ~5-15m, so
+   *  arrival also subtracts the fix's own reported accuracy — see `hasArrived`. */
+  proximityMeters?: number;
 }
 
 export type ActivityStatus = 'preview' | 'live';
@@ -236,6 +254,12 @@ const collageSplitSchema = new Schema<ICollageSplit>({
   photoOrder: { type: [Number], default: undefined },
 }, { _id: false });
 
+const itemLocationSchema = new Schema<IItemLocation>({
+  lat: { type: Number, required: true },
+  lng: { type: Number, required: true },
+  address: { type: String },
+}, { _id: false });
+
 const moduleItemSchema = new Schema<IModuleItem>({
   type: { type: String, required: true, enum: ['game', 'station', 'mission'] },
   ref: { type: Schema.Types.ObjectId, required: true },
@@ -244,10 +268,11 @@ const moduleItemSchema = new Schema<IModuleItem>({
   isFinal: { type: Boolean },
   revisitable: { type: Boolean },
   collageSplit: { type: collageSplitSchema },
+  location: { type: itemLocationSchema },
 }, { _id: false });
 
 const moduleConfigSchema = new Schema<IModuleConfig>({
-  type: { type: String, required: true, enum: ['story', 'mission', 'spiders'], default: 'story' },
+  type: { type: String, required: true, enum: ['story', 'mission', 'spiders', 'map'], default: 'story' },
   theme: { type: String },
   backgroundImage: { type: String },
   showStationNumbers: { type: Boolean, default: false },
@@ -255,6 +280,8 @@ const moduleConfigSchema = new Schema<IModuleConfig>({
   items: { type: [moduleItemSchema], default: [] },
   popups: { type: [popupMessageSchema], default: [] },
   missionRef: { type: Schema.Types.ObjectId, ref: 'Mission' },
+  groupOrders: { type: Schema.Types.Mixed, default: undefined },
+  proximityMeters: { type: Number, default: undefined },
 }, { _id: false });
 
 const openingSchema = new Schema<IOpening>({

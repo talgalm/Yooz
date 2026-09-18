@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { ActivityConfigResponse, JwtPayload } from '../types';
 import { JWT_SECRET } from '../config';
 import { authenticateToken } from '../middleware/auth';
-import { Activity, Report, Game, Station, Mission, CustomTheme } from '../models';
+import { Activity, Report, Game, Station, Mission, CustomTheme, MapGroupState } from '../models';
 import mongoose from 'mongoose';
 import { subscribe, sendLockEvent } from '../utils/lockBroadcaster';
 import { getParticipantCount } from '../utils/participantCountCache';
@@ -11,9 +11,11 @@ import { getOrderSurveyLiveState } from '../utils/orderSurveySession';
 import { getGroupStatus } from '../utils/groupStatus';
 import { ownReportFilter } from '../utils/participantAuth';
 import { resolveCeiling, normalizeScore } from '../utils/scoreNormalization';
-import { startOfTodayIsrael } from '../utils/israelTime';
+import { startOfTodayIsrael, israelDayString } from '../utils/israelTime';
+import { visibleOrderedIndices } from '../utils/moduleItems';
 import { onGroupMemberCompleted } from '../services/groupRewardService';
 import activityGroupsRouter from './activityGroups';
+import mapRunRouter from './mapRun';
 
 const router = Router();
 
@@ -54,6 +56,7 @@ function publicStationSettings(
 
 // Group self-service routes — must be registered before /:code
 router.use(activityGroupsRouter);
+router.use(mapRunRouter);
 
 // Public: get activity config by code (for /play/:code)
 router.get('/:code', async (req: Request<{ code: string }>, res: Response<ActivityConfigResponse | { error: string }>) => {
@@ -202,15 +205,11 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const missionMap = new Map(missions.map((m: any) => [m._id.toString(), m]));
 
-  // Filter items by participant group (if activity uses groups)
-  const moduleItems = (activity.module.items || []).filter((item) => {
-    // If item has no group restriction, show to everyone
-    if (!item.groups || item.groups.length === 0) return true;
-    // If participant has a group, check if it's in the item's groups
-    if (participantGroup) return item.groups.includes(participantGroup);
-    // No group specified but item has restrictions — still show (single mode)
-    return true;
-  });
+  // Hide items this group isn't addressed to, then apply the group's own
+  // visiting order (map modules). Both shift indices — the client's 0..n-1 is
+  // the index space progress is recorded in.
+  const moduleItems = visibleOrderedIndices(activity.module, participantGroup)
+    .map((i) => activity.module!.items[i]);
 
   // Build populated items array in order
   const populatedItems = moduleItems.map((item) => {
@@ -227,6 +226,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         spiderSvg: item.spiderSvg,
         ...(item.isFinal && { isFinal: true }),
         ...(item.revisitable && { revisitable: true }),
+        ...(item.location && { location: item.location }),
       };
     }
     const data = item.type === 'game'
@@ -244,6 +244,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         spiderSvg: item.spiderSvg,
         ...(item.isFinal && { isFinal: true }),
         ...(item.revisitable && { revisitable: true }),
+        ...(item.location && { location: item.location }),
       };
     } else {
       return {
@@ -257,6 +258,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.isFinal && { isFinal: true }),
         ...(item.revisitable && { revisitable: true }),
         ...(item.collageSplit && { collageSplit: item.collageSplit }),
+        ...(item.location && { location: item.location }),
       };
     }
   }).filter(Boolean);
@@ -309,6 +311,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     backgroundImage: activity.module.backgroundImage,
     ...(activity.module.showStationNumbers && { showStationNumbers: true }),
     ...(activity.module.showItemTitleNumbers && { showItemTitleNumbers: true }),
+    ...(activity.module.proximityMeters && { proximityMeters: activity.module.proximityMeters }),
     items: populatedItems,
     popups: filteredPopups.map((p) => ({
       _id: p._id,
@@ -460,7 +463,23 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
   // Group activities: also return per-group standings (sum of member scores).
   // ponytail: time-mode group ranking not supported — groups always rank by points.
   let groups;
-  if (activity.connectionType === 'group') {
+  if (activity.module?.type === 'map') {
+    // A map activity's team score is kept on the shared run: only one member
+    // plays each station, so summing members' reports would still be right but
+    // the run doc is what the map itself is scored against.
+    const runs = await MapGroupState.find(
+      { activityId: activity._id, activityDay: israelDayString() },
+      { groupName: 1, score: 1, completedIndices: 1 },
+    ).sort({ score: -1 }).lean();
+    // No `members` here: the run doc doesn't track headcount, and inventing a
+    // number for a field nobody renders is worse than leaving it out.
+    groups = runs.map((r, i) => ({
+      rank: i + 1,
+      name: r.groupName,
+      score: r.score || 0,
+      completed: (r.completedIndices || []).length,
+    }));
+  } else if (activity.connectionType === 'group') {
     const agg = await Report.aggregate([
       { $match: { activityId: activity._id, group: { $type: 'string', $ne: '' }, 'data.totalScore': { $exists: true }, ...dateFilter } },
       { $group: { _id: '$group', score: { $sum: '$data.totalScore' }, members: { $sum: 1 } } },

@@ -274,6 +274,9 @@ interface LeaderboardViewProps {
   bgStyle: React.CSSProperties;
   leaderboardMode?: 'points' | 'time' | 'both';
   leaderboardAsGrade?: boolean;
+  /** Map activities race against the other teams in plain sight, so they see
+   *  every group's standing — the opposite of the default own-group-only rule. */
+  showAllGroups?: boolean;
   onBack: () => void;
   onLogout: () => void;
   t: Record<string, string>;
@@ -288,6 +291,7 @@ export default function LeaderboardView({
   isLoading,
   leaderboardMode = 'points',
   leaderboardAsGrade = false,
+  showAllGroups = false,
   onBack,
   onLogout,
   t,
@@ -344,7 +348,9 @@ export default function LeaderboardView({
               <SectionTitle>{t.leaderboardGroupsTitle}</SectionTitle>
               <PlayerList style={{ marginBottom: 20 }}>
                 {(() => {
-                  // Only my group's score (with its real rank among all groups).
+                  // Map activities show the whole field; everything else shows
+                  // only my group's score, with its real rank among all groups.
+                  if (showAllGroups) return groupLeaderboard;
                   const mine = currentGroup ? groupLeaderboard.find((g) => g.name === currentGroup) : undefined;
                   return mine ? [mine] : [];
                 })().map((entry, i) => (

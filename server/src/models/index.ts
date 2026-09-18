@@ -1,6 +1,6 @@
 export { Station, type IStation } from './Station';
 export { Layout, type ILayout } from './Layout';
-export { Activity, type IActivity, type IModuleConfig, type IModuleItem } from './Activity';
+export { Activity, type IActivity, type IModuleConfig, type IModuleItem, type IItemLocation } from './Activity';
 export { ActivityGroup, type IActivityGroup, normalizeGroupName } from './ActivityGroup';
 export { PhoneRegistration, type IPhoneRegistration } from './PhoneRegistration';
 export {
@@ -26,3 +26,4 @@ export { DevTask, type IDevTask, type DevTaskType, type DevTaskStatus } from './
 export { CollageJob, type ICollageJob, type CollageJobPhase } from './CollageJob';
 export { SiteContent, DEFAULT_SITE_CONTENT, type ISiteContent, type LocalizedText, type IAudience, type IBooster, type IProject, type ICustomerLogo } from './SiteContent';
 export { ContactLead, type IContactLead } from './ContactLead';
+export { MapGroupState, type IMapGroupState } from './MapGroupState';

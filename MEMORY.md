@@ -76,6 +76,10 @@ are first-time setup / manual ops. Lambda deploy: `.github/workflows/deploy-lamb
 `REGISTER_PHONE_KEY` (shared secret for the public register-phone API; unset = that one endpoint
 refuses every call, nothing else is affected).
 In production, `JWT_SECRET`/`ADMIN_EMAIL`/`ADMIN_PASSWORD` are **required** (throws otherwise).
+Client build-time (Vite, baked into the bundle — not read at runtime): `VITE_GOOGLE_MAPS_KEY`
+(map modules, §16), `VITE_GOOGLE_CLIENT_ID`, `VITE_FACEBOOK_APP_ID`, `VITE_API_URL`. The deploy
+workflow sources `/etc/yooz/prod.env` **before** `npm run build` in `client/`, so a GitHub secret
+`SM_VITE_GOOGLE_MAPS_KEY` reaches the bundle with no workflow edit.
 
 ---
 
@@ -129,12 +133,14 @@ Login config: `loginFields: ('email'|'phoneNumber'|'name')[]`, `emailGoogle?`,
 `portalId?`, `isContinuous?` (portal-login continuous activity), `folderId?` (dashboard folder).
 
 **Module** (`module: IModuleConfig`):
-- `type: 'story'|'mission'|'spiders'`, `theme?` (e.g. `'spy'`), `backgroundImage?`.
+- `type: 'story'|'mission'|'spiders'|'map'`, `theme?` (e.g. `'spy'`), `backgroundImage?`.
 - `items: IModuleItem[]` — ordered `{type:'game'|'station'|'mission', ref: ObjectId,
   groups?: string[] (only these groups see it), spiderSvg?, isFinal? (spiders lock),
   collageSplit? (split a collage station into N parts across the activity),
-  revisitable? (completed item stays re-openable from the roadmap — see §11)}`.
+  revisitable? (completed item stays re-openable from the roadmap — see §11),
+  location? ({lat,lng,address?} — where the station physically is, map modules only, §16)}`.
 - `missionRef?` (when `type='mission'`), `showStationNumbers?`, `showItemTitleNumbers?`.
+- `groupOrders?` (map: group name → permutation of item indices), `proximityMeters?` (map: §16).
 - `popups?: IPopupMessage[]` — see §11.
 
 **Leaderboard/scoring flags**: `leaderboardMode: 'points'|'time'|'both'`,
@@ -271,7 +277,9 @@ lets async handlers throw. `/api/health` (DB check) and `/api/load-status` are p
 ### Participant / activity — `/api/activities` (`activities.ts` + `activityGroups.ts`)
 - `GET /:code` — public activity config (login fields, connection type, groups, opening, schedule).
 - `GET /:code/module` — the ordered module (games/stations/missions populated); filters items
-  by the participant's group (`item.groups`).
+  by the participant's group (`item.groups`) **and** reorders them by `module.groupOrders`
+  (map modules) — both via `utils/moduleItems.ts::visibleOrderedIndices`. Filtering and
+  reordering shift indices: the client's 0..n-1 is the index space progress is recorded in.
 - `GET /:code/lock-stream` — SSE of `lockedFromIndex` (manager live lock).
 - `GET /:code/leaderboard` — points/time/group standings; respects `leaderboardCurrentDayOnly`
   (forced on by `dailyReset`), `leaderboardAsGrade`; group standings = summed member scores
@@ -281,6 +289,10 @@ lets async handlers throw. `/api/health` (DB check) and `/api/load-status` are p
 - `POST /:code/scores` *(participant JWT)* — final score submit → completes the Report.
 - `DELETE /:code/my-report` / `GET /:code/my-progress` *(participant JWT)* — replay support.
 - `GET /:code/order-survey/status` *(participant JWT)* — live order-survey phase.
+- **Map runs** (mounted via `mapRunRouter`, all *participant JWT*, all group-scoped — §16):
+  `POST /:code/map/position` (report a GPS fix; server decides if you're the group's broadcaster),
+  `GET /:code/map/state` (own group's shared progress + every *other* group's marker/score),
+  `POST /:code/map/complete` (record a finished station for the whole team; idempotent).
 - `POST /:code/mission-event`, `POST /:code/share-event` — analytics counters.
 - **Groups** (mounted via `activityGroupsRouter`): `GET /:code/groups/check-name`,
   `/today`, `/by-name`, `/by-token/:token`, `/status` *(JWT)*, `POST /:code/groups` (create). §8.
@@ -671,6 +683,50 @@ present view (`OrderSurveyPresentPage` / `manager/present`).
 - Collage encode is the main scaling pressure point (Lambda + load shedding + boot recovery).
 - AI features (help/report/avatar chat, answer check) use Gemini; TTS uses Azure; SMS uses TextMe
   (stub when creds absent).
+
+---
+
+## 16. Map modules (`module.type === 'map'`)
+
+A **team** walks to real places. Same shape as `spiders` (a module type, not a new model): the
+roadmap is swapped for a map, the advance logic changes, everything else — games, stations,
+popups, hints, `PlayingPhase` — is untouched and works inside a map activity for free.
+
+**Config.** Per item: `location {lat,lng,address?}` — on the *module item*, never on the Station,
+because a Station is a reusable template that can appear in several activities at different
+addresses. Per module: `proximityMeters` (default 10) and `groupOrders` (group name → permutation
+of item indices, so each team walks its own order). Per-group order needs **preset** groups —
+self-service teams don't exist until the day, so they all walk the stored order. Admin UI:
+a 📍 button per item (`ModuleItemsSection` → `LocationPopup`, address geocode + manual lat/lng)
+and `GroupOrderEditor.tsx` (hand-rolled DnD + tap-to-swap, no library).
+
+**Shared group progress.** `MapGroupState` (`map_group_states`), day-scoped and unique on
+`{activityId, activityDay, groupName}`. Whoever reaches a station first completes it **for the
+whole team**; teammates pick the new target up on their next poll. `completedIndices` is the only
+progress state — the current target is *derived* (`nextIncompleteIndex`), never stored, so two
+simultaneous completions can't race a counter. `POST /map/complete` filters on
+`completedIndices: {$ne: itemIndex}`, so a second caller scores nothing. Per-participant `Report`s
+are untouched: analytics, exports and the individual leaderboard keep working as before.
+
+**One marker per team.** A group broadcasts one position — the first member to post claims the
+carrier slot, with a 2-minute staleness takeover so a dropped phone doesn't freeze the marker.
+Teammates never see each other; every *other* group is visible, always, along with the full group
+leaderboard (map activities override the own-group-only rule of §11, via `showAllGroups`).
+
+**Arrival is the part that needs care.** Phone GPS reads 5-15m off, so a raw
+`distance <= radius` leaves people standing at the sign with nothing happening.
+`utils/geo.ts::hasArrived` subtracts the fix's own `coords.accuracy` (capped at 25m so one wide
+fix isn't "at" every station), ignores fixes worse than 50m, and applies 2.5× exit hysteresis so
+a jittering fix doesn't flip a station open and shut. The UI shows live distance **and** accuracy
+— a participant who can see the number walks the last few metres themselves — plus an
+"I'm here" override beyond 40m, because GPS under canopy can simply refuse and a walk must never
+deadlock. Covered by `geo.test.ts`.
+
+**Client.** `MapView.tsx` (sibling of `RoadmapView`/`SpidersView`), `hooks/useMapRun.ts` (GPS
+watch + 10s poll + position push), `utils/googleMaps.ts` (script-tag loader, no npm wrapper —
+the JS API already ships map, geocoder and walking directions). Needs `VITE_GOOGLE_MAPS_KEY` (§2);
+without it the map degrades to a panel that still lets the station be opened. Routes are redrawn
+only when the target changes or the walker drifts ~100m — Directions is billed per call.
 
 ---
 

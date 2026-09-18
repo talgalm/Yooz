@@ -31,6 +31,8 @@ import {
   CounterDisplay,
   VerticalStack,
 } from '../styled';
+import { isWizardModule } from './types';
+import { DEFAULT_PROXIMITY_METERS } from '../../../utils/geo';
 import type {
   LoginField,
   ConnectionType,
@@ -42,8 +44,10 @@ import type {
   ModuleItem,
   Activity,
   CustomInstructions,
+  ItemLocation,
 } from './types';
 import ModuleItemsSection from './ModuleItemsSection';
+import GroupOrderEditor from './GroupOrderEditor';
 import PopupMessagesSection from './PopupMessagesSection';
 import ThemeFormModal, { type CustomTheme } from './ThemeFormModal';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
@@ -369,6 +373,9 @@ export default function AdminCreateActivityPage() {
   const [moduleTheme, setModuleTheme] = useState<string>('');
   const [backgroundImage, setBackgroundImage] = useState('');
   const [selectedItems, setSelectedItems] = useState<ModuleItem[]>([]);
+  // Map modules: per-group visiting order, group name -> permutation of item indices.
+  const [groupOrders, setGroupOrders] = useState<Record<string, number[]>>({});
+  const [proximityMeters, setProximityMeters] = useState(DEFAULT_PROXIMITY_METERS);
 
   const [openingType, setOpeningType] = useState<OpeningType>('none');
   const [openingUrl, setOpeningUrl] = useState('');
@@ -524,9 +531,12 @@ export default function AdminCreateActivityPage() {
                 isFinal: (item as { isFinal?: boolean }).isFinal || undefined,
                 revisitable: (item as { revisitable?: boolean }).revisitable || undefined,
                 collageSplit: (item as { collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number } }).collageSplit as ModuleItem['collageSplit'],
+                location: item.location,
               }))
             );
           }
+          if (a.module.groupOrders) setGroupOrders(a.module.groupOrders);
+          if (a.module.proximityMeters) setProximityMeters(a.module.proximityMeters);
         }
         if (a.managerEmail) setManagerEmail(a.managerEmail);
         setUserControl(a.userControl === true);
@@ -830,6 +840,10 @@ export default function AdminCreateActivityPage() {
     });
     setSplitEditorIndex(null);
   };
+  const updateItemLocation = (index: number, location: ItemLocation | undefined) => {
+    setSelectedItems((prev) => prev.map((item, i) => (i === index ? { ...item, location } : item)));
+  };
+
   const updateItemSvg = (index: number, svgUrl: string) => {
     setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, spiderSvg: svgUrl || undefined } : item));
   };
@@ -870,13 +884,13 @@ export default function AdminCreateActivityPage() {
 
   const smsAvailable = connectionType === 'group' && groupEntryMode === 'selfService';
   const hasAnyField = loginFields.size > 0;
-  const isWizardModule = moduleType === 'story' || moduleType === 'spiders';
-  const canGoToStep2 = name.trim().length > 0 && hasAnyField && isWizardModule;
+  const isWizard = isWizardModule(moduleType);
+  const canGoToStep2 = name.trim().length > 0 && hasAnyField && isWizard;
   const canGoToStep3 = canGoToStep2;
 
   useEffect(() => {
-    if (!isWizardModule && step > 1) setStep(1);
-  }, [isWizardModule, step]);
+    if (!isWizard && step > 1) setStep(1);
+  }, [isWizard, step]);
 
   const insertSmsVariable = (token: string) => {
     const el = smsTemplateRef.current;
@@ -927,8 +941,7 @@ export default function AdminCreateActivityPage() {
     e.preventDefault();
     setError('');
 
-    const isWizardModule = moduleType === 'story' || moduleType === 'spiders';
-    if (isWizardModule && step !== 3) {
+    if (isWizard && step !== 3) {
       if (step === 1 && canGoToStep2) setStep(2);
       else if (step === 2) setStep(3);
       return;
@@ -949,7 +962,12 @@ export default function AdminCreateActivityPage() {
       setStep(3);
       return;
     }
-    if (isWizardModule && selectedItems.length === 0) {
+    if (moduleType === 'map' && selectedItems.some((i) => !i.location)) {
+      setError(t.mapMissingLocations);
+      setStep(2);
+      return;
+    }
+    if (isWizard && selectedItems.length === 0) {
       setError(t.step2ItemsRequired);
       setStep(2);
       return;
@@ -991,7 +1009,18 @@ export default function AdminCreateActivityPage() {
       } else if (openingUrl.trim()) {
         payload.opening = { type: openingType, url: openingUrl.trim() };
       }
-      if (moduleType === 'story' || moduleType === 'spiders') {
+      // Orders are keyed by group name, so a renamed or deleted group leaves a
+      // dead entry behind. The server ignores unknown groups already — this just
+      // stops them accumulating in the document forever.
+      const liveGroupOrders = (): Record<string, number[]> =>
+        Object.fromEntries(
+          groupNames
+            .map((n) => n.trim() || 'Group')
+            .filter((n) => groupOrders[n]?.length)
+            .map((n) => [n, groupOrders[n]]),
+        );
+
+      if (isWizardModule(moduleType)) {
         const modulePayload: Record<string, unknown> = {
           type: moduleType,
           theme: moduleTheme || undefined,
@@ -1004,9 +1033,11 @@ export default function AdminCreateActivityPage() {
             ...(moduleType === 'spiders' && i.isFinal && { isFinal: true }),
             ...(i.revisitable && { revisitable: true }),
             ...(i.collageSplit && { collageSplit: i.collageSplit }),
+            ...(moduleType === 'map' && i.location && { location: i.location }),
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
           ...(showItemTitleNumbers && { showItemTitleNumbers: true }),
+          ...(moduleType === 'map' && { proximityMeters, groupOrders: liveGroupOrders() }),
         };
         if (popups.length > 0) {
           modulePayload.popups = popups
@@ -1118,7 +1149,7 @@ export default function AdminCreateActivityPage() {
           <PageTitle>{isEditMode ? t.editTitle : t.title}</PageTitle>
 
           {/* Step bar — only for story/spiders module */}
-          {(moduleType === 'story' || moduleType === 'spiders') && (
+          {isWizardModule(moduleType) && (
             <StepBar>
               <StepPill
                 type="button"
@@ -1200,8 +1231,12 @@ export default function AdminCreateActivityPage() {
                           <div>{t.spiders}</div>
                           <SelectionSubtext>{t.spidersDesc}</SelectionSubtext>
                         </SelectionButton>
+                        <SelectionButton type="button" selected={moduleType === 'map'} onClick={() => setModuleType('map')}>
+                          <div>{t.map}</div>
+                          <SelectionSubtext>{t.mapDesc}</SelectionSubtext>
+                        </SelectionButton>
                       </SelectionGroup>
-                      {(moduleType === 'story' || moduleType === 'spiders') && (
+                      {isWizardModule(moduleType) && (
                         <div>
                           <SectionLabelSmall>{t.themeLabel}</SectionLabelSmall>
                           <ThemeGrid>
@@ -1681,7 +1716,7 @@ export default function AdminCreateActivityPage() {
 
                 {/* Step 1 navigation */}
                 <SectionCardWide>
-                  {(moduleType === 'story' || moduleType === 'spiders') ? (
+                  {isWizardModule(moduleType) ? (
                     <StepNav>
                       <div />
                       <PrimaryButton
@@ -1708,7 +1743,7 @@ export default function AdminCreateActivityPage() {
             )}
 
             {/* ──── STEP 2 ──── */}
-            {step === 2 && (moduleType === 'story' || moduleType === 'spiders') && (
+            {step === 2 && isWizardModule(moduleType) && (
               <>
                 <SectionCardWide>
                   <ModuleItemsSection
@@ -1726,8 +1761,33 @@ export default function AdminCreateActivityPage() {
                     moduleType={moduleType}
                     connectionType={connectionType}
                     groupNames={groupNames}
+                    onUpdateItemLocation={updateItemLocation}
                     t={t}
                   />
+                  {moduleType === 'map' && (
+                    <div style={{ marginTop: 12 }}>
+                      <SectionLabelSmall>{t.mapProximity}</SectionLabelSmall>
+                      <Input
+                        type="number"
+                        min={5}
+                        max={200}
+                        value={proximityMeters}
+                        onChange={(e) => setProximityMeters(Math.max(5, Math.min(200, Number(e.target.value) || DEFAULT_PROXIMITY_METERS)))}
+                        style={{ maxWidth: 120 }}
+                      />
+                      <SectionDescription style={{ marginTop: 4 }}>{t.mapProximityHint}</SectionDescription>
+                    </div>
+                  )}
+                  {moduleType === 'map' && connectionType === 'group' && (
+                    <GroupOrderEditor
+                      groupNames={groupNames}
+                      items={selectedItems}
+                      orders={groupOrders}
+                      setOrders={setGroupOrders}
+                      selfService={groupEntryMode === 'selfService'}
+                      t={t}
+                    />
+                  )}
                   {moduleType === 'spiders' && (
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 12 }}>
                       <input
@@ -1739,7 +1799,7 @@ export default function AdminCreateActivityPage() {
                       {t.showStationNumbers}
                     </label>
                   )}
-                  {(moduleType === 'story' || moduleType === 'spiders') && (
+                  {isWizardModule(moduleType) && (
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 12 }}>
                       <input
                         type="checkbox"
@@ -1986,7 +2046,7 @@ export default function AdminCreateActivityPage() {
             )}
 
             {/* ──── STEP 3 — After-activity SMS ──── */}
-            {step === 3 && (moduleType === 'story' || moduleType === 'spiders') && (
+            {step === 3 && isWizardModule(moduleType) && (
               <>
                 <SectionCardWide>
                   <SectionHeader>

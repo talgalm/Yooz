@@ -53,6 +53,8 @@ import type {
 import GuidelinesPopup from './GuidelinesPopup';
 import RoadmapView from './RoadmapView';
 import SpidersView from './SpidersView';
+import MapView from './MapView';
+import { useMapRun } from '../../hooks/useMapRun';
 import FinishScreen from './FinishScreen';
 import LeaderboardView from './LeaderboardView';
 import PlayingPhase from './PlayingPhase';
@@ -270,6 +272,13 @@ export default function StoryModulePage() {
   // Live manager-controlled progress lock (SSE). Initial value comes from the
   // module fetch; SSE updates override it as soon as the manager toggles.
   const lockedFromIndex = useLockStream(code, data?.lockedFromIndex ?? null);
+  // Map modules: shared group progress + GPS. Inert for every other module type.
+  // The shared run is group state, so a solo map activity has none — it still
+  // walks the map, it just advances sequentially like any other module.
+  const isMap = data?.module?.type === 'map';
+  const isGroupMap = isMap && !!participant?.group;
+  const mapRun = useMapRun(code || '', isGroupMap);
+
   // Keep the screen awake for the whole activity session — a locked screen can
   // get the tab discarded on mobile (Samsung Internet), losing mid-game state.
   useWakeLock(true);
@@ -804,10 +813,30 @@ export default function StoryModulePage() {
     setPhase('roadmap');
   };
 
-  const advanceToNextItem = () => {
+  const advanceToNextItem = (justScored = 0) => {
     if (!data) return;
     if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const completedIdx = currentItemIndex;
+
+    // Map mode: the *group* advances, not the person. Whoever finishes a
+    // station finishes it for the team, so the next target comes back from the
+    // server rather than being computed here — teammates pick it up on their
+    // next poll.
+    if (isGroupMap) {
+      void mapRun.complete(completedIdx, justScored).then((next) => {
+        if (!next) {
+          setPhase('roadmap'); // offline: stay on the map, the poll will catch up
+          return;
+        }
+        if (next.finished) {
+          showPopupsOrRun('endOfActivity', undefined, () => setPhase('finish'));
+          return;
+        }
+        setCurrentItemIndex(next.currentItemIndex);
+        setPhase('roadmap');
+      });
+      return;
+    }
 
     // Spiders mode: all items can be played in any order, track completed set
     if (data.module.type === 'spiders') {
@@ -841,6 +870,17 @@ export default function StoryModulePage() {
       });
     }
   };
+
+  // A teammate completing a station moves the whole group. Only adopt it while
+  // this device is on the map — never yank someone out of a station mid-play.
+  useEffect(() => {
+    if (!isGroupMap || !mapRun.run || phase !== 'roadmap') return;
+    if (mapRun.run.finished) {
+      setPhase('finish');
+      return;
+    }
+    setCurrentItemIndex(mapRun.run.currentItemIndex);
+  }, [isGroupMap, mapRun.run, phase]);
 
   const spidersFinalItemIndex = data
     ? data.module.items.findIndex((it) => it.isFinal)
@@ -924,7 +964,9 @@ export default function StoryModulePage() {
     }
   }, [showPopupsOrRun]);
 
-  // Skip roadmap entirely when there's only 1 station — go directly to playing immediately (not for spiders)
+  // Skip roadmap entirely when there's only 1 station — go directly to playing
+  // immediately (not for spiders, and not for map: a one-station map activity
+  // still has to be walked to, which is the whole point of it).
   const singleItemAutoEntered = useRef(false);
   useEffect(() => {
     if (
@@ -932,6 +974,7 @@ export default function StoryModulePage() {
       data &&
       data.module.items.length === 1 &&
       data.module.type !== 'spiders' &&
+      data.module.type !== 'map' &&
       !singleItemAutoEntered.current
     ) {
       singleItemAutoEntered.current = true;
@@ -1003,7 +1046,7 @@ export default function StoryModulePage() {
       });
     }
 
-    advanceToNextItem();
+    advanceToNextItem(result.score);
   };
 
   const handleOrderSurveySubmit = async (payload: OrderSurveySubmitPayload) => {
@@ -1500,12 +1543,44 @@ export default function StoryModulePage() {
     const isSingleItem = data.module.items.length === 1;
 
     // Single-item activity (non-spiders): useEffect immediately sets phase to 'playing' — render nothing here
-    if (isSingleItem && data.module.type !== 'spiders') return null;
+    if (isSingleItem && data.module.type !== 'spiders' && data.module.type !== 'map') return null;
 
     const roadmapTotalPoints = Math.max(
       0,
       scores.reduce((sum, s) => sum + s.score, 0) - stationHintUsed.size * stationHintPenalty,
     );
+
+    // Map module: the roadmap is a real map the team walks.
+    if (data.module.type === 'map') {
+      return (
+        <>
+          <MapView
+            items={data.module.items}
+            currentItemIndex={currentItemIndex}
+            completedIndices={
+              mapRun.run?.completedIndices
+              ?? Array.from({ length: currentItemIndex }, (_, i) => i)
+            }
+            others={mapRun.others}
+            fix={mapRun.fix}
+            geoError={mapRun.geoError}
+            proximityMeters={data.module.proximityMeters}
+            onArrive={() => handleNodeTap(currentItemIndex)}
+            t={t}
+          />
+          {showGuidelines && progressChecked && !currentPopup && (
+            <GuidelinesPopup
+              itemCount={data.module.items.length}
+              guidelines={data.guidelines}
+              customInstructions={data.customInstructions}
+              onDismiss={handleGuidelinesDismiss}
+              t={t}
+            />
+          )}
+          {popupModal}
+        </>
+      );
+    }
 
     // Spiders module: scatter view with free-order item selection
     if (data.module.type === 'spiders') {
@@ -1637,6 +1712,7 @@ export default function StoryModulePage() {
     return (
       <>
         <LeaderboardView
+          showAllGroups={isMap}
           activityName={data.name}
           leaderboard={leaderboard}
           groupLeaderboard={groupLeaderboard}

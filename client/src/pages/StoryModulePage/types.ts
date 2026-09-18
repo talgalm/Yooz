@@ -1,3 +1,5 @@
+import type { LatLng } from '../../utils/geo';
+
 export interface GameData {
   _id: string;
   name: string;
@@ -15,6 +17,8 @@ export interface GameItemData {
   spiderSvg?: string;
   isFinal?: boolean;
   revisitable?: boolean;
+  /** Map modules: where this station is on the ground. */
+  location?: LatLng & { address?: string };
 }
 
 export interface CollageSplitData {
@@ -38,6 +42,8 @@ export interface StationItemData {
   spiderSvg?: string;
   isFinal?: boolean;
   revisitable?: boolean;
+  /** Map modules: where this station is on the ground. */
+  location?: LatLng & { address?: string };
   collageSplit?: CollageSplitData;
 }
 
@@ -79,6 +85,8 @@ export interface MissionItemData {
   spiderSvg?: string;
   isFinal?: boolean;
   revisitable?: boolean;
+  /** Map modules: where this station is on the ground. */
+  location?: LatLng & { address?: string };
 }
 
 export type ModuleItemData = GameItemData | StationItemData | MissionItemData;
@@ -116,6 +124,8 @@ export interface ModuleData {
   popups?: PopupData[];
   showStationNumbers?: boolean;
   showItemTitleNumbers?: boolean;
+  /** Map modules: how close a participant must be for a station to open. */
+  proximityMeters?: number;
 }
 
 export interface CustomInstructionsData {
@@ -156,7 +166,10 @@ export interface GroupLeaderboardEntry {
   rank: number;
   name: string;
   score: number;
-  members: number;
+  /** Absent for map activities — their run document tracks no headcount. */
+  members?: number;
+  /** Map activities only: stations the team has finished. */
+  completed?: number;
 }
 
 export type Phase = 'roadmap' | 'playing' | 'summary' | 'finish' | 'leaderboard';
@@ -175,4 +188,26 @@ export interface ConfettiPiece {
   color: string;
   size: number;
   rotation: number;
+}
+
+// ─── Map modules ────────────────────────────────────────────────────────────
+
+/** Another team's marker, as seen from this participant's phone. */
+export interface MapGroupMarker {
+  groupName: string;
+  score: number;
+  completedCount: number;
+  totalItems: number;
+  position?: LatLng;
+  positionAt?: string;
+}
+
+/** The caller's own group run — shared by every member of the team. */
+export interface MapRunState {
+  groupName: string;
+  completedIndices: number[];
+  currentItemIndex: number;
+  score: number;
+  totalItems: number;
+  finished: boolean;
 }

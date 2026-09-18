@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { styled } from '@mui/material/styles';
 import { adminApiFetch } from '../../../utils/adminApi';
 import FileUploadButton from '../../../components/FileUploadButton';
-import type { ModuleItem, GameOption, StationOption } from './types';
+import type { ModuleItem, GameOption, StationOption, ItemLocation } from './types';
+import { geocodeAddress, isMapsAvailable } from '../../../utils/googleMaps';
 import ItemPreviewModal from './ItemPreviewModal';
 import {
   SectionLabel,
@@ -286,6 +287,24 @@ const RemoveBtn = styled('button')({
   '&:hover': { color: '#c0392b' },
 });
 
+const LocationButton = styled('button')<{ hasLocation?: boolean }>(({ hasLocation }) => ({
+  background: 'none',
+  border: `1px solid ${hasLocation ? '#00b894' : '#d0d0d0'}`,
+  color: hasLocation ? '#00b894' : '#999',
+  borderRadius: 6,
+  padding: '2px 8px',
+  fontSize: 12,
+  cursor: 'pointer',
+  fontWeight: 500,
+  flexShrink: 0,
+  maxWidth: 190,
+  overflow: 'hidden',
+  whiteSpace: 'nowrap',
+  textOverflow: 'ellipsis',
+  fontFamily: 'inherit',
+  '&:hover': { background: '#eefaf6', borderColor: '#00b894', color: '#00b894' },
+}));
+
 const GroupButton = styled('button')<{ hasGroups?: boolean }>(({ hasGroups }) => ({
   background: 'none',
   border: `1px solid ${hasGroups ? '#6c5ce7' : '#d0d0d0'}`,
@@ -509,6 +528,101 @@ function hebrewFirstCompare(a: string, b: string): number {
 
 type TabType = 'games' | 'stations' | 'missions';
 
+
+/**
+ * Where one map station is. Address lookup fills the coordinates, but the
+ * coordinates stay editable: a courtyard or a specific gate often has no
+ * address a geocoder knows, and dropping a pin by hand is the fallback.
+ */
+function LocationPopup({
+  item,
+  onChange,
+  onClose,
+  t,
+}: {
+  item: ModuleItem;
+  onChange: (location: ItemLocation | undefined) => void;
+  onClose: () => void;
+  t: Record<string, string>;
+}) {
+  const [address, setAddress] = useState(item.location?.address || '');
+  const [status, setStatus] = useState<'idle' | 'searching' | 'notFound' | 'noKey'>('idle');
+
+  const search = async () => {
+    if (!address.trim()) return;
+    if (!isMapsAvailable()) { setStatus('noKey'); return; }
+    setStatus('searching');
+    const found = await geocodeAddress(address.trim());
+    if (!found) { setStatus('notFound'); return; }
+    setStatus('idle');
+    setAddress(found.address);
+    onChange({ lat: found.lat, lng: found.lng, address: found.address });
+  };
+
+  const setCoord = (key: 'lat' | 'lng', raw: string) => {
+    const value = Number(raw);
+    if (!Number.isFinite(value)) return;
+    onChange({ lat: item.location?.lat ?? 0, lng: item.location?.lng ?? 0, address: item.location?.address, [key]: value });
+  };
+
+  return (
+    <GroupPopupOverlay onClick={onClose}>
+      <GroupPopupCard onClick={(e) => e.stopPropagation()}>
+        <GroupPopupTitle>
+          <span style={{ fontSize: 18 }}>📍</span>
+          {t.mapLocation}
+        </GroupPopupTitle>
+        <div style={{ fontWeight: 600, fontSize: 13, color: '#6c5ce7' }}>{item.name}</div>
+
+        <div style={{ display: 'flex', gap: 6 }}>
+          <Input
+            value={address}
+            placeholder={t.mapAddress}
+            onChange={(e) => setAddress(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void search(); } }}
+            style={{ flex: 1 }}
+          />
+          <GroupPopupDone type="button" onClick={() => void search()} disabled={status === 'searching'}>
+            {status === 'searching' ? t.mapFinding : t.mapFind}
+          </GroupPopupDone>
+        </div>
+        {status === 'notFound' && <GroupPopupHint style={{ color: '#d63031' }}>{t.mapNotFound}</GroupPopupHint>}
+        {status === 'noKey' && <GroupPopupHint style={{ color: '#d63031' }}>{t.mapNoKey}</GroupPopupHint>}
+
+        <div style={{ display: 'flex', gap: 6 }}>
+          <label style={{ flex: 1, fontSize: 12, color: '#666' }}>
+            {t.mapLat}
+            <Input
+              type="number"
+              inputMode="decimal"
+              value={item.location?.lat ?? ''}
+              onChange={(e) => setCoord('lat', e.target.value)}
+            />
+          </label>
+          <label style={{ flex: 1, fontSize: 12, color: '#666' }}>
+            {t.mapLng}
+            <Input
+              type="number"
+              inputMode="decimal"
+              value={item.location?.lng ?? ''}
+              onChange={(e) => setCoord('lng', e.target.value)}
+            />
+          </label>
+        </div>
+
+        <GroupPopupActions>
+          <GroupPopupClear type="button" onClick={() => { onChange(undefined); setAddress(''); }}>
+            ✕
+          </GroupPopupClear>
+          <GroupPopupDone type="button" onClick={onClose}>
+            {t.groupAssignDone || 'Done'}
+          </GroupPopupDone>
+        </GroupPopupActions>
+      </GroupPopupCard>
+    </GroupPopupOverlay>
+  );
+}
+
 interface ModuleItemsSectionProps {
   backgroundImage: string;
   setBackgroundImage: (url: string) => void;
@@ -521,6 +635,7 @@ interface ModuleItemsSectionProps {
   onToggleItemFinal?: (index: number) => void;
   onToggleItemRevisitable?: (index: number) => void;
   onConfigureCollageSplit?: (index: number) => void;
+  onUpdateItemLocation?: (index: number, location: ItemLocation | undefined) => void;
   moduleType?: string;
   connectionType: string;
   groupNames: string[];
@@ -539,12 +654,14 @@ export default function ModuleItemsSection({
   onToggleItemFinal,
   onToggleItemRevisitable,
   onConfigureCollageSplit,
+  onUpdateItemLocation,
   moduleType,
   connectionType,
   groupNames,
   t,
 }: ModuleItemsSectionProps) {
   const isSpiders = moduleType === 'spiders';
+  const isMap = moduleType === 'map';
   const [activeTab, setActiveTab] = useState<TabType>('games');
   const [filterText, setFilterText] = useState('');
   const [allGames, setAllGames] = useState<GameOption[]>([]);
@@ -553,6 +670,7 @@ export default function ModuleItemsSection({
   const [loadingItems, setLoadingItems] = useState(true);
   const [previewItem, setPreviewItem] = useState<ModuleItem | null>(null);
   const [groupPopupIndex, setGroupPopupIndex] = useState<number | null>(null);
+  const [locationPopupIndex, setLocationPopupIndex] = useState<number | null>(null);
 
   // Multi-select sub-filters per tab. Empty set = show all.
   const [selectedGameTypes, setSelectedGameTypes] = useState<Set<string>>(new Set());
@@ -950,6 +1068,18 @@ export default function ModuleItemsSection({
                       : (t.allGroups || 'All')}
                   </GroupButton>
                 )}
+                {isMap && onUpdateItemLocation && (
+                  <LocationButton
+                    type="button"
+                    hasLocation={!!item.location}
+                    onClick={(e) => { e.stopPropagation(); setLocationPopupIndex(index); }}
+                    title={item.location?.address || t.mapLocation}
+                  >
+                    📍 {item.location
+                      ? (item.location.address?.split(',')[0] || `${item.location.lat.toFixed(4)}, ${item.location.lng.toFixed(4)}`)
+                      : t.mapLocation}
+                  </LocationButton>
+                )}
                 {isSpiders && onToggleItemFinal && (
                   <FinalButton
                     type="button"
@@ -1053,6 +1183,15 @@ export default function ModuleItemsSection({
             </GroupPopupActions>
           </GroupPopupCard>
         </GroupPopupOverlay>
+      )}
+
+      {locationPopupIndex !== null && selectedItems[locationPopupIndex] && onUpdateItemLocation && (
+        <LocationPopup
+          item={selectedItems[locationPopupIndex]}
+          onChange={(loc) => onUpdateItemLocation(locationPopupIndex, loc)}
+          onClose={() => setLocationPopupIndex(null)}
+          t={t}
+        />
       )}
 
       {/* Preview Modal */}
