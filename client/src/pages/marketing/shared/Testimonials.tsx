@@ -62,8 +62,8 @@ const Root = styled('section', { shouldForwardProp: (p) => p !== 'wash' })<{ was
      * made this section opaque - and it then painted over the contact form's
      * drop shadow above it and cut it off along a hard horizontal line.
      */
-    paddingBlock: wash ? '230px 90px' : 56,
-    [BP.mobile]: { paddingBlock: wash ? '105px 50px' : 36 },
+    paddingBlock: wash ? '110px 90px' : 56,
+    [BP.mobile]: { paddingBlock: wash ? '52px 50px' : 36 },
   }),
 );
 
