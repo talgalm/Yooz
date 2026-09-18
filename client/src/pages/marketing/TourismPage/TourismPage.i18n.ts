@@ -46,16 +46,48 @@ export const texts = {
     caseSubtitle: '״פארקוד״ בגני יהושוע',
     caseIntro: '3 שלבים פשוטים שמחברים את המבקר לסיפור, מעלים מעורבות ומייצרים שיתופים ברשתות',
     caseSteps: ['1. סרטון פתיחה לסדרה', '2. חידות שטח אינטראקטיביות', '3. סרטון מזכרת AI אישי'],
-    caseStepLabel: 'שלב 1: הצתה וחיבור ראשוני',
-    caseCardTitle: 'פתיחה סיפורית ששואבת את המבקר פנימה',
-    caseCardBody:
-      'סריקת QR מהירה בכניסה למצודה פותחת סרטון קצר של שומר הפארק שמציג את סיפור הרקע ומזמין את הקבוצה למצוא את המזוודה הגנובה.',
-    caseChecks: [
-      'ללא צורך בהורדת אפליקציה מחנות האפליקציות',
-      'זמן טעינה מהיר בכל מכשיר',
-      'התאמה לשפות מרובות (עברית, אנגלית, ערבית)',
+    /**
+     * One entry per chip in `caseSteps`, in the same order.
+     *
+     * Stage 1 is transcribed from the frame. Stages 2 and 3 are WRITTEN to match
+     * it - the comp only ever renders the first tab, so there is no source for
+     * the other two. They want a proof-read before launch.
+     */
+    caseStages: [
+      {
+        label: 'שלב 1: הצתה וחיבור ראשוני',
+        title: 'פתיחה סיפורית ששואבת את המבקר פנימה',
+        body: 'סריקת QR מהירה בכניסה למצודה פותחת סרטון קצר של שומר הפארק שמציג את סיפור הרקע ומזמין את הקבוצה למצוא את המזוודה הגנובה.',
+        checks: [
+          'ללא צורך בהורדת אפליקציה מחנות האפליקציות',
+          'זמן טעינה מהיר בכל מכשיר',
+          'התאמה לשפות מרובות (עברית, אנגלית, ערבית)',
+        ],
+        mediaAlt: 'וידאו פתיחה קולנועי מותאם אישית',
+      },
+      {
+        label: 'שלב 2: חקירה בשטח',
+        title: 'חידות שמפעילות את הקבוצה לאורך כל המסלול',
+        body: 'כל תחנה פותחת חידה שמבוססת על מה שרואים במקום - שילוט, פסל או נקודת נוף. הקבוצה מצלמת, עונה ומקבלת רמז לתחנה הבאה, כך שההליכה עצמה הופכת לחלק מהמשחק.',
+        checks: [
+          'ניווט לתחנה הבאה ללא צורך במדריך',
+          'רמזים מדורגים שמונעים תקיעות',
+          'ניקוד בזמן אמת מול שאר הקבוצות',
+        ],
+        mediaAlt: 'חידת שטח אינטראקטיבית באחת התחנות',
+      },
+      {
+        label: 'שלב 3: סיום ושיתוף',
+        title: 'סרטון מזכרת אישי שנבנה מהתמונות של הקבוצה',
+        body: 'בסיום המסלול המערכת מרכיבה סרטון קצר מהתמונות והתשובות של הקבוצה, עם שם הקבוצה והתוצאה הסופית. הסרטון מוכן לשיתוף ברשתות תוך שניות.',
+        checks: [
+          'הרכבה אוטומטית ללא עריכה ידנית',
+          'מיתוג האתר מוטבע על גבי הסרטון',
+          'שיתוף ישיר לוואטסאפ ולאינסטגרם',
+        ],
+        mediaAlt: 'סרטון מזכרת אישי בסיום המסלול',
+      },
     ],
-    caseMediaAlt: 'וידאו פתיחה קולנועי מותאם אישית',
 
     customersTitle: 'לקוחות מרוצים',
     customers: [
@@ -133,16 +165,41 @@ export const texts = {
     caseSubtitle: '"ParKod" at Ganei Yehoshua',
     caseIntro: 'Three simple stages that connect the visitor to the story, raise involvement and generate social shares',
     caseSteps: ['1. Opening clip for the series', '2. Interactive field riddles', '3. Personal AI keepsake clip'],
-    caseStepLabel: 'Stage 1: the spark and first connection',
-    caseCardTitle: 'A story opening that pulls the visitor in',
-    caseCardBody:
-      'A quick QR scan at the fortress entrance opens a short clip of the park keeper, setting up the background story and inviting the group to find the stolen case.',
-    caseChecks: [
-      'No app store download required',
-      'Fast load time on any device',
-      'Multi-language support (Hebrew, English, Arabic)',
+    caseStages: [
+      {
+        label: 'Stage 1: the spark and first connection',
+        title: 'A story opening that pulls the visitor in',
+        body: 'A quick QR scan at the fortress entrance opens a short clip of the park keeper, setting up the background story and inviting the group to find the stolen case.',
+        checks: [
+          'No app store download required',
+          'Fast load time on any device',
+          'Multi-language support (Hebrew, English, Arabic)',
+        ],
+        mediaAlt: 'Cinematic personalised opening video',
+      },
+      {
+        label: 'Stage 2: investigation in the field',
+        title: 'Riddles that keep the group moving along the route',
+        body: 'Each station opens a riddle built on what is actually in front of them - a sign, a sculpture, a viewpoint. The group photographs, answers, and gets a clue to the next station, so the walk itself becomes part of the game.',
+        checks: [
+          'Navigation to the next station without a guide',
+          'Tiered clues that prevent groups getting stuck',
+          'Live scoring against the other groups',
+        ],
+        mediaAlt: 'An interactive field riddle at one of the stations',
+      },
+      {
+        label: 'Stage 3: finish and share',
+        title: 'A personal keepsake clip built from the group’s own photos',
+        body: 'At the end of the route the system assembles a short clip from the group’s photos and answers, with their name and final score. It is ready to share on social networks within seconds.',
+        checks: [
+          'Assembled automatically, with no manual editing',
+          'Site branding baked into the clip',
+          'Shared straight to WhatsApp and Instagram',
+        ],
+        mediaAlt: 'A personal keepsake clip at the end of the route',
+      },
     ],
-    caseMediaAlt: 'Cinematic personalised opening video',
 
     customersTitle: 'Happy customers',
     customers: [
