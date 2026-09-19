@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { styled } from '@mui/material/styles';
 import { adminApiFetch } from '../../../utils/adminApi';
 import FileUploadButton from '../../../components/FileUploadButton';
 import type { ModuleItem, GameOption, StationOption, ItemLocation } from './types';
-import { geocodeAddress, isMapsAvailable, loadGoogleMaps } from '../../../utils/googleMaps';
 import ItemPreviewModal from './ItemPreviewModal';
+import ItemSettingsModal from './ItemSettingsModal';
 import {
   SectionLabel,
   InlineRow,
@@ -15,28 +15,8 @@ import {
 } from '../styled';
 import { Input } from '../../../components/styled';
 
-// ─── Game type icons ───
-
-const GAME_ICONS: Record<string, string> = {
-  trivia: '❓',
-  order: '🔢',
-  puzzle: '🧩',
-  trueFalse: '✅',
-  ballGame: '🏀',
-  trashSort: '♻️',
-};
-
 /** Game `type` values omitted from the activity module picker (still editable in library). */
 const EXCLUDE_TYPES_FROM_ACTIVITY_PICKER = new Set(['trashSort', 'environmentGame']);
-
-const STATION_ICONS: Record<string, string> = {
-  text: '📝',
-  video: '🎬',
-  image: '🖼️',
-  narrative: '📖',
-  badge: '🏅',
-  riddle: '🔤',
-};
 
 interface MissionOption {
   _id: string;
@@ -107,16 +87,23 @@ const SubFilterChip = styled('button')<{ active?: boolean }>(({ active }) => ({
   '&:hover': { borderColor: '#6c5ce7', color: active ? '#fff' : '#6c5ce7' },
 }));
 
+/** The catalogue is long (hundreds of items), so it stays a scroll panel — but
+ *  a framed one, so a half-visible row reads as "scroll for more" instead of a
+ *  clipped page. */
 const Grid = styled('div')({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
   gap: 10,
-  maxHeight: 260,
+  maxHeight: 330,
   overflowY: 'auto',
-  padding: 2,
+  padding: 12,
+  border: '1px solid #ececf4',
+  borderRadius: 12,
+  background: '#fbfbfd',
+  scrollbarGutter: 'stable',
   '@media (max-width: 600px)': {
     gridTemplateColumns: '1fr',
-    maxHeight: 320,
+    maxHeight: 360,
   },
 });
 
@@ -134,25 +121,13 @@ const Card = styled('div')<{ selected?: boolean }>(({ selected }) => ({
   },
 }));
 
-const CardTopRow = styled('div')({
-  display: 'flex',
-  alignItems: 'center',
-  gap: 6,
-  marginBottom: 4,
-});
-
-const CardIcon = styled('span')({
-  fontSize: 18,
-  lineHeight: 1,
-});
-
 const CardName = styled('div')({
   fontWeight: 600,
   fontSize: 14,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
-  flex: 1,
+  marginBottom: 4,
 });
 
 const CardMeta = styled('div')({
@@ -176,22 +151,6 @@ const CardDescription = styled('div')({
   marginTop: 4,
 });
 
-const CheckMark = styled('div')({
-  position: 'absolute',
-  top: 8,
-  left: 8,
-  width: 20,
-  height: 20,
-  borderRadius: '50%',
-  background: '#6c5ce7',
-  color: '#fff',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: 12,
-  fontWeight: 700,
-});
-
 const EmptyState = styled('div')({
   padding: '32px 16px',
   textAlign: 'center',
@@ -199,15 +158,53 @@ const EmptyState = styled('div')({
   fontSize: 14,
 });
 
-const SelectedHeader = styled('div')({
+/** The ordered list is the activity itself, so it gets its own framed card
+ *  above the catalogue rather than a footnote under it. */
+const SelectedPanel = styled('div')({
+  border: '1px solid #ececf4',
+  borderRadius: 12,
+  padding: '14px 16px',
+  background: '#fff',
   display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  marginTop: 16,
-  marginBottom: 8,
+  flexDirection: 'column',
+  gap: 10,
 });
 
-const PreviewButton = styled('button')({
+const SelectedHeader = styled('div')({
+  display: 'flex',
+  alignItems: 'baseline',
+  gap: 10,
+  flexWrap: 'wrap',
+});
+
+const SelectedTitle = styled('h4')({
+  margin: 0,
+  fontSize: 14,
+  fontWeight: 700,
+  color: '#333',
+});
+
+const SelectedCount = styled('span')({
+  fontSize: 12,
+  fontWeight: 700,
+  color: '#6c5ce7',
+  background: '#f0eefa',
+  borderRadius: 999,
+  padding: '1px 10px',
+});
+
+const SelectedEmpty = styled('div')({
+  padding: '18px 12px',
+  textAlign: 'center',
+  color: '#aaa',
+  fontSize: 13,
+  border: '1px dashed #e0e0e8',
+  borderRadius: 10,
+});
+
+/** Small purple-outline action button — used for the row's "Settings" trigger
+ *  and reused inside the settings modal for "Preview". */
+const RowButton = styled('button')({
   background: 'none',
   border: '1px solid #6c5ce7',
   color: '#6c5ce7',
@@ -217,6 +214,7 @@ const PreviewButton = styled('button')({
   cursor: 'pointer',
   fontWeight: 500,
   flexShrink: 0,
+  fontFamily: 'inherit',
   '&:hover': { background: '#f5f0ff' },
 });
 
@@ -253,11 +251,15 @@ const DragItem = styled('div')<{ isDragging?: boolean }>(({ isDragging }) => ({
   },
 }));
 
+/** Drag handle — a plain dot-grid drawn in CSS, no glyph/icon. */
 const DragHandle = styled('span')({
-  fontSize: 16,
-  color: '#aaa',
-  cursor: 'grab',
+  width: 14,
+  height: 18,
   flexShrink: 0,
+  cursor: 'grab',
+  backgroundImage: 'radial-gradient(circle, #bbb 1.4px, transparent 1.4px)',
+  backgroundSize: '6px 6px',
+  backgroundPosition: 'center',
 });
 
 const DragItemName = styled('span')({
@@ -270,103 +272,40 @@ const DragItemName = styled('span')({
   whiteSpace: 'nowrap',
 });
 
-const DragItemIcon = styled('span')({
-  fontSize: 16,
-  flexShrink: 0,
-});
-
+/** Plain text remove button — no glyph. */
 const RemoveBtn = styled('button')({
   background: 'none',
-  border: 'none',
-  color: '#e74c3c',
-  fontSize: 18,
+  border: '1px solid #e3bdb8',
+  color: '#c0392b',
+  borderRadius: 6,
+  padding: '2px 10px',
+  fontSize: 12,
+  fontWeight: 600,
   cursor: 'pointer',
-  padding: '0 4px',
-  lineHeight: 1,
   flexShrink: 0,
-  '&:hover': { color: '#c0392b' },
+  fontFamily: 'inherit',
+  '&:hover': { background: '#fdeeea' },
 });
 
-/** Where the picker opens when the station has no point yet (central Israel —
- *  every Yooz activity so far is there; pan from here rather than from space). */
-const DEFAULT_PICKER_CENTER = { lat: 32.0853, lng: 34.7818 };
-
-const PickerCanvas = styled('div')({
-  width: '100%',
-  height: 260,
-  borderRadius: 10,
-  border: '1px solid #e0e0e0',
-  background: '#f4f4f4',
-});
-
-const PickedCoords = styled('div')({
-  fontSize: 12,
-  color: '#666',
-  fontFamily: 'monospace',
-  textAlign: 'center',
-  direction: 'ltr',
-});
-
-const LocationButton = styled('button')<{ hasLocation?: boolean }>(({ hasLocation }) => ({
-  background: 'none',
-  border: `1px solid ${hasLocation ? '#00b894' : '#d0d0d0'}`,
-  color: hasLocation ? '#00b894' : '#999',
-  borderRadius: 6,
-  padding: '2px 8px',
-  fontSize: 12,
-  cursor: 'pointer',
-  fontWeight: 500,
-  flexShrink: 0,
-  maxWidth: 190,
-  overflow: 'hidden',
-  whiteSpace: 'nowrap',
-  textOverflow: 'ellipsis',
-  fontFamily: 'inherit',
-  '&:hover': { background: '#eefaf6', borderColor: '#00b894', color: '#00b894' },
-}));
-
-const GroupButton = styled('button')<{ hasGroups?: boolean }>(({ hasGroups }) => ({
-  background: 'none',
-  border: `1px solid ${hasGroups ? '#6c5ce7' : '#d0d0d0'}`,
-  color: hasGroups ? '#6c5ce7' : '#999',
-  borderRadius: 6,
-  padding: '2px 8px',
-  fontSize: 12,
-  cursor: 'pointer',
-  fontWeight: 500,
-  flexShrink: 0,
-  display: 'flex',
-  alignItems: 'center',
-  gap: 4,
-  fontFamily: 'inherit',
-  '&:hover': { background: '#f5f0ff', borderColor: '#6c5ce7', color: '#6c5ce7' },
-}));
-
-const SplitButton = styled('button')<{ disabled?: boolean }>(({ disabled }) => ({
-  background: 'none',
-  border: `1px solid ${disabled ? '#e0e0e0' : '#6c5ce7'}`,
-  color: disabled ? '#bbb' : '#6c5ce7',
-  borderRadius: 6,
-  padding: '2px 8px',
-  fontSize: 12,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  fontWeight: 500,
-  flexShrink: 0,
-  display: 'flex',
-  alignItems: 'center',
-  gap: 4,
-  fontFamily: 'inherit',
-  '&:hover': disabled ? {} : { background: '#f5f0ff' },
-}));
-
-const PartBadge = styled('span')({
-  background: '#ede9fe',
-  color: '#6c5ce7',
-  borderRadius: 6,
-  padding: '2px 8px',
-  fontSize: 11,
-  fontWeight: 700,
-  flexShrink: 0,
+/** Status pill for a selected item's row — color communicates state, never an
+ *  icon. Rendered only when it says something other than the default. */
+const StatusBadge = styled('span')<{ tone?: 'neutral' | 'purple' | 'green' | 'red' }>(({ tone = 'neutral' }) => {
+  const palette = {
+    neutral: { bg: '#f5f5f7', fg: '#666' },
+    purple: { bg: '#f0eefa', fg: '#6c5ce7' },
+    green: { bg: '#eafaf1', fg: '#1e8449' },
+    red: { bg: '#fdeeea', fg: '#c0392b' },
+  }[tone];
+  return {
+    background: palette.bg,
+    color: palette.fg,
+    borderRadius: 6,
+    padding: '2px 8px',
+    fontSize: 11,
+    fontWeight: 700,
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
+  };
 });
 
 function getCollageImageLimit(settings: Record<string, unknown> | undefined): number {
@@ -401,142 +340,22 @@ function effectivePartSizes(item: ModuleItem, limit: number): number[] {
   return distributeEvenly(limit, n);
 }
 
-/** Per-item toggle: keep the node open on the roadmap after it is completed. */
-const RevisitLabel = styled('label')({
-  display: 'flex',
-  alignItems: 'center',
-  gap: 4,
-  flexShrink: 0,
-  fontSize: 12,
-  fontWeight: 600,
-  color: '#666',
-  cursor: 'pointer',
-  whiteSpace: 'nowrap',
-  '& input': { cursor: 'pointer', margin: 0 },
-});
-
-const FinalButton = styled('button')<{ isFinal?: boolean }>(({ isFinal }) => ({
-  background: isFinal ? '#f59e0b' : 'none',
-  border: `1px solid ${isFinal ? '#f59e0b' : '#d0d0d0'}`,
-  color: isFinal ? '#fff' : '#999',
-  borderRadius: 6,
-  padding: '2px 8px',
-  fontSize: 12,
-  cursor: 'pointer',
-  fontWeight: 600,
-  flexShrink: 0,
-  display: 'flex',
-  alignItems: 'center',
-  gap: 3,
-  fontFamily: 'inherit',
-  '&:hover': { background: isFinal ? '#d97706' : '#fff8ec', borderColor: '#f59e0b', color: isFinal ? '#fff' : '#f59e0b' },
-}));
-
-const GroupPopupOverlay = styled('div')({
-  position: 'fixed',
-  inset: 0,
-  background: 'rgba(0,0,0,0.3)',
-  zIndex: 1000,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-});
-
-const GroupPopupCard = styled('div')({
-  background: '#fff',
-  borderRadius: 16,
-  padding: '24px 28px',
-  width: 'min(420px, calc(100vw - 32px))',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 16,
-  boxSizing: 'border-box',
-  '@media (max-width: 600px)': {
-    padding: '20px 18px',
-  },
-});
-
-const GroupPopupTitle = styled('h3')({
-  margin: 0,
-  fontSize: 15,
-  fontWeight: 700,
-  color: '#333',
-  display: 'flex',
-  alignItems: 'center',
-  gap: 8,
-});
-
-const GroupPopupHint = styled('p')({
-  margin: 0,
-  fontSize: 12,
-  color: '#999',
-  lineHeight: 1.4,
-});
-
-const GroupCheckList = styled('div')({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 6,
-  maxHeight: 280,
-  overflowY: 'auto',
-});
-
-const GroupCheckRow = styled('label')({
-  display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  padding: '8px 12px',
-  borderRadius: 8,
-  cursor: 'pointer',
-  fontSize: 14,
-  fontWeight: 500,
-  transition: 'background 0.12s',
-  '&:hover': { background: '#f5f0ff' },
-});
-
-const GroupCheckbox = styled('input')({
-  width: 18,
-  height: 18,
-  accentColor: '#6c5ce7',
-  cursor: 'pointer',
-});
-
-const GroupPopupActions = styled('div')({
-  display: 'flex',
-  justifyContent: 'flex-end',
-  gap: 8,
-  marginTop: 4,
-});
-
-const GroupPopupDone = styled('button')({
-  background: '#6c5ce7',
-  color: '#fff',
-  border: 'none',
-  borderRadius: 8,
-  padding: '8px 24px',
-  fontSize: 13,
-  fontWeight: 600,
-  cursor: 'pointer',
-  fontFamily: 'inherit',
-  '&:hover': { background: '#5a4bd1' },
-});
-
-const GroupPopupClear = styled('button')({
-  background: 'none',
-  color: '#999',
-  border: '1px solid #e0e0e0',
-  borderRadius: 8,
-  padding: '8px 16px',
-  fontSize: 13,
-  fontWeight: 500,
-  cursor: 'pointer',
-  fontFamily: 'inherit',
-  '&:hover': { color: '#6c5ce7', borderColor: '#6c5ce7' },
-});
+/** Text label for a selected item's collage-split badge, e.g. "חלק 2/3 · 4 תמונות". */
+function splitBadgeText(item: ModuleItem, t: Record<string, string>): string | null {
+  const split = item.collageSplit;
+  if (!split) return null;
+  const limit = getCollageImageLimit(item.settings);
+  const partSizes = effectivePartSizes(item, limit);
+  const partIdx = split.partIndex ?? 0;
+  const totalParts = partSizes.length;
+  const isVideoPart = split.videoPartIndex === partIdx;
+  const partSize = isVideoPart ? 0 : (partSizes[partIdx] ?? 1);
+  const amount = isVideoPart ? t.collageSplitVideoPartLabel : `${partSize} ${t.collageSplitPhotosLabel}`;
+  return `${t.collageSplitPart} ${partIdx + 1}/${totalParts} · ${amount}`;
+}
 
 function hebrewFirstCompare(a: string, b: string): number {
-  const hebrewRe = /^[\u0590-\u05FF]/;
+  const hebrewRe = /^[֐-׿]/;
   const aHeb = hebrewRe.test(a);
   const bHeb = hebrewRe.test(b);
   if (aHeb && !bHeb) return -1;
@@ -547,150 +366,6 @@ function hebrewFirstCompare(a: string, b: string): number {
 // ─── Component ───
 
 type TabType = 'games' | 'stations' | 'missions';
-
-
-/**
- * Where one map station is. Address lookup fills the coordinates, but the
- * coordinates stay editable: a courtyard or a specific gate often has no
- * address a geocoder knows, and dropping a pin by hand is the fallback.
- */
-function LocationPopup({
-  item,
-  onChange,
-  onClose,
-  t,
-}: {
-  item: ModuleItem;
-  onChange: (location: ItemLocation | undefined) => void;
-  onClose: () => void;
-  t: Record<string, string>;
-}) {
-  const [address, setAddress] = useState(item.location?.address || '');
-  const [status, setStatus] = useState<'idle' | 'searching' | 'notFound' | 'noKey' | 'mapFailed'>('idle');
-  const canvasRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
-  const markerRef = useRef<google.maps.Marker | null>(null);
-  // The popup owns the pin; `onChange` writes it up to the item. Read through a
-  // ref inside map listeners, which are bound once and would otherwise close
-  // over the first render's props forever.
-  const commit = useRef(onChange);
-  commit.current = onChange;
-
-  const place = useCallback((lat: number, lng: number, addr?: string) => {
-    markerRef.current?.setPosition({ lat, lng });
-    mapRef.current?.panTo({ lat, lng });
-    commit.current({ lat, lng, address: addr });
-  }, []);
-
-  // Mount the picker once. Clicking anywhere drops the pin, and the pin itself
-  // drags — a courtyard, a gate or a tree often has no address a geocoder knows,
-  // and pointing at it is the only way to say where the station really is.
-  useEffect(() => {
-    if (!isMapsAvailable()) { setStatus('noKey'); return; }
-    let cancelled = false;
-    loadGoogleMaps()
-      .then((maps) => {
-        if (cancelled || !canvasRef.current) return;
-        const start = item.location ?? DEFAULT_PICKER_CENTER;
-        const map = new maps.Map(canvasRef.current, {
-          center: start,
-          zoom: item.location ? 17 : 12,
-          disableDefaultUI: true,
-          zoomControl: true,
-          clickableIcons: false,
-        });
-        const marker = new maps.Marker({
-          map,
-          position: start,
-          draggable: true,
-          visible: !!item.location,
-        });
-        map.addListener('click', (e: google.maps.MapMouseEvent) => {
-          if (!e.latLng) return;
-          marker.setVisible(true);
-          // A hand-placed pin keeps whatever address was typed as its label —
-          // the text is what the admin recognises the station by.
-          place(e.latLng.lat(), e.latLng.lng());
-        });
-        marker.addListener('dragend', () => {
-          const pos = marker.getPosition();
-          if (pos) place(pos.lat(), pos.lng());
-        });
-        mapRef.current = map;
-        markerRef.current = marker;
-      })
-      .catch(() => { if (!cancelled) setStatus('mapFailed'); });
-    return () => { cancelled = true; };
-    // Mount-only: re-running would rebuild the map under the admin's cursor.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const search = async () => {
-    if (!address.trim()) return;
-    if (!isMapsAvailable()) { setStatus('noKey'); return; }
-    setStatus('searching');
-    const found = await geocodeAddress(address.trim());
-    if (!found) { setStatus('notFound'); return; }
-    setStatus('idle');
-    setAddress(found.address);
-    markerRef.current?.setVisible(true);
-    mapRef.current?.setZoom(17);
-    place(found.lat, found.lng, found.address);
-  };
-
-  const clear = () => {
-    markerRef.current?.setVisible(false);
-    setAddress('');
-    setStatus('idle');
-    onChange(undefined);
-  };
-
-  const loc = item.location;
-  return (
-    <GroupPopupOverlay onClick={onClose}>
-      <GroupPopupCard onClick={(e) => e.stopPropagation()}>
-        <GroupPopupTitle>
-          <span style={{ fontSize: 18 }}>📍</span>
-          {t.mapLocation}
-        </GroupPopupTitle>
-        <div style={{ fontWeight: 600, fontSize: 13, color: '#6c5ce7' }}>{item.name}</div>
-
-        <div style={{ display: 'flex', gap: 6 }}>
-          <Input
-            value={address}
-            placeholder={t.mapAddress}
-            onChange={(e) => setAddress(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void search(); } }}
-            style={{ flex: 1 }}
-          />
-          <GroupPopupDone type="button" onClick={() => void search()} disabled={status === 'searching'}>
-            {status === 'searching' ? t.mapFinding : t.mapFind}
-          </GroupPopupDone>
-        </div>
-
-        <PickerCanvas ref={canvasRef} />
-        <GroupPopupHint>{t.mapPickHint}</GroupPopupHint>
-
-        {status === 'notFound' && <GroupPopupHint style={{ color: '#d63031' }}>{t.mapNotFound}</GroupPopupHint>}
-        {status === 'noKey' && <GroupPopupHint style={{ color: '#d63031' }}>{t.mapNoKey}</GroupPopupHint>}
-        {status === 'mapFailed' && <GroupPopupHint style={{ color: '#d63031' }}>{t.mapPickerFailed}</GroupPopupHint>}
-
-        <PickedCoords>
-          {loc ? `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}` : t.mapNoPoint}
-        </PickedCoords>
-
-        <GroupPopupActions>
-          <GroupPopupClear type="button" onClick={clear}>
-            {t.mapClearPoint}
-          </GroupPopupClear>
-          <GroupPopupDone type="button" onClick={onClose}>
-            {t.groupAssignDone || 'Done'}
-          </GroupPopupDone>
-        </GroupPopupActions>
-      </GroupPopupCard>
-    </GroupPopupOverlay>
-  );
-}
 
 interface ModuleItemsSectionProps {
   backgroundImage: string;
@@ -738,8 +413,7 @@ export default function ModuleItemsSection({
   const [allMissions, setAllMissions] = useState<MissionOption[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
   const [previewItem, setPreviewItem] = useState<ModuleItem | null>(null);
-  const [groupPopupIndex, setGroupPopupIndex] = useState<number | null>(null);
-  const [locationPopupIndex, setLocationPopupIndex] = useState<number | null>(null);
+  const [settingsItemIndex, setSettingsItemIndex] = useState<number | null>(null);
 
   // Multi-select sub-filters per tab. Empty set = show all.
   const [selectedGameTypes, setSelectedGameTypes] = useState<Set<string>>(new Set());
@@ -748,7 +422,7 @@ export default function ModuleItemsSection({
   // Drag state
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const dragItemRef = useRef<number | null>(null);
+  const [dragItemRefValue, setDragItemRefValue] = useState<number | null>(null);
 
   // Fetch all games, stations, and missions on mount
   useEffect(() => {
@@ -847,17 +521,9 @@ export default function ModuleItemsSection({
     });
   };
 
-  const getIcon = (itemType: 'game' | 'station' | 'mission', subType?: string) => {
-    if (itemType === 'mission') return '🎯';
-    if (!subType) return itemType === 'game' ? '🎮' : '📍';
-    return itemType === 'game'
-      ? (GAME_ICONS[subType] || '🎮')
-      : (STATION_ICONS[subType] || '📍');
-  };
-
   // Drag-and-drop handlers
   const handleDragStart = useCallback((index: number) => {
-    dragItemRef.current = index;
+    setDragItemRefValue(index);
     setDragIndex(index);
   }, []);
 
@@ -867,7 +533,7 @@ export default function ModuleItemsSection({
   }, []);
 
   const handleDrop = useCallback((index: number) => {
-    const from = dragItemRef.current;
+    const from = dragItemRefValue;
     if (from === null || from === index) {
       setDragIndex(null);
       setDragOverIndex(null);
@@ -882,33 +548,92 @@ export default function ModuleItemsSection({
     }
     setDragIndex(null);
     setDragOverIndex(null);
-    dragItemRef.current = null;
-  }, [onMoveItem]);
+    setDragItemRefValue(null);
+  }, [dragItemRefValue, onMoveItem]);
 
   const handleDragEnd = useCallback(() => {
     setDragIndex(null);
     setDragOverIndex(null);
-    dragItemRef.current = null;
+    setDragItemRefValue(null);
   }, []);
 
   return (
     <>
-      <InlineRow>
-        <FileUploadButton
-          accept="image/*"
-          onUploaded={(url) => setBackgroundImage(url)}
-          label={t.upload}
-          uploadingLabel={t.uploading}
-        />
-        <FlexInput
-          placeholder={t.backgroundImage}
-          value={backgroundImage}
-          onChange={(e) => setBackgroundImage(e.target.value)}
-        />
-      </InlineRow>
+      {/* The activity's own content comes first — the catalogue below is the
+          tool for filling it, not the other way round. */}
+      <SelectedPanel>
+        <SelectedHeader>
+          <SelectedTitle>{t.selectedItemsTitle}</SelectedTitle>
+          {selectedItems.length > 0 && <SelectedCount>{selectedItems.length}</SelectedCount>}
+          {selectedItems.length > 0 && <SmallMutedText>{t.selectedItemsHint}</SmallMutedText>}
+        </SelectedHeader>
+
+        {selectedItems.length === 0 ? (
+          <SelectedEmpty>{t.selectedItemsEmpty}</SelectedEmpty>
+        ) : (
+          <DragList>
+            {selectedItems.map((item, index) => {
+              const restrictedGroups = connectionType === 'group' && groupNames.length > 0 && item.groups && item.groups.length > 0;
+              const splitText = splitBadgeText(item, t);
+              return (
+                <DragItem
+                  key={`${item.itemType}-${item.ref}-${index}`}
+                  isDragging={dragIndex === index}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDrop={() => handleDrop(index)}
+                  onDragEnd={handleDragEnd}
+                  style={dragOverIndex === index && dragIndex !== index ? { borderTopColor: '#6c5ce7', borderTopWidth: 2 } : {}}
+                  onClick={() => setSettingsItemIndex(index)}
+                >
+                  <DragHandle />
+                  <SmallText style={{ color: '#aaa', fontSize: 13, flexShrink: 0 }}>{index + 1}.</SmallText>
+                  <ItemTypeBadge itemType={item.itemType === 'mission' ? 'station' : item.itemType} style={{ fontSize: 11, padding: '1px 6px', flexShrink: 0, ...(item.itemType === 'mission' ? { background: '#fff3e0', color: '#e65100' } : {}) }}>
+                    {item.itemType === 'game' ? t.itemGame : item.itemType === 'mission' ? (t.mission || 'Mission') : t.itemStation}
+                  </ItemTypeBadge>
+                  <DragItemName>{item.name}</DragItemName>
+                  {restrictedGroups && (
+                    <StatusBadge tone="purple">{t.groupsBadgeLabel}: {item.groups!.length}/{groupNames.length}</StatusBadge>
+                  )}
+                  {isMap && (
+                    <StatusBadge tone={item.location ? 'green' : 'red'}>
+                      {item.location ? t.locationSetLabel : t.locationMissingLabel}
+                    </StatusBadge>
+                  )}
+                  {isSpiders && item.isFinal && <StatusBadge tone="neutral">{t.spidersFinal}</StatusBadge>}
+                  {item.revisitable && <StatusBadge tone="neutral">{t.revisitable}</StatusBadge>}
+                  {splitText && <StatusBadge tone="purple">{splitText}</StatusBadge>}
+                  <RowButton type="button" onClick={(e) => { e.stopPropagation(); setSettingsItemIndex(index); }}>
+                    {t.settingsButton}
+                  </RowButton>
+                  <RemoveBtn type="button" onClick={(e) => { e.stopPropagation(); onRemoveItem(index); }}>{t.removeItem}</RemoveBtn>
+                </DragItem>
+              );
+            })}
+          </DragList>
+        )}
+      </SelectedPanel>
 
       <div>
-        <SectionLabel>{t.step2Title || t.searchItems}</SectionLabel>
+        <SectionLabel>{t.backgroundImageLabel}</SectionLabel>
+        <InlineRow>
+          <FileUploadButton
+            accept="image/*"
+            onUploaded={(url) => setBackgroundImage(url)}
+            label={t.upload}
+            uploadingLabel={t.uploading}
+          />
+          <FlexInput
+            placeholder={t.backgroundImage}
+            value={backgroundImage}
+            onChange={(e) => setBackgroundImage(e.target.value)}
+          />
+        </InlineRow>
+      </div>
+
+      <div>
+        <SectionLabel>{t.addItemsTitle}</SectionLabel>
 
         <TabsRow>
           <Tab type="button" active={activeTab === 'games'} onClick={() => setActiveTab('games')}>
@@ -935,7 +660,6 @@ export default function ModuleItemsSection({
                     active={active}
                     onClick={() => setSelectedGameTypes((prev) => toggleSet(prev, type))}
                   >
-                    <span style={{ fontSize: 13 }}>{GAME_ICONS[type] || '🎮'}</span>
                     {type}
                     <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span>
                   </SubFilterChip>
@@ -943,7 +667,7 @@ export default function ModuleItemsSection({
               })}
             {selectedGameTypes.size > 0 && (
               <SubFilterChip type="button" onClick={() => setSelectedGameTypes(new Set())}>
-                ✕ {t.filterAll || 'All'}
+                {t.filterAll}
               </SubFilterChip>
             )}
           </SubFilterRow>
@@ -962,7 +686,6 @@ export default function ModuleItemsSection({
                     active={active}
                     onClick={() => setSelectedStationTypes((prev) => toggleSet(prev, type))}
                   >
-                    <span style={{ fontSize: 13 }}>{STATION_ICONS[type] || '📍'}</span>
                     {type}
                     <span style={{ opacity: 0.7, fontWeight: 500 }}>({count})</span>
                   </SubFilterChip>
@@ -970,7 +693,7 @@ export default function ModuleItemsSection({
               })}
             {selectedStationTypes.size > 0 && (
               <SubFilterChip type="button" onClick={() => setSelectedStationTypes(new Set())}>
-                ✕ {t.filterAll || 'All'}
+                {t.filterAll}
               </SubFilterChip>
             )}
           </SubFilterRow>
@@ -998,11 +721,7 @@ export default function ModuleItemsSection({
                       selected={sel}
                       onClick={() => handleCardClick('game', game)}
                     >
-                      {sel && <CheckMark>✓</CheckMark>}
-                      <CardTopRow>
-                        <CardIcon>{GAME_ICONS[game.type] || '🎮'}</CardIcon>
-                        <CardName>{game.name}</CardName>
-                      </CardTopRow>
+                      <CardName>{game.name}</CardName>
                       <CardMeta>
                         <ItemTypeBadge itemType="game" style={{ fontSize: 11, padding: '1px 6px' }}>
                           {game.type}
@@ -1028,11 +747,7 @@ export default function ModuleItemsSection({
                       selected={sel}
                       onClick={() => handleCardClick('station', station)}
                     >
-                      {sel && <CheckMark>✓</CheckMark>}
-                      <CardTopRow>
-                        <CardIcon>{STATION_ICONS[station.type] || '📍'}</CardIcon>
-                        <CardName>{station.name}</CardName>
-                      </CardTopRow>
+                      <CardName>{station.name}</CardName>
                       <CardMeta>
                         <ItemTypeBadge itemType="station" style={{ fontSize: 11, padding: '1px 6px' }}>
                           {station.type}
@@ -1058,11 +773,7 @@ export default function ModuleItemsSection({
                       selected={sel}
                       onClick={() => handleMissionClick(mission)}
                     >
-                      {sel && <CheckMark>✓</CheckMark>}
-                      <CardTopRow>
-                        <CardIcon>🎯</CardIcon>
-                        <CardName>{mission.name}</CardName>
-                      </CardTopRow>
+                      <CardName>{mission.name}</CardName>
                       <CardMeta>
                         <ItemTypeBadge itemType="station" style={{ fontSize: 11, padding: '1px 6px', background: '#fff3e0', color: '#e65100' }}>
                           {t.mission || 'mission'}
@@ -1082,183 +793,22 @@ export default function ModuleItemsSection({
         )}
       </div>
 
-      {/* Selected items — drag to reorder */}
-      {selectedItems.length > 0 && (
-        <div>
-          <SelectedHeader>
-            <SmallMutedText>{t.selectedCount}: {selectedItems.length}</SmallMutedText>
-          </SelectedHeader>
-          <DragList>
-            {selectedItems.map((item, index) => (
-              <DragItem
-                key={`${item.itemType}-${item.ref}-${index}`}
-                isDragging={dragIndex === index}
-                draggable
-                onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDrop={() => handleDrop(index)}
-                onDragEnd={handleDragEnd}
-                style={dragOverIndex === index && dragIndex !== index ? { borderTopColor: '#6c5ce7', borderTopWidth: 2 } : {}}
-              >
-                <DragHandle>⠿</DragHandle>
-                <SmallText style={{ color: '#aaa', fontSize: 13, flexShrink: 0 }}>{index + 1}.</SmallText>
-                <DragItemIcon>{getIcon(item.itemType, item.subType)}</DragItemIcon>
-                <ItemTypeBadge itemType={item.itemType === 'mission' ? 'station' : item.itemType} style={{ fontSize: 11, padding: '1px 6px', flexShrink: 0, ...(item.itemType === 'mission' ? { background: '#fff3e0', color: '#e65100' } : {}) }}>
-                  {item.itemType === 'game' ? t.itemGame : item.itemType === 'mission' ? (t.mission || 'Mission') : t.itemStation}
-                </ItemTypeBadge>
-                <DragItemName>{item.name}</DragItemName>
-                {item.subType && <SmallText style={{ flexShrink: 0 }}>{item.subType}</SmallText>}
-                {isSpiders && onUpdateItemSvg && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                    {item.spiderSvg && (
-                      <img
-                        src={item.spiderSvg}
-                        alt=""
-                        style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 4, border: '1px solid #e0e0e0', background: '#f9f9f9', flexShrink: 0 }}
-                      />
-                    )}
-                    <FileUploadButton
-                      accept="image/svg+xml"
-                      onUploaded={(url) => onUpdateItemSvg(index, url)}
-                      label={item.spiderSvg ? '↺' : (t.spidersSvgUpload || 'SVG')}
-                      uploadingLabel={t.spidersSvgUploading || '...'}
-                    />
-                  </div>
-                )}
-                {connectionType === 'group' && groupNames.length > 0 && (
-                  <GroupButton
-                    type="button"
-                    hasGroups={item.groups && item.groups.length > 0}
-                    onClick={(e) => { e.stopPropagation(); setGroupPopupIndex(index); }}
-                  >
-                    <span style={{ fontSize: 14, lineHeight: 1 }}>👥</span>
-                    {item.groups && item.groups.length > 0
-                      ? `${item.groups.length}/${groupNames.length}`
-                      : (t.allGroups || 'All')}
-                  </GroupButton>
-                )}
-                {isMap && onUpdateItemLocation && (
-                  <LocationButton
-                    type="button"
-                    hasLocation={!!item.location}
-                    onClick={(e) => { e.stopPropagation(); setLocationPopupIndex(index); }}
-                    title={item.location?.address || t.mapLocation}
-                  >
-                    📍 {item.location
-                      ? (item.location.address?.split(',')[0] || `${item.location.lat.toFixed(4)}, ${item.location.lng.toFixed(4)}`)
-                      : t.mapLocation}
-                  </LocationButton>
-                )}
-                {isSpiders && onToggleItemFinal && (
-                  <FinalButton
-                    type="button"
-                    isFinal={item.isFinal}
-                    onClick={(e) => { e.stopPropagation(); onToggleItemFinal(index); }}
-                    title={item.isFinal ? (t.spidersFinalRemove || 'Remove final mark') : (t.spidersFinalMark || 'Mark as final station')}
-                  >
-                    🏁 {item.isFinal ? (t.spidersFinal || 'Final') : (t.spidersSetFinal || 'Set Final')}
-                  </FinalButton>
-                )}
-                {item.itemType === 'station' && item.subType === 'collage' && onConfigureCollageSplit && (() => {
-                  const limit = getCollageImageLimit(item.settings);
-                  const split = item.collageSplit;
-                  const partSizes = effectivePartSizes(item, limit);
-                  const partIdx = split?.partIndex ?? 0;
-                  const totalParts = partSizes.length;
-                  const isVideoPart = split?.videoPartIndex === partIdx;
-                  const partSize = isVideoPart ? 0 : (partSizes[partIdx] ?? 1);
-                  return (
-                    <>
-                      {split && (
-                        <PartBadge title={t.collageSplitPartLabel || 'Part of split collage'}>
-                          {(t.collageSplitPart || 'חלק')} {partIdx + 1}/{totalParts} · {isVideoPart ? '🎬' : `${partSize}📷`}
-                        </PartBadge>
-                      )}
-                      <SplitButton
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); onConfigureCollageSplit(index); }}
-                        title={t.collageSplitConfigure || 'Configure split'}
-                      >
-                        ⚙️ {t.collageSplitConfigure || 'פיצול תחנה'}
-                      </SplitButton>
-                    </>
-                  );
-                })()}
-                {onToggleItemRevisitable && (
-                  <RevisitLabel title={t.revisitableHint || 'Participants can re-open this item from the roadmap after completing it'}>
-                    <input
-                      type="checkbox"
-                      checked={!!item.revisitable}
-                      onChange={(e) => { e.stopPropagation(); onToggleItemRevisitable(index); }}
-                    />
-                    {t.revisitable || 'Re-entry'}
-                  </RevisitLabel>
-                )}
-                <PreviewButton type="button" onClick={(e) => { e.stopPropagation(); setPreviewItem(item); }}>
-                  {t.preview}
-                </PreviewButton>
-                <RemoveBtn type="button" onClick={(e) => { e.stopPropagation(); onRemoveItem(index); }}>×</RemoveBtn>
-              </DragItem>
-            ))}
-          </DragList>
-        </div>
-      )}
-
-      {/* Group assignment popup */}
-      {groupPopupIndex !== null && selectedItems[groupPopupIndex] && (
-        <GroupPopupOverlay onClick={() => setGroupPopupIndex(null)}>
-          <GroupPopupCard onClick={(e) => e.stopPropagation()}>
-            <GroupPopupTitle>
-              <span style={{ fontSize: 18 }}>👥</span>
-              {t.groupAssignTitle || 'Group Visibility'}
-            </GroupPopupTitle>
-            <GroupPopupHint>
-              {t.groupAssignHint || 'Select which groups will see this item. If none selected, all groups will see it.'}
-            </GroupPopupHint>
-            <div style={{ fontWeight: 600, fontSize: 13, color: '#6c5ce7' }}>
-              {selectedItems[groupPopupIndex].name}
-            </div>
-            <GroupCheckList>
-              {groupNames.map((gName) => {
-                const currentGroups = selectedItems[groupPopupIndex].groups || [];
-                const isChecked = currentGroups.includes(gName);
-                return (
-                  <GroupCheckRow key={gName}>
-                    <GroupCheckbox
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => {
-                        const next = isChecked
-                          ? currentGroups.filter((g) => g !== gName)
-                          : [...currentGroups, gName];
-                        onUpdateItemGroups(groupPopupIndex, next);
-                      }}
-                    />
-                    {gName}
-                  </GroupCheckRow>
-                );
-              })}
-            </GroupCheckList>
-            <GroupPopupActions>
-              <GroupPopupClear
-                type="button"
-                onClick={() => onUpdateItemGroups(groupPopupIndex, [])}
-              >
-                {t.groupAssignClear || 'Clear (all groups)'}
-              </GroupPopupClear>
-              <GroupPopupDone type="button" onClick={() => setGroupPopupIndex(null)}>
-                {t.groupAssignDone || 'Done'}
-              </GroupPopupDone>
-            </GroupPopupActions>
-          </GroupPopupCard>
-        </GroupPopupOverlay>
-      )}
-
-      {locationPopupIndex !== null && selectedItems[locationPopupIndex] && onUpdateItemLocation && (
-        <LocationPopup
-          item={selectedItems[locationPopupIndex]}
-          onChange={(loc) => onUpdateItemLocation(locationPopupIndex, loc)}
-          onClose={() => setLocationPopupIndex(null)}
+      {settingsItemIndex !== null && selectedItems[settingsItemIndex] && (
+        <ItemSettingsModal
+          item={selectedItems[settingsItemIndex]}
+          index={settingsItemIndex}
+          groupNames={groupNames}
+          connectionType={connectionType}
+          isMap={isMap}
+          isSpiders={isSpiders}
+          onUpdateGroups={onUpdateItemGroups}
+          onUpdateLocation={onUpdateItemLocation}
+          onUpdateSvg={onUpdateItemSvg}
+          onToggleFinal={onToggleItemFinal}
+          onToggleRevisitable={onToggleItemRevisitable}
+          onConfigureSplit={onConfigureCollageSplit}
+          onPreview={() => setPreviewItem(selectedItems[settingsItemIndex])}
+          onClose={() => setSettingsItemIndex(null)}
           t={t}
         />
       )}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, FormEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent, Fragment } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useTranslations, useLang } from '../../../context/LanguageContext';
@@ -50,6 +50,11 @@ import ModuleItemsSection from './ModuleItemsSection';
 import GroupOrderEditor from './GroupOrderEditor';
 import PopupMessagesSection from './PopupMessagesSection';
 import ThemeFormModal, { type CustomTheme } from './ThemeFormModal';
+import ThemePickerModal, {
+  ThemeSwatchTiny,
+  builtInThemeOptions,
+  customThemeOption,
+} from './ThemePickerModal';
 import { useAdminAuth } from '../../../context/AdminAuthContext';
 import EditOnly from '../../../components/EditOnly';
 import CollageSplitEditor, { type SplitEditorResult } from './CollageSplitEditor';
@@ -113,13 +118,20 @@ const CollapsibleSectionHeader = styled('button')({
   color: 'inherit',
 });
 
+/** Disclosure caret drawn from borders rather than a glyph — points down when
+ *  collapsed, up when open. */
 const CollapseChevron = styled('span')<{ expanded?: boolean }>(({ expanded }) => ({
   display: 'inline-block',
-  transition: 'transform 0.15s',
-  transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-  fontSize: 12,
-  color: '#888',
+  width: 0,
+  height: 0,
   flexShrink: 0,
+  marginTop: expanded ? 0 : 4,
+  borderInlineStart: '5px solid transparent',
+  borderInlineEnd: '5px solid transparent',
+  ...(expanded
+    ? { borderBottom: '6px solid #888', borderTop: 'none' }
+    : { borderTop: '6px solid #888', borderBottom: 'none' }),
+  transition: 'margin 0.15s',
 }));
 
 const FormGrid = styled('div')({
@@ -159,50 +171,98 @@ const TextArea = styled('textarea')({
   },
 });
 
-const StepBar = styled('div')({
+// ─── Progress rail — plain numbered circles + labels, no icons ───
+
+const ProgressRail = styled('div')({
   display: 'flex',
-  alignItems: 'center',
+  alignItems: 'flex-start',
   justifyContent: 'center',
   gap: 0,
-  marginBottom: 28,
+  marginBottom: 8,
   flexWrap: 'wrap',
 });
 
-const StepPill = styled('button')<{ active?: boolean; completed?: boolean; position: 'start' | 'middle' | 'end' }>(({ active, completed, position }) => ({
+const ProgressStepBtn = styled('button')({
   display: 'flex',
+  flexDirection: 'column',
   alignItems: 'center',
-  gap: 8,
-  padding: '10px 28px',
-  fontSize: 14,
-  fontWeight: 600,
+  gap: 6,
+  background: 'none',
   border: 'none',
+  padding: '0 6px',
   cursor: 'pointer',
   fontFamily: 'inherit',
-  transition: 'all 0.2s',
-  background: active ? '#6c5ce7' : completed ? '#f0eefa' : '#f5f5f7',
-  color: active ? '#fff' : completed ? '#6c5ce7' : '#aaa',
-  borderStartStartRadius: position === 'start' ? 24 : 0,
-  borderEndStartRadius: position === 'start' ? 24 : 0,
-  borderStartEndRadius: position === 'end' ? 24 : 0,
-  borderEndEndRadius: position === 'end' ? 24 : 0,
-  '@media (max-width: 600px)': {
-    padding: '10px 16px',
-    fontSize: 13,
+  '&:disabled': {
+    cursor: 'not-allowed',
   },
-}));
+});
 
-const StepNumber = styled('span')<{ active?: boolean }>(({ active }) => ({
-  width: 22,
-  height: 22,
+const ProgressCircle = styled('span')<{ state: 'done' | 'current' | 'upcoming' }>(({ state }) => ({
+  position: 'relative',
+  width: 28,
+  height: 28,
   borderRadius: '50%',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: 12,
+  fontSize: 13,
   fontWeight: 700,
-  background: active ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.06)',
-  color: 'inherit',
+  boxSizing: 'border-box',
+  background: state === 'done' ? '#6c5ce7' : '#fff',
+  border: state === 'upcoming' ? '1.5px solid #ddd' : '2px solid #6c5ce7',
+  color: state === 'done' ? '#fff' : state === 'current' ? '#6c5ce7' : '#aaa',
 }));
+
+const ProgressLabel = styled('span')<{ state: 'done' | 'current' | 'upcoming' }>(({ state }) => ({
+  fontSize: 12,
+  fontWeight: state === 'current' ? 700 : 500,
+  color: state === 'upcoming' ? '#bbb' : state === 'current' ? '#6c5ce7' : '#666',
+  whiteSpace: 'nowrap',
+  '@media (max-width: 640px)': {
+    display: state === 'current' ? 'block' : 'none',
+  },
+}));
+
+/** Marks a step the admin has already been through that still has something
+ *  outstanding — colour only, no glyph. */
+const IssueDot = styled('span')({
+  position: 'absolute',
+  top: -1,
+  insetInlineEnd: -1,
+  width: 10,
+  height: 10,
+  borderRadius: '50%',
+  background: '#e74c3c',
+  border: '2px solid #fff',
+  boxSizing: 'border-box',
+});
+
+const ProgressConnector = styled('div')<{ done?: boolean }>(({ done }) => ({
+  flex: '1 1 24px',
+  minWidth: 16,
+  maxWidth: 56,
+  height: 2,
+  marginTop: 13,
+  background: done ? '#6c5ce7' : '#e3e3ea',
+}));
+
+const StepIntro = styled('div')({
+  textAlign: 'center',
+  marginBottom: 24,
+});
+
+const StepIntroTitle = styled('h3')({
+  margin: 0,
+  fontSize: 17,
+  fontWeight: 700,
+  color: '#333',
+});
+
+const StepIntroSubtitle = styled('p')({
+  margin: '4px 0 0',
+  fontSize: 13,
+  color: '#888',
+});
 
 const StepNav = styled('div')({
   display: 'flex',
@@ -210,6 +270,98 @@ const StepNav = styled('div')({
   gap: 12,
   marginTop: 8,
   flexWrap: 'wrap',
+});
+
+// ─── Module type — large text-only selectable cards ───
+
+const ModuleTypeGrid = styled('div')({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(4, 1fr)',
+  gap: 10,
+  '@media (max-width: 700px)': {
+    gridTemplateColumns: 'repeat(2, 1fr)',
+  },
+});
+
+const ModuleTypeCard = styled('button')<{ selected?: boolean }>(({ selected }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  textAlign: 'center',
+  gap: 4,
+  padding: '18px 12px',
+  minHeight: 96,
+  borderRadius: 14,
+  border: `2px solid ${selected ? '#6c5ce7' : '#e0e0e0'}`,
+  background: selected ? '#f5f0ff' : '#fff',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  transition: 'all 0.15s',
+  '&:hover': {
+    borderColor: '#6c5ce7',
+  },
+}));
+
+const ModuleTypeCardTitle = styled('div')({
+  fontSize: 15,
+  fontWeight: 700,
+  color: '#333',
+});
+
+const ModuleTypeCardDesc = styled('div')({
+  fontSize: 12,
+  color: '#888',
+  lineHeight: 1.4,
+});
+
+// ─── Review card (final step) ───
+
+const ReviewRow = styled('div')({
+  display: 'flex',
+  justifyContent: 'space-between',
+  gap: 12,
+  padding: '10px 0',
+  borderBottom: '1px solid #f0f0f4',
+  fontSize: 14,
+});
+
+const ReviewLabel = styled('span')({
+  color: '#888',
+});
+
+const ReviewValue = styled('span')({
+  fontWeight: 600,
+  color: '#333',
+  textAlign: 'end',
+});
+
+// ─── Validation callouts — color + text, no warning icon ───
+
+const IssueBanner = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  padding: '10px 14px',
+  marginTop: 8,
+  borderRadius: 8,
+  borderInlineStart: '3px solid #e74c3c',
+  background: '#fdeeea',
+  fontSize: 13,
+  color: '#c0392b',
+});
+
+const IssueBannerLink = styled('button')({
+  background: 'none',
+  border: 'none',
+  color: '#6c5ce7',
+  fontWeight: 700,
+  fontSize: 13,
+  cursor: 'pointer',
+  textDecoration: 'underline',
+  flexShrink: 0,
+  fontFamily: 'inherit',
+  whiteSpace: 'nowrap',
 });
 
 const NameInput = styled(Input)({
@@ -255,86 +407,58 @@ const SmsVarChip = styled('button')({
 });
 
 
-const AddThemeBtn = styled('button')({
-  display: 'inline-flex',
+/** Collapsed theme control: current theme as a miniature + its name + Change.
+ *  The full gallery lives in ThemePickerModal so the form stays short. */
+const ThemeRow = styled('button')({
+  display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center',
-  flexShrink: 0,
-  padding: '12px 16px',
-  fontSize: 20,
-  fontWeight: 400,
-  lineHeight: 1,
-  border: '2px dashed #ccc',
+  gap: 12,
+  width: '100%',
+  padding: '10px 12px',
   borderRadius: 12,
-  background: 'transparent',
-  color: '#aaa',
+  border: '1.5px solid #e8e8ec',
+  background: '#fff',
   cursor: 'pointer',
   fontFamily: 'inherit',
-  transition: 'all 0.15s',
-  '&:hover': {
-    background: '#f0eefa',
-    borderColor: '#6c5ce7',
-    color: '#6c5ce7',
-  },
+  textAlign: 'start',
+  transition: 'border-color 0.15s',
+  '&:hover': { borderColor: '#6c5ce7' },
 });
 
-const ThemeGrid = styled('div')({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(3, 1fr)',
-  gap: 8,
-  '@media (max-width: 480px)': {
-    gridTemplateColumns: 'repeat(2, 1fr)',
-  },
+const ThemeRowSwatch = styled('span')({
+  width: 56,
+  flexShrink: 0,
+  display: 'block',
 });
 
-const ThemeBtn = styled(SelectionButton)({
-  flex: 'none',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  textAlign: 'center',
+const ThemeRowName = styled('span')({
+  flex: 1,
+  minWidth: 0,
+  fontSize: 14,
+  fontWeight: 600,
+  color: '#333',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 });
 
-const CustomThemeCard = styled(ThemeBtn)({
-  position: 'relative',
+const ThemeRowAction = styled('span')({
+  flexShrink: 0,
+  fontSize: 12,
+  fontWeight: 700,
+  color: '#6c5ce7',
 });
 
-const ThemeCardActions = styled('div')({
-  position: 'absolute',
-  top: 4,
-  right: 4,
+/** Sub-block inside a card. Only a block that follows another one draws the
+ *  hairline, so it never doubles up with the card header's own rule. */
+const SubBlock = styled('div')({
   display: 'flex',
   flexDirection: 'column',
-  gap: 2,
-});
-
-const EditThemeBtn = styled('button')({
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: 13,
-  color: '#bbb',
-  padding: 2,
-  lineHeight: 1,
-  borderRadius: 4,
-  '&:hover': {
-    color: '#6c5ce7',
-    background: '#f0eefa',
-  },
-});
-
-const DeleteThemeBtn = styled('button')({
-  background: 'none',
-  border: 'none',
-  cursor: 'pointer',
-  fontSize: 13,
-  color: '#bbb',
-  padding: 2,
-  lineHeight: 1,
-  borderRadius: 4,
-  '&:hover': {
-    color: '#e74c3c',
-    background: '#fdecea',
+  gap: 8,
+  '& + &': {
+    paddingTop: 16,
+    marginTop: 4,
+    borderTop: '1px solid #f0f0f4',
   },
 });
 
@@ -428,6 +552,7 @@ export default function AdminCreateActivityPage() {
   // Custom themes
   const [customThemes, setCustomThemes] = useState<CustomTheme[]>([]);
   const [themeModalOpen, setThemeModalOpen] = useState(false);
+  const [themePickerOpen, setThemePickerOpen] = useState(false);
   const [editingTheme, setEditingTheme] = useState<CustomTheme | null>(null);
   const { admin: currentAdmin } = useAdminAuth();
   const canEditContent = currentAdmin?.role !== 'viewer';
@@ -436,7 +561,18 @@ export default function AdminCreateActivityPage() {
     (currentAdmin?.role !== 'customer' || theme.createdByEmail === currentAdmin.email.toLowerCase());
   const canSendTestSms = currentAdmin?.role === 'admin' || currentAdmin?.role === 'super_admin';
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+
+  // Steps the admin has actually been through. An outstanding issue is only
+  // flagged on the rail for one of these, so a fresh form never opens already
+  // scolding you about steps you haven't reached. An activity being edited is
+  // fully "visited" — its problems are worth surfacing straight away.
+  const [visitedSteps, setVisitedSteps] = useState<Set<number>>(
+    () => new Set(isEditMode ? [1, 2, 3, 4, 5] : [1]),
+  );
+  useEffect(() => {
+    setVisitedSteps((prev) => (prev.has(step) ? prev : new Set(prev).add(step)));
+  }, [step]);
 
   // Split-editor popup state: index into selectedItems of the collage being edited.
   const [splitEditorIndex, setSplitEditorIndex] = useState<number | null>(null);
@@ -885,12 +1021,46 @@ export default function AdminCreateActivityPage() {
   const smsAvailable = connectionType === 'group' && groupEntryMode === 'selfService';
   const hasAnyField = loginFields.size > 0;
   const isWizard = isWizardModule(moduleType);
-  const canGoToStep2 = name.trim().length > 0 && hasAnyField && isWizard;
-  const canGoToStep3 = canGoToStep2;
+
+  // How many map-module items are still missing a location — drives the live
+  // banner on the content step and the forward-navigation gate.
+  const mapMissingLocationsCount = moduleType === 'map' ? selectedItems.filter((i) => !i.location).length : 0;
+
+  // Which steps exist for this module type, in order. Steps 3-4 (content,
+  // rules & texts) only apply when there's a module to fill with items.
+  const stepSequence: (1 | 2 | 3 | 4 | 5)[] = isWizard ? [1, 2, 3, 4, 5] : [1, 2, 5];
+
+  // Whether each step can be reached going forward. Going back is always
+  // allowed; going forward requires the previous step to be minimally valid,
+  // so a broken configuration can't be carried all the way to submit.
+  const canReachStep2 = name.trim().length > 0;
+  const canReachStep3 = isWizard && canReachStep2 && hasAnyField;
+  const canReachStep4 = canReachStep3 && selectedItems.length > 0 && mapMissingLocationsCount === 0;
+  const canReachStep5 = isWizard ? canReachStep4 : (canReachStep2 && hasAnyField);
+  const canReach: Record<1 | 2 | 3 | 4 | 5, boolean> = {
+    1: true, 2: canReachStep2, 3: canReachStep3, 4: canReachStep4, 5: canReachStep5,
+  };
+
+  const currentStepIdx = stepSequence.indexOf(step);
+  const nextStepId = stepSequence[currentStepIdx + 1];
+  const prevStepId = stepSequence[currentStepIdx - 1];
+  const nextDisabled = !nextStepId || !canReach[nextStepId];
+
+  const goNext = () => { if (nextStepId && canReach[nextStepId]) setStep(nextStepId); };
+  const goBack = () => { if (prevStepId) setStep(prevStepId); };
 
   useEffect(() => {
-    if (!isWizard && step > 1) setStep(1);
+    if (!stepSequence.includes(step)) setStep(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWizard, step]);
+
+  const STEP_META: Record<1 | 2 | 3 | 4 | 5, { title: string; subtitle: string }> = {
+    1: { title: t.step1Title, subtitle: t.step1Subtitle },
+    2: { title: t.step2Title, subtitle: t.step2Subtitle },
+    3: { title: t.step3Title, subtitle: t.step3Subtitle },
+    4: { title: t.step4Title, subtitle: t.step4Subtitle },
+    5: { title: t.step5Title, subtitle: t.step5Subtitle },
+  };
 
   const insertSmsVariable = (token: string) => {
     const el = smsTemplateRef.current;
@@ -941,35 +1111,29 @@ export default function AdminCreateActivityPage() {
     e.preventDefault();
     setError('');
 
-    if (isWizard && step !== 3) {
-      if (step === 1 && canGoToStep2) setStep(2);
-      else if (step === 2) setStep(3);
-      return;
-    }
-
     if (!isEditMode && managerEmail.trim() && !managerPassword) {
       setError(t.managerPasswordRequired);
-      setStep(1);
+      setStep(2);
       return;
     }
     if (smsAvailable && groupRewardEnabled && !groupRewardCoupon.trim()) {
       setError(t.groupRewardCouponRequired);
-      setStep(3);
+      setStep(5);
       return;
     }
     if (smsAvailable && groupRewardEnabled && !groupRewardAttachmentUrl.trim()) {
       setError(t.groupRewardAttachmentRequired);
-      setStep(3);
+      setStep(5);
       return;
     }
     if (moduleType === 'map' && selectedItems.some((i) => !i.location)) {
       setError(t.mapMissingLocations);
-      setStep(2);
+      setStep(3);
       return;
     }
     if (isWizard && selectedItems.length === 0) {
       setError(t.step2ItemsRequired);
-      setStep(2);
+      setStep(3);
       return;
     }
     setLoading(true);
@@ -1138,6 +1302,46 @@ export default function AdminCreateActivityPage() {
 
   if (initialLoading) return null;
 
+  // ─── Step 5 review — summary values + any outstanding issue, each pointing
+  // back to the step that fixes it. ───
+  const moduleTypeLabel = moduleType === 'map' ? t.map : moduleType === 'spiders' ? t.spiders : moduleType === 'story' ? t.story : t.noModule;
+
+  // Every theme the picker offers, and whichever one is currently selected —
+  // the form shows only the selected one, collapsed to a single row.
+  const themeOptions = [...builtInThemeOptions(t), ...customThemes.map(customThemeOption)];
+  const selectedTheme = themeOptions.find((o) => o.id === moduleTheme) ?? themeOptions[0];
+  const loginFieldLabel = (f: LoginField) => (f === 'name' ? t.fieldName : f === 'email' ? t.fieldEmail : t.fieldPhone);
+  const loginFieldsSummary = Array.from(loginFields).map(loginFieldLabel).join(', ') || t.reviewNoneSet;
+
+  const reviewIssues: { text: string; step: 1 | 2 | 3 | 4 | 5 }[] = [];
+  if (!isEditMode && managerEmail.trim() && !managerPassword) {
+    reviewIssues.push({ text: t.managerPasswordRequired, step: 2 });
+  }
+  if (isContinuous && !portalId) {
+    reviewIssues.push({ text: t.portalRequired, step: 2 });
+  }
+  if (isWizard && selectedItems.length === 0) {
+    reviewIssues.push({ text: t.step2ItemsRequired, step: 3 });
+  }
+  if (moduleType === 'map' && mapMissingLocationsCount > 0) {
+    reviewIssues.push({
+      text: t.mapLocationsMissingCount.replace('{count}', String(mapMissingLocationsCount)).replace('{total}', String(selectedItems.length)),
+      step: 3,
+    });
+  }
+  if (smsAvailable && groupRewardEnabled && !groupRewardCoupon.trim()) {
+    reviewIssues.push({ text: t.groupRewardCouponRequired, step: 5 });
+  }
+  if (smsAvailable && groupRewardEnabled && !groupRewardAttachmentUrl.trim()) {
+    reviewIssues.push({ text: t.groupRewardAttachmentRequired, step: 5 });
+  }
+
+  // A step is flagged on the rail only once it has been visited, and never
+  // while you are standing on it — there the inline banner already says so.
+  const stepsWithIssues = new Set(reviewIssues.map((i) => i.step));
+  const stepHasIssue = (s: 1 | 2 | 3 | 4 | 5) =>
+    s !== step && visitedSteps.has(s) && stepsWithIssues.has(s);
+
   return (
     <AdminPage>
       <AdminHeader>
@@ -1148,49 +1352,38 @@ export default function AdminCreateActivityPage() {
         <AdminCardForm>
           <PageTitle>{isEditMode ? t.editTitle : t.title}</PageTitle>
 
-          {/* Step bar — only for story/spiders module */}
-          {isWizardModule(moduleType) && (
-            <StepBar>
-              <StepPill
-                type="button"
-                active={step === 1}
-                completed={step > 1}
-                position="start"
-                onClick={() => setStep(1)}
-              >
-                <StepNumber active={step === 1}>1</StepNumber>
-                {t.step1Title}
-              </StepPill>
-              <StepPill
-                type="button"
-                active={step === 2}
-                completed={step > 2}
-                position="middle"
-                disabled={!canGoToStep2}
-                onClick={() => canGoToStep2 && setStep(2)}
-              >
-                <StepNumber active={step === 2}>2</StepNumber>
-                {t.step2Title}
-              </StepPill>
-              <StepPill
-                type="button"
-                active={step === 3}
-                completed={false}
-                position="end"
-                disabled={!canGoToStep3}
-                onClick={() => canGoToStep3 && setStep(3)}
-              >
-                <StepNumber active={step === 3}>3</StepNumber>
-                {t.step3Title}
-              </StepPill>
-            </StepBar>
-          )}
+          <ProgressRail>
+            {stepSequence.map((s, i) => {
+              const state: 'done' | 'current' | 'upcoming' = s === step ? 'current' : (i < currentStepIdx ? 'done' : 'upcoming');
+              return (
+                <Fragment key={s}>
+                  <ProgressStepBtn
+                    type="button"
+                    disabled={!canReach[s]}
+                    onClick={() => canReach[s] && setStep(s)}
+                    title={stepHasIssue(s) ? t.stepHasIssues : undefined}
+                  >
+                    <ProgressCircle state={state}>
+                      {i + 1}
+                      {stepHasIssue(s) && <IssueDot />}
+                    </ProgressCircle>
+                    <ProgressLabel state={state}>{STEP_META[s].title}</ProgressLabel>
+                  </ProgressStepBtn>
+                  {i < stepSequence.length - 1 && <ProgressConnector done={i < currentStepIdx} />}
+                </Fragment>
+              );
+            })}
+          </ProgressRail>
+
+          <StepIntro>
+            <StepIntroTitle>{STEP_META[step].title}</StepIntroTitle>
+            <StepIntroSubtitle>{STEP_META[step].subtitle}</StepIntroSubtitle>
+          </StepIntro>
 
           <Form onSubmit={handleSubmit}>
-            {/* ──── STEP 1 ──── */}
+            {/* ──── STEP 1 — Type & look ──── */}
             {step === 1 && (
               <>
-                {/* Activity name — prominent */}
                 <NameInput
                   placeholder={t.activityName}
                   value={name}
@@ -1210,101 +1403,99 @@ export default function AdminCreateActivityPage() {
                   </label>
                 )}
 
+                <SectionCard>
+                  <SectionHeader>
+                    <SectionHeaderTitle>{t.moduleType}</SectionHeaderTitle>
+                  </SectionHeader>
+                  <ModuleTypeGrid>
+                    <ModuleTypeCard type="button" selected={moduleType === 'map'} onClick={() => setModuleType('map')}>
+                      <ModuleTypeCardTitle>{t.map}</ModuleTypeCardTitle>
+                      <ModuleTypeCardDesc>{t.mapDesc}</ModuleTypeCardDesc>
+                    </ModuleTypeCard>
+                    <ModuleTypeCard type="button" selected={moduleType === 'spiders'} onClick={() => setModuleType('spiders')}>
+                      <ModuleTypeCardTitle>{t.spiders}</ModuleTypeCardTitle>
+                      <ModuleTypeCardDesc>{t.spidersDesc}</ModuleTypeCardDesc>
+                    </ModuleTypeCard>
+                    <ModuleTypeCard type="button" selected={moduleType === 'story'} onClick={() => setModuleType('story')}>
+                      <ModuleTypeCardTitle>{t.story}</ModuleTypeCardTitle>
+                      <ModuleTypeCardDesc>{t.storyDesc}</ModuleTypeCardDesc>
+                    </ModuleTypeCard>
+                    <ModuleTypeCard type="button" selected={moduleType === 'none'} onClick={() => setModuleType('none')}>
+                      <ModuleTypeCardTitle>{t.noModule}</ModuleTypeCardTitle>
+                      <ModuleTypeCardDesc>{t.noModuleDesc}</ModuleTypeCardDesc>
+                    </ModuleTypeCard>
+                  </ModuleTypeGrid>
+
+                  {isWizardModule(moduleType) && (
+                    <div style={{ marginTop: 4 }}>
+                      <SectionLabelSmall>{t.themeLabel}</SectionLabelSmall>
+                      <ThemeRow type="button" onClick={() => setThemePickerOpen(true)}>
+                        <ThemeRowSwatch>
+                          <ThemeSwatchTiny
+                            scene={selectedTheme.scene}
+                            road={selectedTheme.road}
+                            node={selectedTheme.node}
+                            image={selectedTheme.image}
+                          />
+                        </ThemeRowSwatch>
+                        <ThemeRowName>{selectedTheme.name}</ThemeRowName>
+                        <ThemeRowAction>{t.themeChange}</ThemeRowAction>
+                      </ThemeRow>
+                    </div>
+                  )}
+                </SectionCard>
+
+                <SectionCardWide>
+                  <SectionHeader>
+                    <SectionHeaderTitle>{t.openingSection}</SectionHeaderTitle>
+                  </SectionHeader>
+                  <SectionDescription style={{ margin: 0 }}>{t.openingDesc}</SectionDescription>
+                  <SelectionGroup>
+                    <SelectionButton type="button" selected={openingType === 'none'} onClick={() => setOpeningType('none')}>
+                      {t.openingNone}
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={openingType === 'video'} onClick={() => setOpeningType('video')}>
+                      {t.openingVideo}
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={openingType === 'image'} onClick={() => setOpeningType('image')}>
+                      {t.openingImage}
+                    </SelectionButton>
+                  </SelectionGroup>
+                  {openingType !== 'none' && (
+                    <InlineRowMt8>
+                      <FileUploadButton
+                        accept={openingType === 'video' ? 'video/*' : 'image/*'}
+                        onUploaded={(url) => setOpeningUrl(url)}
+                        label={t.upload}
+                        uploadingLabel={t.uploading}
+                      />
+                      <FlexInput placeholder={t.openingUrl} value={openingUrl} onChange={(e) => setOpeningUrl(e.target.value)} />
+                    </InlineRowMt8>
+                  )}
+                </SectionCardWide>
+
+                <SectionCardWide>
+                  <StepNav>
+                    <div />
+                    <PrimaryButton
+                      type="button"
+                      disabled={!canReachStep2}
+                      onClick={goNext}
+                      style={{ width: 'auto', padding: '12px 40px' }}
+                    >
+                      {t.nextStep}
+                    </PrimaryButton>
+                  </StepNav>
+                </SectionCardWide>
+              </>
+            )}
+
+            {/* ──── STEP 2 — Access & timing ──── */}
+            {step === 2 && (
+              <>
                 <FormGrid>
                   {/* LEFT COLUMN */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {/* Module type */}
-                    <SectionCard>
-                      <SectionHeader>
-                        <SectionHeaderTitle>{t.moduleType}</SectionHeaderTitle>
-                      </SectionHeader>
-                      <SelectionGroup>
-                        <SelectionButton type="button" selected={moduleType === 'none'} onClick={() => setModuleType('none')}>
-                          <div>{t.noModule}</div>
-                          <SelectionSubtext>{t.noModuleDesc}</SelectionSubtext>
-                        </SelectionButton>
-                        <SelectionButton type="button" selected={moduleType === 'story'} onClick={() => setModuleType('story')}>
-                          <div>{t.story}</div>
-                          <SelectionSubtext>{t.storyDesc}</SelectionSubtext>
-                        </SelectionButton>
-                        <SelectionButton type="button" selected={moduleType === 'spiders'} onClick={() => setModuleType('spiders')}>
-                          <div>{t.spiders}</div>
-                          <SelectionSubtext>{t.spidersDesc}</SelectionSubtext>
-                        </SelectionButton>
-                        <SelectionButton type="button" selected={moduleType === 'map'} onClick={() => setModuleType('map')}>
-                          <div>{t.map}</div>
-                          <SelectionSubtext>{t.mapDesc}</SelectionSubtext>
-                        </SelectionButton>
-                      </SelectionGroup>
-                      {isWizardModule(moduleType) && (
-                        <div>
-                          <SectionLabelSmall>{t.themeLabel}</SectionLabelSmall>
-                          <ThemeGrid>
-                            {canEditContent && (
-                              <AddThemeBtn
-                                type="button"
-                                title={t.themeAddNew}
-                                onClick={() => { setEditingTheme(null); setThemeModalOpen(true); }}
-                              >
-                                +
-                              </AddThemeBtn>
-                            )}
-                            <ThemeBtn type="button" selected={moduleTheme === ''} onClick={() => setModuleTheme('')}>
-                              {t.themeDefault}
-                            </ThemeBtn>
-                            <ThemeBtn type="button" selected={moduleTheme === 'ocean'} onClick={() => setModuleTheme('ocean')}>
-                              {t.themeOcean}
-                            </ThemeBtn>
-                            <ThemeBtn type="button" selected={moduleTheme === 'desert'} onClick={() => setModuleTheme('desert')}>
-                              {t.themeDesert}
-                            </ThemeBtn>
-                            <ThemeBtn type="button" selected={moduleTheme === 'office'} onClick={() => setModuleTheme('office')}>
-                              {t.themeOffice}
-                            </ThemeBtn>
-                            <ThemeBtn type="button" selected={moduleTheme === 'ganei-yehoshua'} onClick={() => setModuleTheme('ganei-yehoshua')}>
-                              {t.themeGaneiYehoshua}
-                            </ThemeBtn>
-                            {customThemes.map((ct) => (
-                              <CustomThemeCard
-                                key={ct._id}
-                                type="button"
-                                selected={moduleTheme === ct._id}
-                                onClick={() => setModuleTheme(ct._id)}
-                              >
-                                {ct.name}
-                                {canManageTheme(ct) && (
-                                  <ThemeCardActions>
-                                    <EditThemeBtn
-                                      type="button"
-                                      title="ערוך ערכה"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setEditingTheme(ct);
-                                        setThemeModalOpen(true);
-                                      }}
-                                    >
-                                      ✎
-                                    </EditThemeBtn>
-                                    <DeleteThemeBtn
-                                      type="button"
-                                      title="מחק ערכה"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteTheme(ct._id);
-                                      }}
-                                    >
-                                      ×
-                                    </DeleteThemeBtn>
-                                  </ThemeCardActions>
-                                )}
-                              </CustomThemeCard>
-                            ))}
-                          </ThemeGrid>
-                        </div>
-                      )}
-                    </SectionCard>
-
-                    {/* Login fields */}
                     <SectionCard>
                       <SectionHeader>
                         <SectionHeaderTitle>{t.loginFields}</SectionHeaderTitle>
@@ -1329,7 +1520,6 @@ export default function AdminCreateActivityPage() {
                       )}
                     </SectionCard>
 
-                    {/* Connection type */}
                     <SectionCard>
                       <SectionHeader>
                         <SectionHeaderTitle>{t.connectionType}</SectionHeaderTitle>
@@ -1365,6 +1555,11 @@ export default function AdminCreateActivityPage() {
                               <SelectionSubtext>{t.groupEntrySelfServiceDesc}</SelectionSubtext>
                             </SelectionButton>
                           </SelectionGroup>
+                          {/* The after-activity SMS reward is gated on this choice
+                              two steps later — say so here, where it is decided. */}
+                          <SectionDescription style={{ margin: '8px 0 0' }}>
+                            {groupEntryMode === 'selfService' ? t.smsUnlockedNote : t.smsGatedNote}
+                          </SectionDescription>
                           {groupEntryMode === 'selfService' && (
                             <>
                               <SectionLabel>{t.groupMinMembers}</SectionLabel>
@@ -1425,37 +1620,6 @@ export default function AdminCreateActivityPage() {
 
                   {/* RIGHT COLUMN */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {/* Opening */}
-                    <SectionCard>
-                      <SectionHeader>
-                        <SectionHeaderTitle>{t.openingSection}</SectionHeaderTitle>
-                      </SectionHeader>
-                      <SectionDescription style={{ margin: 0 }}>{t.openingDesc}</SectionDescription>
-                      <SelectionGroup>
-                        <SelectionButton type="button" selected={openingType === 'none'} onClick={() => setOpeningType('none')}>
-                          {t.openingNone}
-                        </SelectionButton>
-                        <SelectionButton type="button" selected={openingType === 'video'} onClick={() => setOpeningType('video')}>
-                          {t.openingVideo}
-                        </SelectionButton>
-                        <SelectionButton type="button" selected={openingType === 'image'} onClick={() => setOpeningType('image')}>
-                          {t.openingImage}
-                        </SelectionButton>
-                      </SelectionGroup>
-                      {openingType !== 'none' && (
-                        <InlineRowMt8>
-                          <FileUploadButton
-                            accept={openingType === 'video' ? 'video/*' : 'image/*'}
-                            onUploaded={(url) => setOpeningUrl(url)}
-                            label={t.upload}
-                            uploadingLabel={t.uploading}
-                          />
-                          <FlexInput placeholder={t.openingUrl} value={openingUrl} onChange={(e) => setOpeningUrl(e.target.value)} />
-                        </InlineRowMt8>
-                      )}
-                    </SectionCard>
-
-                    {/* Continuous Activity */}
                     <SectionCard>
                       <SectionHeader>
                         <SectionHeaderTitle>{t.continuousActivity}</SectionHeaderTitle>
@@ -1501,7 +1665,6 @@ export default function AdminCreateActivityPage() {
                       )}
                     </SectionCard>
 
-                    {/* Scheduling */}
                     <SectionCard>
                       <SectionHeader>
                         <SectionHeaderTitle>{t.schedulingSection}</SectionHeaderTitle>
@@ -1565,7 +1728,6 @@ export default function AdminCreateActivityPage() {
                       )}
                     </SectionCard>
 
-                    {/* Manager */}
                     <SectionCard>
                       <SectionHeader>
                         <SectionHeaderTitle>{t.managerSection}</SectionHeaderTitle>
@@ -1607,7 +1769,7 @@ export default function AdminCreateActivityPage() {
                         </SectionDescription>
                       )}
                     </div>
-                    <CollapseChevron expanded={helpChatSectionExpanded}>▾</CollapseChevron>
+                    <CollapseChevron expanded={helpChatSectionExpanded} />
                   </CollapsibleSectionHeader>
 
                   {helpChatSectionExpanded && (
@@ -1714,56 +1876,56 @@ export default function AdminCreateActivityPage() {
                   )}
                 </SectionCardWide>
 
-                {/* Step 1 navigation */}
                 <SectionCardWide>
-                  {isWizardModule(moduleType) ? (
-                    <StepNav>
-                      <div />
-                      <PrimaryButton
-                        type="button"
-                        disabled={!canGoToStep2}
-                        onClick={() => setStep(2)}
-                        style={{ width: 'auto', padding: '12px 40px' }}
-                      >
-                        ← {t.nextStep}
-                      </PrimaryButton>
-                    </StepNav>
-                  ) : (
-                    <>
-                      {error && <ErrorText>{error}</ErrorText>}
-                      <EditOnly notice>
-                        <PrimaryButton type="submit" disabled={loading || !name || !hasAnyField}>
-                          {loading ? (isEditMode ? t.saving : t.creating) : (isEditMode ? t.save : t.create)}
-                        </PrimaryButton>
-                      </EditOnly>
-                    </>
-                  )}
+                  <StepNav>
+                    <OutlineButton type="button" onClick={goBack}>
+                      {t.prevStep}
+                    </OutlineButton>
+                    <PrimaryButton
+                      type="button"
+                      disabled={nextDisabled}
+                      onClick={goNext}
+                      style={{ width: 'auto', padding: '12px 40px' }}
+                    >
+                      {t.nextStep}
+                    </PrimaryButton>
+                  </StepNav>
                 </SectionCardWide>
               </>
             )}
 
-            {/* ──── STEP 2 ──── */}
-            {step === 2 && isWizardModule(moduleType) && (
+            {/* ──── STEP 3 — Content ──── */}
+            {step === 3 && isWizard && (
               <>
                 <SectionCardWide>
-                  <ModuleItemsSection
-                    backgroundImage={backgroundImage}
-                    setBackgroundImage={setBackgroundImage}
-                    selectedItems={selectedItems}
-                    onAddItem={addItem}
-                    onRemoveItem={removeItem}
-                    onMoveItem={moveItem}
-                    onUpdateItemGroups={(index, groups) => setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, groups } : item))}
-                    onUpdateItemSvg={updateItemSvg}
-                    onToggleItemFinal={toggleItemFinal}
-                    onToggleItemRevisitable={toggleItemRevisitable}
-                    onConfigureCollageSplit={openSplitEditor}
-                    moduleType={moduleType}
-                    connectionType={connectionType}
-                    groupNames={groupNames}
-                    onUpdateItemLocation={updateItemLocation}
-                    t={t}
-                  />
+                  {selectedItems.length === 0 && (
+                    <IssueBanner><span>{t.step2ItemsRequired}</span></IssueBanner>
+                  )}
+                  {moduleType === 'map' && mapMissingLocationsCount > 0 && (
+                    <IssueBanner>
+                      <span>{t.mapLocationsMissingCount.replace('{count}', String(mapMissingLocationsCount)).replace('{total}', String(selectedItems.length))}</span>
+                    </IssueBanner>
+                  )}
+                  <div style={{ marginTop: (selectedItems.length === 0 || mapMissingLocationsCount > 0) ? 14 : 0 }}>
+                    <ModuleItemsSection
+                      backgroundImage={backgroundImage}
+                      setBackgroundImage={setBackgroundImage}
+                      selectedItems={selectedItems}
+                      onAddItem={addItem}
+                      onRemoveItem={removeItem}
+                      onMoveItem={moveItem}
+                      onUpdateItemGroups={(index, groups) => setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, groups } : item))}
+                      onUpdateItemSvg={updateItemSvg}
+                      onToggleItemFinal={toggleItemFinal}
+                      onToggleItemRevisitable={toggleItemRevisitable}
+                      onConfigureCollageSplit={openSplitEditor}
+                      moduleType={moduleType}
+                      connectionType={connectionType}
+                      groupNames={groupNames}
+                      onUpdateItemLocation={updateItemLocation}
+                      t={t}
+                    />
+                  </div>
                   {moduleType === 'map' && (
                     <div style={{ marginTop: 12 }}>
                       <SectionLabelSmall>{t.mapProximity}</SectionLabelSmall>
@@ -1799,19 +1961,38 @@ export default function AdminCreateActivityPage() {
                       {t.showStationNumbers}
                     </label>
                   )}
-                  {isWizardModule(moduleType) && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 12 }}>
-                      <input
-                        type="checkbox"
-                        checked={showItemTitleNumbers}
-                        onChange={(e) => setShowItemTitleNumbers(e.target.checked)}
-                        style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
-                      />
-                      {t.showItemTitleNumbers}
-                    </label>
-                  )}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 12 }}>
+                    <input
+                      type="checkbox"
+                      checked={showItemTitleNumbers}
+                      onChange={(e) => setShowItemTitleNumbers(e.target.checked)}
+                      style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                    />
+                    {t.showItemTitleNumbers}
+                  </label>
                 </SectionCardWide>
 
+                <SectionCardWide>
+                  <StepNav>
+                    <OutlineButton type="button" onClick={goBack}>
+                      {t.prevStep}
+                    </OutlineButton>
+                    <PrimaryButton
+                      type="button"
+                      disabled={nextDisabled}
+                      onClick={goNext}
+                      style={{ width: 'auto', padding: '12px 40px' }}
+                    >
+                      {t.nextStep}
+                    </PrimaryButton>
+                  </StepNav>
+                </SectionCardWide>
+              </>
+            )}
+
+            {/* ──── STEP 4 — Rules & texts ──── */}
+            {step === 4 && isWizard && (
+              <>
                 <SectionCardWide>
                   <SectionHeader>
                     <SectionHeaderTitle>{t.leaderboardModeSection}</SectionHeaderTitle>
@@ -2030,222 +2211,284 @@ export default function AdminCreateActivityPage() {
 
                 <SectionCardWide>
                   <StepNav>
-                    <OutlineButton type="button" onClick={() => setStep(1)}>
-                      {t.prevStep} →
+                    <OutlineButton type="button" onClick={goBack}>
+                      {t.prevStep}
                     </OutlineButton>
                     <PrimaryButton
                       type="button"
-                      onClick={() => setStep(3)}
+                      disabled={nextDisabled}
+                      onClick={goNext}
                       style={{ width: 'auto', padding: '12px 40px' }}
                     >
-                      ← {t.nextStep}
+                      {t.nextStep}
                     </PrimaryButton>
                   </StepNav>
                 </SectionCardWide>
               </>
             )}
 
-            {/* ──── STEP 3 — After-activity SMS ──── */}
-            {step === 3 && isWizardModule(moduleType) && (
+            {/* ──── STEP 5 — Follow-up & review ──── */}
+            {step === 5 && (
               <>
-                <SectionCardWide>
-                  <SectionHeader>
-                    <SectionHeaderTitle>{t.step3Title}</SectionHeaderTitle>
-                  </SectionHeader>
+                {isWizard && (
+                  <SectionCardWide>
+                    <SectionHeader>
+                      <SectionHeaderTitle>{t.smsSectionTitle}</SectionHeaderTitle>
+                    </SectionHeader>
 
-                  <label
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      cursor: loginFields.has('phoneNumber') ? 'pointer' : 'not-allowed',
-                      fontSize: 14,
-                      opacity: loginFields.has('phoneNumber') ? 1 : 0.55,
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={smsForCollage && loginFields.has('phoneNumber')}
-                      disabled={!loginFields.has('phoneNumber')}
-                      onChange={(e) => setSmsForCollage(e.target.checked)}
-                      style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
-                    />
-                    {t.smsForCollage}
-                  </label>
-                  <SectionDescription style={{ margin: '6px 0 0' }}>
-                    {loginFields.has('phoneNumber') ? t.smsForCollageHint : t.smsForCollageNeedsPhone}
-                  </SectionDescription>
-
-                  {smsForCollage && loginFields.has('phoneNumber') && (
-                    <div style={{ marginTop: 12 }}>
-                      <SectionLabelSmall>{t.smsForCollageMessageLabel}</SectionLabelSmall>
-                      <SmsTemplateArea
-                        placeholder={t.smsForCollageMessagePlaceholder}
-                        value={smsForCollageMessage}
-                        onChange={(e) => setSmsForCollageMessage(e.target.value)}
+                    <SubBlock>
+                      <SectionLabelSmall style={{ marginBottom: 0 }}>{t.smsCollageBlockTitle}</SectionLabelSmall>
+                    <label
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        cursor: loginFields.has('phoneNumber') ? 'pointer' : 'not-allowed',
+                        fontSize: 14,
+                        opacity: loginFields.has('phoneNumber') ? 1 : 0.55,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={smsForCollage && loginFields.has('phoneNumber')}
+                        disabled={!loginFields.has('phoneNumber')}
+                        onChange={(e) => setSmsForCollage(e.target.checked)}
+                        style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
                       />
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 10 }}>
-                        <input
-                          type="checkbox"
-                          checked={smsForCollageShare}
-                          onChange={(e) => setSmsForCollageShare(e.target.checked)}
-                          style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
-                        />
-                        {t.smsSharePageLabel}
-                      </label>
-                      {smsForCollageShare && (
-                        <SectionDescription style={{ margin: '4px 0 0' }}>{t.smsSharePageDesc}</SectionDescription>
-                      )}
-                    </div>
-                  )}
-
-                  <SectionDescription style={{ margin: '20px 0 0' }}>{t.afterActivitySmsDesc}</SectionDescription>
-
-                  {!smsAvailable && (
-                    <SectionDescription style={{ margin: '12px 0 0', color: '#e67e22' }}>
-                      {t.smsNotAvailable}
+                      {t.smsForCollage}
+                    </label>
+                    <SectionDescription style={{ margin: 0 }}>
+                      {loginFields.has('phoneNumber') ? t.smsForCollageHint : t.smsForCollageNeedsPhone}
                     </SectionDescription>
-                  )}
 
-                  <label
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      cursor: smsAvailable ? 'pointer' : 'not-allowed',
-                      fontSize: 14,
-                      marginTop: 16,
-                      opacity: smsAvailable ? 1 : 0.55,
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={groupRewardEnabled}
-                      disabled={!smsAvailable}
-                      onChange={(e) => setGroupRewardEnabled(e.target.checked)}
-                      style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
-                    />
-                    {t.afterActivitySms}
-                  </label>
-
-                  {groupRewardEnabled && smsAvailable && (
-                    <VerticalStack style={{ marginTop: 16 }}>
-                      <div>
-                        <SectionLabelSmall>{t.groupRewardCoupon}</SectionLabelSmall>
-                        <Input
-                          placeholder={t.groupRewardCoupon}
-                          value={groupRewardCoupon}
-                          onChange={(e) => setGroupRewardCoupon(e.target.value)}
+                    {smsForCollage && loginFields.has('phoneNumber') && (
+                      <div style={{ marginTop: 4 }}>
+                        <SectionLabelSmall>{t.smsForCollageMessageLabel}</SectionLabelSmall>
+                        <SmsTemplateArea
+                          placeholder={t.smsForCollageMessagePlaceholder}
+                          value={smsForCollageMessage}
+                          onChange={(e) => setSmsForCollageMessage(e.target.value)}
                         />
-                      </div>
-                      <div>
-                        <SectionLabelSmall>{t.smsAttachmentLabel}</SectionLabelSmall>
-                        <SectionDescription style={{ margin: '0 0 8px' }}>{t.smsAttachmentDesc}</SectionDescription>
-                        <InlineRowGap12 style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                          <FileUploadButton
-                            accept="image/*,.pdf,application/pdf"
-                            label={t.smsAttachmentUpload}
-                            uploadingLabel={t.uploading}
-                            onUploaded={(url, file) => {
-                              setGroupRewardAttachmentUrl(url);
-                              const isPdf = file?.type === 'application/pdf'
-                                || file?.name?.toLowerCase().endsWith('.pdf');
-                              setGroupRewardAttachmentType(isPdf ? 'pdf' : 'image');
-                            }}
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 10 }}>
+                          <input
+                            type="checkbox"
+                            checked={smsForCollageShare}
+                            onChange={(e) => setSmsForCollageShare(e.target.checked)}
+                            style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
                           />
-                          {groupRewardAttachmentUrl && (
-                            <OutlineButton
+                          {t.smsSharePageLabel}
+                        </label>
+                        {smsForCollageShare && (
+                          <SectionDescription style={{ margin: '4px 0 0' }}>{t.smsSharePageDesc}</SectionDescription>
+                        )}
+                      </div>
+                    )}
+                    </SubBlock>
+
+                    <SubBlock>
+                      <SectionLabelSmall style={{ marginBottom: 0 }}>{t.groupReward}</SectionLabelSmall>
+                      <SectionDescription style={{ margin: 0 }}>{t.afterActivitySmsDesc}</SectionDescription>
+
+                    {!smsAvailable && (
+                      <SectionDescription style={{ margin: 0, color: '#e67e22' }}>
+                        {t.smsNotAvailable}
+                      </SectionDescription>
+                    )}
+
+                    <label
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        cursor: smsAvailable ? 'pointer' : 'not-allowed',
+                        fontSize: 14,
+                        opacity: smsAvailable ? 1 : 0.55,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={groupRewardEnabled}
+                        disabled={!smsAvailable}
+                        onChange={(e) => setGroupRewardEnabled(e.target.checked)}
+                        style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                      />
+                      {t.afterActivitySms}
+                    </label>
+
+                    {groupRewardEnabled && smsAvailable && (
+                      <VerticalStack style={{ marginTop: 4 }}>
+                        <div>
+                          <SectionLabelSmall>{t.groupRewardCoupon}</SectionLabelSmall>
+                          <Input
+                            placeholder={t.groupRewardCoupon}
+                            value={groupRewardCoupon}
+                            onChange={(e) => setGroupRewardCoupon(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <SectionLabelSmall>{t.smsAttachmentLabel}</SectionLabelSmall>
+                          <SectionDescription style={{ margin: '0 0 8px' }}>{t.smsAttachmentDesc}</SectionDescription>
+                          <InlineRowGap12 style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                            <FileUploadButton
+                              accept="image/*,.pdf,application/pdf"
+                              label={t.smsAttachmentUpload}
+                              uploadingLabel={t.uploading}
+                              onUploaded={(url, file) => {
+                                setGroupRewardAttachmentUrl(url);
+                                const isPdf = file?.type === 'application/pdf'
+                                  || file?.name?.toLowerCase().endsWith('.pdf');
+                                setGroupRewardAttachmentType(isPdf ? 'pdf' : 'image');
+                              }}
+                            />
+                            {groupRewardAttachmentUrl && (
+                              <OutlineButton
+                                type="button"
+                                style={{ fontSize: 12, padding: '6px 12px' }}
+                                onClick={() => {
+                                  setGroupRewardAttachmentUrl('');
+                                  setGroupRewardAttachmentType('image');
+                                }}
+                              >
+                                {t.smsAttachmentRemove}
+                              </OutlineButton>
+                            )}
+                          </InlineRowGap12>
+                          {groupRewardAttachmentUrl && groupRewardAttachmentType === 'image' && (
+                            <img
+                              src={groupRewardAttachmentUrl}
+                              alt=""
+                              style={{ marginTop: 10, maxWidth: 200, maxHeight: 120, borderRadius: 8, objectFit: 'cover' }}
+                            />
+                          )}
+                          {groupRewardAttachmentUrl && groupRewardAttachmentType === 'pdf' && (
+                            <SectionDescription style={{ margin: '8px 0 0' }}>{t.smsAttachmentPdfReady}</SectionDescription>
+                          )}
+                        </div>
+                        <div>
+                          <SectionLabelSmall>{t.smsTemplateLabel}</SectionLabelSmall>
+                          <SmsTemplateArea
+                            ref={smsTemplateRef}
+                            placeholder={t.groupRewardMessagePlaceholder}
+                            value={groupRewardMessage}
+                            onChange={(e) => setGroupRewardMessage(e.target.value)}
+                          />
+                          <SectionDescription style={{ margin: '8px 0' }}>{t.groupRewardMessageHint}</SectionDescription>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                            {(['{name}', '{score}', '{coupon}', '{group}', '{link}'] as const).map((token) => (
+                              <SmsVarChip key={token} type="button" onClick={() => insertSmsVariable(token)}>
+                                {token}
+                              </SmsVarChip>
+                            ))}
+                          </div>
+                        </div>
+                        <SectionDescription style={{ margin: 0, fontSize: 13, color: '#6c5ce7' }}>
+                          {t.smsPreviewHint}
+                        </SectionDescription>
+
+                        {canSendTestSms && (
+                        <div style={{ marginTop: 8, padding: 14, borderRadius: 12, background: '#f1f8f4', border: '1px solid #cde9d6' }}>
+                          <SectionLabelSmall style={{ marginBottom: 4 }}>{t.smsTestTitle}</SectionLabelSmall>
+                          <SectionDescription style={{ margin: '0 0 10px' }}>{t.smsTestDesc}</SectionDescription>
+                          <InlineRowGap12 style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                            <Input
+                              type="tel"
+                              placeholder={t.smsTestPhonePlaceholder}
+                              value={smsTestPhone}
+                              onChange={(e) => setSmsTestPhone(e.target.value)}
+                              style={{ flex: '1 1 200px', minWidth: 180 }}
+                            />
+                            <button
                               type="button"
-                              style={{ fontSize: 12, padding: '6px 12px' }}
-                              onClick={() => {
-                                setGroupRewardAttachmentUrl('');
-                                setGroupRewardAttachmentType('image');
+                              onClick={handleSendTestSms}
+                              disabled={smsTestSending || !smsTestPhone.trim()}
+                              style={{
+                                padding: '10px 18px',
+                                fontSize: 14,
+                                fontWeight: 700,
+                                color: '#fff',
+                                background: '#27ae60',
+                                border: 'none',
+                                borderRadius: 8,
+                                cursor: smsTestSending || !smsTestPhone.trim() ? 'not-allowed' : 'pointer',
+                                opacity: smsTestSending || !smsTestPhone.trim() ? 0.6 : 1,
+                                fontFamily: 'inherit',
                               }}
                             >
-                              {t.smsAttachmentRemove}
-                            </OutlineButton>
+                              {smsTestSending ? t.smsTestSending : t.smsTestSend}
+                            </button>
+                          </InlineRowGap12>
+                          {smsTestFeedback && (
+                            <SectionDescription style={{ margin: '8px 0 0', color: smsTestFeedback.ok ? '#27ae60' : '#e74c3c' }}>
+                              {smsTestFeedback.msg}
+                            </SectionDescription>
                           )}
-                        </InlineRowGap12>
-                        {groupRewardAttachmentUrl && groupRewardAttachmentType === 'image' && (
-                          <img
-                            src={groupRewardAttachmentUrl}
-                            alt=""
-                            style={{ marginTop: 10, maxWidth: 200, maxHeight: 120, borderRadius: 8, objectFit: 'cover' }}
-                          />
-                        )}
-                        {groupRewardAttachmentUrl && groupRewardAttachmentType === 'pdf' && (
-                          <SectionDescription style={{ margin: '8px 0 0' }}>{t.smsAttachmentPdfReady}</SectionDescription>
-                        )}
-                      </div>
-                      <div>
-                        <SectionLabelSmall>{t.smsTemplateLabel}</SectionLabelSmall>
-                        <SmsTemplateArea
-                          ref={smsTemplateRef}
-                          placeholder={t.groupRewardMessagePlaceholder}
-                          value={groupRewardMessage}
-                          onChange={(e) => setGroupRewardMessage(e.target.value)}
-                        />
-                        <SectionDescription style={{ margin: '8px 0' }}>{t.groupRewardMessageHint}</SectionDescription>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                          {(['{name}', '{score}', '{coupon}', '{group}', '{link}'] as const).map((token) => (
-                            <SmsVarChip key={token} type="button" onClick={() => insertSmsVariable(token)}>
-                              {token}
-                            </SmsVarChip>
-                          ))}
                         </div>
-                      </div>
-                      <SectionDescription style={{ margin: 0, fontSize: 13, color: '#6c5ce7' }}>
-                        {t.smsPreviewHint}
-                      </SectionDescription>
-
-                      {canSendTestSms && (
-                      <div style={{ marginTop: 8, padding: 14, borderRadius: 12, background: '#f1f8f4', border: '1px solid #cde9d6' }}>
-                        <SectionLabelSmall style={{ marginBottom: 4 }}>{t.smsTestTitle}</SectionLabelSmall>
-                        <SectionDescription style={{ margin: '0 0 10px' }}>{t.smsTestDesc}</SectionDescription>
-                        <InlineRowGap12 style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                          <Input
-                            type="tel"
-                            placeholder={t.smsTestPhonePlaceholder}
-                            value={smsTestPhone}
-                            onChange={(e) => setSmsTestPhone(e.target.value)}
-                            style={{ flex: '1 1 200px', minWidth: 180 }}
-                          />
-                          <button
-                            type="button"
-                            onClick={handleSendTestSms}
-                            disabled={smsTestSending || !smsTestPhone.trim()}
-                            style={{
-                              padding: '10px 18px',
-                              fontSize: 14,
-                              fontWeight: 700,
-                              color: '#fff',
-                              background: '#27ae60',
-                              border: 'none',
-                              borderRadius: 8,
-                              cursor: smsTestSending || !smsTestPhone.trim() ? 'not-allowed' : 'pointer',
-                              opacity: smsTestSending || !smsTestPhone.trim() ? 0.6 : 1,
-                              fontFamily: 'inherit',
-                            }}
-                          >
-                            {smsTestSending ? t.smsTestSending : t.smsTestSend}
-                          </button>
-                        </InlineRowGap12>
-                        {smsTestFeedback && (
-                          <SectionDescription style={{ margin: '8px 0 0', color: smsTestFeedback.ok ? '#27ae60' : '#e74c3c' }}>
-                            {smsTestFeedback.msg}
-                          </SectionDescription>
                         )}
-                      </div>
-                      )}
-                    </VerticalStack>
+                      </VerticalStack>
+                    )}
+                    </SubBlock>
+                  </SectionCardWide>
+                )}
+
+                <SectionCardWide>
+                  <SectionHeader>
+                    <SectionHeaderTitle>{t.reviewTitle}</SectionHeaderTitle>
+                  </SectionHeader>
+                  <ReviewRow>
+                    <ReviewLabel>{t.reviewLabelName}</ReviewLabel>
+                    <ReviewValue>{name.trim() || t.reviewNoneSet}</ReviewValue>
+                  </ReviewRow>
+                  <ReviewRow>
+                    <ReviewLabel>{t.reviewLabelType}</ReviewLabel>
+                    <ReviewValue>{moduleTypeLabel}</ReviewValue>
+                  </ReviewRow>
+                  {isWizard && (
+                    <ReviewRow>
+                      <ReviewLabel>{t.reviewLabelItems}</ReviewLabel>
+                      <ReviewValue>{selectedItems.length}</ReviewValue>
+                    </ReviewRow>
+                  )}
+                  <ReviewRow>
+                    <ReviewLabel>{t.reviewLabelLogin}</ReviewLabel>
+                    <ReviewValue>{loginFieldsSummary}</ReviewValue>
+                  </ReviewRow>
+                  {connectionType === 'group' && (
+                    <ReviewRow>
+                      <ReviewLabel>{t.reviewLabelGroups}</ReviewLabel>
+                      <ReviewValue>{groupNames.length}</ReviewValue>
+                    </ReviewRow>
+                  )}
+                  <ReviewRow>
+                    <ReviewLabel>{t.reviewLabelSchedule}</ReviewLabel>
+                    <ReviewValue>{alwaysOpen ? t.reviewScheduleAlways : t.reviewScheduleWindow}</ReviewValue>
+                  </ReviewRow>
+                  <ReviewRow style={{ borderBottom: 'none' }}>
+                    <ReviewLabel>{t.reviewLabelManager}</ReviewLabel>
+                    <ReviewValue>{managerEmail.trim() || t.reviewNoneSet}</ReviewValue>
+                  </ReviewRow>
+
+                  {reviewIssues.length > 0 && (
+                    <div style={{ marginTop: 8 }}>
+                      <SectionDescription style={{ margin: '4px 0 0', fontWeight: 700, color: '#c0392b' }}>
+                        {t.reviewIssuesTitle}
+                      </SectionDescription>
+                      {reviewIssues.map((issue, i) => (
+                        <IssueBanner key={i}>
+                          <span>{issue.text}</span>
+                          <IssueBannerLink type="button" onClick={() => setStep(issue.step)}>
+                            {t.fixIssueLink}
+                          </IssueBannerLink>
+                        </IssueBanner>
+                      ))}
+                    </div>
                   )}
                 </SectionCardWide>
 
                 <SectionCardWide>
                   {error && <ErrorText>{error}</ErrorText>}
                   <StepNav>
-                    <OutlineButton type="button" onClick={() => setStep(2)}>
-                      {t.prevStep} →
+                    <OutlineButton type="button" onClick={goBack}>
+                      {t.prevStep}
                     </OutlineButton>
                     <EditOnly notice>
                       <PrimaryButton type="submit" disabled={loading || !name || !hasAnyField} style={{ width: 'auto', padding: '12px 40px' }}>
@@ -2298,6 +2541,21 @@ export default function AdminCreateActivityPage() {
           />
         );
       })()}
+
+      {themePickerOpen && (
+        <ThemePickerModal
+          value={moduleTheme}
+          options={themeOptions}
+          canCreate={canEditContent}
+          canManage={canManageTheme}
+          onChange={setModuleTheme}
+          onCreate={() => { setEditingTheme(null); setThemeModalOpen(true); }}
+          onEdit={(ct) => { setEditingTheme(ct); setThemeModalOpen(true); }}
+          onDelete={handleDeleteTheme}
+          onClose={() => setThemePickerOpen(false)}
+          t={t}
+        />
+      )}
 
       {themeModalOpen && (
         <ThemeFormModal

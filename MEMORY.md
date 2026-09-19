@@ -1304,10 +1304,21 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   (activities/statistics/stations/library/media/portals/publicity/users/tutorials by role); parallel-
   fetches activities/games/stations/missions/folders; folder UI (`FolderFormModal`,
   `PastelSwatchPicker`, `folderUi`).
-- **`AdminCreateActivityPage/`** — the big activity editor: `index.tsx` (steps: basic config →
-  module config → extras), `ModuleItemsSection` (pick/reorder games/stations/missions, group
-  assignment, collage split via `CollageSplitEditor`), `PopupMessagesSection`, `ThemeFormModal`,
-  `ItemPreviewModal`.
+- **`AdminCreateActivityPage/`** — the big activity editor, a **5-step wizard**: 1 type & look
+  (name, module type, theme, opening) → 2 access & timing (login fields, groups, schedule,
+  manager, help chat) → 3 content → 4 rules & texts (leaderboard, guidelines, instructions,
+  popups) → 5 follow-up SMS + review & submit. `stepSequence` is derived from the module type,
+  so `none` collapses to steps 1, 2, 5; `canReachStepN` gates forward navigation (a step can't
+  be left with 0 items, or with a map item missing a location), and `reviewIssues` drives both
+  the step-5 summary and the red dot on already-visited rail steps.
+  Sub-components: `ModuleItemsSection` (ordered content list first, then the item catalogue;
+  per-item state shown as text status badges), `ItemSettingsModal` (one place for an item's
+  group visibility / location / spider SVG / final / re-entry / collage split),
+  `ThemePickerModal` (theme gallery; previews are painted from `roadmapThemes.ts`'s own kits so
+  they can't drift from the participant roadmap), `PopupMessagesSection`, `ThemeFormModal`,
+  `GroupOrderEditor`, `CollageSplitEditor`, `ItemPreviewModal`.
+  **Admin UI here is deliberately icon-free** — state reads through colour, border and text
+  badges; drag handles are CSS dot-grids, not glyphs.
 - **`AdminGameConfigPage/`** — per-type config forms: `TriviaGameConfig`, `OrderGameConfig`,
   `PuzzleGameConfig`, `TrueFalseGameConfig`, `BallGameConfig`, `TrashSortGameConfig` (+ `index`).
 - **`AdminStationConfigPage`** — station editor (all 10 types). **`AdminMissionConfigPage`** —

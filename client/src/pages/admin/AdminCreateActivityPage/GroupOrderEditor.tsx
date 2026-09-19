@@ -36,8 +36,33 @@ const GroupBlock = styled('div')({
 
 const GroupTitle = styled('div')({ fontWeight: 600, fontSize: 13, color: '#6c5ce7', marginBottom: 6 });
 const List = styled('div')({ display: 'flex', flexDirection: 'column', gap: 4 });
-const Handle = styled('span')({ color: '#bbb', flexShrink: 0 });
+
+/** Drag handle — a plain dot-grid drawn in CSS, no glyph. */
+const Handle = styled('span')({
+  width: 12,
+  height: 16,
+  flexShrink: 0,
+  cursor: 'grab',
+  backgroundImage: 'radial-gradient(circle, #bbb 1.3px, transparent 1.3px)',
+  backgroundSize: '5px 5px',
+  backgroundPosition: 'center',
+});
+
 const Num = styled('span')({ color: '#999', fontSize: 12, width: 18, flexShrink: 0 });
+
+/** Same red "no location" pill the module item rows use, so one glance reads
+ *  the same everywhere. */
+const MissingLocation = styled('span')({
+  marginInlineStart: 'auto',
+  flexShrink: 0,
+  background: '#fdeeea',
+  color: '#c0392b',
+  borderRadius: 6,
+  padding: '1px 8px',
+  fontSize: 11,
+  fontWeight: 700,
+  whiteSpace: 'nowrap',
+});
 
 /** Indices of `items` this group actually sees, in the group's saved order. */
 function orderFor(items: ModuleItem[], group: string, saved?: number[]): number[] {
@@ -125,10 +150,12 @@ export default function GroupOrderEditor({
                     setDrag(null);
                   }}
                 >
-                  <Handle>⠿</Handle>
+                  <Handle />
                   <Num>{pos + 1}.</Num>
                   <span>{items[itemIndex]?.name ?? '?'}</span>
-                  {!items[itemIndex]?.location && <span title={t.mapLocation}>📍❌</span>}
+                  {!items[itemIndex]?.location && (
+                    <MissingLocation>{t.locationMissingLabel}</MissingLocation>
+                  )}
                 </Row>
               ))}
             </List>
