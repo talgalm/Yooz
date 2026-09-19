@@ -47,11 +47,9 @@ export const texts = {
     caseIntro: '3 שלבים פשוטים שמחברים את המבקר לסיפור, מעלים מעורבות ומייצרים שיתופים ברשתות',
     caseSteps: ['1. סרטון פתיחה לסדרה', '2. חידות שטח אינטראקטיביות', '3. סרטון מזכרת AI אישי'],
     /**
-     * One entry per chip in `caseSteps`, in the same order.
-     *
-     * Stage 1 is transcribed from the frame. Stages 2 and 3 are WRITTEN to match
-     * it - the comp only ever renders the first tab, so there is no source for
-     * the other two. They want a proof-read before launch.
+     * One entry per chip in `caseSteps`. Stage 1 is transcribed from the frame;
+     * stages 2 and 3 are written, since the comp only renders the first tab.
+     * Worth a proof-read.
      */
     caseStages: [
       {

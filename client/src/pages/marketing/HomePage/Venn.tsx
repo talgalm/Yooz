@@ -47,13 +47,10 @@ const Unit = styled('div', { shouldForwardProp: (p) => p !== 'pos' })<{
   alignItems: 'center',
   justifyContent: 'center',
   /**
-   * `relative`, not `static`. `Fill` is absolutely positioned, so a static unit
-   * is not its containing block and all three fills resolved against `Stage`
-   * instead - each stretching the full section and stacking into one blob.
-   *
-   * The offsets have to live here rather than on an inline `style` for that to
-   * work: an inline style cannot be overridden by CSS, so `left: 21%` would
-   * survive into the stacked layout and shunt each card sideways.
+   * `relative`, not `static`: `Fill` is absolute, and a static unit is not its
+   * containing block - all three would resolve against `Stage` and stack into
+   * one blob. The offsets live in this styled component rather than an inline
+   * `style` so this media query can reset them; inline styles cannot be.
    */
   [STACK_BP]: {
     position: 'relative',

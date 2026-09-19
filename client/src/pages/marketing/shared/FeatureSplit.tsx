@@ -51,12 +51,9 @@ const Band = styled('section')<{ bg: string }>(({ bg }) => ({
 }));
 
 /**
- * `from` is the colour of the band this strip is LEAVING. Every path in
- * `SectionShape` closes `L1440,120 L0,120 Z`, so it fills only the area below the
- * curve; above it is unpainted. Because the wrapper sits in normal flow and
- * overlays nothing, that unpainted area falls through to the page ground and
- * reads as a white gap between two coloured bands. Carrying the previous band's
- * colour here is what makes the two bands meet along the curve.
+ * In normal flow, so it separates the two bands rather than overlaying the one
+ * above. `SectionShape` paths fill only below the curve, so `from` has to carry
+ * the previous band's colour or the strip reads as a white gap.
  */
 const ShapeWrap = styled('div', { shouldForwardProp: (p) => p !== 'from' })<{ from?: string }>(({ from }) => ({
   lineHeight: 0,
@@ -218,16 +215,6 @@ export default function FeatureSplit({
 }: FeatureSplitProps) {
   return (
     <>
-      {/*
-        In normal flow, not absolutely positioned above the band. At
-        `bottom: 100%` it has no layout height and draws over the preceding
-        section, clipping its copy - the same defect that put the Marketing
-        Engine chevron on top of the audience cards.
-
-        In flow it overlays nothing, though, so the transparent area above the
-        curve shows the PAGE ground rather than the previous band. `shapeFrom`
-        has to carry that band's colour; without it the strip is a white gap.
-      */}
       {shape && (
         <ShapeWrap from={shapeFrom}>
           <SectionShape color={bg} variant={shape} height={96} />

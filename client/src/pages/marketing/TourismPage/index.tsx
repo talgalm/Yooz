@@ -91,22 +91,15 @@ const Step = styled("button")<{ active?: boolean }>(({ active }) => ({
 }));
 
 /**
- * Step markers, traced from the frame at y2432 (x643 / x826 / x1013).
- *
- * Inline rather than `<img>` so they inherit `currentColor` from the chip: the
- * active step is white on purple and the other two are #675A6D, the same colour
- * as their own label, so one drawing serves both states.
+ * Step markers, traced from the frame at y2432. Inline rather than `<img>` so
+ * they take `currentColor` from the chip - white on the active one, #675A6D on
+ * the rest - letting one drawing serve both states.
  */
 function StepPlay() {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden focusable="false">
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
-      {/*
-        Points RIGHT and does NOT mirror. Verified against the frame: isolated at
-        30x the comp's chip icon (x1006..1020, y2426..2439) has its flat edge on
-        the left and its apex on the right, in Hebrew. A play triangle is a
-        transport control, not a directional cue like the CTA arrow.
-      */}
+      {/* Points right in both directions - a transport control, not a reading cue. */}
       <path d="M10.2 8.4 16 12l-5.8 3.6z" fill="currentColor" />
     </svg>
   );
@@ -176,11 +169,7 @@ const CaseCard = styled("div")({
   overflow: "hidden",
   display: "grid",
   gridTemplateColumns: "1fr",
-  /**
-   * Measured: the card runs x214..1300 with the copy taking 449 and the media
-   * 637 - not an even split. DOM order puts the copy first, which under RTL is
-   * the right-hand column, as the frame has it.
-   */
+  /** Measured 449 copy / 637 media - not an even split. */
   "@media (min-width: 901px)": { gridTemplateColumns: "0.7fr 1fr" },
 });
 
@@ -309,10 +298,7 @@ const CaseMedia = styled("div")({
 export default function TourismPage() {
   const t = useTranslations(texts);
   const [stage, setStage] = useState(0);
-  /**
-   * The frame shows a play affordance over a still, so the clip does not
-   * autoplay - it waits for the click, and the overlay hides once it is running.
-   */
+  /** The frame shows a play affordance, so the clip waits for a click. */
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const active = t.caseStages[stage];
@@ -428,12 +414,7 @@ export default function TourismPage() {
               {/* Stages 2 and 3 have no footage yet, so they keep the placeholder. */}
               {video ? (
                 <MediaPanel>
-                  {/*
-                    Not muted: `play()` runs off the overlay click, so it is a user
-                    gesture and browsers allow sound. Native controls appear once it
-                    is running - without them there was no way to pause. No `loop`,
-                    so it ends and hands back to the overlay.
-                  */}
+                  {/* Unmuted: `play()` comes from a click, so sound is allowed. Controls appear once running. */}
                   <CaseVideo
                     key={video}
                     ref={videoRef}

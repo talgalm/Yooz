@@ -1,14 +1,7 @@
 /**
- * Design tokens for the public marketing site (Home / Business / Academy / Tourism).
- *
- * Every value here was sampled directly out of the exported Figma frames in
- * `temp-imgs/אתר yooz/` rather than estimated, so treat them as the source of
- * truth and change them only against a fresh sample.
- *
- * Deliberately separate from `components/styled.ts`: that file is the app + admin
- * language (flat cards, `#6c5ce7`), while the marketing site is violet, rounded,
- * blob-heavy and gradient-driven. Keeping them apart means restyling the site can
- * never regress a participant screen.
+ * Design tokens for the public marketing site, sampled from the Figma frame
+ * exports. Kept separate from `components/styled.ts` so restyling the site
+ * cannot regress a participant screen.
  */
 
 export const C = {
@@ -18,12 +11,7 @@ export const C = {
   /** Near-white used by the "why choose" and FAQ sections. */
   paper: '#FFFAFF',
   paperSoft: '#FFF8FF',
-  /**
-   * The Academy experience cards: `#FAF7FD` fill on the `paper` band, held apart
-   * by a 1px `#F3E8FF` rule rather than by fill contrast. Painting the card in
-   * `paperSoft` on a `paper` band - two points of green apart, no shadow, no
-   * border - is why it read as having no background at all.
-   */
+  /** Academy experience cards. `paper` and `paperSoft` are two points apart, so these separate by rule, not fill. */
   cardTint: '#FAF7FD',
   cardRule: '#F3E8FF',
   /** Footer band. */

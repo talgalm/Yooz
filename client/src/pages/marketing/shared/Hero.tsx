@@ -185,10 +185,9 @@ const MediaFallback = styled("div")({
 // ─── Photo (Academy) variant ───
 
 /**
- * The hero frame is 1512 x 634 in the file, cut back by ~35% here by request -
- * at full height it ate most of the viewport on every screen size. The padding
- * and type inside came down with it: the stage grows past `minHeight` whenever
- * the copy is taller, so trimming this alone would have changed nothing.
+ * 1512 x 634 in the file, cut back ~35%. The stage grows past `minHeight`
+ * whenever the copy is taller, so this, the padding and the H1 are one sizing
+ * decision - changing any of them alone does nothing.
  */
 const PhotoStage = styled("div")({
   position: "relative",
@@ -200,17 +199,9 @@ const PhotoStage = styled("div")({
 });
 
 /**
- * Two layers, not one. The photograph carries its own gradient fill, whose
- * direction and strength both come from the file rather than being assumed:
- *
- *   handles  start=(0, 0.5) -> end=(1, 0.5)   i.e. horizontal, left to right
- *   stops    FFFFFF a0.00  ->  5B005B a1.00
- *   fill opacity 0.54                          i.e. never full strength
- *
- * So the end stop composites to 54% alpha, baked in here because CSS gradients
- * have no layer-opacity equivalent. Running it `to bottom` at full strength (an
- * earlier guess) darkened the foot of the hero and made the copy panel read as a
- * hard-edged box against it.
+ * The file's gradient is horizontal, FFFFFF a0 -> 5B005B a1 at 0.54 fill
+ * opacity. The end stop is baked to 54% alpha here because CSS gradients have no
+ * layer-opacity equivalent.
  */
 const PhotoBg = styled("div")<{ src?: string }>(({ src }) => ({
   position: "absolute",
@@ -220,11 +211,7 @@ const PhotoBg = styled("div")<{ src?: string }>(({ src }) => ({
     : `linear-gradient(120deg, ${C.heading}, ${C.purpleDeep})`,
   backgroundSize: "cover",
   backgroundPosition: "center",
-  /**
-   * CSS gradients have no logical direction, so this has to be mirrored by hand.
-   * The wash darkens toward whichever edge the copy panel sits on - the inline
-   * start, so the right under RTL and the left under LTR.
-   */
+  /** Gradients carry no logical direction, so mirror it to follow the panel. */
   '[dir="ltr"] &': src
     ? {
         backgroundImage: `linear-gradient(to left, rgba(255,255,255,0) 0%, rgba(91,0,91,0.54) 100%), url(${src})`,
@@ -232,42 +219,23 @@ const PhotoBg = styled("div")<{ src?: string }>(({ src }) => ({
     : {},
 }));
 
-/**
- * The copy panel: `SOLID 360A4D` at 78% opacity, inset rather than full-bleed.
- * In the file it runs x730..1512 and y224..723 of a hero starting at y89 - so it
- * floats against the right edge, clear of the top and bottom.
- */
+/** The copy panel: `SOLID 360A4D` at 78%, x730..1512 / y224..723 in the file. */
 const PhotoWash = styled("div")({
   position: "absolute",
-  /**
-   * Inline-START, matching the copy's `margin-inline-end: auto`, which puts the
-   * text at the inline start too. Under RTL that is the right edge, as the file
-   * has it; under LTR both flip to the left together. `inset-inline-END` is the
-   * opposite edge and split the two apart - panel on one side, its own text on
-   * the other.
-   */
+  /** Inline-start, matching the copy's `margin-inline-end: auto`, so both sit on the same side. */
   insetInlineStart: 0,
   /**
-   * The panel's top is a PERCENTAGE of the stage while the copy's is a fixed
-   * `padding-block` - so the two only agree at one stage height. At the file's
-   * 634 the frame's 21.3% sat above the copy's 200px padding; once that padding
-   * came down to 100 the panel started BELOW the heading and its first line
-   * spilled onto bare photograph. Raised to keep the copy inside its backdrop,
-   * and the height raised with it so the panel stays flush to the foot.
+   * Coupled to `PhotoCopy`'s `padding-block`: this is a percentage of the stage
+   * and that is fixed px, so they agree at only one height. Move either and
+   * check the heading still lands inside the panel.
    */
   top: "10%",
-  /**
-   * 782px at the 1512 frame width, opened to 860 so the H1 sets on two lines
-   * instead of three. Capped so it stops growing on wide screens. English runs
-   * longer than the Hebrew this was measured from, so LTR gets more room.
-   */
+  /** 782 at the 1512 frame, opened to 860 to hold the H1 on two lines. */
   width: "min(56.9%, 860px)",
   /**
-   * The mobile reset is nested INSIDE this rule, not left to the `BP.mobile`
-   * block below. `[dir="ltr"] &` is an attribute plus a class - specificity
-   * (0,1,1) - while `BP.mobile` is a bare class, (0,1,0), and a media query adds
-   * none. The LTR rule would otherwise win at every width and hold the panel at
-   * its desktop width on phones.
+   * The mobile reset is nested inside this rule on purpose: `[dir="ltr"] &` is
+   * (0,1,1) against `BP.mobile`'s bare class at (0,1,0), and media queries add
+   * no specificity - so the LTR rule wins at every width otherwise.
    */
   '[dir="ltr"] &': {
     width: "min(68%, 1040px)",
@@ -275,11 +243,7 @@ const PhotoWash = styled("div")({
   },
   height: "90%",
   background: "rgba(54,10,77,0.78)",
-  /**
-   * `radii=[75, 0, 0, 0]` in the file - only the top-left corner is rounded. The
-   * panel is flush to the right frame edge and to its own foot, so that is the
-   * one corner actually floating over the photograph.
-   */
+  /** `radii=[75,0,0,0]` in the file: the one corner floating over the photo. */
   borderStartEndRadius: 75,
   [BP.mobile]: {
     top: 0,
@@ -293,53 +257,29 @@ const PhotoWash = styled("div")({
 const PhotoCopy = styled("div")({
   position: "relative",
   zIndex: 1,
-  /**
-   * Same basis as the panel behind it so the two scale together below 1512 and
-   * freeze together above it. Opened past the frame's 655 to hold the H1 on two
-   * lines. A fixed px here let the panel outgrow the copy on wide screens.
-   */
+  /** Same basis as the panel, so the two scale and freeze together. */
   maxWidth: "min(47.6%, 720px)",
-  /**
-   * Matches the panel's own LTR widening - English needs the longer measure.
-   * The mobile reset is nested here for the same specificity reason as on
-   * `PhotoWash`: this selector outranks the `BP.mobile` block.
-   */
+  /** English needs the longer measure; mobile nested for the specificity reason above. */
   '[dir="ltr"] &': {
     maxWidth: "min(58%, 900px)",
     [BP.mobile]: { maxWidth: "none" },
   },
-  /**
-   * `margin-inline-END: auto` to sit at the inline START, which under RTL is the
-   * RIGHT edge - where the copy panel is. Using `margin-inline-start: auto` did
-   * the opposite and threw the text to the left, away from its own panel.
-   */
+  /** `inline-END: auto` parks the box at the inline START - the panel's side. */
   marginInlineEnd: "auto",
-  /**
-   * The panel's own padding in the file is `39/100/49/74`. Eased back to 72 on
-   * the inline start and opened up at the top by request - both deliberate steps
-   * away from the measured values, so restore 100 / 39 if the file wins.
-   */
+  /** File has 39/100/49/74; eased to 72 here. */
   paddingInlineStart: 72,
   paddingBlock: "100px 70px",
   color: C.white,
   textAlign: "start",
   animation: `${fadeUp} 0.6s ease-out both`,
-  /**
-   * The file sets this at 80/700/89. Scaled back with the stage - the H1 is the
-   * single biggest contributor to the hero's height, so leaving it at 80 would
-   * have held the section tall no matter what `minHeight` said.
-   */
+  /** File: 80/700/89. Scaled back with the stage - it drives the hero's height. */
   "& h1": {
     color: C.white,
     fontSize: "clamp(31px, 4.6vw, 68px)",
     fontWeight: 700,
     lineHeight: 1.11,
   },
-  /** The panel goes full-bleed at this width, so the copy has to as well. */
-  /**
-   * `paddingBlock` has to be reset here too - without it phones inherited the
-   * desktop `100px 70px`, which is 170px of vertical padding on a 360px stage.
-   */
+  /** Full-bleed here, and `paddingBlock` must be reset or phones inherit 170px of it. */
   [BP.mobile]: {
     maxWidth: "none",
     paddingInlineStart: 24,
@@ -349,7 +289,7 @@ const PhotoCopy = styled("div")({
   [REDUCED_MOTION]: { animation: "none" },
 });
 
-/** 24 / 400 in the file - an earlier pass had this at 15.5. */
+/** 24 / 400 in the file. */
 const PhotoLead = styled("p")({
   fontSize: "clamp(16px, 1.6vw, 24px)",
   lineHeight: 1.35,

@@ -24,11 +24,7 @@ interface CustomerLogosProps {
   marquee?: boolean;
 }
 
-/**
- * `#RRGGBB` to the same colour at zero alpha. Fading to the `transparent`
- * keyword instead would interpolate through `rgba(0, 0, 0, 0)` and grey the
- * middle of the gradient out.
- */
+/** `#RRGGBB` at zero alpha. The `transparent` keyword is `rgba(0,0,0,0)` and greys the gradient's middle. */
 const fadeOut = (hex: string) => {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return 'transparent';
@@ -36,11 +32,7 @@ const fadeOut = (hex: string) => {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, 0)`;
 };
 
-/**
- * The band dissolves into whatever follows rather than stopping on a ruled edge.
- * It fades to nothing rather than to a named colour, so this component does not
- * need to know what section comes next.
- */
+/** Fades to nothing rather than to a named colour, so this need not know what follows it. */
 const Root = styled('section')<{ bg?: string }>(({ bg }) => ({
   background: bg ? `linear-gradient(to bottom, ${bg} 0%, ${bg} 70%, ${fadeOut(bg)} 100%)` : 'transparent',
   paddingBlock: 62,
@@ -78,11 +70,9 @@ const scrollX = keyframes`
 `;
 
 /**
- * The track is laid out LTR on purpose. Under the page's RTL the overflow runs
- * off the left edge, so translating by -50% would slide the content away and
- * leave blank space rather than loop. Going LTR puts the overflow on the right
- * where the classic -50% marquee works. Each column centres its own text, so the
- * Hebrew inside still reads correctly.
+ * LTR on purpose: under RTL the overflow runs off the left, so -50% slides the
+ * content away instead of looping. Each column centres its own text, so the
+ * Hebrew still reads correctly inside.
  */
 const Viewport = styled('div')({
   overflow: 'hidden',
@@ -104,10 +94,9 @@ const Track = styled('div', { shouldForwardProp: (p) => p !== 'seconds' })<{ sec
 );
 
 /**
- * Fixed width so the track measures deterministically - the loop depends on the
- * two halves being identical. The rule sits on every item rather than skipping
- * the first, as `DividedRow` does: in a loop, skipping one leaves a visible gap
- * in the pattern at the seam.
+ * Fixed width so the two halves measure identically, which the loop depends on.
+ * The rule sits on every item - skipping the first, as `DividedRow` does, leaves
+ * a gap in the pattern at the seam.
  */
 const MarqueeItem = styled('div')({
   flex: '0 0 auto',

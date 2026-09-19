@@ -23,14 +23,10 @@ interface TestimonialsProps {
 }
 
 /**
- * The pink field behind the cards, traced column by column off the Home frame.
- * Fill is #FFE8FF on #FFFAFF ground. Its top edge dips to a low around x660
- * before climbing steeply to the right, and its underside bellies out to a
- * maximum near x1127 - both edges curve, so this is a closed shape rather than
- * one of `SectionShape`'s single-edge dividers.
- *
- * Columns x427..520 scan a false bottom around y4940 because the white cards
- * occlude the fill there; those three are interpolated, not measured.
+ * The pink field behind the cards, traced column by column off the Home frame:
+ * #FFE8FF on #FFFAFF. Both edges curve, so it is a closed shape rather than one
+ * of `SectionShape`'s single-edge dividers. Columns x427..520 are interpolated -
+ * the white cards occlude the fill there.
  */
 const WASH_PATH =
   'M0,68 C230,160 460,310 690,339 C920,335 1230,230 1512,0 L1512,795 C1400,820 1250,842 1127,843 C800,825 400,720 0,370 Z';
@@ -48,21 +44,15 @@ const Wash = styled('svg')({
 const Content = styled('div')({ position: 'relative', zIndex: 1 });
 
 /**
- * In the frame the field runs y4517..5360 with the cards at y4940..5292 - far
- * more room above them than below. The padding reproduces that proportion; the
- * shape stays inside this section rather than reaching up behind the contact
- * form, which is where it starts in the comp.
+ * The frame runs the field y4517..5360 with the cards at y4940..5292 - more room
+ * above than below, which the padding reproduces. The shape stays inside this
+ * section rather than reaching up behind the contact form as the comp does.
  */
 const Root = styled('section', { shouldForwardProp: (p) => p !== 'wash' })<{ wash?: boolean }>(
   ({ wash }) => ({
     position: 'relative',
     overflow: 'hidden',
-    /**
-     * No background here on purpose. `Page` already grounds everything in
-     * `paper`, which is what the wash reads against, so setting it again only
-     * made this section opaque - and it then painted over the contact form's
-     * drop shadow above it and cut it off along a hard horizontal line.
-     */
+    /** No background: `Page` already grounds this in `paper`, and an opaque one here clips the contact form's shadow. */
     paddingBlock: wash ? '110px 90px' : 56,
     [BP.mobile]: { paddingBlock: wash ? '52px 50px' : 36 },
   }),
@@ -98,11 +88,7 @@ const Quote = styled('figure')<{ tilt: number; lift: number }>(({ tilt, lift }) 
   [REDUCED_MOTION]: { transform: 'none', transition: 'none' },
 }));
 
-/**
- * Stars sit at the card's right edge. Under RTL `start` IS the right, so `end`
- * was pushing them to the left - the opposite of the frame, where they run
- * x1009..x1085 in a card ending at x1113.
- */
+/** Stars sit at the card's inline start - the right under RTL, as the frame has it. */
 const Stars = styled('div')({
   color: C.gold,
   fontSize: 14,
@@ -111,7 +97,7 @@ const Stars = styled('div')({
   textAlign: 'start',
 });
 
-/** 24 / 400 in the file - an earlier pass had this at 15 / 500. */
+/** 24 / 400 in the file. */
 const Text = styled('blockquote')({
   margin: '0 0 20px',
   fontSize: 'clamp(16px, 1.5vw, 24px)',
@@ -121,12 +107,10 @@ const Text = styled('blockquote')({
   [BP.mobile]: { fontSize: 16, lineHeight: 1.5 },
 });
 
-/** Attribution is 20 / 300 in the file; the avatar monogram is 14 / 700. */
 /**
- * The avatar sits to the RIGHT of the attribution text (avatar x705 against text
- * x428 in the frame). Under RTL a plain `row` already places the first child on
- * the right, so the `row-reverse` an earlier pass added was actively undoing the
- * base direction and throwing the circle to the left.
+ * 20 / 300 in the file; the avatar monogram is 14 / 700. A plain `row` already
+ * puts the avatar on the right under RTL - no `row-reverse`, which would undo
+ * the base direction.
  */
 const Attribution = styled('figcaption')({
   display: 'flex',
@@ -156,10 +140,8 @@ const Avatar = styled('span')<{ bg?: string }>(({ bg }) => ({
 export default function Testimonials({ items, wash }: TestimonialsProps) {
   const { dir } = useLang();
   /**
-   * Only reverse under RTL. A flex row puts its first child on the right there,
-   * but in the frame items[0] is the LEFT card, so the pair needs flipping to
-   * keep each quote with its own author. Under LTR the array order is already
-   * the visual order and reversing it re-introduces exactly that bug.
+   * RTL only: a flex row puts items[0] on the right, but the frame has it as the
+   * LEFT card. Reversing under LTR would re-introduce the mismatch it fixes.
    */
   const ordered = dir === 'rtl' ? [...items].reverse() : items;
 
@@ -173,12 +155,6 @@ export default function Testimonials({ items, wash }: TestimonialsProps) {
       <Content>
         <Container>
         <Row>
-          {/*
-            Reversed for RTL: the first child of a flex row lands on the RIGHT,
-            but in the frame items[0] is the LEFT card (Frame 29 at x372, the
-            college-lecturer quote). Rendering in array order mirrored the pair,
-            which reads as the wrong person saying each quote.
-          */}
           {ordered.map((item, i) => (
             <Reveal key={item.author} delay={i * 90}>
               <Quote tilt={i % 2 === 0 ? 3 : -3} lift={i % 2 === 0 ? 18 : 0}>

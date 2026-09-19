@@ -16,14 +16,10 @@ export const texts = {
     valueTitle: 'מה יוצא למוסד שלכם מהטמעת Yooz?',
     valueIntro: 'פתרון מקיף שמחבר בין פדגוגיה איכותית לתוצאות ארגוניות מדידות.',
     /**
-     * Order matters twice over: the grid is 2x2 and RTL fills top-right,
-     * top-left, bottom-right, bottom-left. The comp puts Pedagogical
-     * Intelligence bottom-right and החזר השקעה bottom-left, so those two sit at
-     * indices 2 and 3 in that order - reversing them mirrors the block.
-     *
-     * Colours are sampled from the frame, not guessed. On the first card only,
-     * the tag is green while the tile and glyph are lavender; the other three
-     * share one hue across all three.
+     * Order matters: the 2x2 grid fills top-right, top-left, bottom-right,
+     * bottom-left under RTL, so swapping indices 2 and 3 mirrors the block.
+     * Colours are sampled from the frame - on the first card only, the tag is
+     * green while the tile and glyph are lavender.
      */
     valueCards: [
       {
@@ -68,9 +64,9 @@ export const texts = {
     experienceIntro:
       'חוויה פדגוגית שלמה שנבנתה בשיתוף חוקרי מוח, מעצבי משחקים עטורי פרסים ומומחי הוראה אקדמית.',
     /**
-     * Tiles are 48 square, flat colour, with a white line glyph - not emoji, which
-     * render in their own colours and ignore `fg`. Colours sampled from the frame.
-     * The AI pill is tinted per card and its text is a constant dark purple.
+     * Tiles are 48 square, flat colour, with a white line glyph - emoji render in
+     * their own colours and ignore `fg`. The AI pill is tinted per card over a
+     * constant dark purple text.
      */
     experienceCards: [
       { icon: '/images/marketing/icons/acad-map.svg', tileBg: '#5A1B87', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Quest Engine', body: 'הופך סילבוס סטטי למפת הרפתקה אינטראקטיבית. אלגוריתם ה-AI מתאים את רמת הקושי של המשימות לקצב האישי של כל סטודנט.' },

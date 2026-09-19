@@ -1,20 +1,6 @@
 import { styled } from '@mui/material/styles';
 
-/**
- * The organic shapes that carry the coloured bands.
- *
- * Every path below was exported straight out of the Figma file over the REST API
- * (nodes 459:7450, 459:7448, 459:7449, 459:7573) rather than drawn by hand. The
- * viewBox on each is the node's own coordinate space, so the silhouettes are the
- * designer's, not an approximation of them.
- *
- * Worth knowing for anyone refining this further: in the file these are not
- * dividers sitting on a band's top edge. They are large blobs behind each band -
- * wider than the 1512 frame - and two of them are rotated (peach 13.9deg,
- * testimonials 180deg). Rendering them stretched across the full width keeps the
- * real silhouette while staying responsive; placing them at their true offset and
- * rotation would be the next step up in fidelity.
- */
+/** The curved boundaries between the coloured bands. */
 
 export type ShapeVariant = 'peach' | 'lavender' | 'mint' | 'testimonials' | 'chevron';
 
@@ -36,15 +22,11 @@ const Svg = styled('svg')<{ h: number }>(({ h }) => ({
 }));
 
 /**
- * These are the curves traced by scanning each column of the export for the row
- * where the band colour begins - i.e. the actual boundary, normalised to a
- * 1440x120 box. They are purpose-built for a shallow full-width divider.
+ * Traced by column-scanning each export for the row where the band colour
+ * begins, normalised to a 1440x120 box.
  *
- * Do NOT substitute the file's exported band vectors here. Those are large
- * background blobs (1800x648, 1648x1045, 1858x627), not edge curves; stretching
- * one into a ~96px strip compresses it about 14x and it reads as a smear. If the
- * real artwork is wanted, it belongs behind a band as a positioned layer at its
- * own aspect ratio, not in this component.
+ * Do not substitute the file's band vectors here: those are ~1800x648 background
+ * blobs, and squeezing one into a 96px strip compresses it ~14x into a smear.
  */
 const PATHS: Record<ShapeVariant, string> = {
   // Boundary starts y1744 at the left edge, eases down to y1803 by x~1014.

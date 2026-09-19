@@ -27,14 +27,9 @@ const Band = styled('section')({
 });
 
 /**
- * In normal flow, deliberately. Positioning this absolutely at `bottom: 100%`
- * gives it no layout height, so it draws over whatever section comes before and
- * clips that copy. Sitting in flow, it occupies its own height and separates the
- * two sections the way the frame does.
- *
- * In flow it overlays nothing, though, so the area above the peak shows the PAGE
- * ground rather than the previous section - a white gap between the two bands.
- * `from` carries the previous band's colour and closes it.
+ * In normal flow, so it separates the two sections rather than overlaying the
+ * one above. The area beside the peak is unpainted, so `from` has to carry the
+ * previous band's colour or it reads as a white gap.
  */
 const ShapeWrap = styled('div', { shouldForwardProp: (p) => p !== 'from' })<{ from?: string }>(({ from }) => ({
   lineHeight: 0,
@@ -66,22 +61,14 @@ const Media = styled('video')({ width: '100%', height: '100%', objectFit: 'cover
 const Still = styled('img')({ width: '100%', height: '100%', objectFit: 'cover', display: 'block' });
 
 /**
- * The cream ground the engine sits on.
- *
- * It is a flat-topped hexagon (`REGULAR_POLYGON` 459:7787 in the file), 1691
- * wide against a 1512 frame - so it bleeds past both edges - not the rotated
- * square an earlier pass used, which read as a pointed diamond. Path exported
- * from the file and inlined so it can stretch to any width.
+ * The cream ground the engine sits on: a flat-topped hexagon
+ * (`REGULAR_POLYGON` 459:7787), 1691 wide against a 1512 frame, so it bleeds
+ * past both edges. Inlined from the file so it can stretch to any width.
  */
 const Ground = styled('div')({
   position: 'relative',
   width: '100%',
-  /**
-   * Pulled up so the video's lower portion sits over the hexagon. In the frame
-   * the video ends at y2485 and the hexagon starts at y2230, so roughly 255px of
-   * the video overlaps it. The top padding then clears the video before the
-   * boosters begin.
-   */
+  /** Video ends at y2485 and the hexagon starts at y2230, so 255px overlap. */
   marginTop: -255,
   paddingBlock: '330px 120px',
   [BP.mobile]: { marginTop: -90, paddingBlock: '130px 60px' },

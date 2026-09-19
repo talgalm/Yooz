@@ -18,11 +18,7 @@ import { CONTACT_ANCHOR } from '../shared/routes';
  */
 const ACADEMY_COLUMN = 1264;
 
-/**
- * Icon sits at the inline-START of the card in the comps, above the copy - which
- * under RTL is the top RIGHT corner, the same side the copy is aligned to.
- * `flex-end` is physical, so it put the tile on the left, opposite the comp.
- */
+/** Icon sits at the card's inline start - the top right under RTL, as the comps have it. */
 const CardHead = styled('div')({ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 });
 
 const Tag = styled('span')<{ color: string }>(({ color }) => ({
@@ -46,10 +42,7 @@ const Proof = styled('div')<{ color: string }>(({ color }) => ({
   '& svg': { flexShrink: 0 },
 }));
 
-/**
- * The comp closes each proof line with a ringed tick, not a bare glyph. Stroked
- * in `currentColor` so it takes the card's tag colour from `Proof`.
- */
+/** Ringed tick in `currentColor`, so it takes the card's tag colour from `Proof`. */
 function CheckIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -61,7 +54,7 @@ function CheckIcon() {
 
 const TitleRow = styled('div')({ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 });
 
-/** Tinted per card in the comp, with dark purple text - not white on solid purple. */
+/** Tinted per card, with dark purple text. */
 const AiBadge = styled('span', { shouldForwardProp: (p) => p !== 'bg' })<{ bg?: string }>(({ bg }) => ({
   fontSize: 9.5,
   fontWeight: 800,
