@@ -4,12 +4,53 @@ on:
   push:
     branches:
       - main
+  pull_request:
   workflow_dispatch:
 
 jobs:
+  # ── Gate ──────────────────────────────────────────────────────────
+  #    Typecheck, tests and the CLAUDE.md guidelines, before anything
+  #    touches the server. Same `npm run check` that runs locally.
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The docs-follow-features rule diffs this push against its base.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install
+        run: |
+          npm install
+          npm run install:all
+
+      - name: Typecheck, tests, guidelines
+        run: npm run check
+
+      - name: A feature also updates MEMORY.md
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "No base to diff against — skipping."
+          else
+            node scripts/guidelines.mjs --diff "$BASE"
+          fi
+
   deploy:
     name: Build & Deploy to EC2
     runs-on: ubuntu-latest
+    # A pull request is checked, never deployed.
+    needs: check
+    if: github.event_name != 'pull_request'
 
     steps:
       # ── 1. Checkout ─────────────────────────────────────────

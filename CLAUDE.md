@@ -21,13 +21,23 @@ npm start                # Production: Express serves API + built client on :300
 **`npm run check` is the gate.** Run it before and after any change:
 
 ```bash
-npm run check       # typecheck (server + client) then all node:test self-checks
+npm run check       # typecheck (server + client), node:test self-checks, then the guidelines
 npm run typecheck   # types only
 npm test            # the node:test self-checks only
+npm run guidelines  # the conventions below, checked mechanically
 ```
 
-Both are clean — **zero** type errors, all tests passing. Any error you see is yours; there
-is no baseline to diff against.
+All three are clean — **zero** type errors, all tests passing, no guideline violations. Any
+error you see is yours; there is no baseline to diff against.
+
+**CI runs exactly this**, as the `check` job in `.github/workflows/deploy.yml`, on every pull
+request and every push to `main`. The deploy job `needs: check`, so a red gate never reaches
+EC2. `scripts/guidelines.mjs` enforces: i18n out of components, no CSS files, no TODO/FIXME or
+commented-out code, no `console.log` in client code, a frozen top-level structure, SVG out of
+components, and MEMORY.md updated alongside a new route/model/page. Counted rules carry a
+per-file baseline in `scripts/guidelines-baseline.json` — an existing file may not get worse
+and a clean file may not regress at all. When you fix violations the baseline rewrites itself
+locally; commit it. To document a feature later, put `[skip-docs]` in the commit message.
 
 `npm test` globs `client/src/**/*.test.ts` and `server/src/**/*.test.ts`, so a new `.test.ts`
 file is picked up with no wiring. There is still no lint script.
@@ -83,6 +93,7 @@ Each has its own React context (`AdminAuthContext`, `AuthContext`, `ManagerAuthC
   `useTranslations` fills the gaps from Hebrew per key (`fillFrom`, covered by
   `LanguageContext.test.ts`). Functions and arrays are taken whole, never merged into.
 - **Game configs live in `game.settings`** as `Record<string, unknown>` server-side, typed per game type client-side. When adding a new game type, add the settings interface in `server/src/types/index.ts`, the type to `validTypes` in `AdminGameConfigPage/index.tsx`, and the matching config form beside it. (`StationType` is a real union, but it lives in `server/src/models/Station.ts`.)
+- **SVG never sits inline in a component.** Static art goes in a `.svg` asset under `client/public` (85 already there); anything parameterised by props, colour or state goes in a sibling `*.icons.tsx`, the same co-location shape as `*.i18n.ts`. 131 inline tags predate the rule and are held at their current count by the baseline — leave them or drain them, but do not add to them.
 - **Drag-and-drop is hand-rolled** (HTML5 drag API + tap-to-swap fallback for touch). No dnd library — match this pattern if adding a new draggable game.
 - **API surface convention**: admin endpoints under `/api/admin/*` require admin JWT; manager endpoints under `/api/manager/*` require manager JWT; participant endpoints under `/api/activities/:code/*` are mostly public, except `/scores` which needs participant JWT.
 - **Public OG share page**: `server/src/index.ts` has a Facebook-crawler short-circuit before the SPA fallback (`/play/:code` returns server-rendered OG HTML to social crawlers). Don't move it.
