@@ -162,7 +162,7 @@ export default function FileUploadButton({ accept, onUploaded, label = 'Upload',
         onChange={handleChange}
       />
       <UploadBtn type="button" onClick={handleClick} disabled={uploading}>
-        {uploading ? uploadingLabel : `📁 ${label}`}
+        {uploading ? uploadingLabel : label}
       </UploadBtn>
 
       {pickerOpen && (

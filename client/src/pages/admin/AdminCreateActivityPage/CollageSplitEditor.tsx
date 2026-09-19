@@ -137,11 +137,15 @@ const PhotoRow = styled('div')<{ dragging?: boolean }>(({ dragging }) => ({
   '&:hover': { background: 'rgba(245,158,11,0.08)' },
 }));
 
+/** Drag handle — a plain dot-grid drawn in CSS, no glyph. */
 const DragGrip = styled('span')({
-  fontSize: 16,
-  color: '#a16207',
-  lineHeight: 1,
+  width: 12,
+  height: 16,
   flexShrink: 0,
+  cursor: 'grab',
+  backgroundImage: 'radial-gradient(circle, #a16207 1.3px, transparent 1.3px)',
+  backgroundSize: '5px 5px',
+  backgroundPosition: 'center',
 });
 
 const EmptyHint = styled('div')({
@@ -404,7 +408,7 @@ export default function CollageSplitEditor({
 
               {part.isVideoOnly ? (
                 <VideoOnlyTag>
-                  {t.collageSplitEditorVideoOnly || '🎬 Video creation only'}
+                  {t.collageSplitEditorVideoOnly || 'Video creation only'}
                 </VideoOnlyTag>
               ) : part.photoIndices.length === 0 ? (
                 <EmptyHint>{t.collageSplitEditorEmpty || 'No photos here yet'}</EmptyHint>
@@ -417,7 +421,7 @@ export default function CollageSplitEditor({
                     onDragStart={(e) => onPhotoDragStart(e, pIdx, photoIdx)}
                     onDragEnd={onPhotoDragEnd}
                   >
-                    <DragGrip>⠿</DragGrip>
+                    <DragGrip />
                     <span>{photos[globalPhotoIdx]?.title || `תמונה ${globalPhotoIdx + 1}`}</span>
                   </PhotoRow>
                 ))
