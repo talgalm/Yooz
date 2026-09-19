@@ -1493,8 +1493,8 @@ export default function StoryModulePage() {
         textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', direction: 'rtl',
       }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>⏰</div>
-        <h3 style={{ margin: '0 0 8px', fontSize: 20, color: '#333', fontWeight: 700 }}>נשארה דקה אחת!</h3>
-        <p style={{ margin: '0 0 20px', fontSize: 15, color: '#666' }}>נשארה דקה אחת לסיום הפעילות</p>
+        <h3 style={{ margin: '0 0 8px', fontSize: 20, color: '#333', fontWeight: 700 }}>{t.oneMinuteTitle}</h3>
+        <p style={{ margin: '0 0 20px', fontSize: 15, color: '#666' }}>{t.oneMinuteBody}</p>
         <button
           onClick={() => setShowTimeWarning(false)}
           style={{
@@ -1502,7 +1502,7 @@ export default function StoryModulePage() {
             background: '#e74c3c', color: '#fff', fontSize: 15, cursor: 'pointer', fontWeight: 700,
           }}
         >
-          הבנתי
+          {t.oneMinuteDismiss}
         </button>
       </div>
     </div>

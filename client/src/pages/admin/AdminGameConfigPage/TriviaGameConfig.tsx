@@ -305,7 +305,7 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
                       variant="correct"
                       onClick={() => setAnswerCorrect(qi, ai, true)}
                     >
-                      נכון
+                      {t.answerCorrect}
                     </AnswerPill>
                     <AnswerPill
                       type="button"
@@ -313,7 +313,7 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
                       variant="incorrect"
                       onClick={() => setAnswerCorrect(qi, ai, false)}
                     >
-                      לא נכון
+                      {t.answerIncorrect}
                     </AnswerPill>
                     {question.answers.length > 2 && (
                       <RemoveOutlineButton

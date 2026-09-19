@@ -1,13 +1,15 @@
 /**
  * MissionTopMenu — a single info "i" button anchored top-right of the frame.
- * Tapping it opens a dropdown with Hebrew rows: יציאה (logout), מוזיקה (music),
- * עזרה (help). Tapping anywhere else closes the menu.
+ * Tapping it opens a dropdown of logout / music / help rows. Tapping anywhere
+ * else closes the menu.
  *
  * Each row is shown only when its handler is supplied. This replaces the
  * older three-separate-icons row that was rendered on every mission screen.
  */
 import { useEffect, useRef, useState } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
+import { useTranslations } from '../../context/LanguageContext';
+import { texts } from './MissionPage.i18n';
 
 const MENU_FONT = "'Rubik', sans-serif";
 const MENU_TEAL = '#39CABC';
@@ -122,12 +124,13 @@ export default function MissionTopMenu({ onLogout, toggleMute, muted, onHelp }: 
     action?.();
   };
 
+  const t = useTranslations(texts);
   const hasAny = !!(onLogout || toggleMute || onHelp);
   if (!hasAny) return null;
 
   return (
     <Container ref={containerRef}>
-      <InfoButton onClick={() => setOpen((o) => !o)} aria-label="תפריט" aria-expanded={open}>
+      <InfoButton onClick={() => setOpen((o) => !o)} aria-label={t.menu} aria-expanded={open}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="16" x2="12" y2="12" />
@@ -146,7 +149,7 @@ export default function MissionTopMenu({ onLogout, toggleMute, muted, onHelp }: 
                   <line x1="21" y1="12" x2="9" y2="12" />
                 </svg>
               </IconWrap>
-              <span>יציאה</span>
+              <span>{t.logout}</span>
             </MenuItem>
           )}
           {toggleMute && (
@@ -166,7 +169,7 @@ export default function MissionTopMenu({ onLogout, toggleMute, muted, onHelp }: 
                   </svg>
                 )}
               </IconWrap>
-              <span>{muted ? 'מוזיקה (כבוי)' : 'מוזיקה'}</span>
+              <span>{muted ? t.musicMuted : t.music}</span>
             </MenuItem>
           )}
           {onHelp && (
@@ -178,7 +181,7 @@ export default function MissionTopMenu({ onLogout, toggleMute, muted, onHelp }: 
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
               </IconWrap>
-              <span>עזרה</span>
+              <span>{t.help}</span>
             </MenuItem>
           )}
         </Dropdown>

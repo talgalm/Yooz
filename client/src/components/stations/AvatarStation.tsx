@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import StationDescriptionPopup from './StationDescriptionPopup';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 import { objectPositionStyle } from '../imagePosition';
+import { useTranslations } from '../../context/LanguageContext';
+import { texts } from './AvatarStation.i18n';
 import {
   type SpeechHandle,
   type PreparedSpeech,
@@ -64,7 +66,8 @@ function pickVideoForAnswer(
 async function askAvatar(
   message: string,
   settings: AvatarSettings,
-  history: { role: 'user' | 'character'; text: string }[]
+  history: { role: 'user' | 'character'; text: string }[],
+  noAnswer: string
 ): Promise<string> {
   try {
     const res = await fetchWithNetworkRetry('/api/avatar-chat', {
@@ -74,9 +77,9 @@ async function askAvatar(
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = (await res.json()) as { response?: string };
-    return data.response?.trim() || 'אני עוד לא יודע לענות על זה...';
+    return data.response?.trim() || noAnswer;
   } catch {
-    return 'אני עוד לא יודע לענות על זה...';
+    return noAnswer;
   }
 }
 
@@ -108,6 +111,7 @@ export default function AvatarStation({
   textColor,
   sessionStorageKey,
 }: AvatarStationProps) {
+  const t = useTranslations(texts);
   const settings = (station.settings || {}) as AvatarSettings;
   const descriptionAsPopup = !!settings.descriptionAsPopup && !!station.description;
   const [message, setMessage] = useState('');
@@ -210,7 +214,7 @@ export default function AvatarStation({
     setMessages((prev) => [...prev, userMsg]);
     setPopupOpen(false);
 
-    const replyText = await askAvatar(text, settings, historySnapshot);
+    const replyText = await askAvatar(text, settings, historySnapshot, t.noAnswer);
     if (!isMountedRef.current) return;
     const replyId = nextIdRef.current++;
     setMessages((prev) => [...prev, { id: replyId, role: 'character', text: replyText }]);
@@ -258,7 +262,7 @@ export default function AvatarStation({
     });
   };
 
-  const placeholder = `שאל את ${settings.characterName || ''}`.trim();
+  const placeholder = t.askPlaceholder(settings.characterName || '');
   const hasAskedQuestion = messages.some((m) => m.role === 'user');
 
   const chatInput = (
@@ -269,7 +273,7 @@ export default function AvatarStation({
         onChange={(e) => setMessage(e.target.value)}
       />
       <ChatIconButton type="submit" aria-label="send" disabled={!message.trim()}>
-        <span>שלח</span>
+        <span>{t.send}</span>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="22" y1="2" x2="11" y2="13" />
           <polygon points="22 2 15 22 11 13 2 9 22 2" />
@@ -334,7 +338,7 @@ export default function AvatarStation({
           <PopupBackdrop onClick={() => setPopupOpen(false)} />
           <PopupPanel>
             <PopupTitleBar>
-              <span>{settings.characterName || 'שיחה'}</span>
+              <span>{settings.characterName || t.conversation}</span>
               <PopupCloseButton type="button" aria-label="close" onClick={() => setPopupOpen(false)}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />

@@ -107,7 +107,14 @@ const mergedCache = new WeakMap<object, Partial<Record<Lang, unknown>>>();
  *   const t = useTranslations(texts);
  */
 export function useTranslations<T>(texts: Texts<T>): T {
-  const { lang } = useLang();
+  return translate(texts, useLang().lang);
+}
+
+/**
+ * The non-hook twin of `useTranslations`, for the utilities that format text
+ * outside a component and are handed the language by their caller.
+ */
+export function translate<T>(texts: Texts<T>, lang: Lang): T {
   if (lang === DEFAULT_LANG) return texts.he;
 
   let byLang = mergedCache.get(texts);

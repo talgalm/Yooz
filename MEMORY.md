@@ -606,7 +606,22 @@ full-width desktop. **Don't reuse components across this boundary** without chec
 ### i18n convention (important)
 Every page/component with user-facing text has a **sibling `.i18n.ts`** exporting `{he, en}`
 (Hebrew default, RTL supported), consumed via `useTranslations(texts)` from `LanguageContext`.
-Add new UI strings there — both languages.
+Add new UI strings there — both languages. A folder-level file shared by its components
+(`MissionPage.i18n.ts`, `AdminCreateActivityPage.i18n.ts`) counts as the sibling.
+
+Interpolated strings are **functions** in the `.i18n.ts` (`attempt: (n) => \`ניסיון ${n}\``),
+never a template literal assembled in the component. Code that formats text **outside** a
+component (`formatDuration`, `ganeiYehoshuaShareText`) takes `lang` and calls
+**`translate(texts, lang)`** — the non-hook twin of `useTranslations`, same merge and cache.
+A prop that used to carry a Hebrew default value now defaults to `undefined` and the component
+falls back to `t.<key>` (`MissionTrashSort`, `MissionPuzzle`).
+
+Deliberately **not** in `.i18n.ts` files, and excluded from the rule: Hebrew inside English
+comments; test fixtures; Hebrew-language *logic* (`avatar/speech.ts` gendered→plural map,
+`HelpChat/matcher.ts` intent keywords, Hebrew-suffix regexes in `manage/duration.ts`); the
+`LANGS` labels; and admin-authored **content** defaults — `fillTestData()` in
+`AdminStationConfigPage`/`AdminGameConfigPage` and `DEFAULT_PUZZLE`/`DEFAULT_TRASH` in
+`AdminMissionConfigPage`, which seed per-activity data rather than app chrome.
 
 ### Admin dashboard (`pages/admin/AdminDashboardPage`)
 Fetches activities/games/stations/folders in parallel on mount, passes as props to tabs; tabs

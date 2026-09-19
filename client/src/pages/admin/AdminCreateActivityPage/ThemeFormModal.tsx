@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { styled } from '@mui/material/styles';
 import { adminApiFetch } from '../../../utils/adminApi';
 import FileUploadButton from '../../../components/FileUploadButton';
+import { useTranslations } from '../../../context/LanguageContext';
+import { texts } from './ThemeFormModal.i18n';
 
 export interface CustomTheme {
   _id: string;
@@ -182,6 +184,7 @@ interface Props {
 }
 
 export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
+  const t = useTranslations(texts);
   const isEdit = Boolean(existing);
 
   const [name, setName] = useState(existing?.name ?? '');
@@ -248,8 +251,8 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
   };
 
   const handleSave = async () => {
-    if (!name.trim()) { setError('שם הערכה הוא שדה חובה'); return; }
-    if (!/^#[0-9a-fA-F]{6}$/.test(mainColor)) { setError('צבע לא תקין — נדרש קוד hex כמו #ff6b6b'); return; }
+    if (!name.trim()) { setError(t.nameRequired); return; }
+    if (!/^#[0-9a-fA-F]{6}$/.test(mainColor)) { setError(t.badColor); return; }
     setSaving(true);
     setError('');
     try {
@@ -278,7 +281,7 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
       }
       onSaved(result.theme);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'שגיאה בשמירה');
+      setError(e instanceof Error ? e.message : t.saveError);
     } finally {
       setSaving(false);
     }
@@ -287,16 +290,16 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
   return (
     <Backdrop onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <Modal>
-        <ModalTitle>{isEdit ? 'עריכת ערכת עיצוב' : 'ערכת עיצוב חדשה'}</ModalTitle>
+        <ModalTitle>{isEdit ? t.editTitle : t.createTitle}</ModalTitle>
 
         <ModalBody>
           <Field>
-            <FieldLabel>שם הערכה *</FieldLabel>
-            <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="לדוגמה: חג המולד" />
+            <FieldLabel>{t.name}</FieldLabel>
+            <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder={t.namePlaceholder} />
           </Field>
 
           <Field>
-            <FieldLabel>צבע ראשי *</FieldLabel>
+            <FieldLabel>{t.mainColor}</FieldLabel>
             <ColorRow>
               <ColorSwatch color={mainColor}>
                 <ColorInput type="color" value={mainColor} onChange={(e) => setMainColor(e.target.value)} />
@@ -311,7 +314,7 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
           </Field>
 
           <Field>
-            <FieldLabel>צבע טקסט תחנות</FieldLabel>
+            <FieldLabel>{t.stationTextColor}</FieldLabel>
             <ColorRow>
               <ColorSwatch color={textColor}>
                 <ColorInput type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} />
@@ -326,7 +329,7 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
           </Field>
 
           <Field>
-            <FieldLabel>צבע רקע דפדפן (מסלול + תחנות)</FieldLabel>
+            <FieldLabel>{t.browserBgColor}</FieldLabel>
             <ColorRow>
               <ColorSwatch color={bgColor}>
                 <ColorInput type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} />
@@ -341,7 +344,7 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
           </Field>
 
           <Field>
-            <FieldLabel>צבע עיגול תחנה/משחק פעיל במסלול (אופציונלי)</FieldLabel>
+            <FieldLabel>{t.activeNodeColor}</FieldLabel>
             <ColorRow>
               <ColorSwatch color={roadmapActiveNodeColor || '#d4e84e'}>
                 <ColorInput
@@ -356,12 +359,12 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
                 placeholder="default: nature"
                 style={{ width: 160 }}
               />
-              {roadmapActiveNodeColor && <ClearBtn type="button" title="נקה צבע" onClick={() => setRoadmapActiveNodeColor('')}>×</ClearBtn>}
+              {roadmapActiveNodeColor && <ClearBtn type="button" title={t.clearColor} onClick={() => setRoadmapActiveNodeColor('')}>×</ClearBtn>}
             </ColorRow>
           </Field>
 
           <Field>
-            <FieldLabel>צבע המסלול (אופציונלי)</FieldLabel>
+            <FieldLabel>{t.pathColor}</FieldLabel>
             <ColorRow>
               <ColorSwatch color={roadmapPathColor || '#3A291A'}>
                 <ColorInput
@@ -376,12 +379,12 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
                 placeholder="default: nature"
                 style={{ width: 160 }}
               />
-              {roadmapPathColor && <ClearBtn type="button" title="נקה צבע" onClick={() => setRoadmapPathColor('')}>×</ClearBtn>}
+              {roadmapPathColor && <ClearBtn type="button" title={t.clearColor} onClick={() => setRoadmapPathColor('')}>×</ClearBtn>}
             </ColorRow>
           </Field>
 
           <Field>
-            <FieldLabel>צבע אייקונים בכותרת (אופציונלי)</FieldLabel>
+            <FieldLabel>{t.headerIconColor}</FieldLabel>
             <ColorRow>
               <ColorSwatch color={headerIconColor || '#ffffff'}>
                 <ColorInput
@@ -396,39 +399,39 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
                 placeholder="default: white"
                 style={{ width: 160 }}
               />
-              {headerIconColor && <ClearBtn type="button" title="נקה צבע" onClick={() => setHeaderIconColor('')}>×</ClearBtn>}
+              {headerIconColor && <ClearBtn type="button" title={t.clearColor} onClick={() => setHeaderIconColor('')}>×</ClearBtn>}
             </ColorRow>
           </Field>
 
           <Field>
-            <FieldLabel>תמונת רקע למסלול (אופציונלי)</FieldLabel>
+            <FieldLabel>{t.roadmapImage}</FieldLabel>
             <ImageRow>
               {roadmapImage && <ImageThumb src={roadmapImage} alt="" />}
-              <FileUploadButton accept="image/*" onUploaded={setRoadmapImage} label="העלה תמונה" uploadingLabel="מעלה..." />
-              {roadmapImage && <ClearBtn type="button" title="הסר תמונה" onClick={() => setRoadmapImage('')}>×</ClearBtn>}
+              <FileUploadButton accept="image/*" onUploaded={setRoadmapImage} label={t.upload} uploadingLabel={t.uploading} />
+              {roadmapImage && <ClearBtn type="button" title={t.clearImage} onClick={() => setRoadmapImage('')}>×</ClearBtn>}
             </ImageRow>
             {roadmapImage && (
               <input
                 value={roadmapImage}
                 onChange={(e) => setRoadmapImage(e.target.value)}
-                placeholder="או הדביקו כתובת תמונה..."
+                placeholder={t.imageUrlPlaceholder}
                 style={{ padding: '8px 12px', fontSize: 12, borderRadius: 8, border: '1px solid #e0e0e0', marginTop: 4, width: '100%', boxSizing: 'border-box' }}
               />
             )}
           </Field>
 
           <Field>
-            <FieldLabel>תמונת רקע לתחנות (אופציונלי)</FieldLabel>
+            <FieldLabel>{t.stationsImage}</FieldLabel>
             <ImageRow>
               {stationsImage && <ImageThumb src={stationsImage} alt="" />}
-              <FileUploadButton accept="image/*" onUploaded={setStationsImage} label="העלה תמונה" uploadingLabel="מעלה..." />
-              {stationsImage && <ClearBtn type="button" title="הסר תמונה" onClick={() => setStationsImage('')}>×</ClearBtn>}
+              <FileUploadButton accept="image/*" onUploaded={setStationsImage} label={t.upload} uploadingLabel={t.uploading} />
+              {stationsImage && <ClearBtn type="button" title={t.clearImage} onClick={() => setStationsImage('')}>×</ClearBtn>}
             </ImageRow>
             {stationsImage && (
               <input
                 value={stationsImage}
                 onChange={(e) => setStationsImage(e.target.value)}
-                placeholder="או הדביקו כתובת תמונה..."
+                placeholder={t.imageUrlPlaceholder}
                 style={{ padding: '8px 12px', fontSize: 12, borderRadius: 8, border: '1px solid #e0e0e0', marginTop: 4, width: '100%', boxSizing: 'border-box' }}
               />
             )}
@@ -438,9 +441,9 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
         {error && <div style={{ color: '#e74c3c', fontSize: 13 }}>{error}</div>}
 
         <Actions>
-          <CancelBtn type="button" onClick={onClose}>ביטול</CancelBtn>
+          <CancelBtn type="button" onClick={onClose}>{t.cancel}</CancelBtn>
           <SaveBtn type="button" disabled={saving} onClick={handleSave}>
-            {saving ? 'שומר...' : 'שמור ערכה'}
+            {saving ? t.saving : t.save}
           </SaveBtn>
         </Actions>
       </Modal>

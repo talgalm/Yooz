@@ -639,7 +639,7 @@ export default function AdminPortalConfigPage() {
                       <UserInput
                         type={showPasswords[index] ? 'text' : 'password'}
                         value={user.password.startsWith('$2') ? '' : user.password}
-                        placeholder={user.password.startsWith('$2') ? '(סיסמה שמורה — ייצר חדשה לשינוי)' : ''}
+                        placeholder={user.password.startsWith('$2') ? t.savedPassword : ''}
                         onChange={(e) => updateUser(index, 'password', e.target.value)}
                         readOnly={user.password.startsWith('$2')}
                       />

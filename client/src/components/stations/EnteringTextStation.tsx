@@ -3,6 +3,8 @@ import { styled, keyframes } from '@mui/material/styles';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 import { StationContinueButton, DESKTOP_BREAKPOINT, DESKTOP_STATION_WIDTH, DesktopStationHeaderBand } from '../games/styled';
 import { ModalOverlay, ModalCard } from '../styled';
+import { useTranslations } from '../../context/LanguageContext';
+import { texts } from './EnteringTextStation.i18n';
 
 const confettiFall = keyframes`
   0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
@@ -401,6 +403,7 @@ export default function EnteringTextStation({
   retryButtonLabel,
   textColor,
 }: EnteringTextStationProps) {
+  const t = useTranslations(texts);
   const fields = useMemo(() => {
     const raw = station.settings?.fields;
     if (!Array.isArray(raw)) return [];
@@ -460,9 +463,9 @@ export default function EnteringTextStation({
     }
   }, [attempts, failedRoundCount, solutionHintUsed, sessionStorageKey]);
 
-  const title = (station.settings?.title as string) || 'פתרון התעלומה';
-  const submitButtonText = (station.settings?.submitButtonText as string) || 'תשובה סופית';
-  const returnButtonText = (station.settings?.returnButtonText as string) || 'חזרה לחקירה';
+  const title = (station.settings?.title as string) || t.title;
+  const submitButtonText = (station.settings?.submitButtonText as string) || t.submit;
+  const returnButtonText = (station.settings?.returnButtonText as string) || t.back;
   const maxAttemptsRaw = Number(station.settings?.maxAttempts);
   const maxAttempts = Number.isFinite(maxAttemptsRaw) && maxAttemptsRaw > 0 ? maxAttemptsRaw : 3;
   const successTitle = station.settings?.successTitle as string | undefined;
@@ -555,7 +558,7 @@ export default function EnteringTextStation({
       setAttempts(next);
       const remaining = Math.max(maxAttempts - next, 0);
       if (remaining > 0) {
-        setError(`נא למלא את כל השדות. נשארו ${remaining} ניסיונות.`);
+        setError(t.fillAllFields(remaining));
       } else {
         triggerFailedRound();
       }
@@ -595,7 +598,7 @@ export default function EnteringTextStation({
           setAttempts(next);
           const remaining = Math.max(maxAttempts - next, 0);
           if (remaining > 0) {
-            setError(`תשובה לא נכונה. נשארו ${remaining} ניסיונות.`);
+            setError(t.wrongAnswer(remaining));
           } else {
             triggerFailedRound();
           }
@@ -609,7 +612,7 @@ export default function EnteringTextStation({
         }
       }
     }
-    setError(lastNetworkError ? 'שגיאת חיבור, נסו שוב.' : 'שגיאה בבדיקה, נסו שוב.');
+    setError(lastNetworkError ? t.networkError : t.checkError);
     setLoading(false);
   };
 
@@ -625,7 +628,7 @@ export default function EnteringTextStation({
             <Statement>{field.statement || `Field ${index + 1}`}</Statement>
             <Input
               value={values[index] || ''}
-              placeholder={field.placeholder || field.description || 'הזינו תשובה'}
+              placeholder={field.placeholder || field.description || t.answerPlaceholder}
               onChange={(e) => {
                 const next = [...values];
                 next[index] = e.target.value;
@@ -641,26 +644,26 @@ export default function EnteringTextStation({
           {[...Array(maxAttempts)].map((_, i) => (
             <AttemptDot key={i} used={String(i < attempts)} />
           ))}
-          <span style={{ direction: 'rtl', unicodeBidi: 'isolate' }}>נסיונות:</span>
+          <span style={{ direction: 'rtl', unicodeBidi: 'isolate' }}>{t.attempts}</span>
         </BelowAttemptsRow>
         <HintGroup>
           {showSolutionHintIcon && (
             <SolutionHintTextButton
               type="button"
               onClick={handleSolutionHintClick}
-              aria-label={solutionHintLabel || 'הצג פתרון'}
-              title={solutionHintLabel || 'הצג פתרון'}
+              aria-label={solutionHintLabel || t.showSolution}
+              title={solutionHintLabel || t.showSolution}
             >
-              {solutionHintLabel || 'הצג פתרון'}
+              {solutionHintLabel || t.showSolution}
             </SolutionHintTextButton>
           )}
           {stationHintText && onStationHintClick && (
             <SmallHintButton
               type="button"
               onClick={onStationHintClick}
-              aria-label={hintLabel || 'רמז'}
+              aria-label={hintLabel || t.hint}
             >
-              {hintLabel || 'רמז'}
+              {hintLabel || t.hint}
             </SmallHintButton>
           )}
         </HintGroup>
@@ -671,7 +674,7 @@ export default function EnteringTextStation({
           onClick={handleSubmit}
           disabled={loading || attempts >= maxAttempts}
         >
-          {loading ? `בודק${'.'.repeat(loadingDots)}` : submitButtonText}
+          {loading ? `${t.checking}${'.'.repeat(loadingDots)}` : submitButtonText}
         </PrimaryActionButton>
         {showBackButton && (
           <SecondaryActionButton
@@ -696,7 +699,7 @@ export default function EnteringTextStation({
               <SuccessVideo src={successMediaUrl} autoPlay controls />
             )}
             <SuccessContinueButton type="button" onClick={handleSuccessContinue}>
-              המשיכו
+              {t.continue}
             </SuccessContinueButton>
           </SuccessCard>
         </ModalOverlay>
@@ -705,10 +708,10 @@ export default function EnteringTextStation({
       {showRetryPopup && (
         <ModalOverlay>
           <SuccessCard onClick={(e) => e.stopPropagation()}>
-            <SuccessTitle>{retryTitle || 'נגמרו הניסיונות'}</SuccessTitle>
-            <SuccessSubtitle>{retryMessage || 'לא נורא — נסו שוב.'}</SuccessSubtitle>
+            <SuccessTitle>{retryTitle || t.outOfAttempts}</SuccessTitle>
+            <SuccessSubtitle>{retryMessage || t.tryAgain}</SuccessSubtitle>
             <SuccessContinueButton type="button" onClick={handleRetryDismiss}>
-              {retryButtonLabel || 'המשך'}
+              {retryButtonLabel || t.retryContinue}
             </SuccessContinueButton>
           </SuccessCard>
         </ModalOverlay>
@@ -716,16 +719,16 @@ export default function EnteringTextStation({
       {showSolutionHintWarning && (
         <ModalOverlay onClick={() => setShowSolutionHintWarning(false)}>
           <SuccessCard onClick={(e) => e.stopPropagation()}>
-            <SuccessTitle>{solutionHintLabel || 'הצג פתרון'}</SuccessTitle>
+            <SuccessTitle>{solutionHintLabel || t.showSolution}</SuccessTitle>
             <SuccessSubtitle>
-              {solutionHintWarning || 'הצגת הפתרון תמלא את התשובה הנכונה ותוסיף 4 דקות לזמן שלך. להמשיך?'}
+              {solutionHintWarning || t.solutionWarning}
             </SuccessSubtitle>
             <ConfirmModalActions>
               <ConfirmModalSecondary type="button" onClick={() => setShowSolutionHintWarning(false)}>
-                {hintCancelLabel || 'ביטול'}
+                {hintCancelLabel || t.cancel}
               </ConfirmModalSecondary>
               <ConfirmModalPrimary type="button" onClick={handleSolutionHintConfirm}>
-                {solutionHintConfirmLabel || 'הצג פתרון'}
+                {solutionHintConfirmLabel || t.showSolution}
               </ConfirmModalPrimary>
             </ConfirmModalActions>
           </SuccessCard>

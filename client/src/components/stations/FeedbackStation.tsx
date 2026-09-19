@@ -2,6 +2,8 @@ import { useState, useRef, useCallback } from 'react';
 import { styled } from '@mui/material/styles';
 import { DESKTOP_BREAKPOINT, DESKTOP_STATION_WIDTH } from '../games/styled';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
+import { useTranslations } from '../../context/LanguageContext';
+import { texts } from './FeedbackStation.i18n';
 
 // ─── Types ───
 
@@ -24,13 +26,14 @@ export interface FeedbackResult {
 
 // ─── 6-Level Rating Model ───
 
+// Labels live in FeedbackStation.i18n, indexed by `value - 1`.
 const RATING_LEVELS = [
-  { value: 1, label: 'בכלל לא', emoji: '😞' },
-  { value: 2, label: 'במידה מועטה מאוד', emoji: '😕' },
-  { value: 3, label: 'במידה מועטה', emoji: '😐' },
-  { value: 4, label: 'במידה בינונית', emoji: '🙂' },
-  { value: 5, label: 'במידה רבה', emoji: '😊' },
-  { value: 6, label: 'במידה רבה מאוד', emoji: '🤩' },
+  { value: 1, emoji: '😞' },
+  { value: 2, emoji: '😕' },
+  { value: 3, emoji: '😐' },
+  { value: 4, emoji: '🙂' },
+  { value: 5, emoji: '😊' },
+  { value: 6, emoji: '🤩' },
 ];
 
 // ─── Styled ───
@@ -270,6 +273,7 @@ function SliderQuestion({
     dragging.current = false;
   };
 
+  const t = useTranslations(texts);
   const currentValue = value ?? 0;
   const hasValue = value !== undefined;
   const pct = hasValue ? valueToPercent(currentValue) : 0;
@@ -310,11 +314,11 @@ function SliderQuestion({
       <AnswerLabel>
         {level ? (
           <>
-            <span>{level.label}</span>
+            <span>{t.levels[level.value - 1]}</span>
             <span>{level.emoji}</span>
           </>
         ) : (
-          <span style={{ color: '#bbb', fontWeight: 400 }}>לחצו לבחירה</span>
+          <span style={{ color: '#bbb', fontWeight: 400 }}>{t.tapToChoose}</span>
         )}
       </AnswerLabel>
     </QuestionCard>
@@ -330,6 +334,7 @@ interface FeedbackStationProps {
 }
 
 export default function FeedbackStation({ station, onContinue, textColor }: FeedbackStationProps) {
+  const t = useTranslations(texts);
   const settings = (station.settings || {}) as FeedbackSettings;
   const questions = settings.questions || [];
   const [answers, setAnswers] = useState<Record<number, number>>({});
@@ -348,12 +353,11 @@ export default function FeedbackStation({ station, onContinue, textColor }: Feed
     const result: FeedbackResult = {
       answers: questions.map((q, i) => {
         const val = answers[i];
-        const level = RATING_LEVELS.find((l) => l.value === val);
         return {
           questionIndex: i,
           questionText: q.text,
           value: val,
-          label: level?.label || '',
+          label: t.levels[val - 1] || '',
         };
       }),
       notes: notes.trim(),
@@ -386,7 +390,7 @@ export default function FeedbackStation({ station, onContinue, textColor }: Feed
       {settings.notesEnabled !== false && (
         <NotesCard>
           <NotesArea
-            placeholder={settings.notesPlaceholder || 'עוד הערות?'}
+            placeholder={settings.notesPlaceholder || t.notesPlaceholder}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
@@ -397,10 +401,7 @@ export default function FeedbackStation({ station, onContinue, textColor }: Feed
         disabled={!allAnswered}
         onClick={handleSubmit}
       >
-        {allAnswered
-          ? 'סיום'
-          : `ענו על כל השאלות (${answeredCount}/${questions.length})`
-        }
+        {allAnswered ? t.finish : t.answerAll(answeredCount, questions.length)}
       </SubmitButton>
     </FeedbackContainer>
   );

@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
+import { useTranslations } from '../../context/LanguageContext';
+import { texts } from './MissionPage.i18n';
 import {
   MissionWrapper,
   FrameContainer,
@@ -291,7 +293,8 @@ function savePuzzleSession(code: string, queue: number[], placed: number[]) {
 
 // ─── Component ───
 
-export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect, playWrong, playClick, playComplete, muted, toggleMute, code, completeHeader = 'כל הכבוד!', completeButton = 'לשלב הבא', onLogout, onHelp }: MissionPuzzleProps) {
+export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect, playWrong, playClick, playComplete, muted, toggleMute, code, completeHeader, completeButton, onLogout, onHelp }: MissionPuzzleProps) {
+  const t = useTranslations(texts);
   const savedPuzzle = useRef(loadPuzzleSession(code));
 
   const [queue, setQueue] = useState<number[]>(() => {
@@ -436,14 +439,14 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
           <MissionTopMenu onLogout={onLogout} toggleMute={toggleMute} muted={muted} onHelp={onHelp} />
 
           <MissionHeader>
-            <HeaderText>{completeHeader}</HeaderText>
+            <HeaderText>{completeHeader ?? t.completeHeader}</HeaderText>
           </MissionHeader>
 
           <PuzzleContent style={{ justifyContent: 'flex-start', paddingTop: 10 }} />
 
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <MissionButton step={3} onClick={() => { playClick?.(); onComplete(); }}>
-              {completeButton}
+              {completeButton ?? t.completeButton}
             </MissionButton>
           </div>
         </FrameContainer>
@@ -461,7 +464,7 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
         <MissionTopMenu onLogout={onLogout} toggleMute={toggleMute} muted={muted} onHelp={onHelp} />
 
         <PuzzleInstruction>
-          גררו את החלק אל תוך התמונה<br />כאשר זה יהיה במקום הנכון יתקבל צליל
+          {t.puzzleInstruction[0]}<br />{t.puzzleInstruction[1]}
         </PuzzleInstruction>
 
         <PuzzleContent>

@@ -422,7 +422,7 @@ export default function CollageSplitEditor({
                     onDragEnd={onPhotoDragEnd}
                   >
                     <DragGrip />
-                    <span>{photos[globalPhotoIdx]?.title || `תמונה ${globalPhotoIdx + 1}`}</span>
+                    <span>{photos[globalPhotoIdx]?.title || `${t.photoLabel} ${globalPhotoIdx + 1}`}</span>
                   </PhotoRow>
                 ))
               )}

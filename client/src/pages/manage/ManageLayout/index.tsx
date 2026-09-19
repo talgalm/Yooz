@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useManageAuth } from '../../../context/ManageAuthContext';
-import { useLang } from '../../../context/LanguageContext';
+import { useTranslations } from '../../../context/LanguageContext';
 import { MANAGE_NAV } from '../nav';
+import { texts as navTexts } from '../nav.i18n';
+import { texts } from './ManageLayout.i18n';
 import TimerBar from '../TimerBar';
 import { PRIMARY, PRIMARY_LIGHT, BORDER, TEXT, TEXT_LIGHT } from '../../../components/styled';
 
@@ -192,23 +194,16 @@ const Main = styled('main')({
   [MOBILE]: { padding: 16 },
 });
 
-const ROLE_LABEL: Record<string, { he: string; en: string }> = {
-  owner: { he: 'בעל העסק', en: 'Owner' },
-  pm: { he: 'מנהל פרויקט', en: 'Project manager' },
-  member: { he: 'עובד', en: 'Team member' },
-};
-
 export default function ManageLayout() {
   const { user, logout, isOwner } = useManageAuth();
-  const { lang } = useLang();
+  const t = useTranslations(texts);
+  const nav = useTranslations(navTexts);
   const { pathname } = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const he = lang === 'he';
 
   // Navigating inside the drawer must close it, or the new screen stays covered.
   useEffect(() => setDrawerOpen(false), [pathname]);
 
-  const label = (item: (typeof MANAGE_NAV)[number]) => (he ? item.labelHe : item.labelEn);
   const visible = MANAGE_NAV.filter((i) => !i.ownerOnly || isOwner);
   const firstOwnerOnly = visible.find((i) => i.ownerOnly);
   const current = visible.find((i) => pathname === `/manage/${i.path}`);
@@ -223,39 +218,39 @@ export default function ManageLayout() {
     <Shell>
       {drawerOpen && <Backdrop onClick={() => setDrawerOpen(false)} />}
       <Sidebar style={drawerOpen ? DRAWER_OPEN_STYLE : undefined}>
-        <Brand>{he ? 'ניהול יוז' : 'Yooz Manage'}</Brand>
+        <Brand>{t.brand}</Brand>
         <Nav>
           {visible.map((item) => (
             <div key={item.path}>
               {item === firstOwnerOnly && (
-                <OwnerDivider>{he ? 'למנהל בלבד' : 'OWNER ONLY'}</OwnerDivider>
+                <OwnerDivider>{t.ownerOnly}</OwnerDivider>
               )}
-              <NavItem to={`/manage/${item.path}`}>{label(item)}</NavItem>
+              <NavItem to={`/manage/${item.path}`}>{nav[item.path]}</NavItem>
             </div>
           ))}
           <BackItem to="/admin/dashboard">
-            <span aria-hidden>{he ? '→' : '←'}</span>
-            {he ? 'פאנל ניהול' : 'Admin panel'}
+            <span aria-hidden>{t.backArrow}</span>
+            {t.adminPanel}
           </BackItem>
         </Nav>
         <UserBox>
           <UserName>{user?.name}</UserName>
-          <UserRole>{user ? ROLE_LABEL[user.role][he ? 'he' : 'en'] : ''}</UserRole>
-          <LogoutButton onClick={logout}>{he ? 'התנתקות' : 'Sign out'}</LogoutButton>
+          <UserRole>{user ? t.roles[user.role] : ''}</UserRole>
+          <LogoutButton onClick={logout}>{t.signOut}</LogoutButton>
         </UserBox>
       </Sidebar>
       <Content>
         <TopBar>
           <Hamburger
             onClick={() => setDrawerOpen(true)}
-            aria-label={he ? 'פתיחת תפריט' : 'Open menu'}
+            aria-label={t.openMenu}
             aria-expanded={drawerOpen}
           >
             <span />
             <span />
             <span />
           </Hamburger>
-          <TopBarTitle>{current ? label(current) : he ? 'ניהול יוז' : 'Yooz Manage'}</TopBarTitle>
+          <TopBarTitle>{current ? nav[current.path] : t.brand}</TopBarTitle>
         </TopBar>
         <TimerBar />
         <Main key={pathname}>

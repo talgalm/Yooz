@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { styled, keyframes } from '@mui/material/styles';
 import { angleDelta, bearingDegrees, distanceMeters, offsetMeters, type LatLng } from '../utils/geo';
+import { useTranslations } from '../context/LanguageContext';
+import { texts } from './ArDemoPage.i18n';
 
 /**
  * AR treasure-hunt demo: phone camera + GPS + compass. Coins live at real
@@ -36,10 +38,8 @@ const DEFAULT_COURSE: Array<{ north: number; east: number; emoji: string; kind?:
 
 // The question station hands out the safe code; the safe ends the game.
 const SAFE_CODE = '7391';
-const QUIZ_QUESTIONS: Array<{ text: string; answer: boolean }> = [
-  { text: 'צעד ממוצע של אדם הולך הוא בערך 70 ס״מ.', answer: true },
-  { text: 'המצפן בטלפון מודד את המרחק אל היעד.', answer: false },
-];
+// The question text lives in ArDemoPage.i18n, in this same order.
+const QUIZ_ANSWERS = [true, false];
 
 const CONFETTI_COLORS = ['#ffd54f', '#7c4dff', '#2ec4b6', '#ff8a3d', '#2f9bd6'];
 
@@ -71,6 +71,7 @@ function parseCoinsParam(raw: string | null): Coin[] | null {
 }
 
 export default function ArDemoPage() {
+  const t = useTranslations(texts);
   const [params] = useSearchParams();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -125,22 +126,22 @@ export default function ArDemoPage() {
         audio: false,
       });
     } catch {
-      setError('אין גישה למצלמה. אשרו את ההרשאה ונסו שוב (נדרש HTTPS).');
+      setError(t.cameraDenied);
       return;
     }
     setStarted(true);
     if (!(await compassPermission)) {
-      setCompassNote('הרשאת המצפן נדחתה — הגדרות ← Safari ← Motion & Orientation Access');
+      setCompassNote(t.compassDenied);
     }
-  }, []);
+  }, [t]);
 
   // Attach the camera only once the <video> is actually mounted; the start screen
   // does not render it, so assigning srcObject inside start() hit a null ref.
   useEffect(() => {
     if (!started || !videoRef.current || !streamRef.current) return;
     videoRef.current.srcObject = streamRef.current;
-    videoRef.current.play().catch(() => setError('הדפדפן חסם את הווידאו. נסו לרענן.'));
-  }, [started]);
+    videoRef.current.play().catch(() => setError(t.videoBlocked));
+  }, [started, t]);
 
   useEffect(
     () => () => {
@@ -177,7 +178,7 @@ export default function ArDemoPage() {
     window.addEventListener('deviceorientation', onOrientation);
     const commit = setInterval(() => setHeading(headingRef.current), HEADING_FPS_MS);
     const noSensor = setTimeout(() => {
-      if (headingRef.current === null) setCompassNote('לא מתקבלת קריאת מצפן במכשיר הזה');
+      if (headingRef.current === null) setCompassNote(t.noCompass);
     }, 3000);
 
     return () => {
@@ -186,7 +187,7 @@ export default function ArDemoPage() {
       clearInterval(commit);
       clearTimeout(noSensor);
     };
-  }, [started]);
+  }, [started, t]);
 
   // Dead reckoning. A step covers ~0.7m and GPS noise is several meters, so walking a
   // couple of paces is invisible to the fix alone — count footfalls and move along the
@@ -236,7 +237,7 @@ export default function ArDemoPage() {
   useEffect(() => {
     if (!started) return;
     if (!navigator.geolocation) {
-      setError('אין תמיכה במיקום בדפדפן הזה.');
+      setError(t.noGeolocation);
       return;
     }
     const watchId = navigator.geolocation.watchPosition(
@@ -275,11 +276,11 @@ export default function ArDemoPage() {
           }));
         });
       },
-      () => setError('אין גישה למיקום. אשרו את ההרשאה ונסו שוב.'),
+      () => setError(t.locationDenied),
       { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
     );
     return () => navigator.geolocation.clearWatch(watchId);
-  }, [started, fixedCoins]);
+  }, [started, fixedCoins, t]);
 
   const collect = useCallback((id: number, left: number, top: number) => {
     setCollected((prev) => (prev.includes(id) ? prev : [...prev, id]));
@@ -296,14 +297,14 @@ export default function ArDemoPage() {
 
   const answerQuiz = (value: boolean) => {
     if (!quiz || quiz.correct !== null) return;
-    const correct = value === QUIZ_QUESTIONS[quiz.step].answer;
+    const correct = value === QUIZ_ANSWERS[quiz.step];
     navigator.vibrate?.(correct ? 60 : [40, 60, 40]);
     setQuiz({ ...quiz, correct });
   };
 
   const nextQuiz = () => {
     if (!quiz) return;
-    if (quiz.step + 1 < QUIZ_QUESTIONS.length) {
+    if (quiz.step + 1 < QUIZ_ANSWERS.length) {
       setQuiz({ ...quiz, step: quiz.step + 1, correct: null });
       return;
     }
@@ -373,12 +374,11 @@ export default function ArDemoPage() {
         <div style={{ fontSize: 64 }}>🪙</div>
         <h1 style={{ margin: 0, fontSize: 32, letterSpacing: 1 }}>Yooz Go</h1>
         <p style={{ opacity: 0.8, lineHeight: 1.6, maxWidth: 320 }}>
-          כוונו את הטלפון סביבכם, מצאו את המטבעות שמסתתרים במרחב, והתקרבו עד {COLLECT_RADIUS_M} מטר
-          כדי לאסוף אותם. בעמדת ❓ מחכות שאלות — והתשובות פותחות את הכספת. צריך שטח פתוח בחוץ.
+          {t.intro(COLLECT_RADIUS_M)}
         </p>
         {error && <p style={{ color: '#ff8a80' }}>{error}</p>}
         <button type="button" onClick={start} style={styles.startButton}>
-          התחלה
+          {t.start}
         </button>
       </Screen>
     );
@@ -400,7 +400,7 @@ export default function ArDemoPage() {
             >
               <span>{entry.coin.emoji}</span>
               <CoinLabel inRange={entry.inRange}>
-                {entry.inRange ? 'הקישו לאיסוף!' : `${Math.round(entry.distance)} מ׳`}
+                {entry.inRange ? t.tapToCollect : t.metres(Math.round(entry.distance))}
               </CoinLabel>
             </CoinButton>
           ),
@@ -437,32 +437,29 @@ export default function ArDemoPage() {
       {nearest && !nearest.onScreen && (
         <div style={styles.arrowWrap}>
           <div style={{ ...styles.arrow, transform: `rotate(${nearest.offset}deg)` }}>⬆</div>
-          <div>{Math.round(nearest.distance)} מ׳ — הסתובבו לכיוון החץ</div>
+          <div>{t.turnToArrow(Math.round(nearest.distance))}</div>
         </div>
       )}
 
       <div style={styles.hud}>
         <div style={styles.hudRow}>
-          <span>נאספו {collected.length}</span>
-          <span>נותרו {remaining}</span>
-          {nearest && <span>הקרוב: {Math.round(nearest.distance)} מ׳</span>}
+          <span>{t.collected(collected.length)}</span>
+          <span>{t.remaining(remaining)}</span>
+          {nearest && <span>{t.nearest(Math.round(nearest.distance))}</span>}
         </div>
         {nearest && trend && (
           <div style={{ ...styles.warning, color: trend === 'closer' ? '#69f0ae' : '#ff8a80' }}>
-            {trend === 'closer' ? '▼ מתקרבים' : '▲ מתרחקים'}
+            {trend === 'closer' ? t.closer : t.farther}
           </div>
         )}
         {heading !== null && !absoluteSeenRef.current && (
-          <div style={styles.warning}>מצפן יחסי — הכיוון עשוי לסטות</div>
+          <div style={styles.warning}>{t.relativeCompass}</div>
         )}
         {compassNote && <div style={styles.warning}>{compassNote}</div>}
         {error && <div style={styles.warning}>{error}</div>}
-        {!position && <div style={styles.warning}>מאתר מיקום…</div>}
+        {!position && <div style={styles.warning}>{t.locating}</div>}
         {position && position.accuracy > COLLECT_RADIUS_M * 2 && (
-          <div style={styles.warning}>
-            דיוק המיקום ±{Math.round(position.accuracy)} מ׳ — גדול מטווח האיסוף. בתוך מבנה ה-GPS לא
-            מספיק מדויק.
-          </div>
+          <div style={styles.warning}>{t.poorAccuracy(Math.round(position.accuracy))}</div>
         )}
       </div>
 
@@ -471,30 +468,30 @@ export default function ArDemoPage() {
           <div style={styles.card}>
             <div style={{ fontSize: 40 }}>❓</div>
             <div style={{ fontSize: 15, opacity: 0.7 }}>
-              שאלה {quiz.step + 1} מתוך {QUIZ_QUESTIONS.length}
+              {t.questionProgress(quiz.step + 1, QUIZ_ANSWERS.length)}
             </div>
-            <div style={{ fontSize: 19, lineHeight: 1.5 }}>{QUIZ_QUESTIONS[quiz.step].text}</div>
+            <div style={{ fontSize: 19, lineHeight: 1.5 }}>{t.quizQuestions[quiz.step]}</div>
             {quiz.correct === null ? (
               <div style={{ display: 'flex', gap: 12 }}>
                 <button type="button" onClick={() => answerQuiz(true)} style={styles.quizButton}>
-                  נכון
+                  {t.true}
                 </button>
                 <button type="button" onClick={() => answerQuiz(false)} style={styles.quizButton}>
-                  לא נכון
+                  {t.false}
                 </button>
               </div>
             ) : (
               <>
                 <div style={{ fontSize: 20, color: quiz.correct ? '#69f0ae' : '#ff8a80' }}>
-                  {quiz.correct ? '✔ נכון!' : '✘ טעות'}
+                  {quiz.correct ? t.right : t.wrong}
                 </div>
-                {quiz.step === QUIZ_QUESTIONS.length - 1 && (
+                {quiz.step === QUIZ_ANSWERS.length - 1 && (
                   <div style={styles.codeReveal}>
-                    קוד הכספת: <b style={{ letterSpacing: 6 }}>{SAFE_CODE}</b>
+                    {t.safeCode}<b style={{ letterSpacing: 6 }}>{SAFE_CODE}</b>
                   </div>
                 )}
                 <button type="button" onClick={nextQuiz} style={styles.startButton}>
-                  {quiz.step + 1 < QUIZ_QUESTIONS.length ? 'לשאלה הבאה' : 'סיום'}
+                  {quiz.step + 1 < QUIZ_ANSWERS.length ? t.nextQuestion : t.finish}
                 </button>
               </>
             )}
@@ -507,13 +504,13 @@ export default function ArDemoPage() {
           {safeOpen ? (
             <div style={styles.card}>
               <div style={{ fontSize: 72 }}>🔓</div>
-              <div style={{ fontSize: 22 }}>הכספת נפתחה!</div>
+              <div style={{ fontSize: 22 }}>{t.safeOpened}</div>
               <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: 2 }}>Game Over</div>
             </div>
           ) : (
             <div style={styles.card}>
               <div style={{ fontSize: 64 }}>🔐</div>
-              <div style={{ fontSize: 18 }}>הקישו את הקוד בן 4 הספרות</div>
+              <div style={{ fontSize: 18 }}>{t.enterCode}</div>
               <div
                 style={{
                   ...styles.pinRow,
@@ -524,7 +521,7 @@ export default function ArDemoPage() {
                   <span key={i}>{pin[i] ?? '•'}</span>
                 ))}
               </div>
-              {pinError && <div style={{ color: '#ff8a80', fontSize: 15 }}>קוד שגוי, נסו שוב</div>}
+              {pinError && <div style={{ color: '#ff8a80', fontSize: 15 }}>{t.wrongCode}</div>}
               <div style={styles.keypad}>
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].map((digit) => (
                   <button

@@ -590,7 +590,7 @@ export default function AdminCreateActivityPage() {
   }, []);
 
   const handleDeleteTheme = async (id: string) => {
-    if (!window.confirm('למחוק ערכה זו?')) return;
+    if (!window.confirm(t.confirmDeleteTheme)) return;
     try {
       await adminApiFetch(`/api/admin/themes/${id}`, { method: 'DELETE' });
       setCustomThemes((prev) => prev.filter((t) => t._id !== id));
@@ -2511,12 +2511,12 @@ export default function AdminCreateActivityPage() {
         const settings = target.settings ?? {};
         const rawMissions = (settings as { missions?: { title?: string; description?: string }[] }).missions;
         const photoLabels = Array.isArray(rawMissions) && rawMissions.length > 0
-          ? rawMissions.map((m, i) => ({ title: m?.title?.trim() || `${t.collageSplitEditorSubPart || 'תמונה'} ${i + 1}`, description: m?.description }))
-          : Array.from({ length: limit }, (_, i) => ({ title: `תמונה ${i + 1}` }));
+          ? rawMissions.map((m, i) => ({ title: m?.title?.trim() || `${t.photoLabel} ${i + 1}`, description: m?.description }))
+          : Array.from({ length: limit }, (_, i) => ({ title: `${t.photoLabel} ${i + 1}` }));
         // Reorder by existing photoOrder if set, so the popup shows current order.
         const existingOrder = target.collageSplit?.photoOrder;
         const orderedLabels = existingOrder && existingOrder.length === photoLabels.length
-          ? existingOrder.map((idx) => photoLabels[idx] ?? { title: `תמונה ${idx + 1}` })
+          ? existingOrder.map((idx) => photoLabels[idx] ?? { title: `${t.photoLabel} ${idx + 1}` })
           : photoLabels;
         const initialPartSizes = target.collageSplit?.partSizes && target.collageSplit.partSizes.length > 0
           ? target.collageSplit.partSizes

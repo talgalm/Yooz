@@ -46,6 +46,8 @@ export const texts = {
     round: 'Round',
     // Trivia game
     triviaInstructionsPlaceholder: 'Select all correct answers for each question',
+    answerCorrect: 'Correct',
+    answerIncorrect: 'Incorrect',
     questions: 'Questions',
     addQuestion: 'Add Question',
     removeQuestion: 'Remove Question',
@@ -192,6 +194,8 @@ export const texts = {
     round: 'סבב',
     // Trivia game
     triviaInstructionsPlaceholder: 'בחרו את כל התשובות הנכונות לכל שאלה',
+    answerCorrect: 'נכון',
+    answerIncorrect: 'לא נכון',
     questions: 'שאלות',
     addQuestion: 'הוסף שאלה',
     removeQuestion: 'הסר שאלה',
