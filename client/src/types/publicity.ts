@@ -74,12 +74,7 @@ export interface ContactLead {
   company?: string;
   position?: string;
   email: string;
-  /**
-   * Optional, matching the server. The marketing contact form collects name,
-   * email and company only, so leads saved through it carry no phone - this
-   * type claimed otherwise, which would have let admin code treat a missing
-   * value as a string.
-   */
+  /** Required on new leads, but optional here: rows saved while it was not enforced may lack it. */
   phone?: string;
   message?: string;
   handled: boolean;
