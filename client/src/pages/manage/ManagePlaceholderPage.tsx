@@ -1,6 +1,8 @@
 import { useParams } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
-import { useLang } from '../../context/LanguageContext';
+import { useTranslations } from '../../context/LanguageContext';
+import { texts } from './ManagePlaceholderPage.i18n';
+import { texts as navTexts } from './nav.i18n';
 import { MANAGE_NAV } from './nav';
 import { BORDER, TEXT_LIGHT } from '../../components/styled';
 
@@ -28,14 +30,15 @@ const Empty = styled('div')({
 /** Every menu entry lands here until its milestone builds the real screen. */
 export default function ManagePlaceholderPage() {
   const { section } = useParams<{ section: string }>();
-  const { lang } = useLang();
+  const t = useTranslations(texts);
+  const nav = useTranslations(navTexts);
   const item = MANAGE_NAV.find((i) => i.path === section);
-  const title = item ? (lang === 'he' ? item.labelHe : item.labelEn) : section;
+  const title = item ? nav[item.path] : section;
 
   return (
     <>
       <Title>{title}</Title>
-      <Empty>{lang === 'he' ? 'המסך הזה ייבנה באבן הדרך הבאה.' : 'This screen arrives in a later milestone.'}</Empty>
+      <Empty>{t.empty}</Empty>
     </>
   );
 }

@@ -1,0 +1,28 @@
+export const texts = {
+  en: {
+    failure: 'Better luck next time!',
+    continue: 'Continue',
+    check: 'Check',
+    attempt: (n: number) => `Attempt ${n}`,
+    attemptOfThree: (n: number) => `Attempt ${n} of 3`,
+    wrong: '❌ Not quite — try again',
+    hint: 'Hint',
+    wellDone: 'Well done!',
+    earned: (score: number) => `You got ${score} points`,
+    gameOver: 'Game Over',
+    theAnswerWas: 'The answer was: ',
+  },
+  he: {
+    failure: 'לא הצלחת הפעם. נסה שוב בפעם הבאה!',
+    continue: 'המשך',
+    check: 'בדיקה',
+    attempt: (n: number) => `ניסיון ${n}`,
+    attemptOfThree: (n: number) => `ניסיון ${n} מתוך 3`,
+    wrong: '❌ לא נכון, נסו שוב',
+    hint: 'רמז',
+    wellDone: 'כל הכבוד',
+    earned: (score: number) => `קיבלת ${score} נקודות`,
+    gameOver: 'לא הצלחת',
+    theAnswerWas: 'התשובה הנכונה: ',
+  },
+};

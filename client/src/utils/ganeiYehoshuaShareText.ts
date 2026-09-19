@@ -1,25 +1,29 @@
-export const SHARE_CHALLENGE_LINE1 = 'עמדתי באתגר המזוודה הסודית של גני יהושוע';
+import { translate, type Lang } from '../context/LanguageContext';
+import { texts } from './ganeiYehoshuaShareText.i18n';
 
-export const BADGE_SHARE_LINE2 = 'המשימה הושלמה. התג שלי ביד 🏆';
-export const VIDEO_SHARE_LINE2 = 'ככה נראים רגעי השיא שלי בפעילות 🎬';
+/** The share lines themselves, for callers that lay them out rather than join them. */
+export const shareLines = (lang: Lang) => translate(texts, lang);
 
-export function buildBadgeShareTextBody(): string {
-  return `${SHARE_CHALLENGE_LINE1}\n${BADGE_SHARE_LINE2}`;
+export function buildBadgeShareTextBody(lang: Lang): string {
+  const t = shareLines(lang);
+  return `${t.challenge}\n${t.badge}`;
 }
 
-export function buildVideoShareTextBody(): string {
-  return `${SHARE_CHALLENGE_LINE1}\n${VIDEO_SHARE_LINE2}`;
+export function buildVideoShareTextBody(lang: Lang): string {
+  const t = shareLines(lang);
+  return `${t.challenge}\n${t.video}`;
 }
 
-export function buildBadgeSharePlainText(activityUrl: string): string {
-  return `${buildBadgeShareTextBody()}\n${activityUrl}`;
+export function buildBadgeSharePlainText(lang: Lang, activityUrl: string): string {
+  return `${buildBadgeShareTextBody(lang)}\n${activityUrl}`;
 }
 
-export function buildVideoSharePlainText(activityUrl?: string): string {
-  const body = buildVideoShareTextBody();
+export function buildVideoSharePlainText(lang: Lang, activityUrl?: string): string {
+  const body = buildVideoShareTextBody(lang);
   return activityUrl ? `${body}\n${activityUrl}` : body;
 }
 
-export function buildBadgeShareHtml(activityUrl: string): string {
-  return `${SHARE_CHALLENGE_LINE1}<br>${BADGE_SHARE_LINE2}<br><a href="${activityUrl}">${activityUrl}</a>`;
+export function buildBadgeShareHtml(lang: Lang, activityUrl: string): string {
+  const t = shareLines(lang);
+  return `${t.challenge}<br>${t.badge}<br><a href="${activityUrl}">${activityUrl}</a>`;
 }

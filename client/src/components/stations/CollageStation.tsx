@@ -16,6 +16,8 @@ import {
   buildVideoSharePlainText,
   buildVideoShareTextBody,
 } from '../../utils/ganeiYehoshuaShareText';
+import { useLang, useTranslations } from '../../context/LanguageContext';
+import { texts } from './CollageStation.i18n';
 import {
   saveCollagePart,
   loadCollageParts,
@@ -355,6 +357,8 @@ const VideoPlayIcon = styled('span')({
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CollageStation({ station, onContinue, code, smsForCollage }: Props) {
+  const t = useTranslations(texts);
+  const { lang } = useLang();
   // Scope every collage storage/server key to this login session so one
   // participant's job can't be picked up by a different participant logging in
   // on the same device (was: User B re-using the same activity code instantly
@@ -369,7 +373,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   const singleGroupId = `single_${station._id}_${userTag}`;
 
   const settings = (station.settings ?? {}) as Record<string, unknown>;
-  const header = (settings.header as string) || station.name || 'תחנת צילום';
+  const header = (settings.header as string) || station.name || t.stationName;
   const description = (settings.description as string) || station.description || '';
   const disclaimer = (settings.disclaimer as string) || '';
   const logoUrl = (settings.logoUrl as string) || '';
@@ -381,10 +385,10 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     : 1;
   const rawMissions = settings.missions as CollageMission[] | undefined;
   const baseMissions: CollageMission[] = multiSelect
-    ? Array.from({ length: multiSelectCount }, (_, i) => ({ title: `פריט ${i + 1}`, description: '' }))
+    ? Array.from({ length: multiSelectCount }, (_, i) => ({ title: t.itemLabel(i + 1), description: '' }))
     : (Array.isArray(rawMissions) && rawMissions.length > 0
         ? rawMissions
-        : [{ title: 'צלמו תמונה', description: '' }]);
+        : [{ title: t.takePhoto, description: '' }]);
 
   // ── Split metadata ────────────────────────────────────────────────────────
   // When the station is split, each part owns a slice of the full image set.
@@ -458,7 +462,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [collageTitle, setCollageTitle] = useState('');
   const [progress, setProgress] = useState(0);
-  const [progressLabel, setProgressLabel] = useState('מעלה תמונות...');
+  const [progressLabel, setProgressLabel] = useState(t.uploading);
   const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
   const [resultUrl, setResultUrl] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
@@ -648,7 +652,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       }
       if (merged.length < totalImages) {
         setError(
-          `נדרשות ${totalImages} תמונות לסרטון. השלימו את החלקים הקודמים בפעילות (${merged.length}/${totalImages}).`,
+          t.needImagesEarlier(totalImages, merged.length),
         );
         setPhotos(merged);
         setPhase('capture');
@@ -685,8 +689,8 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     if (source.length !== totalImages) {
       setError(
         isSplit
-          ? `נדרשות ${totalImages} תמונות לסרטון. השלימו את כל חלקי התחנה לפני יצירת הסרטון (${source.length}/${totalImages}).`
-          : `נדרשות ${totalImages} תמונות לסרטון (נבחרו ${source.length}).`,
+          ? t.needImagesAllParts(totalImages, source.length)
+          : t.needImagesSelected(totalImages, source.length),
       );
       setPhase('review');
       return;
@@ -694,7 +698,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
 
     setPhase('generating');
     setProgress(0);
-    setProgressLabel('מעלה תמונות...');
+    setProgressLabel(t.uploading);
     setEtaSeconds(null);
     setError('');
 
@@ -726,7 +730,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       startPoll(jobId);
       const unsub = subscribeBackgroundCollage(bgKey, (j) => {
         setProgress((cur) => Math.max(cur, j.uploadPct));
-        if (j.uploadPct >= 55) setProgressLabel('יוצר קולאז׳...');
+        if (j.uploadPct >= 55) setProgressLabel(t.creatingCollage);
       });
       bgUnsubRef.current = unsub;
 
@@ -738,7 +742,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       consumeBackgroundCollage(bgKey);
 
       setProgress(100);
-      setProgressLabel('הסרטון מוכן!');
+      setProgressLabel(t.videoReady);
       setEtaSeconds(0);
 
       await new Promise((r) => setTimeout(r, 500));
@@ -760,7 +764,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     } catch (err) {
       stopPoll();
       if (bgUnsubRef.current) { bgUnsubRef.current(); bgUnsubRef.current = null; }
-      setError(err instanceof Error ? err.message : 'שגיאה ביצירת הסרטון');
+      setError(err instanceof Error ? err.message : t.videoError);
       setPhase('review');
     }
   };
@@ -772,14 +776,14 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   }, []);
 
   const formatEta = (secs: number): string => {
-    if (secs <= 0) return 'כמעט סיימנו...';
-    if (secs < 60) return `נותרו כ-${secs} שניות`;
+    if (secs <= 0) return t.almostDone;
+    if (secs < 60) return t.secondsLeft(secs);
     // ponytail: server ETA extrapolates from createdAt, so a resumed/stale job
     // can show absurd values (hours). Cap the honest signal at "a few minutes".
-    if (secs > 10 * 60) return 'נותרו עוד כמה דקות';
+    if (secs > 10 * 60) return t.fewMinutesLeft;
     const m = Math.floor(secs / 60);
     const s = secs % 60;
-    return s === 0 ? `נותרו כ-${m} דקות` : `נותרו כ-${m}:${String(s).padStart(2, '0')} דקות`;
+    return s === 0 ? t.minutesLeft(m) : t.minutesSecondsLeft(m, String(s).padStart(2, '0'));
   };
 
   const shareUrl = code ? `${window.location.origin}/play/${code}` : undefined;
@@ -817,8 +821,8 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   }, [resultIsVideo, resultUrl]);
 
   const handleShare = useCallback(async () => {
-    const shareText = buildVideoShareTextBody();
-    const shareTextWithUrl = buildVideoSharePlainText(shareUrl);
+    const shareText = buildVideoShareTextBody(lang);
+    const shareTextWithUrl = buildVideoSharePlainText(lang, shareUrl);
     const file = await getResultVideoFile();
 
     if (navigator.share) {
@@ -944,7 +948,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
         if (serverJob && ['queued', 'preparing', 'encoding', 'uploading'].includes(serverJob.phase)) {
           setPhase('generating');
           setProgress(Math.min(99, Math.round(55 + serverJob.percent * 0.45)));
-          setProgressLabel(serverJob.message || 'יוצר קולאז׳...');
+          setProgressLabel(serverJob.message || t.creatingCollage);
           try {
             const result = await waitForServerCollageJob(serverJob.jobId, (snap) => {
               setProgress((cur) => Math.max(cur, Math.min(99, Math.round(55 + snap.percent * 0.45))));
@@ -952,7 +956,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
               setEtaSeconds(typeof snap.etaSeconds === 'number' ? snap.etaSeconds : null);
             });
             setProgress(100);
-            setProgressLabel('הסרטון מוכן!');
+            setProgressLabel(t.videoReady);
             await cleanupCollageJobPersistence(activityCode, groupId);
             setResultUrl(result.url);
             setResultIsVideo(result.isVideo);
@@ -978,7 +982,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     (async () => {
       const activityCode = code ?? '';
       if (!activityCode || !splitMeta) {
-        setError('לא נמצאו תמונות שמורות מהחלקים הקודמים');
+        setError(t.noSavedPhotos);
         setPhase('review');
         return;
       }
@@ -990,7 +994,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
 
       const finishWithResult = async (url: string, isVideo: boolean) => {
         setProgress(100);
-        setProgressLabel('הסרטון מוכן!');
+        setProgressLabel(t.videoReady);
         setEtaSeconds(0);
         await new Promise((r) => setTimeout(r, 500));
         try {
@@ -1007,7 +1011,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       const attachToJob = async (activeJobId: string, promise: Promise<{ url: string; isVideo: boolean }>) => {
         setPhase('generating');
         setProgress(0);
-        setProgressLabel('מעלה תמונות...');
+        setProgressLabel(t.uploading);
         setEtaSeconds(null);
         setError('');
 
@@ -1015,7 +1019,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
 
         const unsub = subscribeBackgroundCollage(bgKey, (j) => {
           setProgress((cur) => Math.max(cur, j.uploadPct));
-          if (j.uploadPct >= 55) setProgressLabel('יוצר קולאז׳...');
+          if (j.uploadPct >= 55) setProgressLabel(t.creatingCollage);
         });
         bgUnsubRef.current = unsub;
 
@@ -1030,7 +1034,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
           unsub();
           bgUnsubRef.current = null;
           consumeBackgroundCollage(bgKey);
-          setError('שגיאה ביצירת הסרטון — מנסה שוב...');
+          setError(t.videoErrorRetrying);
           await runFreshGeneration();
         }
       };
@@ -1040,7 +1044,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
           const prior = await loadCollageParts(activityCode, splitGroupId);
           const merged = mergeSplitPhotos(prior, []);
           if (merged.length < totalImages) {
-            setError(`נדרשות ${totalImages} תמונות לסרטון. השלימו את החלקים הקודמים בפעילות (${merged.length}/${totalImages}).`);
+            setError(t.needImagesEarlier(totalImages, merged.length));
             setPhotos(merged);
             setPhase('review');
             return;
@@ -1049,7 +1053,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
           setCollageTitle(effectiveTitle);
           await generateCollage(merged);
         } catch {
-          setError('שגיאה בטעינת התמונות');
+          setError(t.loadPhotosError);
           setPhase('review');
         }
       };
@@ -1074,7 +1078,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       if (serverJob && ['queued', 'preparing', 'encoding', 'uploading'].includes(serverJob.phase)) {
         setPhase('generating');
         setProgress(serverJob.percent);
-        setProgressLabel(serverJob.message || 'יוצר קולאז׳...');
+        setProgressLabel(serverJob.message || t.creatingCollage);
         try {
           const result = await waitForServerCollageJob(serverJob.jobId, (snap) => {
             setProgress((cur) => Math.max(cur, Math.min(99, Math.round(55 + snap.percent * 0.45))));
@@ -1105,7 +1109,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     return (
       <Wrap>
         <Content>
-          <TopLabel>תחנת צילום</TopLabel>
+          <TopLabel>{t.stationName}</TopLabel>
           <BigTitle>{header}</BigTitle>
           {description && <SubText>{description}</SubText>}
 
@@ -1115,7 +1119,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
 
           {isSplit && (
             <PartBadge>
-              🎬 חלק {partIndex + 1} מתוך {totalParts} – {partSize} תמונות בחלק הזה
+              {t.partHeader(partIndex + 1, totalParts, partSize)}
             </PartBadge>
           )}
 
@@ -1123,8 +1127,8 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
             <MissionCard>
               <MissionNum>{partMultiSelectCount}</MissionNum>
               <MissionInfo>
-                <MissionTitle>בחרו {partMultiSelectCount} תמונות או סרטונים</MissionTitle>
-                <MissionDesc>אפשר לבחור הכול בבת אחת מהגלריה</MissionDesc>
+                <MissionTitle>{t.chooseN(partMultiSelectCount)}</MissionTitle>
+                <MissionDesc>{t.chooseAllAtOnce}</MissionDesc>
               </MissionInfo>
             </MissionCard>
           ) : (
@@ -1141,9 +1145,9 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
 
           <div style={{ marginTop: 8 }}>
             <PrimaryBtn onClick={() => { setCurrentMission(0); setPhotos([]); setPreviewUrl(''); setPreviewBlob(null); setPhase('capture'); }}>
-              מתחילים לצלם 📸
+              {t.startShooting}
             </PrimaryBtn>
-            <OutlineBtn onClick={handleSkip}>דלג על התחנה הזו</OutlineBtn>
+            <OutlineBtn onClick={handleSkip}>{t.skipStation}</OutlineBtn>
           </div>
         </Content>
       </Wrap>
@@ -1159,10 +1163,10 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       <Wrap>
         <CaptureLayout>
           <CaptureHeader>
-            <TopLabel style={{ marginBottom: 4, fontSize: 15 }}>תחנת צילום{isSplit ? ` — חלק ${partIndex + 1}/${totalParts}` : ''}</TopLabel>
-            <BigTitle style={{ fontSize: 26, marginBottom: 6 }}>בחרו {partMultiSelectCount} תמונות או סרטונים</BigTitle>
+            <TopLabel style={{ marginBottom: 4, fontSize: 15 }}>{t.stationName}{isSplit ? t.partSuffix(partIndex + 1, totalParts) : ''}</TopLabel>
+            <BigTitle style={{ fontSize: 26, marginBottom: 6 }}>{t.chooseN(partMultiSelectCount)}</BigTitle>
             <SubText style={{ margin: '0 0 10px', fontSize: 16, color: 'rgba(255,255,255,0.85)' }}>
-              נבחרו {photos.length} מתוך {partMultiSelectCount}
+              {t.selectedOf(photos.length, partMultiSelectCount)}
             </SubText>
             {disclaimer && <CompactDisclaimer>{disclaimer}</CompactDisclaimer>}
           </CaptureHeader>
@@ -1192,7 +1196,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
                       background: 'rgba(0,0,0,0.65)', color: '#fff', cursor: 'pointer',
                       fontSize: 13, lineHeight: 1, padding: 0, fontFamily: 'inherit',
                     }}
-                    aria-label="הסר"
+                    aria-label={t.remove}
                   >×</button>
                 </div>
               ))}
@@ -1202,17 +1206,17 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
           <CaptureActions>
             {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: 12, margin: '0 0 6px' }}>{error}</p>}
             <ButtonRow>
-              <HalfBtn onClick={() => quickCaptureRef.current?.click()} disabled={remaining === 0}>📷 פתח מצלמה</HalfBtn>
-              <HalfBtn onClick={() => fileInputRef.current?.click()} disabled={remaining === 0}>🖼 מהגלריה</HalfBtn>
+              <HalfBtn onClick={() => quickCaptureRef.current?.click()} disabled={remaining === 0}>{t.openCamera}</HalfBtn>
+              <HalfBtn onClick={() => fileInputRef.current?.click()} disabled={remaining === 0}>{t.fromGallery}</HalfBtn>
             </ButtonRow>
             <PrimaryBtn
               onClick={() => void finishLocalPart(photos)}
               disabled={photos.length < partMultiSelectCount}
             >
-              {isSplit && !finalizesCollage ? 'שמור והמשך לתחנה הבאה' : 'אישור והמשך'}
+              {isSplit && !finalizesCollage ? t.saveAndContinue : t.confirmAndContinue}
             </PrimaryBtn>
             {isSplit && !isFirstPart && (
-              <OutlineBtn onClick={handleSkip}>דלג על התחנה הזו</OutlineBtn>
+              <OutlineBtn onClick={handleSkip}>{t.skipStation}</OutlineBtn>
             )}
           </CaptureActions>
 
@@ -1234,8 +1238,8 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
         <CaptureLayout>
           <CaptureHeader>
             <TopLabel style={{ marginBottom: 4, fontSize: 15 }}>
-              צילום {currentMission + 1} מתוך {missions.length}
-              {isSplit ? ` — חלק ${partIndex + 1}/${totalParts}` : ''}
+              {t.shotOf(currentMission + 1, missions.length)}
+              {isSplit ? t.partSuffix(partIndex + 1, totalParts) : ''}
             </TopLabel>
             <BigTitle style={{ fontSize: 26, marginBottom: 6 }}>{mission.title}</BigTitle>
             {mission.description && (
@@ -1270,7 +1274,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
                 : <CapturePreviewImg src={displayUrl} alt="preview" />
               : <>
                   {mission.referenceImageUrl && <ReferenceImg src={mission.referenceImageUrl} alt="" />}
-                  <PlaceholderIcon>📷</PlaceholderIcon><PlaceholderText>צלמו תמונה או העלו מהגלריה</PlaceholderText>
+                  <PlaceholderIcon>📷</PlaceholderIcon><PlaceholderText>{t.takeOrUpload}</PlaceholderText>
                 </>
             }
           </CaptureArea>
@@ -1278,24 +1282,24 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
           <CaptureActions>
             {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: 12, margin: '0 0 6px' }}>{error}</p>}
             <ButtonRow>
-              <HalfBtn onClick={() => quickCaptureRef.current?.click()}>📷 פתח מצלמה</HalfBtn>
-              <HalfBtn onClick={() => fileInputRef.current?.click()}>🖼 מהגלריה</HalfBtn>
+              <HalfBtn onClick={() => quickCaptureRef.current?.click()}>{t.openCamera}</HalfBtn>
+              <HalfBtn onClick={() => fileInputRef.current?.click()}>{t.fromGallery}</HalfBtn>
             </ButtonRow>
             {previewUrl && (
               <OutlineBtn
                 onClick={() => { setPreviewUrl(''); setPreviewBlob(null); setPreviewIsVideo(false); }}
                 style={{ marginBottom: 4, padding: '4px 0' }}
               >
-                בחר מחדש
+                {t.retake}
               </OutlineBtn>
             )}
             <PrimaryBtn onClick={confirmPhoto} disabled={!hasCapture} style={{ marginTop: 4 }}>
               {currentMission === missions.length - 1 && isSplit && !finalizesCollage
-                ? 'שמור והמשך לתחנה הבאה'
-                : 'אישור תמונה והמשך'}
+                ? t.saveAndContinue
+                : t.confirmPhotoAndContinue}
             </PrimaryBtn>
             {isSplit && !isFirstPart && (
-              <OutlineBtn onClick={handleSkip}>דלג על התחנה הזו</OutlineBtn>
+              <OutlineBtn onClick={handleSkip}>{t.skipStation}</OutlineBtn>
             )}
           </CaptureActions>
 
@@ -1314,13 +1318,13 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     return (
       <Wrap>
         <Content>
-          <TopLabel>תחנת קולאז׳</TopLabel>
-          <BigTitle>יש לנו {photos.length} תמונות 🎉</BigTitle>
-          <SubText>תוכלו ליצור סרטון מהתמונות בהמשך הפעילות!</SubText>
+          <TopLabel>{t.collageStation}</TopLabel>
+          <BigTitle>{t.weHaveN(photos.length)}</BigTitle>
+          <SubText>{t.canCreateLater}</SubText>
           {disclaimer && <CompactDisclaimer>{disclaimer}</CompactDisclaimer>}
 
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.48)', marginBottom: 6 }}>כותרת לסרטון (אופציונלי)</p>
-          <TitleInput value={collageTitle} onChange={(e) => setCollageTitle(e.target.value)} placeholder="הרגעים שלנו יחד" dir="rtl" />
+          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.48)', marginBottom: 6 }}>{t.videoTitleLabel}</p>
+          <TitleInput value={collageTitle} onChange={(e) => setCollageTitle(e.target.value)} placeholder={t.videoTitlePlaceholder} dir="rtl" />
 
           {[...photos].sort((a, b) => a.missionIndex - b.missionIndex).map((photo) => {
             // Merged split photos use global indices (0..totalImages-1); use fullMissions, not this part's slice.
@@ -1332,7 +1336,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
                   : <ReviewThumb src={photo.previewUrl} alt="" />
                 }
                 <ReviewInfo>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{mission?.title ?? `תמונה ${photo.missionIndex + 1}`}</div>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{mission?.title ?? t.photoLabel(photo.missionIndex + 1)}</div>
                   {mission?.description && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>{mission.description}</div>}
                 </ReviewInfo>
                 <span style={{ fontSize: 20 }}>📷</span>
@@ -1343,12 +1347,12 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
           {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: 13, margin: '8px 0' }}>{error}</p>}
 
           {photos.length < totalImages ? (
-            <PrimaryBtn onClick={handleSkip} style={{ marginTop: 12 }}>המשך בפעילות</PrimaryBtn>
+            <PrimaryBtn onClick={handleSkip} style={{ marginTop: 12 }}>{t.continueActivity}</PrimaryBtn>
           ) : (
-            <PrimaryBtn onClick={() => void generateCollage()} style={{ marginTop: 12 }}>יצירת סרטון קולאז׳ 🎬</PrimaryBtn>
+            <PrimaryBtn onClick={() => void generateCollage()} style={{ marginTop: 12 }}>{t.createCollage}</PrimaryBtn>
           )}
           {!isSplit && (
-            <OutlineBtn onClick={() => { setPhase('capture'); setCurrentMission(missions.length - 1); }}>חזרה לצילום</OutlineBtn>
+            <OutlineBtn onClick={() => { setPhase('capture'); setCurrentMission(missions.length - 1); }}>{t.backToShooting}</OutlineBtn>
           )}
         </Content>
       </Wrap>
@@ -1363,34 +1367,34 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       <Wrap>
         <GeneratingWrap>
           <GeneratingCard>
-            <GeneratingIntro>הופכים את התמונות שלכם לסרטון מדהים... זה יקח כמה דקות</GeneratingIntro>
+            <GeneratingIntro>{t.generatingIntro}</GeneratingIntro>
             <LoadingGif src="/images/camera-loading.gif" alt="" />
             <ProgressTrack><ProgressFill pct={progress} /></ProgressTrack>
-            <ProgressLabel>יוצר קולאז׳... {progress}%</ProgressLabel>
+            <ProgressLabel>{t.creatingWithPct(progress)}</ProgressLabel>
             <ProgressSub>{progressLabel}</ProgressSub>
             {etaSeconds !== null && progress < 100 && !pollOffline && (
               <ProgressEta>{formatEta(etaSeconds)}</ProgressEta>
             )}
             {pollOffline && (
-              <ProgressOffline>קליטה חלשה — ממתינים לחיבור...</ProgressOffline>
+              <ProgressOffline>{t.weakReception}</ProgressOffline>
             )}
             {canRequestSms && smsRequestState !== 'sent' && (
               <>
-                <SmsCalloutHint>לא חייבים לחכות כאן! 👇</SmsCalloutHint>
+                <SmsCalloutHint>{t.noNeedToWait}</SmsCalloutHint>
                 <SmsCalloutBtn
                   type="button"
                   onClick={() => void handleRequestSms()}
                   disabled={smsRequestState === 'sending'}
                 >
-                  {smsRequestState === 'sending' ? 'שולח...' : '📲 שלחו לי את הסרטון ב-SMS כשהוא מוכן'}
+                  {smsRequestState === 'sending' ? t.sending : t.smsWhenReady}
                 </SmsCalloutBtn>
               </>
             )}
             {smsRequestState === 'error' && (
-              <p style={{ color: '#f87171', fontSize: 12, margin: '8px 0 0' }}>שגיאה — נסו שוב</p>
+              <p style={{ color: '#f87171', fontSize: 12, margin: '8px 0 0' }}>{t.errorTryAgain}</p>
             )}
             {isSplit && isVideoPart && (
-              <OutlineBtn onClick={handleSkip} style={{ marginTop: 12 }}>דלג על התחנה הזו</OutlineBtn>
+              <OutlineBtn onClick={handleSkip} style={{ marginTop: 12 }}>{t.skipStation}</OutlineBtn>
             )}
           </GeneratingCard>
         </GeneratingWrap>
@@ -1405,8 +1409,8 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     return (
       <Wrap>
         <Content>
-          <TopLabel>תחנת קולאז׳</TopLabel>
-          <BigTitle>הסרטון מוכן! 🎉</BigTitle>
+          <TopLabel>{t.collageStation}</TopLabel>
+          <BigTitle>{t.videoReadyTitle}</BigTitle>
 
           <VideoWrap>
             {resultIsVideo
@@ -1420,7 +1424,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
                     onPlay={() => setResultVideoStarted(true)}
                   />
                   {!resultVideoStarted && (
-                    <VideoPlayOverlay type="button" aria-label="נגן סרטון" onClick={() => void handlePlayResultVideo()}>
+                    <VideoPlayOverlay type="button" aria-label={t.playVideo} onClick={() => void handlePlayResultVideo()}>
                       <VideoPlayIcon aria-hidden>▶</VideoPlayIcon>
                     </VideoPlayOverlay>
                   )}
@@ -1432,17 +1436,17 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
           {resultIsVideo && (
             <>
               <SubText style={{ marginBottom: 12, whiteSpace: 'pre-line' }}>
-                {buildVideoShareTextBody()}
+                {buildVideoShareTextBody(lang)}
               </SubText>
               <PrimaryBtn onClick={() => void handleShare()}>
-                {shareCopied ? 'הטקסט הועתק — שתפו את הסרטון שהורדתם' : 'שתפו את הסרטון'}
+                {shareCopied ? t.shareCopied : t.shareVideo}
               </PrimaryBtn>
             </>
           )}
           <PrimaryBtn onClick={handleDownload} style={resultIsVideo ? { marginTop: 8 } : undefined}>
-            הורידו את הסרטון ⬇️
+            {t.downloadVideo}
           </PrimaryBtn>
-          <OutlineBtn onClick={onContinue} style={{ color: '#f87171', marginTop: 8 }}>חזרה לפעילות</OutlineBtn>
+          <OutlineBtn onClick={onContinue} style={{ color: '#f87171', marginTop: 8 }}>{t.backToActivity}</OutlineBtn>
         </Content>
       </Wrap>
     );

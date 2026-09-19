@@ -16,12 +16,13 @@ import {
 import MissionTopMenu from './MissionTopMenu';
 import { shareViaFacebookDialog } from '../../utils/facebookSdk';
 import {
-  BADGE_SHARE_LINE2,
-  SHARE_CHALLENGE_LINE1,
   buildBadgeShareHtml,
   buildBadgeSharePlainText,
   buildBadgeShareTextBody,
+  shareLines,
 } from '../../utils/ganeiYehoshuaShareText';
+import { useLang, useTranslations } from '../../context/LanguageContext';
+import { texts } from './MissionPage.i18n';
 
 // ─── Design tokens ───
 const MISSION_FONT = "'Rubik', sans-serif";
@@ -508,18 +509,18 @@ export default function MissionTrashSort({
   stopTrashBg,
   stopBg,
   startBg,
-  title = 'איך משחקים?',
-  description = 'עכשיו התמונה ברורה, אבל הזבל עדיין\nמסתיר את האות!\n\nליחצו על הפח הנכון עבור סוג\nהאשפה.',
-  scoreLabel = 'ניקוד:',
-  gameFinalText = 'כל הכבוד!',
-  completeHeader = 'תודה!',
-  completeButton = 'לקבלת תג',
-  badgeHeader = 'תעלומת המזוודה הסודית',
-  badgeCurveText = 'תג סוכן הפארק',
-  badgeAwardText = 'מוענק בזאת',
-  badgeAchievementText = 'על מציאת המזוודה והצלת הפארק!',
-  shareButton = 'שתפו עם חברים',
-  startButton = 'קדימה!',
+  title: titleProp,
+  description: descriptionProp,
+  scoreLabel: scoreLabelProp,
+  gameFinalText: gameFinalTextProp,
+  completeHeader: completeHeaderProp,
+  completeButton: completeButtonProp,
+  badgeHeader: badgeHeaderProp,
+  badgeCurveText: badgeCurveTextProp,
+  badgeAwardText: badgeAwardTextProp,
+  badgeAchievementText: badgeAchievementTextProp,
+  shareButton: shareButtonProp,
+  startButton: startButtonProp,
   onContinue,
   participantName,
   activityCode,
@@ -527,6 +528,22 @@ export default function MissionTrashSort({
   onLogout,
   onHelp,
 }: MissionTrashSortProps) {
+  const t = useTranslations(texts);
+  const { lang } = useLang();
+  const share = shareLines(lang);
+  const title = titleProp ?? t.trashTitle;
+  const description = descriptionProp ?? t.trashDescription;
+  const scoreLabel = scoreLabelProp ?? t.trashScoreLabel;
+  const gameFinalText = gameFinalTextProp ?? t.trashFinalText;
+  const completeHeader = completeHeaderProp ?? t.trashCompleteHeader;
+  const completeButton = completeButtonProp ?? t.trashCompleteButton;
+  const badgeHeader = badgeHeaderProp ?? t.badgeHeader;
+  const badgeCurveText = badgeCurveTextProp ?? t.badgeCurveText;
+  const badgeAwardText = badgeAwardTextProp ?? t.badgeAwardText;
+  const badgeAchievementText = badgeAchievementTextProp ?? t.badgeAchievementText;
+  const shareButton = shareButtonProp ?? t.shareButton;
+  const startButton = startButtonProp ?? t.startButton;
+
   type Phase = 'intro' | 'throwing' | 'countdown' | 'game' | 'complete' | 'badge';
   type ScoreFlash = 'positive' | 'negative' | null;
   type AnimatedTrashItem = {
@@ -668,10 +685,10 @@ export default function MissionTrashSort({
       ctx.shadowBlur = 6;
       ctx.font = 'bold 24px Rubik, Arial, sans-serif';
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(SHARE_CHALLENGE_LINE1, W / 2, 720);
+      ctx.fillText(share.challenge, W / 2, 720);
       ctx.font = '22px Rubik, Arial, sans-serif';
       ctx.fillStyle = '#F2F7FF';
-      ctx.fillText(BADGE_SHARE_LINE2, W / 2, 758);
+      ctx.fillText(share.badge, W / 2, 758);
       ctx.restore();
 
       // Bottom URL hint
@@ -690,13 +707,13 @@ export default function MissionTrashSort({
     } catch {
       return null;
     }
-  }, [badgeBlob, badgeCurveText, badgeAwardText, badgeAchievementText, participantName, shareUrl]);
+  }, [badgeBlob, badgeCurveText, badgeAwardText, badgeAchievementText, participantName, shareUrl, share]);
 
   const handleShareClick = useCallback(async () => {
     trackShareEvent('click');
     const blob = await getBadgeBlob();
-    const shareText = buildBadgeShareTextBody();
-    const shareTextWithUrl = buildBadgeSharePlainText(shareUrl);
+    const shareText = buildBadgeShareTextBody(lang);
+    const shareTextWithUrl = buildBadgeSharePlainText(lang, shareUrl);
 
     if (navigator.share) {
       const file = blob
@@ -732,10 +749,10 @@ export default function MissionTrashSort({
       setBadgePreviewUrl(url);
     }
     setShowShareModal(true);
-  }, [trackShareEvent, getBadgeBlob, shareUrl]);
+  }, [trackShareEvent, getBadgeBlob, shareUrl, lang]);
 
   const handleSocialShare = useCallback(async (platform: 'whatsapp' | 'facebook' | 'twitter') => {
-    const plainText = buildBadgeSharePlainText(shareUrl);
+    const plainText = buildBadgeSharePlainText(lang, shareUrl);
     const encodedText = encodeURIComponent(plainText);
     if (platform === 'facebook') {
       try {
@@ -753,7 +770,7 @@ export default function MissionTrashSort({
     else if (platform === 'twitter') url = `https://twitter.com/intent/tweet?text=${encodedText}`;
     window.open(url, '_blank', 'noopener,noreferrer');
     trackShareEvent('completed');
-  }, [shareUrl, trackShareEvent]);
+  }, [shareUrl, trackShareEvent, lang]);
 
   const handleDownloadImage = useCallback(async () => {
     const blob = await getBadgeBlob();
@@ -768,8 +785,8 @@ export default function MissionTrashSort({
   }, [getBadgeBlob, trackShareEvent]);
 
   const handleCopyLink = useCallback(async () => {
-    const plainText = buildBadgeSharePlainText(shareUrl);
-    const html = buildBadgeShareHtml(shareUrl);
+    const plainText = buildBadgeSharePlainText(lang, shareUrl);
+    const html = buildBadgeShareHtml(lang, shareUrl);
     try {
       if (typeof ClipboardItem !== 'undefined') {
         await navigator.clipboard.write([
@@ -794,7 +811,7 @@ export default function MissionTrashSort({
         // clipboard not available
       }
     }
-  }, [shareUrl, trackShareEvent]);
+  }, [shareUrl, trackShareEvent, lang]);
 
   useEffect(() => {
     const srcs = [
@@ -1257,19 +1274,19 @@ export default function MissionTrashSort({
           <BinWrapper ref={orangeBinRef} onClick={() => handleGameBinClick('orange')}>
             <BinImg
               src={openBinId === 'orange' ? BIN_OPEN_IMAGES.orange : '/images/bin-orange.svg'}
-              alt="אריזות"
+              alt={t.binPackaging}
             />
           </BinWrapper>
           <BinWrapper ref={blueBinRef} onClick={() => handleGameBinClick('blue')}>
             <BinImg
               src={openBinId === 'blue' ? BIN_OPEN_IMAGES.blue : '/images/bin-blue.svg'}
-              alt="נייר"
+              alt={t.binPaper}
             />
           </BinWrapper>
           <BinWrapper ref={brownBinRef} onClick={() => handleGameBinClick('brown')}>
             <BinImg
               src={openBinId === 'brown' ? BIN_OPEN_IMAGES.brown : '/images/bin-brown.svg'}
-              alt="אורגני"
+              alt={t.binOrganic}
             />
           </BinWrapper>
         </BinsRow>
@@ -1336,7 +1353,7 @@ export default function MissionTrashSort({
 
   // ─── Badge phase ───
   if (phase === 'badge') {
-    const badgeName = participantName?.trim() || 'למשתתף/ת';
+    const badgeName = participantName?.trim() || t.anonymousParticipant;
     return (
       <>
       <MissionWrapper bg="/images/mission-bg-1.svg" step={0}>
@@ -1409,7 +1426,7 @@ export default function MissionTrashSort({
               onClick={onContinue ? onContinue : handleShareClick}
             >
               <ShareButtonLabel>
-                {'יצירת סרטון קולאז׳'}
+                {t.makeCollage}
                 <svg width="20" height="20" viewBox="0 0 75 75" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <path d="M12.3698 49.9488C5.48028 49.9488 0 44.4686 0 37.5791C0 30.6896 5.48028 25.2093 12.3698 25.2093C19.2593 25.2093 24.7396 30.6896 24.7396 37.5791C24.7396 44.312 19.2593 49.9488 12.3698 49.9488ZM12.3698 29.7501C8.14213 29.7501 4.69738 33.1948 4.69738 37.4225C4.69738 41.6501 8.14213 45.0949 12.3698 45.0949C16.5974 45.0949 20.0422 41.6501 20.0422 37.4225C20.0422 33.3514 16.5974 29.7501 12.3698 29.7501ZM62.6318 24.7396C55.7423 24.7396 50.262 19.2593 50.262 12.3698C50.262 5.48028 55.7423 0 62.6318 0C69.5213 0 75.0016 5.48028 75.0016 12.3698C75.0016 19.2593 69.3647 24.7396 62.6318 24.7396ZM62.6318 4.69738C58.4041 4.69738 54.9594 8.14213 54.9594 12.3698C54.9594 16.5974 58.4041 20.0422 62.6318 20.0422C66.8594 20.0422 70.3042 16.5974 70.3042 12.3698C70.3042 8.14213 66.8594 4.69738 62.6318 4.69738ZM62.6318 75.0016C55.7423 75.0016 50.262 69.5213 50.262 62.6318C50.262 55.7423 55.7423 50.262 62.6318 50.262C69.5213 50.262 75.0016 55.7423 75.0016 62.6318C75.0016 69.5213 69.3647 75.0016 62.6318 75.0016ZM62.6318 54.9594C58.4041 54.9594 54.9594 58.4041 54.9594 62.6318C54.9594 66.8594 58.4041 70.3042 62.6318 70.3042C66.8594 70.3042 70.3042 66.8594 70.3042 62.6318C70.3042 58.4041 66.8594 54.9594 62.6318 54.9594Z" fill="#F4FBFF" />
                   <path d="M52.4539 60.436L20.1985 44.3084L22.3906 39.7676L54.8026 55.8952L52.4539 60.436ZM22.3906 35.2268L20.1985 30.8425L52.4539 14.7148L54.8026 19.0991L22.3906 35.2268Z" fill="#F4FBFF" />
@@ -1439,9 +1456,9 @@ export default function MissionTrashSort({
                 whiteSpace: 'pre-line',
               }}
             >
-              {SHARE_CHALLENGE_LINE1}
+              {share.challenge}
               {'\n'}
-              {BADGE_SHARE_LINE2}
+              {share.badge}
               {'\n'}
               <a
                 href={shareUrl}
@@ -1467,11 +1484,11 @@ export default function MissionTrashSort({
               onClick={handleDownloadImage}
               style={{ width: '100%', padding: '9px 0', fontSize: 13 }}
             >
-              ⬇ שמור תמונה
+              {t.saveImage}
             </ShareCopyBtn>
 
             <div style={{ fontSize: 11, color: 'rgba(242,247,255,0.5)', textAlign: 'center' }}>
-              שתפו את ההודעה והתמונה
+              {t.shareMessageAndImage}
             </div>
             <ShareOptionRow>
               <ShareOption onClick={() => handleSocialShare('whatsapp')}>
@@ -1497,12 +1514,12 @@ export default function MissionTrashSort({
               </ShareOption>
             </ShareOptionRow>
             <ShareCopyRow>
-              <ShareLinkInput readOnly value={buildBadgeSharePlainText(shareUrl)} />
+              <ShareLinkInput readOnly value={buildBadgeSharePlainText(lang, shareUrl)} />
               <ShareCopyBtn onClick={handleCopyLink}>
-                {copiedLink ? '✓ הועתק' : 'העתק'}
+                {copiedLink ? t.copied : t.copy}
               </ShareCopyBtn>
             </ShareCopyRow>
-            <ShareCloseBtn onClick={() => setShowShareModal(false)}>סגור</ShareCloseBtn>
+            <ShareCloseBtn onClick={() => setShowShareModal(false)}>{t.close}</ShareCloseBtn>
           </ShareModalBox>
         </ShareModalOverlay>
       )}
@@ -1563,16 +1580,16 @@ export default function MissionTrashSort({
       {phase !== 'intro' && (
         <BinsRow>
           <BinWrapper>
-            <BinImg src="/images/bin-orange.svg" alt="אריזות" />
+            <BinImg src="/images/bin-orange.svg" alt={t.binPackaging} />
           </BinWrapper>
           <BinWrapper ref={blueBinRef} onClick={handleBlueBinClick}>
             <BinImg
               src={blueBinOpen ? '/images/bin-blue-open.svg' : '/images/bin-blue.svg'}
-              alt="נייר"
+              alt={t.binPaper}
             />
           </BinWrapper>
           <BinWrapper>
-            <BinImg src="/images/bin-brown.svg" alt="אורגני" />
+            <BinImg src="/images/bin-brown.svg" alt={t.binOrganic} />
           </BinWrapper>
         </BinsRow>
       )}

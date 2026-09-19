@@ -512,7 +512,7 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
       {gameState !== 'playing' && (
         <ResultScreen>
           {gameState === 'success' ? (
-            <img src="/images/golf-success-badge.png" alt="כל הכבוד" style={{ width: 'clamp(260px, 80%, 380px)', objectFit: 'contain' }} />
+            <img src="/images/golf-success-badge.png" alt={t.successBadgeAlt} style={{ width: 'clamp(260px, 80%, 380px)', objectFit: 'contain' }} />
           ) : (
             <ResultTitle>{t.failed}</ResultTitle>
           )}

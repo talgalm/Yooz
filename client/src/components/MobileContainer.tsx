@@ -2,6 +2,8 @@ import { styled } from '@mui/material/styles';
 import { useEffect, useState, type ReactNode } from 'react';
 import { isStorageHealthy } from '../utils/storageHealth';
 import { installIosTapRescue } from '../utils/iosTapRescue';
+import { useTranslations } from '../context/LanguageContext';
+import { texts } from './MobileContainer.i18n';
 
 // ponytail: Network Information API is Chrome/Android only — on iOS this falls
 // back to the online/offline flag, so the banner shows there only when the
@@ -85,18 +87,17 @@ const ReceptionBanner = styled('div')({
 
 export function MobileContainer({ children }: { children: ReactNode }) {
   const weakReception = useWeakReception();
+  const t = useTranslations(texts);
   // iOS drops the click when the layout shifts under the finger — see iosTapRescue.
   useEffect(installIosTapRescue, []);
   return (
     <Outer>
       <Inner>
         {weakReception && (
-          <ReceptionBanner>קליטה חלשה — ההתקדמות תישמר ותסתנכרן כשהחיבור יחזור</ReceptionBanner>
+          <ReceptionBanner>{t.weakReception}</ReceptionBanner>
         )}
         {!isStorageHealthy() && (
-          <StorageBanner>
-            שמירה מקומית חסומה — צאו ממצב גלישה פרטית כדי לא לאבד התקדמות
-          </StorageBanner>
+          <StorageBanner>{t.storageBlocked}</StorageBanner>
         )}
         {children}
       </Inner>

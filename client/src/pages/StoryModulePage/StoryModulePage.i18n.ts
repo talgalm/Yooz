@@ -1,5 +1,8 @@
 export const texts = {
   en: {
+    oneMinuteTitle: 'One minute left!',
+    oneMinuteBody: 'One minute left to finish the activity',
+    oneMinuteDismiss: 'Got it',
     loading: 'Loading...',
     error: 'Failed to load activity',
     welcome: 'Welcome!',
@@ -94,6 +97,9 @@ export const texts = {
     mapNoStationLocation: 'This station has no location set.',
   },
   he: {
+    oneMinuteTitle: 'נשארה דקה אחת!',
+    oneMinuteBody: 'נשארה דקה אחת לסיום הפעילות',
+    oneMinuteDismiss: 'הבנתי',
     loading: 'טוען...',
     error: 'שגיאה בטעינת הפעילות',
     welcome: 'ברוכים הבאים!',

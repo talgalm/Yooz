@@ -5,6 +5,8 @@ import type { GameResult } from '../games/types';
 import { resolveVideoSource } from '../../utils/videoSource';
 import { StationContinueButton } from '../games/styled';
 import ImageZoomOverlay, { ZoomBadge, ZoomGlassIcon } from '../ImageZoomOverlay';
+import { useLang, useTranslations } from '../../context/LanguageContext';
+import { texts } from './RiddleStation.i18n';
 
 // ─── Types ───
 
@@ -394,16 +396,18 @@ export default function RiddleStation({
   hintLabel,
 }: RiddleStationProps) {
   const [imageFullscreen, setImageFullscreen] = useState(false);
+  const t = useTranslations(texts);
+  const { dir } = useLang();
   const settings = (station.settings || {}) as RiddleSettings;
   const clue = settings.clue || '';
   const answer = settings.answer || '';
   const maxScore = typeof settings.maxScore === 'number' ? settings.maxScore : 100;
   const unlimitedAttempts = settings.unlimitedAttempts === true;
-  const failureMessage = settings.failureMessage || (isHebrewText(clue + answer) ? 'לא הצלחת הפעם. נסה שוב בפעם הבאה!' : 'Better luck next time!');
-  const isHebrew = isHebrewText(clue + answer);
+  const failureMessage = settings.failureMessage || t.failure;
+  // Content-derived, not UI-derived: it lays out the answer boxes, not the chrome.
   const isRTL = isHebrewText(answer);
-  const continueLabel = settings.continueButtonText?.trim() || (isHebrew ? 'המשך' : 'Continue');
-  const checkLabel = isHebrew ? 'בדיקה' : 'Check';
+  const continueLabel = settings.continueButtonText?.trim() || t.continue;
+  const checkLabel = t.check;
   const customSuccessImage = settings.successImageUrl?.trim();
 
   // Build word groups (split answer by spaces)
@@ -582,7 +586,7 @@ export default function RiddleStation({
         <AttemptsRow>
           {unlimitedAttempts ? (
             <span style={{ marginInlineStart: 4 }}>
-              {isHebrew ? `ניסיון ${attempt + 1}` : `Attempt ${attempt + 1}`}
+              {t.attempt(attempt + 1)}
             </span>
           ) : (
             <>
@@ -590,19 +594,19 @@ export default function RiddleStation({
                 <AttemptDot key={i} used={String(i < attempt)} />
               ))}
               <span style={{ marginInlineStart: 4 }}>
-                {isHebrew ? `ניסיון ${attempt + 1} מתוך 3` : `Attempt ${attempt + 1} of 3`}
+                {t.attemptOfThree(attempt + 1)}
               </span>
             </>
           )}
         </AttemptsRow>
 
         <WrongHint>
-          {shaking ? (isHebrew ? '❌ לא נכון, נסו שוב' : '❌ Not quite — try again') : ' '}
+          {shaking ? t.wrong : ' '}
         </WrongHint>
 
         {(stationHintText || stationHintImageUrl) && onStationHintClick && phase === 'playing' && (
           <InlineHintButton type="button" onClick={onStationHintClick}>
-            💡 {hintLabel || (isHebrew ? 'רמז' : 'Hint')}
+            💡 {hintLabel || t.hint}
           </InlineHintButton>
         )}
 
@@ -687,10 +691,10 @@ export default function RiddleStation({
                 <path d="M230,185 Q235,185 235,180 Q235,185 240,185 Q235,185 235,190 Q235,185 230,185 Z" fill="#FCE082" />
               </g>
             </svg>
-              <SuccessBannerText dir={isHebrew ? 'rtl' : 'ltr'}>
-                <SuccessBannerTitle>{isHebrew ? 'כל הכבוד' : 'Well done!'}</SuccessBannerTitle>
+              <SuccessBannerText dir={dir}>
+                <SuccessBannerTitle>{t.wellDone}</SuccessBannerTitle>
                 <SuccessBannerSubtitle>
-                  {isHebrew ? `קיבלת ${earnedScore} נקודות` : `You got ${earnedScore} points`}
+                  {t.earned(earnedScore)}
                 </SuccessBannerSubtitle>
               </SuccessBannerText>
             </>
@@ -708,10 +712,10 @@ export default function RiddleStation({
         <ResultOverlay>
           <ResultCard>
             <ResultEmoji>😔</ResultEmoji>
-            <ResultTitle>{isHebrew ? 'לא הצלחת' : 'Game Over'}</ResultTitle>
+            <ResultTitle>{t.gameOver}</ResultTitle>
             <ResultMessage>{failureMessage}</ResultMessage>
             <div style={{ fontSize: 14, color: '#888', marginTop: 8 }}>
-              {isHebrew ? `התשובה הנכונה: ` : `The answer was: `}
+              {t.theAnswerWas}
               <strong style={{ color: '#333' }}>{answer}</strong>
             </div>
           </ResultCard>

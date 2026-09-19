@@ -1,5 +1,5 @@
 import { styled } from '@mui/material/styles';
-import { useTranslations, useLang } from '../../context/LanguageContext';
+import { useTranslations, useLang, LANGS } from '../../context/LanguageContext';
 import { texts } from './PrivacyPage.i18n';
 
 const Wrapper = styled('div')<{ dir: 'ltr' | 'rtl' }>(({ dir }) => ({
@@ -70,12 +70,13 @@ const ContactLink = styled('a')({
 export default function PrivacyPage() {
   const t = useTranslations(texts);
   const { lang, setLang, dir } = useLang();
+  const other = lang === 'he' ? 'en' : 'he';
 
   return (
     <Wrapper dir={dir}>
       <Container>
-        <LangToggle onClick={() => setLang(lang === 'he' ? 'en' : 'he')}>
-          {lang === 'he' ? 'English' : 'עברית'}
+        <LangToggle onClick={() => setLang(other)}>
+          {LANGS.find((l) => l.code === other)?.label}
         </LangToggle>
         <Title>{t.title}</Title>
         <Updated>{t.lastUpdated}</Updated>

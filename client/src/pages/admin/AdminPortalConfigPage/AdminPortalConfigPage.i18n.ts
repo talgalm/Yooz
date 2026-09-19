@@ -49,6 +49,7 @@ export const texts = {
 
     save: 'Save Portal',
     saving: 'Saving...',
+    savedPassword: '(password stored — generate a new one to change it)',
     saved: 'Portal saved!',
     back: 'Back',
     error: 'Something went wrong',
@@ -103,6 +104,7 @@ export const texts = {
 
     save: 'שמור פורטל',
     saving: 'שומר...',
+    savedPassword: '(סיסמה שמורה — ייצר חדשה לשינוי)',
     saved: 'הפורטל נשמר!',
     back: 'חזרה',
     error: 'משהו השתבש',
