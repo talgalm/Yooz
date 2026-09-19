@@ -6,8 +6,7 @@ export interface IContactLead {
   company?: string;
   position?: string;
   email: string;
-  /** Optional: the marketing contact form collects name, email and company only. */
-  phone?: string;
+  phone: string;
   message?: string;
   handled: boolean;
   createdAt: Date;
@@ -18,7 +17,7 @@ const contactLeadSchema = new Schema<IContactLead>({
   company: { type: String, trim: true },
   position: { type: String, trim: true },
   email: { type: String, required: true, trim: true },
-  phone: { type: String, trim: true },
+  phone: { type: String, required: true, trim: true },
   message: { type: String, trim: true },
   handled: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },

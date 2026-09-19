@@ -11,16 +11,11 @@ async function getOrCreateContent() {
   return doc;
 }
 
-/**
- * Pure validation reused by the route and the self-check script.
- *
- * Phone is optional: the marketing site's contact form collects name, email and
- * company only, matching the design. Leads submitted through other surfaces may
- * still carry a phone, so the field is kept on the model.
- */
+/** Pure validation reused by the route and the self-check script. */
 export function validateLead(body: Partial<{ name: string; email: string; phone: string }>): string | null {
   if (!body.name || !body.name.trim()) return 'Name is required';
   if (!body.email || !body.email.trim()) return 'Email is required';
+  if (!body.phone || !body.phone.trim()) return 'Phone is required';
   return null;
 }
 

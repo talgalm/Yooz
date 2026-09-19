@@ -98,6 +98,26 @@ const Field = styled('input')({
   '&:focus': { borderColor: C.magenta, boxShadow: '0 0 0 4px rgba(233,71,154,0.14)' },
 });
 
+/** Same treatment as `Field`, sized for a few lines and not resizable sideways. */
+const TextArea = styled('textarea')({
+  width: '100%',
+  minHeight: 96,
+  resize: 'vertical',
+  background: C.white,
+  border: `1.8px solid ${C.purple}`,
+  borderRadius: RADIUS.field,
+  padding: '15px 20px',
+  fontSize: 15,
+  fontFamily: 'inherit',
+  lineHeight: 1.6,
+  color: C.ink,
+  outline: 'none',
+  boxSizing: 'border-box',
+  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+  '&::placeholder': { color: '#A99BB5' },
+  '&:focus': { borderColor: C.magenta, boxShadow: '0 0 0 4px rgba(233,71,154,0.14)' },
+});
+
 const SubmitRow = styled('div')({ display: 'flex', justifyContent: 'center', marginTop: 4 });
 
 const Submit = styled('button')<{ bg: string; fg: string }>(({ bg, fg }) => ({
@@ -124,7 +144,7 @@ const Note = styled('div')<{ error?: boolean; onDark: boolean }>(({ error, onDar
   color: error ? (onDark ? '#FFD2D2' : '#C0392B') : onDark ? '#B9F5D0' : '#1E8A53',
 }));
 
-const EMPTY = { name: '', email: '', company: '' };
+const EMPTY = { name: '', email: '', phone: '', company: '', message: '' };
 
 export default function ContactForm({ tone = 'cream' }: ContactFormProps) {
   const t = useTranslations(texts);
@@ -132,14 +152,16 @@ export default function ContactForm({ tone = 'cream' }: ContactFormProps) {
   const [form, setForm] = useState(EMPTY);
   const [status, setStatus] = useState<'idle' | 'sending' | 'ok' | 'error' | 'required'>('idle');
 
-  const set = (k: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((prev) => ({ ...prev, [k]: e.target.value }));
+  const set =
+    (k: keyof typeof EMPTY) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setForm((prev) => ({ ...prev, [k]: e.target.value }));
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     // Mirrors `validateLead` on the server, so the user sees the problem before
     // a round trip rather than after a 400.
-    if (!form.name.trim() || !form.email.trim()) {
+    if (!form.name.trim() || !form.email.trim() || !form.phone.trim()) {
       setStatus('required');
       return;
     }
@@ -166,7 +188,9 @@ export default function ContactForm({ tone = 'cream' }: ContactFormProps) {
               <FieldStack>
                 <Field placeholder={t.name} value={form.name} onChange={set('name')} autoComplete="name" />
                 <Field placeholder={t.email} type="email" value={form.email} onChange={set('email')} autoComplete="email" />
+                <Field placeholder={t.phone} type="tel" value={form.phone} onChange={set('phone')} autoComplete="tel" />
                 <Field placeholder={t.company} value={form.company} onChange={set('company')} autoComplete="organization" />
+                <TextArea placeholder={t.message} rows={3} value={form.message} onChange={set('message')} />
               </FieldStack>
             </Panel>
 
