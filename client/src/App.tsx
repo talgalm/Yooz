@@ -40,8 +40,12 @@ import ManageEmployeesPage from './pages/manage/ManageEmployeesPage';
 import ManageSettingsPage from './pages/manage/ManageSettingsPage';
 import { ManageTimerProvider } from './pages/manage/TimerContext';
 import PrivacyPage from './pages/PrivacyPage';
-import PublicityPage from './pages/PublicityPage';
 import ArDemoPage from './pages/ArDemoPage';
+import MarketingLayout from './pages/marketing/shared/MarketingLayout';
+import MarketingHomePage from './pages/marketing/HomePage';
+import BusinessPage from './pages/marketing/BusinessPage';
+import AcademyPage from './pages/marketing/AcademyPage';
+import TourismPage from './pages/marketing/TourismPage';
 import SharedStatsPage from './pages/shared/SharedStatsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpChatProvider, HelpChatFab } from './components/HelpChat';
@@ -69,6 +73,9 @@ function FallbackRedirect() {
     || pathname.startsWith('/manage')
     || pathname.startsWith('/portal')
     || pathname.startsWith('/stats')
+    || pathname.startsWith('/business')
+    || pathname.startsWith('/academy')
+    || pathname.startsWith('/tourism')
     || pathname === '/privacy'
   ) {
     return <Navigate to="/" replace />;
@@ -192,8 +199,13 @@ export default function App() {
                 {/* Public read-only statistics share link */}
                 <Route path="/stats/:token" element={<SharedStatsPage />} />
 
-                {/* Default: YOOZ landing page — responsive (mobile + desktop) */}
-                <Route path="/" element={<PublicityPage />} />
+                {/* Public marketing site - responsive (mobile + desktop), shared nav/footer */}
+                <Route element={<MarketingLayout />}>
+                  <Route path="/" element={<MarketingHomePage />} />
+                  <Route path="/business" element={<BusinessPage />} />
+                  <Route path="/academy" element={<AcademyPage />} />
+                  <Route path="/tourism" element={<TourismPage />} />
+                </Route>
                 <Route path="*" element={<FallbackRedirect />} />
               </Routes>
             </BrowserRouter>

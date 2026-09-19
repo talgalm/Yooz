@@ -4,6 +4,9 @@ dist/
 .env.local
 .DS_Store
 *.tsbuildinfo
+# Raw Figma exports for the marketing site. The optimised copies that the site
+# actually serves live in client/public/images/marketing/.
+temp-imgs/
 .claude/
 deploy/.ec2-info
 firestore-service-account*.json

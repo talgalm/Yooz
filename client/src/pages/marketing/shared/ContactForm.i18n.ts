@@ -1,0 +1,28 @@
+export const texts = {
+  he: {
+    titleTop: 'נשמע מעניין?',
+    titleBottom: 'דברו איתנו!',
+    blurb: 'השאירו פרטים ונחזור אליכם עם הדגמה מותאמת אישית למגזר שלכם',
+    name: 'שם',
+    email: 'אימייל',
+    company: 'חברה',
+    send: 'שליחה',
+    sending: 'שולח…',
+    success: 'תודה! נחזור אליכם בהקדם.',
+    error: 'משהו השתבש. נסו שוב.',
+    required: 'שם ואימייל הם שדות חובה.',
+  },
+  en: {
+    titleTop: 'Sounds interesting?',
+    titleBottom: 'Talk to us!',
+    blurb: 'Leave your details and we will come back with a demo shaped around your sector',
+    name: 'Name',
+    email: 'Email',
+    company: 'Company',
+    send: 'Send',
+    sending: 'Sending…',
+    success: 'Thanks! We will be in touch shortly.',
+    error: 'Something went wrong. Please try again.',
+    required: 'Name and email are required.',
+  },
+};
