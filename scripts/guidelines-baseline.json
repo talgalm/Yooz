@@ -29,7 +29,7 @@
       "utils"
     ]
   },
-  "hebrewOutsideI18n": {
+  "i18n": {
     "client/src/components/HelpChat/matcher.ts": 17,
     "client/src/components/stations/avatar/speech.ts": 22,
     "client/src/context/LanguageContext.tsx": 1,
@@ -45,7 +45,7 @@
     "client/src/pages/admin/AdminStationConfigPage/index.tsx": 62,
     "client/src/pages/manage/duration.ts": 3
   },
-  "inlineSvg": {
+  "svg": {
     "client/src/components/ActivityLogoutButton.tsx": 1,
     "client/src/components/DesertBackground.tsx": 4,
     "client/src/components/games/BallGame/index.tsx": 1,
@@ -86,10 +86,10 @@
     "client/src/pages/StoryModulePage/PlayingPhase.tsx": 4,
     "client/src/pages/StoryModulePage/roadmapThemes.ts": 14,
     "client/src/pages/StoryModulePage/roadmapTrees.ts": 14,
-    "client/src/pages/StoryModulePage/RoadmapView.tsx": 6,
+    "client/src/pages/StoryModulePage/RoadmapView.tsx": 5,
     "client/src/pages/StoryModulePage/SpidersView.tsx": 3
   },
-  "undocumentedModules": {
+  "docs": {
     "server/src/routes/activityFolders.ts": 1,
     "server/src/routes/gameFolders.ts": 1,
     "server/src/routes/help.i18n.ts": 1,
