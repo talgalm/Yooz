@@ -82,12 +82,19 @@ export const Band = styled('section')<{ bg?: string }>(({ bg }) => ({
 // ─── Type ───
 
 export const H1 = styled('h1')({
-  fontSize: 'clamp(30px, 3.2vw, 48px)',
+  /**
+   * The floor, not just the `BP.mobile` override below, carries narrow screens:
+   * the breakpoint stops at 700px, so everything from there to ~1180px fell back
+   * to this value. At the old 30px that whole band read far too small. The vw
+   * term and ceiling are unchanged, so desktop is untouched.
+   */
+  fontSize: 'clamp(44px, 3.4vw, 54px)',
   fontWeight: 900,
   lineHeight: 1.4,
   letterSpacing: '-0.015em',
   color: C.heading,
   margin: '0 0 28px',
+  [BP.mobile]: { fontSize: 48, lineHeight: 1.18, marginBottom: 22 },
 });
 
 export const H2 = styled('h2')({
@@ -270,6 +277,12 @@ export const DividedRow = styled('div')<{ min?: number }>(({ min = 220 }) => ({
   [BP.mobile]: {
     '& > * + *': { borderInlineStart: 'none', borderTop: `1px solid ${C.ruleSoft}` },
     '& > *': { padding: '18px 8px' },
+    /**
+     * An odd-numbered last item is left alone in one column; spanning it across
+     * the track centres it instead. No-op when the count is even, or when the
+     * grid has collapsed to a single column.
+     */
+    '& > *:last-child:nth-child(odd)': { gridColumn: '1 / -1' },
   },
 }));
 
