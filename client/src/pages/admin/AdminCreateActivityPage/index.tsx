@@ -182,6 +182,8 @@ const ProgressRail = styled('div')({
   flexWrap: 'wrap',
 });
 
+type StepId = 1 | 2 | 3 | 4 | 5 | 6;
+
 const ProgressStepBtn = styled('button')({
   display: 'flex',
   flexDirection: 'column',
@@ -561,14 +563,14 @@ export default function AdminCreateActivityPage() {
     (currentAdmin?.role !== 'customer' || theme.createdByEmail === currentAdmin.email.toLowerCase());
   const canSendTestSms = currentAdmin?.role === 'admin' || currentAdmin?.role === 'super_admin';
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [step, setStep] = useState<StepId>(1);
 
   // Steps the admin has actually been through. An outstanding issue is only
   // flagged on the rail for one of these, so a fresh form never opens already
   // scolding you about steps you haven't reached. An activity being edited is
   // fully "visited" — its problems are worth surfacing straight away.
   const [visitedSteps, setVisitedSteps] = useState<Set<number>>(
-    () => new Set(isEditMode ? [1, 2, 3, 4, 5] : [1]),
+    () => new Set(isEditMode ? [1, 2, 3, 4, 5, 6] : [1]),
   );
   useEffect(() => {
     setVisitedSteps((prev) => (prev.has(step) ? prev : new Set(prev).add(step)));
@@ -1026,9 +1028,10 @@ export default function AdminCreateActivityPage() {
   // banner on the content step and the forward-navigation gate.
   const mapMissingLocationsCount = moduleType === 'map' ? selectedItems.filter((i) => !i.location).length : 0;
 
-  // Which steps exist for this module type, in order. Steps 3-4 (content,
-  // rules & texts) only apply when there's a module to fill with items.
-  const stepSequence: (1 | 2 | 3 | 4 | 5)[] = isWizard ? [1, 2, 3, 4, 5] : [1, 2, 5];
+  // Which steps exist for this module type, in order. Steps 3-5 (content,
+  // rules & texts, follow-up SMS) only apply when there's a module to fill
+  // with items; the summary is always last.
+  const stepSequence: StepId[] = isWizard ? [1, 2, 3, 4, 5, 6] : [1, 2, 6];
 
   // Whether each step can be reached going forward. Going back is always
   // allowed; going forward requires the previous step to be minimally valid,
@@ -1037,8 +1040,8 @@ export default function AdminCreateActivityPage() {
   const canReachStep3 = isWizard && canReachStep2 && hasAnyField;
   const canReachStep4 = canReachStep3 && selectedItems.length > 0 && mapMissingLocationsCount === 0;
   const canReachStep5 = isWizard ? canReachStep4 : (canReachStep2 && hasAnyField);
-  const canReach: Record<1 | 2 | 3 | 4 | 5, boolean> = {
-    1: true, 2: canReachStep2, 3: canReachStep3, 4: canReachStep4, 5: canReachStep5,
+  const canReach: Record<StepId, boolean> = {
+    1: true, 2: canReachStep2, 3: canReachStep3, 4: canReachStep4, 5: canReachStep5, 6: canReachStep5,
   };
 
   const currentStepIdx = stepSequence.indexOf(step);
@@ -1046,20 +1049,24 @@ export default function AdminCreateActivityPage() {
   const prevStepId = stepSequence[currentStepIdx - 1];
   const nextDisabled = !nextStepId || !canReach[nextStepId];
 
-  const goNext = () => { if (nextStepId && canReach[nextStepId]) setStep(nextStepId); };
-  const goBack = () => { if (prevStepId) setStep(prevStepId); };
+  // A submit error belongs to the attempt that bounced you here, not to
+  // wherever you navigate next — so any deliberate step change clears it.
+  const goToStep = (s: StepId) => { setError(''); setStep(s); };
+  const goNext = () => { if (nextStepId && canReach[nextStepId]) goToStep(nextStepId); };
+  const goBack = () => { if (prevStepId) goToStep(prevStepId); };
 
   useEffect(() => {
     if (!stepSequence.includes(step)) setStep(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWizard, step]);
 
-  const STEP_META: Record<1 | 2 | 3 | 4 | 5, { title: string; subtitle: string }> = {
+  const STEP_META: Record<StepId, { title: string; subtitle: string }> = {
     1: { title: t.step1Title, subtitle: t.step1Subtitle },
     2: { title: t.step2Title, subtitle: t.step2Subtitle },
     3: { title: t.step3Title, subtitle: t.step3Subtitle },
     4: { title: t.step4Title, subtitle: t.step4Subtitle },
     5: { title: t.step5Title, subtitle: t.step5Subtitle },
+    6: { title: t.step6Title, subtitle: t.step6Subtitle },
   };
 
   const insertSmsVariable = (token: string) => {
@@ -1302,7 +1309,7 @@ export default function AdminCreateActivityPage() {
 
   if (initialLoading) return null;
 
-  // ─── Step 5 review — summary values + any outstanding issue, each pointing
+  // ─── Step 6 summary — review values + any outstanding issue, each pointing
   // back to the step that fixes it. ───
   const moduleTypeLabel = moduleType === 'map' ? t.map : moduleType === 'spiders' ? t.spiders : moduleType === 'story' ? t.story : t.noModule;
 
@@ -1313,7 +1320,7 @@ export default function AdminCreateActivityPage() {
   const loginFieldLabel = (f: LoginField) => (f === 'name' ? t.fieldName : f === 'email' ? t.fieldEmail : t.fieldPhone);
   const loginFieldsSummary = Array.from(loginFields).map(loginFieldLabel).join(', ') || t.reviewNoneSet;
 
-  const reviewIssues: { text: string; step: 1 | 2 | 3 | 4 | 5 }[] = [];
+  const reviewIssues: { text: string; step: StepId }[] = [];
   if (!isEditMode && managerEmail.trim() && !managerPassword) {
     reviewIssues.push({ text: t.managerPasswordRequired, step: 2 });
   }
@@ -1339,7 +1346,7 @@ export default function AdminCreateActivityPage() {
   // A step is flagged on the rail only once it has been visited, and never
   // while you are standing on it — there the inline banner already says so.
   const stepsWithIssues = new Set(reviewIssues.map((i) => i.step));
-  const stepHasIssue = (s: 1 | 2 | 3 | 4 | 5) =>
+  const stepHasIssue = (s: StepId) =>
     s !== step && visitedSteps.has(s) && stepsWithIssues.has(s);
 
   return (
@@ -1360,7 +1367,7 @@ export default function AdminCreateActivityPage() {
                   <ProgressStepBtn
                     type="button"
                     disabled={!canReach[s]}
-                    onClick={() => canReach[s] && setStep(s)}
+                    onClick={() => canReach[s] && goToStep(s)}
                     title={stepHasIssue(s) ? t.stepHasIssues : undefined}
                   >
                     <ProgressCircle state={state}>
@@ -1379,6 +1386,10 @@ export default function AdminCreateActivityPage() {
             <StepIntroTitle>{STEP_META[step].title}</StepIntroTitle>
             <StepIntroSubtitle>{STEP_META[step].subtitle}</StepIntroSubtitle>
           </StepIntro>
+
+          {/* handleSubmit sends you back to the step that broke — steps 2, 3
+            and 5 all get here, so the message is rendered once, for all of them. */}
+          {error && <ErrorText>{error}</ErrorText>}
 
           <Form onSubmit={handleSubmit}>
             {/* ──── STEP 1 — Type & look ──── */}
@@ -2227,7 +2238,7 @@ export default function AdminCreateActivityPage() {
               </>
             )}
 
-            {/* ──── STEP 5 — Follow-up & review ──── */}
+            {/* ──── STEP 5 — Follow-up (SMS) ──── */}
             {step === 5 && (
               <>
                 {isWizard && (
@@ -2431,6 +2442,27 @@ export default function AdminCreateActivityPage() {
                 )}
 
                 <SectionCardWide>
+                  <StepNav>
+                    <OutlineButton type="button" onClick={goBack}>
+                      {t.prevStep}
+                    </OutlineButton>
+                    <PrimaryButton
+                      type="button"
+                      disabled={nextDisabled}
+                      onClick={goNext}
+                      style={{ width: 'auto', padding: '12px 40px' }}
+                    >
+                      {t.nextStep}
+                    </PrimaryButton>
+                  </StepNav>
+                </SectionCardWide>
+              </>
+            )}
+
+            {/* ──── STEP 6 — Summary ──── */}
+            {step === 6 && (
+              <>
+                <SectionCardWide>
                   <SectionHeader>
                     <SectionHeaderTitle>{t.reviewTitle}</SectionHeaderTitle>
                   </SectionHeader>
@@ -2475,7 +2507,7 @@ export default function AdminCreateActivityPage() {
                       {reviewIssues.map((issue, i) => (
                         <IssueBanner key={i}>
                           <span>{issue.text}</span>
-                          <IssueBannerLink type="button" onClick={() => setStep(issue.step)}>
+                          <IssueBannerLink type="button" onClick={() => goToStep(issue.step)}>
                             {t.fixIssueLink}
                           </IssueBannerLink>
                         </IssueBanner>
@@ -2485,7 +2517,6 @@ export default function AdminCreateActivityPage() {
                 </SectionCardWide>
 
                 <SectionCardWide>
-                  {error && <ErrorText>{error}</ErrorText>}
                   <StepNav>
                     <OutlineButton type="button" onClick={goBack}>
                       {t.prevStep}
