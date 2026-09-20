@@ -9,6 +9,7 @@ import type { LatLng } from './geo';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
 const SCRIPT_ID = 'yz-google-maps';
+const CALLBACK = '__yzMapsReady';
 
 export function isMapsAvailable(): boolean {
   return !!API_KEY;
@@ -28,18 +29,23 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
     script.id = SCRIPT_ID;
     script.async = true;
     script.src =
-      `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(API_KEY)}&loading=async`;
-    script.onload = () => {
+      `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(API_KEY)}` +
+      `&loading=async&callback=${CALLBACK}`;
+    // `callback` is the API's own ready signal. The script's `load` event fires
+    // earlier, while `google.maps` is still a stub whose `importLibrary` is not
+    // attached yet -- calling it there throws out of the event handler, leaving
+    // this promise pending forever and every map silently blank.
+    (window as unknown as Record<string, () => void>)[CALLBACK] = () => {
       const maps = window.google?.maps;
-      if (!maps) {
+      if (!maps?.importLibrary) {
         reject(new Error('maps_load_failed'));
         return;
       }
-      // Under `loading=async` the bootstrap resolves before the individual
-      // libraries are attached, so `new maps.Geocoder()` at this point throws
-      // "not a constructor". Awaiting them puts the classes on the namespace
-      // (importLibrary attaches them for compatibility), so every call site can
-      // keep using `new maps.X` instead of threading library handles around.
+      // The bootstrap is ready before the individual libraries are attached, so
+      // `new maps.Geocoder()` at this point throws "not a constructor". Awaiting
+      // them puts the classes on the namespace (importLibrary attaches them for
+      // compatibility), so every call site can keep using `new maps.X` instead
+      // of threading library handles around.
       Promise.all([
         maps.importLibrary('maps'),
         maps.importLibrary('marker'),
