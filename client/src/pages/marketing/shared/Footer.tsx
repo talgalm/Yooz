@@ -161,7 +161,7 @@ export default function Footer() {
           <div>
             <ColTitle>{t.colCompany}</ColTitle>
             <ColList>
-              <li><ColAnchor href={CONTACT_ANCHOR}>{t.about}</ColAnchor></li>
+              <li><ColLink to="/about">{t.about}</ColLink></li>
               <li><ColAnchor href="#faq">{t.faqLink}</ColAnchor></li>
               <li><ColAnchor href={CONTACT_ANCHOR}>{t.contact}</ColAnchor></li>
             </ColList>
