@@ -565,8 +565,8 @@ Self-check: `npx tsx server/src/routes/collageFilter.check.ts`.
 - **Public**: `/control/:id` (`pages/ControlPage`, desktop cashier console — hardcoded
   `register`/`123456` login in the component, then a phone field + "הכנס למערכת" that POSTs to
   `/api/activities/control/:id/register`), `/portal/:code`, `/privacy`, `/stats/:token`
-  (shared stats), `/ar-demo`, and `/`
-  (the publicity site — it renders `PublicityPage` directly and never redirects).
+  (shared stats), `/ar-demo`, and the **marketing site** — `/`, `/business`, `/academy`,
+  `/tourism`, `/about` — all wrapped in `MarketingLayout` (§13a).
 - **`/ar-demo`** (`pages/ArDemoPage.tsx`, standalone — no MobileContainer, no auth): GPS + camera
   + compass treasure hunt. Pickups are real lat/lng points drawn over the rear camera feed at
   their compass bearing, sized 1/distance, collected by tapping within 3m. Defaults to a
@@ -578,6 +578,40 @@ Self-check: `npx tsx server/src/routes/collageFilter.check.ts`.
 ### Two layout worlds
 Participant pages are **mobile-only** (`MobileContainer`, ≤480px). Admin/manager pages are
 full-width desktop. **Don't reuse components across this boundary** without checking styling.
+(The marketing site below is a third world again — neither of these shells.)
+
+### 13a. Marketing site (`pages/marketing/`)
+
+Five public pages sharing `MarketingLayout` (sticky `Nav`, routed `<Outlet/>`, `Footer`):
+
+| route | page |
+|---|---|
+| `/` | `HomePage` — hero, Venn, three sector bands, logos, testimonials, FAQ |
+| `/business` | `BusinessPage` |
+| `/academy` | `AcademyPage` — photo-tone hero, value + experience card rows |
+| `/tourism` | `TourismPage` — stat strip, case study with per-stage video tabs |
+| `/about` | `AboutPage` — how an activity works, the three boosters, toolbox, audiences |
+
+**Hardcoded, not CMS-driven.** Copy lives in sibling `.i18n.ts` files, *not* `SiteContent`. The
+`/api/site-content` content endpoints still back the older `PublicityPage` shape and the admin
+Publicity tab; of that router only `POST /leads` is used by the new site (`ContactForm`).
+
+- `shared/tokens.ts` — palette, radii, shadows, gradients, breakpoints (`BP.mobile` 700,
+  `BP.tablet` 960). Values are **sampled from the Figma frame exports**, not estimated.
+- `shared/styled.ts` — `Page`, `Container` (optional `max`), `Band`, `H1`–`H3`, `Body`,
+  `CardGrid` / `DividedRow` (both `minmax(min(px,100%),1fr)`, so a track wider than the
+  container collapses instead of overflowing the page), `IconTile`, `CtaButton`, `Reveal` motion.
+- `shared/` components: `Hero` (`plain` | `photo` tones), `FeatureSplit`, `SectionShape`,
+  `MarketingEngine`, `IconCardRow`, `CustomerLogos` (optional `marquee`), `Testimonials`
+  (optional `wash`), `StatStrip`, `ContactForm`, `Faq`, `Nav`, `Footer`, `Blob` / `SoftBlob`.
+- `shared/routes.ts` — `MARKETING_ROUTES` is the single source for both the nav and the footer.
+
+**RTL is the default, and the main hazard here.** The first flex child lands *rightmost*;
+`inset-inline-start` measures from the right; SVG paths and CSS gradients carry no logical
+direction and must be mirrored by hand under `[dir="ltr"]`. Note that `[dir="ltr"] &` has
+specificity (0,1,1) and outranks a `BP.mobile` block (0,1,0) — media queries add none — so any
+mobile override of an LTR rule must nest *inside* it. English also needs its own type scale:
+Hebrew sets far more compactly, and a heading tuned for it runs ~40% oversized in English.
 
 ### Contexts
 `AuthContext` (participant, cookie-mirrored token), `AdminAuthContext`, `ManagerAuthContext`,
@@ -1237,7 +1271,8 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   → `MissionPuzzle.tsx` → `MissionTrashSort.tsx` (+ `MissionFrame`, `MissionTopMenu`); posts
   `mission-event` analytics.
 - **`HomePage/index.tsx`** (`/home`) — post-login landing for some flows.
-- **`LandingPage`** / **`PublicityPage`** — marketing site (`SiteContent`-driven).
+- **`pages/marketing/*`** — the public marketing site (§13a). **`PublicityPage`** — the previous
+  `SiteContent`-driven landing page; still in the tree, no longer routed.
   **`PrivacyPage`** — privacy policy. **`ParticipantLandingRedirect`** / `FallbackRedirect`
   keep participants on their activity.
 
