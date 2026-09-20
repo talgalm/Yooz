@@ -169,7 +169,7 @@ const BoosterDesc = styled('div')({
   fontSize: 16,
   lineHeight: 1.19,
   color: C.ink,
-  [BP.mobile]: { fontSize: 12.5 },
+  [BP.mobile]: { fontSize: 13.5 },
 });
 
 export default function MarketingEngine({ videoUrl, posterUrl, shapeFrom = C.paper }: MarketingEngineProps) {

@@ -69,6 +69,17 @@ const Steps = styled("div")({
   marginBottom: 30,
   flexWrap: "wrap",
   justifyContent: "center",
+  /**
+   * A phone wraps this to one chip per line anyway, so it stops being a pill row
+   * and becomes a stacked list - full width rather than three centred stubs.
+   */
+  [BP.mobile]: {
+    display: "flex",
+    flexDirection: "column",
+    width: "100%",
+    gap: 8,
+    padding: 8,
+  },
 });
 
 /** A real button: the chips switch the card beneath them, so they are controls. */
@@ -87,7 +98,23 @@ const Step = styled("button")<{ active?: boolean }>(({ active }) => ({
   background: active ? C.purple : "transparent",
   color: active ? C.white : C.inkSoft,
   "& svg": { flexShrink: 0 },
-  [BP.mobile]: { fontSize: 13, padding: "11px 15px", gap: 8 },
+  /**
+   * A grid, not a centred flex row. Centring each chip's own icon-plus-label
+   * group puts the icons at a different x on every line, since the labels are
+   * different lengths. A fixed first column lines the icons up and starts every
+   * label at the same point.
+   */
+  [BP.mobile]: {
+    width: "100%",
+    display: "grid",
+    gridTemplateColumns: "20px 1fr",
+    alignItems: "center",
+    gap: 10,
+    textAlign: "start",
+    whiteSpace: "normal",
+    fontSize: 15,
+    padding: "14px 18px",
+  },
 }));
 
 /**

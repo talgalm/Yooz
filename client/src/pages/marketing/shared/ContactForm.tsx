@@ -88,7 +88,8 @@ const Field = styled('input')({
   border: `1.8px solid ${C.purple}`,
   borderRadius: RADIUS.field,
   padding: '15px 20px',
-  fontSize: 15,
+  /** 16 is the floor: iOS Safari zooms the page when a focused field is smaller. */
+  fontSize: 16,
   fontFamily: 'inherit',
   color: C.ink,
   outline: 'none',
@@ -107,7 +108,8 @@ const TextArea = styled('textarea')({
   border: `1.8px solid ${C.purple}`,
   borderRadius: RADIUS.field,
   padding: '15px 20px',
-  fontSize: 15,
+  /** Same 16px floor as `Field`, for the same iOS zoom reason. */
+  fontSize: 16,
   fontFamily: 'inherit',
   lineHeight: 1.6,
   color: C.ink,

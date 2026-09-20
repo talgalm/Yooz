@@ -35,6 +35,8 @@ const Col = styled('div')<{ align: 'center' | 'start' }>(({ align }) => ({
   alignItems: align === 'center' ? 'center' : 'flex-start',
   textAlign: align === 'center' ? 'center' : 'start',
   gap: 8,
+  /** Stacked to one column on a phone, `start` alignment reads as a ragged edge. */
+  [BP.mobile]: { alignItems: 'center', textAlign: 'center' },
 }));
 
 /** Icon and label share a line in the Business treatment. */
