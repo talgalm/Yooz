@@ -19,12 +19,7 @@ export const MARKETING_ROUTES: MarketingRoute[] = [
   { key: 'business', path: '/business' },
   { key: 'academy', path: '/academy' },
   { key: 'tourism', path: '/tourism' },
-  /**
-   * The comps show אודות in the navigation but no design was supplied for the
-   * page, so it points at the contact section rather than shipping a dead link.
-   * Give it a real `path` here once that page exists.
-   */
-  { key: 'about', path: '#contact' },
+  { key: 'about', path: '/about' },
 ];
 
 /** The footer's "תחומים" column lists only the three real sector pages. */

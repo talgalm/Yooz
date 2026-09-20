@@ -82,12 +82,28 @@ export const Band = styled('section')<{ bg?: string }>(({ bg }) => ({
 // ─── Type ───
 
 export const H1 = styled('h1')({
-  fontSize: 'clamp(30px, 3.2vw, 48px)',
+  /**
+   * The floor, not just the `BP.mobile` override below, carries narrow screens:
+   * the breakpoint stops at 700px, so everything from there to ~1180px fell back
+   * to this value. At the old 30px that whole band read far too small. The vw
+   * term and ceiling are unchanged, so desktop is untouched.
+   */
+  fontSize: 'clamp(44px, 3.4vw, 54px)',
   fontWeight: 900,
   lineHeight: 1.4,
   letterSpacing: '-0.015em',
   color: C.heading,
   margin: '0 0 28px',
+  [BP.mobile]: { fontSize: 48, lineHeight: 1.18, marginBottom: 22 },
+  /**
+   * English runs far longer than the Hebrew these sizes were measured against -
+   * the same headline sets in three lines there and six here. The mobile step is
+   * nested inside this rule because `[dir="ltr"] &` outranks `BP.mobile`.
+   */
+  '[dir="ltr"] &': {
+    fontSize: 'clamp(33px, 3vw, 50px)',
+    [BP.mobile]: { fontSize: 33, lineHeight: 1.16 },
+  },
 });
 
 export const H2 = styled('h2')({
@@ -134,14 +150,16 @@ export const SectionIntro = styled('p')({
   color: C.inkSoft,
   maxWidth: 720,
   margin: '0 auto 44px',
-  [BP.mobile]: { fontSize: 14.5, marginBottom: 30 },
+  [BP.mobile]: { fontSize: 15, marginBottom: 30 },
 });
 
 export const Body = styled('p')({
-  fontSize: 14,
+  fontSize: 15,
   lineHeight: 1.75,
   color: C.inkSoft,
   margin: 0,
+  /** Phones get the larger step - 14 sat a size below common practice for body copy. */
+  [BP.mobile]: { fontSize: 15.5, lineHeight: 1.7 },
 });
 
 // ─── Buttons ───
@@ -249,7 +267,12 @@ export const CardGrid = styled('div', { shouldForwardProp: (p) => p !== 'min' &&
   gap?: number;
 }>(({ min = 210, gap = 20 }) => ({
   display: 'grid',
-  gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`,
+  /**
+   * `min(px, 100%)` rather than a bare px: `minmax` will not shrink below its
+   * minimum, so a track wider than the container overflows the page instead of
+   * collapsing to one column. Academy asks for 560 here, well past a phone.
+   */
+  gridTemplateColumns: `repeat(auto-fit, minmax(min(${min}px, 100%), 1fr))`,
   gap,
   alignItems: 'stretch',
   [BP.mobile]: { gap: 14 },
@@ -262,7 +285,8 @@ export const CardGrid = styled('div', { shouldForwardProp: (p) => p !== 'min' &&
  */
 export const DividedRow = styled('div')<{ min?: number }>(({ min = 220 }) => ({
   display: 'grid',
-  gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`,
+  /** Same `min(px, 100%)` guard as `CardGrid` - see the note there. */
+  gridTemplateColumns: `repeat(auto-fit, minmax(min(${min}px, 100%), 1fr))`,
   gap: 0,
   marginTop: 34,
   '& > * + *': { borderInlineStart: `1px solid ${C.ruleSoft}` },
@@ -270,6 +294,12 @@ export const DividedRow = styled('div')<{ min?: number }>(({ min = 220 }) => ({
   [BP.mobile]: {
     '& > * + *': { borderInlineStart: 'none', borderTop: `1px solid ${C.ruleSoft}` },
     '& > *': { padding: '18px 8px' },
+    /**
+     * An odd-numbered last item is left alone in one column; spanning it across
+     * the track centres it instead. No-op when the count is even, or when the
+     * grid has collapsed to a single column.
+     */
+    '& > *:last-child:nth-child(odd)': { gridColumn: '1 / -1' },
   },
 }));
 

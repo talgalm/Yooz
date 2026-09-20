@@ -46,6 +46,7 @@ import MarketingHomePage from './pages/marketing/HomePage';
 import BusinessPage from './pages/marketing/BusinessPage';
 import AcademyPage from './pages/marketing/AcademyPage';
 import TourismPage from './pages/marketing/TourismPage';
+import AboutPage from './pages/marketing/AboutPage';
 import SharedStatsPage from './pages/shared/SharedStatsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpChatProvider, HelpChatFab } from './components/HelpChat';
@@ -76,6 +77,7 @@ function FallbackRedirect() {
     || pathname.startsWith('/business')
     || pathname.startsWith('/academy')
     || pathname.startsWith('/tourism')
+    || pathname.startsWith('/about')
     || pathname === '/privacy'
   ) {
     return <Navigate to="/" replace />;
@@ -205,6 +207,7 @@ export default function App() {
                   <Route path="/business" element={<BusinessPage />} />
                   <Route path="/academy" element={<AcademyPage />} />
                   <Route path="/tourism" element={<TourismPage />} />
+                  <Route path="/about" element={<AboutPage />} />
                 </Route>
                 <Route path="*" element={<FallbackRedirect />} />
               </Routes>

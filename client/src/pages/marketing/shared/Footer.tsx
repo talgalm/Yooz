@@ -19,12 +19,19 @@ const Columns = styled('div')({
   gap: 36,
   alignItems: 'start',
   '@media (max-width: 900px)': { gridTemplateColumns: '1fr 1fr', gap: 28 },
-  [BP.mobile]: { gridTemplateColumns: '1fr', gap: 26 },
+  /** One column on a phone, so the whole block centres rather than hugging one edge. */
+  [BP.mobile]: { gridTemplateColumns: '1fr', gap: 26, justifyItems: 'center', textAlign: 'center' },
 });
 
 // ─── Brand column ───
 
-const BrandCol = styled('div')({ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8 });
+const BrandCol = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: 8,
+  [BP.mobile]: { alignItems: 'center' },
+});
 
 /**
  * The asset already carries the "Engage, Share, Grow" lockup - do not re-render it.
@@ -38,9 +45,15 @@ const BrandMark = styled('img')({
   width: 'auto',
   [BP.mobile]: { height: 72 },
 });
-const Badges = styled('div')({ display: 'flex', gap: 9, flexWrap: 'wrap', marginTop: 8 });
+const Badges = styled('div')({
+  display: 'flex',
+  gap: 9,
+  flexWrap: 'wrap',
+  marginTop: 8,
+  [BP.mobile]: { justifyContent: 'center' },
+});
 const Badge = styled('span')({
-  fontSize: 11,
+  fontSize: 12,
   fontWeight: 600,
   color: C.inkSoft,
   background: C.white,
@@ -112,6 +125,8 @@ const BottomRow = styled('div')({
   gap: 14,
   flexWrap: 'wrap',
   fontSize: 12,
+  /** Wraps on a phone, where `space-between` would strand each half at an edge. */
+  [BP.mobile]: { justifyContent: 'center', textAlign: 'center', fontSize: 12.5, gap: 10 },
   color: C.inkSoft,
 });
 
@@ -146,7 +161,7 @@ export default function Footer() {
           <div>
             <ColTitle>{t.colCompany}</ColTitle>
             <ColList>
-              <li><ColAnchor href={CONTACT_ANCHOR}>{t.about}</ColAnchor></li>
+              <li><ColLink to="/about">{t.about}</ColLink></li>
               <li><ColAnchor href="#faq">{t.faqLink}</ColAnchor></li>
               <li><ColAnchor href={CONTACT_ANCHOR}>{t.contact}</ColAnchor></li>
             </ColList>

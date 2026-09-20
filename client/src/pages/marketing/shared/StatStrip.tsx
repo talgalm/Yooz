@@ -49,7 +49,7 @@ const Value = styled('span')<{ onDark?: boolean }>(({ onDark }) => ({
 const Figure = styled('span')({ direction: 'ltr', unicodeBidi: 'isolate' });
 
 const Label = styled('span')<{ onDark?: boolean }>(({ onDark }) => ({
-  fontSize: 12,
+  fontSize: 13,
   lineHeight: 1.5,
   maxWidth: 150,
   color: onDark ? 'rgba(255,255,255,0.82)' : C.inkSoft,

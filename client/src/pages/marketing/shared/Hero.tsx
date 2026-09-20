@@ -245,11 +245,12 @@ const PhotoWash = styled("div")({
   background: "rgba(54,10,77,0.78)",
   /** `radii=[75,0,0,0]` in the file: the one corner floating over the photo. */
   borderStartEndRadius: 75,
+  /** Full-bleed here, so the floating corner has no edge to round against. */
   [BP.mobile]: {
     top: 0,
     width: "100%",
     height: "100%",
-    borderStartEndRadius: 40,
+    borderStartEndRadius: 0,
   },
 });
 
@@ -263,6 +264,11 @@ const PhotoCopy = styled("div")({
   '[dir="ltr"] &': {
     maxWidth: "min(58%, 900px)",
     [BP.mobile]: { maxWidth: "none" },
+    /** Same reason as the shared `H1`: English needs a smaller measure here. */
+    "& h1": {
+      fontSize: "clamp(29px, 4vw, 60px)",
+      [BP.mobile]: { fontSize: 31, lineHeight: 1.18 },
+    },
   },
   /** `inline-END: auto` parks the box at the inline START - the panel's side. */
   marginInlineEnd: "auto",
@@ -278,6 +284,12 @@ const PhotoCopy = styled("div")({
     fontSize: "clamp(31px, 4.6vw, 68px)",
     fontWeight: 700,
     lineHeight: 1.11,
+    /**
+     * This selector outranks `H1`'s own class, so the shared mobile size never
+     * reaches it - without this the Academy hero stayed at the 31px floor while
+     * every other hero went to 48.
+     */
+    [BP.mobile]: { fontSize: 46, lineHeight: 1.12 },
   },
   /** Full-bleed here, and `paddingBlock` must be reset or phones inherit 170px of it. */
   [BP.mobile]: {
@@ -329,7 +341,7 @@ const LeadItem = styled("li")({
   borderRadius: RADIUS.pill,
   padding: "8px 16px",
   whiteSpace: "nowrap",
-  [BP.mobile]: { fontSize: 12, padding: "6px 13px" },
+  [BP.mobile]: { fontSize: 14, padding: "8px 15px" },
 });
 
 const WhiteCta = styled("a")({
@@ -349,6 +361,8 @@ const WhiteCta = styled("a")({
   boxShadow: SHADOW.card,
   transition: "transform 0.16s ease",
   "&:hover": { transform: "translateY(-2px)" },
+  /** 215 x 68 at 24pt is a desktop box - on a phone it runs most of the width. */
+  [BP.mobile]: { padding: "14px 30px", minWidth: 0, fontSize: 17 },
   [REDUCED_MOTION]: { transition: "none", "&:hover": { transform: "none" } },
 });
 

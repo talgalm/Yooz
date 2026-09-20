@@ -69,6 +69,17 @@ const Steps = styled("div")({
   marginBottom: 30,
   flexWrap: "wrap",
   justifyContent: "center",
+  /**
+   * A phone wraps this to one chip per line anyway, so it stops being a pill row
+   * and becomes a stacked list - full width rather than three centred stubs.
+   */
+  [BP.mobile]: {
+    display: "flex",
+    flexDirection: "column",
+    width: "100%",
+    gap: 8,
+    padding: 8,
+  },
 });
 
 /** A real button: the chips switch the card beneath them, so they are controls. */
@@ -87,7 +98,23 @@ const Step = styled("button")<{ active?: boolean }>(({ active }) => ({
   background: active ? C.purple : "transparent",
   color: active ? C.white : C.inkSoft,
   "& svg": { flexShrink: 0 },
-  [BP.mobile]: { fontSize: 11.5, padding: "8px 12px" },
+  /**
+   * A grid, not a centred flex row. Centring each chip's own icon-plus-label
+   * group puts the icons at a different x on every line, since the labels are
+   * different lengths. A fixed first column lines the icons up and starts every
+   * label at the same point.
+   */
+  [BP.mobile]: {
+    width: "100%",
+    display: "grid",
+    gridTemplateColumns: "20px 1fr",
+    alignItems: "center",
+    gap: 10,
+    textAlign: "start",
+    whiteSpace: "normal",
+    fontSize: 15,
+    padding: "14px 18px",
+  },
 }));
 
 /**
@@ -131,14 +158,11 @@ function StepSparkles() {
 /** Positional, not translated copy - so it lives here rather than in the i18n. */
 const STEP_ICONS = [StepPlay, StepPuzzle, StepSparkles];
 
-/**
- * Also positional. Only stage 1's clip has been supplied so far; the other two
- * fall back to the placeholder panel until their footage arrives.
- */
+/** Positional, like `STEP_ICONS`. A stage with no clip falls back to the placeholder panel. */
 const STAGE_VIDEOS: (string | undefined)[] = [
   "/images/marketing/case-step-1.mp4",
-  undefined,
-  undefined,
+  "/images/marketing/case-step-2.mp4",
+  "/images/marketing/case-step-3.mp4",
 ];
 
 /** The comp closes each line with a ringed tick, not a bare glyph. */
@@ -167,6 +191,10 @@ const CaseCard = styled("div")({
   borderRadius: RADIUS.cardLarge,
   boxShadow: SHADOW.cardHover,
   overflow: "hidden",
+  /** The frame runs the card x214..1300, narrower than the content column it sits in. */
+  width: "100%",
+  maxWidth: 1086,
+  marginInline: "auto",
   display: "grid",
   gridTemplateColumns: "1fr",
   /** Measured 449 copy / 637 media - not an even split. */
