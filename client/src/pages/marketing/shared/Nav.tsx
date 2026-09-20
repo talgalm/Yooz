@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useTranslations, useLang, LANGS } from '../../../context/LanguageContext';
@@ -16,6 +15,13 @@ const Bar = styled('header')({
   borderBottom: `1px solid ${C.ruleSoft}`,
 });
 
+/**
+ * One row on desktop, two below 900.
+ *
+ * The brand and the actions already fill a phone's width, so the destinations
+ * wrap onto a row of their own rather than collapsing behind a menu button -
+ * `Links` is ordered last and given the full width, and the bar grows to suit.
+ */
 const Inner = styled('div')({
   maxWidth: CONTAINER,
   marginInline: 'auto',
@@ -26,7 +32,14 @@ const Inner = styled('div')({
   justifyContent: 'space-between',
   gap: 16,
   boxSizing: 'border-box',
-  [BP.mobile]: { paddingInline: 16, height: 66 },
+  '@media (max-width: 900px)': {
+    flexWrap: 'wrap',
+    height: 'auto',
+    alignItems: 'center',
+    paddingTop: 8,
+    rowGap: 6,
+  },
+  [BP.mobile]: { paddingInline: 16 },
 });
 
 /**
@@ -38,6 +51,7 @@ const Brand = styled(Link)({
   alignItems: 'center',
   textDecoration: 'none',
   flexShrink: 0,
+  '@media (max-width: 900px)': { order: 0 },
 });
 
 /**
@@ -56,7 +70,20 @@ const BrandMark = styled('img')({
 const Links = styled('nav')({
   display: 'flex',
   alignItems: 'stretch',
-  '@media (max-width: 900px)': { display: 'none' },
+  /**
+   * Full-bleed below 900: the row breaks out of `Inner`'s gutter with a negative
+   * inline margin so it spans the whole viewport. The tabs then tile it with no
+   * gap, which is what lets an active first or last tab's tinted block run all
+   * the way to the screen edge instead of stopping at the container.
+   */
+  '@media (max-width: 900px)': {
+    order: 2,
+    width: 'calc(100% + 48px)',
+    marginInline: -24,
+    gap: 0,
+    borderTop: `1px solid ${C.ruleSoft}`,
+  },
+  [BP.mobile]: { width: 'calc(100% + 32px)', marginInline: -16 },
 });
 
 const itemStyle = {
@@ -72,6 +99,16 @@ const itemStyle = {
   '&:hover': { color: C.purple },
   /** The active page is a full-height tinted block, not a pill. */
   '&.active': { background: C.paperSoft, color: C.magenta, fontWeight: 800 },
+  /** Equal shares, so the four together tile the full-bleed row edge to edge. */
+  '@media (max-width: 900px)': {
+    flex: 1,
+    justifyContent: 'center',
+    textAlign: 'center' as const,
+    paddingInline: 6,
+    paddingBlock: 12,
+    fontSize: 13.5,
+  },
+  [BP.mobile]: { paddingInline: 4, paddingBlock: 11, fontSize: 12.5 },
 };
 
 const Item = styled(NavLink)(itemStyle);
@@ -82,6 +119,7 @@ const Actions = styled('div')({
   alignItems: 'center',
   gap: 14,
   flexShrink: 0,
+  '@media (max-width: 900px)': { order: 1, gap: 10 },
 });
 
 /** Flat violet - the gradient is reserved for the hero buttons. */
@@ -122,65 +160,6 @@ const GlobeButton = styled('button')({
   '&:hover': { color: C.purple },
 });
 
-const Burger = styled('button')({
-  display: 'none',
-  width: 38,
-  height: 38,
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'none',
-  border: `1.5px solid ${C.vennEngageEdge}`,
-  borderRadius: 10,
-  cursor: 'pointer',
-  color: C.heading,
-  fontSize: 17,
-  lineHeight: 1,
-  '@media (max-width: 900px)': { display: 'flex' },
-});
-
-const Sheet = styled('div')({
-  display: 'none',
-  '@media (max-width: 900px)': {
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '6px 16px 16px',
-    background: C.shell,
-    borderTop: `1px solid ${C.ruleSoft}`,
-  },
-});
-
-const sheetItemStyle = {
-  color: C.ink,
-  textDecoration: 'none',
-  fontWeight: 700,
-  fontSize: 15,
-  padding: '13px 12px',
-  borderRadius: 10,
-  '&.active': { background: C.paperSoft, color: C.magenta },
-};
-const SheetItem = styled(NavLink)(sheetItemStyle);
-const SheetAnchor = styled('a')(sheetItemStyle);
-
-/** Hamburger and close, drawn so they keep a consistent weight with the globe. */
-function MenuIcon({ open }: { open: boolean }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden focusable="false">
-      {open ? (
-        <>
-          <path d="M3.5 3.5 14.5 14.5" />
-          <path d="M14.5 3.5 3.5 14.5" />
-        </>
-      ) : (
-        <>
-          <path d="M2.5 4.5h13" />
-          <path d="M2.5 9h13" />
-          <path d="M2.5 13.5h13" />
-        </>
-      )}
-    </svg>
-  );
-}
-
 function GlobeIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden focusable="false">
@@ -194,7 +173,6 @@ function GlobeIcon() {
 export default function Nav() {
   const t = useTranslations(texts);
   const { lang } = useLang();
-  const [open, setOpen] = useState(false);
 
   // Language is read from storage at boot, so switching persists and reloads.
   const cycleLang = () => {
@@ -208,7 +186,7 @@ export default function Nav() {
     <Bar>
       <Inner>
         {/* RTL puts the first child on the right, which is where the comps have the brand. */}
-        <Brand to="/" onClick={() => setOpen(false)}>
+        <Brand to="/">
           <BrandMark src="/images/marketing/logo-yooz.png" alt={t.logoAlt} />
         </Brand>
 
@@ -227,28 +205,8 @@ export default function Nav() {
           <GlobeButton type="button" onClick={cycleLang} aria-label={t.switchLang}>
             <GlobeIcon />
           </GlobeButton>
-          <Burger
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-label={open ? t.closeMenu : t.openMenu}
-          >
-            <MenuIcon open={open} />
-          </Burger>
         </Actions>
       </Inner>
-
-      {open && (
-        <Sheet>
-          {MARKETING_ROUTES.map((r) =>
-            r.path.startsWith('#') ? (
-              <SheetAnchor key={r.key} href={r.path} onClick={() => setOpen(false)}>{t[r.key]}</SheetAnchor>
-            ) : (
-              <SheetItem key={r.key} to={r.path} onClick={() => setOpen(false)}>{t[r.key]}</SheetItem>
-            ),
-          )}
-        </Sheet>
-      )}
     </Bar>
   );
 }
