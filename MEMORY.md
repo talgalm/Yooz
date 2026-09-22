@@ -615,7 +615,7 @@ Five public pages sharing `MarketingLayout` (sticky `Nav`, routed `<Outlet/>`, `
 | `/business` | `BusinessPage` |
 | `/academy` | `AcademyPage` — photo-tone hero, value + experience card rows |
 | `/tourism` | `TourismPage` — stat strip, case study with per-stage video tabs |
-| `/about` | `AboutPage` — how an activity works, the three boosters, toolbox, audiences |
+| `/about` | `AboutPage` - the founder's story and the team beside his portrait (`about-eran.png`) with a name card, his "More of the Same" line pulled out as a quote. The old hero, how-it-works, boosters, toolbox, audiences, logos and contact form were cut on request, i18n keys included |
 
 **Hardcoded, not CMS-driven.** Copy lives in sibling `.i18n.ts` files, *not* `SiteContent`. The
 `/api/site-content` content endpoints still back the older `PublicityPage` shape and the admin
