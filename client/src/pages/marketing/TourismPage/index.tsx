@@ -10,6 +10,7 @@ import CustomerLogos from "../shared/CustomerLogos";
 import ContactForm from "../shared/ContactForm";
 import Faq from "../shared/Faq";
 import Reveal from "../shared/Reveal";
+import useStopWhenUnseen from "../shared/useStopWhenUnseen";
 import { Band, Container, H2, H3, Body, SectionIntro } from "../shared/styled";
 import { C, SHADOW, RADIUS, BP, REDUCED_MOTION } from "../shared/tokens";
 
@@ -329,6 +330,8 @@ export default function TourismPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const active = t.caseStages[stage];
   const video = STAGE_VIDEOS[stage];
+  /** Plays with sound, so it stops when it leaves the screen or the page. */
+  useStopWhenUnseen(videoRef, { src: video });
 
   return (
     <>

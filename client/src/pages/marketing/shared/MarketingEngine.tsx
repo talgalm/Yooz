@@ -6,6 +6,7 @@ import { C, SHADOW, BP, REDUCED_MOTION } from './tokens';
 import { Container, H2, floatY } from './styled';
 import SectionShape from './SectionShape';
 import Reveal from './Reveal';
+import useStopWhenUnseen from './useStopWhenUnseen';
 
 interface MarketingEngineProps {
   /** Looping clip shown in the device frame. Falls back to a still. */
@@ -63,6 +64,15 @@ const Frame = styled('div')({
   display: 'flex',
   [BP.mobile]: { borderWidth: 6, borderRadius: 24, marginTop: 20 },
 });
+
+/**
+ * The frame's own `zIndex` only holds once `Reveal` has finished: while the
+ * wrapper still carries its lift transform it is a stacking context of its own,
+ * and the cream hexagon below - later in the DOM - paints over the video until
+ * the transform clears. Positioning the wrapper keeps the video on top
+ * throughout, instead of letting it pop forward mid-animation.
+ */
+const VideoReveal = styled(Reveal)({ position: 'relative', zIndex: 2 });
 
 const Media = styled('video')({ width: '100%', height: '100%', objectFit: 'cover', display: 'block' });
 const Still = styled('img')({ width: '100%', height: '100%', objectFit: 'cover', display: 'block' });
@@ -182,6 +192,7 @@ function KeepsakePhone({ src, poster, label, alt, playLabel }: {
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
+  useStopWhenUnseen(videoRef, { src });
 
   return (
     <Phone>
@@ -349,6 +360,12 @@ const BoosterDesc = styled('div')({
 
 export default function MarketingEngine({ videoUrl, posterUrl, clipUrl, clipPosterUrl, shapeFrom = C.paper }: MarketingEngineProps) {
   const t = useTranslations(texts);
+  const parkRef = useRef<HTMLVideoElement>(null);
+  /**
+   * It loops, so it must not pause off-screen - it would freeze on a frame.
+   * The unmount stop still matters: the controls let a visitor unmute it.
+   */
+  useStopWhenUnseen(parkRef, { offscreen: false });
 
   return (
     <>
@@ -359,15 +376,26 @@ export default function MarketingEngine({ videoUrl, posterUrl, clipUrl, clipPost
       <Band>
       <Container>
         <H2>{t.title}</H2>
-        <Reveal>
+        <VideoReveal>
           <Frame>
             {videoUrl ? (
-              <Media src={videoUrl} poster={posterUrl} autoPlay muted loop playsInline aria-label={t.videoAlt} />
+              /* Muted autoplay, but with controls: it is a video, so it has to be pausable. */
+              <Media
+                ref={parkRef}
+                src={videoUrl}
+                poster={posterUrl}
+                autoPlay
+                muted
+                loop
+                controls
+                playsInline
+                aria-label={t.videoAlt}
+              />
             ) : posterUrl ? (
               <Still src={posterUrl} alt={t.videoAlt} loading="lazy" />
             ) : null}
           </Frame>
-        </Reveal>
+        </VideoReveal>
       </Container>
 
       <Ground>
