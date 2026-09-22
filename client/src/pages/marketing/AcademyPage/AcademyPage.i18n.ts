@@ -68,22 +68,28 @@ export const texts = {
       { icon: '/images/marketing/icons/acad-shield.svg', tileBg: '#4F46E5', fg: '#FFFFFF', title: 'Faculty Command Center', body: 'דשבורד אינטואיטיבי המאפשר למרצה להשיק אתגר כיתתי בלחיצת כפתור אחת, לעקוב אחר הבנת החומר בזמן אמת, ולהעניק ״בוסטים״.' },
     ],
 
-    testimonials: [
-      {
-        quote:
-          '"מזה 5 שנים אני משתמש בפלטפורמת Yooz כדי לייצר חוויית למידה מעניינת ומאתגרת... תוצאות המחקר שערכתי במשך 3 שנים מצביעות על עלייה בהישגים ובמעורבות"',
-        author: 'מרצה במכללה האקדמית בתל אביב יפו',
-        initials: 'ד.ו',
-        avatarBg: '#D1FAE5',
-      },
-      {
-        quote:
-          '"פיתחנו סימולטור מתקדם לבדיקת מידת קבלת החלטות רפואיות על ידי הסטודנטים. הסימולטור מדמה מצבי אמת באמצעות כלי AI ותורם לחוויית ואפקטיביות הלמידה"',
-        author: 'מרצה בחוג לסיעוד',
-        initials: 'מ.ט',
-        avatarBg: '#F3E8FF',
-      },
-    ],
+    testimonialTitle: 'המלצות לקוחות',
+    /**
+     * One named testimonial instead of the shared anonymous pair. The quote is
+     * the client's own words, kept verbatim. The Hebrew signature is translated
+     * from her English one - check the name's spelling with her before launch.
+     */
+    testimonial: {
+      paragraphs: [
+        'ערן תודה על שליחת הדו"ח המסכם וגליונות ציוני הסטודנטים/ות המראים את הצלחתן של הסימולציות הקליניות לקידום המיומנויות של החשיבה הקלינית בקרב סטודנטים וסטודנטיות בבית הספר לסיעוד.',
+        'תודה רבה לך ולצוות על העבודה המקצועית, הסבלנות והתאמתן של הטכנולוגיות לפדגוגיה שנדרשת לפיצוח התוכן. אני מעריכה את המאמץ הרב, ההשקעה, החשיבה והדיוק בהכנתן של הסימולציות.',
+      ],
+      name: 'פרופ׳ חנה מדלר-לירז',
+      roles: [
+        'ראש המרכז לקידום הלמידה',
+        'ראש מגמת השיווק בתוכנית ה-MBA',
+        'ראש ההתמחות בניהול שיווק שירותים, תואר ראשון',
+        'בית הספר לניהול וכלכלה',
+        'המכללה האקדמית תל אביב-יפו',
+      ],
+      logoUrl: '/images/marketing/logo-academic-tlv.png',
+      logoAlt: 'המכללה האקדמית תל אביב-יפו',
+    },
 
     customersTitle: 'לקוחות מרוצים',
     customers: [
@@ -127,10 +133,24 @@ export const texts = {
       { icon: '/images/marketing/icons/acad-shield.svg', tileBg: '#4F46E5', fg: '#FFFFFF', title: 'Faculty Command Center', body: 'An intuitive dashboard letting a lecturer launch a class challenge in one click, track comprehension live, and hand out boosts.' },
     ],
 
-    testimonials: [
-      { quote: '"For five years I have used the Yooz platform to build an engaging, challenging learning experience... three years of research I ran show a rise in both achievement and involvement"', author: 'Lecturer, Academic College of Tel Aviv-Yafo', initials: 'D.V', avatarBg: '#D1FAE5' },
-      { quote: '"We built an advanced simulator to assess medical decision-making by students. It models real situations using AI tools and adds to both the experience and the effectiveness of the learning"', author: 'Lecturer, Nursing Department', initials: 'M.T', avatarBg: '#F3E8FF' },
-    ],
+    testimonialTitle: 'Client testimonials',
+    /** The quote is translated from the Hebrew original; the signature is hers as she signs in English. */
+    testimonial: {
+      paragraphs: [
+        'Eran, thank you for sending the summary report and the student grade sheets, which show how successful the clinical simulations were in advancing clinical-reasoning skills among students at the School of Nursing.',
+        'Many thanks to you and the team for the professional work, the patience, and for fitting the technology to the pedagogy the content called for. I appreciate the great effort, the investment, the thought and the precision that went into preparing the simulations.',
+      ],
+      name: 'Prof. Hana Medler-Liraz',
+      roles: [
+        'Head, Center for Learning Advancement',
+        'Head of Marketing Program in MBA',
+        'Head of Services Marketing Management Specialization, B.A.',
+        'School of Management and Economics',
+        'The Academic College of Tel Aviv Yaffo',
+      ],
+      logoUrl: '/images/marketing/logo-academic-tlv.png',
+      logoAlt: 'The Academic College of Tel Aviv Yaffo',
+    },
 
     customersTitle: 'Happy customers',
     customers: [

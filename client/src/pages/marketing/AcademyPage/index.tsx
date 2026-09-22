@@ -3,7 +3,7 @@ import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AcademyPage.i18n';
 import Hero from '../shared/Hero';
 import CustomerLogos from '../shared/CustomerLogos';
-import Testimonials from '../shared/Testimonials';
+import FeaturedTestimonial from './FeaturedTestimonial';
 import ContactForm from '../shared/ContactForm';
 import Faq from '../shared/Faq';
 import Reveal from '../shared/Reveal';
@@ -185,13 +185,14 @@ export default function AcademyPage() {
         </Container>
       </Band>
 
-      <Testimonials items={t.testimonials} />
+      <FeaturedTestimonial title={t.testimonialTitle} quote={t.testimonial} />
 
       <CustomerLogos title={t.customersTitle} items={t.customers} />
 
-      <ContactForm tone="peach" />
-
+      {/* Questions first, then the form - a visitor's doubts are answered before they are asked to write. */}
       <Faq title={t.faqTitle} items={t.faq} />
+
+      <ContactForm tone="peach" closing />
     </>
   );
 }
