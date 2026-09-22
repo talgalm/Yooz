@@ -93,6 +93,24 @@ export const texts = {
       { name: 'קופ״ח כללית', caption: 'פעילות גיבוש של מאות עובדים ב-40 סניפים', logoUrl: '/images/marketing/logo-clalit.svg' },
     ],
 
+    testimonialsTitle: 'לקוחות ממליצים',
+    testimonials: [
+      {
+        quote:
+          '"עבור מרכז המבקרים בקיבוץ שדה אליהו פיתחנו פעילות חווייתית המלווה את הסיור. המבקרים לומדים על הקיבוץ, דמויות המפתח, ההיסטוריה והענפים השונים, והיא הופכת את הסיור לחוויה מיוחדת"',
+        author: 'נינה, מנהלת מרכז המבקרים שדה אליהו',
+        initials: 'נ',
+        avatarBg: '#D1FAE5',
+      },
+      {
+        quote:
+          '"עבור פעילות משפחות בישוב שלנו פותחה פעילות מיוחדת בתל קאקון (עמק חפר). מזה שנתיים משפחות נהנות מפעילות משחקית מדליקה, ערן תודה רבה"',
+        author: 'יעל, ועדת תרבות בת חפר',
+        initials: 'י',
+        avatarBg: '#F3E8FF',
+      },
+    ],
+
     faqTitle: 'שאלות נפוצות',
     faq: [
       { q: 'האם צריך קליטה סלולרית לאורך כל המסלול?', a: 'כן. הפעילות רצה בזמן אמת מהנייד של המשתתפים, ולכן נדרשת קליטה סלולרית לאורך המסלול.' },
@@ -183,6 +201,24 @@ export const texts = {
       { name: 'Ganei Yehoshua', caption: 'A family activity, open all year round', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
       { name: 'Tel Qaqun', caption: 'The Mamluk treasure mystery', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
       { name: 'Clalit Health', caption: 'Team-building for hundreds of employees across 40 branches', logoUrl: '/images/marketing/logo-clalit.svg' },
+    ],
+
+    testimonialsTitle: 'What our customers say',
+    testimonials: [
+      {
+        quote:
+          '"For the visitor centre at Kibbutz Sde Eliyahu we built an experience that runs alongside the tour. Visitors learn about the kibbutz, its key figures, its history and its different branches, and it turns the tour into something special"',
+        author: 'Nina, visitor centre manager, Sde Eliyahu',
+        initials: 'N',
+        avatarBg: '#D1FAE5',
+      },
+      {
+        quote:
+          '"For family activities in our community a special activity was built at Tel Qaqun (Hefer Valley). For two years now families have been enjoying a brilliant game-based activity - thank you, Eran"',
+        author: 'Yael, culture committee, Bat Hefer',
+        initials: 'Y',
+        avatarBg: '#F3E8FF',
+      },
     ],
 
     faqTitle: 'Frequently asked questions',

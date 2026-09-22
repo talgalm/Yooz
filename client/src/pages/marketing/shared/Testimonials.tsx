@@ -1,7 +1,7 @@
 import { styled } from '@mui/material/styles';
 import { useLang } from '../../../context/LanguageContext';
 import { C, SHADOW, BP, REDUCED_MOTION } from './tokens';
-import { Container } from './styled';
+import { Container, H2 } from './styled';
 import Reveal from './Reveal';
 
 export interface Testimonial {
@@ -15,6 +15,10 @@ export interface Testimonial {
 
 interface TestimonialsProps {
   items: Testimonial[];
+  /** Optional heading above the cards. Omit where the section speaks for itself. */
+  title?: string;
+  /** A notch smaller, for longer quotes than the two-line ones on Home. */
+  dense?: boolean;
   /**
    * Paint the soft pink field behind the cards. Off by default: Business,
    * Tourism and Academy share this component and sit on their own grounds.
@@ -97,15 +101,15 @@ const Stars = styled('div')({
   textAlign: 'start',
 });
 
-/** 24 / 400 in the file. */
-const Text = styled('blockquote')({
+/** 24 / 400 in the file; `dense` steps that down for a longer quote. */
+const Text = styled('blockquote', { shouldForwardProp: (p) => p !== 'dense' })<{ dense?: boolean }>(({ dense }) => ({
   margin: '0 0 20px',
-  fontSize: 'clamp(16px, 1.5vw, 24px)',
-  lineHeight: 1.35,
+  fontSize: dense ? 'clamp(15px, 1.35vw, 21px)' : 'clamp(16px, 1.5vw, 24px)',
+  lineHeight: dense ? 1.4 : 1.35,
   color: C.ink,
   fontWeight: 400,
-  [BP.mobile]: { fontSize: 16, lineHeight: 1.5 },
-});
+  [BP.mobile]: { fontSize: dense ? 15 : 16, lineHeight: 1.5 },
+}));
 
 /**
  * 20 / 300 in the file; the avatar monogram is 14 / 700. A plain `row` already
@@ -137,7 +141,7 @@ const Avatar = styled('span')<{ bg?: string }>(({ bg }) => ({
   flexShrink: 0,
 }));
 
-export default function Testimonials({ items, wash }: TestimonialsProps) {
+export default function Testimonials({ items, title, dense, wash }: TestimonialsProps) {
   const { dir } = useLang();
   /**
    * RTL only: a flex row puts items[0] on the right, but the frame has it as the
@@ -154,12 +158,13 @@ export default function Testimonials({ items, wash }: TestimonialsProps) {
       )}
       <Content>
         <Container>
+        {title && <H2 style={{ marginBottom: 28 }}>{title}</H2>}
         <Row>
           {ordered.map((item, i) => (
             <Reveal key={item.author} delay={i * 90}>
               <Quote tilt={i % 2 === 0 ? 3 : -3} lift={i % 2 === 0 ? 18 : 0}>
                 <Stars aria-label="5/5">★★★★★</Stars>
-                <Text>{item.quote}</Text>
+                <Text dense={dense}>{item.quote}</Text>
                 <Attribution>
                   <Avatar bg={item.avatarBg} aria-hidden>{item.initials}</Avatar>
                   <span>{item.author}</span>

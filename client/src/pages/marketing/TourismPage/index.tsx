@@ -8,6 +8,7 @@ import IconCardRow from "../shared/IconCardRow";
 import MarketingEngine from "../shared/MarketingEngine";
 import CustomerLogos from "../shared/CustomerLogos";
 import ContactForm from "../shared/ContactForm";
+import Testimonials from "../shared/Testimonials";
 import Faq from "../shared/Faq";
 import Reveal from "../shared/Reveal";
 import useStopWhenUnseen from "../shared/useStopWhenUnseen";
@@ -489,6 +490,8 @@ export default function TourismPage() {
         items={t.customers}
         bg={C.bandPink}
       />
+
+      <Testimonials title={t.testimonialsTitle} items={t.testimonials} dense />
 
       <Faq title={t.faqTitle} items={t.faq} />
       <ContactForm tone="purple" closing />
