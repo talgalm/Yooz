@@ -36,7 +36,7 @@ const Split = styled('div')({
   '@media (min-width: 901px)': { gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: 64 },
 });
 
-const Copy = styled('div')({ textAlign: 'start', maxWidth: 680 });
+const Copy = styled('div')({ textAlign: 'start', maxWidth: 760 });
 
 /**
  * The site's heading colour, ranged left with the text rather than centred -
@@ -156,6 +156,87 @@ const Role = styled('div')({
   '&:last-of-type': { marginTop: 4, fontWeight: 800, color: C.heading },
 });
 
+// ─── Story beats ───
+
+/**
+ * The line the company was built around, set as something he said: ruled off on
+ * the side the text starts from, with the same quote glyph the Academy
+ * testimonial uses, so a reader hears it rather than reads past it.
+ */
+const Quote = styled('blockquote')({
+  position: 'relative',
+  margin: '18px 0 22px',
+  padding: '16px 22px 16px 20px',
+  background: `linear-gradient(120deg, ${C.shell}, rgba(255,232,255,0.35))`,
+  borderRadius: RADIUS.card,
+  borderInlineStartWidth: 4,
+  borderInlineStartStyle: 'solid',
+  borderInlineStartColor: C.magenta,
+  fontSize: 'clamp(17px, 1.8vw, 22px)',
+  fontWeight: 800,
+  lineHeight: 1.5,
+  color: C.purple,
+  display: 'flex',
+  alignItems: 'flex-start',
+  gap: 12,
+  [BP.mobile]: { padding: '14px 16px', gap: 9 },
+});
+
+/** Same drawing as the Academy quote, a size down. */
+function QuoteMark() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden focusable="false" style={{ flexShrink: 0, marginTop: 2 }}>
+      <path d="M4.5 6.5h6v6l-2.6 5H5.1l2.1-5H4.5zM13.5 6.5h6v6l-2.6 5h-2.8l2.1-5h-2.7z" fill={C.magenta} opacity="0.55" />
+    </svg>
+  );
+}
+
+/** The sentence the company is born in - given its own beat, not a run-on line. */
+const Birth = styled('p')({
+  margin: '22px 0',
+  fontSize: 'clamp(20px, 2.1vw, 27px)',
+  fontWeight: 900,
+  lineHeight: 1.3,
+  color: C.heading,
+});
+
+/**
+ * The team's opening line, a notch smaller than the story's lead so the two do
+ * not read as the same beat - and so it holds one line at desktop width.
+ */
+const TeamLead = styled('p')({
+  margin: '0 0 18px',
+  fontSize: 'clamp(15px, 1.3vw, 17.5px)',
+  fontWeight: 800,
+  lineHeight: 1.5,
+  color: C.heading,
+});
+
+const Roles = styled('div')({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 9,
+  margin: '4px 0 18px',
+});
+
+/** The list of what the team does, as chips instead of a comma run. */
+const RolePill = styled('span')({
+  fontSize: 13,
+  fontWeight: 700,
+  color: C.purple,
+  background: C.white,
+  border: `1px solid ${C.vennEngageEdge}`,
+  borderRadius: RADIUS.pill,
+  padding: '7px 15px',
+});
+
+/** Sets the brand name in the site's text gradient wherever it appears. */
+function withBrand(line: string) {
+  return line.split('Yooz').flatMap((part, i) =>
+    i === 0 ? [part] : [<GradientText key={i}>Yooz</GradientText>, part],
+  );
+}
+
 export default function AboutPage() {
   const t = useTranslations(texts);
 
@@ -185,15 +266,24 @@ export default function AboutPage() {
             <Copy>
               <Title>{t.storyTitle}</Title>
               <Lead>{t.storyLead}</Lead>
-              {t.story.map((p) => (
-                <Para key={p}>{p}</Para>
-              ))}
+              <Para>{t.storyOpening}</Para>
+              <Quote>
+                <QuoteMark />
+                <span>{t.storyMark}</span>
+              </Quote>
+              <Para>{t.storySearch}</Para>
+              <Birth>{withBrand(t.storyBirth)}</Birth>
+              <Para>{t.storyToday}</Para>
 
               <Title>{t.teamTitle}</Title>
-              <Lead>{t.teamLead}</Lead>
-              {t.team.map((p) => (
-                <Para key={p}>{p}</Para>
-              ))}
+              <TeamLead>{t.teamLead}</TeamLead>
+              <Roles>
+                {t.teamRoles.map((role) => (
+                  <RolePill key={role}>{role}</RolePill>
+                ))}
+              </Roles>
+              <Para>{t.teamBody}</Para>
+              <Para>{t.teamClosing}</Para>
             </Copy>
           </Reveal>
 
