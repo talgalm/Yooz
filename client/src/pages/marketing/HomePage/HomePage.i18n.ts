@@ -53,7 +53,7 @@ export const texts = {
       },
       {
         q: 'כמה זמן לוקח להקים ולהשיק פעילות?',
-        a: 'לאחר אפיון צרכים מהיר, פעילות המבוססת על תבנית קיימת יכולה לעלות לאוויר תוך 1-2 שבועות. פעילות מותאמת לעומק, עם תוכן וצילומים ייעודיים, נמשכת מספר שבועות בודדים.',
+        a: 'לאחר אפיון צרכים מהיר, פעילות המבוססת על תבנית קיימת יכולה לעלות לאוויר תוך זמן קצר. פעילות מותאמת לעומק, עם תוכן וצילומים ייעודיים, נמשכת מספר שבועות בודדים.',
       },
       {
         q: 'איזה מידע ונתונים מקבלים בסיום או תוך כדי הפעילות?',
@@ -102,7 +102,7 @@ export const texts = {
     faq: [
       { q: 'What is Yooz, and how does it work?', a: 'Yooz is a gamification platform for building interactive activities that participants run from their own phone, with no app to install. You define stations, missions and scoring; the system runs the journey and collects the data.' },
       { q: 'Who is the service for?', a: 'Tourist sites and parks, academic institutions, organisations rolling out change processes, and businesses that want to turn waiting time into selling time. Each sector gets its own adaptation.' },
-      { q: 'How long does it take to build and launch an activity?', a: 'After a quick needs assessment, an activity based on an existing template can go live within 1-2 weeks. A deeply customised one, with dedicated content and photography, takes just a few weeks.' },
+      { q: 'How long does it take to build and launch an activity?', a: 'After a quick needs assessment, an activity based on an existing template can go live within a short time. A deeply customised one, with dedicated content and photography, takes just a few weeks.' },
       { q: 'What data do we get during and after the activity?', a: 'A full report at participant and group level: progress between stations, scores, dwell times, drop-off points and social shares. Available live and as an export at the end.' },
     ],
   },
