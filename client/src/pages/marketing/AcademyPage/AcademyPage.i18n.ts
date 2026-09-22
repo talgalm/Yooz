@@ -41,8 +41,8 @@ export const texts = {
         tag: 'Pedagogical Intelligence',
         icon: '/images/marketing/icons/acad-chart-up.svg',
         title: 'דאטה ואנליטיקה התנהגותית בזמן אמת לסגל האקדמי',
-        body: 'מערכת בינה מלאכותית מנטרת תבניות אינטראקציה, מזהה מראש נקודות חולשה של סטודנטים מתקשים, ומתריעה למרצה עוד לפני שהסטודנט שוקל לפרוש מהקורס.',
-        proof: 'דוחות חיזוי הצלחה בדיוק של מעל 91%',
+        body: 'מערכת AI מנתחת את ביצועי הסטודנטים ומתריעה למרצה על נושאי לימוד בעייתיים ועל נקודות חולשה של סטודנטים ספציפיים. כך המרצה יודע בזמן מה לחזק ובמי לתמוך.',
+        proof: 'דוחות יומיים נשלחים למרצה באופן יזום',
       },
       {
         tag: 'החזר השקעה מובהק',
@@ -62,7 +62,7 @@ export const texts = {
      * row stays uniform, so every AI pill uses the same lavender.
      */
     experienceCards: [
-      { icon: '/images/marketing/icons/acad-map.svg', tileBg: '#5A1B87', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Quest Engine', body: 'הופך סילבוס סטטי למפת הרפתקה אינטראקטיבית. אלגוריתם ה-AI מתאים את רמת הקושי של המשימות לקצב האישי של כל סטודנט.' },
+      { icon: '/images/marketing/icons/acad-map.svg', tileBg: '#5A1B87', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Quest Engine', body: 'דוחות מהירים בסיוע AI, המאפשרים לשנות בטווח קצר את רמת הקושי של המשימות ואת הידע הנדרש.' },
       { icon: '/images/marketing/icons/acad-star-circle.svg', tileBg: '#059669', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Medical Simulator', body: 'סימולטור אינטראקטיבי לקבלת החלטות רפואיות בזמן אמת, במטרה להכין את הסטודנטים לעולם האמיתי.' },
       { icon: '/images/marketing/icons/acad-swords.svg', tileBg: '#DB2777', fg: '#FFFFFF', title: 'Peer Challenges', body: 'תחרויות עמיתים שבועיות, אתגרי צוותים פקולטיים שמדרבנים שיתוף פעולה ולמידה חברתית עמוקה.' },
       { icon: '/images/marketing/icons/acad-shield.svg', tileBg: '#4F46E5', fg: '#FFFFFF', title: 'Faculty Command Center', body: 'דשבורד אינטואיטיבי המאפשר למרצה להשיק אתגר כיתתי בלחיצת כפתור אחת, לעקוב אחר הבנת החומר בזמן אמת, ולהעניק ״בוסטים״.' },
@@ -114,14 +114,14 @@ export const texts = {
     valueCards: [
       { tag: 'Proactive retention', icon: '/images/marketing/icons/acad-head-question.svg', title: 'A leap in retention, and fewer dropouts from hard courses', body: 'Gateway and foundation courses cause real frustration. With micro-rewards, instant feedback and a Level-Up mechanic, students feel continuous progress instead of surrendering to early gaps.', proof: '28% improvement in average final-course pass grades' },
       { tag: 'Genuine Plug & Play', icon: '/images/marketing/icons/acad-puzzle.svg', title: 'An innovative academic position', body: 'Leading innovation in academic teaching and embedding modern technology, differentiating the institution and attracting students who want learning fitted to the digital era.', proof: 'AI technology embedded' },
-      { tag: 'Pedagogical Intelligence', icon: '/images/marketing/icons/acad-chart-up.svg', title: 'Real-time behavioural analytics for faculty', body: 'An AI system monitors interaction patterns, identifies weak points for struggling students in advance, and alerts the lecturer before the student considers leaving the course.', proof: 'Success-prediction reports accurate to over 91%' },
+      { tag: 'Pedagogical Intelligence', icon: '/images/marketing/icons/acad-chart-up.svg', title: 'Real-time behavioural analytics for faculty', body: 'An AI system analyses student performance and alerts the lecturer to problem topics and to the weak points of specific students, so the lecturer knows in time what to reinforce and whom to support.', proof: 'Daily reports sent to the lecturer proactively' },
       { tag: 'Clear return on investment', icon: '/images/marketing/icons/acad-piggy.svg', title: 'Fewer support hours, a better reputation', body: 'Retaining students is worth hundreds of thousands in tuition. Less lecturer load answering repeat questions, fewer resit sittings, and a marked lift in institutional teaching feedback.', proof: 'Full payback within the first semester' },
     ],
 
     experienceTitle: 'The pedagogical experience',
     experienceIntro: 'A complete learning experience built with brain researchers, award-winning game designers and academic teaching experts.',
     experienceCards: [
-      { icon: '/images/marketing/icons/acad-map.svg', tileBg: '#5A1B87', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Quest Engine', body: 'Turns a static syllabus into an interactive adventure map. The AI algorithm fits mission difficulty to each student’s own pace.' },
+      { icon: '/images/marketing/icons/acad-map.svg', tileBg: '#5A1B87', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Quest Engine', body: 'Fast, AI-assisted reports that let you change mission difficulty and the knowledge required at short notice.' },
       { icon: '/images/marketing/icons/acad-star-circle.svg', tileBg: '#059669', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Medical Simulator', body: 'An interactive simulator for real-time medical decision-making, preparing students for the real world.' },
       { icon: '/images/marketing/icons/acad-swords.svg', tileBg: '#DB2777', fg: '#FFFFFF', title: 'Peer Challenges', body: 'Weekly peer contests and faculty team challenges that drive collaboration and deep social learning.' },
       { icon: '/images/marketing/icons/acad-shield.svg', tileBg: '#4F46E5', fg: '#FFFFFF', title: 'Faculty Command Center', body: 'An intuitive dashboard letting a lecturer launch a class challenge in one click, track comprehension live, and hand out boosts.' },
