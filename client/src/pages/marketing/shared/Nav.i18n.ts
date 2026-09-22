@@ -1,5 +1,6 @@
 export const texts = {
   he: {
+    home: 'ראשי',
     business: 'המגזר העסקי',
     academy: 'אקדמיה',
     tourism: 'תיירות',
@@ -11,6 +12,7 @@ export const texts = {
     switchLang: 'החלפת שפה',
   },
   en: {
+    home: 'Home',
     business: 'Business',
     academy: 'Academy',
     tourism: 'Tourism',

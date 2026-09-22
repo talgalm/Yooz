@@ -1,8 +1,9 @@
+import type { ComponentType } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useTranslations, useLang, LANGS } from '../../../context/LanguageContext';
 import { texts } from './Nav.i18n';
-import { MARKETING_ROUTES, CONTACT_ANCHOR } from './routes';
+import { MARKETING_ROUTES, CONTACT_ANCHOR, type MarketingRoute } from './routes';
 import { C, RADIUS, CONTAINER, BP } from './tokens';
 
 const BAR_H = 88;
@@ -99,7 +100,7 @@ const itemStyle = {
   '&:hover': { color: C.purple },
   /** The active page is a full-height tinted block, not a pill. */
   '&.active': { background: C.paperSoft, color: C.magenta, fontWeight: 800 },
-  /** Equal shares, so the four together tile the full-bleed row edge to edge. */
+  /** Equal shares, so the items together tile the full-bleed row edge to edge. */
   '@media (max-width: 900px)': {
     flex: 1,
     justifyContent: 'center',
@@ -113,6 +114,66 @@ const itemStyle = {
 
 const Item = styled(NavLink)(itemStyle);
 const AnchorItem = styled('a')(itemStyle);
+
+/**
+ * Home and About collapse to an icon on a phone. They take a narrow fixed slot
+ * rather than an equal share, which hands the width they free to the three
+ * sector names - the longest labels in the row.
+ */
+const IconItem = styled(Item)({ [BP.mobile]: { flex: '0 0 50px', paddingInline: 0 } });
+
+const ItemIcon = styled('span')({
+  display: 'none',
+  [BP.mobile]: { display: 'flex' },
+});
+
+/**
+ * Visually hidden on a phone, not `display: none`: the icon is aria-hidden, so
+ * this text is what gives the link its accessible name there.
+ */
+const CollapsibleLabel = styled('span')({
+  [BP.mobile]: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    margin: -1,
+    padding: 0,
+    border: 0,
+    overflow: 'hidden',
+    clipPath: 'inset(50%)',
+    whiteSpace: 'nowrap',
+  },
+});
+
+/** Stroked in `currentColor`, so they take the link's hover and active colours. */
+function HomeIcon() {
+  return (
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden focusable="false">
+      <path d="M3.5 10.6 12 3.8l8.5 6.8" />
+      <path d="M5.8 9v10.7h12.4V9" />
+      <path d="M10 19.7v-5.2h4v5.2" />
+    </svg>
+  );
+}
+
+/**
+ * The plain "i" in a circle. A team mark, a business card and a speech bubble
+ * were all tried instead and dropped - the "i" is the one that reads at a glance.
+ */
+function InfoIcon() {
+  return (
+    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden focusable="false">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11.2v5.3" />
+      <circle cx="12" cy="7.9" r="0.4" fill="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+const NAV_ICONS: Partial<Record<MarketingRoute['key'], ComponentType>> = {
+  home: HomeIcon,
+  about: InfoIcon,
+};
 
 const Actions = styled('div')({
   display: 'flex',
@@ -191,13 +252,25 @@ export default function Nav() {
         </Brand>
 
         <Links>
-          {MARKETING_ROUTES.map((r) =>
-            r.path.startsWith('#') ? (
-              <AnchorItem key={r.key} href={r.path}>{t[r.key]}</AnchorItem>
-            ) : (
-              <Item key={r.key} to={r.path}>{t[r.key]}</Item>
-            ),
-          )}
+          {MARKETING_ROUTES.map((r) => {
+            if (r.path.startsWith('#')) {
+              return <AnchorItem key={r.key} href={r.path}>{t[r.key]}</AnchorItem>;
+            }
+            // `end` on "/" only: without it every path starts with "/" and Home stays highlighted.
+            const end = r.path === '/';
+            const Icon = NAV_ICONS[r.key];
+            if (!Icon) {
+              return <Item key={r.key} to={r.path} end={end}>{t[r.key]}</Item>;
+            }
+            return (
+              <IconItem key={r.key} to={r.path} end={end}>
+                <ItemIcon aria-hidden>
+                  <Icon />
+                </ItemIcon>
+                <CollapsibleLabel>{t[r.key]}</CollapsibleLabel>
+              </IconItem>
+            );
+          })}
         </Links>
 
         <Actions>

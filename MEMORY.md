@@ -5,8 +5,7 @@
 > architectural questions or designing features. Pairs with `CLAUDE.md` (dev commands +
 > deployment) and `QA_REQUIREMENTS_AND_TESTS.md` (per-feature requirements + manual tests).
 >
-> **This file is `.gitignore`d** (intentionally local per-developer). It is not committed —
-> keep it updated locally as the system evolves.
+> This file is committed with the repo - keep it updated as the system evolves.
 
 ---
 
@@ -38,8 +37,9 @@ API and the built React SPA — no separate frontend host.
   optional `folder` field → upload straight into an open media-library folder).
   Client component: `FileUploadButton` (picker: computer *or* existing media). Browse/delete
   the cloud from the **Media tab** → `/api/admin/media`.
-- **Video collages**: ffmpeg encode offloaded to AWS Lambda (see `LAMBDA_SETUP.md`,
-  `server/src/lambda/collageHandler.ts`), with a local fallback processor.
+- **Video collages**: ffmpeg encode runs on AWS Lambda (see `LAMBDA_SETUP.md`,
+  `server/src/lambda/collageHandler.ts`). The only ffmpeg still run on the box is the legacy
+  synchronous `POST /api/collage/generate`.
 - **AI**: Google Gemini (`GEMINI_MODEL`, default `gemini-2.5-flash-lite`) for help/report/
   avatar chat + answer checking. Azure Speech for TTS. TextMe (textme.co.il) for SMS.
 
@@ -51,11 +51,12 @@ npm run dev:client       # Vite :5173, proxies /api → :3000   — terminal 2
 npm run build:client     # build React app into client/dist
 npm start                # production: Express serves API + built client on :3000
 ```
-No lint script, no test-runner script. Two `node:test` self-checks are run by hand
-(`npx tsx --test client/src/utils/inAppBrowserEscape.test.ts`,
-`npx tsx server/src/utils/groupRewardConfig.test.ts`). Everything else is Playwright
-walkthroughs (`npm run walkthrough*`, `walkthroughs/*.spec.ts`) — UI-flow recordings, not
-assertions. `npm run build --prefix client` is the only real typecheck: `client/tsconfig.json`
+`npm run check` is the gate: typecheck (server + client) then every `node:test` file matched by
+`client/src/**/*.test.ts` and `server/src/**/*.test.ts` (a new `.test.ts` is picked up with no
+wiring). Both are clean, so any error is new. `*.check.ts` / `*.selfcheck.ts` files are run by
+hand with `npx tsx <file>` and are not in the gate. No lint script. Playwright walkthroughs
+(`npm run walkthrough*`, `walkthroughs/*.spec.ts`) are UI-flow recordings, not assertions.
+Client typecheck is `tsc -p tsconfig.app.json --noEmit`, run from `client/`: `client/tsconfig.json`
 is solution-style (`files: []`), so a bare `tsc --noEmit` there checks nothing and always passes.
 
 ### Deployment
@@ -85,8 +86,9 @@ workflow sources `/etc/yooz/prod.env` **before** `npm run build` in `client/`, s
 
 ## 3. Auth realms (the #1 thing to know)
 
-Four JWT-bearing identities, each with its own React context, `apiFetch` wrapper, and
-localStorage key. **Never mix them.**
+Five JWT-bearing identities, each with its own React context, `apiFetch` wrapper, and
+localStorage key. **Never mix them.** All five share one `JWT_SECRET`, so a claim in the token
+(role, or `realm` for Manage) is the only thing keeping one realm's token out of another's API.
 
 | Realm | How they log in | JWT role | localStorage key | Client helper / context |
 |---|---|---|---|---|
@@ -94,10 +96,12 @@ localStorage key. **Never mix them.**
 | **Participant** | activity code (anonymous) or portal login | n/a | `yooz_token` (+ cookie mirror) | `api.ts` / `AuthContext` |
 | **Manager** | per-activity email + bcrypt password (or Google) | `manager` | `yooz_manager_token` | `managerApi.ts` / `ManagerAuthContext` |
 | **Portal user** | portal code + username/password (bcrypt) | issues a participant token | `yooz_token` | via `PortalPage` |
+| **Manage** (YOOZ Manage, §16) | email + bcrypt password in `mng_users` | `owner`/`pm`/`member` + `realm:'manage'` | `yz_manage_token` | `manageApi.ts` / `ManageAuthContext` |
 
 - Middleware: `authenticateAdmin`+`requireRole(...)` (`middleware/adminAuth.ts`),
   `authenticateToken` (participant, `middleware/auth.ts`), `authenticateManager`
-  (`middleware/managerAuth.ts`). All read `Authorization: Bearer <jwt>`, verify with `JWT_SECRET`.
+  (`middleware/managerAuth.ts`), `authenticateManage`+`requireManageRole(...)`
+  (`middleware/manageAuth.ts`). All read `Authorization: Bearer <jwt>`, verify with `JWT_SECRET`.
 - **Participant token** is mirrored to a `yooz_token` cookie (7-day) because in-app webviews
   can drop localStorage between opens (`AuthContext.tsx`). On login as a *different* user,
   local progress keys (`yooz_session_*`, `yooz_game_progress_*`, `puzzle_progress_*`,
@@ -191,6 +195,14 @@ Israel day** may create a self-service group — otherwise `POST /:code/groups` 
 ולהירשם אצל הקופאי". Off = no check anywhere.
 
 **Groups (self-service)**: `groupMinMembers?` (default 1), `groupMaxMembers?` (0/null = no cap).
+A cashier ticket code doubles one group's cap: `POST /:code/groups/redeem-capacity
+{groupToken, code}` checks `code` against `GROUP_CAPACITY_CODE` (default `'2026'`) and sets
+`ActivityGroup.maxMembersOverride`, which `checkGroupCapacity` prefers over the activity cap.
+**Participant help chat (per activity)**: `organizerContactName?`/`organizerContactPhone?` (who
+the bot points people to), `helpCategoriesDisabled?` (FAQ keys to hide: login, game_start,
+score, loading, kicked_out, button_stuck, task_stuck, video_missing), `helpCategoryResponses?`
+(per-key answer overrides), `helpOtherCategoryEnabled?` (free-text "something else" chat, off by
+default), `extraSupportInfo?`.
 **Group reward**: `groupReward?: {enabled, couponCode, messageTemplate?, attachmentUrl?,
 attachmentType?:'image'|'pdf', downloadToken?}` — top scorer gets an SMS coupon after all finish.
 **Collage SMS**: `smsForCollage?` (requires phone login), `smsForCollageMessage?` (`{link}`
@@ -545,8 +557,9 @@ Shared: `StationDescriptionPopup`, floating clue button for info stations.
 Participant photos → Cloudinary → an ffmpeg collage (video or static). State machine in
 `CollageJob` (`collecting→queued→preparing→encoding→uploading→done|error`, `percent`,
 `resultUrl`, `isVideo`). Encoding runs on **AWS Lambda** (`lambda/collageHandler.ts`,
-`LAMBDA_SETUP.md`) with a local fallback (`services/collageProcessor.ts`), concurrency-limited
-and protected by `loadShed` (503 + Retry-After when event-loop lag / RSS / queue depth trips).
+`LAMBDA_SETUP.md`), kicked fire-and-forget by `services/collageProcessor.ts` - there is no local
+fallback in that path. Upload/start routes are protected by `loadShed` (503 + Retry-After when
+event-loop lag or RSS trips; the queue-depth signal always reads 0 now that AWS owns concurrency).
 Boot recovery in `index.ts` resurrects jobs 30s–15min stale, aborts older ones. A split collage
 (`module.items[].collageSplit`) spreads photo capture across several stations. Every collage
 storage/job key is scoped by `participantSessionId()` (`utils/participantActivity.ts`) — a random
@@ -616,7 +629,15 @@ Publicity tab; of that router only `POST /leads` is used by the new site (`Conta
 - `shared/` components: `Hero` (`plain` | `photo` tones), `FeatureSplit`, `SectionShape`,
   `MarketingEngine`, `IconCardRow`, `CustomerLogos` (optional `marquee`), `Testimonials`
   (optional `wash`), `StatStrip`, `ContactForm`, `Faq`, `Nav`, `Footer`, `Blob` / `SoftBlob`.
-- `shared/routes.ts` — `MARKETING_ROUTES` is the single source for both the nav and the footer.
+- `shared/routes.ts` - `MARKETING_ROUTES` is the single source for both the nav and the footer,
+  and its array order is display order (first = rightmost under RTL): ראשי, המגזר העסקי,
+  תיירות, אקדמיה, אודות. "ראשי" (`home`, `/`) was added on request - the comps had none - and
+  renders with `end` so it is not active on every page. `SECTOR_ROUTES` (footer "תחומים")
+  drops `home` and `about`. On a phone (`BP.mobile`) Home and About render as icons
+  (`NAV_ICONS` in `Nav.tsx`: house, and the plain "i" in a circle for About - a team mark, a
+  business card and a speech bubble were all tried and dropped in its favour) in a fixed 50px
+  slot, so the three sector names get the freed width; the label stays in the DOM visually
+  hidden, which is the link's accessible name.
 
 **RTL is the default, and the main hazard here.** The first flex child lands *rightmost*;
 `inset-inline-start` measures from the right; SVG paths and CSS gradients carry no logical
@@ -778,6 +799,47 @@ watch + 10s poll + position push), `utils/googleMaps.ts` (script-tag loader, no 
 the JS API already ships map, geocoder and walking directions). Needs `VITE_GOOGLE_MAPS_KEY` (§2);
 without it the map degrades to a panel that still lets the station be opened. Routes are redrawn
 only when the target changes or the walker drifts ~100m — Directions is billed per call.
+---
+
+## 17. YOOZ Manage - internal business system (`/manage`)
+
+A separate internal ops app for the studio team (CRM, projects, tasks, time tracking,
+profitability, capacity). It has nothing to do with the gamification product except that it
+lives in the same repo, process and database. Built from the `yooz-manage-spec/` folder (kept
+outside the repo); "spec ch.NN" comments in the code point into it.
+
+- **Realm**: own users (`ManageUser`, `mng_users`), own JWT (12h, carries `realm:'manage'`),
+  own context (`ManageAuthContext`, `yz_manage_token`), own fetch wrapper (`manageApi.ts`).
+  Login `POST /api/manage/auth/login` (5/min/IP). Roles `owner` > `pm` > `member`.
+  `seedManageUsers()` creates the owner (`MANAGE_OWNER_*`, `tracksTime:false`) and one member
+  (`MANAGE_MEMBER_*`) on first boot; it never touches an existing user.
+- **Collections** (all `mng_*`, models in `server/src/models/manage/`): `ManageUser`,
+  `ManageClient` (+ embedded contacts), `ManageInteraction`, `ManageProject` (stages, payment
+  milestones, contract, recurring fee, stored `health`), `ManageTask` (checklist, comments,
+  watchers, `visibleToAll`), `ManageTimeEntry` (timer or manual, `costRateSnapshot`,
+  `afterProjectClose`, `locked`, `autoStopped`), `ManageExpense`, `ManageChangeRequest`,
+  `ManageSettings` (singleton: stage template, time categories, alert thresholds, defaults).
+- **Routers** (`routes/manage*.ts`, all under `/api/manage`): `clients`, `projects`, `time`,
+  `tasks`, `dashboard`, `calendar`, `finance`, `reports`, `employees`, `settings`.
+  Owner-only whole routers: **finance, reports, employees, settings**. Clients/projects: edit
+  is owner+pm, delete is owner. `time/lock` is owner. Report `profitability_by_client` is owner.
+- **Money never leaves the server for non-owners**: `serializeManageUser` and
+  `serializers/manageProject.ts` strip `hourlyCost`, `employerCostFactor`, prices, contract and
+  milestones for pm/member. Cost per hour goes through `effectiveHourlyCost()` only (the employer
+  overhead factor is stored but currently not applied there).
+- **Computed, not stored**: actual hours are always summed from `TimeEntry`; alerts
+  (`services/manageAlerts.ts`) are a query run on dashboard load, not rows. Money math lives in
+  `services/manageMoney.ts` (self-check `manageMoney.check.ts`), metrics in `manageMetrics.ts`.
+  Every profitability view carries "not including management hours" because the owner does not
+  log time.
+- **Background**: `startManageScheduler()` auto-stops timers older than `MAX_TIMER_HOURS` (10h)
+  every 15 min and flags them `autoStopped`. `seedInternalProject()` keeps one shared internal
+  project (`INTERNAL_PROJECT_NAME = 'פנימי'`) so non-client hours have a home.
+  `dropManageProjectCodeIndex()` removes a legacy unique `code_1` index at boot.
+- **Client**: `pages/manage/*` under `ManageLayout` + `ManageTimerProvider`; menu in
+  `pages/manage/nav.ts` (`ownerOnly` there is cosmetic, the server gate is real). Desktop only.
+  The admin dashboard sidebar links to it ("לקוחות", admin/super_admin only); the link is only
+  navigation, since `/manage` still needs its own login.
 
 ---
 
@@ -859,7 +921,7 @@ All require `connectionType==='group'` && `groupEntryMode==='selfService'` (else
 Standard admin CRUD (B0). Endpoints: `GET /` (list, customer-scoped, newest first),
 `POST /` (create), `GET/PUT/DELETE /:id`, `PATCH /:id/folder`. Stations & missions also
 have `POST /:id/duplicate` (games do **not**). Station create/update whitelists `type` to the
-10 `StationType`s (defaults to `text`). Game `type` defaults to `generic`. All under
+11 `StationType`s (defaults to `text`). Game `type` defaults to `generic`. All under
 `/api/admin/{games,stations,missions}`.
 
 ### `routes/activities.ts` — participant-facing activity API (mounts `activityGroupsRouter`)
@@ -1372,7 +1434,7 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   badges; drag handles are CSS dot-grids, not glyphs.
 - **`AdminGameConfigPage/`** — per-type config forms: `TriviaGameConfig`, `OrderGameConfig`,
   `PuzzleGameConfig`, `TrueFalseGameConfig`, `BallGameConfig`, `TrashSortGameConfig` (+ `index`).
-- **`AdminStationConfigPage`** — station editor (all 10 types). **`AdminMissionConfigPage`** —
+- **`AdminStationConfigPage`** - station editor (all 11 types). **`AdminMissionConfigPage`** -
   mission editor. **`AdminPortalConfigPage`** — portal editor (users, Excel import, activities).
 - Dashboard tabs: **`AdminGamesTab`**, **`AdminStationsTab`**, **`AdminLibraryTab`**,
   **`AdminMediaTab`** (Cloudinary browser, admin/super_admin — `MediaBrowser` + upload into
