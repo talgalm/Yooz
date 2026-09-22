@@ -4,7 +4,7 @@ import { texts } from './AboutPage.i18n';
 import Reveal from '../shared/Reveal';
 import SoftBlob from '../shared/SoftBlob';
 import { Band, Container, GradientText } from '../shared/styled';
-import { C, SHADOW, RADIUS, BP } from '../shared/tokens';
+import { C, SHADOW, RADIUS, BP, TEXT_GRADIENT } from '../shared/tokens';
 
 const Root = styled(Band)({
   position: 'relative',
@@ -159,37 +159,40 @@ const Role = styled('div')({
 // ─── Story beats ───
 
 /**
- * The line the company was built around, set as something he said: ruled off on
- * the side the text starts from, with the same quote glyph the Academy
- * testimonial uses, so a reader hears it rather than reads past it.
+ * The line the company was built around, set as something he said: a large
+ * pale quote mark at its head and nothing else, so it lifts off the page
+ * without a panel around it.
  */
 const Quote = styled('blockquote')({
   position: 'relative',
-  margin: '18px 0 22px',
-  padding: '16px 22px 16px 20px',
-  background: `linear-gradient(120deg, ${C.shell}, rgba(255,232,255,0.35))`,
-  borderRadius: RADIUS.card,
-  borderInlineStartWidth: 4,
-  borderInlineStartStyle: 'solid',
-  borderInlineStartColor: C.magenta,
-  fontSize: 'clamp(17px, 1.8vw, 22px)',
+  margin: '30px 0 32px',
+  paddingInlineStart: 52,
+  fontSize: 'clamp(16.5px, 1.6vw, 20px)',
   fontWeight: 800,
   lineHeight: 1.5,
-  color: C.purple,
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: 12,
-  [BP.mobile]: { padding: '14px 16px', gap: 9 },
+  /** The site's text gradient, as on the big headings and his name on the card. */
+  background: TEXT_GRADIENT,
+  WebkitBackgroundClip: 'text',
+  backgroundClip: 'text',
+  color: 'transparent',
+  WebkitTextFillColor: 'transparent',
+  [BP.mobile]: { margin: '24px 0 26px', paddingInlineStart: 38 },
 });
 
-/** Same drawing as the Academy quote, a size down. */
-function QuoteMark() {
-  return (
-    <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden focusable="false" style={{ flexShrink: 0, marginTop: 2 }}>
-      <path d="M4.5 6.5h6v6l-2.6 5H5.1l2.1-5H4.5zM13.5 6.5h6v6l-2.6 5h-2.8l2.1-5h-2.7z" fill={C.magenta} opacity="0.55" />
-    </svg>
-  );
-}
+/**
+ * The same drawing as the Academy testimonial, set large and pale at the head
+ * of the line - the mark carries the quote, so the line itself needs no panel.
+ */
+const QuoteMark = styled('svg')({
+  position: 'absolute',
+  insetInlineStart: 0,
+  top: -6,
+  width: 36,
+  height: 36,
+  fill: C.magenta,
+  opacity: 0.3,
+  [BP.mobile]: { width: 28, height: 28, top: -2 },
+});
 
 /** The sentence the company is born in - given its own beat, not a run-on line. */
 const Birth = styled('p')({
@@ -268,8 +271,10 @@ export default function AboutPage() {
               <Lead>{t.storyLead}</Lead>
               <Para>{t.storyOpening}</Para>
               <Quote>
-                <QuoteMark />
-                <span>{t.storyMark}</span>
+                <QuoteMark viewBox="0 0 24 24" aria-hidden focusable="false">
+                  <path d="M4.5 6.5h6v6l-2.6 5H5.1l2.1-5H4.5zM13.5 6.5h6v6l-2.6 5h-2.8l2.1-5h-2.7z" />
+                </QuoteMark>
+                {t.storyMark}
               </Quote>
               <Para>{t.storySearch}</Para>
               <Birth>{withBrand(t.storyBirth)}</Birth>
