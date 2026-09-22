@@ -13,19 +13,18 @@ export const texts = {
     heroCta: 'הזמנת דמו',
     heroMediaAlt: 'סטודנטים בכיתה אקדמית',
 
-    valueTitle: 'מה יוצא למוסד שלכם מהטמעת Yooz?',
-    valueIntro: 'פתרון מקיף שמחבר בין פדגוגיה איכותית לתוצאות ארגוניות מדידות.',
+    // \u00A0 is a no-break space: it keeps 'ב' on the same line as Yooz.
+    valueTitle: 'מה הערך המוסף למוסד האקדמי שלכם מפיתוח קורס ושימוש ב\u00A0Yooz',
+    valueIntro: 'פתרון מקיף שמחבר בין פדגוגיה איכותית, שביעות רצון סטודנטים ומרצים ותוצאות מדידות.',
     /**
      * Order matters: the 2x2 grid fills top-right, top-left, bottom-right,
      * bottom-left under RTL, so swapping indices 2 and 3 mirrors the block.
-     * Colours are sampled from the frame - on the first card only, the tag is
-     * green while the tile and glyph are lavender.
+     * No colours here: each card's colour (icon, tile, tag and proof line) is
+     * set by position in the page (`VALUE_ICONS`).
      */
     valueCards: [
       {
         tag: 'מניעת נטישה פרואקטיבית',
-        tagColor: '#059669',
-        tileBg: '#F3E8FF',
         icon: '/images/marketing/icons/acad-head-question.svg',
         title: 'זינוק בשימור סטודנטים ומניעת נשירה מקורסים קשים',
         body: 'קורסי סינון ומבואות גורמים לתסכול רב. בעזרת מיקרו-תגמולים, משוב מיידי ומנגנון "Level-Up", הסטודנט מרגיש התקדמות רציפה ולא נכנע לפערי למידה ראשוניים.',
@@ -33,8 +32,6 @@ export const texts = {
       },
       {
         tag: 'Plug & Play אמיתי',
-        tagColor: '#5A1B87',
-        tileBg: '#F3E8FF',
         icon: '/images/marketing/icons/acad-puzzle.svg',
         title: 'מיצוב אקדמי חדשני',
         body: 'הובלת חדשנות בהוראה אקדמית והטמעת טכנולוגיות מתקדמות, המבדלות את המוסד ומושכות סטודנטים המחפשים למידה רלוונטית ומותאמת לעידן הדיגיטלי.',
@@ -42,8 +39,6 @@ export const texts = {
       },
       {
         tag: 'Pedagogical Intelligence',
-        tagColor: '#EC4899',
-        tileBg: '#FCE7F3',
         icon: '/images/marketing/icons/acad-chart-up.svg',
         title: 'דאטה ואנליטיקה התנהגותית בזמן אמת לסגל האקדמי',
         body: 'מערכת בינה מלאכותית מנטרת תבניות אינטראקציה, מזהה מראש נקודות חולשה של סטודנטים מתקשים, ומתריעה למרצה עוד לפני שהסטודנט שוקל לפרוש מהקורס.',
@@ -51,8 +46,6 @@ export const texts = {
       },
       {
         tag: 'החזר השקעה מובהק',
-        tagColor: '#047857',
-        tileBg: '#D1FAE5',
         icon: '/images/marketing/icons/acad-piggy.svg',
         title: 'חיסכון בשעות תגבור ושיפור המוניטין',
         body: 'שימור סטודנטים באקדמיה שווה מאות אלפי שקלים בשכר לימוד. הפחתת עומסי מרצים במענה לשאלות חוזרות, חיסכון במועדי ג׳ ושיפור משמעותי במשוב ההוראה המוסדי.',
@@ -65,14 +58,14 @@ export const texts = {
       'חוויה פדגוגית שלמה שנבנתה בשיתוף חוקרי מוח, מעצבי משחקים עטורי פרסים ומומחי הוראה אקדמית.',
     /**
      * Tiles are 48 square, flat colour, with a white line glyph - emoji render in
-     * their own colours and ignore `fg`. The AI pill is tinted per card over a
-     * constant dark purple text.
+     * their own colours and ignore `fg`. Each tile has its own colour; the title
+     * row stays uniform, so every AI pill uses the same lavender.
      */
     experienceCards: [
       { icon: '/images/marketing/icons/acad-map.svg', tileBg: '#5A1B87', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Quest Engine', body: 'הופך סילבוס סטטי למפת הרפתקה אינטראקטיבית. אלגוריתם ה-AI מתאים את רמת הקושי של המשימות לקצב האישי של כל סטודנט.' },
-      { icon: '/images/marketing/icons/acad-star-circle.svg', tileBg: '#059669', fg: '#FFFFFF', badge: 'AI', badgeBg: '#74F2B5', title: 'Medical Simulator', body: 'סימולטור אינטראקטיבי לקבלת החלטות רפואיות בזמן אמת, במטרה להכין את הסטודנטים לעולם האמיתי.' },
+      { icon: '/images/marketing/icons/acad-star-circle.svg', tileBg: '#059669', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Medical Simulator', body: 'סימולטור אינטראקטיבי לקבלת החלטות רפואיות בזמן אמת, במטרה להכין את הסטודנטים לעולם האמיתי.' },
       { icon: '/images/marketing/icons/acad-swords.svg', tileBg: '#DB2777', fg: '#FFFFFF', title: 'Peer Challenges', body: 'תחרויות עמיתים שבועיות, אתגרי צוותים פקולטיים שמדרבנים שיתוף פעולה ולמידה חברתית עמוקה.' },
-      { icon: '/images/marketing/icons/acad-shield.svg', tileBg: '#7E22CE', fg: '#FFFFFF', title: 'Faculty Command Center', body: 'דשבורד אינטואיטיבי המאפשר למרצה להשיק אתגר כיתתי בלחיצת כפתור אחת, לעקוב אחר הבנת החומר בזמן אמת, ולהעניק ״בוסטים״.' },
+      { icon: '/images/marketing/icons/acad-shield.svg', tileBg: '#4F46E5', fg: '#FFFFFF', title: 'Faculty Command Center', body: 'דשבורד אינטואיטיבי המאפשר למרצה להשיק אתגר כיתתי בלחיצת כפתור אחת, לעקוב אחר הבנת החומר בזמן אמת, ולהעניק ״בוסטים״.' },
     ],
 
     testimonials: [
@@ -116,22 +109,22 @@ export const texts = {
     heroCta: 'Book a demo',
     heroMediaAlt: 'Students in an academic lecture hall',
 
-    valueTitle: 'What does your institution gain from Yooz?',
-    valueIntro: 'A comprehensive solution connecting quality pedagogy to measurable institutional results.',
+    valueTitle: 'The added value for your academic institution of developing a course and using Yooz',
+    valueIntro: 'A comprehensive solution connecting quality pedagogy, student and lecturer satisfaction, and measurable results.',
     valueCards: [
-      { tag: 'Proactive retention', tagColor: '#059669', tileBg: '#F3E8FF', icon: '/images/marketing/icons/acad-head-question.svg', title: 'A leap in retention, and fewer dropouts from hard courses', body: 'Gateway and foundation courses cause real frustration. With micro-rewards, instant feedback and a Level-Up mechanic, students feel continuous progress instead of surrendering to early gaps.', proof: '28% improvement in average final-course pass grades' },
-      { tag: 'Genuine Plug & Play', tagColor: '#5A1B87', tileBg: '#F3E8FF', icon: '/images/marketing/icons/acad-puzzle.svg', title: 'An innovative academic position', body: 'Leading innovation in academic teaching and embedding modern technology, differentiating the institution and attracting students who want learning fitted to the digital era.', proof: 'AI technology embedded' },
-      { tag: 'Pedagogical Intelligence', tagColor: '#EC4899', tileBg: '#FCE7F3', icon: '/images/marketing/icons/acad-chart-up.svg', title: 'Real-time behavioural analytics for faculty', body: 'An AI system monitors interaction patterns, identifies weak points for struggling students in advance, and alerts the lecturer before the student considers leaving the course.', proof: 'Success-prediction reports accurate to over 91%' },
-      { tag: 'Clear return on investment', tagColor: '#047857', tileBg: '#D1FAE5', icon: '/images/marketing/icons/acad-piggy.svg', title: 'Fewer support hours, a better reputation', body: 'Retaining students is worth hundreds of thousands in tuition. Less lecturer load answering repeat questions, fewer resit sittings, and a marked lift in institutional teaching feedback.', proof: 'Full payback within the first semester' },
+      { tag: 'Proactive retention', icon: '/images/marketing/icons/acad-head-question.svg', title: 'A leap in retention, and fewer dropouts from hard courses', body: 'Gateway and foundation courses cause real frustration. With micro-rewards, instant feedback and a Level-Up mechanic, students feel continuous progress instead of surrendering to early gaps.', proof: '28% improvement in average final-course pass grades' },
+      { tag: 'Genuine Plug & Play', icon: '/images/marketing/icons/acad-puzzle.svg', title: 'An innovative academic position', body: 'Leading innovation in academic teaching and embedding modern technology, differentiating the institution and attracting students who want learning fitted to the digital era.', proof: 'AI technology embedded' },
+      { tag: 'Pedagogical Intelligence', icon: '/images/marketing/icons/acad-chart-up.svg', title: 'Real-time behavioural analytics for faculty', body: 'An AI system monitors interaction patterns, identifies weak points for struggling students in advance, and alerts the lecturer before the student considers leaving the course.', proof: 'Success-prediction reports accurate to over 91%' },
+      { tag: 'Clear return on investment', icon: '/images/marketing/icons/acad-piggy.svg', title: 'Fewer support hours, a better reputation', body: 'Retaining students is worth hundreds of thousands in tuition. Less lecturer load answering repeat questions, fewer resit sittings, and a marked lift in institutional teaching feedback.', proof: 'Full payback within the first semester' },
     ],
 
     experienceTitle: 'The pedagogical experience',
     experienceIntro: 'A complete learning experience built with brain researchers, award-winning game designers and academic teaching experts.',
     experienceCards: [
       { icon: '/images/marketing/icons/acad-map.svg', tileBg: '#5A1B87', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Quest Engine', body: 'Turns a static syllabus into an interactive adventure map. The AI algorithm fits mission difficulty to each student’s own pace.' },
-      { icon: '/images/marketing/icons/acad-star-circle.svg', tileBg: '#059669', fg: '#FFFFFF', badge: 'AI', badgeBg: '#74F2B5', title: 'Medical Simulator', body: 'An interactive simulator for real-time medical decision-making, preparing students for the real world.' },
+      { icon: '/images/marketing/icons/acad-star-circle.svg', tileBg: '#059669', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Medical Simulator', body: 'An interactive simulator for real-time medical decision-making, preparing students for the real world.' },
       { icon: '/images/marketing/icons/acad-swords.svg', tileBg: '#DB2777', fg: '#FFFFFF', title: 'Peer Challenges', body: 'Weekly peer contests and faculty team challenges that drive collaboration and deep social learning.' },
-      { icon: '/images/marketing/icons/acad-shield.svg', tileBg: '#7E22CE', fg: '#FFFFFF', title: 'Faculty Command Center', body: 'An intuitive dashboard letting a lecturer launch a class challenge in one click, track comprehension live, and hand out boosts.' },
+      { icon: '/images/marketing/icons/acad-shield.svg', tileBg: '#4F46E5', fg: '#FFFFFF', title: 'Faculty Command Center', body: 'An intuitive dashboard letting a lecturer launch a class challenge in one click, track comprehension live, and hand out boosts.' },
     ],
 
     testimonials: [

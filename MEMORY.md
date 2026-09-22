@@ -611,7 +611,7 @@ Five public pages sharing `MarketingLayout` (sticky `Nav`, routed `<Outlet/>`, `
 
 | route | page |
 |---|---|
-| `/` | `HomePage` — hero, Venn, three sector bands, logos, testimonials, FAQ |
+| `/` | `HomePage` - hero, sector chooser (`HomePage/SectorPicker.tsx`), logos, contact, testimonials, FAQ |
 | `/business` | `BusinessPage` |
 | `/academy` | `AcademyPage` — photo-tone hero, value + experience card rows |
 | `/tourism` | `TourismPage` — stat strip, case study with per-stage video tabs |
@@ -638,6 +638,15 @@ Publicity tab; of that router only `POST /leads` is used by the new site (`Conta
   business card and a speech bubble were all tried and dropped in its favour) in a fixed 50px
   slot, so the three sector names get the freed width; the label stays in the DOM visually
   hidden, which is the link's accessible name.
+- **Sector chooser** (`HomePage/SectorPicker.tsx`): three photo tiles under "באיזה מגזר תרצו
+  לשמוע פירוט על הפתרונות?", each a plain `Link` into `/business`, `/tourism`, `/academy` (the
+  nav's order). Deliberately a teaser, not a rundown - the brief was that a home page carrying
+  each sector's full story gave visitors no reason to click through. It replaced the original
+  Engage/Grow/Share Venn and the three stacked `FeatureSplit` sector bands, which were removed
+  (`FeatureSplit` is now unused except for its exported `ArrowGlyph`). Hover widens the tile
+  (`flex` 1.7, only under `(hover: hover) and (min-width: 701px)`) and dims its siblings via a
+  rule on the row; phones stack the tiles full width. Labels come from `Nav.i18n`; the heading
+  and taglines from `SectorPicker.i18n`.
 
 **RTL is the default, and the main hazard here.** The first flex child lands *rightmost*;
 `inset-inline-start` measures from the right; SVG paths and CSS gradients carry no logical

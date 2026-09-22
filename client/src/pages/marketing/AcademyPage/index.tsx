@@ -18,6 +18,42 @@ import { CONTACT_ANCHOR } from '../shared/routes';
  */
 const ACADEMY_COLUMN = 1264;
 
+/**
+ * Each value card has one colour, used for its icon, tile, tag (the small line
+ * above the title) and proof line; the title is the same on every card. The comp
+ * mixed colours within a card - a green tag over a purple icon - which read as
+ * noise. By position (colour is not copy, so it lives here, not in the i18n).
+ * Under RTL the 2x2 grid fills top-right, top-left, bottom-right, bottom-left,
+ * so this order puts the two violets on a diagonal.
+ */
+const VALUE_ICONS = [
+  { fg: '#5A1B87', bg: '#F3E8FF' },
+  { fg: '#DB2777', bg: '#FCE7F3' },
+  { fg: '#047857', bg: '#D1FAE5' },
+  { fg: '#4F46E5', bg: '#E0E7FF' },
+];
+
+/**
+ * The icon drawn as a mask and filled with the card's colour, so one value
+ * drives both glyph and tile - the SVG files' own stroke colour is ignored.
+ */
+const MaskIcon = styled('span', { shouldForwardProp: (p) => p !== 'src' && p !== 'fg' })<{ src: string; fg: string }>(
+  ({ src, fg }) => ({
+    display: 'block',
+    width: 24,
+    height: 24,
+    backgroundColor: fg,
+    WebkitMaskImage: `url("${src}")`,
+    maskImage: `url("${src}")`,
+    WebkitMaskRepeat: 'no-repeat',
+    maskRepeat: 'no-repeat',
+    WebkitMaskSize: 'contain',
+    maskSize: 'contain',
+    WebkitMaskPosition: 'center',
+    maskPosition: 'center',
+  }),
+);
+
 /** Icon sits at the card's inline start - the top right under RTL, as the comps have it. */
 const CardHead = styled('div')({ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 });
 
@@ -42,7 +78,7 @@ const Proof = styled('div')<{ color: string }>(({ color }) => ({
   '& svg': { flexShrink: 0 },
 }));
 
-/** Ringed tick in `currentColor`, so it takes the card's tag colour from `Proof`. */
+/** Ringed tick in `currentColor`, so it takes the card's colour from `Proof`. */
 function CheckIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -92,7 +128,8 @@ export default function AcademyPage() {
 
       <Band bg={C.paperSoft}>
         <Container max={ACADEMY_COLUMN}>
-          <H2>{t.valueTitle}</H2>
+          {/* Two lines on desktop; balanced so the second is not a one-word stub. */}
+          <H2 style={{ textWrap: 'balance' }}>{t.valueTitle}</H2>
           <SectionIntro>{t.valueIntro}</SectionIntro>
           {/* 2x2 in the comp: cards 147..745 and 767..1365, so 598 wide on a 22 gap. */}
           <CardGrid min={560} gap={22}>
@@ -100,14 +137,14 @@ export default function AcademyPage() {
               <Reveal key={c.title} delay={i * 90}>
                 <Card>
                   <CardHead>
-                    <IconTile bg={c.tileBg}>
-                      <img src={c.icon} alt="" width={24} height={24} style={{ display: 'block' }} />
+                    <IconTile bg={VALUE_ICONS[i % VALUE_ICONS.length].bg}>
+                      <MaskIcon src={c.icon} fg={VALUE_ICONS[i % VALUE_ICONS.length].fg} aria-hidden />
                     </IconTile>
                   </CardHead>
-                  <Tag color={c.tagColor}>{c.tag}</Tag>
+                  <Tag color={VALUE_ICONS[i % VALUE_ICONS.length].fg}>{c.tag}</Tag>
                   <H3>{c.title}</H3>
                   <Body>{c.body}</Body>
-                  <Proof color={c.tagColor}>
+                  <Proof color={VALUE_ICONS[i % VALUE_ICONS.length].fg}>
                     <CheckIcon />
                     {c.proof}
                   </Proof>
