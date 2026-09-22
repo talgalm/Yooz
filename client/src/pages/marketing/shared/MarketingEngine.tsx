@@ -1,4 +1,5 @@
-import { styled } from '@mui/material/styles';
+import { useRef, useState } from 'react';
+import { styled, keyframes } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './MarketingEngine.i18n';
 import { C, SHADOW, BP, REDUCED_MOTION } from './tokens';
@@ -10,6 +11,12 @@ interface MarketingEngineProps {
   /** Looping clip shown in the device frame. Falls back to a still. */
   videoUrl?: string;
   posterUrl?: string;
+  /**
+   * The Yooz Auto Clip keepsake video, shown in a phone beside the Auto Clip
+   * disc. Portrait, plays with sound on a tap. Omit to show the discs alone.
+   */
+  clipUrl?: string;
+  clipPosterUrl?: string;
   /**
    * Colour of the section above, filling the chevron strip either side of the
    * peak. Both call sites - Business and Tourism - put this after a `C.paper`
@@ -59,6 +66,152 @@ const Frame = styled('div')({
 
 const Media = styled('video')({ width: '100%', height: '100%', objectFit: 'cover', display: 'block' });
 const Still = styled('img')({ width: '100%', height: '100%', objectFit: 'cover', display: 'block' });
+
+// ─── Keepsake phone ───
+
+/**
+ * A phone, tilted toward the Auto Clip disc it sits beside. Tilt mirrors with
+ * direction so it always leans in: the phone is right of the disc under RTL,
+ * left of it under LTR.
+ */
+const Phone = styled('figure')({
+  position: 'relative',
+  width: 200,
+  margin: 0,
+  padding: 9,
+  borderRadius: 38,
+  background: '#1B0E24',
+  boxShadow: `0 0 0 3px ${C.purple}, ${SHADOW.float}`,
+  transform: 'rotate(-3deg)',
+  transition: 'transform 0.3s ease',
+  '[dir="ltr"] &': { transform: 'rotate(3deg)' },
+  '&:hover': { transform: 'rotate(0deg) translateY(-6px)' },
+  [BP.tablet]: { width: 180 },
+  [BP.mobile]: { width: 'min(190px, 50vw)', padding: 7, borderRadius: 32 },
+  [REDUCED_MOTION]: { transition: 'none', transform: 'none', '[dir="ltr"] &': { transform: 'none' }, '&:hover': { transform: 'none' } },
+});
+
+/** The camera pill at the top of the screen. */
+const Notch = styled('span')({
+  position: 'absolute',
+  top: 17,
+  left: '50%',
+  transform: 'translateX(-50%)',
+  width: 64,
+  height: 17,
+  borderRadius: 999,
+  background: '#1B0E24',
+  zIndex: 2,
+});
+
+const Screen = styled('div')({
+  position: 'relative',
+  borderRadius: 31,
+  overflow: 'hidden',
+  aspectRatio: '9 / 16',
+  background: C.heading,
+});
+
+const ClipVideo = styled('video')({
+  position: 'absolute',
+  inset: 0,
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+  display: 'block',
+});
+
+/** Same yellow as the booster discs, so the phone reads as the Auto Clip one. */
+const ClipBadge = styled('figcaption')({
+  position: 'absolute',
+  top: -15,
+  left: '50%',
+  transform: 'translateX(-50%)',
+  zIndex: 3,
+  whiteSpace: 'nowrap',
+  background: '#FFBF4D',
+  color: C.heading,
+  fontSize: 14,
+  fontWeight: 800,
+  padding: '7px 16px',
+  borderRadius: 999,
+  boxShadow: SHADOW.card,
+  pointerEvents: 'none',
+});
+
+const pulse = keyframes`
+  0%   { box-shadow: 0 0 0 0 rgba(255,191,77,0.75); }
+  70%  { box-shadow: 0 0 0 18px rgba(255,191,77,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,191,77,0); }
+`;
+
+const PlayButton = styled('button')({
+  position: 'absolute',
+  left: '50%',
+  top: '50%',
+  transform: 'translate(-50%, -50%)',
+  zIndex: 2,
+  width: 68,
+  height: 68,
+  padding: 0,
+  border: 'none',
+  borderRadius: '50%',
+  cursor: 'pointer',
+  background: 'rgba(255,255,255,0.94)',
+  color: C.purple,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  animation: `${pulse} 2.2s ease-out infinite`,
+  transition: 'transform 0.16s ease',
+  '&:hover': { transform: 'translate(-50%, -50%) scale(1.08)' },
+  '&:focus-visible': { outline: `3px solid ${C.amber}`, outlineOffset: 4 },
+  [REDUCED_MOTION]: { animation: 'none', transition: 'none', '&:hover': { transform: 'translate(-50%, -50%)' } },
+});
+
+/**
+ * Tap to play, with sound - the point of the clip is what a participant hears
+ * and sees. Controls appear once it is running; the button returns when it stops.
+ */
+function KeepsakePhone({ src, poster, label, alt, playLabel }: {
+  src: string;
+  poster?: string;
+  label: string;
+  alt: string;
+  playLabel: string;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+
+  return (
+    <Phone>
+      <ClipBadge>{label}</ClipBadge>
+      <Notch aria-hidden />
+      <Screen>
+        <ClipVideo
+          ref={videoRef}
+          src={src}
+          poster={poster}
+          playsInline
+          preload="none"
+          controls={playing}
+          aria-label={alt}
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => setPlaying(false)}
+        />
+        {!playing && (
+          <PlayButton type="button" onClick={() => videoRef.current?.play()} aria-label={playLabel}>
+            {/* Points right in both directions - a transport control, not a reading cue. */}
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden focusable="false">
+              <path d="M8 5.2 19 12 8 18.8z" />
+            </svg>
+          </PlayButton>
+        )}
+      </Screen>
+    </Phone>
+  );
+}
 
 /**
  * The cream ground the engine sits on: a flat-topped hexagon
@@ -125,6 +278,28 @@ const Slot = styled(Reveal, { shouldForwardProp: (p) => p !== 'area' })<{ area: 
   [BP.mobile]: { gridArea: 'auto' },
 }));
 
+/**
+ * The Auto Clip disc hugs the top of its row. The phone beside it is taller, and
+ * centring would push the disc down away from the other two.
+ */
+const ClipSlot = styled(Slot)({ alignSelf: 'start' });
+
+/**
+ * The phone's cell: under Stay, beside the Auto Clip disc. Grid columns follow
+ * `direction`, so column 1 is the right under RTL; `end` then pushes it toward
+ * the centre column, and the negative end margin pulls it in closer to the disc.
+ * The top padding clears the badge from the Stay disc above. On a phone the grid
+ * is one column and this simply follows the disc.
+ */
+const PhoneSlot = styled(Reveal)({
+  gridArea: '2 / 1 / 3 / 2',
+  justifySelf: 'end',
+  alignSelf: 'start',
+  paddingTop: 18,
+  marginInlineEnd: -48,
+  [BP.mobile]: { gridArea: 'auto', justifySelf: 'center', marginInlineEnd: 0, paddingTop: 14 },
+});
+
 const Booster = styled('div')({
   /**
    * The frame's ellipse is 192x163, but its text frame is 215 wide - i.e. the
@@ -172,7 +347,7 @@ const BoosterDesc = styled('div')({
   [BP.mobile]: { fontSize: 13.5 },
 });
 
-export default function MarketingEngine({ videoUrl, posterUrl, shapeFrom = C.paper }: MarketingEngineProps) {
+export default function MarketingEngine({ videoUrl, posterUrl, clipUrl, clipPosterUrl, shapeFrom = C.paper }: MarketingEngineProps) {
   const t = useTranslations(texts);
 
   return (
@@ -221,12 +396,25 @@ export default function MarketingEngine({ videoUrl, posterUrl, shapeFrom = C.pap
             </Booster>
           </Slot>
 
-          <Slot area="2 / 2 / 3 / 3" delay={120}>
+          <ClipSlot area="2 / 2 / 3 / 3" delay={120}>
             <Booster>
               <BoosterTitle>{t.share}</BoosterTitle>
               <BoosterDesc>{t.shareDesc}</BoosterDesc>
             </Booster>
-          </Slot>
+          </ClipSlot>
+
+          {/* What the Auto Clip disc describes, playable, right beside it. */}
+          {clipUrl && (
+            <PhoneSlot delay={180}>
+              <KeepsakePhone
+                src={clipUrl}
+                poster={clipPosterUrl}
+                label={t.share}
+                alt={t.clipAlt}
+                playLabel={t.clipPlay}
+              />
+            </PhoneSlot>
+          )}
         </Stage>
       </Ground>
       </Band>

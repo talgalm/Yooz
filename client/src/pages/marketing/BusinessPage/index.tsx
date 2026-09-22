@@ -4,13 +4,11 @@ import Hero from '../shared/Hero';
 import MarketingEngine from '../shared/MarketingEngine';
 import IconCardRow from '../shared/IconCardRow';
 import CustomerLogos from '../shared/CustomerLogos';
-import Testimonials from '../shared/Testimonials';
 import ContactForm from '../shared/ContactForm';
 import Faq from '../shared/Faq';
 import Reveal from '../shared/Reveal';
 import { Band, Container, H2, H3, Body, Card, CardGrid, IconDisc, SectionIntro } from '../shared/styled';
 import { C } from '../shared/tokens';
-import { CONTACT_ANCHOR } from '../shared/routes';
 
 export default function BusinessPage() {
   const t = useTranslations(texts);
@@ -21,10 +19,6 @@ export default function BusinessPage() {
         titleTop={t.heroTitleTop}
         titleBottom={t.heroTitleBottom}
         bullets={t.heroBullets}
-        primaryCta={t.heroCta}
-        primaryHref={CONTACT_ANCHOR}
-        secondaryCta={t.heroSecondary}
-        secondaryHref={CONTACT_ANCHOR}
         mediaUrl="/images/marketing/hero-business.png"
         mediaAlt={t.heroMediaAlt}
       />
@@ -59,12 +53,13 @@ export default function BusinessPage() {
 
       <MarketingEngine
         videoUrl="/images/marketing/engine-park.mp4"
+        clipUrl="/images/marketing/case-step-3.mp4"
+        clipPosterUrl="/images/marketing/keepsake-poster.jpg"
       />
 
       <CustomerLogos title={t.customersTitle} items={t.customers} bg={C.bandPink} />
 
-      <ContactForm tone="purple" />
-      <Testimonials items={t.testimonials} />
+      <ContactForm tone="purple" roomBelow />
       <Faq title={t.faqTitle} items={t.faq} bg="#FDFAEF" />
     </>
   );

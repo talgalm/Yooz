@@ -15,13 +15,13 @@ export const texts = {
 
     customersTitle: 'לקוחות מרוצים',
     customers: [
-      { name: 'תל קאקון', caption: 'תעלומת האוצר הממלכתי', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
+      { name: 'תל קאקון', caption: 'תעלומת האוצר הממלוכי', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
       { name: 'מכללת כנרת', caption: 'הנחיית קורסים תואר ראשון ושני', logoUrl: '/images/marketing/logo-kinneret.png' },
-      { name: 'גני יהושוע', caption: 'פארקוד - פעילות קבועה לקבוצות', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
-      { name: 'שדה אליהו', caption: 'פעילות מרכז מבקרים', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
+      { name: 'גני יהושוע', caption: 'פעילות למשפחות (פתוחה כל השנה)', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
+      { name: 'שדה אליהו', caption: 'פעילות במרכז המבקרים', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
       { name: 'מכללת פרס', caption: 'הנחיית קורסים תואר ראשון ושני', logoUrl: '/images/marketing/logo-peres.png' },
       { name: 'האקדמית', caption: 'סימולטור לקבלת החלטות רפואיות', logoUrl: '/images/marketing/logo-academic-tlv.png' },
-      { name: 'קופ״ח כללית', caption: 'פעילות גיבוש עובדים בפריסה רחבה', logoUrl: '/images/marketing/logo-clalit.svg' },
+      { name: 'קופ״ח כללית', caption: 'פעילות גיבוש של מאות עובדים ב-40 סניפים', logoUrl: '/images/marketing/logo-clalit.svg' },
     ],
 
     testimonials: [
@@ -72,13 +72,13 @@ export const texts = {
 
     customersTitle: 'Happy customers',
     customers: [
-      { name: 'Tel Qaqun', caption: 'The royal treasure mystery', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
+      { name: 'Tel Qaqun', caption: 'The Mamluk treasure mystery', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
       { name: 'Kinneret College', caption: 'Bachelor and master course delivery', logoUrl: '/images/marketing/logo-kinneret.png' },
-      { name: 'Ganei Yehoshua', caption: 'ParKod - a standing group activity', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
-      { name: 'Sde Eliyahu', caption: 'Visitor centre activity', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
+      { name: 'Ganei Yehoshua', caption: 'A family activity, open all year round', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
+      { name: 'Sde Eliyahu', caption: 'An activity at the visitor centre', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
       { name: 'Peres College', caption: 'Bachelor and master course delivery', logoUrl: '/images/marketing/logo-peres.png' },
       { name: 'Academic TLV', caption: 'Medical decision-making simulator', logoUrl: '/images/marketing/logo-academic-tlv.png' },
-      { name: 'Clalit Health', caption: 'Employee engagement activity at scale', logoUrl: '/images/marketing/logo-clalit.svg' },
+      { name: 'Clalit Health', caption: 'Team-building for hundreds of employees across 40 branches', logoUrl: '/images/marketing/logo-clalit.svg' },
     ],
 
     testimonials: [

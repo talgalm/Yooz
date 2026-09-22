@@ -66,7 +66,7 @@ const LogoImg = styled('img')({ maxHeight: 'var(--logo-h, 76px)', maxWidth: '100
 /** Measured: name ink 22px, caption two lines 32px apart at ~20px type. */
 const Name = styled('div')({ fontSize: 'var(--logo-name, 22px)', fontWeight: 800, color: C.heading });
 
-const Caption = styled('div')({ fontSize: 19.5, lineHeight: 1.55, color: C.ink, maxWidth: 250 });
+const Caption = styled('div')({ fontSize: 19.5, lineHeight: 1.55, color: C.ink, maxWidth: 250, textWrap: 'balance' });
 
 // ─── Marquee ───
 

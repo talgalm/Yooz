@@ -11,8 +11,6 @@ export const texts = {
     heroTitleThird: 'שמשאירה חותם',
     heroLead:
       'פתרונות גיימיפיקציה מתקדמים לאתרי תיירות, פארקים, מוזיאונים ומסלולי בטבע לשיפור החוויה והמעורבות.',
-    heroCta: 'הזמנת דמו',
-    heroSecondary: 'המודל העסקי',
     heroMediaAlt: 'מטיילים מצלמים סלפי בעיר העתיקה',
     stats: [
       { value: '1.5x', label: 'זמן שהייה ממוצע באתר' },
@@ -89,10 +87,10 @@ export const texts = {
 
     customersTitle: 'לקוחות מרוצים',
     customers: [
-      { name: 'שדה אליהו', caption: 'פעילות מרכז מבקרים', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
-      { name: 'גני יהושוע', caption: 'פארקוד - פעילות קבועה לקבוצות', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
-      { name: 'תל קאקון', caption: 'תעלומת האוצר הממלכתי', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
-      { name: 'קופ״ח כללית', caption: 'פעילות גיבוש עובדים בפריסה רחבה', logoUrl: '/images/marketing/logo-clalit.svg' },
+      { name: 'שדה אליהו', caption: 'פעילות במרכז המבקרים', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
+      { name: 'גני יהושוע', caption: 'פעילות למשפחות (פתוחה כל השנה)', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
+      { name: 'תל קאקון', caption: 'תעלומת האוצר הממלוכי', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
+      { name: 'קופ״ח כללית', caption: 'פעילות גיבוש של מאות עובדים ב-40 סניפים', logoUrl: '/images/marketing/logo-clalit.svg' },
     ],
 
     /** The same pair appears on all four frames - not page-specific. */
@@ -128,8 +126,6 @@ export const texts = {
     heroTitleThird: 'that leaves a mark',
     heroLead:
       'Advanced gamification for tourist sites, parks, museums and nature trails, to lift both the experience and involvement.',
-    heroCta: 'Book a demo',
-    heroSecondary: 'The business model',
     heroMediaAlt: 'Travellers taking a selfie in the old city',
     stats: [
       { value: '1.5x', label: 'Average dwell time on site' },
@@ -201,10 +197,10 @@ export const texts = {
 
     customersTitle: 'Happy customers',
     customers: [
-      { name: 'Sde Eliyahu', caption: 'Visitor centre activity', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
-      { name: 'Ganei Yehoshua', caption: 'ParKod - a standing group activity', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
-      { name: 'Tel Qaqun', caption: 'The royal treasure mystery', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
-      { name: 'Clalit Health', caption: 'Employee engagement activity at scale', logoUrl: '/images/marketing/logo-clalit.svg' },
+      { name: 'Sde Eliyahu', caption: 'An activity at the visitor centre', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
+      { name: 'Ganei Yehoshua', caption: 'A family activity, open all year round', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
+      { name: 'Tel Qaqun', caption: 'The Mamluk treasure mystery', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
+      { name: 'Clalit Health', caption: 'Team-building for hundreds of employees across 40 branches', logoUrl: '/images/marketing/logo-clalit.svg' },
     ],
 
     testimonials: [

@@ -21,6 +21,11 @@ interface ContactFormProps {
    * band cut the shadow off in a hard line; this leaves room for it to fade.
    */
   closing?: boolean;
+  /**
+   * A tinted band follows the form directly (Business's FAQ). Keeps the top padding
+   * and gives the shadow the same room to fade as `closing`.
+   */
+  roomBelow?: boolean;
 }
 
 const TONES: Record<ContactTone, {
@@ -37,11 +42,13 @@ const TONES: Record<ContactTone, {
   purple: { bg: C.purple, title: C.white, accent: C.amber, blurb: 'rgba(255,255,255,0.85)', panel: true, submitBg: '#F5E6FA', submitFg: C.heading },
 };
 
-const Wrap = styled('div', { shouldForwardProp: (p) => p !== 'closing' })<{ closing?: boolean }>(({ closing }) => ({
+const Wrap = styled('div', {
+  shouldForwardProp: (p) => p !== 'closing' && p !== 'roomBelow',
+})<{ closing?: boolean; roomBelow?: boolean }>(({ closing, roomBelow }) => ({
   position: 'relative',
   /** Closing: no top padding - the section above already supplies the gap. */
-  paddingBlock: closing ? '0 112px' : 40,
-  [BP.mobile]: { paddingBlock: closing ? '0 64px' : 26 },
+  paddingBlock: `${closing ? 0 : 40}px ${closing || roomBelow ? 112 : 40}px`,
+  [BP.mobile]: { paddingBlock: `${closing ? 0 : 26}px ${closing || roomBelow ? 64 : 26}px` },
 }));
 
 const CardBox = styled('div')<{ bg: string }>(({ bg }) => ({
@@ -159,7 +166,7 @@ const Note = styled('div')<{ error?: boolean; onDark: boolean }>(({ error, onDar
 
 const EMPTY = { name: '', email: '', phone: '', company: '', message: '' };
 
-export default function ContactForm({ tone = 'cream', closing }: ContactFormProps) {
+export default function ContactForm({ tone = 'cream', closing, roomBelow }: ContactFormProps) {
   const t = useTranslations(texts);
   const p = TONES[tone];
   const [form, setForm] = useState(EMPTY);
@@ -189,7 +196,7 @@ export default function ContactForm({ tone = 'cream', closing }: ContactFormProp
   };
 
   return (
-    <Wrap id="contact" closing={closing}>
+    <Wrap id="contact" closing={closing} roomBelow={roomBelow}>
       <Container>
         <CardBox bg={p.bg}>
           <TitleTop color={p.title}>{t.titleTop}</TitleTop>

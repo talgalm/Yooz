@@ -10,7 +10,6 @@ export const texts = {
     heroTitleBottom: 'למסע למידה סוחף',
     heroLead:
       'למידה חווייתית | מעורבות ושביעות רצון | אפקטיביות פדגוגית | תובנות מבוססות נתונים | מיצוב אקדמי חדשני',
-    heroCta: 'הזמנת דמו',
     heroMediaAlt: 'סטודנטים בכיתה אקדמית',
 
     // \u00A0 is a no-break space: it keeps 'ב' on the same line as Yooz.
@@ -101,8 +100,8 @@ export const texts = {
     faqTitle: 'שאלות נפוצות',
     faq: [
       { q: 'האם המערכת מתאימה לכל תחום דעת?', a: 'כן. המערכת אגנוסטית לתוכן - מדעי הבריאות, הנדסה, מדעי החברה ומשפטים כולם נבנים מאותם אבני בניין של תחנות ומשימות.' },
-      { q: 'כמה זמן ומאמץ נדרשים מהסגל כדי להטמיע את המערכת?', a: 'הקמת קורס ראשון נעשית בליווי צמוד שלנו ואורכת מספר שעות. לאחר מכן מרצה מנוסה מרכיב מסע חדש באופן עצמאי.' },
-      { q: 'האם הפורמט המשחקי לא ״מוריד״ את הרמה האקדמית?', a: 'התוכן והדרישות נשארים ברמה האקדמית שהמרצה קובע. המשחוק משנה את אופן ההגשה והתרגול, לא את הסטנדרט.' },
+      { q: 'כמה זמן ומאמץ נדרשים מהסגל כדי להטמיע את המערכת?', a: 'הקמת הפעילות נעשית בליווי צמוד של צוות Yooz, שמאבחן יחד עם המרצה, מומחה התוכן, את צורכי ההדרכה ומתאים להם את פתרונות המשחוק והטכנולוגיה הרלוונטיים.' },
+      { q: 'האם הפורמט המשחקי לא ״מוריד״ את הרמה האקדמית?', a: 'התוכן והדרישות נשארים ברמה האקדמית. מה שמשתנה הוא אופן ההנגשה של התוכן לסטודנטים: יצירת אתגרים, פיתוח מנגנוני הנעה ומשוב, ויצירת מעורבות וחיבור לתכנים ולפעילות. כל זאת תוך שמירה על היכולת להעריך את הידע של הסטודנטים ולבדוק מיומנויות וכישורים מוגדרים.' },
       { q: 'איזה מידע המרצה מקבל על ביצועי הסטודנטים?', a: 'התקדמות ברמת הסטודנט והכיתה, זמני מענה, שאלות עם אחוזי כישלון גבוהים וסימון סטודנטים בסיכון נשירה.' },
     ],
   },
@@ -112,7 +111,6 @@ export const texts = {
     heroTitleBottom: 'into an immersive journey',
     heroLead:
       'Experiential learning | Involvement and satisfaction | Pedagogical effectiveness | Data-driven insight | An innovative academic position',
-    heroCta: 'Book a demo',
     heroMediaAlt: 'Students in an academic lecture hall',
 
     valueTitle: 'The added value for your academic institution of developing a course and using Yooz',
@@ -162,8 +160,8 @@ export const texts = {
     faqTitle: 'Frequently asked questions',
     faq: [
       { q: 'Does it suit every field of study?', a: 'Yes. The system is content-agnostic - health sciences, engineering, social sciences and law are all built from the same stations and missions.' },
-      { q: 'How much time and effort does adoption take from faculty?', a: 'The first course is built with close support from us and takes a few hours. After that an experienced lecturer assembles a new journey alone.' },
-      { q: 'Does a game format lower the academic level?', a: 'Content and requirements stay at the level the lecturer sets. Gamification changes delivery and practice, not the standard.' },
+      { q: 'How much time and effort does adoption take from faculty?', a: 'Each activity is set up with close support from the Yooz team, who work with the lecturer, as the content expert, to diagnose the training needs and fit the relevant gamification and technology solutions to them.' },
+      { q: 'Does a game format lower the academic level?', a: 'Content and requirements stay at the academic level. What changes is how the content reaches students: challenges, motivation and feedback mechanisms, and real engagement with the material and the activity. All while keeping the ability to assess what students know and to test defined skills and competencies.' },
       { q: 'What data does the lecturer get on student performance?', a: 'Progress at student and class level, response times, questions with high failure rates, and flags on students at risk of dropping out.' },
     ],
   },

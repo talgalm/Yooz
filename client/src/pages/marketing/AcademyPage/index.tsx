@@ -9,7 +9,6 @@ import Faq from '../shared/Faq';
 import Reveal from '../shared/Reveal';
 import { Band, Container, H2, H3, Body, Card, CardGrid, IconTile, SectionIntro } from '../shared/styled';
 import { C, BP } from '../shared/tokens';
-import { CONTACT_ANCHOR } from '../shared/routes';
 
 /**
  * The Academy frame lays its content out on a 1216 column (both card rows run
@@ -120,8 +119,6 @@ export default function AcademyPage() {
         titleTop={t.heroTitleTop}
         titleBottom={t.heroTitleBottom}
         lead={t.heroLead}
-        primaryCta={t.heroCta}
-        primaryHref={CONTACT_ANCHOR}
         mediaUrl="/images/marketing/hero-academy.jpg"
         mediaAlt={t.heroMediaAlt}
       />

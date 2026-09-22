@@ -35,9 +35,10 @@ export default function HomePage() {
 
       <CustomerLogos title={t.customersTitle} items={t.customers} bg={C.bandPink} marquee />
 
-      <ContactForm tone="cream" />
-      <Testimonials items={t.testimonials} wash />
+      {/* Questions first, the form last - `closing` gives its shadow room above the footer. */}
       <Faq title={t.faqTitle} items={t.faq} />
+      <Testimonials items={t.testimonials} wash />
+      <ContactForm tone="cream" closing />
     </>
   );
 }
