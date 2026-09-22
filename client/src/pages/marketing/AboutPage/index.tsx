@@ -3,7 +3,7 @@ import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AboutPage.i18n';
 import Reveal from '../shared/Reveal';
 import SoftBlob from '../shared/SoftBlob';
-import { Band, Container } from '../shared/styled';
+import { Band, Container, GradientText } from '../shared/styled';
 import { C, SHADOW, RADIUS, BP } from '../shared/tokens';
 
 const Root = styled(Band)({
@@ -39,28 +39,16 @@ const Split = styled('div')({
 const Copy = styled('div')({ textAlign: 'start', maxWidth: 680 });
 
 /**
- * Magenta and ranged left with the text, not the site's centred section
- * heading - this page reads as one letter rather than a stack of sections.
+ * The site's heading colour, ranged left with the text rather than centred -
+ * this page reads as one letter rather than a stack of sections.
  */
 const Title = styled('h2')({
   position: 'relative',
   fontSize: 'clamp(24px, 2.6vw, 34px)',
   fontWeight: 900,
   lineHeight: 1.2,
-  color: C.magenta,
+  color: C.heading,
   margin: '0 0 16px',
-  paddingBottom: 12,
-  /** Short rule under the heading, on the side the text starts from. */
-  '&::after': {
-    content: '""',
-    position: 'absolute',
-    insetInlineStart: 0,
-    bottom: 0,
-    width: 54,
-    height: 4,
-    borderRadius: 999,
-    background: `linear-gradient(90deg, ${C.magenta}, ${C.purple})`,
-  },
   '&:not(:first-of-type)': { marginTop: 52 },
 });
 
@@ -90,23 +78,25 @@ const PhotoSide = styled('figure')({
   width: 'min(340px, 100%)',
   margin: 0,
   marginInline: 'auto',
-  /** Leaves the card room below the photo; it only clips the bottom corner. */
-  paddingBottom: 118,
+  /** Room for the card, which sits under the photo and laps onto its foot. */
+  paddingBottom: 132,
   '@media (min-width: 901px)': { position: 'sticky', top: 104 },
   [BP.mobile]: { paddingBottom: 132 },
 });
 
-/** Sits behind the photo and peeks out along its far edge and foot. */
+/**
+ * The same rectangle as the photo, offset behind it - a matched shape reads as
+ * intentional, where the old mismatched panel read as a stray box.
+ */
 const Frame = styled('span')({
   position: 'absolute',
-  insetInlineEnd: -18,
-  top: 22,
+  insetInlineEnd: -16,
+  top: 16,
   width: '100%',
-  height: 'calc(100% - 114px)',
+  /** Ends with the photo, not with the column: the card below it is separate. */
+  height: 'calc(100% - 132px)',
   borderRadius: RADIUS.cardLarge,
-  border: `2px solid ${C.vennEngageEdge}`,
-  background: C.shell,
-  opacity: 0.55,
+  background: `linear-gradient(150deg, ${C.shell}, ${C.blobPurple})`,
   zIndex: 0,
 });
 
@@ -121,31 +111,41 @@ const Portrait = styled('img')({
   boxShadow: SHADOW.float,
 });
 
-/** Overhangs the portrait's far corner so the two shapes interlock. */
+/**
+ * Centred under the portrait and lapping onto its foot, so the two shapes read
+ * as one object rather than a card dropped on a corner.
+ */
 const NameCard = styled('figcaption')({
   position: 'absolute',
-  insetInlineEnd: -30,
+  insetInline: 0,
   bottom: 0,
   zIndex: 2,
-  width: 'max-content',
-  maxWidth: 'min(320px, 100%)',
+  width: '92%',
+  marginInline: 'auto',
   background: C.white,
-  borderRadius: 16,
+  borderRadius: RADIUS.card,
   boxShadow: SHADOW.quote,
-  padding: '16px 20px',
-  textAlign: 'start',
-  /** Accent edge on the side the text starts from, in the site's magenta. */
-  borderInlineStartWidth: 4,
-  borderInlineStartStyle: 'solid',
-  borderInlineStartColor: C.magenta,
-  [BP.mobile]: { insetInline: 0, width: 'auto', maxWidth: 'none' },
+  padding: '15px 18px 16px',
+  textAlign: 'center',
+  [BP.mobile]: { width: '94%' },
 });
 
 const Name = styled('div')({
-  fontSize: 18,
+  fontSize: 19,
   fontWeight: 900,
-  color: C.purple,
-  marginBottom: 6,
+  marginBottom: 8,
+});
+
+/** Hairline between the name and what he does, the width of the name itself. */
+const Rule = styled('span')({
+  display: 'block',
+  width: 34,
+  height: 3,
+  borderRadius: 999,
+  marginInline: 'auto',
+  marginBottom: 10,
+  background: C.magenta,
+  opacity: 0.35,
 });
 
 const Role = styled('div')({
@@ -202,7 +202,10 @@ export default function AboutPage() {
               <Frame aria-hidden />
               <Portrait src="/images/marketing/about-eran.png" alt={t.founderPhotoAlt} />
               <NameCard>
-                <Name>{t.founderName}</Name>
+                <Name>
+                  <GradientText>{t.founderName}</GradientText>
+                </Name>
+                <Rule aria-hidden />
                 {t.founderRoles.map((role) => (
                   <Role key={role}>{role}</Role>
                 ))}

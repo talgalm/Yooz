@@ -615,7 +615,7 @@ Five public pages sharing `MarketingLayout` (sticky `Nav`, routed `<Outlet/>`, `
 | `/business` | `BusinessPage` |
 | `/academy` | `AcademyPage` — photo-tone hero, value + experience card rows |
 | `/tourism` | `TourismPage` — stat strip, case study with per-stage video tabs |
-| `/about` | `AboutPage` - two bands: the founder's story in a white card with his portrait panel (Tourism case-card shape) and a signature block, then the team as tag pills plus a closing pill. The old hero, how-it-works, boosters, toolbox, audiences, logos and contact form were cut on request, i18n keys included |
+| `/about` | `AboutPage` - the founder's story and the team beside his portrait (`about-eran.png`) with a name card. The old hero, how-it-works, boosters, toolbox, audiences, logos and contact form were cut on request, i18n keys included. The design still needs a reference to work from - several attempts have been rejected |
 
 **Hardcoded, not CMS-driven.** Copy lives in sibling `.i18n.ts` files, *not* `SiteContent`. The
 `/api/site-content` content endpoints still back the older `PublicityPage` shape and the admin
