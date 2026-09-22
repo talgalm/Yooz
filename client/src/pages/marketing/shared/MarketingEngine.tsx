@@ -3,7 +3,7 @@ import { styled, keyframes } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './MarketingEngine.i18n';
 import { C, SHADOW, BP, REDUCED_MOTION } from './tokens';
-import { Container, H2, floatY } from './styled';
+import { Container, H2 } from './styled';
 import SectionShape from './SectionShape';
 import Reveal from './Reveal';
 import useStopWhenUnseen from './useStopWhenUnseen';
@@ -271,16 +271,13 @@ const Stage = styled('div')({
  * the viewBox edge.
  */
 /**
- * The ribbon draws itself around the loop, holds, then flows away from the same
- * end, which lands back on empty - so the cycle repeats without a jump.
- * `pathLength="1"` makes one lap exactly one unit, and `stroke-dasharray="1 1"`
- * (one lap drawn, one lap of gap) is what the offset slides through.
+ * One lap of the dash pattern. `pathLength="1"` makes a lap one unit, so a dash
+ * plus its gap is one unit too and the offset slides through exactly one of
+ * them per cycle - the ribbon keeps flowing rather than reopening at a fixed
+ * point, and the linear timing is what keeps the travel even.
  */
-const draw = keyframes`
-  0%   { stroke-dashoffset: 1; }
-  45%  { stroke-dashoffset: 0; }
-  60%  { stroke-dashoffset: 0; }
-  100% { stroke-dashoffset: -1; }
+const flow = keyframes`
+  to { stroke-dashoffset: -1; }
 `;
 
 const Infinity8 = styled('svg')({
@@ -288,14 +285,13 @@ const Infinity8 = styled('svg')({
   height: 'auto',
   gridColumn: 2,
   gridRow: 1,
-  animation: `${floatY} 6s ease-in-out infinite`,
   overflow: 'visible',
   '& .engine-ribbon': {
-    strokeDasharray: '1 1',
-    animation: `${draw} 4.5s ease-in-out infinite`,
+    /** Most of the loop drawn; the short gap is the opening that travels. */
+    strokeDasharray: '0.78 0.22',
+    animation: `${flow} 6s linear infinite`,
   },
   [REDUCED_MOTION]: {
-    animation: 'none',
     /** Whole loop, drawn: the mark still has to read as an infinity. */
     '& .engine-ribbon': { strokeDasharray: 'none', animation: 'none' },
   },
@@ -305,6 +301,111 @@ const Infinity8 = styled('svg')({
 /** The one path both strokes trace. */
 const INFINITY_PATH =
   'M308.327 25.0247C356.388 10.2104 402.5 56.4381 402.5 95.1858C402.5 133.934 356.388 180.161 308.327 165.347C246.745 146.365 179.564 46.8043 119.673 25.0247C72.9336 8.02853 25.5 56.4381 25.5 95.1858C25.5 133.934 72.9336 182.343 119.673 165.347C179.564 143.567 246.745 44.007 308.327 25.0247Z';
+
+/**
+ * The mark. The ribbon is drawn with one short gap in it, and the gap travels
+ * the loop continuously - so the opening is always somewhere else and the
+ * motion never restarts from a fixed point.
+ */
+function InfinityMark() {
+
+  return (
+    <Infinity8 viewBox="0 0 428 199" fill="none" aria-hidden focusable="false">
+      <g filter="url(#engineInfinityInner)">
+        <path
+          d={INFINITY_PATH}
+          stroke="#FFBF4D"
+          strokeOpacity="0.2"
+          strokeWidth="43"
+          strokeMiterlimit="10"
+          strokeLinejoin="round"
+        />
+        <path
+          className="engine-ribbon"
+          filter="url(#engineInfinityRibbon)"
+          d={INFINITY_PATH}
+          pathLength="1"
+          stroke="#721BA0"
+          strokeWidth="43"
+          strokeMiterlimit="10"
+          strokeLinejoin="round"
+          /* Rounded while it is mid-draw; the closed path hides them when full. */
+          strokeLinecap="round"
+        />
+      </g>
+      <defs>
+        <filter
+          id="engineInfinityInner"
+          x="-20"
+          y="-20"
+          width="468"
+          height="239"
+          filterUnits="userSpaceOnUse"
+          colorInterpolationFilters="sRGB"
+        >
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
+          <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
+          <feColorMatrix
+            in="SourceAlpha"
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+            result="hardAlpha"
+          />
+          <feOffset dy="4" />
+          <feGaussianBlur stdDeviation="2" />
+          <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
+          <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+          <feBlend mode="normal" in2="shape" result="effect1_innerShadow" />
+        </filter>
+        <filter
+          id="engineInfinityRibbon"
+          x="-20"
+          y="-20"
+          width="468"
+          height="239"
+          filterUnits="userSpaceOnUse"
+          colorInterpolationFilters="sRGB"
+        >
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
+          <feColorMatrix
+            in="SourceAlpha"
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+            result="hardAlpha"
+          />
+          <feOffset dy="4" />
+          <feGaussianBlur stdDeviation="2" />
+          <feComposite in2="hardAlpha" operator="out" />
+          <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+          <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow" />
+          <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape" />
+          <feColorMatrix
+            in="SourceAlpha"
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+            result="hardAlpha"
+          />
+          <feOffset dy="8" />
+          <feGaussianBlur stdDeviation="1.85" />
+          <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
+          <feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.25 0" />
+          <feBlend mode="normal" in2="shape" result="effect2_innerShadow" />
+          <feColorMatrix
+            in="SourceAlpha"
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+            result="hardAlpha"
+          />
+          <feOffset dy="-6" />
+          <feGaussianBlur stdDeviation="2" />
+          <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
+          <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
+          <feBlend mode="normal" in2="effect2_innerShadow" result="effect3_innerShadow" />
+        </filter>
+      </defs>
+    </Infinity8>
+  );
+}
 
 /**
  * Grid placement has to live on the `Reveal` wrapper, not the disc: `Reveal`
@@ -443,100 +544,7 @@ export default function MarketingEngine({ videoUrl, posterUrl, clipUrl, clipPost
             </Booster>
           </Slot>
 
-          <Infinity8 viewBox="0 0 428 199" fill="none" aria-hidden focusable="false">
-            <g filter="url(#engineInfinityInner)">
-              <path
-                d={INFINITY_PATH}
-                stroke="#FFBF4D"
-                strokeOpacity="0.2"
-                strokeWidth="43"
-                strokeMiterlimit="10"
-                strokeLinejoin="round"
-              />
-              <path
-                className="engine-ribbon"
-                filter="url(#engineInfinityRibbon)"
-                d={INFINITY_PATH}
-                pathLength="1"
-                stroke="#721BA0"
-                strokeWidth="43"
-                strokeMiterlimit="10"
-                strokeLinejoin="round"
-                /* Rounded while it is mid-draw; the closed path hides them when full. */
-                strokeLinecap="round"
-              />
-            </g>
-            <defs>
-              <filter
-                id="engineInfinityInner"
-                x="-20"
-                y="-20"
-                width="468"
-                height="239"
-                filterUnits="userSpaceOnUse"
-                colorInterpolationFilters="sRGB"
-              >
-                <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
-                <feColorMatrix
-                  in="SourceAlpha"
-                  type="matrix"
-                  values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-                  result="hardAlpha"
-                />
-                <feOffset dy="4" />
-                <feGaussianBlur stdDeviation="2" />
-                <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
-                <feBlend mode="normal" in2="shape" result="effect1_innerShadow" />
-              </filter>
-              <filter
-                id="engineInfinityRibbon"
-                x="-20"
-                y="-20"
-                width="468"
-                height="239"
-                filterUnits="userSpaceOnUse"
-                colorInterpolationFilters="sRGB"
-              >
-                <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                <feColorMatrix
-                  in="SourceAlpha"
-                  type="matrix"
-                  values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-                  result="hardAlpha"
-                />
-                <feOffset dy="4" />
-                <feGaussianBlur stdDeviation="2" />
-                <feComposite in2="hardAlpha" operator="out" />
-                <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
-                <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow" />
-                <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape" />
-                <feColorMatrix
-                  in="SourceAlpha"
-                  type="matrix"
-                  values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-                  result="hardAlpha"
-                />
-                <feOffset dy="8" />
-                <feGaussianBlur stdDeviation="1.85" />
-                <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                <feColorMatrix type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.25 0" />
-                <feBlend mode="normal" in2="shape" result="effect2_innerShadow" />
-                <feColorMatrix
-                  in="SourceAlpha"
-                  type="matrix"
-                  values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-                  result="hardAlpha"
-                />
-                <feOffset dy="-6" />
-                <feGaussianBlur stdDeviation="2" />
-                <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
-                <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0" />
-                <feBlend mode="normal" in2="effect2_innerShadow" result="effect3_innerShadow" />
-              </filter>
-            </defs>
-          </Infinity8>
+          <InfinityMark />
 
           <Slot area="1 / 3 / 2 / 4" delay={60}>
             <Booster>

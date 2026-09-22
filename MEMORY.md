@@ -638,11 +638,11 @@ Publicity tab; of that router only `POST /leads` is used by the new site (`Conta
   the main park clip stays centred above on its own, autoplaying muted, looping and with native `controls` so it can be paused or unmuted. Its `Reveal` wrapper is positioned (`VideoReveal`, z-index 2): the lift transform makes `Reveal` a stacking context, so without it the cream hexagon painted over the video until the animation finished, then the video popped forward. Any clip with sound uses `shared/useStopWhenUnseen.ts` - pauses on tab-hide, on scroll-out, and on unmount once the element is off the page, because a detached element can keep playing audio over the next route. The unmount pause is deferred a tick and guarded by `isConnected`: StrictMode runs the cleanup between two mounts, so pausing straight away kills the park clip's autoplay in dev, and clearing `src` there leaves every video blank (React does not re-set an unchanged `src`). That video is `case-step-3.mp4` (the web copy of
   `temp-imgs/סרטון מזכרת.mp4`, 93MB raw), poster `keepsake-poster.jpg`; the third booster is
   titled "Yooz Auto Clip". The infinity mark is inlined SVG, not the `engine-infinity.svg` file
-  (kept as the export): the purple ribbon draws itself round the yellow track, holds, then flows
-  away, 4.5s a cycle - the Figma animation, and what the export's `pathLength="1"` +
-  `stroke-dasharray="1 1"` were already set up for. Under reduced motion the dash is dropped so
-  the loop reads whole. Figma's filter regions were too tight and chopped the drop shadow flat at
-  the bottom; they are widened here. Academy has its own `AcademyPage/FeaturedTestimonial.tsx` (one named
+  (kept as the export): the ribbon is drawn with one short gap in it (`stroke-dasharray 0.78 0.22` on `pathLength="1"`)
+  and the gap travels the loop continuously, 6s a lap, linear - so the opening is always somewhere
+  else and nothing restarts from a fixed point. Under reduced motion the dash is dropped so the
+  loop reads whole. Figma's filter regions were too tight and chopped the drop shadow flat at the
+  bottom; they are widened here. The mark no longer floats up and down. Academy has its own `AcademyPage/FeaturedTestimonial.tsx` (one named
   quote + signature) instead of the shared `Testimonials` pair, which runs on Home (the shared pair) and on Tourism, where it carries two named quotes of its own under `title` "לקוחות ממליצים" (the component takes an optional `title`). Business and About dropped it, i18n keys included, so nothing is repeated across the site.
 - `shared/routes.ts` - `MARKETING_ROUTES` is the single source for both the nav and the footer,
   and its array order is display order (first = rightmost under RTL): ראשי, המגזר העסקי,
