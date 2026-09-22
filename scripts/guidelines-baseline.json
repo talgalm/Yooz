@@ -48,7 +48,6 @@
   "svg": {
     "client/src/components/ActivityLogoutButton.tsx": 1,
     "client/src/components/DesertBackground.tsx": 4,
-    "client/src/components/games/BallGame/index.tsx": 1,
     "client/src/components/games/HintModals.tsx": 1,
     "client/src/components/games/MuteButton.tsx": 2,
     "client/src/components/games/OrderGame/GolfChallenge.tsx": 1,
@@ -60,7 +59,6 @@
     "client/src/components/login/ManagerLoginModal.tsx": 1,
     "client/src/components/NatureBackground.tsx": 5,
     "client/src/components/OceanBackground.tsx": 2,
-    "client/src/components/OfficeBackground.tsx": 1,
     "client/src/components/stations/AvatarQuizStation.tsx": 6,
     "client/src/components/stations/AvatarStation.tsx": 5,
     "client/src/components/stations/RiddleStation.tsx": 1,
@@ -74,11 +72,10 @@
     "client/src/pages/LandingPage/index.tsx": 3,
     "client/src/pages/manager/ManagerDashboardPage/ControlFlowTab.tsx": 1,
     "client/src/pages/marketing/AcademyPage/index.tsx": 1,
-    "client/src/pages/marketing/shared/Nav.tsx": 2,
-    "client/src/pages/marketing/TourismPage/index.tsx": 5,
+    "client/src/pages/marketing/TourismPage/index.tsx": 4,
     "client/src/pages/MissionPage/MissionPuzzle.tsx": 1,
     "client/src/pages/MissionPage/MissionTopMenu.tsx": 5,
-    "client/src/pages/MissionPage/MissionTrashSort.tsx": 5,
+    "client/src/pages/MissionPage/MissionTrashSort.tsx": 4,
     "client/src/pages/portal/PortalPage.tsx": 4,
     "client/src/pages/StoryModulePage/ActivitySessionHeader.tsx": 4,
     "client/src/pages/StoryModulePage/FinishScreen.tsx": 7,
@@ -105,12 +102,6 @@
     "server/src/routes/manageTime.ts": 1,
     "server/src/routes/missionFolders.ts": 1,
     "server/src/routes/stationFolders.ts": 1,
-    "server/src/routes/tutorials.hint-check.ts": 1,
-    "server/src/models/manage/ChangeRequest.ts": 1,
-    "server/src/models/manage/Expense.ts": 1,
-    "server/src/models/manage/Interaction.ts": 1,
-    "server/src/models/manage/ManageUser.ts": 1,
-    "server/src/models/manage/Project.ts": 1,
-    "server/src/models/manage/TimeEntry.ts": 1
+    "server/src/routes/tutorials.hint-check.ts": 1
   }
 }

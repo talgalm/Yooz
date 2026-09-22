@@ -7,6 +7,7 @@ import { Container, H2 } from './styled';
 import SectionShape from './SectionShape';
 import Reveal from './Reveal';
 import useStopWhenUnseen from './useStopWhenUnseen';
+import { PlayGlyph } from './MarketingEngine.icons';
 
 interface MarketingEngineProps {
   /** Looping clip shown in the device frame. Falls back to a still. */
@@ -213,10 +214,7 @@ function KeepsakePhone({ src, poster, label, alt, playLabel }: {
         />
         {!playing && (
           <PlayButton type="button" onClick={() => videoRef.current?.play()} aria-label={playLabel}>
-            {/* Points right in both directions - a transport control, not a reading cue. */}
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden focusable="false">
-              <path d="M8 5.2 19 12 8 18.8z" />
-            </svg>
+            <PlayGlyph />
           </PlayButton>
         )}
       </Screen>

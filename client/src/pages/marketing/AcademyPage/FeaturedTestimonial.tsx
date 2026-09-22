@@ -2,6 +2,7 @@ import { styled } from '@mui/material/styles';
 import { C, SHADOW, BP } from '../shared/tokens';
 import { Container, H2 } from '../shared/styled';
 import Reveal from '../shared/Reveal';
+import { QuoteMark } from './FeaturedTestimonial.icons';
 
 export interface FeaturedQuote {
   paragraphs: string[];
@@ -60,15 +61,6 @@ const Head = styled('div')({
 });
 
 const Stars = styled('div')({ color: C.gold, fontSize: 15, letterSpacing: 2 });
-
-/** Filled marks, not a typed glyph: a font's quotation mark changes shape and weight by fallback. */
-function QuoteMark() {
-  return (
-    <svg width="44" height="44" viewBox="0 0 24 24" aria-hidden focusable="false">
-      <path d="M4.5 6.5h6v6l-2.6 5H5.1l2.1-5H4.5zM13.5 6.5h6v6l-2.6 5h-2.8l2.1-5h-2.7z" fill={C.blobPurple} />
-    </svg>
-  );
-}
 
 const Paragraph = styled('p')({
   margin: '0 0 14px',
