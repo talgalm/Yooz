@@ -629,11 +629,36 @@ Publicity tab; of that router only `POST /leads` is used by the new site (`Conta
 - `shared/` components: `Hero` (`plain` | `photo` tones), `FeatureSplit`, `SectionShape`,
   `MarketingEngine`, `IconCardRow`, `CustomerLogos` (optional `marquee`), `Testimonials`
   (optional `wash`), `StatStrip`, `ContactForm`, `Faq`, `Nav`, `Footer`, `Blob` / `SoftBlob`.
-  Options worth knowing: `CustomerLogos marquee` measures one set of logos and repeats it
-  enough times to fill the viewport, so the loop is seamless at any width (`MARQUEE_CELL`,
-  `MARQUEE_SPEED`). `ContactForm closing` = the form is the page's last section (no top
-  padding, 112px below so `SHADOW.float` fades before the footer); Home uses it, with
-  `tone="purple"`.
+  Options worth knowing: `Hero` buttons are optional - Business, Tourism and Academy pass
+  none, only Home keeps "הזמנת דמו". `CustomerLogos marquee` measures one set of logos and
+  repeats it enough times to fill the viewport (`MARQUEE_CELL`, `MARQUEE_SPEED`).
+  `ContactForm closing` = the form is the page's last section (no top padding, 112px below
+  so `SHADOW.float` fades before the footer); every page uses `tone="purple"` and puts the
+  FAQ before the form. `Testimonials` takes an optional `title`, and `dense` for longer
+  quotes than the two-line pair on Home.
+- `shared/MarketingEngine.tsx` ("מנוע שיווקי עסקי", Business + Tourism) takes
+  `clipUrl`/`clipPosterUrl`: a tilted phone in the booster grid, right of the "Yooz Auto
+  Clip" disc under RTL (`PhoneSlot`, row 2 col 1), playing the keepsake video on tap, with
+  sound. That clip is `case-step-3.mp4` (the web copy of `temp-imgs/סרטון מזכרת.mp4`, 93MB
+  raw), poster `keepsake-poster.jpg`; the third booster is titled "Yooz Auto Clip". The main
+  park clip stays centred above, autoplaying muted and looping, with native `controls` so it
+  can be paused or unmuted. Its `Reveal` wrapper is positioned (`VideoReveal`, z-index 2):
+  the lift transform makes `Reveal` a stacking context, so without it the cream hexagon
+  painted over the video until the animation finished, then the video popped forward.
+  The infinity mark is inlined SVG, not the `engine-infinity.svg` file (kept as the export):
+  the ribbon carries one short gap (`stroke-dasharray 0.78 0.22` on `pathLength="1"`) and the
+  gap travels the loop continuously, 6s a lap, linear - so nothing restarts from a fixed
+  point. Reduced motion drops the dash so the loop reads whole. Figma's filter regions were
+  too tight and chopped the drop shadow flat at the bottom; they are widened here.
+- `shared/useStopWhenUnseen.ts` - any clip that plays with sound pauses on tab-hide, on
+  scroll-out and on unmount once the element has left the page, because a detached element
+  can keep playing audio over the next route. The unmount pause is deferred a tick and
+  guarded by `isConnected`: StrictMode runs the cleanup between two mounts, so pausing
+  straight away kills the park clip's autoplay in dev, and clearing `src` there leaves every
+  video blank (React does not re-set an unchanged `src`).
+- Academy has its own `AcademyPage/FeaturedTestimonial.tsx` (one named quote + signature)
+  instead of the shared `Testimonials` pair, which runs on Home and on Tourism, where it
+  carries two named client quotes under the title "לקוחות ממליצים". Business dropped it.
 - `shared/routes.ts` - `MARKETING_ROUTES` is the single source for both the nav and the footer,
   and its array order is display order (first = rightmost under RTL): ראשי, המגזר העסקי,
   תיירות, אקדמיה, אודות. "ראשי" (`home`, `/`) was added on request - the comps had none - and

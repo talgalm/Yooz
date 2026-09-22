@@ -26,8 +26,9 @@ interface HeroProps {
   titleThird?: string;
   lead?: string;
   bullets?: string[];
-  primaryCta: string;
-  primaryHref: string;
+  /** Omit both to show no buttons (Business, Tourism and Academy heroes have none). */
+  primaryCta?: string;
+  primaryHref?: string;
   secondaryCta?: string;
   secondaryHref?: string;
   mediaUrl?: string;
@@ -439,9 +440,11 @@ export default function Hero({
               ) : (
                 <PhotoLead>{lead}</PhotoLead>
               ))}
-            <Actions>
-              <WhiteCta href={primaryHref}>{primaryCta}</WhiteCta>
-            </Actions>
+            {primaryCta && primaryHref && (
+              <Actions>
+                <WhiteCta href={primaryHref}>{primaryCta}</WhiteCta>
+              </Actions>
+            )}
             {children}
           </PhotoCopy>
         </PhotoStage>
@@ -494,15 +497,17 @@ export default function Hero({
                 ))}
               </Bullets>
             )}
-            <Actions>
-              <CtaButton href={primaryHref}>{primaryCta}</CtaButton>
-              {secondaryCta && (
-                <GhostButton href={secondaryHref ?? primaryHref}>
-                  <PlayGlyph />
-                  {secondaryCta}
-                </GhostButton>
-              )}
-            </Actions>
+            {primaryCta && primaryHref && (
+              <Actions>
+                <CtaButton href={primaryHref}>{primaryCta}</CtaButton>
+                {secondaryCta && (
+                  <GhostButton href={secondaryHref ?? primaryHref}>
+                    <PlayGlyph />
+                    {secondaryCta}
+                  </GhostButton>
+                )}
+              </Actions>
+            )}
             {children}
           </Copy>
 
