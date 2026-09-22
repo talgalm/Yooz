@@ -95,9 +95,9 @@ export const texts = {
 
     faqTitle: 'שאלות נפוצות',
     faq: [
-      { q: 'האם צריך קליטה סלולרית לאורך כל המסלול?', a: 'לא. הפעילות נטענת מראש וממשיכה לעבוד גם באזורים ללא קליטה, ומסתנכרנת כשהחיבור חוזר.' },
+      { q: 'האם צריך קליטה סלולרית לאורך כל המסלול?', a: 'כן. הפעילות רצה בזמן אמת מהנייד של המשתתפים, ולכן נדרשת קליטה סלולרית לאורך המסלול.' },
       { q: 'האם הפעילות מתאימה לכל הגילאים?', a: 'כן. רמת הקושי והתוכן מותאמים לקהל - משפחות, קבוצות בית ספר או מבוגרים.' },
-      { q: 'כמה זמן לוקח להקים מסלול באתר שלנו?', a: 'לאחר אפיון צרכים מהיר, סיור המבוסס על תבנית יכול לעלות לאוויר תוך 1-2 שבועות. מסלול מותאם עם צילומים ותוכן ייעודי נמשך מספר שבועות בודדים.' },
+      { q: 'כמה זמן לוקח לנו לפתח לכם פעילות חווייתית מדליקה?', a: 'פיתוח פעילות או מסלול שמותאמים לצרכים שלכם נמשך מספר שבועות בודדים, לאחר אפיון צרכים קצר.' },
       { q: 'איזה מידע ונתונים מקבלים בסיום או תוך כדי הפעילות?', a: 'מספר משתתפים, זמני שהייה בכל תחנה, נקודות נטישה, ציונים ושיתופים ברשתות - בזמן אמת ובייצוא.' },
     ],
   },
@@ -187,9 +187,9 @@ export const texts = {
 
     faqTitle: 'Frequently asked questions',
     faq: [
-      { q: 'Is mobile reception needed along the whole route?', a: 'No. The activity is preloaded and keeps working in areas without reception, syncing when the connection returns.' },
+      { q: 'Is mobile reception needed along the whole route?', a: "Yes. The activity runs live on the participants' phones, so reception is needed along the route." },
       { q: 'Does it suit every age group?', a: 'Yes. Difficulty and content are matched to the audience - families, school groups or adults.' },
-      { q: 'How long does it take to build a route at our site?', a: 'After a quick needs assessment, a template-based tour can go live within 1-2 weeks. A custom route with dedicated photography and content takes just a few weeks.' },
+      { q: 'How long does it take us to build you an experience worth talking about?', a: 'Building an activity or route around what you need takes just a few weeks, after a short needs assessment.' },
       { q: 'What data do we get during and after the activity?', a: 'Participant numbers, dwell time per station, drop-off points, scores and social shares, live and as an export.' },
     ],
   },
