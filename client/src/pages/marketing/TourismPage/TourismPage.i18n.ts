@@ -27,7 +27,7 @@ export const texts = {
       { iconUrl: '/images/marketing/icon-engagement.png', title: 'מעורבות', body: 'תוכן רב-כיווני ודינמי שיוצר חיבור ישיר בין המבקר, הידע והמרחב הפיזי.' },
     ],
     bottomLineLabel: 'השורה התחתונה:',
-    bottomLine: 'אנחנו לא רק מספרים את הסיפור של המקום - אנחנו גורמים למבקר לקחת בו חלק פעיל.',
+    bottomLine: 'אנחנו מסייעים ללקוח לספר את הסיפור של המקום - וגורמים למבקרים לקחת חלק פעיל ומעורב בחוויה.',
 
     fitTitle: 'לאיזה אתרים ופארקים Yooz מתאימה?',
     fitIntro:
@@ -53,7 +53,7 @@ export const texts = {
       {
         label: 'שלב 1: הצתה וחיבור ראשוני',
         title: 'פתיחה סיפורית ששואבת את המבקר פנימה',
-        body: 'סריקת QR מהירה בכניסה למצודה פותחת סרטון קצר של שומר הפארק שמציג את סיפור הרקע ומזמין את הקבוצה למצוא את המזוודה הגנובה.',
+        body: 'סריקת QR מהירה בכניסה לפעילות פותחת סרטון קצר של שומר הפארק שמציג את סיפור הרקע ומזמין את הקבוצה למצוא את המזוודה הגנובה.',
         checks: [
           'ללא צורך בהורדת אפליקציה מחנות האפליקציות',
           'זמן טעינה מהיר בכל מכשיר',
@@ -124,7 +124,7 @@ export const texts = {
       { iconUrl: '/images/marketing/icon-engagement.png', title: 'Involvement', body: 'Multi-directional, dynamic content connecting the visitor, the knowledge and the physical space.' },
     ],
     bottomLineLabel: 'The bottom line:',
-    bottomLine: 'we do not just tell the story of the place - we make the visitor take an active part in it.',
+    bottomLine: 'we help you tell the story of your place - and get visitors to take an active, involved part in the experience.',
 
     fitTitle: 'Which sites and parks is Yooz for?',
     fitIntro:
@@ -145,7 +145,7 @@ export const texts = {
       {
         label: 'Stage 1: the spark and first connection',
         title: 'A story opening that pulls the visitor in',
-        body: 'A quick QR scan at the fortress entrance opens a short clip of the park keeper, setting up the background story and inviting the group to find the stolen case.',
+        body: 'A quick QR scan at the start of the activity opens a short clip of the park keeper, setting up the background story and inviting the group to find the stolen case.',
         checks: [
           'No app store download required',
           'Fast load time on any device',
