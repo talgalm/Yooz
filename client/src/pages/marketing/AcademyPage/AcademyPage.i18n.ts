@@ -26,9 +26,9 @@ export const texts = {
       {
         tag: 'מניעת נטישה פרואקטיבית',
         icon: '/images/marketing/icons/acad-head-question.svg',
-        title: 'זינוק בשימור סטודנטים ומניעת נשירה מקורסים קשים',
-        body: 'קורסי סינון ומבואות גורמים לתסכול רב. בעזרת מיקרו-תגמולים, משוב מיידי ומנגנון "Level-Up", הסטודנט מרגיש התקדמות רציפה ולא נכנע לפערי למידה ראשוניים.',
-        proof: 'שיפור של 28% בממוצע ציוני מעבר קורסים סופיים',
+        title: 'זינוק בשימור סטודנטים ומניעת נשירה מקורסים "משעממים"',
+        body: 'מחקר של 3 שנים באקדמית תל אביב-יפו (2022-2025) מצא שקורסים משולבי Gamification העלו ב-21% את שביעות הרצון של סטודנטים ומרצים, ושיפרו את הציונים.',
+        proof: 'שיפור ציונים ושביעות רצון',
       },
       {
         tag: 'Plug & Play אמיתי',
@@ -112,7 +112,7 @@ export const texts = {
     valueTitle: 'The added value for your academic institution of developing a course and using Yooz',
     valueIntro: 'A comprehensive solution connecting quality pedagogy, student and lecturer satisfaction, and measurable results.',
     valueCards: [
-      { tag: 'Proactive retention', icon: '/images/marketing/icons/acad-head-question.svg', title: 'A leap in retention, and fewer dropouts from hard courses', body: 'Gateway and foundation courses cause real frustration. With micro-rewards, instant feedback and a Level-Up mechanic, students feel continuous progress instead of surrendering to early gaps.', proof: '28% improvement in average final-course pass grades' },
+      { tag: 'Proactive retention', icon: '/images/marketing/icons/acad-head-question.svg', title: 'A leap in retention, and fewer dropouts from "boring" courses', body: 'A 3-year study at the Academic College of Tel Aviv-Yafo (2022-2025) found that gamified courses raised student and lecturer satisfaction by 21% and improved grades.', proof: 'Better grades and satisfaction' },
       { tag: 'Genuine Plug & Play', icon: '/images/marketing/icons/acad-puzzle.svg', title: 'An innovative academic position', body: 'Leading innovation in academic teaching and embedding modern technology, differentiating the institution and attracting students who want learning fitted to the digital era.', proof: 'AI technology embedded' },
       { tag: 'Pedagogical Intelligence', icon: '/images/marketing/icons/acad-chart-up.svg', title: 'Real-time behavioural analytics for faculty', body: 'An AI system analyses student performance and alerts the lecturer to problem topics and to the weak points of specific students, so the lecturer knows in time what to reinforce and whom to support.', proof: 'Daily reports sent to the lecturer proactively' },
       { tag: 'Clear return on investment', icon: '/images/marketing/icons/acad-piggy.svg', title: 'Fewer support hours, a better reputation', body: 'Retaining students is worth hundreds of thousands in tuition. Less lecturer load answering repeat questions, fewer resit sittings, and a marked lift in institutional teaching feedback.', proof: 'Full payback within the first semester' },
