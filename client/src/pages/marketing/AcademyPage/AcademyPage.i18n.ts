@@ -49,13 +49,13 @@ export const texts = {
         icon: '/images/marketing/icons/acad-piggy.svg',
         title: 'חיסכון בשעות תגבור, שיפור מוניטין',
         body: 'שימור סטודנטים שווה כסף רב. שילוב הטכנולוגיה מעלה את העניין, הציונים, איכות הלמידה ושביעות הרצון במשוב ההוראה, ומפחית מהמרצים את עומס השאלות החוזרות.',
-        proof: 'החזר השקעה מלא כבר בסמסטר הראשון',
+        proof: 'החזר השקעה בטווח קצר',
       },
     ],
 
     experienceTitle: 'החוויה הפדגוגית',
     experienceIntro:
-      'חוויה פדגוגית שלמה שנבנתה בשיתוף חוקרי מוח, מעצבי משחקים עטורי פרסים ומומחי הוראה אקדמית.',
+      'חוויה פדגוגית שלמה שנבנתה בשיתוף משחקולוגים, מעצבים ומומחי הוראה אקדמית.',
     /**
      * Tiles are 48 square, flat colour, with a white line glyph - emoji render in
      * their own colours and ignore `fg`. Each tile has its own colour; the title
@@ -115,11 +115,11 @@ export const texts = {
       { tag: 'Proactive retention', icon: '/images/marketing/icons/acad-head-question.svg', title: 'A leap in retention, and fewer dropouts from "boring" courses', body: 'A 3-year study at the Academic College of Tel Aviv-Yafo (2022-2025) found that gamified courses raised student and lecturer satisfaction by 21% and improved grades.', proof: 'Better grades and satisfaction' },
       { tag: 'Genuine Plug & Play', icon: '/images/marketing/icons/acad-puzzle.svg', title: 'An innovative academic position', body: 'Leading innovation in academic teaching and embedding modern technology, differentiating the institution and attracting students who want learning fitted to the digital era.', proof: 'AI technology embedded' },
       { tag: 'Pedagogical Intelligence', icon: '/images/marketing/icons/acad-chart-up.svg', title: 'Real-time behavioural analytics for faculty', body: 'An AI system analyses student performance, alerts the lecturer to problem topics and to the weak points of specific students, so the material can be fixed and adjusted while the course is running.', proof: 'Ongoing reports sent to the lecturer proactively' },
-      { tag: 'Clear return on investment', icon: '/images/marketing/icons/acad-piggy.svg', title: 'Fewer support hours, a better reputation', body: 'Retaining students is worth a great deal. The technology lifts interest, grades, learning quality and satisfaction in teaching feedback, and takes repeat questions off lecturers.', proof: 'Full payback within the first semester' },
+      { tag: 'Clear return on investment', icon: '/images/marketing/icons/acad-piggy.svg', title: 'Fewer support hours, a better reputation', body: 'Retaining students is worth a great deal. The technology lifts interest, grades, learning quality and satisfaction in teaching feedback, and takes repeat questions off lecturers.', proof: 'Return on investment in the short term' },
     ],
 
     experienceTitle: 'The pedagogical experience',
-    experienceIntro: 'A complete learning experience built with brain researchers, award-winning game designers and academic teaching experts.',
+    experienceIntro: 'A complete learning experience built with ludologists, designers and academic teaching experts.',
     experienceCards: [
       { icon: '/images/marketing/icons/acad-map.svg', tileBg: '#5A1B87', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Quest Engine', body: 'Fast, AI-assisted reports that let you change mission difficulty and the knowledge required at short notice.' },
       { icon: '/images/marketing/icons/acad-star-circle.svg', tileBg: '#059669', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Medical Simulator', body: 'An interactive simulator for real-time medical decision-making, preparing students for the real world.' },
