@@ -4,7 +4,6 @@ import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AboutPage.i18n';
 import Hero from '../shared/Hero';
 import CustomerLogos from '../shared/CustomerLogos';
-import Testimonials from '../shared/Testimonials';
 import ContactForm from '../shared/ContactForm';
 import Reveal from '../shared/Reveal';
 import { Band, Container, H2, H3, Body, Card, CardGrid, IconTile, SectionIntro } from '../shared/styled';
@@ -317,8 +316,7 @@ export default function AboutPage() {
 
       <CustomerLogos title={t.customersTitle} items={t.customers} bg={C.bandPink} marquee />
 
-      <ContactForm tone="cream" />
-      <Testimonials items={t.testimonials} />
+      <ContactForm tone="purple" roomBelow />
     </>
   );
 }

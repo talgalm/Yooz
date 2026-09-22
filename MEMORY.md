@@ -612,7 +612,7 @@ Five public pages sharing `MarketingLayout` (sticky `Nav`, routed `<Outlet/>`, `
 | route | page |
 |---|---|
 | `/` | `HomePage` - hero, sector chooser (`HomePage/SectorPicker.tsx`), logos, FAQ, testimonials, contact |
-| `/business` | `BusinessPage` - no testimonials section (removed on purpose) |
+| `/business` | `BusinessPage` |
 | `/academy` | `AcademyPage` — photo-tone hero, value + experience card rows |
 | `/tourism` | `TourismPage` — stat strip, case study with per-stage video tabs |
 | `/about` | `AboutPage` — how an activity works, the three boosters, toolbox, audiences |
@@ -630,15 +630,15 @@ Publicity tab; of that router only `POST /leads` is used by the new site (`Conta
   `MarketingEngine`, `IconCardRow`, `CustomerLogos` (optional `marquee`), `Testimonials`
   (optional `wash`), `StatStrip`, `ContactForm`, `Faq`, `Nav`, `Footer`, `Blob` / `SoftBlob`.
   Options worth knowing: `Hero` buttons are optional (Business/Tourism/Academy pass none; only
-  Home keeps "הזמנת דמו"). `ContactForm closing` = the form is the page's last section
-  (no top padding, 112px below so `SHADOW.float` fades before the footer) - Home and Academy put
-  FAQ before the form and use it. `ContactForm roomBelow` keeps the top padding but gives the same 112px below - Business uses it because its tinted FAQ band follows the form directly. `MarketingEngine` ("מנוע שיווקי עסקי", Business + Tourism)
+  Home keeps "הזמנת דמו"). Every page now uses `ContactForm tone="purple"` and puts FAQ before the form (About has no FAQ, so its form follows the logo band). The `cream` and `peach` tones still exist but no page passes them. `closing` = the form is the page's last section
+  (no top padding, 112px below so `SHADOW.float` fades before the footer) - Home, Business,
+  Tourism and Academy all use it. `ContactForm roomBelow` keeps the top padding but gives the same 112px below - About uses it (its form ends the page but a logo band sits above). `MarketingEngine` ("מנוע שיווקי עסקי", Business + Tourism)
   takes `clipUrl`/`clipPosterUrl`: a tilted phone in the booster grid, right of the "Yooz Auto
   Clip" disc under RTL (`PhoneSlot`, row 2 col 1), plays the keepsake video on tap, with sound;
   the main park clip stays centred above on its own. That video is `case-step-3.mp4` (the web copy of
   `temp-imgs/סרטון מזכרת.mp4`, 93MB raw), poster `keepsake-poster.jpg`; the third booster is
   titled "Yooz Auto Clip". Academy has its own `AcademyPage/FeaturedTestimonial.tsx` (one named
-  quote + signature) instead of the shared `Testimonials` pair.
+  quote + signature) instead of the shared `Testimonials` pair, which now runs on Home only - Business, Tourism and About dropped it (their `testimonials` i18n keys are gone too) so the pair is not repeated across the site.
 - `shared/routes.ts` - `MARKETING_ROUTES` is the single source for both the nav and the footer,
   and its array order is display order (first = rightmost under RTL): ראשי, המגזר העסקי,
   תיירות, אקדמיה, אודות. "ראשי" (`home`, `/`) was added on request - the comps had none - and

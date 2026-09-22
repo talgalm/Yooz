@@ -189,7 +189,7 @@ export default function AcademyPage() {
       {/* Questions first, then the form - a visitor's doubts are answered before they are asked to write. */}
       <Faq title={t.faqTitle} items={t.faq} />
 
-      <ContactForm tone="peach" closing />
+      <ContactForm tone="purple" closing />
     </>
   );
 }

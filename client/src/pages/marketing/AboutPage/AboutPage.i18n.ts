@@ -112,23 +112,6 @@ export const texts = {
       { name: 'האקדמית', caption: 'סימולטור לקבלת החלטות רפואיות', logoUrl: '/images/marketing/logo-academic-tlv.png' },
       { name: 'קופ״ח כללית', caption: 'פעילות גיבוש של מאות עובדים ב-40 סניפים', logoUrl: '/images/marketing/logo-clalit.svg' },
     ],
-
-    testimonials: [
-      {
-        quote:
-          '"מזה 5 שנים אני משתמש בפלטפורמת Yooz כדי לייצר חוויית למידה מעניינת ומאתגרת... תוצאות המחקר שערכתי במשך 3 שנים מצביעות על עלייה בהישגים ובמעורבות"',
-        author: 'מרצה במכללה האקדמית בתל אביב יפו',
-        initials: 'ד.ו',
-        avatarBg: '#D1FAE5',
-      },
-      {
-        quote:
-          '"פיתחנו סימולטור מתקדם לבדיקת מידת קבלת החלטות רפואיות על ידי הסטודנטים. הסימולטור מדמה מצבי אמת באמצעות כלי AI ותורם לחוויית ואפקטיביות הלמידה"',
-        author: 'מרצה בחוג לסיעוד',
-        initials: 'מ.ט',
-        avatarBg: '#F3E8FF',
-      },
-    ],
   },
 
   en: {
@@ -232,23 +215,6 @@ export const texts = {
       { name: 'Peres College', caption: 'Bachelor and master course delivery', logoUrl: '/images/marketing/logo-peres.png' },
       { name: 'Academic TLV', caption: 'Medical decision-making simulator', logoUrl: '/images/marketing/logo-academic-tlv.png' },
       { name: 'Clalit Health', caption: 'Team-building for hundreds of employees across 40 branches', logoUrl: '/images/marketing/logo-clalit.svg' },
-    ],
-
-    testimonials: [
-      {
-        quote:
-          '"For five years I have used the Yooz platform to build an engaging, challenging learning experience... three years of research I ran show a rise in both achievement and involvement"',
-        author: 'Lecturer, Academic College of Tel Aviv-Yafo',
-        initials: 'D.V',
-        avatarBg: '#D1FAE5',
-      },
-      {
-        quote:
-          '"We built an advanced simulator to assess medical decision-making by students. It models real situations using AI tools and adds to both the experience and the effectiveness of the learning"',
-        author: 'Lecturer, Nursing Department',
-        initials: 'M.T',
-        avatarBg: '#F3E8FF',
-      },
     ],
   },
 };

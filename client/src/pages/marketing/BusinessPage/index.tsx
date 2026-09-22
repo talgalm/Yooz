@@ -59,8 +59,8 @@ export default function BusinessPage() {
 
       <CustomerLogos title={t.customersTitle} items={t.customers} bg={C.bandPink} />
 
-      <ContactForm tone="purple" roomBelow />
-      <Faq title={t.faqTitle} items={t.faq} bg="#FDFAEF" />
+      <Faq title={t.faqTitle} items={t.faq} />
+      <ContactForm tone="purple" closing />
     </>
   );
 }

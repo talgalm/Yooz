@@ -38,7 +38,7 @@ export default function HomePage() {
       {/* Questions first, the form last - `closing` gives its shadow room above the footer. */}
       <Faq title={t.faqTitle} items={t.faq} />
       <Testimonials items={t.testimonials} wash />
-      <ContactForm tone="cream" closing />
+      <ContactForm tone="purple" closing />
     </>
   );
 }

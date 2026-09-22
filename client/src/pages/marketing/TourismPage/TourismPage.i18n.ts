@@ -93,29 +93,11 @@ export const texts = {
       { name: 'קופ״ח כללית', caption: 'פעילות גיבוש של מאות עובדים ב-40 סניפים', logoUrl: '/images/marketing/logo-clalit.svg' },
     ],
 
-    /** The same pair appears on all four frames - not page-specific. */
-    testimonials: [
-      {
-        quote:
-          '"מזה 5 שנים אני משתמש בפלטפורמת Yooz כדי לייצר חוויית למידה מעניינת ומאתגרת... תוצאות המחקר שערכתי במשך 3 שנים מצביעות על עלייה בהישגים ובמעורבות"',
-        author: 'מרצה במכללה האקדמית בתל אביב יפו',
-        initials: 'ד.ו',
-        avatarBg: '#D1FAE5',
-      },
-      {
-        quote:
-          '"פיתחנו סימולטור מתקדם לבדיקת מידת קבלת החלטות רפואיות על ידי הסטודנטים. הסימולטור מדמה מצבי אמת באמצעות כלי AI ותורם לחוויית ואפקטיביות הלמידה"',
-        author: 'מרצה בחוג לסיעוד',
-        initials: 'מ.ט',
-        avatarBg: '#F3E8FF',
-      },
-    ],
-
     faqTitle: 'שאלות נפוצות',
     faq: [
       { q: 'האם צריך קליטה סלולרית לאורך כל המסלול?', a: 'לא. הפעילות נטענת מראש וממשיכה לעבוד גם באזורים ללא קליטה, ומסתנכרנת כשהחיבור חוזר.' },
       { q: 'האם הפעילות מתאימה לכל הגילאים?', a: 'כן. רמת הקושי והתוכן מותאמים לקהל - משפחות, קבוצות בית ספר או מבוגרים.' },
-      { q: 'כמה זמן לוקח להקים מסלול באתר שלנו?', a: 'סיור מבוסס תבנית עולה לאוויר תוך ימים ספורים. מסלול מותאם עם צילומים ותוכן ייעודי נמשך מספר שבועות.' },
+      { q: 'כמה זמן לוקח להקים מסלול באתר שלנו?', a: 'לאחר אפיון צרכים מהיר, סיור המבוסס על תבנית יכול לעלות לאוויר תוך 1-2 שבועות. מסלול מותאם עם צילומים ותוכן ייעודי נמשך מספר שבועות בודדים.' },
       { q: 'איזה מידע ונתונים מקבלים בסיום או תוך כדי הפעילות?', a: 'מספר משתתפים, זמני שהייה בכל תחנה, נקודות נטישה, ציונים ושיתופים ברשתות - בזמן אמת ובייצוא.' },
     ],
   },
@@ -203,16 +185,11 @@ export const texts = {
       { name: 'Clalit Health', caption: 'Team-building for hundreds of employees across 40 branches', logoUrl: '/images/marketing/logo-clalit.svg' },
     ],
 
-    testimonials: [
-      { quote: '"For five years I have used the Yooz platform to build an engaging, challenging learning experience... three years of research I ran show a rise in both achievement and involvement"', author: 'Lecturer, Academic College of Tel Aviv-Yafo', initials: 'D.V', avatarBg: '#D1FAE5' },
-      { quote: '"We built an advanced simulator to assess medical decision-making by students. It models real situations using AI tools and adds to both the experience and the effectiveness of the learning"', author: 'Lecturer, Nursing Department', initials: 'M.T', avatarBg: '#F3E8FF' },
-    ],
-
     faqTitle: 'Frequently asked questions',
     faq: [
       { q: 'Is mobile reception needed along the whole route?', a: 'No. The activity is preloaded and keeps working in areas without reception, syncing when the connection returns.' },
       { q: 'Does it suit every age group?', a: 'Yes. Difficulty and content are matched to the audience - families, school groups or adults.' },
-      { q: 'How long does it take to build a route at our site?', a: 'A template-based tour goes live within days. A custom route with dedicated photography and content takes a few weeks.' },
+      { q: 'How long does it take to build a route at our site?', a: 'After a quick needs assessment, a template-based tour can go live within 1-2 weeks. A custom route with dedicated photography and content takes just a few weeks.' },
       { q: 'What data do we get during and after the activity?', a: 'Participant numbers, dwell time per station, drop-off points, scores and social shares, live and as an export.' },
     ],
   },

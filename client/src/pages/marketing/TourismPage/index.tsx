@@ -7,7 +7,6 @@ import StatStrip from "../shared/StatStrip";
 import IconCardRow from "../shared/IconCardRow";
 import MarketingEngine from "../shared/MarketingEngine";
 import CustomerLogos from "../shared/CustomerLogos";
-import Testimonials from "../shared/Testimonials";
 import ContactForm from "../shared/ContactForm";
 import Faq from "../shared/Faq";
 import Reveal from "../shared/Reveal";
@@ -488,9 +487,8 @@ export default function TourismPage() {
         bg={C.bandPink}
       />
 
-      <ContactForm tone="purple" />
-      <Testimonials items={t.testimonials} />
       <Faq title={t.faqTitle} items={t.faq} />
+      <ContactForm tone="purple" closing />
     </>
   );
 }
