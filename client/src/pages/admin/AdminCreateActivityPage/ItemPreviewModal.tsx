@@ -66,7 +66,7 @@ const HeaderBadge = styled('span')({
   background: '#f0eefa',
   color: '#6c5ce7',
   flexShrink: 0,
-  marginLeft: 8,
+  marginInlineStart: 8,
 });
 
 const CloseButton = styled('button')({

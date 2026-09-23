@@ -275,7 +275,6 @@ export const HeaderActionGroup = styled('div')({
 export const PeriodControl = styled('div')({
   display: 'inline-flex',
   alignItems: 'center',
-  direction: 'rtl',
   gap: 4,
   padding: 3,
   border: `1px solid ${BORDER}`,
