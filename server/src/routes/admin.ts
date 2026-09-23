@@ -14,6 +14,7 @@ import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginFiel
 import { Activity, ActivityFolder, ActivityGroup, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
 import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
+import { sanitiseModuleItems, sanitiseMapFields } from '../utils/moduleConfig';
 import { IActivity } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
 import { getSmsProvider } from '../services/sms/smsProvider';
@@ -133,33 +134,16 @@ async function buildActivityData(
       // Story module: supports games, stations, and missions as items
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mod = moduleConfig as any;
+      const moduleType = moduleConfig.type || 'story';
       data.module = {
-        type: moduleConfig.type || 'story',
+        type: moduleType,
         theme: mod.theme || undefined,
         backgroundImage: moduleConfig.backgroundImage || undefined,
         ...(mod.showStationNumbers === true && { showStationNumbers: true }),
         ...(mod.showItemTitleNumbers === true && { showItemTitleNumbers: true }),
-        items: Array.isArray(mod.items)
-          ? mod.items
-              .filter((item: { type: string; ref: string }) => item.type && item.ref && ['game', 'station', 'mission'].includes(item.type))
-              .map((item: {
-                type: string;
-                ref: string;
-                groups?: string[];
-                spiderSvg?: string;
-                isFinal?: boolean;
-                revisitable?: boolean;
-                collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number; videoPartIndex?: number | null; photoOrder?: number[] };
-              }) => ({
-                type: item.type,
-                ref: item.ref,
-                ...(Array.isArray(item.groups) && item.groups.length > 0 && { groups: item.groups }),
-                ...(item.spiderSvg && { spiderSvg: item.spiderSvg }),
-                ...(item.isFinal && { isFinal: true }),
-                ...(item.revisitable && { revisitable: true }),
-                ...(item.collageSplit && { collageSplit: item.collageSplit }),
-              }))
-          : [],
+        /** Map modules carry the walking order and the arrival radius. */
+        ...sanitiseMapFields(moduleType, mod),
+        items: sanitiseModuleItems(mod.items),
         popups: Array.isArray(mod.popups) ? mod.popups.map((p: Record<string, unknown>) => {
           const ct = p.contentType === 'image' ? 'image' : 'text';
           return {
