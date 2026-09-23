@@ -7,13 +7,13 @@ import StatStrip from "../shared/StatStrip";
 import IconCardRow from "../shared/IconCardRow";
 import MarketingEngine from "../shared/MarketingEngine";
 import CustomerLogos from "../shared/CustomerLogos";
-import Testimonials from "../shared/Testimonials";
 import ContactForm from "../shared/ContactForm";
+import Testimonials from "../shared/Testimonials";
 import Faq from "../shared/Faq";
 import Reveal from "../shared/Reveal";
+import useStopWhenUnseen from "../shared/useStopWhenUnseen";
 import { Band, Container, H2, H3, Body, SectionIntro } from "../shared/styled";
 import { C, SHADOW, RADIUS, BP, REDUCED_MOTION } from "../shared/tokens";
-import { CONTACT_ANCHOR } from "../shared/routes";
 
 /** The single-line takeaway between the two card rows. */
 const BottomLine = styled("p")({
@@ -331,6 +331,8 @@ export default function TourismPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const active = t.caseStages[stage];
   const video = STAGE_VIDEOS[stage];
+  /** Plays with sound, so it stops when it leaves the screen or the page. */
+  useStopWhenUnseen(videoRef, { src: video });
 
   return (
     <>
@@ -339,10 +341,6 @@ export default function TourismPage() {
         titleBottom={t.heroTitleBottom}
         titleThird={t.heroTitleThird}
         lead={t.heroLead}
-        primaryCta={t.heroCta}
-        primaryHref={CONTACT_ANCHOR}
-        secondaryCta={t.heroSecondary}
-        secondaryHref={CONTACT_ANCHOR}
         mediaUrl="/images/marketing/hero-tourism.jpg"
         mediaAlt={t.heroMediaAlt}
         pinkFrame
@@ -481,7 +479,11 @@ export default function TourismPage() {
         </Container>
       </Band>
 
-      <MarketingEngine videoUrl="/images/marketing/engine-park.mp4" />
+      <MarketingEngine
+        videoUrl="/images/marketing/engine-park.mp4"
+        clipUrl="/images/marketing/case-step-3.mp4"
+        clipPosterUrl="/images/marketing/keepsake-poster.jpg"
+      />
 
       <CustomerLogos
         title={t.customersTitle}
@@ -489,9 +491,10 @@ export default function TourismPage() {
         bg={C.bandPink}
       />
 
-      <ContactForm tone="purple" />
-      <Testimonials items={t.testimonials} />
+      <Testimonials title={t.testimonialsTitle} items={t.testimonials} dense />
+
       <Faq title={t.faqTitle} items={t.faq} />
+      <ContactForm tone="purple" closing />
     </>
   );
 }
