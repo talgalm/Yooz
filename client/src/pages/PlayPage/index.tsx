@@ -808,8 +808,14 @@ export default function PlayPage() {
           prepared in, and renders nothing when that is Hebrew alone.
         */}
         <LoginLangSlot>
-          {/* No languages on the activity means Hebrew only - not "offer everything". */}
-          <LangDrawer only={activity?.languages ?? []} />
+          {/*
+            Always offered, even on an activity nobody prepared a translation for:
+            this is the one screen where someone who cannot read the language has
+            to find their way out, and an English shell over Hebrew content still
+            tells them which button starts the game. An activity that does declare
+            its languages offers exactly those.
+          */}
+          <LangDrawer only={activity?.languages?.length ? activity.languages : undefined} />
         </LoginLangSlot>
         <LoginLogo src="/images/logo-white.png" alt="Yooz" />
         <LoginHeading>{loginHeading}</LoginHeading>
