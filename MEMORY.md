@@ -388,6 +388,13 @@ No admin auth — the `statsShareToken` is the credential.
   changes its hash, so there is nothing to invalidate. It never fails a request: a model error,
   a timeout or a missing `GEMINI_API_KEY` leaves the Hebrew in place. The UI chrome around it is
   hand-translated in the `.i18n.ts` files — this is only for content nobody can pre-translate.
+- **`services/activityPretranslate.ts`** — `Activity.languages` (chosen in the wizard's settings
+  step, e.g. `['en']`) is the set of languages an activity is offered in besides Hebrew. Saving
+  the activity warms the cache for each of them in the background — module copy, stations, games
+  and missions — so the first participant to pick that language does not wait for the model.
+  Fire-and-forget: if it fails, the participant path still translates what it finds missing.
+  The participant config (`GET /api/activities/:code`) reports `languages` so the picker can
+  offer exactly what the activity was prepared for.
 - **`services/activityAnalyticsService.ts`** — analytics aggregations (funnel/items/questions/
   groups/anomalies/report-card/export builders).
 - **`services/reportContext.ts`** — builds LLM context for DumbDumbBot's report answers.

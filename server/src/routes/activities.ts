@@ -112,6 +112,7 @@ router.get('/:code', async (req: Request<{ code: string }>, res: Response<Activi
       helpCategoryResponses: activity.helpCategoryResponses,
     }),
     ...(activity.helpOtherCategoryEnabled === true && { helpOtherCategoryEnabled: true }),
+    ...(activity.languages?.length && { languages: activity.languages }),
   };
 
   activityConfigCache.set(code, { data, expiresAt: Date.now() + ACTIVITY_CONFIG_TTL_MS });

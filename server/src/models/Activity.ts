@@ -106,6 +106,10 @@ export interface IActivity {
   opening?: IOpening;
   module?: IModuleConfig;
   guidelines?: string;
+  /** Languages this activity is offered in besides Hebrew, e.g. ['en'].
+   *  Content is pre-translated into each one when the activity is saved, so the
+   *  first participant to pick that language does not wait on the model. */
+  languages?: string[];
   extraSupportInfo?: string;
   /** Optional named contact (name + phone) for this activity's participant
    *  support bot to point participants to. When unset, all "contact the
@@ -310,6 +314,7 @@ const activitySchema = new Schema<IActivity>({
   opening: { type: openingSchema },
   module: { type: moduleConfigSchema },
   guidelines: { type: String },
+  languages: { type: [String], default: undefined },
   extraSupportInfo: { type: String },
   organizerContactName: { type: String },
   organizerContactPhone: { type: String },
