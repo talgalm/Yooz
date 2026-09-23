@@ -7,6 +7,20 @@ import { HttpError, isRetryableFetchError, retryDelayMs } from './fetchErrors';
 
 export { isRetryableFetchError } from './fetchErrors';
 
+/**
+ * The language the participant picked, read from the same store the UI reads.
+ * It travels on every call so the server can translate the activity's own
+ * content - station names, riddles, questions - to match the interface.
+ * Storage can throw in a locked-down browser, and Hebrew is the default anyway.
+ */
+function currentLang(): string {
+  try {
+    return localStorage.getItem('yooz_lang') || 'he';
+  } catch {
+    return 'he';
+  }
+}
+
 export async function apiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('yooz_token');
 
@@ -14,6 +28,7 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'X-Yooz-Lang': currentLang(),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
