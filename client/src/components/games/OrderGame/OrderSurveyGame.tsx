@@ -283,7 +283,7 @@ export default function OrderSurveyGame({
   if (showInstructions && settings.instructions) {
     return (
       <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
-        <IntroContainer dir="rtl">
+        <IntroContainer>
           <IntroContent>
             <IntroTitle>{game.name}</IntroTitle>
             <IntroWelcomeMidSpacer aria-hidden>
@@ -309,7 +309,7 @@ export default function OrderSurveyGame({
 
   return (
     <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
-      <OrderContainer dir="rtl">
+      <OrderContainer>
         {round.title && (
           <OrderRoundBanner>
             <OrderRoundBannerText>{round.title}</OrderRoundBannerText>

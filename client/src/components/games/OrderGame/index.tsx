@@ -356,7 +356,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
             </GameIntroHeaderBar>
           </div>
         )}
-        <IntroContainer dir="rtl">
+        <IntroContainer>
           <IntroContent>
             <IntroTitle>{game.name}</IntroTitle>
 
@@ -407,7 +407,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     const finalScore = hint.applyHintPenalty(totalScore) + golfBonus;
     return (
       <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
-        <FinishContainer dir="rtl">
+        <FinishContainer>
           {!activityHeaderAudio && (
             <GameIntroHeaderBar>
               <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
@@ -440,7 +440,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
   if (gameComplete && golfEnabled && !golfDone) {
     return (
       <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
-      <OrderContainer dir="rtl" style={{ justifyContent: 'center' }}>
+      <OrderContainer style={{ justifyContent: 'center' }}>
         <InstructionsCard style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>⛳</div>
           <InstructionsTitle>{golfT.title}</InstructionsTitle>
@@ -544,7 +544,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
 
   return (
     <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
-    <OrderContainer dir="rtl">
+    <OrderContainer>
 
       {/* Top bar (glass effect) */}
       <OrderTopBar>

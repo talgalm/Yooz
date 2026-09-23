@@ -87,7 +87,6 @@ const TopBar = styled('div')({
   alignItems: 'center',
   justifyContent: 'center',
   padding: '0px 16px 0',
-  direction: 'rtl',
   position: 'relative',
   zIndex: 5,
 });
@@ -128,7 +127,6 @@ const ShareModalBox = styled('div')({
   gap: 16,
   fontFamily: "'Rubik', sans-serif",
   color: '#F2F7FF',
-  direction: 'rtl',
 });
 
 const ShareOptionRow = styled('div')({
@@ -208,8 +206,7 @@ const ShareButtonLabel = styled('span')({
   fontStyle: 'normal',
   lineHeight: 1,
   letterSpacing: 0,
-  textAlign: 'right',
-  direction: 'rtl',
+  textAlign: 'start',
 });
 
 // ─── Funnel ───
@@ -277,7 +274,6 @@ const TitleText = styled('h2')({
   fontSize: 'clamp(28px, 8vw, 40px)',
   fontWeight: 700,
   textAlign: 'center',
-  direction: 'rtl',
   margin: 0,
   position: 'absolute',
   top: '50%',
@@ -301,7 +297,6 @@ const DescBox = styled('div')({
   fontSize: 'clamp(14px, 4vw, 17px)',
   lineHeight: 1.7,
   textAlign: 'center',
-  direction: 'rtl',
   whiteSpace: 'pre-line',
 });
 
@@ -1404,7 +1399,6 @@ export default function MissionTrashSort({
                 color: MISSION_TEXT,
                 fontFamily: MISSION_FONT,
                 textAlign: 'center',
-                direction: 'rtl',
                 lineHeight: 1.6,
                 fontSize: 'clamp(14px, 4vw, 18px)',
                 border: `1.5px solid ${MISSION_TEAL}`,
@@ -1450,7 +1444,6 @@ export default function MissionTrashSort({
                 fontSize: 14,
                 lineHeight: 1.6,
                 textAlign: 'center',
-                direction: 'rtl',
                 color: MISSION_TEXT,
                 margin: 0,
                 whiteSpace: 'pre-line',
