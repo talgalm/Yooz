@@ -4,7 +4,7 @@ import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HelpChatHeaderButton, useHelpChat, setHelpChatActivityContext } from '../../components/HelpChat';
 import { useAuth } from '../../context/AuthContext';
 import { ActivityPlayingHeaderProvider } from '../../context/activityPlayingHeaderContext';
-import { useTranslations } from '../../context/LanguageContext';
+import { useTranslations, useLang } from '../../context/LanguageContext';
 import { apiFetch, apiFetchPersistSilent, apiFetchWithRetry } from '../../utils/api';
 import { isRequestQueued, subscribeOfflineQueue } from '../../utils/offlineQueue';
 import { participantPlayPath, rememberActivityCode } from '../../utils/participantActivity';
@@ -12,6 +12,7 @@ import { useParticipantExit } from '../../hooks/useParticipantExit';
 import { preloadActivityMedia } from '../../utils/mediaPreloader';
 import { optimizeActivityMediaData } from '../../utils/participantMedia';
 import { getCachedModuleData, setCachedModuleData } from '../../utils/moduleCache';
+import { rememberActivityLanguages } from '../../utils/activityLanguages';
 import { clearStorySession, loadStorySessionRaw, saveStorySessionRaw } from '../../utils/storySession';
 import { texts } from './StoryModulePage.i18n';
 import { GAME_CONSTANTS, type GameResult } from '../../components/games/types';
@@ -264,6 +265,7 @@ export default function StoryModulePage() {
   const navigate = useNavigate();
   const exitActivity = useParticipantExit();
   const t = useTranslations(texts);
+  const { restrictToLanguages } = useLang();
 
   const [data, setData] = useState<ActivityModuleResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -533,6 +535,9 @@ export default function StoryModulePage() {
       );
       const d = optimizeActivityMediaData(raw);
       setCachedModuleData(code, participant?.group || '', d);
+      // Everything inside the activity reads in the language it was prepared in.
+      rememberActivityLanguages(code, d.languages);
+      restrictToLanguages(d.languages ?? []);
       setData(d);
       setError(false);
       preloadActivityMedia(d);
@@ -557,6 +562,8 @@ export default function StoryModulePage() {
     const group = participant?.group || '';
     const cached = getCachedModuleData<ActivityModuleResponse>(code, group);
     if (cached) {
+      rememberActivityLanguages(code, cached.languages);
+      restrictToLanguages(cached.languages ?? []);
       setData(cached);
       setError(false);
       preloadActivityMedia(cached);
@@ -1432,10 +1439,10 @@ export default function StoryModulePage() {
       <PageShell shellColor="#8B2FC9">
         <FullScreenLoader>
           <LoaderWave aria-label={t.loading}>
-            <span>z</span>
-            <span>o</span>
-            <span>o</span>
             <span>Y</span>
+            <span>o</span>
+            <span>o</span>
+            <span>z</span>
           </LoaderWave>
         </FullScreenLoader>
       </PageShell>
@@ -1459,10 +1466,10 @@ export default function StoryModulePage() {
       <PageShell shellColor="#8B2FC9">
         <FullScreenLoader>
           <LoaderWave aria-label={t.loading}>
-            <span>z</span>
-            <span>o</span>
-            <span>o</span>
             <span>Y</span>
+            <span>o</span>
+            <span>o</span>
+            <span>z</span>
           </LoaderWave>
         </FullScreenLoader>
       </PageShell>
@@ -1712,6 +1719,7 @@ export default function StoryModulePage() {
     return (
       <>
         <LeaderboardView
+          languages={data.languages}
           showAllGroups={isMap}
           activityName={data.name}
           leaderboard={leaderboard}
@@ -1784,7 +1792,7 @@ export default function StoryModulePage() {
           <HeaderActions>
             <HelpChatHeaderButton />
             <ActivityLogoutButton onClick={handleExit} ariaLabel={t.exitActivity} />
-            <LangDrawer variant="darkHeader" />
+            <LangDrawer variant="darkHeader" only={data?.languages ?? []} />
           </HeaderActions>
         </HeaderBar>
         <CenteredContent style={{ position: 'relative', zIndex: 1 }}>

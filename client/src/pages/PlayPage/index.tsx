@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../context/AuthContext';
-import { useTranslations } from '../../context/LanguageContext';
+import { useTranslations, useLang } from '../../context/LanguageContext';
 import { texts } from './PlayPage.i18n';
 import ActivityLogin from '../../components/login/ActivityLogin';
 import { apiFetchWithRetry } from '../../utils/api';
@@ -37,6 +37,7 @@ import {
   LoginFormWrapper,
 } from '../admin/styled';
 import LangDrawer from '../../components/LangDrawer';
+import { rememberActivityLanguages } from '../../utils/activityLanguages';
 
 type LoginField = 'email' | 'phoneNumber' | 'name';
 
@@ -197,14 +198,6 @@ const ScheduleScreen = styled('div')({
   textAlign: 'center',
 });
 
-/** Top corner of the login screen, clear of the logo and the safe area. */
-const LoginLangSlot = styled('div')({
-  position: 'absolute',
-  top: 'calc(12px + env(safe-area-inset-top, 0px))',
-  insetInlineStart: 12,
-  zIndex: 1,
-});
-
 const ScheduleLogo = styled('img')({
   width: 160,
   marginBottom: 32,
@@ -260,6 +253,7 @@ export default function PlayPage() {
   const { login, establishSession, isAuthenticated, participant } = useAuth();
   const navigate = useNavigate();
   const t = useTranslations(texts);
+  const { restrictToLanguages } = useLang();
   const resumeCheckedForCode = useRef<string | null>(null);
 
   const isSelfService = activity?.connectionType === 'group' && activity?.groupEntryMode === 'selfService';
@@ -317,6 +311,11 @@ export default function PlayPage() {
         const data = await res.json();
         if (cancelled) return;
         setActivity(data);
+        // The screens after login need the same answer and fetch nothing else,
+        // and the interface narrows to it straight away rather than on the next
+        // navigation - this is the screen the participant is already reading.
+        rememberActivityLanguages(data.code, data.languages);
+        restrictToLanguages(data.languages ?? []);
         if (!data.opening?.url) setShowDefaultSplash(true);
         if (
           data.connectionType === 'group'
@@ -600,7 +599,7 @@ export default function PlayPage() {
         return (
           <PurpleLoadingScreen style={{ position: 'relative', inset: 'auto', background: 'transparent', minHeight: 80 }}>
             <LoaderWave aria-label={t.loading}>
-              <span>z</span><span>o</span><span>o</span><span>Y</span>
+              <span>Y</span><span>o</span><span>o</span><span>z</span>
             </LoaderWave>
           </PurpleLoadingScreen>
         );
@@ -665,10 +664,10 @@ export default function PlayPage() {
     return (
       <PurpleLoadingScreen>
         <LoaderWave aria-label={t.loading}>
-          <span>z</span>
-          <span>o</span>
-          <span>o</span>
           <span>Y</span>
+          <span>o</span>
+          <span>o</span>
+          <span>z</span>
         </LoaderWave>
         {slowLoad && (
           <div style={{ position: 'absolute', bottom: 80, color: '#fff', opacity: 0.85, fontSize: 14 }}>
@@ -724,7 +723,7 @@ export default function PlayPage() {
     return (
       <PurpleLoadingScreen>
         <LoaderWave aria-label={t.loading}>
-          <span>z</span><span>o</span><span>o</span><span>Y</span>
+          <span>Y</span><span>o</span><span>o</span><span>z</span>
         </LoaderWave>
       </PurpleLoadingScreen>
     );
@@ -802,21 +801,13 @@ export default function PlayPage() {
       {/* Login page — full screen purple */}
       <PurpleLoginPage visible={openingPhase !== 'playing'}>
         {/*
-          The language belongs on this screen, not only inside the activity:
-          this is where a participant first reads anything, and the choice
-          carries into the whole run. It offers only what the activity was
-          prepared in, and renders nothing when that is Hebrew alone.
+          Offered on the first screen a participant reads, so someone who cannot
+          read the language can get out of it before working out which field is
+          their name. Only the languages the activity was prepared in: an
+          activity nobody translated shows no control at all, rather than an
+          English shell around Hebrew stations.
         */}
-        <LoginLangSlot>
-          {/*
-            Always offered, even on an activity nobody prepared a translation for:
-            this is the one screen where someone who cannot read the language has
-            to find their way out, and an English shell over Hebrew content still
-            tells them which button starts the game. An activity that does declare
-            its languages offers exactly those.
-          */}
-          <LangDrawer only={activity?.languages?.length ? activity.languages : undefined} />
-        </LoginLangSlot>
+        <LangDrawer variant="fab" only={activity?.languages ?? []} />
         <LoginLogo src="/images/logo-white.png" alt="Yooz" />
         <LoginHeading>{loginHeading}</LoginHeading>
         <LoginSubheading>{loginSubheading}</LoginSubheading>

@@ -1240,7 +1240,9 @@ export default function AdminCreateActivityPage() {
         payload.module = modulePayload;
       }
       payload.guidelines = guidelines.trim() || undefined;
-      payload.languages = languages.length > 0 ? languages : undefined;
+      // Always sent, empty included: an omitted field is left alone by the
+      // update, so sending nothing made unchecking the last language a no-op.
+      payload.languages = languages;
       payload.organizerContactName = organizerContactName.trim() || undefined;
       payload.organizerContactPhone = organizerContactPhone.trim() || undefined;
       payload.extraSupportInfo = extraSupportInfo.trim() || undefined;
@@ -1422,22 +1424,28 @@ export default function AdminCreateActivityPage() {
                   <SectionHeader>
                     <SectionHeaderTitle>{t.moduleType}</SectionHeaderTitle>
                   </SectionHeader>
+                  {/*
+                    None first, then the modules in the order they grew. The row
+                    is a flex row, so DOM order is reading order in both
+                    directions - first card on the right in Hebrew, on the left
+                    in English, and the same option either way.
+                  */}
                   <ModuleTypeGrid>
-                    <ModuleTypeCard type="button" selected={moduleType === 'map'} onClick={() => setModuleType('map')}>
-                      <ModuleTypeCardTitle>{t.map}</ModuleTypeCardTitle>
-                      <ModuleTypeCardDesc>{t.mapDesc}</ModuleTypeCardDesc>
-                    </ModuleTypeCard>
-                    <ModuleTypeCard type="button" selected={moduleType === 'spiders'} onClick={() => setModuleType('spiders')}>
-                      <ModuleTypeCardTitle>{t.spiders}</ModuleTypeCardTitle>
-                      <ModuleTypeCardDesc>{t.spidersDesc}</ModuleTypeCardDesc>
+                    <ModuleTypeCard type="button" selected={moduleType === 'none'} onClick={() => setModuleType('none')}>
+                      <ModuleTypeCardTitle>{t.noModule}</ModuleTypeCardTitle>
+                      <ModuleTypeCardDesc>{t.noModuleDesc}</ModuleTypeCardDesc>
                     </ModuleTypeCard>
                     <ModuleTypeCard type="button" selected={moduleType === 'story'} onClick={() => setModuleType('story')}>
                       <ModuleTypeCardTitle>{t.story}</ModuleTypeCardTitle>
                       <ModuleTypeCardDesc>{t.storyDesc}</ModuleTypeCardDesc>
                     </ModuleTypeCard>
-                    <ModuleTypeCard type="button" selected={moduleType === 'none'} onClick={() => setModuleType('none')}>
-                      <ModuleTypeCardTitle>{t.noModule}</ModuleTypeCardTitle>
-                      <ModuleTypeCardDesc>{t.noModuleDesc}</ModuleTypeCardDesc>
+                    <ModuleTypeCard type="button" selected={moduleType === 'spiders'} onClick={() => setModuleType('spiders')}>
+                      <ModuleTypeCardTitle>{t.spiders}</ModuleTypeCardTitle>
+                      <ModuleTypeCardDesc>{t.spidersDesc}</ModuleTypeCardDesc>
+                    </ModuleTypeCard>
+                    <ModuleTypeCard type="button" selected={moduleType === 'map'} onClick={() => setModuleType('map')}>
+                      <ModuleTypeCardTitle>{t.map}</ModuleTypeCardTitle>
+                      <ModuleTypeCardDesc>{t.mapDesc}</ModuleTypeCardDesc>
                     </ModuleTypeCard>
                   </ModuleTypeGrid>
 

@@ -14,7 +14,7 @@ import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginFiel
 import { Activity, ActivityFolder, ActivityGroup, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
 import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
-import { SUPPORTED_LANGS } from '../utils/requestLang';
+import { sanitiseLanguages } from '../utils/requestLang';
 import { pretranslateActivity } from '../services/activityPretranslate';
 import { IActivity } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
@@ -198,12 +198,12 @@ async function buildActivityData(
   // Languages this activity is offered in besides Hebrew. Its content is
   // pre-translated into each one after the save, so the first participant to
   // pick one does not wait on the model.
-  data.languages = Array.isArray(languages)
-    ? languages.filter(
-        (l: unknown): l is string =>
-          typeof l === 'string' && l !== 'he' && (SUPPORTED_LANGS as readonly string[]).includes(l),
-      )
-    : undefined;
+  //
+  // An empty array is a real answer - "offered in Hebrew only" - and has to
+  // reach the document, because `$set` skips `undefined` and the previous list
+  // would survive unchecking the last language. A missing field, from a caller
+  // that does not know about languages at all, still leaves it untouched.
+  data.languages = sanitiseLanguages(languages);
 
   // Free-text context for the "something else" open free-text chat only,
   // appended to the Gemini prompt for this activity.

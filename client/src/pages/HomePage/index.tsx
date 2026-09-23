@@ -5,6 +5,7 @@ import { useParticipantExit } from '../../hooks/useParticipantExit';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './HomePage.i18n';
 import LangDrawer from '../../components/LangDrawer';
+import { activityLanguages } from '../../utils/activityLanguages';
 import { HelpChatHeaderButton } from '../../components/HelpChat';
 import {
   PageContainer,
@@ -32,7 +33,7 @@ export default function HomePage() {
       <HeaderBar>
         <AccentText>{participant?.activityCode}</AccentText>
         <HeaderActions>
-          <LangDrawer />
+          <LangDrawer only={activityLanguages(participant?.activityCode) ?? []} />
           <HelpChatHeaderButton tone="light" />
           <OutlineButton onClick={() => exitActivity(participant?.activityCode)}>{t.leave}</OutlineButton>
         </HeaderActions>

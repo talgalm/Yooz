@@ -1,5 +1,11 @@
 const cache = new Map<string, unknown>();
-const MODULE_STORAGE_PREFIX = 'yooz_module_';
+/**
+ * Bumped when the shape or the meaning of a cached module changes. Anything
+ * stored under an older prefix is never read again, so a browser holding a
+ * module from before a fix does not keep serving it - clearing site data is not
+ * something a participant in the field will do.
+ */
+const MODULE_STORAGE_PREFIX = 'yooz_module_v2_';
 
 /**
  * The language is part of the key: the server translates the activity's content
