@@ -11,8 +11,6 @@ export const texts = {
     heroTitleThird: 'שמשאירה חותם',
     heroLead:
       'פתרונות גיימיפיקציה מתקדמים לאתרי תיירות, פארקים, מוזיאונים ומסלולי בטבע לשיפור החוויה והמעורבות.',
-    heroCta: 'הזמנת דמו',
-    heroSecondary: 'המודל העסקי',
     heroMediaAlt: 'מטיילים מצלמים סלפי בעיר העתיקה',
     stats: [
       { value: '1.5x', label: 'זמן שהייה ממוצע באתר' },
@@ -29,7 +27,7 @@ export const texts = {
       { iconUrl: '/images/marketing/icon-engagement.png', title: 'מעורבות', body: 'תוכן רב-כיווני ודינמי שיוצר חיבור ישיר בין המבקר, הידע והמרחב הפיזי.' },
     ],
     bottomLineLabel: 'השורה התחתונה:',
-    bottomLine: 'אנחנו לא רק מספרים את הסיפור של המקום - אנחנו גורמים למבקר לקחת בו חלק פעיל.',
+    bottomLine: 'אנחנו מסייעים ללקוח לספר את הסיפור של המקום - וגורמים למבקרים לקחת חלק פעיל ומעורב בחוויה.',
 
     fitTitle: 'לאיזה אתרים ופארקים Yooz מתאימה?',
     fitIntro:
@@ -55,7 +53,7 @@ export const texts = {
       {
         label: 'שלב 1: הצתה וחיבור ראשוני',
         title: 'פתיחה סיפורית ששואבת את המבקר פנימה',
-        body: 'סריקת QR מהירה בכניסה למצודה פותחת סרטון קצר של שומר הפארק שמציג את סיפור הרקע ומזמין את הקבוצה למצוא את המזוודה הגנובה.',
+        body: 'סריקת QR מהירה בכניסה לפעילות פותחת סרטון קצר של שומר הפארק שמציג את סיפור הרקע ומזמין את הקבוצה למצוא את המזוודה הגנובה.',
         checks: [
           'ללא צורך בהורדת אפליקציה מחנות האפליקציות',
           'זמן טעינה מהיר בכל מכשיר',
@@ -89,35 +87,35 @@ export const texts = {
 
     customersTitle: 'לקוחות מרוצים',
     customers: [
-      { name: 'שדה אליהו', caption: 'פעילות מרכז מבקרים', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
-      { name: 'גני יהושוע', caption: 'פארקוד - פעילות קבועה לקבוצות', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
-      { name: 'תל קאקון', caption: 'תעלומת האוצר הממלכתי', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
-      { name: 'קופ״ח כללית', caption: 'פעילות גיבוש עובדים בפריסה רחבה', logoUrl: '/images/marketing/logo-clalit.svg' },
+      { name: 'שדה אליהו', caption: 'פעילות במרכז המבקרים', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
+      { name: 'גני יהושוע', caption: 'פעילות למשפחות (פתוחה כל השנה)', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
+      { name: 'תל קאקון', caption: 'תעלומת האוצר הממלוכי', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
+      { name: 'קופ״ח כללית', caption: 'פעילות גיבוש של מאות עובדים ב-40 סניפים', logoUrl: '/images/marketing/logo-clalit.svg' },
     ],
 
-    /** The same pair appears on all four frames - not page-specific. */
+    testimonialsTitle: 'לקוחות ממליצים',
     testimonials: [
       {
         quote:
-          '"מזה 5 שנים אני משתמש בפלטפורמת Yooz כדי לייצר חוויית למידה מעניינת ומאתגרת... תוצאות המחקר שערכתי במשך 3 שנים מצביעות על עלייה בהישגים ובמעורבות"',
-        author: 'מרצה במכללה האקדמית בתל אביב יפו',
-        initials: 'ד.ו',
+          '"עבור מרכז המבקרים בקיבוץ שדה אליהו פיתחנו פעילות חווייתית המלווה את הסיור. המבקרים לומדים על הקיבוץ, דמויות המפתח, ההיסטוריה והענפים השונים, והיא הופכת את הסיור לחוויה מיוחדת"',
+        author: 'נינה, מנהלת מרכז המבקרים שדה אליהו',
+        initials: 'נ',
         avatarBg: '#D1FAE5',
       },
       {
         quote:
-          '"פיתחנו סימולטור מתקדם לבדיקת מידת קבלת החלטות רפואיות על ידי הסטודנטים. הסימולטור מדמה מצבי אמת באמצעות כלי AI ותורם לחוויית ואפקטיביות הלמידה"',
-        author: 'מרצה בחוג לסיעוד',
-        initials: 'מ.ט',
+          '"עבור פעילות משפחות בישוב שלנו פותחה פעילות מיוחדת בתל קאקון (עמק חפר). מזה שנתיים משפחות נהנות מפעילות משחקית מדליקה, ערן תודה רבה"',
+        author: 'יעל, ועדת תרבות בת חפר',
+        initials: 'י',
         avatarBg: '#F3E8FF',
       },
     ],
 
     faqTitle: 'שאלות נפוצות',
     faq: [
-      { q: 'האם צריך קליטה סלולרית לאורך כל המסלול?', a: 'לא. הפעילות נטענת מראש וממשיכה לעבוד גם באזורים ללא קליטה, ומסתנכרנת כשהחיבור חוזר.' },
+      { q: 'האם צריך קליטה סלולרית לאורך כל המסלול?', a: 'כן. הפעילות רצה בזמן אמת מהנייד של המשתתפים, ולכן נדרשת קליטה סלולרית לאורך המסלול.' },
       { q: 'האם הפעילות מתאימה לכל הגילאים?', a: 'כן. רמת הקושי והתוכן מותאמים לקהל - משפחות, קבוצות בית ספר או מבוגרים.' },
-      { q: 'כמה זמן לוקח להקים מסלול באתר שלנו?', a: 'סיור מבוסס תבנית עולה לאוויר תוך ימים ספורים. מסלול מותאם עם צילומים ותוכן ייעודי נמשך מספר שבועות.' },
+      { q: 'כמה זמן לוקח לנו לפתח לכם פעילות חווייתית מדליקה?', a: 'פיתוח פעילות או מסלול שמותאמים לצרכים שלכם נמשך מספר שבועות בודדים, לאחר אפיון צרכים קצר.' },
       { q: 'איזה מידע ונתונים מקבלים בסיום או תוך כדי הפעילות?', a: 'מספר משתתפים, זמני שהייה בכל תחנה, נקודות נטישה, ציונים ושיתופים ברשתות - בזמן אמת ובייצוא.' },
     ],
   },
@@ -128,8 +126,6 @@ export const texts = {
     heroTitleThird: 'that leaves a mark',
     heroLead:
       'Advanced gamification for tourist sites, parks, museums and nature trails, to lift both the experience and involvement.',
-    heroCta: 'Book a demo',
-    heroSecondary: 'The business model',
     heroMediaAlt: 'Travellers taking a selfie in the old city',
     stats: [
       { value: '1.5x', label: 'Average dwell time on site' },
@@ -146,7 +142,7 @@ export const texts = {
       { iconUrl: '/images/marketing/icon-engagement.png', title: 'Involvement', body: 'Multi-directional, dynamic content connecting the visitor, the knowledge and the physical space.' },
     ],
     bottomLineLabel: 'The bottom line:',
-    bottomLine: 'we do not just tell the story of the place - we make the visitor take an active part in it.',
+    bottomLine: 'we help you tell the story of your place - and get visitors to take an active, involved part in the experience.',
 
     fitTitle: 'Which sites and parks is Yooz for?',
     fitIntro:
@@ -167,7 +163,7 @@ export const texts = {
       {
         label: 'Stage 1: the spark and first connection',
         title: 'A story opening that pulls the visitor in',
-        body: 'A quick QR scan at the fortress entrance opens a short clip of the park keeper, setting up the background story and inviting the group to find the stolen case.',
+        body: 'A quick QR scan at the start of the activity opens a short clip of the park keeper, setting up the background story and inviting the group to find the stolen case.',
         checks: [
           'No app store download required',
           'Fast load time on any device',
@@ -201,22 +197,35 @@ export const texts = {
 
     customersTitle: 'Happy customers',
     customers: [
-      { name: 'Sde Eliyahu', caption: 'Visitor centre activity', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
-      { name: 'Ganei Yehoshua', caption: 'ParKod - a standing group activity', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
-      { name: 'Tel Qaqun', caption: 'The royal treasure mystery', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
-      { name: 'Clalit Health', caption: 'Employee engagement activity at scale', logoUrl: '/images/marketing/logo-clalit.svg' },
+      { name: 'Sde Eliyahu', caption: 'An activity at the visitor centre', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
+      { name: 'Ganei Yehoshua', caption: 'A family activity, open all year round', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
+      { name: 'Tel Qaqun', caption: 'The Mamluk treasure mystery', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
+      { name: 'Clalit Health', caption: 'Team-building for hundreds of employees across 40 branches', logoUrl: '/images/marketing/logo-clalit.svg' },
     ],
 
+    testimonialsTitle: 'What our customers say',
     testimonials: [
-      { quote: '"For five years I have used the Yooz platform to build an engaging, challenging learning experience... three years of research I ran show a rise in both achievement and involvement"', author: 'Lecturer, Academic College of Tel Aviv-Yafo', initials: 'D.V', avatarBg: '#D1FAE5' },
-      { quote: '"We built an advanced simulator to assess medical decision-making by students. It models real situations using AI tools and adds to both the experience and the effectiveness of the learning"', author: 'Lecturer, Nursing Department', initials: 'M.T', avatarBg: '#F3E8FF' },
+      {
+        quote:
+          '"For the visitor centre at Kibbutz Sde Eliyahu we built an experience that runs alongside the tour. Visitors learn about the kibbutz, its key figures, its history and its different branches, and it turns the tour into something special"',
+        author: 'Nina, visitor centre manager, Sde Eliyahu',
+        initials: 'N',
+        avatarBg: '#D1FAE5',
+      },
+      {
+        quote:
+          '"For family activities in our community a special activity was built at Tel Qaqun (Hefer Valley). For two years now families have been enjoying a brilliant game-based activity - thank you, Eran"',
+        author: 'Yael, culture committee, Bat Hefer',
+        initials: 'Y',
+        avatarBg: '#F3E8FF',
+      },
     ],
 
     faqTitle: 'Frequently asked questions',
     faq: [
-      { q: 'Is mobile reception needed along the whole route?', a: 'No. The activity is preloaded and keeps working in areas without reception, syncing when the connection returns.' },
+      { q: 'Is mobile reception needed along the whole route?', a: "Yes. The activity runs live on the participants' phones, so reception is needed along the route." },
       { q: 'Does it suit every age group?', a: 'Yes. Difficulty and content are matched to the audience - families, school groups or adults.' },
-      { q: 'How long does it take to build a route at our site?', a: 'A template-based tour goes live within days. A custom route with dedicated photography and content takes a few weeks.' },
+      { q: 'How long does it take us to build you an experience worth talking about?', a: 'Building an activity or route around what you need takes just a few weeks, after a short needs assessment.' },
       { q: 'What data do we get during and after the activity?', a: 'Participant numbers, dwell time per station, drop-off points, scores and social shares, live and as an export.' },
     ],
   },
