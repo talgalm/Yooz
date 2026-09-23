@@ -13,8 +13,14 @@ body {
   background: #fff;
   color: #333;
   -webkit-font-smoothing: antialiased;
-  direction: rtl;
-  text-align: right;
+  /*
+   * Direction follows the document, which `LanguageProvider` sets from the
+   * chosen language. Pinning `rtl` here overrode it: in English the text read
+   * left to right but the paragraph direction stayed right to left, so every
+   * "?" and "!" jumped to the wrong end of its sentence. `start` aligns with
+   * whichever direction is in force.
+   */
+  text-align: start;
 }
 
 #root {
@@ -81,11 +87,16 @@ body {
   }
 }
 
+/*
+ * Form controls do not inherit direction from the page on their own, so they
+ * are told to follow it. Pinning `rtl` here put the caret and the placeholder
+ * on the right of every English field.
+ */
 input,
 textarea,
 select {
-  direction: rtl;
-  text-align: right;
+  direction: inherit;
+  text-align: start;
 }
 
 /*

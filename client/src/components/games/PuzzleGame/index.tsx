@@ -671,7 +671,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
   // ─── Opening / Intro screen ───
   if (!gameStarted) {
     return (
-      <IntroContainer dir="rtl" $externalBackdrop={Boolean(setThemedSceneOverlay)}>
+      <IntroContainer $externalBackdrop={Boolean(setThemedSceneOverlay)}>
         {!activityHeaderAudio && (
           <PuzzleGameIntroHeaderBar>
             <PuzzleGameMuteButton onClick={toggleMute} aria-label={isMuted ? 'Unmute' : 'Mute'}>
@@ -713,7 +713,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     if (noContent) return null;
     return (
       <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
-        <FinishContainer dir="rtl">
+        <FinishContainer>
           <FinishContent>
             <IntroTitle dir="auto">
               <IntroTitleLine>{((game.settings as Record<string, unknown>).endTitle as string)?.trim() || t.gameComplete}</IntroTitleLine>
@@ -743,7 +743,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
 
     return (
       <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
-        <PuzzleContainer dir="rtl">
+        <PuzzleContainer>
           <PuzzleGameTopBar>
             <TopBarLeftCluster>
               <PuzzleGameTopBarItem>{t.piecesRevealed}: {revealedPieces.size}/{totalPieces}</PuzzleGameTopBarItem>
@@ -853,7 +853,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
 
   return (
     <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
-    <PuzzleContainer dir="rtl">
+    <PuzzleContainer>
       {/* Top bar */}
       <PuzzleGameTopBar>
         <TopBarLeftCluster>

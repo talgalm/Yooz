@@ -449,7 +449,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
   // ─── Opening / Instructions screen ───
   if (showInstructions) {
     return (
-      <IntroContainer dir="rtl" $externalBackdrop={Boolean(setThemedSceneOverlay)}>
+      <IntroContainer $externalBackdrop={Boolean(setThemedSceneOverlay)}>
         {!activityHeaderAudio && (
           <GameIntroHeaderBar>
             <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
@@ -497,7 +497,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
   if (countdown !== null) {
     return (
       <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
-        <NatureCountdown dir="rtl">
+        <NatureCountdown>
           {!activityHeaderAudio && (
             <GameIntroHeaderBar>
               <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
@@ -519,7 +519,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     if (noContent) return null;
     return (
       <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
-        <FinishContainer dir="rtl">
+        <FinishContainer>
           {!activityHeaderAudio && (
             <GameIntroHeaderBar>
               <GameHeaderMuteButton onClick={sounds.toggleMute} aria-label={sounds.isMuted ? 'Unmute' : 'Mute'}>
@@ -556,7 +556,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
 
   return (
     <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
-      <NatureContainer dir="rtl">
+      <NatureContainer>
       {/* Header */}
       <TFHeader>
         <TFHeaderLeft>

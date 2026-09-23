@@ -160,7 +160,6 @@ const PuzzleInstruction = styled('p')({
   fontSize: 'clamp(16px, 5vw, 22px)',
   color: '#F2F7FF',
   textAlign: 'center',
-  direction: 'rtl',
   margin: 0,
   padding: '0 16px',
   lineHeight: 1.5,
