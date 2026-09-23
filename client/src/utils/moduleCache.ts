@@ -1,8 +1,19 @@
 const cache = new Map<string, unknown>();
 const MODULE_STORAGE_PREFIX = 'yooz_module_';
 
+/**
+ * The language is part of the key: the server translates the activity's content
+ * to match the interface, so the same activity cached in Hebrew must not be
+ * served to a participant who has since switched to English.
+ */
 function cacheKey(code: string, group: string): string {
-  return `${code.trim()}:${group || ''}`;
+  let lang = 'he';
+  try {
+    lang = localStorage.getItem('yooz_lang') || 'he';
+  } catch {
+    /* storage blocked - Hebrew is the default anyway */
+  }
+  return `${code.trim()}:${group || ''}:${lang}`;
 }
 
 function persistKey(code: string, group: string): string {
