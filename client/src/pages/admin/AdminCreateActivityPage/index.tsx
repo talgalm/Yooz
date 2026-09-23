@@ -1665,7 +1665,6 @@ export default function AdminCreateActivityPage() {
                               fontSize: 14,
                               background: '#fafafe',
                               outline: 'none',
-                              direction: 'rtl',
                             }}
                           >
                             <option value="">{t.selectPortalPlaceholder}</option>

@@ -114,7 +114,6 @@ const TextArea = styled('textarea')({
   fontFamily: 'inherit',
   resize: 'vertical',
   minHeight: 100,
-  direction: 'rtl',
   '&:focus': {
     borderColor: '#6c5ce7',
     background: '#fff',
@@ -221,7 +220,6 @@ const PreviewBox = styled('div')<{ bgUrl?: string }>(({ bgUrl }) => ({
   padding: '24px 20px',
   color: '#F2F7FF',
   textAlign: 'center',
-  direction: 'rtl',
   maxWidth: 360,
   minHeight: 300,
   margin: '0 auto 16px',

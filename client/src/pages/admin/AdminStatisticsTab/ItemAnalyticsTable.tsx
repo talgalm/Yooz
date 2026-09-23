@@ -179,16 +179,16 @@ function QuestionBreakdown({
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
           <tr>
-            <th style={{ textAlign: 'right', padding: '6px 10px', color: '#888', fontWeight: 600 }}>
+            <th style={{ textAlign: 'start', padding: '6px 10px', color: '#888', fontWeight: 600 }}>
               #
             </th>
-            <th style={{ textAlign: 'right', padding: '6px 10px', color: '#888', fontWeight: 600 }}>
+            <th style={{ textAlign: 'start', padding: '6px 10px', color: '#888', fontWeight: 600 }}>
               {t.question}
             </th>
-            <th style={{ textAlign: 'right', padding: '6px 10px', color: '#888', fontWeight: 600 }}>
+            <th style={{ textAlign: 'start', padding: '6px 10px', color: '#888', fontWeight: 600 }}>
               {t.successRate}
             </th>
-            <th style={{ textAlign: 'right', padding: '6px 10px', color: '#888', fontWeight: 600 }}>
+            <th style={{ textAlign: 'start', padding: '6px 10px', color: '#888', fontWeight: 600 }}>
               {t.avgTime}
             </th>
           </tr>

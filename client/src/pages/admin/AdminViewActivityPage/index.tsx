@@ -38,7 +38,6 @@ const ProvisionWarning = styled('div')({
 
 const PageBg = styled('div')({
   minHeight: '100vh',
-  direction: 'rtl',
   background: 'linear-gradient(160deg, #f5edf4 0%, #eee8f8 40%, #f5f5f7 100%)',
   overflowX: 'hidden',
 });
