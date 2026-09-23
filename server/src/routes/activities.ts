@@ -12,6 +12,8 @@ import { getGroupStatus } from '../utils/groupStatus';
 import { ownReportFilter } from '../utils/participantAuth';
 import { resolveCeiling, normalizeScore } from '../utils/scoreNormalization';
 import { startOfTodayIsrael, israelDayString } from '../utils/israelTime';
+import { readLang } from '../utils/requestLang';
+import { translateContent } from '../services/contentTranslation';
 import { visibleOrderedIndices } from '../utils/moduleItems';
 import { onGroupMemberCompleted } from '../services/groupRewardService';
 import activityGroupsRouter from './activityGroups';
@@ -325,7 +327,13 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   };
 
   res.setHeader('Cache-Control', 'no-store');
-  res.json({
+  /**
+   * Everything below this line is admin-authored content, so a participant
+   * running in another language gets it translated. Hebrew is a no-op, and a
+   * translation that cannot be produced falls back to the Hebrew it was given.
+   */
+  const lang = readLang(req);
+  res.json(await translateContent({
     code: activity.code,
     name: activity.name,
     module: moduleResponse,
@@ -340,7 +348,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     lockedFromIndex: typeof activity.lockedFromIndex === 'number' ? activity.lockedFromIndex : null,
     ...(activity.includeOnRoadmap && { includeOnRoadmap: true }),
     ...(activity.smsForCollage && { smsForCollage: true }),
-  });
+  }, lang));
 });
 
 // SSE: live updates of the manager-controlled progress lock for an activity.
