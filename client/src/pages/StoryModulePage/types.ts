@@ -141,6 +141,8 @@ export interface ActivityModuleResponse {
   code: string;
   name: string;
   module: ModuleData;
+  /** Languages the activity was prepared in besides Hebrew. */
+  languages?: string[];
   guidelines?: string;
   customInstructions?: CustomInstructionsData;
   isContinuous?: boolean;

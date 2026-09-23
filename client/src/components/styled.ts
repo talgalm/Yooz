@@ -35,6 +35,8 @@ const wave = keyframes`
 
 export const LoaderWave = styled('div')({
   display: 'flex',
+  /** A Latin wordmark reads the same in every language - it never mirrors. */
+  direction: 'ltr',
   gap: 6,
   fontSize: 48,
   fontWeight: 700,

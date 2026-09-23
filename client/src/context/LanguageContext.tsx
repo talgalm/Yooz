@@ -6,11 +6,12 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
  * untouched; keys the new language does not carry fall back to Hebrew.
  *
  * `label` is the language's own name (never translated), so a new language
- * needs no new i18n key to appear in the switchers.
+ * needs no new i18n key to appear in the switchers. `short` is that name cut
+ * down to what fits inside a round button.
  */
 export const LANGS = [
-  { code: 'he', label: 'עברית', flag: '🇮🇱', dir: 'rtl' },
-  { code: 'en', label: 'English', flag: '🇺🇸', dir: 'ltr' },
+  { code: 'he', label: 'עברית', short: 'עב', flag: '🇮🇱', dir: 'rtl' },
+  { code: 'en', label: 'English', short: 'EN', flag: '🇺🇸', dir: 'ltr' },
 ] as const;
 
 export type Lang = (typeof LANGS)[number]['code'];
@@ -48,26 +49,48 @@ function readStoredLang(): Lang {
 }
 
 interface LanguageContextType {
+  /** The language actually rendered - the choice, unless an activity narrows it. */
   lang: Lang;
   dir: 'ltr' | 'rtl';
   setLang: (lang: Lang) => void;
+  /**
+   * Called by the participant activity scope with the languages that activity
+   * was prepared in, and with `null` on the way out of it.
+   */
+  restrictToLanguages: (langs: string[] | null) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>(readStoredLang);
+  const [chosen, setChosen] = useState<Lang>(readStoredLang);
+  /**
+   * The languages the activity being played was prepared in, or `null` outside
+   * an activity and before its config has arrived. Inside an activity that was
+   * never translated, everything - station names, buttons, help - reads in
+   * Hebrew, whatever the device was set to: half an activity in English is
+   * worse than all of it in the language it was written in.
+   */
+  const [activityLangs, setActivityLangs] = useState<string[] | null>(null);
 
+  const restricted = activityLangs !== null && chosen !== DEFAULT_LANG && !activityLangs.includes(chosen);
+  const lang: Lang = restricted ? DEFAULT_LANG : chosen;
   const dir = langDir(lang);
 
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = dir;
-    localStorage.setItem(STORAGE_KEY, lang);
   }, [lang, dir]);
 
+  /** Only the participant's own choice is stored; a restriction is not theirs. */
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, chosen);
+  }, [chosen]);
+
   return (
-    <LanguageContext.Provider value={{ lang, dir, setLang }}>
+    <LanguageContext.Provider
+      value={{ lang, dir, setLang: setChosen, restrictToLanguages: setActivityLangs }}
+    >
       {children}
     </LanguageContext.Provider>
   );
