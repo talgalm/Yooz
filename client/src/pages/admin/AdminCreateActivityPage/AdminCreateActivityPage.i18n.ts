@@ -216,6 +216,9 @@ export const texts = {
     activityDurationHint: '1-minute warning popup will be shown before time runs out',
     roadmapTimerEnable: 'Show a timer on the roadmap',
     roadmapTimerPlaceholder: 'e.g. 15',
+    languagesSection: 'Languages',
+    languagesDesc:
+      "Besides Hebrew. The activity's own content is translated for participants who pick one, and is prepared when you save so nobody waits for it.",
     guidelinesSection: 'Guidelines (optional)',
     guidelinesDesc: 'Custom instructions shown to participants before starting',
     guidelinesPlaceholder: 'Enter custom guidelines for participants...',
@@ -542,6 +545,8 @@ export const texts = {
     activityDurationHint: 'תופיע התראה דקה לפני סיום הזמן',
     roadmapTimerEnable: 'הצג טיימר במפת הדרך',
     roadmapTimerPlaceholder: 'לדוגמה: 15',
+    languagesSection: 'שפות',
+    languagesDesc: 'מלבד עברית. התוכן של הפעילות מתורגם למשתתפים שבוחרים בשפה, והתרגום מוכן כבר בשמירה כדי שאיש לא ימתין לו.',
     guidelinesSection: 'הנחיות (אופציונלי)',
     guidelinesDesc: 'הוראות מותאמות שיוצגו למשתתפים לפני תחילת הפעילות',
     guidelinesPlaceholder: 'הכניסו הנחיות למשתתפים...',
