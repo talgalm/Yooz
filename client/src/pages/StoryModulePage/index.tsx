@@ -1490,7 +1490,7 @@ export default function StoryModulePage() {
     }}>
       <div style={{
         background: '#fff', borderRadius: 16, padding: '28px 32px', maxWidth: 340, width: '90%',
-        textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', direction: 'rtl',
+        textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', 
       }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>⏰</div>
         <h3 style={{ margin: '0 0 8px', fontSize: 20, color: '#333', fontWeight: 700 }}>{t.oneMinuteTitle}</h3>

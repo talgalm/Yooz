@@ -376,7 +376,6 @@ export const ChatIconButton = styled('button')({
   gap: 6,
   cursor: 'pointer',
   borderRadius: 999,
-  direction: 'rtl',
   fontSize: 14,
   fontWeight: 800,
   fontFamily: 'inherit',
