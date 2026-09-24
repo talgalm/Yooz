@@ -183,4 +183,4 @@ export interface CombinedReportData {
 }
 
 export type StatisticsView = 'overview' | 'activity' | 'audit' | 'combined';
-export type ActivitySubTab = 'overview' | 'funnel' | 'items' | 'groups' | 'participants' | 'export';
+export type ActivitySubTab = 'overview' | 'funnel' | 'items' | 'groups' | 'participants' | 'export' | 'automated';
