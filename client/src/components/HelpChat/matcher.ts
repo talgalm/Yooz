@@ -3,10 +3,12 @@
  *
  * Architecture: This is a pluggable module. To upgrade to LLM-based responses,
  * replace this file's `matchTopic` function with an API call to your LLM endpoint.
- * The interface stays the same: (input: string, lang: Lang) => MatchResult | null
+ * The interface stays the same: (input: string) => MatchResult | null
+ *
+ * It takes no language: the keywords are matched against whatever the person
+ * actually typed, in every language they are authored in, and the answer is
+ * looked up by `responseKey` in the caller's own translations.
  */
-
-import type { Lang } from '../../context/LanguageContext';
 
 export interface MatchResult {
   topicId: string;
@@ -169,11 +171,7 @@ const topics: TopicDef[] = [
  * Match user input against predefined topics using keyword scoring.
  * Returns the best match if confidence is above threshold.
  */
-export function matchTopic(input: string, lang: Lang): MatchResult | null {
-  // ponytail: keywords are only authored in Hebrew and English; any other
-  // language matches against the English set. Add a keyword list per language
-  // here if the help bot ever needs to match one directly.
-  const kw: 'en' | 'he' = lang === 'he' ? 'he' : 'en';
+export function matchTopic(input: string): MatchResult | null {
   const normalized = input.toLowerCase().trim();
   if (!normalized) return null;
 
@@ -181,7 +179,10 @@ export function matchTopic(input: string, lang: Lang): MatchResult | null {
   let bestScore = 0;
 
   for (const topic of topics) {
-    const keywords = [...topic.keywords[kw], ...topic.keywords[kw === 'en' ? 'he' : 'en']];
+    // Every authored list, whatever the interface language: someone reading
+    // the app in one language often types their question in another, and a
+    // keyword only ever matches text that actually contains it.
+    const keywords = Object.values(topic.keywords).flat();
     let score = 0;
     let matchCount = 0;
 

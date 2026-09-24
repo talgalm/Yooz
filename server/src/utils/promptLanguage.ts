@@ -1,9 +1,4 @@
-import { SUPPORTED_LANGS, type Lang } from './requestLang';
-
-const NAMES: Record<Lang, string> = {
-  he: 'Hebrew',
-  en: 'English',
-};
+import { DEFAULT_LANG, isLanguage, languageOf } from './languages';
 
 /**
  * The line that decides what language a model answers a participant in.
@@ -14,11 +9,11 @@ const NAMES: Record<Lang, string> = {
  * goes last and says plainly which language the reply is in. A late, explicit
  * instruction is the one the model follows.
  *
- * Empty for Hebrew: the prompt already says so, and a redundant English
- * sentence in an otherwise Hebrew prompt only invites the model to switch.
+ * Empty for the default language: the prompt already says so, and a redundant
+ * English sentence in an otherwise Hebrew prompt only invites the model to
+ * switch.
  */
 export function replyLanguageInstruction(lang: string): string {
-  if (!lang || lang === 'he' || !(SUPPORTED_LANGS as readonly string[]).includes(lang)) return '';
-  const name = NAMES[lang as Lang];
-  return `Reply only in ${name}. This overrides any earlier instruction about which language to use. Keep the character, the tone and the length exactly as described above.`;
+  if (!lang || lang === DEFAULT_LANG || !isLanguage(lang)) return '';
+  return `Reply only in ${languageOf(lang).name}. This overrides any earlier instruction about which language to use. Keep the character, the tone and the length exactly as described above.`;
 }

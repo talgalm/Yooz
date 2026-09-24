@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { AZURE_SPEECH_KEY, AZURE_SPEECH_REGION } from '../config';
 import { readLang } from '../utils/requestLang';
+import { languageOf } from '../utils/languages';
 import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
@@ -16,15 +17,10 @@ const isRateLimited = createRateLimiter({
   perAddress: 400,
 });
 
-/**
- * One voice per language and gender. A Hebrew voice reading English does not
- * sound accented - it mispronounces the words outright, because it is sounding
- * out Latin letters with Hebrew phonetics.
- */
-const VOICES = {
-  he: { locale: 'he-IL', man: 'he-IL-AvriNeural', woman: 'he-IL-HilaNeural' },
-  en: { locale: 'en-US', man: 'en-US-GuyNeural', woman: 'en-US-JennyNeural' },
-} as const;
+// The voice comes from the one language registry. A voice from the wrong
+// language does not sound accented - it mispronounces the words outright,
+// because it is sounding out the letters with another language's phonetics,
+// and Azure answers with an empty clip, which plays as silence.
 
 function escapeSsml(text: string): string {
   return text
@@ -55,10 +51,10 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   const safeText = text.trim().slice(0, 1000);
-  const set = VOICES[lang] ?? VOICES.he;
-  const voice = voiceType === 'woman' ? set.woman : set.man;
+  const { locale, voices } = languageOf(lang);
+  const voice = voiceType === 'woman' ? voices.woman : voices.man;
 
-  const ssml = `<speak version='1.0' xml:lang='${set.locale}'><voice xml:lang='${set.locale}' name='${voice}'>${escapeSsml(safeText)}</voice></speak>`;
+  const ssml = `<speak version='1.0' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voice}'>${escapeSsml(safeText)}</voice></speak>`;
 
   const url = `https://${AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`;
 

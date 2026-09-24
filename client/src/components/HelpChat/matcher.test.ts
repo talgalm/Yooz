@@ -9,39 +9,39 @@ import { matchTopic } from './matcher';
  * neighbours most likely to be stolen from.
  */
 
-function topicOf(input: string, lang: 'en' | 'he') {
-  return matchTopic(input, lang)?.topicId ?? null;
+function topicOf(input: string) {
+  return matchTopic(input)?.topicId ?? null;
 }
 
 test('field sheet — Hebrew phrasings route to their own topic', () => {
-  assert.equal(topicOf('נזרקתי מהפעילות', 'he'), 'kickedOut');
-  assert.equal(topicOf('אין לי קישור לפעילות', 'he'), 'kickedOut');
-  assert.equal(topicOf('הכפתור לא עובד', 'he'), 'buttonStuck');
-  assert.equal(topicOf('אני תקוע במשימה', 'he'), 'taskStuck');
-  assert.equal(topicOf('צריך רמז', 'he'), 'taskStuck');
-  assert.equal(topicOf('לא נוצר סרטון', 'he'), 'videoMissing');
-  assert.equal(topicOf('לא קיבלתי סרטון', 'he'), 'videoMissing');
+  assert.equal(topicOf('נזרקתי מהפעילות'), 'kickedOut');
+  assert.equal(topicOf('אין לי קישור לפעילות'), 'kickedOut');
+  assert.equal(topicOf('הכפתור לא עובד'), 'buttonStuck');
+  assert.equal(topicOf('אני תקוע במשימה'), 'taskStuck');
+  assert.equal(topicOf('צריך רמז'), 'taskStuck');
+  assert.equal(topicOf('לא נוצר סרטון'), 'videoMissing');
+  assert.equal(topicOf('לא קיבלתי סרטון'), 'videoMissing');
 });
 
 test('field sheet — English phrasings route to their own topic', () => {
-  assert.equal(topicOf('I got kicked out', 'en'), 'kickedOut');
-  assert.equal(topicOf('the button does nothing', 'en'), 'buttonStuck');
-  assert.equal(topicOf('I cant solve this', 'en'), 'taskStuck');
-  assert.equal(topicOf('no video was created', 'en'), 'videoMissing');
+  assert.equal(topicOf('I got kicked out'), 'kickedOut');
+  assert.equal(topicOf('the button does nothing'), 'buttonStuck');
+  assert.equal(topicOf('I cant solve this'), 'taskStuck');
+  assert.equal(topicOf('no video was created'), 'videoMissing');
 });
 
 test('existing topics are not stolen by the new keywords', () => {
-  assert.equal(topicOf('לא מצליח להתחבר', 'he'), 'login');
-  assert.equal(topicOf('הניקוד שלי לא נכון', 'he'), 'score');
-  assert.equal(topicOf('אין חיבור אינטרנט', 'he'), 'connection');
-  assert.equal(topicOf('איך לשחק', 'he'), 'howToPlay');
-  assert.equal(topicOf('cannot login', 'en'), 'login');
-  assert.equal(topicOf('my score is wrong', 'en'), 'score');
-  assert.equal(topicOf('no internet connection', 'en'), 'connection');
+  assert.equal(topicOf('לא מצליח להתחבר'), 'login');
+  assert.equal(topicOf('הניקוד שלי לא נכון'), 'score');
+  assert.equal(topicOf('אין חיבור אינטרנט'), 'connection');
+  assert.equal(topicOf('איך לשחק'), 'howToPlay');
+  assert.equal(topicOf('cannot login'), 'login');
+  assert.equal(topicOf('my score is wrong'), 'score');
+  assert.equal(topicOf('no internet connection'), 'connection');
 });
 
 test('nonsense and empty input still fall through', () => {
-  assert.equal(matchTopic('', 'he'), null);
-  assert.equal(matchTopic('   ', 'en'), null);
-  assert.equal(matchTopic('qwertyuiop zxcvbnm', 'en'), null);
+  assert.equal(matchTopic(''), null);
+  assert.equal(matchTopic('   '), null);
+  assert.equal(matchTopic('qwertyuiop zxcvbnm'), null);
 });

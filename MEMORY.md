@@ -1439,6 +1439,14 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 - **`LanguageContext`** — `useLang()` → `{lang('he'|'en'), dir('rtl'|'ltr'), setLang,
   restrictToLanguages, useScopeOf}`; sets `<html lang/dir>`. **`useTranslations(texts)`** → active
   language slice of a `{he,en}` object (the co-located `.i18n.ts` pattern).
+- **One language registry per side.** `client/src/utils/languages.ts` holds `code`, `label`,
+  `short`, `flag`, `dir`, `locale`; `server/src/utils/languages.ts` holds `code`, `name` (English,
+  for model prompts), `locale`, `voices`. `SUPPORTED_LANGS`, `Lang`, `DEFAULT_LANG`, the TTS
+  voice, the translation prompt and `replyLanguageInstruction` all derive from them, and
+  `LanguageContext` re-exports `LANGS` so existing imports are untouched. Five places used to
+  keep their own partial list; two of them failed silently when they disagreed (a language with
+  no voice made Azure return an empty clip, i.e. silence). `server/src/utils/languages.test.ts`
+  now fails if a row is incomplete or the two sides list different codes.
 - **Three language preferences, not one** (`utils/currentLang.ts`). The activity, the staff
   panels and the marketing site are separate products sharing an origin, so each stores its own
   choice: `yooz_participant_lang` (`/play`, `/home`, `/story`, `/mission`, `/portal`),
