@@ -513,6 +513,12 @@ export default function AdminCreateActivityPage() {
   const [guidelines, setGuidelines] = useState('');
   /** Languages the activity is offered in besides Hebrew. */
   const [languages, setLanguages] = useState<string[]>([]);
+  /**
+   * Hand-edited sentences already stored for this activity's content, per
+   * language - including languages no longer offered. Turning a language off
+   * keeps the work, so the picker says so instead of letting it look lost.
+   */
+  const [storedTranslations, setStoredTranslations] = useState<Record<string, number>>({});
   const [extraSupportInfo, setExtraSupportInfo] = useState('');
   const [organizerContactName, setOrganizerContactName] = useState('');
   const [organizerContactPhone, setOrganizerContactPhone] = useState('');
@@ -682,6 +688,16 @@ export default function AdminCreateActivityPage() {
         setUserControl(a.userControl === true);
         if (a.guidelines) setGuidelines(a.guidelines);
         if (a.languages) setLanguages(a.languages);
+        // What has already been translated by hand, whatever is offered now.
+        adminApiFetch<{ languages: { code: string; reviewed: number }[] }>(
+          `/api/admin/translations/activity/${id}/languages`,
+        )
+          .then((data) =>
+            setStoredTranslations(
+              Object.fromEntries(data.languages.map((l) => [l.code, l.reviewed])),
+            ),
+          )
+          .catch(() => undefined);
         if (a.organizerContactName) setOrganizerContactName(a.organizerContactName);
         if (a.organizerContactPhone) setOrganizerContactPhone(a.organizerContactPhone);
         if (a.extraSupportInfo) setExtraSupportInfo(a.extraSupportInfo);
@@ -2092,20 +2108,38 @@ export default function AdminCreateActivityPage() {
                     <SectionHeaderTitle>{t.languagesSection}</SectionHeaderTitle>
                   </SectionHeader>
                   <SectionDescription style={{ margin: 0 }}>{t.languagesDesc}</SectionDescription>
-                  {LANGS.filter((l) => l.code !== 'he').map((l) => (
-                    <label key={l.code} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 4 }}>
-                      <input
-                        type="checkbox"
-                        checked={languages.includes(l.code)}
-                        onChange={(e) =>
-                          setLanguages((prev) =>
-                            e.target.checked ? [...prev, l.code] : prev.filter((c) => c !== l.code),
-                          )
-                        }
-                      />
-                      {l.label}
-                    </label>
-                  ))}
+                  {LANGS.filter((l) => l.code !== 'he').map((l) => {
+                    const edited = storedTranslations[l.code] ?? 0;
+                    const kept = edited > 0 && !languages.includes(l.code);
+                    return (
+                      <label key={l.code} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 4 }}>
+                        <input
+                          type="checkbox"
+                          checked={languages.includes(l.code)}
+                          onChange={(e) =>
+                            setLanguages((prev) =>
+                              e.target.checked ? [...prev, l.code] : prev.filter((c) => c !== l.code),
+                            )
+                          }
+                        />
+                        {l.label}
+                        {edited > 0 && (
+                          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+                            {t.languagesStored.replace('{n}', String(edited))}
+                          </span>
+                        )}
+                        {kept && (
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '1px 7px', borderRadius: 999, border: '1px solid rgba(255,190,120,0.5)', color: '#ffcf96' }}>
+                            {t.languagesKept}
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
+                  {/* Turning a language off never discards the work done in it. */}
+                  {Object.values(storedTranslations).some((n) => n > 0) && (
+                    <SectionDescription style={{ margin: '2px 0 0' }}>{t.languagesKeptHint}</SectionDescription>
+                  )}
                 </SectionCardWide>
 
                 <SectionCardWide>

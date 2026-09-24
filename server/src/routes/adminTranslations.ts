@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authenticateAdmin } from '../middleware/adminAuth';
-import { Game, Station } from '../models';
+import { Activity, Game, Station } from '../models';
 import { collectProse, translationsFor } from '../services/contentTranslation';
 import { normaliseLang, SUPPORTED_LANGS } from '../utils/requestLang';
 
@@ -32,6 +32,118 @@ function isKind(raw: string): raw is Kind {
 function translatableParts(doc: { name?: string; description?: string; settings?: unknown }) {
   return { name: doc.name, description: doc.description, settings: doc.settings };
 }
+
+/**
+ * What an activity holds in each language, across all of its content.
+ *
+ * Registered before the `:kind` routes below, which would otherwise swallow
+ * `/activity/...` and answer 404. Used by the activity's language picker to
+ * show that work already exists for a language - including one that is no
+ * longer offered, so turning it back on is visibly free.
+ */
+router.get(
+  '/activity/:id/languages',
+  authenticateAdmin,
+  async (req: Request<{ id: string }>, res: Response) => {
+    const activity = await Activity.findById(req.params.id).select('languages module').lean();
+    if (!activity) {
+      res.status(404).json({ error: 'Not found' });
+      return;
+    }
+
+    const items = activity.module?.items ?? [];
+    const idsOf = (type: string) => items.filter((i) => i.type === type).map((i) => i.ref);
+    const [stations, games] = await Promise.all([
+      Station.find({ _id: { $in: idsOf('station') } }).select('translations').lean(),
+      Game.find({ _id: { $in: idsOf('game') } }).select('translations').lean(),
+    ]);
+
+    const reviewed: Record<string, number> = {};
+    for (const doc of [...stations, ...games]) {
+      const stored = (doc.translations ?? {}) as Record<string, Record<string, string>>;
+      for (const [lang, corrections] of Object.entries(stored)) {
+        reviewed[lang] = (reviewed[lang] ?? 0) + Object.keys(corrections ?? {}).length;
+      }
+    }
+
+    const enabled = new Set(activity.languages ?? []);
+    const codes = new Set<string>([
+      ...SUPPORTED_LANGS.filter((code) => code !== 'he'),
+      ...Object.keys(reviewed),
+    ]);
+
+    res.json({
+      languages: [...codes].map((code) => ({
+        code,
+        reviewed: reviewed[code] ?? 0,
+        enabled: enabled.has(code),
+      })),
+    });
+  }
+);
+
+/** The languages offered by the activities that actually include this item. */
+async function languagesInUse(kind: Kind, id: string): Promise<Set<string>> {
+  const type = kind === 'games' ? 'game' : 'station';
+  const activities = await Activity.find({
+    'module.items': { $elemMatch: { type, ref: id } },
+  })
+    .select('languages')
+    .lean();
+  const inUse = new Set<string>();
+  for (const activity of activities) {
+    for (const lang of activity.languages ?? []) inUse.add(lang);
+  }
+  return inUse;
+}
+
+/**
+ * What exists, per language, before any of it is opened.
+ *
+ * Drives the language tabs: how many sentences a person has corrected, and
+ * whether the language is still offered by an activity that uses this item. A
+ * translation is never deleted when an activity stops offering its language -
+ * the work was paid for and the language may come back - so `inUse: false` is
+ * the honest way to say "kept, but nobody is reading it".
+ */
+router.get(
+  '/:kind/:id/languages',
+  authenticateAdmin,
+  async (req: Request<{ kind: string; id: string }>, res: Response) => {
+    const { kind, id } = req.params;
+    if (!isKind(kind)) {
+      res.status(404).json({ error: 'Unknown content type' });
+      return;
+    }
+
+    const doc = await findOneLean(kind, id);
+    if (!doc) {
+      res.status(404).json({ error: 'Not found' });
+      return;
+    }
+
+    const stored = (doc.translations ?? {}) as Record<string, Record<string, string>>;
+    const inUse = await languagesInUse(kind, id);
+
+    // Every language the app knows, plus any a translation is stored under -
+    // including one dropped from the registry, which would otherwise become
+    // invisible work.
+    const codes = new Set<string>([
+      ...SUPPORTED_LANGS.filter((code) => code !== 'he'),
+      ...Object.keys(stored),
+    ]);
+
+    res.json({
+      total: [...collectProse(translatableParts(doc))].length,
+      languages: [...codes].map((code) => ({
+        code,
+        reviewed: Object.keys(stored[code] ?? {}).length,
+        inUse: inUse.has(code),
+        supported: (SUPPORTED_LANGS as readonly string[]).includes(code),
+      })),
+    });
+  }
+);
 
 // Every translatable string, with what the machine made of it and what a person
 // corrected it to. Missing translations are produced here, on request, so the
