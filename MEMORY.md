@@ -394,7 +394,20 @@ No admin auth — the `statsShareToken` is the credential.
   and missions — so the first participant to pick that language does not wait for the model.
   Fire-and-forget: if it fails, the participant path still translates what it finds missing.
   The participant config (`GET /api/activities/:code`) reports `languages` so the picker can
-  offer exactly what the activity was prepared for.
+  offer exactly what the activity was prepared for. An activity that declares none is served
+  exactly as written, and the whole interface inside it falls back to Hebrew
+  (`ParticipantActivityScope` → `LanguageContext.restrictToLanguages`) rather than wrapping
+  Hebrew content in an English shell.
+- **`routes/adminTranslations.ts`** (`/api/admin/translations/:kind/:id`, `kind` = `stations` |
+  `games`) — the review half. `GET ?lang=en` lists every translatable string in the item with its
+  machine translation (produced on the spot if the cache has none) and any human correction;
+  `PUT` stores the corrections on the document itself, in `Station.translations` /
+  `Game.translations`: `{ en: { '<the Hebrew>': '<the English>' } }`. Keyed by source text, not
+  by field path, because `settings` is free-form per type. `GET /api/activities/:code/module`
+  applies these **before** the machine pass (`withReviewedTranslations`), so a corrected sentence
+  is no longer Hebrew by the time `translateContent` runs and the model only fills the rest.
+  Editing the Hebrew retires the correction with it. Admin UI: `TranslationsModal.tsx`, opened
+  from an item's settings in the activity wizard.
 - **`services/activityAnalyticsService.ts`** — analytics aggregations (funnel/items/questions/
   groups/anomalies/report-card/export builders).
 - **`services/reportContext.ts`** — builds LLM context for DumbDumbBot's report answers.
@@ -1375,9 +1388,19 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   login, logout}`. `yooz_admin_token`, JWT-decoded, role-validated.
 - **`ManagerAuthContext`** — `useManagerAuth()` → `{token, manager, isManagerAuthenticated, login,
   logout}`. `yooz_manager_token` (+ `yooz_manager_activity_name`), 4h.
-- **`LanguageContext`** — `useLang()` → `{lang('he'|'en'), dir('rtl'|'ltr'), setLang}`; sets
-  `<html lang/dir>`, persists `yooz_lang` (default `he`). **`useTranslations(texts)`** → active
+- **`LanguageContext`** — `useLang()` → `{lang('he'|'en'), dir('rtl'|'ltr'), setLang,
+  restrictToLanguages, useScopeOf}`; sets `<html lang/dir>`. **`useTranslations(texts)`** → active
   language slice of a `{he,en}` object (the co-located `.i18n.ts` pattern).
+- **Three language preferences, not one** (`utils/currentLang.ts`). The activity, the staff
+  panels and the marketing site are separate products sharing an origin, so each stores its own
+  choice: `yooz_participant_lang` (`/play`, `/home`, `/story`, `/mission`, `/portal`),
+  `yooz_admin_lang` (`/admin`, `/manager`, `/manage`, `/control`) and `yooz_site_lang`
+  (everything else). Default `he` throughout. They replaced a single shared `yooz_lang`, under
+  which reading the marketing site in English put the next activity into English and an admin's
+  panel language reached participants. `langScope(pathname)` is the one mapping — it is read
+  from the path so it also works outside React (`apiFetch`, the module cache, the avatar's
+  fetch helper), and `LangScopeSync` (inside the router, since the provider sits above it)
+  re-reads the right preference when a client-side navigation crosses between them.
 - **`activityPlayingHeaderContext`** / **`themedSceneOverlayContext`** — share header state /
   themed scene overlays across the play flow.
 

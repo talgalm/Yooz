@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import {
+  langInScope,
+  langScope,
+  storeLangInScope,
+  type LangScope,
+} from '../utils/currentLang';
 
 /**
  * The one place a language is declared. Adding a language means adding a row
@@ -36,14 +42,17 @@ type PartialTexts<T> =
  */
 export type Texts<T> = { he: T } & { [K in Exclude<Lang, typeof DEFAULT_LANG>]?: PartialTexts<T> };
 
-const STORAGE_KEY = 'yooz_lang';
-
 function langDir(lang: Lang): 'ltr' | 'rtl' {
   return LANGS.find((l) => l.code === lang)?.dir ?? 'ltr';
 }
 
-function readStoredLang(): Lang {
-  const stored = localStorage.getItem(STORAGE_KEY);
+/**
+ * The choice stored for the part of the app this page belongs to - the activity,
+ * the staff panels, or the marketing site. They are three separate preferences;
+ * see `utils/currentLang` for why.
+ */
+function readStoredLang(scope: LangScope): Lang {
+  const stored = langInScope(scope);
   // Guards a stale value left behind by a language that no longer exists.
   return LANGS.some((l) => l.code === stored) ? (stored as Lang) : DEFAULT_LANG;
 }
@@ -58,12 +67,26 @@ interface LanguageContextType {
    * was prepared in, and with `null` on the way out of it.
    */
   restrictToLanguages: (langs: string[] | null) => void;
+  /**
+   * Called by `LangScopeSync` on every navigation. Moving between the activity,
+   * the staff panels and the marketing site moves between three separate
+   * preferences, and a client-side navigation does not reload the page.
+   */
+  useScopeOf: (pathname: string) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [chosen, setChosen] = useState<Lang>(readStoredLang);
+  /**
+   * Which of the three preferences this page reads and writes. Taken from the
+   * path at boot; the provider sits above the router, so `LangScopeSync` keeps
+   * it current from inside.
+   */
+  const [scope, setScope] = useState<LangScope>(() =>
+    langScope(typeof window === 'undefined' ? '/' : window.location.pathname)
+  );
+  const [chosen, setChosen] = useState<Lang>(() => readStoredLang(scope));
   /**
    * The languages the activity being played was prepared in, or `null` outside
    * an activity and before its config has arrived. Inside an activity that was
@@ -82,14 +105,34 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     document.documentElement.dir = dir;
   }, [lang, dir]);
 
-  /** Only the participant's own choice is stored; a restriction is not theirs. */
+  /**
+   * Only the participant's own choice is stored; a restriction is not theirs.
+   * Written here rather than in an effect on `chosen`, so that switching scope
+   * cannot race the write and stamp one product's language onto another's key.
+   */
+  const setLang = useCallback(
+    (next: Lang) => {
+      storeLangInScope(scope, next);
+      setChosen(next);
+    },
+    [scope]
+  );
+
+  /** A navigation into another part of the app adopts that part's preference. */
+  const useScopeOf = useCallback((pathname: string) => {
+    const next = langScope(pathname);
+    setScope((prev) => (prev === next ? prev : next));
+  }, []);
+
+  // Re-reads on a scope change. On mount this reads the same value the state
+  // was seeded with, so it costs nothing.
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, chosen);
-  }, [chosen]);
+    setChosen(readStoredLang(scope));
+  }, [scope]);
 
   return (
     <LanguageContext.Provider
-      value={{ lang, dir, setLang: setChosen, restrictToLanguages: setActivityLangs }}
+      value={{ lang, dir, setLang, restrictToLanguages: setActivityLangs, useScopeOf }}
     >
       {children}
     </LanguageContext.Provider>

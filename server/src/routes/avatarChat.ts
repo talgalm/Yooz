@@ -1,32 +1,19 @@
 import { Router, Request, Response } from 'express';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
 import { normalizeText, coverage, jaccardSimilarity } from '../utils/hebrewText';
+import { replyLanguageInstruction } from '../utils/promptLanguage';
+import { readLang } from '../utils/requestLang';
+import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
 
-// ─── In-memory rate limiter (20 req/min/IP) ───
+// ─── In-memory rate limiter, counted per participant ───
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 20;
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-  entry.count++;
-  return entry.count > RATE_LIMIT_MAX;
-}
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of rateLimitMap) {
-    if (now > entry.resetAt) rateLimitMap.delete(ip);
-  }
-}, 5 * 60_000);
+const isRateLimited = createRateLimiter({
+  perParticipant: 20,
+  perAnonymous: 20,
+  perAddress: 200,
+});
 
 const FALLBACK_RESPONSE = 'אני עוד לא יודע לענות על זה...';
 
@@ -63,7 +50,7 @@ interface HistoryEntry {
   text: string;
 }
 
-function buildSystemPrompt(settings: AvatarSettings): string {
+function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
   const lines: string[] = [];
   const name = settings.characterName?.trim();
 
@@ -152,13 +139,18 @@ function buildSystemPrompt(settings: AvatarSettings): string {
   lines.push('');
   lines.push('כללי פלט: תשובה קצרה (עד 2 משפטים), ללא אימוג׳ים, ללא מרקדאון, ללא הסברים מטה-טקסט.');
 
+  // Last word on the language, so a participant reading English is answered in it.
+  const language = replyLanguageInstruction(lang);
+  if (language) lines.push('', language);
+
   return lines.join('\n');
 }
 
 async function askGemini(
   message: string,
   settings: AvatarSettings,
-  history: HistoryEntry[]
+  history: HistoryEntry[],
+  lang: string
 ): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
@@ -171,7 +163,7 @@ async function askGemini(
 
   const body = {
     contents,
-    systemInstruction: { parts: [{ text: buildSystemPrompt(settings) }] },
+    systemInstruction: { parts: [{ text: buildSystemPrompt(settings, lang) }] },
     generationConfig: {
       temperature: 0.6,
       maxOutputTokens: 200,
@@ -253,8 +245,7 @@ function matchVideo(message: string, videos: AvatarVideo[]): string | undefined 
 }
 
 router.post('/', async (req: Request, res: Response) => {
-  const ip = req.ip || req.socket.remoteAddress || 'unknown';
-  if (isRateLimited(ip)) {
+  if (isRateLimited(req)) {
     res.status(429).json({ error: 'Too many requests. Please try again later.' });
     return;
   }
@@ -288,7 +279,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   try {
-    const raw = await askGemini(safeMessage, safeSettings, safeHistory);
+    const raw = await askGemini(safeMessage, safeSettings, safeHistory, readLang(req));
     const response = snapToOptionalAnswer(raw, safeSettings.optionalAnswers);
     res.json({ response, videoUrl, source: 'gemini' });
   } catch (err) {
