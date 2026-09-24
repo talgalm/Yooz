@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateAdmin } from '../middleware/adminAuth';
 import { Activity, Game, Station } from '../models';
-import { collectProse, translationsFor } from '../services/contentTranslation';
+import { cachedTranslations, collectProse, translationsFor } from '../services/contentTranslation';
 import { normaliseLang, SUPPORTED_LANGS } from '../utils/requestLang';
 
 /**
@@ -146,8 +146,13 @@ router.get(
 );
 
 // Every translatable string, with what the machine made of it and what a person
-// corrected it to. Missing translations are produced here, on request, so the
-// screen is useful before anyone has played the activity.
+// corrected it to.
+//
+// Nothing is translated by opening this. Reading the screen used to translate
+// the whole item, which spends real money at the model - and most of all for a
+// language no activity offers, where nobody would ever read the result. Pass
+// `?translate=1` to fill in what is missing; that is what the button on the
+// screen does.
 router.get('/:kind/:id', authenticateAdmin, async (req: Request<{ kind: string; id: string }>, res: Response) => {
   const { kind, id } = req.params;
   if (!isKind(kind)) {
@@ -168,12 +173,17 @@ router.get('/:kind/:id', authenticateAdmin, async (req: Request<{ kind: string; 
   }
 
   const sources = [...collectProse(translatableParts(doc))];
-  const machine = await translationsFor(sources, lang);
+  const generate = req.query.translate === '1';
+  const machine = generate
+    ? await translationsFor(sources, lang)
+    : await cachedTranslations(sources, lang);
   const reviewed = (doc.translations?.[lang] ?? {}) as Record<string, string>;
 
   res.json({
     lang,
     name: doc.name,
+    /** How many sentences have no translation yet, so the screen can offer one. */
+    missing: sources.filter((source) => !machine.has(source) && !reviewed[source]).length,
     rows: sources.map((source) => ({
       source,
       machine: machine.get(source) ?? null,

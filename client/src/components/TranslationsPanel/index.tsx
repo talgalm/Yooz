@@ -53,6 +53,27 @@ const UnusedNote = styled('div')({
 
 const UnusedTitle = styled('div')({ fontWeight: 800 });
 
+const TranslateRow = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  flexWrap: 'wrap',
+  marginTop: 6,
+});
+
+const TranslateButton = styled('button')({
+  padding: '8px 16px',
+  borderRadius: 9,
+  border: '1.5px solid #e0a84a',
+  background: '#fff',
+  color: '#8a5f14',
+  fontSize: 13,
+  fontWeight: 800,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+  '&:disabled': { opacity: 0.6, cursor: 'default' },
+});
+
 const Fields = styled('div')({ display: 'grid', gap: 16 });
 
 /** One translated string, laid out like a labelled field in the form itself. */
@@ -145,20 +166,26 @@ const ResetButton = styled('button')({
 export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: TranslationsPanelProps) {
   const t = useTranslations(texts);
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [missing, setMissing] = useState(0);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const [savedAt, setSavedAt] = useState(0);
-  const [failed, setFailed] = useState<'load' | 'save' | null>(null);
+  const [failed, setFailed] = useState<'load' | 'save' | 'translate' | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setRows(null);
     setFailed(null);
     setSavedAt(0);
-    adminApiFetch<{ rows: Row[] }>(`/api/admin/translations/${kind}/${id}?lang=${lang}`)
+    // No `translate=1`: opening a tab reads what exists and translates nothing.
+    adminApiFetch<{ rows: Row[]; missing: number }>(
+      `/api/admin/translations/${kind}/${id}?lang=${lang}`
+    )
       .then((data) => {
         if (cancelled) return;
         setRows(data.rows);
+        setMissing(data.missing);
         // The box opens on what participants would see right now.
         setEdits(
           Object.fromEntries(data.rows.map((r) => [r.source, r.reviewed ?? r.machine ?? '']))
@@ -169,6 +196,29 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
       cancelled = true;
     };
   }, [kind, id, lang]);
+
+  /** Asks for the sentences that have none. The only thing that spends a model call. */
+  const translateMissing = async () => {
+    setTranslating(true);
+    setFailed(null);
+    try {
+      const data = await adminApiFetch<{ rows: Row[]; missing: number }>(
+        `/api/admin/translations/${kind}/${id}?lang=${lang}&translate=1`
+      );
+      setRows(data.rows);
+      setMissing(data.missing);
+      // Anything already in a box is the person's own work; only fill the blanks.
+      setEdits((prev) =>
+        Object.fromEntries(
+          data.rows.map((r) => [r.source, prev[r.source]?.trim() || r.reviewed || r.machine || ''])
+        )
+      );
+    } catch {
+      setFailed('translate');
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   /** The direction this language reads in, from the one language registry. */
   const dir = LANGS.find((l) => l.code === lang)?.dir ?? 'ltr';
@@ -212,7 +262,27 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
     <Wrap>
       <Hint>{t.hint}</Hint>
 
-      {!inUse && (
+      {/*
+        Nothing was translated, and for a language no activity offers, nothing
+        would have been - so say that plainly and let it be asked for, rather
+        than quietly spending a model call on a screen nobody reads.
+      */}
+      {rows !== null && missing > 0 && (
+        <UnusedNote>
+          <UnusedTitle>
+            {missing === rows.length ? t.notTranslatedTitle : t.partlyTranslatedTitle}
+          </UnusedTitle>
+          <div>{inUse ? t.missingBody : t.notTranslatedBody}</div>
+          <TranslateRow>
+            <TranslateButton type="button" onClick={translateMissing} disabled={translating}>
+              {translating ? t.translating : t.translateNow.replace('{n}', String(missing))}
+            </TranslateButton>
+            {failed === 'translate' && <Note>{t.translateFailed}</Note>}
+          </TranslateRow>
+        </UnusedNote>
+      )}
+
+      {!inUse && missing === 0 && (
         <UnusedNote>
           <UnusedTitle>{t.unusedTitle}</UnusedTitle>
           <div>{t.unusedBody}</div>
