@@ -10,31 +10,27 @@ export const texts = {
     heroTitleBottom: 'למסע למידה סוחף',
     heroLead:
       'למידה חווייתית | מעורבות ושביעות רצון | אפקטיביות פדגוגית | תובנות מבוססות נתונים | מיצוב אקדמי חדשני',
-    heroCta: 'הזמנת דמו',
     heroMediaAlt: 'סטודנטים בכיתה אקדמית',
 
-    valueTitle: 'מה יוצא למוסד שלכם מהטמעת Yooz?',
-    valueIntro: 'פתרון מקיף שמחבר בין פדגוגיה איכותית לתוצאות ארגוניות מדידות.',
+    // \u00A0 is a no-break space: it keeps 'ב' on the same line as Yooz.
+    valueTitle: 'מה הערך המוסף למוסד האקדמי שלכם מפיתוח קורס ושימוש ב\u00A0Yooz',
+    valueIntro: 'פתרון מקיף שמחבר בין פדגוגיה איכותית, שביעות רצון סטודנטים ומרצים ותוצאות מדידות.',
     /**
      * Order matters: the 2x2 grid fills top-right, top-left, bottom-right,
      * bottom-left under RTL, so swapping indices 2 and 3 mirrors the block.
-     * Colours are sampled from the frame - on the first card only, the tag is
-     * green while the tile and glyph are lavender.
+     * No colours here: each card's colour (icon, tile, tag and proof line) is
+     * set by position in the page (`VALUE_ICONS`).
      */
     valueCards: [
       {
         tag: 'מניעת נטישה פרואקטיבית',
-        tagColor: '#059669',
-        tileBg: '#F3E8FF',
         icon: '/images/marketing/icons/acad-head-question.svg',
-        title: 'זינוק בשימור סטודנטים ומניעת נשירה מקורסים קשים',
-        body: 'קורסי סינון ומבואות גורמים לתסכול רב. בעזרת מיקרו-תגמולים, משוב מיידי ומנגנון "Level-Up", הסטודנט מרגיש התקדמות רציפה ולא נכנע לפערי למידה ראשוניים.',
-        proof: 'שיפור של 28% בממוצע ציוני מעבר קורסים סופיים',
+        title: 'זינוק בשימור סטודנטים ומניעת נשירה מקורסים "משעממים"',
+        body: 'מחקר של 3 שנים באקדמית תל אביב-יפו (2022-2025) מצא שקורסים משולבי Gamification העלו ב-21% את שביעות הרצון של סטודנטים ומרצים, ושיפרו את הציונים.',
+        proof: 'שיפור ציונים ושביעות רצון',
       },
       {
         tag: 'Plug & Play אמיתי',
-        tagColor: '#5A1B87',
-        tileBg: '#F3E8FF',
         icon: '/images/marketing/icons/acad-puzzle.svg',
         title: 'מיצוב אקדמי חדשני',
         body: 'הובלת חדשנות בהוראה אקדמית והטמעת טכנולוגיות מתקדמות, המבדלות את המוסד ומושכות סטודנטים המחפשים למידה רלוונטית ומותאמת לעידן הדיגיטלי.',
@@ -42,55 +38,57 @@ export const texts = {
       },
       {
         tag: 'Pedagogical Intelligence',
-        tagColor: '#EC4899',
-        tileBg: '#FCE7F3',
         icon: '/images/marketing/icons/acad-chart-up.svg',
         title: 'דאטה ואנליטיקה התנהגותית בזמן אמת לסגל האקדמי',
-        body: 'מערכת בינה מלאכותית מנטרת תבניות אינטראקציה, מזהה מראש נקודות חולשה של סטודנטים מתקשים, ומתריעה למרצה עוד לפני שהסטודנט שוקל לפרוש מהקורס.',
-        proof: 'דוחות חיזוי הצלחה בדיוק של מעל 91%',
+        body: 'מערכת AI מנתחת את ביצועי הסטודנטים, מתריעה למרצה על נושאי לימוד בעייתיים ועל נקודות חולשה של סטודנטים ספציפיים, ומאפשרת לתקן ולהתאים את החומר תוך כדי הקורס.',
+        proof: 'דוחות שוטפים נשלחים למרצה באופן יזום',
       },
       {
         tag: 'החזר השקעה מובהק',
-        tagColor: '#047857',
-        tileBg: '#D1FAE5',
         icon: '/images/marketing/icons/acad-piggy.svg',
-        title: 'חיסכון בשעות תגבור ושיפור המוניטין',
-        body: 'שימור סטודנטים באקדמיה שווה מאות אלפי שקלים בשכר לימוד. הפחתת עומסי מרצים במענה לשאלות חוזרות, חיסכון במועדי ג׳ ושיפור משמעותי במשוב ההוראה המוסדי.',
-        proof: 'החזר השקעה מלא כבר בסמסטר הראשון',
+        title: 'חיסכון בשעות תגבור, שיפור מוניטין',
+        body: 'שימור סטודנטים שווה כסף רב. שילוב הטכנולוגיה מעלה את העניין, הציונים, איכות הלמידה ושביעות הרצון במשוב ההוראה, ומפחית מהמרצים את עומס השאלות החוזרות.',
+        proof: 'החזר השקעה בטווח קצר',
       },
     ],
 
     experienceTitle: 'החוויה הפדגוגית',
     experienceIntro:
-      'חוויה פדגוגית שלמה שנבנתה בשיתוף חוקרי מוח, מעצבי משחקים עטורי פרסים ומומחי הוראה אקדמית.',
+      'חוויה פדגוגית שלמה שנבנתה בשיתוף משחקולוגים, מעצבים ומומחי הוראה אקדמית.',
     /**
      * Tiles are 48 square, flat colour, with a white line glyph - emoji render in
-     * their own colours and ignore `fg`. The AI pill is tinted per card over a
-     * constant dark purple text.
+     * their own colours and ignore `fg`. Each tile has its own colour; the title
+     * row stays uniform, so every AI pill uses the same lavender.
      */
     experienceCards: [
-      { icon: '/images/marketing/icons/acad-map.svg', tileBg: '#5A1B87', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Quest Engine', body: 'הופך סילבוס סטטי למפת הרפתקה אינטראקטיבית. אלגוריתם ה-AI מתאים את רמת הקושי של המשימות לקצב האישי של כל סטודנט.' },
-      { icon: '/images/marketing/icons/acad-star-circle.svg', tileBg: '#059669', fg: '#FFFFFF', badge: 'AI', badgeBg: '#74F2B5', title: 'Medical Simulator', body: 'סימולטור אינטראקטיבי לקבלת החלטות רפואיות בזמן אמת, במטרה להכין את הסטודנטים לעולם האמיתי.' },
+      { icon: '/images/marketing/icons/acad-map.svg', tileBg: '#5A1B87', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Quest Engine', body: 'דוחות מהירים בסיוע AI, המאפשרים לשנות בטווח קצר את רמת הקושי של המשימות ואת הידע הנדרש.' },
+      { icon: '/images/marketing/icons/acad-star-circle.svg', tileBg: '#059669', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Medical Simulator', body: 'סימולטור אינטראקטיבי לקבלת החלטות רפואיות בזמן אמת, במטרה להכין את הסטודנטים לעולם האמיתי.' },
       { icon: '/images/marketing/icons/acad-swords.svg', tileBg: '#DB2777', fg: '#FFFFFF', title: 'Peer Challenges', body: 'תחרויות עמיתים שבועיות, אתגרי צוותים פקולטיים שמדרבנים שיתוף פעולה ולמידה חברתית עמוקה.' },
-      { icon: '/images/marketing/icons/acad-shield.svg', tileBg: '#7E22CE', fg: '#FFFFFF', title: 'Faculty Command Center', body: 'דשבורד אינטואיטיבי המאפשר למרצה להשיק אתגר כיתתי בלחיצת כפתור אחת, לעקוב אחר הבנת החומר בזמן אמת, ולהעניק ״בוסטים״.' },
+      { icon: '/images/marketing/icons/acad-shield.svg', tileBg: '#4F46E5', fg: '#FFFFFF', title: 'Faculty Command Center', body: 'דשבורד אינטואיטיבי המאפשר למרצה להשיק אתגר כיתתי בלחיצת כפתור אחת, לעקוב אחר הבנת החומר בזמן אמת, ולהעניק ״בוסטים״.' },
     ],
 
-    testimonials: [
-      {
-        quote:
-          '"מזה 5 שנים אני משתמש בפלטפורמת Yooz כדי לייצר חוויית למידה מעניינת ומאתגרת... תוצאות המחקר שערכתי במשך 3 שנים מצביעות על עלייה בהישגים ובמעורבות"',
-        author: 'מרצה במכללה האקדמית בתל אביב יפו',
-        initials: 'ד.ו',
-        avatarBg: '#D1FAE5',
-      },
-      {
-        quote:
-          '"פיתחנו סימולטור מתקדם לבדיקת מידת קבלת החלטות רפואיות על ידי הסטודנטים. הסימולטור מדמה מצבי אמת באמצעות כלי AI ותורם לחוויית ואפקטיביות הלמידה"',
-        author: 'מרצה בחוג לסיעוד',
-        initials: 'מ.ט',
-        avatarBg: '#F3E8FF',
-      },
-    ],
+    testimonialTitle: 'המלצות לקוחות',
+    /**
+     * One named testimonial instead of the shared anonymous pair. The quote is
+     * the client's own words, kept verbatim. The Hebrew signature is translated
+     * from her English one - check the name's spelling with her before launch.
+     */
+    testimonial: {
+      paragraphs: [
+        'ערן תודה על שליחת הדו"ח המסכם וגליונות ציוני הסטודנטים/ות המראים את הצלחתן של הסימולציות הקליניות לקידום המיומנויות של החשיבה הקלינית בקרב סטודנטים וסטודנטיות בבית הספר לסיעוד.',
+        'תודה רבה לך ולצוות על העבודה המקצועית, הסבלנות והתאמתן של הטכנולוגיות לפדגוגיה שנדרשת לפיצוח התוכן. אני מעריכה את המאמץ הרב, ההשקעה, החשיבה והדיוק בהכנתן של הסימולציות.',
+      ],
+      name: 'פרופ׳ חנה מדלר-לירז',
+      roles: [
+        'ראש המרכז לקידום הלמידה',
+        'ראש מגמת השיווק בתוכנית ה-MBA',
+        'ראש ההתמחות בניהול שיווק שירותים, תואר ראשון',
+        'בית הספר לניהול וכלכלה',
+        'המכללה האקדמית תל אביב-יפו',
+      ],
+      logoUrl: '/images/marketing/logo-academic-tlv.png',
+      logoAlt: 'המכללה האקדמית תל אביב-יפו',
+    },
 
     customersTitle: 'לקוחות מרוצים',
     customers: [
@@ -102,8 +100,8 @@ export const texts = {
     faqTitle: 'שאלות נפוצות',
     faq: [
       { q: 'האם המערכת מתאימה לכל תחום דעת?', a: 'כן. המערכת אגנוסטית לתוכן - מדעי הבריאות, הנדסה, מדעי החברה ומשפטים כולם נבנים מאותם אבני בניין של תחנות ומשימות.' },
-      { q: 'כמה זמן ומאמץ נדרשים מהסגל כדי להטמיע את המערכת?', a: 'הקמת קורס ראשון נעשית בליווי צמוד שלנו ואורכת מספר שעות. לאחר מכן מרצה מנוסה מרכיב מסע חדש באופן עצמאי.' },
-      { q: 'האם הפורמט המשחקי לא ״מוריד״ את הרמה האקדמית?', a: 'התוכן והדרישות נשארים ברמה האקדמית שהמרצה קובע. המשחוק משנה את אופן ההגשה והתרגול, לא את הסטנדרט.' },
+      { q: 'כמה זמן ומאמץ נדרשים מהסגל כדי להטמיע את המערכת?', a: 'הקמת הפעילות נעשית בליווי צמוד של צוות Yooz, שמאבחן יחד עם המרצה, מומחה התוכן, את צורכי ההדרכה ומתאים להם את פתרונות המשחוק והטכנולוגיה הרלוונטיים.' },
+      { q: 'האם הפורמט המשחקי לא ״מוריד״ את הרמה האקדמית?', a: 'התוכן והדרישות נשארים ברמה האקדמית. מה שמשתנה הוא אופן ההנגשה של התוכן לסטודנטים: יצירת אתגרים, פיתוח מנגנוני הנעה ומשוב, ויצירת מעורבות וחיבור לתכנים ולפעילות. כל זאת תוך שמירה על היכולת להעריך את הידע של הסטודנטים ולבדוק מיומנויות וכישורים מוגדרים.' },
       { q: 'איזה מידע המרצה מקבל על ביצועי הסטודנטים?', a: 'התקדמות ברמת הסטודנט והכיתה, זמני מענה, שאלות עם אחוזי כישלון גבוהים וסימון סטודנטים בסיכון נשירה.' },
     ],
   },
@@ -113,31 +111,44 @@ export const texts = {
     heroTitleBottom: 'into an immersive journey',
     heroLead:
       'Experiential learning | Involvement and satisfaction | Pedagogical effectiveness | Data-driven insight | An innovative academic position',
-    heroCta: 'Book a demo',
     heroMediaAlt: 'Students in an academic lecture hall',
 
-    valueTitle: 'What does your institution gain from Yooz?',
-    valueIntro: 'A comprehensive solution connecting quality pedagogy to measurable institutional results.',
+    valueTitle: 'The added value for your academic institution of developing a course and using Yooz',
+    valueIntro: 'A comprehensive solution connecting quality pedagogy, student and lecturer satisfaction, and measurable results.',
     valueCards: [
-      { tag: 'Proactive retention', tagColor: '#059669', tileBg: '#F3E8FF', icon: '/images/marketing/icons/acad-head-question.svg', title: 'A leap in retention, and fewer dropouts from hard courses', body: 'Gateway and foundation courses cause real frustration. With micro-rewards, instant feedback and a Level-Up mechanic, students feel continuous progress instead of surrendering to early gaps.', proof: '28% improvement in average final-course pass grades' },
-      { tag: 'Genuine Plug & Play', tagColor: '#5A1B87', tileBg: '#F3E8FF', icon: '/images/marketing/icons/acad-puzzle.svg', title: 'An innovative academic position', body: 'Leading innovation in academic teaching and embedding modern technology, differentiating the institution and attracting students who want learning fitted to the digital era.', proof: 'AI technology embedded' },
-      { tag: 'Pedagogical Intelligence', tagColor: '#EC4899', tileBg: '#FCE7F3', icon: '/images/marketing/icons/acad-chart-up.svg', title: 'Real-time behavioural analytics for faculty', body: 'An AI system monitors interaction patterns, identifies weak points for struggling students in advance, and alerts the lecturer before the student considers leaving the course.', proof: 'Success-prediction reports accurate to over 91%' },
-      { tag: 'Clear return on investment', tagColor: '#047857', tileBg: '#D1FAE5', icon: '/images/marketing/icons/acad-piggy.svg', title: 'Fewer support hours, a better reputation', body: 'Retaining students is worth hundreds of thousands in tuition. Less lecturer load answering repeat questions, fewer resit sittings, and a marked lift in institutional teaching feedback.', proof: 'Full payback within the first semester' },
+      { tag: 'Proactive retention', icon: '/images/marketing/icons/acad-head-question.svg', title: 'A leap in retention, and fewer dropouts from "boring" courses', body: 'A 3-year study at the Academic College of Tel Aviv-Yafo (2022-2025) found that gamified courses raised student and lecturer satisfaction by 21% and improved grades.', proof: 'Better grades and satisfaction' },
+      { tag: 'Genuine Plug & Play', icon: '/images/marketing/icons/acad-puzzle.svg', title: 'An innovative academic position', body: 'Leading innovation in academic teaching and embedding modern technology, differentiating the institution and attracting students who want learning fitted to the digital era.', proof: 'AI technology embedded' },
+      { tag: 'Pedagogical Intelligence', icon: '/images/marketing/icons/acad-chart-up.svg', title: 'Real-time behavioural analytics for faculty', body: 'An AI system analyses student performance, alerts the lecturer to problem topics and to the weak points of specific students, so the material can be fixed and adjusted while the course is running.', proof: 'Ongoing reports sent to the lecturer proactively' },
+      { tag: 'Clear return on investment', icon: '/images/marketing/icons/acad-piggy.svg', title: 'Fewer support hours, a better reputation', body: 'Retaining students is worth a great deal. The technology lifts interest, grades, learning quality and satisfaction in teaching feedback, and takes repeat questions off lecturers.', proof: 'Return on investment in the short term' },
     ],
 
     experienceTitle: 'The pedagogical experience',
-    experienceIntro: 'A complete learning experience built with brain researchers, award-winning game designers and academic teaching experts.',
+    experienceIntro: 'A complete learning experience built with ludologists, designers and academic teaching experts.',
     experienceCards: [
-      { icon: '/images/marketing/icons/acad-map.svg', tileBg: '#5A1B87', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Quest Engine', body: 'Turns a static syllabus into an interactive adventure map. The AI algorithm fits mission difficulty to each student’s own pace.' },
-      { icon: '/images/marketing/icons/acad-star-circle.svg', tileBg: '#059669', fg: '#FFFFFF', badge: 'AI', badgeBg: '#74F2B5', title: 'Medical Simulator', body: 'An interactive simulator for real-time medical decision-making, preparing students for the real world.' },
+      { icon: '/images/marketing/icons/acad-map.svg', tileBg: '#5A1B87', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Quest Engine', body: 'Fast, AI-assisted reports that let you change mission difficulty and the knowledge required at short notice.' },
+      { icon: '/images/marketing/icons/acad-star-circle.svg', tileBg: '#059669', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Medical Simulator', body: 'An interactive simulator for real-time medical decision-making, preparing students for the real world.' },
       { icon: '/images/marketing/icons/acad-swords.svg', tileBg: '#DB2777', fg: '#FFFFFF', title: 'Peer Challenges', body: 'Weekly peer contests and faculty team challenges that drive collaboration and deep social learning.' },
-      { icon: '/images/marketing/icons/acad-shield.svg', tileBg: '#7E22CE', fg: '#FFFFFF', title: 'Faculty Command Center', body: 'An intuitive dashboard letting a lecturer launch a class challenge in one click, track comprehension live, and hand out boosts.' },
+      { icon: '/images/marketing/icons/acad-shield.svg', tileBg: '#4F46E5', fg: '#FFFFFF', title: 'Faculty Command Center', body: 'An intuitive dashboard letting a lecturer launch a class challenge in one click, track comprehension live, and hand out boosts.' },
     ],
 
-    testimonials: [
-      { quote: '"For five years I have used the Yooz platform to build an engaging, challenging learning experience... three years of research I ran show a rise in both achievement and involvement"', author: 'Lecturer, Academic College of Tel Aviv-Yafo', initials: 'D.V', avatarBg: '#D1FAE5' },
-      { quote: '"We built an advanced simulator to assess medical decision-making by students. It models real situations using AI tools and adds to both the experience and the effectiveness of the learning"', author: 'Lecturer, Nursing Department', initials: 'M.T', avatarBg: '#F3E8FF' },
-    ],
+    testimonialTitle: 'Client testimonials',
+    /** The quote is translated from the Hebrew original; the signature is hers as she signs in English. */
+    testimonial: {
+      paragraphs: [
+        'Eran, thank you for sending the summary report and the student grade sheets, which show how successful the clinical simulations were in advancing clinical-reasoning skills among students at the School of Nursing.',
+        'Many thanks to you and the team for the professional work, the patience, and for fitting the technology to the pedagogy the content called for. I appreciate the great effort, the investment, the thought and the precision that went into preparing the simulations.',
+      ],
+      name: 'Prof. Hana Medler-Liraz',
+      roles: [
+        'Head, Center for Learning Advancement',
+        'Head of Marketing Program in MBA',
+        'Head of Services Marketing Management Specialization, B.A.',
+        'School of Management and Economics',
+        'The Academic College of Tel Aviv Yaffo',
+      ],
+      logoUrl: '/images/marketing/logo-academic-tlv.png',
+      logoAlt: 'The Academic College of Tel Aviv Yaffo',
+    },
 
     customersTitle: 'Happy customers',
     customers: [
@@ -149,8 +160,8 @@ export const texts = {
     faqTitle: 'Frequently asked questions',
     faq: [
       { q: 'Does it suit every field of study?', a: 'Yes. The system is content-agnostic - health sciences, engineering, social sciences and law are all built from the same stations and missions.' },
-      { q: 'How much time and effort does adoption take from faculty?', a: 'The first course is built with close support from us and takes a few hours. After that an experienced lecturer assembles a new journey alone.' },
-      { q: 'Does a game format lower the academic level?', a: 'Content and requirements stay at the level the lecturer sets. Gamification changes delivery and practice, not the standard.' },
+      { q: 'How much time and effort does adoption take from faculty?', a: 'Each activity is set up with close support from the Yooz team, who work with the lecturer, as the content expert, to diagnose the training needs and fit the relevant gamification and technology solutions to them.' },
+      { q: 'Does a game format lower the academic level?', a: 'Content and requirements stay at the academic level. What changes is how the content reaches students: challenges, motivation and feedback mechanisms, and real engagement with the material and the activity. All while keeping the ability to assess what students know and to test defined skills and competencies.' },
       { q: 'What data does the lecturer get on student performance?', a: 'Progress at student and class level, response times, questions with high failure rates, and flags on students at risk of dropping out.' },
     ],
   },

@@ -124,7 +124,7 @@ const Arrow = styled('svg')({
   '[dir="ltr"] &': { transform: 'scaleX(-1)' },
 });
 
-function ArrowGlyph() {
+export function ArrowGlyph() {
   return (
     <Arrow width="15" height="12" viewBox="0 0 16 12" fill="none" aria-hidden focusable="false">
       <path

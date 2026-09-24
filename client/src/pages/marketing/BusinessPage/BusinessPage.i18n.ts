@@ -13,8 +13,6 @@ export const texts = {
       'אפשרות להענקת קופונים למימוש מיידי המעלות את ממוצע הרכישה ומעודדות קנייה חוזרת',
       'הפיכת הלקוח לשגריר המותג דרך שיתוף תכנים ברשתות החברתיות',
     ],
-    heroCta: 'הזמנת דמו',
-    heroSecondary: 'המודל העסקי',
     heroMediaAlt: 'לקוחות משחקים במסעדה',
 
     salesTitle: 'להפוך זמן המתנה למנוע מכירות',
@@ -45,36 +43,18 @@ export const texts = {
 
     customersTitle: 'לקוחות מרוצים',
     customers: [
-      { name: 'קופ״ח כללית', caption: 'פעילות גיבוש עובדים בפריסה רחבה', logoUrl: '/images/marketing/logo-clalit.svg' },
-      { name: 'תל קאקון', caption: 'תעלומת האוצר הממלכתי', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
-      { name: 'גני יהושוע', caption: 'פארקוד - פעילות קבועה לקבוצות', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
-      { name: 'שדה אליהו', caption: 'פעילות מרכז מבקרים', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
-    ],
-
-    /** The same pair appears on all four frames - not page-specific. */
-    testimonials: [
-      {
-        quote:
-          '"מזה 5 שנים אני משתמש בפלטפורמת Yooz כדי לייצר חוויית למידה מעניינת ומאתגרת... תוצאות המחקר שערכתי במשך 3 שנים מצביעות על עלייה בהישגים ובמעורבות"',
-        author: 'מרצה במכללה האקדמית בתל אביב יפו',
-        initials: 'ד.ו',
-        avatarBg: '#D1FAE5',
-      },
-      {
-        quote:
-          '"פיתחנו סימולטור מתקדם לבדיקת מידת קבלת החלטות רפואיות על ידי הסטודנטים. הסימולטור מדמה מצבי אמת באמצעות כלי AI ותורם לחוויית ואפקטיביות הלמידה"',
-        author: 'מרצה בחוג לסיעוד',
-        initials: 'מ.ט',
-        avatarBg: '#F3E8FF',
-      },
+      { name: 'קופ״ח כללית', caption: 'פעילות גיבוש של מאות עובדים ב-40 סניפים', logoUrl: '/images/marketing/logo-clalit.svg' },
+      { name: 'תל קאקון', caption: 'תעלומת האוצר הממלוכי', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
+      { name: 'גני יהושוע', caption: 'פעילות למשפחות (פתוחה כל השנה)', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
+      { name: 'שדה אליהו', caption: 'פעילות במרכז המבקרים', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
     ],
 
     faqTitle: 'שאלות נפוצות',
     faq: [
       { q: 'איך הלקוח מתחיל לשחק? צריך להוריד אפליקציה?', a: 'לא. סריקת QR בשולחן או בעמדה פותחת את הפעילות בדפדפן של הלקוח, בלי התקנה ובלי הרשמה.' },
       { q: 'איך מונעים חלוקת יתר של פרסים ושומרים על התקציב?', a: 'אתם מגדירים תקרה לכמות הקופונים, את שוויים ואת תנאי המימוש. המערכת עוצרת אוטומטית בהגעה לתקרה.' },
-      { q: 'האם המשחקים ממותגים בשפת העסק ובתפריט שלי?', a: 'כן. צבעים, לוגו, תמונות ותוכן המשימות נבנים סביב המותג והתפריט שלכם.' },
-      { q: 'כמה זמן לוקח להקים ולהשיק פעילות?', a: 'פעילות מבוססת תבנית עולה לאוויר תוך ימים ספורים. התאמה מלאה נמשכת בדרך כלל מספר שבועות.' },
+      { q: 'האם המשחקים ממותגים בשפת העסק ובתפריט שלי?', a: 'כן. צבעים, לוגו, תמונות ותוכן המשימות נבנים סביב המותג והתפריט שלכם, ואפשר ליצור גרסאות של הפעילות בשפות שונות.' },
+      { q: 'כמה זמן לוקח להקים ולהשיק פעילות?', a: 'לאחר אפיון צרכים מהיר, פעילות המבוססת על תבנית יכולה לעלות לאוויר תוך זמן קצר. התאמה ופיתוח מלאים נמשכים מספר שבועות בודדים.' },
       { q: 'איזה מידע ונתונים מקבלים בסיום או תוך כדי הפעילות?', a: 'כמות משתתפים, זמני שהייה, מימוש קופונים, שיתופים ברשתות ונקודות נטישה - בזמן אמת ובייצוא בסיום.' },
     ],
   },
@@ -88,8 +68,6 @@ export const texts = {
       'Coupons for immediate redemption that lift average spend and drive repeat purchase',
       'Turns the customer into a brand ambassador through social sharing',
     ],
-    heroCta: 'Book a demo',
-    heroSecondary: 'The business model',
     heroMediaAlt: 'Customers playing in a restaurant',
 
     salesTitle: 'Turn waiting time into a sales engine',
@@ -114,23 +92,18 @@ export const texts = {
 
     customersTitle: 'Happy customers',
     customers: [
-      { name: 'Clalit Health', caption: 'Employee engagement activity at scale', logoUrl: '/images/marketing/logo-clalit.svg' },
-      { name: 'Tel Qaqun', caption: 'The royal treasure mystery', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
-      { name: 'Ganei Yehoshua', caption: 'ParKod - a standing group activity', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
-      { name: 'Sde Eliyahu', caption: 'Visitor centre activity', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
-    ],
-
-    testimonials: [
-      { quote: '"For five years I have used the Yooz platform to build an engaging, challenging learning experience... three years of research I ran show a rise in both achievement and involvement"', author: 'Lecturer, Academic College of Tel Aviv-Yafo', initials: 'D.V', avatarBg: '#D1FAE5' },
-      { quote: '"We built an advanced simulator to assess medical decision-making by students. It models real situations using AI tools and adds to both the experience and the effectiveness of the learning"', author: 'Lecturer, Nursing Department', initials: 'M.T', avatarBg: '#F3E8FF' },
+      { name: 'Clalit Health', caption: 'Team-building for hundreds of employees across 40 branches', logoUrl: '/images/marketing/logo-clalit.svg' },
+      { name: 'Tel Qaqun', caption: 'The Mamluk treasure mystery', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
+      { name: 'Ganei Yehoshua', caption: 'A family activity, open all year round', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
+      { name: 'Sde Eliyahu', caption: 'An activity at the visitor centre', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
     ],
 
     faqTitle: 'Frequently asked questions',
     faq: [
       { q: 'How does a customer start playing? Is an app needed?', a: 'No. Scanning a QR at the table or stand opens the activity in the browser, with no install and no signup.' },
       { q: 'How do we avoid over-issuing prizes and keep to budget?', a: 'You set a cap on coupon volume, their value and the redemption terms. The system stops automatically at the cap.' },
-      { q: 'Are the games branded in our own look and menu?', a: 'Yes. Colours, logo, imagery and mission content are built around your brand and menu.' },
-      { q: 'How long does it take to build and launch?', a: 'A template-based activity goes live within days. Full customisation usually takes a few weeks.' },
+      { q: 'Are the games branded in our own look and menu?', a: 'Yes. Colours, logo, imagery and mission content are built around your brand and menu, and the activity can be produced in several languages.' },
+      { q: 'How long does it take to build and launch?', a: 'After a quick needs assessment, a template-based activity can go live within a short time. Full customisation and development take just a few weeks.' },
       { q: 'What data do we get during and after the activity?', a: 'Participant volume, dwell times, coupon redemption, social shares and drop-off points, live and as an export.' },
     ],
   },
