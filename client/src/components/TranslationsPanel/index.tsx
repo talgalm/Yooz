@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { adminApiFetch } from '../../utils/adminApi';
-import { LANGS, useTranslations } from '../../context/LanguageContext';
+import { LANGS, useLang, useTranslations } from '../../context/LanguageContext';
 import { texts } from './TranslationsPanel.i18n';
 
 interface Row {
@@ -222,6 +222,12 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
 
   /** The direction this language reads in, from the one language registry. */
   const dir = LANGS.find((l) => l.code === lang)?.dir ?? 'ltr';
+  /**
+   * An empty box shows a hint written in the admin's own language, not in the
+   * one being translated into - so it reads in the admin's direction until
+   * there is something in the box to read the other way.
+   */
+  const uiDir = useLang().dir;
 
   const isEdited = (row: Row) => {
     const value = (edits[row.source] ?? '').trim();
@@ -275,7 +281,11 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
           <div>{inUse ? t.missingBody : t.notTranslatedBody}</div>
           <TranslateRow>
             <TranslateButton type="button" onClick={translateMissing} disabled={translating}>
-              {translating ? t.translating : t.translateNow.replace('{n}', String(missing))}
+              {translating
+                ? t.translating
+                : missing === 1
+                  ? t.translateNowOne
+                  : t.translateNow.replace('{n}', String(missing))}
             </TranslateButton>
             {failed === 'translate' && <Note>{t.translateFailed}</Note>}
           </TranslateRow>
@@ -304,7 +314,7 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
                 </SourceLabel>
                 <Box
                   id={`tr-${row.source}`}
-                  dir={dir}
+                  dir={edits[row.source] ? dir : uiDir}
                   lang={lang}
                   edited={isEdited(row)}
                   value={edits[row.source] ?? ''}
@@ -321,7 +331,11 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
                 ? t.saveFailed
                 : savedAt
                   ? t.saved
-                  : t.editedCount.replace('{n}', String(editedCount))}
+                  : editedCount === 1
+                    ? t.editedCountOne
+                    : editedCount > 1
+                      ? t.editedCount.replace('{n}', String(editedCount))
+                      : ''}
             </Note>
             <Actions>
               {editedCount > 0 && (
