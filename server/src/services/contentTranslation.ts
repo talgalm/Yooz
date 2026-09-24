@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
 import { ContentTranslation } from '../models/ContentTranslation';
+import { DEFAULT_LANG, languageOf } from '../utils/languages';
 
 /**
  * Machine translation of admin-authored activity content.
@@ -89,7 +90,7 @@ const BATCH_SIZE = 40;
 
 function buildPrompt(lang: string, sources: string[]): string {
   return [
-    `Translate each item of this JSON array from Hebrew into ${lang === 'en' ? 'English' : lang}.`,
+    `Translate each item of this JSON array from ${languageOf(DEFAULT_LANG).name} into ${languageOf(lang).name}.`,
     'These are strings from a game: station names, riddles, questions, hints and button labels.',
     'Rules:',
     '- Reply with a JSON array of the same length and order, nothing else.',
@@ -150,7 +151,7 @@ export async function cachedTranslations(
   lang: string
 ): Promise<Map<string, string>> {
   const map = new Map<string, string>();
-  if (sources.length === 0 || lang === 'he') return map;
+  if (sources.length === 0 || lang === DEFAULT_LANG) return map;
 
   const keys = sources.map((s) => cacheKey(lang, s));
   const cached = await ContentTranslation.find({ key: { $in: keys } }).lean();
@@ -160,7 +161,7 @@ export async function cachedTranslations(
 
 export async function translationsFor(sources: string[], lang: string): Promise<Map<string, string>> {
   const map = await cachedTranslations(sources, lang);
-  if (sources.length === 0 || lang === 'he') return map;
+  if (sources.length === 0 || lang === DEFAULT_LANG) return map;
 
   const missing = sources.filter((s) => !map.has(s));
   if (missing.length === 0 || !GEMINI_API_KEY) return map;
@@ -189,7 +190,7 @@ export async function translationsFor(sources: string[], lang: string): Promise<
  * shape back in the participant's language.
  */
 export async function translateContent<T>(payload: T, lang: string): Promise<T> {
-  if (!lang || lang === 'he') return payload;
+  if (!lang || lang === DEFAULT_LANG) return payload;
   const sources = [...collectProse(payload)];
   if (sources.length === 0) return payload;
 

@@ -5,25 +5,15 @@ import {
   storeLangInScope,
   type LangScope,
 } from '../utils/currentLang';
+import { LANGS, DEFAULT_LANG, type Lang } from '../utils/languages';
 
 /**
- * The one place a language is declared. Adding a language means adding a row
- * here — nothing else is required. Existing `.i18n.ts` files keep working
- * untouched; keys the new language does not carry fall back to Hebrew.
- *
- * `label` is the language's own name (never translated), so a new language
- * needs no new i18n key to appear in the switchers. `short` is that name cut
- * down to what fits inside a round button.
+ * The registry itself lives in `utils/languages`, so that code outside React
+ * can read it too. Re-exported here because most of the app has always
+ * imported `LANGS` from this module.
  */
-export const LANGS = [
-  { code: 'he', label: 'עברית', short: 'עב', flag: '🇮🇱', dir: 'rtl' },
-  { code: 'en', label: 'English', short: 'EN', flag: '🇺🇸', dir: 'ltr' },
-] as const;
-
-export type Lang = (typeof LANGS)[number]['code'];
-
-/** Hebrew is both the default and the fallback every other language fills in from. */
-export const DEFAULT_LANG = 'he';
+export { LANGS, DEFAULT_LANG };
+export type { Lang };
 
 /**
  * A language other than Hebrew may translate as much or as little as it likes —

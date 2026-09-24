@@ -10,13 +10,16 @@ import type { Request } from 'express';
  * Unknown values fall back to Hebrew rather than erroring: a stale or hand-typed
  * value should serve the activity as authored, not break it.
  */
-export const SUPPORTED_LANGS = ['he', 'en'] as const;
-export type Lang = (typeof SUPPORTED_LANGS)[number];
+import { DEFAULT_LANG, isLanguage, LANGUAGE_CODES, type Lang } from './languages';
+
+/** Derived from the one registry; see `languages.ts` for how to add one. */
+export const SUPPORTED_LANGS = LANGUAGE_CODES;
+export type { Lang };
 
 export function normaliseLang(raw: unknown): Lang {
-  if (typeof raw !== 'string') return 'he';
+  if (typeof raw !== 'string') return DEFAULT_LANG;
   const code = raw.trim().toLowerCase().split(/[-_,;]/)[0];
-  return (SUPPORTED_LANGS as readonly string[]).includes(code) ? (code as Lang) : 'he';
+  return isLanguage(code) ? code : DEFAULT_LANG;
 }
 
 export function readLang(req: Pick<Request, 'headers' | 'query'>): Lang {
@@ -35,5 +38,6 @@ export function readLang(req: Pick<Request, 'headers' | 'query'>): Lang {
  */
 export function sanitiseLanguages(raw: unknown): Lang[] | undefined {
   if (!Array.isArray(raw)) return undefined;
-  return raw.filter((l): l is Lang => typeof l === 'string' && l !== 'he' && (SUPPORTED_LANGS as readonly string[]).includes(l));
+  // The default language is implicit - an activity is always offered in it.
+  return raw.filter((l): l is Lang => typeof l === 'string' && l !== DEFAULT_LANG && isLanguage(l));
 }

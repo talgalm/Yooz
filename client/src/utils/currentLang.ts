@@ -14,6 +14,8 @@
  * is true at the moment it is asked, with nothing to keep in sync.
  */
 
+import { DEFAULT_LANG, languageOf } from './languages';
+
 export type LangScope = 'participant' | 'admin' | 'site';
 
 const KEYS: Record<LangScope, string> = {
@@ -54,9 +56,9 @@ function path(): string {
  */
 export function langInScope(scope: LangScope): string {
   try {
-    return localStorage.getItem(langStorageKey(scope)) || 'he';
+    return localStorage.getItem(langStorageKey(scope)) || DEFAULT_LANG;
   } catch {
-    return 'he';
+    return DEFAULT_LANG;
   }
 }
 
@@ -84,15 +86,10 @@ export function langHeader(): Record<string, string> {
 }
 
 /**
- * The BCP-47 tag for a language, for anything that speaks or reads text out
- * loud rather than sending it to the server: `SpeechSynthesisUtterance.lang`,
- * and the SSML locale the voice is picked from.
+ * The BCP-47 tag for a language, for anything that speaks text out loud rather
+ * than sending it to the server - `SpeechSynthesisUtterance.lang`. Taken from
+ * the one registry, so a new language brings its own.
  */
-const LOCALES: Record<string, string> = {
-  he: 'he-IL',
-  en: 'en-US',
-};
-
 export function currentLocale(lang: string = currentLang()): string {
-  return LOCALES[lang] || LOCALES.he;
+  return languageOf(lang).locale;
 }

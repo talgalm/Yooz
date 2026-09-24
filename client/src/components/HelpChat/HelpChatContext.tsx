@@ -281,7 +281,7 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
       setTyping(false);
       setMessages((prev) => [...prev, { from: 'bot', text: data.response }]);
     } catch {
-      const match = matchTopic(text, lang);
+      const match = matchTopic(text);
       setTyping(false);
 
       if (match) {
