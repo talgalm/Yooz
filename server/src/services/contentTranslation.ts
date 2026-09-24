@@ -138,13 +138,29 @@ async function askGemini(lang: string, sources: string[]): Promise<string[] | nu
  * could not translate is simply absent from the map, which leaves the Hebrew in
  * place downstream.
  */
-export async function translationsFor(sources: string[], lang: string): Promise<Map<string, string>> {
+/**
+ * What has already been translated, without translating anything new.
+ *
+ * Reading a screen should never spend money at the model on its own. The admin
+ * translation screen opens with this, and only asks for the rest when someone
+ * says to.
+ */
+export async function cachedTranslations(
+  sources: string[],
+  lang: string
+): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   if (sources.length === 0 || lang === 'he') return map;
 
   const keys = sources.map((s) => cacheKey(lang, s));
   const cached = await ContentTranslation.find({ key: { $in: keys } }).lean();
   for (const row of cached) map.set(row.source, row.translated);
+  return map;
+}
+
+export async function translationsFor(sources: string[], lang: string): Promise<Map<string, string>> {
+  const map = await cachedTranslations(sources, lang);
+  if (sources.length === 0 || lang === 'he') return map;
 
   const missing = sources.filter((s) => !map.has(s));
   if (missing.length === 0 || !GEMINI_API_KEY) return map;

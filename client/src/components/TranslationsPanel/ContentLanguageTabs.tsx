@@ -31,8 +31,30 @@ interface ContentLanguageTabsProps {
  * scrollbar on the tab strip. Nothing overflows downwards now; the strip itself
  * is pulled down over the card's top border instead, and paints above it.
  */
-/** How far the active tab's white reaches down into the card. */
-const MERGE = 4;
+/**
+ * How far the active tab reaches down into the card: exactly the card's border.
+ *
+ * The tab's white bottom border lands on that row and hides it, which is what
+ * joins the two. Any deeper and the tab's side borders would carry on past the
+ * card's top edge as two little stubs inside it.
+ */
+const MERGE = 1;
+
+/** The card's border, continued around the tab so the outline never breaks. */
+const CARD_BORDER = '#ecebf4';
+
+/** The card's own shadow, so the tab carries the same edge as the surface it joins. */
+const CARD_SHADOW = '0 1px 2px rgba(16,12,40,0.04), 0 10px 30px rgba(16,12,40,0.05)';
+
+/**
+ * Room inside the strip for that shadow to spread into.
+ *
+ * The strip scrolls sideways, which makes it a clipping box - a shadow on a tab
+ * would be cut off flush with the tab itself. Padding gives it somewhere to go,
+ * and an equal negative margin puts the tabs back exactly where they were, so
+ * the first one still lines up with the card's edge.
+ */
+const SHADOW_ROOM = 24;
 
 /**
  * The card gives up the rounded corner the tabs sit on.
@@ -63,27 +85,58 @@ const Strip = styled('div')({
   // above, and a box-shadow bridging the seam would be clipped with it.
   marginBottom: -MERGE,
   paddingBottom: 0,
+  paddingTop: SHADOW_ROOM,
+  paddingInline: SHADOW_ROOM,
+  marginTop: -SHADOW_ROOM,
+  marginInline: -SHADOW_ROOM,
   scrollbarWidth: 'thin',
   '&::-webkit-scrollbar': { height: 6 },
   '&::-webkit-scrollbar-thumb': { background: '#ded7f0', borderRadius: 3 },
 });
 
 /**
- * Filled shapes rather than outlined boxes, the way a browser draws its own
- * tabs. An outline would leave two short stubs of border poking into the card,
- * since the tab now reaches below the card's top edge to merge with it.
+ * The active tab is the card's edge carried upwards: same border, same shadow,
+ * same white. Its bottom border is white instead, covering the card's top
+ * border for the width of the tab - that single row is the join.
+ *
+ * An inactive tab keeps a transparent border of the same width, so it takes up
+ * the same room and the card's own border still runs underneath it.
  */
 const Tab = styled('button')<{ active?: boolean }>(({ active }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: 7,
   flex: '0 0 auto',
-  padding: `9px 16px ${10 + MERGE}px`,
+  position: 'relative',
+  padding: `8px 15px ${9 + MERGE}px`,
   borderRadius: '12px 12px 0 0',
-  border: 'none',
-  // Transparent, so the card's own top border still runs under an inactive tab
-  // and only disappears beneath the active one.
+  border: `1px solid ${active ? CARD_BORDER : 'transparent'}`,
+  // The bottom keeps the border's colour so the two corner pixels match the
+  // card's own outline exactly; the white bar below covers everything between.
+  borderBottomColor: active ? CARD_BORDER : 'transparent',
   background: active ? '#fff' : 'transparent',
+  // Keeps the white out of the bottom border, where it would be mitered
+  // against the side borders and bleed a pixel past the card's edge.
+  backgroundClip: 'padding-box',
+  /**
+   * The join, as a bar rather than a border: it spans the padding box, so it
+   * stops short of both bottom corners and leaves them the border's own colour
+   * - which is the card's colour, so the outline stays unbroken.
+   */
+  ...(active && {
+    '&::after': {
+      content: '""',
+      position: 'absolute',
+      insetInline: 0,
+      bottom: -1,
+      height: 1,
+      background: '#fff',
+    },
+  }),
+  boxShadow: active ? CARD_SHADOW : 'none',
+  // Cuts the shadow off at the tab's own bottom edge, so it wraps the top and
+  // sides like the card's does but never smudges across the card it sits on.
+  clipPath: active ? `inset(-${SHADOW_ROOM * 2}px -${SHADOW_ROOM * 2}px 0)` : 'none',
   color: active ? '#6C5CE7' : '#6b6280',
   fontSize: 13.5,
   fontWeight: 700,

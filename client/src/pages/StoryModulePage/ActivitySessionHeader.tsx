@@ -34,7 +34,16 @@ const RoadmapHeaderButtonRow = styled('div')({
   justifyContent: 'space-between',
   width: '100%',
   gap: 14,
+  // Pinned so the score keeps reading as a number, whatever the page direction.
   direction: 'ltr',
+  // Which also left the row in one fixed order for every language. It should
+  // mirror like the rest of the interface: the score nearest the edge the
+  // language starts reading from, exit at the far end - right and left
+  // respectively in Hebrew, the other way round in English. Reversing the flex
+  // order does that without unpinning the direction above.
+  '[dir="ltr"] &': {
+    flexDirection: 'row-reverse',
+  },
 });
 
 const RoadmapHeaderItem = styled('div')({
@@ -233,7 +242,9 @@ export interface ActivitySessionHeaderProps {
 }
 
 /**
- * Single session header: exit → help → third slot → points (LTR).
+ * Single session header: exit → help → third slot → points, in the direction
+ * the language reads - so exit sits at the far edge and the score at the near
+ * one, mirrored between Hebrew and English.
  * Same chrome as the roadmap; use during roadmap, games, and stations.
  */
 export default function ActivitySessionHeader({
