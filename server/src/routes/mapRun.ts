@@ -116,7 +116,11 @@ router.get('/:code/map/state', authenticateToken, async (req: Request<{ code: st
 
 router.post('/:code/map/complete', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
   const itemIndex = Number((req.body ?? {}).itemIndex);
-  const score = Number((req.body ?? {}).score) || 0;
+  const score = Number((req.body ?? {}).score ?? 0);
+  if (!Number.isFinite(score)) {
+    res.status(400).json({ error: 'bad_score' });
+    return;
+  }
 
   const loaded = await loadRun(req, res);
   if (!loaded) return;
@@ -124,6 +128,11 @@ router.post('/:code/map/complete', authenticateToken, async (req: Request<{ code
 
   if (!Number.isInteger(itemIndex) || itemIndex < 0 || itemIndex >= total) {
     res.status(400).json({ error: 'bad_item_index' });
+    return;
+  }
+  const done = run.completedIndices || [];
+  if (!done.includes(itemIndex) && itemIndex !== nextIncompleteIndex(done, total)) {
+    res.status(409).json({ error: 'not_current_station' });
     return;
   }
 

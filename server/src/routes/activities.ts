@@ -14,7 +14,7 @@ import { resolveCeiling, normalizeScore } from '../utils/scoreNormalization';
 import { startOfTodayIsrael, israelDayString } from '../utils/israelTime';
 import { readLang } from '../utils/requestLang';
 import { translateContent, applyTranslations } from '../services/contentTranslation';
-import { visibleOrderedIndices } from '../utils/moduleItems';
+import { visibleOrderedIndices, popupsForServedItems } from '../utils/moduleItems';
 import { onGroupMemberCompleted } from '../services/groupRewardService';
 import activityGroupsRouter from './activityGroups';
 import mapRunRouter from './mapRun';
@@ -195,13 +195,13 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   const stationMap = new Map(stations.map((s: any) => [s._id.toString(), s]));
   const missionMap = new Map(missions.map((m: any) => [m._id.toString(), m]));
 
-  const moduleItems = visibleOrderedIndices(activity.module, participantGroup)
-    .map((i) => activity.module!.items[i]);
+  const servedOrder = visibleOrderedIndices(activity.module, participantGroup);
+  const moduleItems = servedOrder.map((i) => activity.module!.items[i]);
 
   const requested = readLang(req);
   const lang = activity.languages?.includes(requested) ? requested : 'he';
 
-  const populatedItems = moduleItems.map((item) => {
+  const populated = moduleItems.map((item) => {
     if (item.type === 'mission') {
       const data = missionMap.get(item.ref.toString());
       if (!data) return null;
@@ -250,7 +250,9 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.location && { location: item.location }),
       }, data, lang);
     }
-  }).filter(Boolean);
+  });
+  const populatedItems = populated.filter(Boolean);
+  const servedIndices = servedOrder.filter((_, position) => populated[position]);
 
   let filteredPopups: typeof activity.module.popups = [];
   if (activity.module.popups && activity.module.popups.length > 0) {
@@ -299,7 +301,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     ...(activity.module.showItemTitleNumbers && { showItemTitleNumbers: true }),
     ...(activity.module.proximityMeters && { proximityMeters: activity.module.proximityMeters }),
     items: populatedItems,
-    popups: filteredPopups.map((p) => ({
+    popups: popupsForServedItems(filteredPopups, servedIndices).map((p) => ({
       _id: p._id,
       title: p.title,
       contentType: p.contentType || 'text',

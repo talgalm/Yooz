@@ -59,3 +59,17 @@ export function nextIncompleteIndex(completed: number[], total: number): number 
   for (let i = 0; i < total; i++) if (!done.has(i)) return i;
   return total;
 }
+
+const ITEM_TRIGGER_POINTS = new Set(['beforeItem', 'afterItem']);
+
+export function popupsForServedItems<P extends { trigger: { point: string; itemIndex?: number | null } }>(
+  popups: P[],
+  served: number[],
+): P[] {
+  return popups.flatMap((p) => {
+    const stored = p.trigger.itemIndex;
+    if (!ITEM_TRIGGER_POINTS.has(p.trigger.point) || stored === undefined || stored === null) return [p];
+    const position = served.indexOf(stored);
+    return position === -1 ? [] : [{ ...p, trigger: { ...p.trigger, itemIndex: position } }];
+  });
+}

@@ -270,7 +270,7 @@ export default function StoryModulePage() {
   const lockedFromIndex = useLockStream(code, data?.lockedFromIndex ?? null);
   const isMap = data?.module?.type === 'map';
   const isGroupMap = isMap && !!participant?.group;
-  const mapRun = useMapRun(code || '', isGroupMap);
+  const mapRun = useMapRun(code || '', isMap, isGroupMap);
 
   useWakeLock(true);
   const { nudge: nudgeHelp } = useHelpChat();
@@ -754,18 +754,23 @@ export default function StoryModulePage() {
     if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const completedIdx = currentItemIndex;
 
-    if (isGroupMap) {
-      void mapRun.complete(completedIdx, justScored).then((next) => {
-        if (!next) {
+    if (isMap) {
+      const settle = (finished: boolean, nextIndex: number) =>
+        showPopupsOrRun('afterItem', completedIdx, () => {
+          if (finished) {
+            showPopupsOrRun('endOfActivity', undefined, () => setPhase('finish'));
+            return;
+          }
+          setCurrentItemIndex(nextIndex);
           setPhase('roadmap');
-          return;
-        }
-        if (next.finished) {
-          showPopupsOrRun('endOfActivity', undefined, () => setPhase('finish'));
-          return;
-        }
-        setCurrentItemIndex(next.currentItemIndex);
-        setPhase('roadmap');
+        });
+      if (!isGroupMap) {
+        settle(completedIdx + 1 >= data.module.items.length, completedIdx + 1);
+        return;
+      }
+      void mapRun.complete(completedIdx, justScored).then((next) => {
+        if (next) settle(next.finished, next.currentItemIndex);
+        else setPhase('roadmap');
       });
       return;
     }

@@ -6,6 +6,7 @@ import {
   sanitizeLocation,
   sanitizeProximityMeters,
   sanitizeGroupOrders,
+  popupsForServedItems,
 } from './moduleItems';
 
 const items = (...groups: (string[] | undefined)[]) =>
@@ -76,4 +77,20 @@ test('team orders keep only real, distinct station indices', () => {
   assert.equal(sanitizeGroupOrders({ red: [] }, 3), undefined);
   assert.equal(sanitizeGroupOrders([[0]], 3), undefined);
   assert.equal(sanitizeGroupOrders(null, 3), undefined);
+});
+
+test('station popups follow the station into the order the player is served', () => {
+  const popup = (point: string, itemIndex?: number) => ({ title: `${point}:${itemIndex}`, trigger: { point, itemIndex } });
+  const served = [2, 0];
+  const out = popupsForServedItems(
+    [popup('afterItem', 2), popup('beforeItem', 0), popup('afterItem', 1), popup('afterLogin', 1), popup('endOfActivity'), popup('beforeItem')],
+    served,
+  );
+  assert.deepEqual(out.map((p) => [p.title, p.trigger.itemIndex]), [
+    ['afterItem:2', 0],
+    ['beforeItem:0', 1],
+    ['afterLogin:1', 1],
+    ['endOfActivity:undefined', undefined],
+    ['beforeItem:undefined', undefined],
+  ]);
 });
