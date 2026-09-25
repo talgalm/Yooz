@@ -2,33 +2,21 @@ import { Router, Request, Response } from 'express';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
 import { Activity } from '../models';
 import { type OrganizerContact, contactClause, askClause, buildFallbackMessage } from './help.i18n';
+import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
 
 // ─── In-memory rate limiter (10 req/min/IP) ───
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 10;
+// ─── In-memory rate limiter, counted per participant ───
+// Ten a minute for a whole venue meant a group of twenty could ask for help
+// twice between them. Each participant now has their own ten.
 
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-  entry.count++;
-  return entry.count > RATE_LIMIT_MAX;
-}
-
-// Periodic cleanup to prevent memory leak
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of rateLimitMap) {
-    if (now > entry.resetAt) rateLimitMap.delete(ip);
-  }
-}, 5 * 60_000);
+const isRateLimited = createRateLimiter({
+  perParticipant: 10,
+  perAnonymous: 10,
+  perAddress: 150,
+});
 
 async function fetchActivityExtras(code?: string): Promise<{ extraSupportInfo?: string; contact?: OrganizerContact }> {
   if (!code) return {};
@@ -297,9 +285,7 @@ async function askGemini(message: string, lang: 'en' | 'he', history: HistoryEnt
 // ─── POST /api/help ───
 
 router.post('/', async (req: Request, res: Response) => {
-  // Rate limit
-  const ip = req.ip || req.socket.remoteAddress || 'unknown';
-  if (isRateLimited(ip)) {
+  if (isRateLimited(req)) {
     res.status(429).json({ error: 'Too many requests. Please try again later.' });
     return;
   }
