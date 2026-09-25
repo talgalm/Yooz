@@ -4,11 +4,11 @@ import { useLang } from '../context/LanguageContext';
 
 export default function LangScopeSync() {
   const { pathname } = useLocation();
-  const { useScopeOf } = useLang();
+  const { enterScopeOf } = useLang();
 
   useEffect(() => {
-    useScopeOf(pathname);
-  }, [pathname, useScopeOf]);
+    enterScopeOf(pathname);
+  }, [pathname, enterScopeOf]);
 
   return null;
 }

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { exec } from 'child_process';
-import { writeFileSync, readFileSync, existsSync, unlinkSync, mkdirSync, readdirSync, rmSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, unlinkSync, mkdirSync, readdirSync, rmSync, statSync } from 'fs';
 import path from 'path';
 import { v2 as cloudinary } from 'cloudinary';
 import { authenticateAdmin, requireRole } from '../middleware/adminAuth';
@@ -745,7 +745,7 @@ function findVideoFile(videoDir: string, prefix: string): string | null {
     if (entry.isDirectory()) {
       const videoPath = path.join(videoDir, entry.name, 'video.webm');
       if (existsSync(videoPath)) {
-        const { mtimeMs } = require('fs').statSync(videoPath);
+        const { mtimeMs } = statSync(videoPath);
         if (mtimeMs > newestTime) {
           newestTime = mtimeMs;
           newestFile = videoPath;

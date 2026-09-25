@@ -35,13 +35,21 @@ request and every push to `main`. The deploy job `needs: check`, so a red gate n
 EC2. `scripts/guidelines.mjs` enforces: i18n out of components, no CSS files, no comments in
 `client/src` / `server/src` (directives like `@ts-expect-error` aside), no TODO/FIXME or
 commented-out code, no `console.log` in client code, a frozen top-level structure, SVG out of
-components, and MEMORY.md updated alongside a new route/model/page. Counted rules carry a
+components, MEMORY.md updated alongside a new route/model/page, and ESLint. Counted rules carry a
 per-file baseline in `scripts/guidelines-baseline.json` — an existing file may not get worse
 and a clean file may not regress at all. When you fix violations the baseline rewrites itself
 locally; commit it. To document a feature later, put `[skip-docs]` in the commit message.
 
 `npm test` globs `client/src/**/*.test.ts` and `server/src/**/*.test.ts`, so a new `.test.ts`
-file is picked up with no wiring. There is still no lint script.
+file is picked up with no wiring.
+
+**ESLint runs inside the guidelines**, from `eslint.config.mjs` at the root: the TypeScript and
+React-hooks (`rules-of-hooks`, `exhaustive-deps`) recommended sets over `client/src` and
+`server/src`. Its problems are a counted rule like the rest — 123 across 41 files predate it
+(mostly `exhaustive-deps` and `any`), held per file by the baseline, and a clean file must stay
+clean. `npx eslint <file>` shows what a file has. A hook that deliberately leaves out a
+dependency gets `// eslint-disable-next-line react-hooks/exhaustive-deps` — the one comment
+the no-comments rule allows besides `@ts-` directives, and a stale one is itself an error.
 
 Client typechecking has one trap: a bare `tsc --noEmit` inside `client/` is empty, because
 `client/tsconfig.json` is solution-style (`"files": []`) and always passes. The real check is
@@ -99,8 +107,8 @@ Each has its own React context (`AdminAuthContext`, `AuthContext`, `ManagerAuthC
 - **Game configs live in `game.settings`** as `Record<string, unknown>` server-side, typed per game type client-side. When adding a new game type, add the settings interface in `server/src/types/index.ts`, the type to `validTypes` in `AdminGameConfigPage/index.tsx`, and the matching config form beside it. (`StationType` is a real union, but it lives in `server/src/models/Station.ts`.)
 - **No comments in code.** Say it with a name — a well-named function, variable or type. The
   why of a change goes in the commit message, how the system works goes in MEMORY.md. The
-  codebase is at zero, so a single comment fails the gate. Only `@ts-` directives and
-  `/// <reference>` are allowed; there is no ESLint, so `eslint-disable` lines do nothing.
+  codebase is at zero, so a single comment fails the gate. Only `@ts-` directives,
+  `eslint-disable` directives and `/// <reference>` are allowed.
 - **SVG never sits inline in a component.** Static art goes in a `.svg` asset under `client/public` (85 already there); anything parameterised by props, colour or state goes in a sibling `*.icons.tsx`, the same co-location shape as `*.i18n.ts`. 131 inline tags predate the rule and are held at their current count by the baseline — leave them or drain them, but do not add to them.
 - **Drag-and-drop is hand-rolled** (HTML5 drag API + tap-to-swap fallback for touch). No dnd library — match this pattern if adding a new draggable game.
 - **API surface convention**: admin endpoints under `/api/admin/*` require admin JWT; manager endpoints under `/api/manager/*` require manager JWT; participant endpoints under `/api/activities/:code/*` are mostly public, except `/scores` which needs participant JWT.

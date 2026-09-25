@@ -457,7 +457,7 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
 
 router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
   const { itemResult, totalItemsCompleted, lastActiveItemIndex, runningTotal, progressOnly } = req.body;
-  const { activityCode, participantName } = req.participant!;
+  const { activityCode } = req.participant!;
 
   if (req.params.code !== activityCode) {
     res.status(403).json({ error: 'Forbidden' });
@@ -497,7 +497,7 @@ router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: s
 });
 
 router.delete('/:code/my-report', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
-  const { activityCode, participantName } = req.participant!;
+  const { activityCode } = req.participant!;
   if (req.params.code !== activityCode) {
     res.status(403).json({ error: 'Forbidden' });
     return;
@@ -514,7 +514,7 @@ router.delete('/:code/my-report', authenticateToken, async (req: Request<{ code:
 });
 
 router.get('/:code/my-progress', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
-  const { activityCode, participantName } = req.participant!;
+  const { activityCode } = req.participant!;
 
   if (req.params.code !== activityCode) {
     res.status(403).json({ error: 'Forbidden' });

@@ -567,7 +567,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
 
     if (isSplit && finalizesCollage) {
       const activityCode = code ?? '';
-      let merged: CapturedPhoto[] = [];
+      let merged: CapturedPhoto[];
       if (activityCode && splitMeta) {
         try {
           const prior = await loadCollageParts(activityCode, splitGroupId);

@@ -1481,7 +1481,7 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 - **`ManagerAuthContext`** — `useManagerAuth()` → `{token, manager, isManagerAuthenticated, login,
   logout}`. `yooz_manager_token` (+ `yooz_manager_activity_name`), 4h.
 - **`LanguageContext`** — `useLang()` → `{lang('he'|'en'), dir('rtl'|'ltr'), setLang,
-  restrictToLanguages, useScopeOf}`; sets `<html lang/dir>`. **`useTranslations(texts)`** → active
+  restrictToLanguages, enterScopeOf}`; sets `<html lang/dir>`. **`useTranslations(texts)`** → active
   language slice of a `{he,en}` object (the co-located `.i18n.ts` pattern).
 - **The server's own sentences are translated too**, via `translateText(text, lang)` in
   `contentTranslation` - one line, through the same content cache, so a fixed phrase costs one

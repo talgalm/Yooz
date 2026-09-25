@@ -607,7 +607,7 @@ function buildScoreBuckets(scores: number[]) {
 
 function buildRecommendations(
   stats: Omit<ExportStats, 'recommendations'>,
-  activity: ExportActivity,
+  _activity: ExportActivity,
 ): Recommendation[] {
   const recommendations: Recommendation[] = [];
   const riskiestItem = [...stats.items].sort((a, b) => {

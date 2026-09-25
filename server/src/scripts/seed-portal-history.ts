@@ -36,7 +36,7 @@ async function seed() {
     process.exit(1);
   }
 
-  const { Game, Station } = await import('../models');
+  const { Game } = await import('../models');
 
   const approvedUsers = portal.users.filter(u => u.status === 'approved');
   console.log(`\nGenerating history for ${approvedUsers.length} approved users across ${activities.length} activities...`);

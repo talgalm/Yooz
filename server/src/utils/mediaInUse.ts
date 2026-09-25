@@ -11,7 +11,7 @@ export function docMentions(doc: unknown, publicId: string): boolean {
   return JSON.stringify(doc ?? null).includes(publicId);
 }
 
-const SOURCES: { collection: string; model: { find: Function }; name: (d: Record<string, any>) => string }[] = [
+const SOURCES: { collection: string; model: { find: (filter: object) => { lean: () => Promise<unknown> } }; name: (d: Record<string, any>) => string }[] = [
   { collection: 'activities', model: Activity, name: (d) => d.name || d.code },
   { collection: 'games', model: Game, name: (d) => d.name },
   { collection: 'stations', model: Station, name: (d) => d.name },

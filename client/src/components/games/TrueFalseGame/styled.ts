@@ -237,8 +237,7 @@ export const WrongButton = styled('button')<{
   if (answered) {
     if (isCorrectAnswer) {
       borderColor = '#3d8b37';
-    } else if (wasSelected) {
-    } else {
+    } else if (!wasSelected) {
       opacity = 0.4;
     }
   }

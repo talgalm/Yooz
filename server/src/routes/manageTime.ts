@@ -2,8 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Types } from 'mongoose';
 import { authenticateManage, requireManageRole } from '../middleware/manageAuth';
 import {
-  TimeEntry, TIME_CATEGORIES, CATEGORIES_REQUIRING_PROJECT, TimeCategory,
-  MAX_HOURS_PER_DAY,
+  TimeEntry, TIME_CATEGORIES, TimeCategory,
 } from '../models/manage/TimeEntry';
 import { Project } from '../models/manage/Project';
 import { ManageUser, effectiveHourlyCost } from '../models/manage/ManageUser';

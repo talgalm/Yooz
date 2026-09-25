@@ -233,7 +233,7 @@ export function runFfmpeg(
   }
   if (extras.titlePath) {
     args.push('-loop', '1', '-t', String(template.duration), '-i', extras.titlePath);
-    titleIdx = nextIdx++;
+    titleIdx = nextIdx;
   }
 
   args.push(
@@ -490,7 +490,7 @@ router.post('/upload-photo', photoUpload.single('file'), async (req: Request, re
       stream.end(req.file!.buffer);
     });
 
-    let job = await CollageJob.findOne({ jobId });
+    const job = await CollageJob.findOne({ jobId });
     if (!job) {
       res.status(404).json({ error: 'Job not found — create it first' });
       return;

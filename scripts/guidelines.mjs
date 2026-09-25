@@ -22,6 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { ESLint } from 'eslint';
 
 const ts = createRequire(path.resolve('server/package.json'))('typescript');
 
@@ -67,7 +68,16 @@ const RULES = {
     fix: [
       'Delete it. Say it with a name instead: a well-named function, variable or type.',
       'Why a change was made belongs in the commit message; how the system works',
-      'belongs in MEMORY.md. Compiler directives (@ts-expect-error, /// <reference>) are exempt.',
+      'belongs in MEMORY.md. Directives (@ts-expect-error, eslint-disable-next-line,',
+      '/// <reference>) are exempt.',
+    ],
+  },
+  lint: {
+    title: 'ESLint (eslint.config.mjs) finds no problems',
+    fix: [
+      'Run `npx eslint <file>` to see each problem. The rules are the TypeScript and',
+      'React-hooks recommended sets. A hook that deliberately omits a dependency gets',
+      '`// eslint-disable-next-line react-hooks/exhaustive-deps` on the line above.',
     ],
   },
   notes: {
@@ -226,13 +236,28 @@ function codeComments() {
     };
     visit(file);
     const hits = [...seen.values()]
-      .filter((r) => !/^\/\/\/\s*<reference|^\/[/*]\s*@ts-/.test(text.slice(r.pos, r.end)))
+      .filter((r) => !/^\/\/\/\s*<reference|^\/[/*]\s*(@ts-|eslint-disable)/.test(text.slice(r.pos, r.end)))
       .map((r) => file.getLineAndCharacterOfPosition(r.pos).line);
     if (hits.length) {
       counts[f] = hits.length;
       const line = Math.min(...hits);
       examples[f] = [text.split('\n')[line], line + 1];
     }
+  }
+  return { counts, examples };
+}
+
+/** Rule: ESLint finds nothing, per eslint.config.mjs. */
+async function lintProblems() {
+  const counts = {};
+  const examples = {};
+  const results = await new ESLint().lintFiles(['client/src', 'server/src']);
+  for (const r of results) {
+    if (!r.messages.length) continue;
+    const f = posix(path.relative(process.cwd(), r.filePath));
+    counts[f] = r.messages.length;
+    const m = r.messages[0];
+    examples[f] = [`${m.ruleId ?? 'parse'}: ${m.message}`, m.line];
   }
   return { counts, examples };
 }
@@ -349,12 +374,13 @@ function report() {
 
 const baseline = fs.existsSync(BASELINE_PATH)
   ? JSON.parse(read(BASELINE_PATH))
-  : { structure: {}, i18n: {}, svg: {}, comments: {}, docs: {} };
+  : { structure: {}, i18n: {}, svg: {}, comments: {}, lint: {}, docs: {} };
 
 const measured = {
   i18n: hebrewOutsideI18n(),
   svg: inlineSvg(),
   comments: codeComments(),
+  lint: await lintProblems(),
   docs: undocumentedModules(),
 };
 
@@ -366,6 +392,7 @@ const current = {
   i18n: measured.i18n.counts,
   svg: measured.svg.counts,
   comments: measured.comments.counts,
+  lint: measured.lint.counts,
   docs: measured.docs.counts,
 };
 
@@ -380,6 +407,7 @@ const improved = [
   compare('i18n', measured.i18n, baseline, (n) => `${n} Hebrew line${n > 1 ? 's' : ''} outside a .i18n.ts`),
   compare('svg', measured.svg, baseline, (n) => `${n} inline <svg>`),
   compare('comments', measured.comments, baseline, (n) => `${n} comment${n > 1 ? 's' : ''}`),
+  compare('lint', measured.lint, baseline, (n) => `${n} ESLint problem${n > 1 ? 's' : ''}`),
   compare('docs', measured.docs, baseline, () => 'not mentioned anywhere in MEMORY.md'),
 ].some(Boolean);
 

@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { Task, isOpen } from '../models/manage/Task';
+import { Task } from '../models/manage/Task';
 import { Project } from '../models/manage/Project';
 import { Client } from '../models/manage/Client';
 import { ManageRole } from '../models/manage/ManageUser';
