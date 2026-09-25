@@ -107,9 +107,6 @@ export interface IActivity {
   opening?: IOpening;
   module?: IModuleConfig;
   guidelines?: string;
-  /** Languages this activity is offered in besides Hebrew, e.g. ['en'].
-   *  Content is pre-translated into each one when the activity is saved, so the
-   *  first participant to pick that language does not wait on the model. */
   languages?: string[];
   extraSupportInfo?: string;
   /** Optional named contact (name + phone) for this activity's participant

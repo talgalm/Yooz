@@ -77,11 +77,6 @@ async function provisionActivityManager(
   return provisionManagerCustomer(managerEmail.trim(), managerPassword);
 }
 
-/**
- * Pre-translates an activity's content in the background. The save has already
- * been answered by the time this runs, and a failure only means the first
- * participant in that language waits for the translation themselves.
- */
 function warmTranslations(activityId: string, languages?: string[]): void {
   if (!languages?.length) return;
   pretranslateActivity(activityId, languages).catch(() => undefined);
@@ -197,9 +192,6 @@ async function buildActivityData(
   // Handle guidelines
   data.guidelines = guidelines?.trim() || null;
 
-  // Languages this activity is offered in besides Hebrew. Its content is
-  // pre-translated into each one after the save, so the first participant to
-  // pick one does not wait on the model.
   data.languages = Array.isArray(languages)
     ? languages.filter(
         (l: unknown): l is string =>

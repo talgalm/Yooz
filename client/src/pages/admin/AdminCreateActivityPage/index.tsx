@@ -511,7 +511,6 @@ export default function AdminCreateActivityPage() {
   const [userControl, setUserControl] = useState(false);
 
   const [guidelines, setGuidelines] = useState('');
-  /** Languages the activity is offered in besides Hebrew. */
   const [languages, setLanguages] = useState<string[]>([]);
   const [extraSupportInfo, setExtraSupportInfo] = useState('');
   const [organizerContactName, setOrganizerContactName] = useState('');

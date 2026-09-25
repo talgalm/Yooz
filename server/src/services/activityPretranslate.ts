@@ -1,18 +1,6 @@
 import { Activity, Station, Game, Mission } from '../models';
 import { collectProse, translationsFor } from './contentTranslation';
 
-/**
- * Warms the translation cache for an activity.
- *
- * Without this the first participant to pick English pays for the whole
- * activity: dozens of strings, batched, against a model - seconds of waiting on
- * the screen where a game should have started. Saving the activity in the admin
- * does that work instead, while nobody is playing.
- *
- * Fire-and-forget by design: it runs after the save has already been answered,
- * and a failure costs nothing but a slower first run, since the participant
- * path translates whatever it finds missing anyway.
- */
 export async function pretranslateActivity(activityId: string, langs: string[]): Promise<number> {
   const targets = langs.filter((l) => l && l !== 'he');
   if (targets.length === 0) return 0;
@@ -29,10 +17,6 @@ export async function pretranslateActivity(activityId: string, langs: string[]):
     Mission.find({ _id: { $in: idsOf('mission') } }).lean(),
   ]);
 
-  /**
-   * The same shape the participant is served: the module's own copy (popups,
-   * item labels) plus every station, game and mission it points at.
-   */
   const content = {
     name: activity.name,
     guidelines: activity.guidelines,
