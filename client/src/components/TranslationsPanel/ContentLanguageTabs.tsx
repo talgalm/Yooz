@@ -1,8 +1,8 @@
-import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { adminApiFetch } from '../../utils/adminApi';
 import { AdminCardWide } from '../../pages/admin/styled';
-import { LANGS, useTranslations } from '../../context/LanguageContext';
+import { LANGS, useLang, useTranslations } from '../../context/LanguageContext';
 import { texts } from './TranslationsPanel.i18n';
 import TranslationsPanel, { type LangSummary } from './index';
 
@@ -21,29 +21,33 @@ const CARD_SHADOW = '0 1px 2px rgba(16,12,40,0.04), 0 10px 30px rgba(16,12,40,0.
 
 const SHADOW_ROOM = 24;
 
-const squareTabCorner = { '& > *': { borderStartStartRadius: 0 } } as const;
+const cardMeetingTabs = {
+  '& > *': {
+    borderStartStartRadius: 0,
+    clipPath: 'inset(0 -60px -60px -60px)',
+  },
+} as const;
 
-const Surface = styled('div')(squareTabCorner);
+const Surface = styled('div')(cardMeetingTabs);
 
-const PanelCard = styled(AdminCardWide)({ borderStartStartRadius: 0 });
+const PanelCard = styled(AdminCardWide)({
+  borderStartStartRadius: 0,
+  clipPath: 'inset(0 -60px -60px -60px)',
+});
 
 const Strip = styled('div')({
   display: 'flex',
   gap: 4,
   alignItems: 'flex-end',
-  overflowX: 'auto',
+  overflowX: 'hidden',
   overflowY: 'hidden',
   position: 'relative',
-  zIndex: 1,
+  zIndex: 2,
   marginBottom: -MERGE,
   paddingBottom: 0,
   paddingTop: SHADOW_ROOM,
-  paddingInline: SHADOW_ROOM,
   marginTop: -SHADOW_ROOM,
-  marginInline: -SHADOW_ROOM,
-  scrollbarWidth: 'thin',
-  '&::-webkit-scrollbar': { height: 6 },
-  '&::-webkit-scrollbar-thumb': { background: '#ded7f0', borderRadius: 3 },
+  scrollBehavior: 'smooth',
 });
 
 const Tab = styled('button')<{ active?: boolean }>(({ active }) => ({
@@ -95,6 +99,20 @@ const Dot = styled('span')({
   background: '#e0a84a',
 });
 
+function fadeStyle(
+  more: { start: boolean; end: boolean },
+  dir: 'ltr' | 'rtl'
+): { maskImage?: string; WebkitMaskImage?: string } {
+  const left = dir === 'rtl' ? more.end : more.start;
+  const right = dir === 'rtl' ? more.start : more.end;
+  if (!left && !right) return {};
+  const edge = '28px';
+  const mask = `linear-gradient(to right, ${
+    left ? 'transparent 0, #000 ' + edge : '#000 0'
+  }, ${right ? `#000 calc(100% - ${edge}), transparent 100%` : '#000 100%'})`;
+  return { maskImage: mask, WebkitMaskImage: mask };
+}
+
 function labelFor(code: string): string {
   return LANGS.find((l) => l.code === code)?.label ?? code;
 }
@@ -110,8 +128,53 @@ export default function ContentLanguageTabs({
   plain,
 }: ContentLanguageTabsProps) {
   const t = useTranslations(texts);
+  const { dir } = useLang();
   const [summary, setSummary] = useState<LangSummary[] | null>(null);
   const [tab, setTab] = useState('he');
+  const stripRef = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState({ start: false, end: false });
+
+  const measure = useCallback(() => {
+    const el = stripRef.current;
+    if (!el) return;
+    const from = Math.abs(el.scrollLeft);
+    const max = el.scrollWidth - el.clientWidth;
+    setMore({ start: from > 1, end: from < max - 1 });
+  }, []);
+
+  useEffect(() => {
+    const el = stripRef.current;
+    if (!el) return;
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [measure, summary]);
+
+  useEffect(() => {
+    stripRef.current
+      ?.querySelector('[aria-selected="true"]')
+      ?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  }, [summary]);
+
+  const reveal = useCallback((el: HTMLElement | null) => {
+    const strip = stripRef.current;
+    if (!strip || !el) return;
+    const box = strip.getBoundingClientRect();
+    const tabBox = el.getBoundingClientRect();
+    const towardsLeft = tabBox.left + tabBox.width / 2 < box.left + box.width / 2;
+
+    const beyond = [...strip.querySelectorAll<HTMLElement>('[role="tab"]')]
+      .map((tab) => ({ tab, rect: tab.getBoundingClientRect() }))
+      .filter(({ rect }) => (towardsLeft ? rect.left < tabBox.left : rect.right > tabBox.right))
+      .sort((a, b) => (towardsLeft ? b.rect.left - a.rect.left : a.rect.right - b.rect.right));
+
+    (beyond[0]?.tab ?? el).scrollIntoView({
+      inline: 'nearest',
+      block: 'nearest',
+      behavior: 'smooth',
+    });
+  }, []);
 
   const loadSummary = useCallback(async () => {
     if (!id) return;
@@ -147,14 +210,17 @@ export default function ContentLanguageTabs({
 
   return (
     <>
-      <Strip role="tablist">
+      <Strip ref={stripRef} role="tablist" onScroll={measure} style={fadeStyle(more, dir)}>
         {children && (
           <Tab
             type="button"
             role="tab"
             aria-selected={current === 'he'}
             active={current === 'he'}
-            onClick={() => setTab('he')}
+            onClick={(e) => {
+              setTab('he');
+              reveal(e.currentTarget);
+            }}
           >
             {t.generalTab}
           </Tab>
@@ -166,7 +232,10 @@ export default function ContentLanguageTabs({
             role="tab"
             aria-selected={current === l.code}
             active={current === l.code}
-            onClick={() => setTab(l.code)}
+            onClick={(e) => {
+              setTab(l.code);
+              reveal(e.currentTarget);
+            }}
             title={l.inUse ? undefined : t.unusedTitle}
           >
             <span aria-hidden>{flagFor(l.code)}</span>

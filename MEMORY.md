@@ -465,7 +465,22 @@ No admin auth — the `statsShareToken` is the credential.
   so the card's own top border still runs under the inactive ones. `overflow-y` is pinned to
   `hidden`: a box with `overflow-x: auto` has a `visible` y-axis promoted to `auto`, so one pixel
   of downward overflow grew a scrollbar on the tab strip - which is also why the overlap is done
-  by moving the strip rather than the tabs, and why a bridging `box-shadow` would not work. Built for the registry reaching ~7 languages - verified that eight tabs neither
+  by moving the strip rather than the tabs, and why a bridging `box-shadow` would not work.
+  Past about eight languages the strip scrolls sideways, and the edge it continues past is faded
+  with a `mask-image` driven by its scroll position (a `ResizeObserver` plus the `scroll` event;
+  `scrollLeft` runs negative in RTL, so distance from the start is its magnitude). Without it a
+  strip that simply ends mid-tab reads as broken rather than as scrollable. The strip is moved
+  **only by clicking a tab** - `overflow-x: hidden`, which still allows `scrollIntoView` but
+  offers no scrollbar, no wheel and no drag, so it can never sit half-way between two tabs. A
+  click scrolls the clicked tab's *neighbour* into view, walking the strip that way by the least
+  it can; the "scroll the active tab into view" effect is keyed on the tab list only, never on
+  the selection, because re-running it on a click cancelled that smooth scroll and the strip
+  never moved. The card is clipped flush at its top (`clip-path: inset(0 -60px -60px -60px)`):
+  its shadow blurs ~20px above its own edge, and since inactive tabs are transparent that shadow
+  washed up through them and greyed their lower half - measured as a 245→242 gradient. Raising
+  the strip's `z-index` does not fix it; the shadow is already behind the tabs. The shadow room is padding on the **top only**: the same trick sideways made
+  the strip wider than the card, and content scrolls *through* a scroller's padding, so tabs
+  appeared outside the card's edges. Built for the registry reaching ~7 languages - verified that eight tabs neither
   clip nor scroll vertically once the strip scrolls sideways - and a language's rows load only
   when its tab is first opened, since asking is what produces the translation. The card is
   hidden with `display: contents → none` rather than unmounted, so unsaved edits survive a look

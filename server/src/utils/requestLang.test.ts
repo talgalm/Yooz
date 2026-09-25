@@ -22,7 +22,7 @@ test('nothing sent means Hebrew', () => {
 });
 
 test('a language we do not have falls back to Hebrew, it does not throw', () => {
-  for (const raw of ['fr', 'klingon', '', '  ', 42, null, undefined, {}]) {
+  for (const raw of ['zz', 'klingon', '', '  ', 42, null, undefined, {}]) {
     assert.equal(normaliseLang(raw), 'he');
   }
 });
