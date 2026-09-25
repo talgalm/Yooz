@@ -192,14 +192,6 @@ async function buildActivityData(
   // Handle guidelines
   data.guidelines = guidelines?.trim() || null;
 
-  // Languages this activity is offered in besides Hebrew. Its content is
-  // pre-translated into each one after the save, so the first participant to
-  // pick one does not wait on the model.
-  //
-  // An empty array is a real answer - "offered in Hebrew only" - and has to
-  // reach the document, because `$set` skips `undefined` and the previous list
-  // would survive unchecking the last language. A missing field, from a caller
-  // that does not know about languages at all, still leaves it untouched.
   data.languages = sanitiseLanguages(languages);
 
   // Free-text context for the "something else" open free-text chat only,

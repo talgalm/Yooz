@@ -328,24 +328,12 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   };
 
   res.setHeader('Cache-Control', 'no-store');
-  /**
-   * Everything below this line is admin-authored content, so a participant
-   * running in a language the activity was prepared in gets it translated.
-   * Prepared is the operative word: an activity that never declared a language
-   * keeps its content exactly as written, even for a participant whose
-   * interface is in English. The interface is ours to translate; the content is
-   * the organiser's, and machine-translating it uninvited is not our call.
-   *
-   * Hebrew is a no-op, and a translation that cannot be produced falls back to
-   * the Hebrew it was given.
-   */
   const requested = readLang(req);
   const lang = activity.languages?.includes(requested) ? requested : 'he';
   res.json(await translateContent({
     code: activity.code,
     name: activity.name,
     module: moduleResponse,
-    /** So the language control inside the activity offers only what was prepared. */
     ...(activity.languages?.length && { languages: activity.languages }),
     guidelines: activity.guidelines || undefined,
     customInstructions: activity.customInstructions || undefined,

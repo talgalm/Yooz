@@ -310,9 +310,6 @@ export default function PlayPage() {
         const data = await res.json();
         if (cancelled) return;
         setActivity(data);
-        // The screens after login need the same answer and fetch nothing else,
-        // and the interface narrows to it straight away rather than on the next
-        // navigation - this is the screen the participant is already reading.
         rememberActivityLanguages(data.code, data.languages);
         restrictToLanguages(data.languages ?? []);
         if (!data.opening?.url) setShowDefaultSplash(true);
@@ -799,13 +796,6 @@ export default function PlayPage() {
 
       {/* Login page — full screen purple */}
       <PurpleLoginPage visible={openingPhase !== 'playing'}>
-        {/*
-          Offered on the first screen a participant reads, so someone who cannot
-          read the language can get out of it before working out which field is
-          their name. Only the languages the activity was prepared in: an
-          activity nobody translated shows no control at all, rather than an
-          English shell around Hebrew stations.
-        */}
         <LangDrawer variant="fab" only={activity?.languages ?? []} />
         <LoginLogo src="/images/logo-white.png" alt="Yooz" />
         <LoginHeading>{loginHeading}</LoginHeading>
