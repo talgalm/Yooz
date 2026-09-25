@@ -927,10 +927,14 @@ because a Station is a reusable template that can appear in several activities a
 addresses. Per module: `proximityMeters` (default 10) and `groupOrders` (group name → permutation
 of item indices, so each team walks its own order). Per-group order needs **preset** groups —
 self-service teams don't exist until the day, so they all walk the stored order. Admin UI:
-a 📍 button per item (`ModuleItemsSection` → `LocationPopup`: address geocode **and** a
+each item's settings dialog (`ItemSettingsModal` → `LocationSection`: address geocode **and** a
 click-to-drop map picker with a draggable pin, for spots no address describes — a gate, a
-courtyard, a tree; raw lat/lng inputs were removed in favour of it)
-and `GroupOrderEditor.tsx` (hand-rolled DnD + tap-to-swap, no library).
+courtyard, a tree) and `GroupOrderEditor.tsx` (hand-rolled DnD + tap-to-swap, no library).
+Saving goes through `routes/admin.ts::buildActivityData`, which keeps these three fields for map
+modules only and sanitises them in `utils/moduleItems.ts` — `sanitizeLocation` drops missing,
+non-finite or out-of-range coordinates, `sanitizeProximityMeters` clamps to 5-200,
+`sanitizeGroupOrders` keeps distinct in-range indices. The admin read returns `location` too,
+so a reopened activity keeps its pins (it used to drop all three on every save).
 
 **Shared group progress.** `MapGroupState` (`map_group_states`), day-scoped and unique on
 `{activityId, activityDay, groupName}`. Whoever reaches a station first completes it **for the
@@ -1574,7 +1578,8 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   scheduling gate (countdown/expired) → **login**. For single: `ActivityLogin`. For self-service
   groups: a `GroupFlow` state machine (`choice`→`create`/`join-paste`/`join-login`→`success`)
   wiring the `groupEntry/*` components. Prefetches the module (`startEarlyModulePrefetch`) and
-  preloads media, then redirects to `participantStoryPath`/`participantMissionPath` by moduleType.
+  preloads media, then redirects by moduleType: `mission` → `participantMissionPath`, any other
+  module (story, spiders, map) → `participantStoryPath`, none → `/home`.
   Handles in-app-browser escape for camera/QR.
 - **`StoryModulePage/index.tsx`** (`/story/:code`) — the **orchestrator**. Loads `/module`, holds
   the `Phase` state (`roadmap`|`playing`|`finish`|`leaderboard`), `currentItemIndex`, `scores`,
