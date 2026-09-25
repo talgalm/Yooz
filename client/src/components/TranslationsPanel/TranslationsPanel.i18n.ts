@@ -1,6 +1,5 @@
 export const texts = {
   he: {
-    /** The first tab: the station as it is authored. */
     generalTab: 'כללי (עברית)',
     hint: 'ערכו מה שצריך. תיבה שלא נגעתם בה נשארת בתרגום אוטומטי.',
     loading: 'מתרגם...',

@@ -25,8 +25,6 @@ import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
 
-// ─── In-memory rate limiter, per participant — same policy as avatarChat ───
-
 const isRateLimited = createRateLimiter({
   perParticipant: 20,
   perAnonymous: 20,
@@ -205,9 +203,6 @@ function buildSystemPrompt(settings: AvatarQuizSettings, question: AvatarQuizQue
     lines.push('- דרשו את כל מרכיבי התשובה כדי לתת correct.');
   }
 
-  // Last word on the language, so a participant reading English is answered and
-  // graded in it. The gender-neutral rule above is about Hebrew and does not
-  // carry over.
   const language = replyLanguageInstruction(lang);
   if (language) lines.push('', language);
 

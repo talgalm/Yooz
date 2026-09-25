@@ -9,8 +9,6 @@ import { translateText } from '../services/contentTranslation';
 
 const router = Router();
 
-// ─── In-memory rate limiter, counted per participant ───
-
 const isRateLimited = createRateLimiter({
   perParticipant: 20,
   perAnonymous: 20,
@@ -148,7 +146,6 @@ function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
   lines.push('');
   lines.push('כללי פלט: תשובה קצרה (עד 2 משפטים), ללא אימוג׳ים, ללא מרקדאון, ללא הסברים מטה-טקסט.');
 
-  // Last word on the language, so a participant reading English is answered in it.
   const language = replyLanguageInstruction(lang);
   if (language) lines.push('', language);
 

@@ -3,25 +3,8 @@ import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
 import { ContentTranslation } from '../models/ContentTranslation';
 import { DEFAULT_LANG, languageOf } from '../utils/languages';
 
-/**
- * Machine translation of admin-authored activity content.
- *
- * The UI chrome is translated by hand in the `.i18n.ts` files. The content
- * inside an activity - station titles, riddles, trivia questions, popups - is
- * written by whoever built the activity, so there is nothing to hand-translate
- * in advance: it is translated on demand and cached by content hash.
- *
- * Two rules the game depends on:
- *   1. It never fails a request. A model error, a timeout or a missing key
- *      leaves the Hebrew in place - a participant sees the original text
- *      instead of a broken screen.
- *   2. It never touches anything that is not prose. URLs, ids, colours and
- *      answer keys that are already Latin stay exactly as they are.
- */
-
 const HEBREW = /[֐-׿]/;
 
-/** Keys whose values are never prose, whatever they contain. */
 const SKIP_KEYS = new Set([
   '_id', 'id', 'ref', 'code', 'type', 'key', 'slug', 'lang', 'token', 'password',
   'url', 'image', 'imageUrl', 'images', 'video', 'videoUrl', 'audio', 'audioUrl',
@@ -30,7 +13,6 @@ const SKIP_KEYS = new Set([
   'email', 'phone', 'phoneNumber', 'managerEmail', 'splitGroupId',
 ]);
 
-/** Values that are technically strings but never sentences. */
 function isProse(value: string): boolean {
   if (!HEBREW.test(value)) return false;
   if (value.length > 2000) return false;
@@ -38,13 +20,6 @@ function isProse(value: string): boolean {
   return true;
 }
 
-/**
- * Every translatable string in a payload, de-duplicated.
- *
- * De-duplication is what makes this cheap: one activity repeats the same button
- * label and the same station name across dozens of items, and each distinct
- * sentence is translated once.
- */
 export function collectProse(payload: unknown, out = new Set<string>()): Set<string> {
   if (typeof payload === 'string') {
     if (isProse(payload)) out.add(payload);
@@ -63,11 +38,6 @@ export function collectProse(payload: unknown, out = new Set<string>()): Set<str
   return out;
 }
 
-/**
- * The same payload with every translated string swapped in. Anything the map
- * does not know about is left alone, so a partial translation degrades to
- * partly-Hebrew rather than to blanks.
- */
 export function applyTranslations<T>(payload: T, map: Map<string, string>): T {
   if (typeof payload === 'string') return (map.get(payload) ?? payload) as T;
   if (Array.isArray(payload)) return payload.map((item) => applyTranslations(item, map)) as T;
@@ -85,7 +55,6 @@ export function cacheKey(lang: string, source: string): string {
   return crypto.createHash('sha256').update(`${lang}:${source}`).digest('hex');
 }
 
-/** One model call per batch; a long activity is a handful of calls, not hundreds. */
 const BATCH_SIZE = 40;
 
 function buildPrompt(lang: string, sources: string[]): string {
@@ -134,18 +103,6 @@ async function askGemini(lang: string, sources: string[]): Promise<string[] | nu
   }
 }
 
-/**
- * Translations for these strings, from cache where possible. Anything the model
- * could not translate is simply absent from the map, which leaves the Hebrew in
- * place downstream.
- */
-/**
- * What has already been translated, without translating anything new.
- *
- * Reading a screen should never spend money at the model on its own. The admin
- * translation screen opens with this, and only asks for the rest when someone
- * says to.
- */
 export async function cachedTranslations(
   sources: string[],
   lang: string
@@ -178,7 +135,6 @@ export async function translationsFor(sources: string[], lang: string): Promise<
       translated: translated[j],
     }));
     for (const row of rows) map.set(row.source, row.translated);
-    /** Two participants can open the same station at once; the loser is a no-op. */
     await ContentTranslation.insertMany(rows, { ordered: false }).catch(() => undefined);
   }
 
