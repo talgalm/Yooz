@@ -27,8 +27,6 @@ export async function resolveGroupName(
   const entryMode = activity.groupEntryMode || 'preset';
 
   if (entryMode === 'selfService') {
-    // Self-service groups are day-scoped: only a group created today can be joined.
-    // Previous days' groups stay in the DB (for reports) but are no longer joinable.
     const today = israelDayString();
     if (opts.groupToken) {
       const found = await ActivityGroup.findOne({
@@ -69,8 +67,6 @@ export async function checkGroupCapacity(
 ): Promise<string | null> {
   if (activity.connectionType !== 'group' || activity.groupEntryMode !== 'selfService') return null;
 
-  // A redeemed ticket code raises the cap for one group only (maxMembersOverride);
-  // otherwise the activity-wide cap applies.
   const group = await ActivityGroup.findOne({
     activityId: activity._id!,
     activityDay: israelDayString(),
@@ -91,11 +87,6 @@ export async function checkGroupCapacity(
   const alreadyMember = await Report.exists(lookup);
   if (alreadyMember) return null;
 
-  // ponytail: read-then-write race could let two concurrent joins both squeak past
-  // the cap. Family-group sizes are small / low-concurrency so acceptable; upgrade
-  // to a unique-index or transactional join slot if it ever bites.
-  // Day-scoped: only today's members count toward the cap (group names can repeat
-  // across days, so a previous day's members must not fill up today's group).
   const memberCount = await Report.countDocuments({
     activityId: activity._id,
     group: groupName,
@@ -105,12 +96,6 @@ export async function checkGroupCapacity(
   return null;
 }
 
-/**
- * `dayScoped` is set for `dailyReset` activities. Their reports are no longer
- * deleted overnight (the history feeds the admin reports), so without it a
- * participant returning the next morning would resume — and overwrite —
- * yesterday's finished run instead of starting fresh.
- */
 export function buildReportLookupQuery(
   activityCode: string,
   displayName: string,
@@ -151,7 +136,6 @@ export async function createParticipantSession(
     email?: string;
     phoneNumber?: string;
     group?: string;
-    /** What the participant is reading, so an SMS sent hours later matches. */
     lang?: string;
   },
 ): Promise<LoginResponse> {
@@ -190,11 +174,6 @@ export async function createParticipantSession(
     {
       participantName: resolvedName,
       activityCode: opts.activityCode,
-      // Pin the session to the report login just resolved. Everything after
-      // this (resume, progress saves, final scores) addresses it by id — name
-      // is not an identity: two people share one, and one person with two
-      // email addresses has two reports under the same name, so a name lookup
-      // resumes and overwrites whichever report happens to be newest.
       reportId: String(report._id),
       ...(activity.dailyReset && { dailyReset: true }),
       connectionType,
@@ -203,8 +182,6 @@ export async function createParticipantSession(
       ...(opts.group && { group: opts.group }),
     },
     JWT_SECRET,
-    // ponytail: 7d so a queued score still flushes after a long offline gap.
-    // Participants are anonymous; no security downside.
     { expiresIn: '7d' },
   );
 
@@ -221,11 +198,6 @@ export async function createParticipantSession(
   };
 }
 
-/**
- * The report a participant session owns. Tokens issued before `reportId`
- * existed fall back to the old name lookup (`sort({joinedAt:-1})` still applies
- * at the call site); they expire within 7 days of deploy.
- */
 export function ownReportFilter(participant: {
   reportId?: string;
   activityCode: string;

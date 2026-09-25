@@ -9,8 +9,6 @@ import { translateText } from '../services/contentTranslation';
 
 const router = Router();
 
-// ─── In-memory rate limiter, counted per participant ───
-
 const isRateLimited = createRateLimiter({
   perParticipant: 20,
   perAnonymous: 20,
@@ -63,9 +61,6 @@ function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
   } else {
     lines.push('את/ה עד בחקירה בלשית אינטראקטיבית. המשתמש הוא הבלש החוקר אותך.');
   }
-  // The language clause is only stated when it is the language being asked
-  // for: left in, it contradicts the instruction at the end of the prompt, and
-  // the model followed the Hebrew one.
   lines.push(
     lang === DEFAULT_LANG
       ? 'ענה/י תמיד בעברית, בגוף ראשון, בטון קצר וטבעי (1–2 משפטים).'
@@ -148,7 +143,6 @@ function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
   lines.push('');
   lines.push('כללי פלט: תשובה קצרה (עד 2 משפטים), ללא אימוג׳ים, ללא מרקדאון, ללא הסברים מטה-טקסט.');
 
-  // Last word on the language, so a participant reading English is answered in it.
   const language = replyLanguageInstruction(lang);
   if (language) lines.push('', language);
 

@@ -6,21 +6,11 @@ import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
 
-/**
- * A station speaks a line per turn, so a participant gets a generous minute's
- * worth of clips of their own. See `participantRateLimit` for why counting
- * these per address instead is what made a whole group go quiet.
- */
 const isRateLimited = createRateLimiter({
   perParticipant: 60,
   perAnonymous: 30,
   perAddress: 400,
 });
-
-// The voice comes from the one language registry. A voice from the wrong
-// language does not sound accented - it mispronounces the words outright,
-// because it is sounding out the letters with another language's phonetics,
-// and Azure answers with an empty clip, which plays as silence.
 
 function escapeSsml(text: string): string {
   return text

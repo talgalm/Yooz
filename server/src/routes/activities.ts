@@ -56,11 +56,6 @@ function publicStationSettings(
   };
 }
 
-/**
- * Swaps in the translations a person reviewed for this station or game, before
- * the machine ever sees the text. Whatever they corrected is no longer Hebrew,
- * so `translateContent` leaves it alone and fills in only the rest.
- */
 function withReviewedTranslations<T>(built: T, source: { translations?: Record<string, Record<string, string>> }, lang: string): T {
   const reviewed = lang === 'he' ? undefined : source.translations?.[lang];
   if (!reviewed) return built;
@@ -225,10 +220,6 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   const moduleItems = visibleOrderedIndices(activity.module, participantGroup)
     .map((i) => activity.module!.items[i]);
 
-  /**
-   * The language this activity is actually served in: what the participant
-   * asked for, but only if the activity was prepared in it.
-   */
   const requested = readLang(req);
   const lang = activity.languages?.includes(requested) ? requested : 'he';
 
@@ -346,22 +337,10 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   };
 
   res.setHeader('Cache-Control', 'no-store');
-  /**
-   * Everything below this line is admin-authored content, so a participant
-   * running in a language the activity was prepared in gets it translated.
-   * Prepared is the operative word: an activity that never declared a language
-   * keeps its content exactly as written, even for a participant whose
-   * interface is in English. The interface is ours to translate; the content is
-   * the organiser's, and machine-translating it uninvited is not our call.
-   *
-   * Hebrew is a no-op, and a translation that cannot be produced falls back to
-   * the Hebrew it was given.
-   */
   res.json(await translateContent({
     code: activity.code,
     name: activity.name,
     module: moduleResponse,
-    /** So the language control inside the activity offers only what was prepared. */
     ...(activity.languages?.length && { languages: activity.languages }),
     guidelines: activity.guidelines || undefined,
     customInstructions: activity.customInstructions || undefined,

@@ -1,8 +1,6 @@
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { adminApiFetch } from '../../utils/adminApi';
-// The card the tabs sit on, so the panel lands on exactly the same surface as
-// the form it replaces. Admin-only styling, used by an admin-only component.
 import { AdminCardWide } from '../../pages/admin/styled';
 import { LANGS, useLang, useTranslations } from '../../context/LanguageContext';
 import { texts } from './TranslationsPanel.i18n';
@@ -10,40 +8,15 @@ import TranslationsPanel, { type LangSummary } from './index';
 
 interface ContentLanguageTabsProps {
   kind: 'stations' | 'games';
-  /** Absent while the item is being created - there is nothing to translate yet. */
   id?: string;
-  /**
-   * The item's own card: everything is authored in Hebrew on the first tab.
-   * Omitted where there is no form to show - the module builder's modal opens
-   * straight onto the languages.
-   */
   children?: ReactNode;
-  /** Inside a modal, which supplies its own surface, the panel needs no card. */
   plain?: boolean;
 }
 
-/**
- * The tabs sit on top of the card, the way a browser's tabs sit on its window.
- *
- * `overflow-y` is pinned to `hidden` on purpose: a box with `overflow-x: auto`
- * and a visible y-axis has that axis promoted to `auto` too, so a single pixel
- * of vertical overflow - a tab reaching down to meet the card - grew a vertical
- * scrollbar on the tab strip. Nothing overflows downwards now; the strip itself
- * is pulled down over the card's top border instead, and paints above it.
- */
-/**
- * How far the active tab reaches down into the card: exactly the card's border.
- *
- * The tab's white bottom border lands on that row and hides it, which is what
- * joins the two. Any deeper and the tab's side borders would carry on past the
- * card's top edge as two little stubs inside it.
- */
 const MERGE = 1;
 
-/** The card's border, continued around the tab so the outline never breaks. */
 const CARD_BORDER = '#ecebf4';
 
-/** The card's own shadow, so the tab carries the same edge as the surface it joins. */
 const CARD_SHADOW = '0 1px 2px rgba(16,12,40,0.04), 0 10px 30px rgba(16,12,40,0.05)';
 
 /**
@@ -119,14 +92,6 @@ const Strip = styled('div')({
   scrollBehavior: 'smooth',
 });
 
-/**
- * The active tab is the card's edge carried upwards: same border, same shadow,
- * same white. Its bottom border is white instead, covering the card's top
- * border for the width of the tab - that single row is the join.
- *
- * An inactive tab keeps a transparent border of the same width, so it takes up
- * the same room and the card's own border still runs underneath it.
- */
 const Tab = styled('button')<{ active?: boolean }>(({ active }) => ({
   display: 'flex',
   alignItems: 'center',
@@ -136,18 +101,9 @@ const Tab = styled('button')<{ active?: boolean }>(({ active }) => ({
   padding: `8px 15px ${9 + MERGE}px`,
   borderRadius: '12px 12px 0 0',
   border: `1px solid ${active ? CARD_BORDER : 'transparent'}`,
-  // The bottom keeps the border's colour so the two corner pixels match the
-  // card's own outline exactly; the white bar below covers everything between.
   borderBottomColor: active ? CARD_BORDER : 'transparent',
   background: active ? '#fff' : 'transparent',
-  // Keeps the white out of the bottom border, where it would be mitered
-  // against the side borders and bleed a pixel past the card's edge.
   backgroundClip: 'padding-box',
-  /**
-   * The join, as a bar rather than a border: it spans the padding box, so it
-   * stops short of both bottom corners and leaves them the border's own colour
-   * - which is the card's colour, so the outline stays unbroken.
-   */
   ...(active && {
     '&::after': {
       content: '""',
@@ -159,8 +115,6 @@ const Tab = styled('button')<{ active?: boolean }>(({ active }) => ({
     },
   }),
   boxShadow: active ? CARD_SHADOW : 'none',
-  // Cuts the shadow off at the tab's own bottom edge, so it wraps the top and
-  // sides like the card's does but never smudges across the card it sits on.
   clipPath: active ? `inset(-${SHADOW_ROOM * 2}px -${SHADOW_ROOM * 2}px 0)` : 'none',
   color: active ? '#6C5CE7' : '#6b6280',
   fontSize: 13.5,
@@ -217,14 +171,6 @@ function flagFor(code: string): string {
   return LANGS.find((l) => l.code === code)?.flag ?? '🏳️';
 }
 
-/**
- * The station's content, one tab per language.
- *
- * The first tab is the station itself, authored in Hebrew; every other tab is
- * the same content in that language, editable in place. The form is hidden
- * rather than unmounted when another tab is open, so unsaved edits to the
- * station survive a look at the translations.
- */
 export default function ContentLanguageTabs({
   kind,
   id,
@@ -320,10 +266,8 @@ export default function ContentLanguageTabs({
     };
   }, [loadSummary]);
 
-  // Nothing to translate until the item exists, and no tabs worth showing.
   if (!id || !summary || summary.length === 0) return <>{children}</>;
 
-  // With no form to show, the first language is the landing tab.
   const current = children ? tab : tab === 'he' ? (summary[0]?.code ?? 'he') : tab;
   const active = summary.find((l) => l.code === current);
 
@@ -376,12 +320,6 @@ export default function ContentLanguageTabs({
         ))}
       </Strip>
 
-      {/*
-        Hidden, not unmounted: the form keeps whatever was typed into it while
-        another tab is open. `contents` rather than a plain block, so what it
-        holds stays a direct child of the layout around it and keeps its
-        spacing - wrapping it in a box of its own swallowed the gaps.
-      */}
       {children && (
         <Surface style={{ display: current === 'he' ? 'contents' : 'none' }}>{children}</Surface>
       )}

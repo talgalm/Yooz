@@ -4,13 +4,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { LANGUAGES, LANGUAGE_CODES, DEFAULT_LANG, languageOf, isLanguage } from './languages';
 
-/**
- * Adding a language is meant to be one row here and one row in the client's
- * registry. These are the checks that keep that true: a row missing a field,
- * or a language added to one side only, used to surface as a participant
- * hearing silence rather than as a failure anyone could see.
- */
-
 test('every language carries everything the app needs from it', () => {
   for (const lang of LANGUAGES) {
     assert.ok(lang.code, 'a language needs a code');
@@ -40,9 +33,6 @@ test('an unknown code falls back to the default rather than throwing', () => {
 });
 
 test('the client registry offers exactly the same languages', () => {
-  // Read as text on purpose: the client is a separate package with its own
-  // tsconfig, and importing across that line is what this check exists to
-  // avoid needing. If the file moves, this fails loudly and says so.
   const file = path.resolve(__dirname, '../../../client/src/utils/languages.ts');
   assert.ok(fs.existsSync(file), `client registry not found at ${file} - has it moved?`);
 

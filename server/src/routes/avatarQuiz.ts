@@ -25,8 +25,6 @@ import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
 
-// ─── In-memory rate limiter, per participant — same policy as avatarChat ───
-
 const isRateLimited = createRateLimiter({
   perParticipant: 20,
   perAnonymous: 20,
@@ -133,7 +131,6 @@ function buildSystemPrompt(settings: AvatarQuizSettings, question: AvatarQuizQue
   lines.push(
     `אתם ${name || 'המדריכים'}, מדריכים בנושא ${topic || 'ההדרכה'}. המשתתף הוא הלומד.`
   );
-  // See avatarChat: naming Hebrew here overrode the reply-language line below.
   lines.push(
     lang === DEFAULT_LANG
       ? 'דברו בעברית, בגוף ראשון, בטון ידידותי וקצר. אל תצאו מהדמות.'
@@ -205,9 +202,6 @@ function buildSystemPrompt(settings: AvatarQuizSettings, question: AvatarQuizQue
     lines.push('- דרשו את כל מרכיבי התשובה כדי לתת correct.');
   }
 
-  // Last word on the language, so a participant reading English is answered and
-  // graded in it. The gender-neutral rule above is about Hebrew and does not
-  // carry over.
   const language = replyLanguageInstruction(lang);
   if (language) lines.push('', language);
 
@@ -537,12 +531,6 @@ router.post('/', async (req: Request, res: Response) => {
 
   const lang = readLang(req);
 
-  /**
-   * The one place the judgement reaches the participant, so the one place that
-   * has to be in their language. The stock reactions and the admin's rebuttals
-   * are written in Hebrew; anything a model already wrote in the right language
-   * passes through untouched.
-   */
   const respond = async (judgement: Judgement, source: 'gemini' | 'fallback') => {
     const videoUrl =
       judgement.verdict === 'correct' ? reactionVideos.correct

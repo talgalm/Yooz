@@ -6,7 +6,6 @@ import { createRateLimiter, participantFromRequest } from './participantRateLimi
 
 const LIMITS = { perParticipant: 3, perAnonymous: 2, perAddress: 10 };
 
-/** A request from one device, optionally carrying a participant session. */
 const req = (address: string, participant?: string) =>
   ({
     ip: address,
@@ -14,7 +13,6 @@ const req = (address: string, participant?: string) =>
     headers: participant ? { authorization: `Bearer ${participant}` } : {},
   }) as never;
 
-/** The limiter under test, identifying participants by the raw header value. */
 const limiter = () => createRateLimiter(LIMITS, (r) => {
   const header = (r.headers as Record<string, string>)['authorization'];
   return header ? header.replace('Bearer ', '') : null;
@@ -27,8 +25,6 @@ test('one participant is cut off at their own allowance', () => {
 });
 
 test('a group behind one address does not share one allowance', () => {
-  // The bug this exists to prevent: everyone plays from the venue's WiFi, so
-  // every phone reaches the server from the same address.
   const isLimited = limiter();
   for (let i = 0; i < 3; i++) assert.equal(isLimited(req('1.1.1.1', 'dana')), false);
   assert.equal(isLimited(req('1.1.1.1', 'dana')), true, 'dana has spent her own allowance');

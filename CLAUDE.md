@@ -32,7 +32,8 @@ error you see is yours; there is no baseline to diff against.
 
 **CI runs exactly this**, as the `check` job in `.github/workflows/deploy.yml`, on every pull
 request and every push to `main`. The deploy job `needs: check`, so a red gate never reaches
-EC2. `scripts/guidelines.mjs` enforces: i18n out of components, no CSS files, no TODO/FIXME or
+EC2. `scripts/guidelines.mjs` enforces: i18n out of components, no CSS files, no comments in
+`client/src` / `server/src` (directives like `@ts-expect-error` aside), no TODO/FIXME or
 commented-out code, no `console.log` in client code, a frozen top-level structure, SVG out of
 components, and MEMORY.md updated alongside a new route/model/page. Counted rules carry a
 per-file baseline in `scripts/guidelines-baseline.json` — an existing file may not get worse
@@ -96,6 +97,10 @@ Each has its own React context (`AdminAuthContext`, `AuthContext`, `ManagerAuthC
   covered by `LanguageContext.test.ts`). Functions and arrays are taken whole, never merged into.
   Verified by adding a third language (Arabic, RTL) and running the gate: nothing else changed.
 - **Game configs live in `game.settings`** as `Record<string, unknown>` server-side, typed per game type client-side. When adding a new game type, add the settings interface in `server/src/types/index.ts`, the type to `validTypes` in `AdminGameConfigPage/index.tsx`, and the matching config form beside it. (`StationType` is a real union, but it lives in `server/src/models/Station.ts`.)
+- **No comments in code.** Say it with a name — a well-named function, variable or type. The
+  why of a change goes in the commit message, how the system works goes in MEMORY.md. ~4,800
+  comments across 405 files predate the rule and are held per file by the baseline; a file may
+  lose comments but never gain one, and a new file starts at zero.
 - **SVG never sits inline in a component.** Static art goes in a `.svg` asset under `client/public` (85 already there); anything parameterised by props, colour or state goes in a sibling `*.icons.tsx`, the same co-location shape as `*.i18n.ts`. 131 inline tags predate the rule and are held at their current count by the baseline — leave them or drain them, but do not add to them.
 - **Drag-and-drop is hand-rolled** (HTML5 drag API + tap-to-swap fallback for touch). No dnd library — match this pattern if adding a new draggable game.
 - **API surface convention**: admin endpoints under `/api/admin/*` require admin JWT; manager endpoints under `/api/manager/*` require manager JWT; participant endpoints under `/api/activities/:code/*` are mostly public, except `/scores` which needs participant JWT.
