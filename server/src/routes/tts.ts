@@ -4,8 +4,6 @@ import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
 
-/** See `participantRateLimit` for why these are not counted per address. */
-
 const isRateLimited = createRateLimiter({
   perParticipant: 60,
   perAnonymous: 30,

@@ -62,7 +62,6 @@ interface ActivityConfig {
   scheduledStart?: string;
   scheduledEnd?: string;
   moduleType?: string;
-  /** Languages this activity was prepared in besides Hebrew. */
   languages?: string[];
 }
 
