@@ -16,24 +16,18 @@ interface ContentLanguageTabsProps {
 const MERGE = 1;
 
 const CARD_BORDER = '#ecebf4';
-
 const CARD_SHADOW = '0 1px 2px rgba(16,12,40,0.04), 0 10px 30px rgba(16,12,40,0.05)';
 
 const SHADOW_ROOM = 24;
 
 const cardMeetingTabs = {
-  '& > *': {
-    borderStartStartRadius: 0,
-    clipPath: 'inset(0 -60px -60px -60px)',
-  },
-} as const;
-
-const Surface = styled('div')(cardMeetingTabs);
-
-const PanelCard = styled(AdminCardWide)({
   borderStartStartRadius: 0,
   clipPath: 'inset(0 -60px -60px -60px)',
-});
+} as const;
+
+const Surface = styled('div')({ '& > *': cardMeetingTabs });
+
+const PanelCard = styled(AdminCardWide)(cardMeetingTabs);
 
 const Strip = styled('div')({
   display: 'flex',
