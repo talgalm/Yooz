@@ -55,21 +55,17 @@ export function storeLangInScope(scope: LangScope, lang: string): void {
   try {
     localStorage.setItem(langStorageKey(scope), lang);
   } catch {
-    /* storage blocked - the choice lasts for this page only */
   }
 }
 
-/** The language in force on the current page. */
 export function currentLang(pathname: string = path()): string {
   return langInScope(langScope(pathname));
 }
 
-/** Records a choice against the scope of the page it was made on. */
 export function storeLang(lang: string, pathname: string = path()): void {
   storeLangInScope(langScope(pathname), lang);
 }
 
-/** The header every call carries, so the server answers in the same language. */
 export function langHeader(): Record<string, string> {
   return { 'X-Yooz-Lang': currentLang() };
 }

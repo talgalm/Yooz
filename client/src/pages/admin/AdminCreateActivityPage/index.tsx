@@ -511,13 +511,7 @@ export default function AdminCreateActivityPage() {
   const [userControl, setUserControl] = useState(false);
 
   const [guidelines, setGuidelines] = useState('');
-  /** Languages the activity is offered in besides Hebrew. */
   const [languages, setLanguages] = useState<string[]>([]);
-  /**
-   * Hand-edited sentences already stored for this activity's content, per
-   * language - including languages no longer offered. Turning a language off
-   * keeps the work, so the picker says so instead of letting it look lost.
-   */
   const [storedTranslations, setStoredTranslations] = useState<Record<string, number>>({});
   const [extraSupportInfo, setExtraSupportInfo] = useState('');
   const [organizerContactName, setOrganizerContactName] = useState('');
@@ -688,7 +682,6 @@ export default function AdminCreateActivityPage() {
         setUserControl(a.userControl === true);
         if (a.guidelines) setGuidelines(a.guidelines);
         if (a.languages) setLanguages(a.languages);
-        // What has already been translated by hand, whatever is offered now.
         adminApiFetch<{ languages: { code: string; reviewed: number }[] }>(
           `/api/admin/translations/activity/${id}/languages`,
         )
@@ -1256,8 +1249,6 @@ export default function AdminCreateActivityPage() {
         payload.module = modulePayload;
       }
       payload.guidelines = guidelines.trim() || undefined;
-      // Always sent, empty included: an omitted field is left alone by the
-      // update, so sending nothing made unchecking the last language a no-op.
       payload.languages = languages;
       payload.organizerContactName = organizerContactName.trim() || undefined;
       payload.organizerContactPhone = organizerContactPhone.trim() || undefined;
@@ -1440,12 +1431,6 @@ export default function AdminCreateActivityPage() {
                   <SectionHeader>
                     <SectionHeaderTitle>{t.moduleType}</SectionHeaderTitle>
                   </SectionHeader>
-                  {/*
-                    None first, then the modules in the order they grew. The row
-                    is a flex row, so DOM order is reading order in both
-                    directions - first card on the right in Hebrew, on the left
-                    in English, and the same option either way.
-                  */}
                   <ModuleTypeGrid>
                     <ModuleTypeCard type="button" selected={moduleType === 'none'} onClick={() => setModuleType('none')}>
                       <ModuleTypeCardTitle>{t.noModule}</ModuleTypeCardTitle>
@@ -2136,7 +2121,6 @@ export default function AdminCreateActivityPage() {
                       </label>
                     );
                   })}
-                  {/* Turning a language off never discards the work done in it. */}
                   {Object.values(storedTranslations).some((n) => n > 0) && (
                     <SectionDescription style={{ margin: '2px 0 0' }}>{t.languagesKeptHint}</SectionDescription>
                   )}

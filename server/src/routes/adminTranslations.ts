@@ -14,7 +14,6 @@ const router = Router();
 
 type Kind = 'stations' | 'games';
 
-/** Branching rather than a lookup map: the two models do not share a signature. */
 const findOne = (kind: Kind, id: string) => (kind === 'stations' ? Station.findById(id) : Game.findById(id));
 const findOneLean = (kind: Kind, id: string) => (kind === 'stations' ? Station.findById(id).lean() : Game.findById(id).lean());
 
@@ -22,7 +21,6 @@ function isKind(raw: string): raw is Kind {
   return raw === 'stations' || raw === 'games';
 }
 
-/** Only the parts a participant reads - not timestamps, ids or folder ids. */
 function translatableParts(doc: { name?: string; description?: string; settings?: unknown }) {
   return { name: doc.name, description: doc.description, settings: doc.settings };
 }
@@ -73,7 +71,6 @@ router.get(
   }
 );
 
-/** The languages offered by the activities that actually include this item. */
 async function languagesInUse(kind: Kind, id: string): Promise<Set<string>> {
   const type = kind === 'games' ? 'game' : 'station';
   const activities = await Activity.find({
@@ -113,9 +110,6 @@ router.get(
     const stored = (doc.translations ?? {}) as Record<string, Record<string, string>>;
     const inUse = await languagesInUse(kind, id);
 
-    // Every language the app knows, plus any a translation is stored under -
-    // including one dropped from the registry, which would otherwise become
-    // invisible work.
     const codes = new Set<string>([
       ...SUPPORTED_LANGS.filter((code) => code !== 'he'),
       ...Object.keys(stored),
@@ -165,7 +159,6 @@ router.get('/:kind/:id', authenticateAdmin, async (req: Request<{ kind: string; 
   res.json({
     lang,
     name: doc.name,
-    /** How many sentences have no translation yet, so the screen can offer one. */
     missing: sources.filter((source) => !machine.has(source) && !reviewed[source]).length,
     rows: sources.map((source) => ({
       source,
@@ -175,8 +168,6 @@ router.get('/:kind/:id', authenticateAdmin, async (req: Request<{ kind: string; 
   });
 });
 
-// Store the corrections. An empty or unchanged value drops the correction and
-// hands that sentence back to the machine, rather than freezing a copy of it.
 router.put('/:kind/:id', authenticateAdmin, async (req: Request<{ kind: string; id: string }>, res: Response) => {
   const { kind, id } = req.params;
   if (!isKind(kind)) {

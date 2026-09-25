@@ -9,10 +9,6 @@ import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
 
-// ─── In-memory rate limiter, counted per participant ───
-// Ten a minute for a whole venue meant a group of twenty could ask for help
-// twice between them. Each participant now has their own ten.
-
 const isRateLimited = createRateLimiter({
   perParticipant: 10,
   perAnonymous: 10,
@@ -29,14 +25,6 @@ async function fetchActivityExtras(code?: string): Promise<{ extraSupportInfo?: 
   return { extraSupportInfo: activity.extraSupportInfo || undefined, contact };
 }
 
-// ─── System prompt for Gemini ───
-
-/**
- * `examples` picks which authored wording the model is shown - those exist in
- * Hebrew and English only. `replyLang` is the language it must answer in, and
- * comes from the registry, so a third language gets the English examples and is
- * still answered in its own language.
- */
 function buildSystemPrompt(examples: 'en' | 'he', replyLang: string, contact?: OrganizerContact): string {
   const langName = languageOf(replyLang).name;
 
@@ -185,8 +173,6 @@ RULES:
 - IMPORTANT: If the conversation history already contains an answer to this topic, do NOT repeat the same content. Instead, acknowledge what was already suggested and offer a different next step (e.g., contact the organizer, try a different browser, refresh again).`;
 }
 
-// ─── Live participant context (sent by the client with each message) ───
-
 interface HelpContext {
   activityName?: string;
   phase?: string;
@@ -215,8 +201,6 @@ function sanitizeContext(raw: unknown): HelpContext | null {
   return Object.values(ctx).some((v) => v !== undefined) ? ctx : null;
 }
 
-// ─── Per-activity support info (admin-authored, feeds the open "something else" chat only) ───
-
 function buildActivitySupportPrompt(text: string): string {
   return `\n\nADDITIONAL ACTIVITY-SPECIFIC SUPPORT INFO (provided by the organizer for this specific activity — applies ONLY here, do not apply it to any other activity or assume it's general platform behavior):\n${text}`;
 }
@@ -232,8 +216,6 @@ function buildContextPrompt(ctx: HelpContext): string {
   return lines.join('\n');
 }
 
-// ─── Gemini API call ───
-
 interface HistoryEntry {
   from: 'bot' | 'user';
   text: string;
@@ -242,7 +224,6 @@ interface HistoryEntry {
 async function askGemini(message: string, examples: 'en' | 'he', replyLang: string, history: HistoryEntry[] = [], context: HelpContext | null = null, contact?: OrganizerContact, extraSupportInfo?: string): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-  // Build multi-turn contents from history (max last 6 turns to stay concise)
   const priorTurns = history.slice(-6).map((h) => ({
     role: h.from === 'bot' ? 'model' : 'user',
     parts: [{ text: h.text }],
@@ -289,16 +270,12 @@ async function askGemini(message: string, examples: 'en' | 'he', replyLang: stri
   }
 }
 
-// ─── POST /api/help ───
-
 router.post('/', async (req: Request, res: Response) => {
-  // Rate limit
   if (isRateLimited(req)) {
     res.status(429).json({ error: 'Too many requests. Please try again later.' });
     return;
   }
 
-  // Validate input
   const { message, lang, history, context } = req.body;
   if (!message || typeof message !== 'string' || !message.trim()) {
     res.status(400).json({ error: 'Message is required' });
@@ -306,8 +283,6 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   const safeLang = normaliseLang(lang);
-  // The authored examples exist in two languages; anything else uses the
-  // English set and is answered in its own language.
   const examples: 'en' | 'he' = safeLang === 'he' ? 'he' : 'en';
   const safeMessage = message.trim().slice(0, 500);
   const safeHistory: HistoryEntry[] = Array.isArray(history)
@@ -316,13 +291,11 @@ router.post('/', async (req: Request, res: Response) => {
   const safeContext = sanitizeContext(context);
   const { extraSupportInfo, contact } = await fetchActivityExtras(safeContext?.code);
 
-  // If no API key, return fallback (still using this activity's named contact, if set)
   if (!GEMINI_API_KEY) {
     res.json({ response: await translateText(buildFallbackMessage(examples, contact), safeLang), source: 'fallback' });
     return;
   }
 
-  // Call Gemini
   try {
     const response = await askGemini(safeMessage, examples, safeLang, safeHistory, safeContext, contact, extraSupportInfo);
     res.json({ response, source: 'gemini' });

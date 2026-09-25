@@ -12,24 +12,19 @@ interface Row {
 
 export interface LangSummary {
   code: string;
-  /** How many sentences a person has corrected by hand. */
   reviewed: number;
-  /** Whether an activity that uses this item still offers the language. */
   inUse: boolean;
   supported: boolean;
 }
 
 interface TranslationsPanelProps {
-  /** Which collection the item lives in. */
   kind: 'stations' | 'games';
   id: string;
   lang: string;
   inUse: boolean;
-  /** Lets the tab strip refresh its counts after a save. */
   onSaved?: () => void;
 }
 
-/** The admin surfaces this appears on are light, so there is one palette. */
 const INK = '#2d2540';
 const MUTED = '#6b6280';
 const LINE = '#ded7f0';
@@ -76,7 +71,6 @@ const TranslateButton = styled('button')({
 
 const Fields = styled('div')({ display: 'grid', gap: 16 });
 
-/** One translated string, laid out like a labelled field in the form itself. */
 const Field = styled('div')({ display: 'grid', gap: 6 });
 
 const SourceLabel = styled('label')({
@@ -182,7 +176,6 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
         if (cancelled) return;
         setRows(data.rows);
         setMissing(data.missing);
-        // The box opens on what participants would see right now.
         setEdits(
           Object.fromEntries(data.rows.map((r) => [r.source, r.reviewed ?? r.machine ?? '']))
         );
@@ -216,7 +209,6 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
     }
   };
 
-  /** The direction this language reads in, from the one language registry. */
   const dir = LANGS.find((l) => l.code === lang)?.dir ?? 'ltr';
   // An empty box shows a hint in the admin's language, so it reads that way
   // until there is something in the box to read the other way.
@@ -249,7 +241,6 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
     }
   };
 
-  /** Puts every box back to the machine's wording, before saving. */
   const resetAll = () => {
     if (!rows) return;
     setEdits(Object.fromEntries(rows.map((r) => [r.source, r.machine ?? ''])));

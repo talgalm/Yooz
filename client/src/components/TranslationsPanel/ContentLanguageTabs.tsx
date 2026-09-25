@@ -8,11 +8,9 @@ import TranslationsPanel, { type LangSummary } from './index';
 
 interface ContentLanguageTabsProps {
   kind: 'stations' | 'games';
-  /** Absent while the item is being created - there is nothing to translate yet. */
   id?: string;
   /** The item's own card. Omitted by the module builder's modal, which has no form. */
   children?: ReactNode;
-  /** Inside a modal, which supplies its own surface, the panel needs no card. */
   plain?: boolean;
 }
 
@@ -159,14 +157,6 @@ function flagFor(code: string): string {
   return LANGS.find((l) => l.code === code)?.flag ?? '🏳️';
 }
 
-/**
- * The station's content, one tab per language.
- *
- * The first tab is the station itself, authored in Hebrew; every other tab is
- * the same content in that language, editable in place. The form is hidden
- * rather than unmounted when another tab is open, so unsaved edits to the
- * station survive a look at the translations.
- */
 export default function ContentLanguageTabs({
   kind,
   id,
@@ -184,8 +174,6 @@ export default function ContentLanguageTabs({
   const measure = useCallback(() => {
     const el = stripRef.current;
     if (!el) return;
-    // `scrollLeft` runs negative in a right-to-left strip, so distance from the
-    // start is its magnitude either way.
     const from = Math.abs(el.scrollLeft);
     const max = el.scrollWidth - el.clientWidth;
     setMore({ start: from > 1, end: from < max - 1 });
@@ -227,7 +215,6 @@ export default function ContentLanguageTabs({
     const beyond = [...strip.querySelectorAll<HTMLElement>('[role="tab"]')]
       .map((tab) => ({ tab, rect: tab.getBoundingClientRect() }))
       .filter(({ rect }) => (towardsLeft ? rect.left < tabBox.left : rect.right > tabBox.right))
-      // The nearest one on that side.
       .sort((a, b) => (towardsLeft ? b.rect.left - a.rect.left : a.rect.right - b.rect.right));
 
     (beyond[0]?.tab ?? el).scrollIntoView({
@@ -253,10 +240,8 @@ export default function ContentLanguageTabs({
     };
   }, [loadSummary]);
 
-  // Nothing to translate until the item exists, and no tabs worth showing.
   if (!id || !summary || summary.length === 0) return <>{children}</>;
 
-  // With no form to show, the first language is the landing tab.
   const current = children ? tab : tab === 'he' ? (summary[0]?.code ?? 'he') : tab;
   const active = summary.find((l) => l.code === current);
 
@@ -309,12 +294,6 @@ export default function ContentLanguageTabs({
         ))}
       </Strip>
 
-      {/*
-        Hidden, not unmounted: the form keeps whatever was typed into it while
-        another tab is open. `contents` rather than a plain block, so what it
-        holds stays a direct child of the layout around it and keeps its
-        spacing - wrapping it in a box of its own swallowed the gaps.
-      */}
       {children && (
         <Surface style={{ display: current === 'he' ? 'contents' : 'none' }}>{children}</Surface>
       )}

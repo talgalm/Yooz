@@ -900,7 +900,6 @@ router.get('/share/:jobId', async (req: Request<{ jobId: string }>, res: Respons
   }
   const base = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '')
     || `${req.protocol}://${req.get('host')}`;
-  // `?lang=` on the link wins; the job's own language is the fallback.
   const lang = req.query.lang ? readLang(req) : (job.lang || readLang(req));
   res.send(await renderVideoSharePage(job.resultUrl, `${base}/api/collage/share/${job.jobId}`, `${base}/play/${job.activityCode}`, lang));
 });

@@ -19,11 +19,8 @@ import { JwtPayload } from '../types';
 const WINDOW_MS = 60_000;
 
 export interface Limits {
-  /** Per minute, for one participant with a valid session. */
   perParticipant: number;
-  /** Per minute, for an address whose caller has no session - the strict case. */
   perAnonymous: number;
-  /** Per minute, for a whole address once sessions are recognised. */
   perAddress: number;
 }
 

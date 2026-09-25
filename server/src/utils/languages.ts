@@ -11,9 +11,7 @@
  */
 export interface Language {
   code: string;
-  /** English name, for model prompts. */
   name: string;
-  /** BCP-47 tag, for speech synthesis and the `lang` attribute. */
   locale: string;
   /** Which way it reads; the server renders HTML of its own (the collage share page). */
   dir: 'rtl' | 'ltr';
@@ -40,7 +38,6 @@ export const LANGUAGES = [
 
 export type Lang = (typeof LANGUAGES)[number]['code'];
 
-/** The language everything is authored in, and what anything unknown falls back to. */
 export const DEFAULT_LANG: Lang = 'he';
 
 export const LANGUAGE_CODES: readonly Lang[] = LANGUAGES.map((l) => l.code);

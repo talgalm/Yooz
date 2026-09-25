@@ -18,7 +18,6 @@ export const LANGS = [
 
 export type Lang = (typeof LANGS)[number]['code'];
 
-/** The language everything is authored in, and the fallback for every other. */
 export const DEFAULT_LANG = 'he';
 
 export function languageOf(code: string): (typeof LANGS)[number] {

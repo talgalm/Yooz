@@ -21,6 +21,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+
+const ts = createRequire(path.resolve('server/package.json'))('typescript');
 
 const BASELINE_PATH = 'scripts/guidelines-baseline.json';
 const argv = process.argv.slice(2);
@@ -57,6 +60,14 @@ const RULES = {
     fix: [
       'Delete the stylesheet and express it with styled() or the sx prop.',
       'client/src/App.css is the one allowed file (the global reset).',
+    ],
+  },
+  comments: {
+    title: 'No comments in code',
+    fix: [
+      'Delete it. Say it with a name instead: a well-named function, variable or type.',
+      'Why a change was made belongs in the commit message; how the system works',
+      'belongs in MEMORY.md. Compiler directives (@ts-expect-error, /// <reference>) are exempt.',
     ],
   },
   notes: {
@@ -198,6 +209,34 @@ function undocumentedModules() {
   return { counts, examples: {} };
 }
 
+/** Rule: no comments in client or server source, directives aside. */
+function codeComments() {
+  const counts = {};
+  const examples = {};
+  for (const f of [...sources('client/src'), ...sources('server/src')]) {
+    const text = read(f);
+    const file = ts.createSourceFile(f, text, ts.ScriptTarget.Latest, false,
+      f.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+    const seen = new Map();
+    const collect = (ranges) => ranges?.forEach((r) => seen.set(r.pos, r));
+    const visit = (node) => {
+      collect(ts.getLeadingCommentRanges(text, node.pos));
+      collect(ts.getTrailingCommentRanges(text, node.end));
+      node.getChildren(file).forEach(visit);
+    };
+    visit(file);
+    const hits = [...seen.values()]
+      .filter((r) => !/^\/\/\/\s*<reference|^\/[/*]\s*@ts-/.test(text.slice(r.pos, r.end)))
+      .map((r) => file.getLineAndCharacterOfPosition(r.pos).line);
+    if (hits.length) {
+      counts[f] = hits.length;
+      const line = Math.min(...hits);
+      examples[f] = [text.split('\n')[line], line + 1];
+    }
+  }
+  return { counts, examples };
+}
+
 // ─── hard rules ────────────────────────────────────────────────────────────
 
 function hardRules(baseline) {
@@ -310,11 +349,12 @@ function report() {
 
 const baseline = fs.existsSync(BASELINE_PATH)
   ? JSON.parse(read(BASELINE_PATH))
-  : { structure: {}, i18n: {}, svg: {}, docs: {} };
+  : { structure: {}, i18n: {}, svg: {}, comments: {}, docs: {} };
 
 const measured = {
   i18n: hebrewOutsideI18n(),
   svg: inlineSvg(),
+  comments: codeComments(),
   docs: undocumentedModules(),
 };
 
@@ -325,6 +365,7 @@ const current = {
   },
   i18n: measured.i18n.counts,
   svg: measured.svg.counts,
+  comments: measured.comments.counts,
   docs: measured.docs.counts,
 };
 
@@ -338,6 +379,7 @@ hardRules(baseline);
 const improved = [
   compare('i18n', measured.i18n, baseline, (n) => `${n} Hebrew line${n > 1 ? 's' : ''} outside a .i18n.ts`),
   compare('svg', measured.svg, baseline, (n) => `${n} inline <svg>`),
+  compare('comments', measured.comments, baseline, (n) => `${n} comment${n > 1 ? 's' : ''}`),
   compare('docs', measured.docs, baseline, () => 'not mentioned anywhere in MEMORY.md'),
 ].some(Boolean);
 

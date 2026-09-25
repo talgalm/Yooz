@@ -73,7 +73,8 @@ are first-time setup / manual ops. Lambda deploy: `.github/workflows/deploy-lamb
 ### Config / env (`server/src/config.ts`)
 `PORT`(3000) · `JWT_SECRET` · `MONGODB_URI` · `ADMIN_EMAIL`/`ADMIN_PASSWORD` (super-admin seed)
 · `CLOUDINARY_*` · `GEMINI_API_KEY`/`GEMINI_MODEL` · `AZURE_SPEECH_KEY`/`_REGION` ·
-`TEXTME_API_TOKEN`/`_USERNAME`/`_SOURCE` · `CORS_ORIGIN` (comma list; unset = allow all) ·
+`TEXTME_API_TOKEN`/`_USERNAME`/`_SOURCE` · `RESEND_API_KEY` (automated reports, §4; sender is the `EMAIL_FROM` constant) ·
+`CORS_ORIGIN` (comma list; unset = allow all) ·
 `REGISTER_PHONE_KEY` (shared secret for the public register-phone API; unset = that one endpoint
 refuses every call, nothing else is affected).
 In production, `JWT_SECRET`/`ADMIN_EMAIL`/`ADMIN_PASSWORD` are **required** (throws otherwise).
@@ -207,6 +208,25 @@ default), `extraSupportInfo?`.
 attachmentType?:'image'|'pdf', downloadToken?}` — top scorer gets an SMS coupon after all finish.
 **Collage SMS**: `smsForCollage?` (requires phone login), `smsForCollageMessage?` (`{link}`
 placeholder), `smsForCollageShare?` (link → share landing page vs raw video).
+
+**Automated reports**: `scheduledReport?: {enabled, reportType:AnalyticsExportType, recipients:
+string[], frequency:'daily'|'weekly', dayOfWeek? (0-6, weekly only), scheduleHour (0-23, Israel
+time, **whole hour only — no minutes field**), skipIfUnchanged, lastSentAt?, lastSentSnapshot?}`.
+Yooz-admin-only (no manager/customer self-service) — set from the "דוחות אוטומטיים" sub-tab in
+`AdminStatisticsTab/ActivityAnalytics` (`AutomatedReportSection`), `GET/PUT
+/api/admin/activities/:id/scheduled-report`. `services/scheduledReports.ts`'s 5-minute sweep
+(`runScheduledReports`, started from `index.ts`) sends when the current Israel hour/day-of-week
+matches and it hasn't already sent within this same Israel hour (the idempotency guard the 5-min
+poll needs — mirrors `dailyReset`'s stamp-comparison above), skipping when `skipIfUnchanged` and
+a fresh `computeReportsSnapshot()` matches `lastSentSnapshot`. `sendScheduledReportNow(activity)`
+is the one place that actually builds (`buildAnalyticsWorkbookBuffer`) and emails (Resend) the
+report and stamps `lastSentAt`/`lastSentSnapshot` — shared by both the cron and the manual
+`POST …/scheduled-report/send-now` ("שלח עכשיו" button), which sends immediately on the activity's
+saved settings, ignoring the schedule and `skipIfUnchanged` entirely. **It does not mutate report
+data** — only reads Reports and stamps the schedule's own two fields. Resend sends from
+`EMAIL_FROM` in `config.ts` (`reports@yooz.org.il`, a verified domain, so any recipient works;
+needs `RESEND_API_KEY`).
+
 Legacy: `stations[]`, `loginComponent` (migrated by `migrateActivities()`).
 
 ### Game (`games`) — reusable game template
@@ -320,6 +340,9 @@ lets async handlers throw. `/api/health` (DB check) and `/api/load-status` are p
   `PATCH /activities/:id/folder`, `POST /activities/:id/duplicate`, `DELETE /activities/:id`
   (cascade-deletes its reports), `PATCH …/lock` (customer edit lock).
 - `GET /search`, `GET /random-items`, `POST /sms/test`.
+- `GET/PUT /activities/:id/scheduled-report`, `POST /activities/:id/scheduled-report/send-now` —
+  automated reports (admin/super_admin only — see Activity model, §4). Not customer-scoped
+  (role-gated instead, since customers can't reach it at all).
 - **All list/read queries are customer-scoped** via `customerMongoFilter`/`customerOwnsDoc` (§7).
 
 ### Admin content
@@ -474,9 +497,15 @@ No admin auth — the `statsShareToken` is the credential.
 - **`services/activityAnalyticsService.ts`** — analytics aggregations (funnel/items/questions/
   groups/anomalies/report-card/export builders).
 - **`services/reportContext.ts`** — builds LLM context for DumbDumbBot's report answers.
+- **`services/scheduledReports.ts`** — automated reports: `sendScheduledReportNow(activity)`
+  (build + Resend send + stamp `lastSentAt`/`lastSentSnapshot`), `runScheduledReports()` (the
+  hourly-by-Israel-time sweep), `startScheduledReportsScheduler()` (5-min poll, started from
+  `index.ts`). See Activity model §4.
 - **`utils/customerScope`** is in `middleware/customerScope.ts` (§7).
-- **`utils/israelTime.ts`** — `startOfTodayIsrael()` (UTC instant of Israel midnight) and
-  `israelDayString()` (`YYYY-MM-DD` in `Asia/Jerusalem`). Used for day-scoping (groups, leaderboard).
+- **`utils/israelTime.ts`** — `startOfTodayIsrael()` (UTC instant of Israel midnight),
+  `israelDayString()` (`YYYY-MM-DD` in `Asia/Jerusalem`), `israelHour()` (0-23),
+  `israelDayOfWeek()` (0-6, 0=Sunday). Used for day-scoping (groups, leaderboard) and the
+  scheduled-reports cron's hour/day matching.
 - **`utils/scoreNormalization.ts`** — `normalizeScore`/`resolveCeiling`/`maxScoreForReport`/
   `clampPassThreshold` — the 0-100 grade normalization used across analytics + leaderboard grade mode.
 - **`utils/participantAuth.ts`** — `resolveGroupName` (day-scoped), `checkGroupCapacity`
@@ -1610,6 +1639,7 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   `OverviewSection` (KPIs, timeline, activities table, combined-select, audit-log button —
   hidden for customers), `ActivityAnalytics` (per-activity tabs), `FunnelChart`,
   `ItemAnalyticsTable`, `GroupComparison`, `ParticipantsRoster` (exclusions), `ExportSection`,
+  `AutomatedReportSection` (scheduled reports, admin/super_admin only — see Activity model §4),
   `CombinedReportCard`, `AuditLogView`, `analyticsSource`.
 - **`AdminViewActivityPage`** — read-only activity detail.
 
