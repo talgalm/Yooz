@@ -7,8 +7,6 @@ const router = Router();
 
 // ─── In-memory rate limiter (20 req/min/IP) ───
 
-// ─── In-memory rate limiter, counted per participant ───
-
 const isRateLimited = createRateLimiter({
   perParticipant: 20,
   perAnonymous: 20,

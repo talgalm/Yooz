@@ -23,8 +23,6 @@ const router = Router();
 
 // ─── In-memory rate limiter (20 req/min/IP) — same policy as avatarChat ───
 
-// ─── In-memory rate limiter, per participant — same policy as avatarChat ───
-
 const isRateLimited = createRateLimiter({
   perParticipant: 20,
   perAnonymous: 20,
