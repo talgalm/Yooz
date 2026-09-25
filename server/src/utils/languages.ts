@@ -1,20 +1,13 @@
 /**
- * Every language the server knows, one row each.
+ * Every language the server knows, one row each. Everything that used to hold
+ * its own partial list reads this one: accepted codes (`requestLang`), what the
+ * model translates into (`contentTranslation`), what a character answers in
+ * (`promptLanguage`) and which voice reads it (`routes/tts`). Those lists used
+ * to disagree, and a language with no voice made the speech endpoint return an
+ * empty clip - silence, with nothing to see.
  *
- * Adding a language is adding a row here. Everything that used to hold its own
- * partial list now reads this one: which codes are accepted (`requestLang`),
- * what the model is told to translate into (`contentTranslation`), what an AI
- * character is told to answer in (`promptLanguage`), and which voice reads it
- * out loud (`routes/tts`). Those lists used to disagree - a language could be
- * accepted everywhere and still have no voice, which the speech endpoint
- * answered with an empty clip and total silence.
- *
- * The matching client-side row lives in `client/src/utils/languages.ts`, and
- * `languages.test.ts` fails if the two ever drift apart.
- *
- * `name` is the language's name **in English**, because it goes into prompts
- * written in English. The participant never sees it; they see `label` from the
- * client registry, which is the language's name in itself.
+ * The matching client row is in `client/src/utils/languages.ts`;
+ * `languages.test.ts` fails if the two drift apart.
  */
 export interface Language {
   code: string;
@@ -22,9 +15,9 @@ export interface Language {
   name: string;
   /** BCP-47 tag, for speech synthesis and the `lang` attribute. */
   locale: string;
-  /** Which way it reads. The server renders HTML of its own (the collage share page). */
+  /** Which way it reads; the server renders HTML of its own (the collage share page). */
   dir: 'rtl' | 'ltr';
-  /** Azure neural voices. Listed at <region>.tts.speech.microsoft.com/cognitiveservices/voices/list */
+  /** Azure neural voices; the region's list is at /cognitiveservices/voices/list. */
   voices: { man: string; woman: string };
 }
 

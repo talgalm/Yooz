@@ -29,7 +29,7 @@ export interface ICollageJob {
   isVideo: boolean;
   /** When set, server SMS's resultUrl to this number once phase === 'done'. */
   smsPhone?: string;
-  /** The participant's language, so the SMS and the share page are in it. */
+  /** The participant's language, for the SMS and the share page. */
   lang?: string;
   smsSentAt?: Date;
   createdAt: Date;
