@@ -2,8 +2,10 @@ import { Router, Request, Response } from 'express';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
 import { normalizeText, coverage, jaccardSimilarity } from '../utils/hebrewText';
 import { replyLanguageInstruction } from '../utils/promptLanguage';
+import { DEFAULT_LANG } from '../utils/languages';
 import { readLang } from '../utils/requestLang';
 import { createRateLimiter } from '../utils/participantRateLimit';
+import { translateText } from '../services/contentTranslation';
 
 const router = Router();
 
@@ -61,7 +63,14 @@ function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
   } else {
     lines.push('את/ה עד בחקירה בלשית אינטראקטיבית. המשתמש הוא הבלש החוקר אותך.');
   }
-  lines.push('ענה/י תמיד בעברית, בגוף ראשון, בטון קצר וטבעי (1–2 משפטים).');
+  // The language clause is only stated when it is the language being asked
+  // for: left in, it contradicts the instruction at the end of the prompt, and
+  // the model followed the Hebrew one.
+  lines.push(
+    lang === DEFAULT_LANG
+      ? 'ענה/י תמיד בעברית, בגוף ראשון, בטון קצר וטבעי (1–2 משפטים).'
+      : 'ענה/י בגוף ראשון, בטון קצר וטבעי (1–2 משפטים).'
+  );
   lines.push('אל תצא/י מהדמות. אל תחשוף/י שאת/ה בינה מלאכותית.');
 
   // 2. Absolute truth
@@ -274,7 +283,7 @@ router.post('/', async (req: Request, res: Response) => {
   const videoUrl = matchVideo(safeMessage, safeSettings.videos || []);
 
   if (!GEMINI_API_KEY) {
-    res.json({ response: FALLBACK_RESPONSE, videoUrl, source: 'fallback' });
+    res.json({ response: await translateText(FALLBACK_RESPONSE, readLang(req)), videoUrl, source: 'fallback' });
     return;
   }
 
@@ -284,7 +293,7 @@ router.post('/', async (req: Request, res: Response) => {
     res.json({ response, videoUrl, source: 'gemini' });
   } catch (err) {
     console.error('Avatar chat endpoint error:', err);
-    res.json({ response: FALLBACK_RESPONSE, videoUrl, source: 'fallback' });
+    res.json({ response: await translateText(FALLBACK_RESPONSE, readLang(req)), videoUrl, source: 'fallback' });
   }
 });
 

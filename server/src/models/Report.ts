@@ -49,6 +49,8 @@ export interface IReport {
   participantName: string;
   email?: string;
   phoneNumber?: string;
+  /** The language this participant is playing in, for anything sent to them later. */
+  lang?: string;
   connectionType: string;
   group?: string;
   joinedAt: Date;
@@ -106,6 +108,7 @@ const reportSchema = new Schema<IReport>({
   participantName: { type: String, required: true },
   email: { type: String },
   phoneNumber: { type: String },
+  lang: { type: String },
   connectionType: { type: String, required: true },
   group: { type: String },
   joinedAt: { type: Date, default: Date.now },

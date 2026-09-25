@@ -29,6 +29,8 @@ export interface ICollageJob {
   isVideo: boolean;
   /** When set, server SMS's resultUrl to this number once phase === 'done'. */
   smsPhone?: string;
+  /** The participant's language, so the SMS and the share page are in it. */
+  lang?: string;
   smsSentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -57,6 +59,7 @@ const collageJobSchema = new Schema<ICollageJob>(
     resultUrl: { type: String },
     isVideo: { type: Boolean, default: true },
     smsPhone: { type: String },
+    lang: { type: String },
     smsSentAt: { type: Date },
   },
   { timestamps: true },

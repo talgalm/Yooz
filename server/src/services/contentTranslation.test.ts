@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { collectProse, applyTranslations, cacheKey } from './contentTranslation';
+import { collectProse, applyTranslations, cacheKey, translateText } from './contentTranslation';
 
 test('Hebrew prose is collected, once per distinct sentence', () => {
   const payload = {
@@ -59,4 +59,22 @@ test('the cache key is per language and per exact wording', () => {
   assert.notEqual(cacheKey('en', 'שלום'), cacheKey('ru', 'שלום'));
   assert.notEqual(cacheKey('en', 'שלום'), cacheKey('en', 'שלום!'));
   assert.equal(cacheKey('en', 'שלום'), cacheKey('en', 'שלום'));
+});
+
+/**
+ * `translateText` is what the server uses for the sentences it writes itself -
+ * an avatar's stock reaction, the collage share page. Both guards below must
+ * return before any model call, so they are safe to run with no database.
+ */
+test('the default language is handed straight back, untouched', async () => {
+  assert.equal(await translateText('שלום', 'he'), 'שלום');
+  assert.equal(await translateText('שלום', ''), 'שלום');
+});
+
+test('text already in another language is not round-tripped', async () => {
+  // A model answer written in the participant's language reaches the same
+  // boundary as an authored Hebrew one; translating it again would mangle it.
+  const english = "Hmm, that's not quite the safest approach.";
+  assert.equal(await translateText(english, 'en'), english);
+  assert.equal(await translateText('', 'en'), '');
 });

@@ -151,6 +151,8 @@ export async function createParticipantSession(
     email?: string;
     phoneNumber?: string;
     group?: string;
+    /** What the participant is reading, so an SMS sent hours later matches. */
+    lang?: string;
   },
 ): Promise<LoginResponse> {
   const connectionType = (activity.connectionType || 'single') as ConnectionType;
@@ -179,6 +181,7 @@ export async function createParticipantSession(
       phoneNumber: opts.phoneNumber,
       connectionType,
       group: opts.group,
+      lang: opts.lang,
     });
     bumpParticipantCount(activity._id!);
   }

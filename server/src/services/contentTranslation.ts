@@ -186,6 +186,31 @@ export async function translationsFor(sources: string[], lang: string): Promise<
 }
 
 /**
+ * One line, translated the same way everything else is - through the cache, so
+ * a fixed phrase costs a model call once and is free forever after.
+ *
+ * For the sentences the server writes itself rather than taking from an
+ * activity: an avatar's stock reactions, the line it says when it cannot
+ * answer, the buttons on the collage share page. Translating them rather than
+ * keeping a per-language table means a new language needs no new table.
+ *
+ * Returns the original on any failure, so the worst case is the authored text.
+ */
+export async function translateText(text: string, lang: string): Promise<string> {
+  if (!text || !lang || lang === DEFAULT_LANG) return text;
+  // Nothing in the source language means there is nothing to translate - an
+  // answer a model already wrote in the participant's language passes straight
+  // through instead of being round-tripped.
+  if (!HEBREW.test(text)) return text;
+  try {
+    const map = await translationsFor([text], lang);
+    return map.get(text) ?? text;
+  } catch {
+    return text;
+  }
+}
+
+/**
  * The entry point a route uses: hand it what it was about to send, get the same
  * shape back in the participant's language.
  */
