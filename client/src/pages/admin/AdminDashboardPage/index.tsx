@@ -69,17 +69,11 @@ const Sidebar = styled('aside')<{ open?: boolean }>(({ open }) => ({
   // PageBg is not a containing block for fixed descendants, so this is not clipped.
   position: 'fixed',
   top: 0,
-  /**
-   * Inline start, not `right`: the content column offsets itself with
-   * `marginInlineStart`, so a physical `right` left the two on the same side in
-   * English - the nav over the table, and an empty column beside it.
-   */
   insetInlineStart: 0,
   height: '100dvh',
   zIndex: 200,
   '@media (max-width: 900px)': {
     boxShadow: '-8px 0 32px rgba(40,30,70,0.14)',
-    // Transforms are physical, so the drawer hides toward its own edge.
     transform: open ? 'none' : 'translateX(100%)',
     transition: 'transform 0.22s ease',
     '[dir="ltr"] &': {

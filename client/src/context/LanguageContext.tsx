@@ -58,14 +58,9 @@ function readStoredLang(scope: LangScope): Lang {
 }
 
 interface LanguageContextType {
-  /** The language actually rendered - the choice, unless an activity narrows it. */
   lang: Lang;
   dir: 'ltr' | 'rtl';
   setLang: (lang: Lang) => void;
-  /**
-   * Called by the participant activity scope with the languages that activity
-   * was prepared in, and with `null` on the way out of it.
-   */
   restrictToLanguages: (langs: string[] | null) => void;
   /**
    * Called by `LangScopeSync` on every navigation. Moving between the activity,

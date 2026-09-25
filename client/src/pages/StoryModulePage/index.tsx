@@ -535,7 +535,6 @@ export default function StoryModulePage() {
       );
       const d = optimizeActivityMediaData(raw);
       setCachedModuleData(code, participant?.group || '', d);
-      // Everything inside the activity reads in the language it was prepared in.
       rememberActivityLanguages(code, d.languages);
       restrictToLanguages(d.languages ?? []);
       setData(d);
