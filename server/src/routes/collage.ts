@@ -31,6 +31,9 @@ import ffmpegPath from 'ffmpeg-static';
 import sharp from 'sharp';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from '../config';
 import { Activity, CollageJob } from '../models';
+import { readLang } from '../utils/requestLang';
+import { DEFAULT_LANG, languageOf } from '../utils/languages';
+import { translateText } from '../services/contentTranslation';
 import { getSmsProvider } from '../services/sms/smsProvider';
 import motionDataDefault from '../data/collage-template-motion.json';
 import motionDataGanYehoshua from '../data/collage-template-gan-yehoshua-motion.json';
@@ -743,6 +746,7 @@ router.post('/jobs', async (req: Request, res: Response) => {
     percent: 0,
     message: 'אוסף תמונות...',
     isVideo: true,
+    lang: readLang(req),
   });
 
   res.status(201).json(serializeCollageJob(job));
@@ -815,17 +819,35 @@ router.post('/jobs/:jobId/start', loadShed, async (req: Request<{ jobId: string 
 // Public: when smsForCollageShare is enabled, the SMS {link} points here instead
 // of the raw video URL — video player + native share sheet + back-to-activity link.
 
-function renderVideoSharePage(videoUrl: string, pageUrl: string, activityUrl: string): string {
+/**
+ * The page the SMS link opens. It has no session of its own, so the language
+ * rides along on the job that produced the video and is passed in here.
+ */
+async function renderVideoSharePage(
+  videoUrl: string,
+  pageUrl: string,
+  activityUrl: string,
+  lang: string,
+): Promise<string> {
   // Cloudinary derives a poster frame by swapping the video extension for .jpg
   const posterUrl = videoUrl.includes('res.cloudinary.com') ? videoUrl.replace(/\.\w+$/, '.jpg') : '';
+  const { locale, dir } = languageOf(lang);
+  const [pageTitle, ogTitle, ogDescription, shareLabel, backLabel, preparingLabel] = await Promise.all([
+    translateText('הסרטון שלכם', lang),
+    translateText('הסרטון שלנו מהפעילות!', lang),
+    translateText('לחצו לצפייה בסרטון', lang),
+    translateText('שיתוף', lang),
+    translateText('חזור לפעילות', lang),
+    translateText('מכינים את הסרטון…', lang),
+  ]);
   return `<!doctype html>
-<html lang="he" dir="rtl">
+<html lang="${locale}" dir="${dir}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>הסרטון שלכם</title>
-<meta property="og:title" content="הסרטון שלנו מהפעילות!">
-<meta property="og:description" content="לחצו לצפייה בסרטון">
+<title>${pageTitle}</title>
+<meta property="og:title" content="${ogTitle}">
+<meta property="og:description" content="${ogDescription}">
 ${posterUrl ? `<meta property="og:image" content="${posterUrl}">` : ''}
 <meta property="og:video" content="${videoUrl}">
 <meta property="og:url" content="${pageUrl}">
@@ -845,15 +867,15 @@ ${posterUrl ? `<meta property="og:image" content="${posterUrl}">` : ''}
 <body>
 <video src="${videoUrl}" ${posterUrl ? `poster="${posterUrl}"` : ''} controls playsinline></video>
 <div class="btns">
-  <button id="share">שיתוף</button>
-  <a id="dl" href="${activityUrl}">חזור לפעילות</a>
+  <button id="share">${shareLabel}</button>
+  <a id="dl" href="${activityUrl}">${backLabel}</a>
 </div>
 <script>
 const shareBtn = document.getElementById('share');
 shareBtn.onclick = async () => {
   shareBtn.disabled = true;
   const label = shareBtn.textContent;
-  shareBtn.textContent = 'מכינים את הסרטון…';
+  shareBtn.textContent = ${JSON.stringify(preparingLabel)};
   try {
     const blob = await fetch(${JSON.stringify(videoUrl)}).then((r) => r.blob());
     const file = new File([blob], 'video.mp4', { type: blob.type || 'video/mp4' });
@@ -881,7 +903,9 @@ router.get('/share/:jobId', async (req: Request<{ jobId: string }>, res: Respons
   }
   const base = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '')
     || `${req.protocol}://${req.get('host')}`;
-  res.send(renderVideoSharePage(job.resultUrl, `${base}/api/collage/share/${job.jobId}`, `${base}/play/${job.activityCode}`));
+  // `?lang=` on the link wins; the job's own language is the fallback.
+  const lang = req.query.lang ? readLang(req) : (job.lang || readLang(req));
+  res.send(await renderVideoSharePage(job.resultUrl, `${base}/api/collage/share/${job.jobId}`, `${base}/play/${job.activityCode}`, lang));
 });
 
 // Participant taps "send video by SMS" in the loading screen → save phone on
@@ -1165,10 +1189,15 @@ export async function sendCollageReadySms(jobId: string): Promise<void> {
   if (!claimed || !claimed.smsPhone || !claimed.resultUrl) return;
 
   const activity = await Activity.findOne({ code: claimed.activityCode }).select('smsForCollageMessage smsForCollageShare').lean();
-  const template = activity?.smsForCollageMessage?.trim() || 'הסרטון שלך מוכן! צפה והורד כאן: {link}';
+  const rawTemplate = activity?.smsForCollageMessage?.trim() || 'הסרטון שלך מוכן! צפה והורד כאן: {link}';
+  // The text an admin wrote is Hebrew like the rest of their content, so it is
+  // translated the same way; the link carries the language to the share page,
+  // which has no session of its own.
+  const lang = claimed.lang || DEFAULT_LANG;
+  const template = await translateText(rawTemplate, lang);
   const base = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '') || 'http://localhost:3000';
   const link = activity?.smsForCollageShare
-    ? `${base}/api/collage/share/${claimed.jobId}`
+    ? `${base}/api/collage/share/${claimed.jobId}${lang === DEFAULT_LANG ? '' : `?lang=${lang}`}`
     : claimed.resultUrl;
   const message = template.includes('{link}')
     ? template.replace(/\{link\}/g, link)

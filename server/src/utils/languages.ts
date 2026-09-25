@@ -20,8 +20,10 @@ export interface Language {
   code: string;
   /** English name, for model prompts. */
   name: string;
-  /** BCP-47 tag, for speech synthesis. */
+  /** BCP-47 tag, for speech synthesis and the `lang` attribute. */
   locale: string;
+  /** Which way it reads. The server renders HTML of its own (the collage share page). */
+  dir: 'rtl' | 'ltr';
   /** Azure neural voices. Listed at <region>.tts.speech.microsoft.com/cognitiveservices/voices/list */
   voices: { man: string; woman: string };
 }
@@ -31,12 +33,14 @@ export const LANGUAGES = [
     code: 'he',
     name: 'Hebrew',
     locale: 'he-IL',
+    dir: 'rtl',
     voices: { man: 'he-IL-AvriNeural', woman: 'he-IL-HilaNeural' },
   },
   {
     code: 'en',
     name: 'English',
     locale: 'en-US',
+    dir: 'ltr',
     voices: { man: 'en-US-GuyNeural', woman: 'en-US-JennyNeural' },
   },
 ] as const satisfies readonly Language[];

@@ -13,6 +13,7 @@ import {
   validateGroupName,
   createParticipantSession,
 } from '../utils/participantAuth';
+import { readLang } from '../utils/requestLang';
 
 const router = Router();
 
@@ -372,6 +373,7 @@ router.post('/:code/groups', async (req: Request<{ code: string }, {}, CreateGro
     || 'Participant';
 
   const session = await createParticipantSession(activity, {
+    lang: readLang(req),
     activityCode: code,
     displayName,
     email: email || undefined,

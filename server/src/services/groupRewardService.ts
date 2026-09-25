@@ -5,6 +5,8 @@ import { SmsNotification } from '../models/SmsNotification';
 import { getSmsProvider } from './sms/smsProvider';
 import { buildRewardDownloadUrl, renderWinnerSms } from '../utils/groupRewardConfig';
 import { israelDayString } from '../utils/israelTime';
+import { translateText } from './contentTranslation';
+import { DEFAULT_LANG } from '../utils/languages';
 
 /** After the last finish in a group, wait this long before SMS (resets on each new finish). */
 export const GROUP_REWARD_IDLE_MS = 5 * 60 * 1000;
@@ -48,7 +50,9 @@ async function sendWinnerSms(
   const downloadLink = activity.groupReward!.downloadToken
     ? buildRewardDownloadUrl(activity.groupReward!.downloadToken)
     : '';
-  const template = activity.groupReward!.messageTemplate?.trim() || DEFAULT_SMS_TEMPLATE;
+  const rawTemplate = activity.groupReward!.messageTemplate?.trim() || DEFAULT_SMS_TEMPLATE;
+  // Sent hours after the game, so it follows the language the winner played in.
+  const template = await translateText(rawTemplate, winner.lang || DEFAULT_LANG);
   const message = renderWinnerSms(template, {
     name: winner.participantName,
     score,
