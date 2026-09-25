@@ -75,6 +75,7 @@ export const texts = {
     itemsTab: 'Items',
     groupsTab: 'Groups',
     exportTab: 'Export',
+    automatedTab: 'Automated Reports',
 
     // Funnel
     joined: 'Joined',
@@ -112,6 +113,47 @@ export const texts = {
     exportProgressDescription: 'Progress, bottlenecks, and follow-up report',
     downloading: 'Downloading...',
     exportFailed: 'Export failed. Please try again.',
+
+    // Automated reports
+    automatedReportsEnable: 'Enable automated reports',
+    reportTypeLabel: 'Report Type',
+    reportTypeExecutive: 'Executive Report',
+    reportTypeParticipants: 'Participants Report',
+    reportTypeScores: 'Scores Report',
+    reportTypeProgress: 'Progress Report',
+    reportPreviewTitle: 'Preview',
+    reportPreviewShowButton: 'Show preview',
+    reportPreviewHideButton: 'Hide preview',
+    reportPreviewHint: 'Each table mirrors a real sheet in the Excel file, with sample data for illustration only',
+    recipientsLabel: 'Recipients',
+    recipientsPlaceholder: 'Type an email and press Enter',
+    recipientsPlaceholderMore: 'Add another email…',
+    removeRecipient: 'Remove',
+    frequencyLabel: 'Frequency',
+    frequencyDaily: 'Daily',
+    frequencyWeekly: 'Weekly',
+    dayOfWeekLabel: 'Day of week',
+    daySunday: 'Sunday',
+    dayMonday: 'Monday',
+    dayTuesday: 'Tuesday',
+    dayWednesday: 'Wednesday',
+    dayThursday: 'Thursday',
+    dayFriday: 'Friday',
+    daySaturday: 'Saturday',
+    scheduleHourLabel: 'Daily send time',
+    skipIfUnchangedLabel: 'Send only if something changed',
+    skipIfUnchangedHint: 'Skip sending when nothing changed since the last report.',
+    automatedReportsLoading: 'Loading…',
+    automatedReportsSave: 'Save',
+    automatedReportsSaving: 'Saving…',
+    automatedReportsSaved: 'Saved',
+    automatedReportsSaveFailed: 'Save failed. Please try again.',
+    automatedReportsDayRequired: 'Please select a day of the week.',
+    automatedReportsRecipientsRequired: 'At least one recipient is required to enable automated reports.',
+    automatedReportsSendNow: 'Send now',
+    automatedReportsSending: 'Sending…',
+    automatedReportsSent: 'Sent',
+    automatedReportsSendFailed: 'Send failed. Please try again.',
 
     // Participants roster
     participantsTab: 'Participants',
@@ -262,6 +304,7 @@ export const texts = {
     itemsTab: 'תחנות',
     groupsTab: 'קבוצות',
     exportTab: 'ייצוא',
+    automatedTab: 'דוחות אוטומטיים',
 
     // Funnel
     joined: 'הצטרפו',
@@ -299,6 +342,47 @@ export const texts = {
     exportProgressDescription: 'התקדמות, צווארי בקבוק ומי דורש טיפול',
     downloading: 'מוריד...',
     exportFailed: 'הייצוא נכשל. נסה שוב.',
+
+    // Automated reports
+    automatedReportsEnable: 'הפעל דוחות אוטומטיים',
+    reportTypeLabel: 'סוג דוח',
+    reportTypeExecutive: 'דוח מנהלים מלא',
+    reportTypeParticipants: 'דוח משתתפים',
+    reportTypeScores: 'דוח ציונים',
+    reportTypeProgress: 'דוח התקדמות',
+    reportPreviewTitle: 'תצוגה מקדימה',
+    reportPreviewShowButton: 'הצג תצוגה מקדימה',
+    reportPreviewHideButton: 'הסתר תצוגה מקדימה',
+    reportPreviewHint: 'כל טבלה משקפת גיליון אמיתי בקובץ האקסל, עם נתוני דוגמה להמחשה בלבד',
+    recipientsLabel: 'רשימת מיילים לשליחה',
+    recipientsPlaceholder: 'הקלד/י כתובת מייל ולחץ/י Enter',
+    recipientsPlaceholderMore: 'הוסף/י מייל נוסף...',
+    removeRecipient: 'הסר',
+    frequencyLabel: 'תדירות',
+    frequencyDaily: 'יומי',
+    frequencyWeekly: 'שבועי',
+    dayOfWeekLabel: 'יום בשבוע',
+    daySunday: 'ראשון',
+    dayMonday: 'שני',
+    dayTuesday: 'שלישי',
+    dayWednesday: 'רביעי',
+    dayThursday: 'חמישי',
+    dayFriday: 'שישי',
+    daySaturday: 'שבת',
+    scheduleHourLabel: 'שעת שליחה יומית',
+    skipIfUnchangedLabel: 'שלח רק אם יש שינוי',
+    skipIfUnchangedHint: 'דילוג על שליחה כשאין שינוי מאז הדוח הקודם.',
+    automatedReportsLoading: 'טוען...',
+    automatedReportsSave: 'שמור',
+    automatedReportsSaving: 'שומר...',
+    automatedReportsSaved: 'נשמר',
+    automatedReportsSaveFailed: 'השמירה נכשלה. נסה/י שוב.',
+    automatedReportsDayRequired: 'יש לבחור יום בשבוע.',
+    automatedReportsRecipientsRequired: 'יש להזין לפחות נמען אחד כדי להפעיל דוחות אוטומטיים.',
+    automatedReportsSendNow: 'שלח עכשיו',
+    automatedReportsSending: 'שולח...',
+    automatedReportsSent: 'נשלח',
+    automatedReportsSendFailed: 'השליחה נכשלה. נסה/י שוב.',
 
     // Participants roster
     participantsTab: 'משתתפים',
@@ -373,4 +457,117 @@ export const texts = {
     seconds: 'שניות',
     minutes: 'דקות',
   },
+};
+
+// A preview of what each automated-report type's Excel actually looks like — one section
+// per real sheet the export produces, each with its FULL real column list (every header
+// exactly as defined in server/src/utils/analyticsExcelExport.ts, nothing left out) and 1-2
+// fabricated sample rows for illustration only. Sections and their sheet order mirror
+// addActivityReportSheets' per-exportType dispatch exactly (excluding the order-survey /
+// feedback sheets, which only appear conditionally). The scores/progress sheets append one
+// dynamic column per station on top of their fixed columns in the real export (the exact
+// count and station names depend on the activity's module) — illustrated here with two
+// placeholder stations, clearly not a claim about any specific activity's real stations.
+// Kept as a separate export (not part of `texts` above) because that object is also
+// consumed by helpers typed `Record<string, string>` elsewhere (ActivityAnalytics.tsx),
+// which a non-string-valued key here would break. Not translated: the generated Excel
+// file's columns are always Hebrew, regardless of admin UI language.
+export interface ReportPreviewSection {
+  sheetName: string;
+  columns: string[];
+  rows: string[][];
+}
+
+const previewSummary: ReportPreviewSection = {
+  sheetName: 'תקציר מנהלים',
+  columns: ['דירוג', 'שם', 'קבוצה', 'ציון (0-100)', 'משך', 'התקדמות'],
+  rows: [
+    ['1', 'נועה כהן', 'קבוצה א', '92', '18:24', '100%'],
+    ['2', 'איתי לוי', 'קבוצה ב', '85', '21:10', '100%'],
+  ],
+};
+
+const previewParticipants: ReportPreviewSection = {
+  sheetName: 'משתתפים',
+  columns: [
+    '#', 'דירוג', 'שם', 'אימייל', 'טלפון', 'קבוצה', 'סטטוס', 'ציון (0-100)',
+    'עבר/לא עבר', 'התקדמות %', 'תחנות שהושלמו', 'סה"כ תחנות', 'תחנה אחרונה', 'משך', 'הצטרפות', 'סיום',
+  ],
+  rows: [
+    ['1', '1', 'נועה כהן', 'noa@example.com', '050-1234567', 'קבוצה א', 'הושלם', '92', 'עבר', '100%', '6', '6', 'חדר בריחה', '18:24', '10:02', '10:20'],
+    ['2', '2', 'איתי לוי', 'itai@example.com', '052-7654321', 'קבוצה ב', 'בתהליך', '68', 'לא עבר', '65%', '4', '6', 'חידת פתיחה', '—', '10:05', '—'],
+  ],
+};
+
+const previewScores: ReportPreviewSection = {
+  sheetName: 'ציונים',
+  columns: ['דירוג', 'שם', 'קבוצה', 'סטטוס', 'ציון (0-100)', 'עבר/לא עבר', 'משך', '1. חידת פתיחה (0-100)', '2. חדר בריחה (0-100)'],
+  rows: [
+    ['1', 'נועה כהן', 'קבוצה א', 'הושלם', '92', 'עבר', '18:24', '95', '88'],
+    ['2', 'איתי לוי', 'קבוצה ב', 'בתהליך', '68', 'לא עבר', '—', '72', '—'],
+  ],
+};
+
+const previewProgress: ReportPreviewSection = {
+  sheetName: 'התקדמות',
+  columns: ['שם', 'קבוצה', 'סטטוס', 'התקדמות %', 'תחנות שהושלמו', 'תחנה אחרונה', 'משך', '1. חידת פתיחה', '2. חדר בריחה'],
+  rows: [
+    ['נועה כהן', 'קבוצה א', 'הושלם', '100%', '6', 'חדר בריחה', '18:24', 'הושלם', 'הושלם'],
+    ['איתי לוי', 'קבוצה ב', 'בתהליך', '65%', '4', 'חידת פתיחה', '—', 'הושלם', 'התחיל'],
+  ],
+};
+
+const previewItems: ReportPreviewSection = {
+  sheetName: 'תחנות',
+  columns: ['#', 'שם תחנה', 'סוג', 'סוג משחק', 'הגיעו', 'שיעור הגעה', 'השלימו', 'השלמה %', 'ציון ממוצע (0-100)', 'זמן ממוצע', 'שימוש ברמז %', 'רמת סיכון'],
+  rows: [
+    ['1', 'חידת פתיחה', 'משחק', 'חידה', '24', '100%', '22', '92%', '88', '04:10', '12%', 'נמוכה'],
+    ['2', 'חדר בריחה', 'משחק', 'בריחה', '22', '92%', '18', '82%', '79', '07:45', '30%', 'בינונית'],
+  ],
+};
+
+const previewQuestions: ReportPreviewSection = {
+  sheetName: 'שאלות',
+  columns: ['תחנה', '# שאלה', 'שאלה', 'ניסיונות', 'נכונים', 'הצלחה %', 'זמן ממוצע', 'נקודות ממוצעות', 'אבחון'],
+  rows: [
+    ['חידת פתיחה', '1', 'מהו הקוד הסודי?', '24', '21', '88%', '00:35', '9.2', 'תקין'],
+    ['חדר בריחה', '2', 'באיזו תחנה מוסתר המפתח?', '22', '14', '64%', '01:10', '6.8', 'דורש בדיקה'],
+  ],
+};
+
+const previewGroups: ReportPreviewSection = {
+  sheetName: 'קבוצות',
+  columns: ['קבוצה', 'משתתפים', 'הושלם', 'בתהליך', 'נכנסו בלבד', 'אחוז סיום', 'ציון ממוצע (0-100)', 'התקדמות ממוצעת', 'זמן ממוצע', 'ציון מוביל (0-100)', 'דורשים פולו-אפ'],
+  rows: [
+    ['קבוצה א', '8', '7', '1', '0', '88%', '86', '94%', '19:40', '92', '1'],
+    ['קבוצה ב', '7', '5', '2', '0', '71%', '74', '80%', '23:15', '85', '2'],
+  ],
+};
+
+const previewDistribution: ReportPreviewSection = {
+  sheetName: 'התפלגות',
+  columns: ['טווח ציון (0-100)', 'כמות משתתפים'],
+  rows: [
+    ['81-100', '9'],
+    ['61-80', '5'],
+  ],
+};
+
+const previewRecommendations: ReportPreviewSection = {
+  sheetName: 'המלצות',
+  columns: ['חומרה', 'נושא', 'תובנה', 'פעולה מומלצת', 'נתון תומך'],
+  rows: [
+    ['גבוהה', 'נטישה בתחנה', '25% מהמשתתפים נטשו ב"חדר בריחה"', 'שקול הוספת רמז נוסף בתחנה זו', 'שיעור נטישה 25%'],
+    ['בינונית', 'פער בין קבוצות', 'קבוצה א מובילה על קבוצה ב בפער ניכר', 'בדוק אם קבוצה ב פספסה תחנה', 'פער של 12 נקודות'],
+  ],
+};
+
+export const reportTypePreview: Record<'executive' | 'participants' | 'scores' | 'progress', ReportPreviewSection[]> = {
+  executive: [
+    previewSummary, previewParticipants, previewScores, previewProgress,
+    previewItems, previewQuestions, previewGroups, previewDistribution, previewRecommendations,
+  ],
+  participants: [previewSummary, previewParticipants, previewGroups, previewProgress],
+  scores: [previewSummary, previewScores, previewItems, previewQuestions, previewDistribution],
+  progress: [previewSummary, previewProgress, previewParticipants, previewItems, previewRecommendations],
 };

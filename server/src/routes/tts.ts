@@ -6,11 +6,6 @@ import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
 
-/**
- * A station speaks a line per turn, so a participant gets a generous minute's
- * worth of clips of their own. See `participantRateLimit` for why counting
- * these per address instead is what made a whole group go quiet.
- */
 const isRateLimited = createRateLimiter({
   perParticipant: 60,
   perAnonymous: 30,

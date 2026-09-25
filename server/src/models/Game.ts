@@ -9,16 +9,6 @@ export interface IGame {
   theme?: string;
   tags?: string[];
   settings: Record<string, unknown>;
-  /**
-   * Human-reviewed translations, by language and then by the exact Hebrew it
-   * replaces: { en: { 'אבטחת מידע': 'Information Security' } }.
-   *
-   * Keyed by the source text, not by field path, because settings are free-form
-   * per type - one correction fixes that sentence wherever it appears in this
-   * document. Edit the Hebrew and the key stops matching, so the correction
-   * retires with the wording it was written for and the machine takes over
-   * again, which is the rule the translation cache already follows.
-   */
   translations?: Record<string, Record<string, string>>;
   createdAt: Date;
   createdByEmail?: string;
@@ -34,7 +24,6 @@ const gameSchema = new Schema<IGame>({
   theme: { type: String },
   tags: { type: [String], default: [] },
   settings: { type: Schema.Types.Mixed, default: {} },
-  /** Human-reviewed translations; see the interface for the shape. */
   translations: { type: Schema.Types.Mixed, default: undefined },
   createdAt: { type: Date, default: Date.now },
   createdByEmail: { type: String, lowercase: true, trim: true },
