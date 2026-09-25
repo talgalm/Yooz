@@ -15,6 +15,7 @@ import { Activity, ActivityFolder, ActivityGroup, Report, Game, Station, Mission
 import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { sanitiseLanguages } from '../utils/requestLang';
+import { sanitizeLocation, sanitizeProximityMeters, sanitizeGroupOrders } from '../utils/moduleItems';
 import { pretranslateActivity } from '../services/activityPretranslate';
 import { IActivity, IScheduledReport } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
@@ -130,24 +131,22 @@ async function buildActivityData(
       };
     } else {
       const mod = moduleConfig as any;
-      data.module = {
-        type: moduleConfig.type || 'story',
-        theme: mod.theme || undefined,
-        backgroundImage: moduleConfig.backgroundImage || undefined,
-        ...(mod.showStationNumbers === true && { showStationNumbers: true }),
-        ...(mod.showItemTitleNumbers === true && { showItemTitleNumbers: true }),
-        items: Array.isArray(mod.items)
-          ? mod.items
-              .filter((item: { type: string; ref: string }) => item.type && item.ref && ['game', 'station', 'mission'].includes(item.type))
-              .map((item: {
-                type: string;
-                ref: string;
-                groups?: string[];
-                spiderSvg?: string;
-                isFinal?: boolean;
-                revisitable?: boolean;
-                collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number; videoPartIndex?: number | null; photoOrder?: number[] };
-              }) => ({
+      const isMap = moduleConfig.type === 'map';
+      const items = Array.isArray(mod.items)
+        ? mod.items
+            .filter((item: { type: string; ref: string }) => item.type && item.ref && ['game', 'station', 'mission'].includes(item.type))
+            .map((item: {
+              type: string;
+              ref: string;
+              groups?: string[];
+              spiderSvg?: string;
+              isFinal?: boolean;
+              revisitable?: boolean;
+              collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number; videoPartIndex?: number | null; photoOrder?: number[] };
+              location?: unknown;
+            }) => {
+              const location = isMap ? sanitizeLocation(item.location) : undefined;
+              return {
                 type: item.type,
                 ref: item.ref,
                 ...(Array.isArray(item.groups) && item.groups.length > 0 && { groups: item.groups }),
@@ -155,8 +154,21 @@ async function buildActivityData(
                 ...(item.isFinal && { isFinal: true }),
                 ...(item.revisitable && { revisitable: true }),
                 ...(item.collageSplit && { collageSplit: item.collageSplit }),
-              }))
-          : [],
+                ...(location && { location }),
+              };
+            })
+        : [];
+      const proximityMeters = isMap ? sanitizeProximityMeters(mod.proximityMeters) : undefined;
+      const groupOrders = isMap ? sanitizeGroupOrders(mod.groupOrders, items.length) : undefined;
+      data.module = {
+        type: moduleConfig.type || 'story',
+        theme: mod.theme || undefined,
+        backgroundImage: moduleConfig.backgroundImage || undefined,
+        ...(mod.showStationNumbers === true && { showStationNumbers: true }),
+        ...(mod.showItemTitleNumbers === true && { showItemTitleNumbers: true }),
+        ...(proximityMeters !== undefined && { proximityMeters }),
+        ...(groupOrders && { groupOrders }),
+        items,
         popups: Array.isArray(mod.popups) ? mod.popups.map((p: Record<string, unknown>) => {
           const ct = p.contentType === 'image' ? 'image' : 'text';
           return {
@@ -315,6 +327,7 @@ async function populateActivityItems(activities: any[]): Promise<any[]> {
           isFinal: item.isFinal,
           revisitable: item.revisitable,
           collageSplit: item.collageSplit,
+          location: item.location,
         };
       });
     }

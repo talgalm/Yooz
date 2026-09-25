@@ -111,14 +111,17 @@ export interface ModuleItemRequest {
   isFinal?: boolean;
   revisitable?: boolean;
   collageSplit?: CollageSplitRequest;
+  location?: { lat: number; lng: number; address?: string };
 }
 
 export interface ModuleConfigRequest {
-  type: 'story' | 'mission' | 'spiders';
+  type: 'story' | 'mission' | 'spiders' | 'map';
   backgroundImage?: string;
   items: ModuleItemRequest[];
   popups?: PopupMessageConfig[];
   missionRef?: string;
+  proximityMeters?: number;
+  groupOrders?: Record<string, number[]>;
 }
 
 export interface OrderGameRound {
