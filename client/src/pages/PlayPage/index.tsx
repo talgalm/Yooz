@@ -61,7 +61,6 @@ interface ActivityConfig {
   scheduledStart?: string;
   scheduledEnd?: string;
   moduleType?: string;
-  /** Languages this activity was prepared in besides Hebrew. */
   languages?: string[];
 }
 
@@ -197,7 +196,6 @@ const ScheduleScreen = styled('div')({
   textAlign: 'center',
 });
 
-/** Top corner of the login screen, clear of the logo and the safe area. */
 const LoginLangSlot = styled('div')({
   position: 'absolute',
   top: 'calc(12px + env(safe-area-inset-top, 0px))',
@@ -801,14 +799,7 @@ export default function PlayPage() {
 
       {/* Login page — full screen purple */}
       <PurpleLoginPage visible={openingPhase !== 'playing'}>
-        {/*
-          The language belongs on this screen, not only inside the activity:
-          this is where a participant first reads anything, and the choice
-          carries into the whole run. It offers only what the activity was
-          prepared in, and renders nothing when that is Hebrew alone.
-        */}
         <LoginLangSlot>
-          {/* No languages on the activity means Hebrew only - not "offer everything". */}
           <LangDrawer only={activity?.languages ?? []} />
         </LoginLangSlot>
         <LoginLogo src="/images/logo-white.png" alt="Yooz" />

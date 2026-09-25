@@ -328,11 +328,6 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   };
 
   res.setHeader('Cache-Control', 'no-store');
-  /**
-   * Everything below this line is admin-authored content, so a participant
-   * running in another language gets it translated. Hebrew is a no-op, and a
-   * translation that cannot be produced falls back to the Hebrew it was given.
-   */
   const lang = readLang(req);
   res.json(await translateContent({
     code: activity.code,

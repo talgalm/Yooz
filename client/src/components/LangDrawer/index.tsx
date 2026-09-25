@@ -4,12 +4,6 @@ import { IconButton, DarkHeaderActionIconButton } from '../styled';
 interface LangDrawerProps {
   /** Match help / exit on tinted headers (finish, leaderboard, …). */
   variant?: 'default' | 'darkHeader';
-  /**
-   * Languages this activity was prepared in, besides Hebrew. An activity's own
-   * content is translated only for the languages it was saved with, so offering
-   * more than that would hand a participant an English shell around Hebrew
-   * stations. Omit to offer everything the app knows.
-   */
   only?: string[];
 }
 
@@ -18,8 +12,6 @@ export default function LangDrawer({ variant = 'default', only }: LangDrawerProp
 
   const available = only ? LANGS.filter((l) => l.code === 'he' || only.includes(l.code)) : LANGS;
 
-  // One language is not a choice, and a button that does nothing is worse than
-  // no button - an activity offered in Hebrew alone shows nothing here.
   if (available.length < 2) return null;
 
   const current = available.findIndex((l) => l.code === lang);
