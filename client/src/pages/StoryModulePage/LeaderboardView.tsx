@@ -264,6 +264,7 @@ function formatDuration(ms: number): string {
 // ─── Component ───
 
 interface LeaderboardViewProps {
+  languages?: string[];
   activityName: string;
   leaderboard: LeaderboardEntry[];
   groupLeaderboard?: GroupLeaderboardEntry[];
@@ -282,6 +283,7 @@ interface LeaderboardViewProps {
 }
 
 export default function LeaderboardView({
+  languages,
   activityName,
   leaderboard,
   groupLeaderboard = [],
@@ -334,7 +336,7 @@ export default function LeaderboardView({
         <HeaderActions>
           <HelpChatHeaderButton />
           <ActivityLogoutButton onClick={onLogout} ariaLabel={t.exitActivity} />
-          <LangDrawer variant="darkHeader" />
+          <LangDrawer variant="darkHeader" only={languages ?? []} />
         </HeaderActions>
       </HeaderBar>
 

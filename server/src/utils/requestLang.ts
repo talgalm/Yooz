@@ -14,3 +14,8 @@ export function readLang(req: Pick<Request, 'headers' | 'query'>): Lang {
   const fromHeader = Array.isArray(header) ? header[0] : header;
   return normaliseLang(fromHeader ?? (req.query?.lang as string | undefined));
 }
+
+export function sanitiseLanguages(raw: unknown): Lang[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  return raw.filter((l): l is Lang => typeof l === 'string' && l !== 'he' && (SUPPORTED_LANGS as readonly string[]).includes(l));
+}

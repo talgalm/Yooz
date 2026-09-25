@@ -328,11 +328,13 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   };
 
   res.setHeader('Cache-Control', 'no-store');
-  const lang = readLang(req);
+  const requested = readLang(req);
+  const lang = activity.languages?.includes(requested) ? requested : 'he';
   res.json(await translateContent({
     code: activity.code,
     name: activity.name,
     module: moduleResponse,
+    ...(activity.languages?.length && { languages: activity.languages }),
     guidelines: activity.guidelines || undefined,
     customInstructions: activity.customInstructions || undefined,
     ...(activity.isContinuous && { isContinuous: true }),

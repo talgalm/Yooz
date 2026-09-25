@@ -6,11 +6,12 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
  * untouched; keys the new language does not carry fall back to Hebrew.
  *
  * `label` is the language's own name (never translated), so a new language
- * needs no new i18n key to appear in the switchers.
+ * needs no new i18n key to appear in the switchers. `short` is that name cut
+ * down to what fits inside a round button.
  */
 export const LANGS = [
-  { code: 'he', label: 'עברית', flag: '🇮🇱', dir: 'rtl' },
-  { code: 'en', label: 'English', flag: '🇺🇸', dir: 'ltr' },
+  { code: 'he', label: 'עברית', short: 'עב', flag: '🇮🇱', dir: 'rtl' },
+  { code: 'en', label: 'English', short: 'EN', flag: '🇺🇸', dir: 'ltr' },
 ] as const;
 
 export type Lang = (typeof LANGS)[number]['code'];
@@ -51,23 +52,32 @@ interface LanguageContextType {
   lang: Lang;
   dir: 'ltr' | 'rtl';
   setLang: (lang: Lang) => void;
+  restrictToLanguages: (langs: string[] | null) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>(readStoredLang);
+  const [chosen, setChosen] = useState<Lang>(readStoredLang);
+  const [activityLangs, setActivityLangs] = useState<string[] | null>(null);
 
+  const restricted = activityLangs !== null && chosen !== DEFAULT_LANG && !activityLangs.includes(chosen);
+  const lang: Lang = restricted ? DEFAULT_LANG : chosen;
   const dir = langDir(lang);
 
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = dir;
-    localStorage.setItem(STORAGE_KEY, lang);
   }, [lang, dir]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, chosen);
+  }, [chosen]);
+
   return (
-    <LanguageContext.Provider value={{ lang, dir, setLang }}>
+    <LanguageContext.Provider
+      value={{ lang, dir, setLang: setChosen, restrictToLanguages: setActivityLangs }}
+    >
       {children}
     </LanguageContext.Provider>
   );

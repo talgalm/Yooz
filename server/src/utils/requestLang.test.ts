@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readLang, normaliseLang } from './requestLang';
+import { readLang, normaliseLang, sanitiseLanguages } from './requestLang';
 
 const req = (headers: Record<string, unknown> = {}, query: Record<string, unknown> = {}) =>
   ({ headers, query }) as never;
@@ -32,4 +32,18 @@ test('regional and Accept-Language shapes are understood', () => {
   assert.equal(normaliseLang('EN'), 'en');
   assert.equal(normaliseLang('en_GB'), 'en');
   assert.equal(normaliseLang('en,he;q=0.8'), 'en');
+});
+
+test('an empty list is a real answer and is stored as one', () => {
+  assert.deepEqual(sanitiseLanguages([]), []);
+});
+
+test('saying nothing about languages leaves the stored value alone', () => {
+  assert.equal(sanitiseLanguages(undefined), undefined);
+  assert.equal(sanitiseLanguages(null), undefined);
+  assert.equal(sanitiseLanguages('en'), undefined);
+});
+
+test('Hebrew is implicit, and unknown codes are dropped', () => {
+  assert.deepEqual(sanitiseLanguages(['he', 'en', 'klingon', 42, null]), ['en']);
 });

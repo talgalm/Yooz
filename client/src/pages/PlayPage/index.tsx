@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../context/AuthContext';
-import { useTranslations } from '../../context/LanguageContext';
+import { useTranslations, useLang } from '../../context/LanguageContext';
 import { texts } from './PlayPage.i18n';
 import ActivityLogin from '../../components/login/ActivityLogin';
 import { apiFetchWithRetry } from '../../utils/api';
@@ -37,6 +37,7 @@ import {
   LoginFormWrapper,
 } from '../admin/styled';
 import LangDrawer from '../../components/LangDrawer';
+import { rememberActivityLanguages } from '../../utils/activityLanguages';
 
 type LoginField = 'email' | 'phoneNumber' | 'name';
 
@@ -196,13 +197,6 @@ const ScheduleScreen = styled('div')({
   textAlign: 'center',
 });
 
-const LoginLangSlot = styled('div')({
-  position: 'absolute',
-  top: 'calc(12px + env(safe-area-inset-top, 0px))',
-  insetInlineStart: 12,
-  zIndex: 1,
-});
-
 const ScheduleLogo = styled('img')({
   width: 160,
   marginBottom: 32,
@@ -258,6 +252,7 @@ export default function PlayPage() {
   const { login, establishSession, isAuthenticated, participant } = useAuth();
   const navigate = useNavigate();
   const t = useTranslations(texts);
+  const { restrictToLanguages } = useLang();
   const resumeCheckedForCode = useRef<string | null>(null);
 
   const isSelfService = activity?.connectionType === 'group' && activity?.groupEntryMode === 'selfService';
@@ -315,6 +310,8 @@ export default function PlayPage() {
         const data = await res.json();
         if (cancelled) return;
         setActivity(data);
+        rememberActivityLanguages(data.code, data.languages);
+        restrictToLanguages(data.languages ?? []);
         if (!data.opening?.url) setShowDefaultSplash(true);
         if (
           data.connectionType === 'group'
@@ -598,7 +595,7 @@ export default function PlayPage() {
         return (
           <PurpleLoadingScreen style={{ position: 'relative', inset: 'auto', background: 'transparent', minHeight: 80 }}>
             <LoaderWave aria-label={t.loading}>
-              <span>z</span><span>o</span><span>o</span><span>Y</span>
+              <span>Y</span><span>o</span><span>o</span><span>z</span>
             </LoaderWave>
           </PurpleLoadingScreen>
         );
@@ -663,10 +660,10 @@ export default function PlayPage() {
     return (
       <PurpleLoadingScreen>
         <LoaderWave aria-label={t.loading}>
-          <span>z</span>
-          <span>o</span>
-          <span>o</span>
           <span>Y</span>
+          <span>o</span>
+          <span>o</span>
+          <span>z</span>
         </LoaderWave>
         {slowLoad && (
           <div style={{ position: 'absolute', bottom: 80, color: '#fff', opacity: 0.85, fontSize: 14 }}>
@@ -722,7 +719,7 @@ export default function PlayPage() {
     return (
       <PurpleLoadingScreen>
         <LoaderWave aria-label={t.loading}>
-          <span>z</span><span>o</span><span>o</span><span>Y</span>
+          <span>Y</span><span>o</span><span>o</span><span>z</span>
         </LoaderWave>
       </PurpleLoadingScreen>
     );
@@ -799,9 +796,7 @@ export default function PlayPage() {
 
       {/* Login page — full screen purple */}
       <PurpleLoginPage visible={openingPhase !== 'playing'}>
-        <LoginLangSlot>
-          <LangDrawer only={activity?.languages ?? []} />
-        </LoginLangSlot>
+        <LangDrawer variant="fab" only={activity?.languages ?? []} />
         <LoginLogo src="/images/logo-white.png" alt="Yooz" />
         <LoginHeading>{loginHeading}</LoginHeading>
         <LoginSubheading>{loginSubheading}</LoginSubheading>

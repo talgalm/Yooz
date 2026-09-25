@@ -1239,7 +1239,7 @@ export default function AdminCreateActivityPage() {
         payload.module = modulePayload;
       }
       payload.guidelines = guidelines.trim() || undefined;
-      payload.languages = languages.length > 0 ? languages : undefined;
+      payload.languages = languages;
       payload.organizerContactName = organizerContactName.trim() || undefined;
       payload.organizerContactPhone = organizerContactPhone.trim() || undefined;
       payload.extraSupportInfo = extraSupportInfo.trim() || undefined;
@@ -1422,21 +1422,21 @@ export default function AdminCreateActivityPage() {
                     <SectionHeaderTitle>{t.moduleType}</SectionHeaderTitle>
                   </SectionHeader>
                   <ModuleTypeGrid>
-                    <ModuleTypeCard type="button" selected={moduleType === 'map'} onClick={() => setModuleType('map')}>
-                      <ModuleTypeCardTitle>{t.map}</ModuleTypeCardTitle>
-                      <ModuleTypeCardDesc>{t.mapDesc}</ModuleTypeCardDesc>
-                    </ModuleTypeCard>
-                    <ModuleTypeCard type="button" selected={moduleType === 'spiders'} onClick={() => setModuleType('spiders')}>
-                      <ModuleTypeCardTitle>{t.spiders}</ModuleTypeCardTitle>
-                      <ModuleTypeCardDesc>{t.spidersDesc}</ModuleTypeCardDesc>
+                    <ModuleTypeCard type="button" selected={moduleType === 'none'} onClick={() => setModuleType('none')}>
+                      <ModuleTypeCardTitle>{t.noModule}</ModuleTypeCardTitle>
+                      <ModuleTypeCardDesc>{t.noModuleDesc}</ModuleTypeCardDesc>
                     </ModuleTypeCard>
                     <ModuleTypeCard type="button" selected={moduleType === 'story'} onClick={() => setModuleType('story')}>
                       <ModuleTypeCardTitle>{t.story}</ModuleTypeCardTitle>
                       <ModuleTypeCardDesc>{t.storyDesc}</ModuleTypeCardDesc>
                     </ModuleTypeCard>
-                    <ModuleTypeCard type="button" selected={moduleType === 'none'} onClick={() => setModuleType('none')}>
-                      <ModuleTypeCardTitle>{t.noModule}</ModuleTypeCardTitle>
-                      <ModuleTypeCardDesc>{t.noModuleDesc}</ModuleTypeCardDesc>
+                    <ModuleTypeCard type="button" selected={moduleType === 'spiders'} onClick={() => setModuleType('spiders')}>
+                      <ModuleTypeCardTitle>{t.spiders}</ModuleTypeCardTitle>
+                      <ModuleTypeCardDesc>{t.spidersDesc}</ModuleTypeCardDesc>
+                    </ModuleTypeCard>
+                    <ModuleTypeCard type="button" selected={moduleType === 'map'} onClick={() => setModuleType('map')}>
+                      <ModuleTypeCardTitle>{t.map}</ModuleTypeCardTitle>
+                      <ModuleTypeCardDesc>{t.mapDesc}</ModuleTypeCardDesc>
                     </ModuleTypeCard>
                   </ModuleTypeGrid>
 

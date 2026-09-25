@@ -35,6 +35,7 @@ const wave = keyframes`
 
 export const LoaderWave = styled('div')({
   display: 'flex',
+  direction: 'ltr',
   gap: 6,
   fontSize: 48,
   fontWeight: 700,

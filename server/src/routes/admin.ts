@@ -14,7 +14,7 @@ import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginFiel
 import { Activity, ActivityFolder, ActivityGroup, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
 import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
-import { SUPPORTED_LANGS } from '../utils/requestLang';
+import { sanitiseLanguages } from '../utils/requestLang';
 import { pretranslateActivity } from '../services/activityPretranslate';
 import { IActivity, IScheduledReport } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
@@ -192,12 +192,7 @@ async function buildActivityData(
   // Handle guidelines
   data.guidelines = guidelines?.trim() || null;
 
-  data.languages = Array.isArray(languages)
-    ? languages.filter(
-        (l: unknown): l is string =>
-          typeof l === 'string' && l !== 'he' && (SUPPORTED_LANGS as readonly string[]).includes(l),
-      )
-    : undefined;
+  data.languages = sanitiseLanguages(languages);
 
   // Free-text context for the "something else" open free-text chat only,
   // appended to the Gemini prompt for this activity.

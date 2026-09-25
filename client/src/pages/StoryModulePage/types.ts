@@ -141,6 +141,7 @@ export interface ActivityModuleResponse {
   code: string;
   name: string;
   module: ModuleData;
+  languages?: string[];
   guidelines?: string;
   customInstructions?: CustomInstructionsData;
   isContinuous?: boolean;

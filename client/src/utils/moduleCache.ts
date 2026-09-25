@@ -1,5 +1,5 @@
 const cache = new Map<string, unknown>();
-const MODULE_STORAGE_PREFIX = 'yooz_module_';
+const MODULE_STORAGE_PREFIX = 'yooz_module_v2_';
 
 function cacheKey(code: string, group: string): string {
   let lang = 'he';
