@@ -2,7 +2,6 @@ import { Router, Request, Response } from 'express';
 import { Types } from 'mongoose';
 import { authenticateManage } from '../middleware/manageAuth';
 import { Task, TASK_STATUSES, TASK_PRIORITIES, TaskStatus, TaskPriority, PRIORITY_RANK } from '../models/manage/Task';
-import { ManageUser } from '../models/manage/ManageUser';
 import { taskVisibility } from '../utils/taskVisibility';
 
 const router = Router();

@@ -317,7 +317,7 @@ export default function PlayPage() {
         ) {
           setGroupFlow('choice');
         }
-      } catch (err) {
+      } catch {
         clearTimeout(timeoutId);
         if (cancelled) return;
         if (attempt < 1) {

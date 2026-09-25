@@ -57,40 +57,6 @@ export interface IReport {
   lastActiveItemIndex: number;
 }
 
-const questionAnswerSchema = new Schema<IQuestionAnswer>(
-  {
-    questionIndex: { type: Number, required: true },
-    questionText: { type: String },
-    selectedAnswers: [{ type: Number }],
-    correctAnswers: [{ type: Number }],
-    isCorrect: { type: Boolean, required: true },
-    pointsEarned: { type: Number, required: true },
-    timeSpentMs: { type: Number, required: true },
-  },
-  { _id: false },
-);
-
-const itemResultSchema = new Schema<IItemResult>(
-  {
-    itemIndex: { type: Number, required: true },
-    itemId: { type: String, required: true },
-    itemType: { type: String, enum: ['game', 'station'], required: true },
-    itemName: { type: String, required: true },
-    gameType: { type: String },
-    score: { type: Number, required: true },
-    maxPossibleScore: { type: Number },
-    startedAt: { type: Date, required: true },
-    completedAt: { type: Date },
-    durationMs: { type: Number, required: true },
-    hintUsed: { type: Boolean, default: false },
-    hintPenalty: { type: Number, default: 0 },
-    questionAnswers: [questionAnswerSchema],
-    attempts: { type: Number },
-    metadata: { type: Schema.Types.Mixed },
-  },
-  { _id: false },
-);
-
 const reportSchema = new Schema<IReport>({
   activityId: { type: Schema.Types.ObjectId, ref: 'Activity', required: true },
   activityCode: { type: String, required: true },

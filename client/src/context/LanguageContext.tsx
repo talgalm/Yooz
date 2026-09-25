@@ -32,7 +32,7 @@ interface LanguageContextType {
   dir: 'ltr' | 'rtl';
   setLang: (lang: Lang) => void;
   restrictToLanguages: (langs: string[] | null) => void;
-  useScopeOf: (pathname: string) => void;
+  enterScopeOf: (pathname: string) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | null>(null);
@@ -61,7 +61,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     [scope]
   );
 
-  const useScopeOf = useCallback((pathname: string) => {
+  const enterScopeOf = useCallback((pathname: string) => {
     const next = langScope(pathname);
     setScope((prev) => (prev === next ? prev : next));
   }, []);
@@ -72,7 +72,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   return (
     <LanguageContext.Provider
-      value={{ lang, dir, setLang, restrictToLanguages: setActivityLangs, useScopeOf }}
+      value={{ lang, dir, setLang, restrictToLanguages: setActivityLangs, enterScopeOf }}
     >
       {children}
     </LanguageContext.Provider>

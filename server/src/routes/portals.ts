@@ -5,7 +5,7 @@ import multer from 'multer';
 import * as XLSX from 'xlsx';
 import { authenticateAdmin } from '../middleware/adminAuth';
 import { createdByEmailForNewResource, customerMongoFilter, customerOwnsDoc } from '../middleware/customerScope';
-import { CreatePortalRequest, PortalUserRequest } from '../types';
+import { CreatePortalRequest } from '../types';
 import { Portal, Activity, Report } from '../models';
 import { generateInviteToken } from '../models/Portal';
 
@@ -386,7 +386,7 @@ router.post('/public/:code/register', async (req: Request<{ code: string }>, res
 });
 
 router.patch('/public/:code/profile', async (req: Request<{ code: string }>, res: Response) => {
-  const { username, currentPassword, newPassword, displayName } = req.body;
+  const { username, currentPassword, newPassword } = req.body;
 
   if (!username || !currentPassword) {
     res.status(400).json({ error: 'Username and current password are required' });

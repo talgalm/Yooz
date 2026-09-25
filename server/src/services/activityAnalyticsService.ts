@@ -3,7 +3,6 @@ import { Report } from '../models';
 import { israelDayRange } from '../utils/israelTime';
 import {
   resolvePassThreshold,
-  maxScoreForReport,
   normalizeScore,
   resolveCeiling,
 } from '../utils/scoreNormalization';
