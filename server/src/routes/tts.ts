@@ -1,29 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { AZURE_SPEECH_KEY, AZURE_SPEECH_REGION } from '../config';
+import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 30;
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-  entry.count++;
-  return entry.count > RATE_LIMIT_MAX;
-}
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of rateLimitMap) {
-    if (now > entry.resetAt) rateLimitMap.delete(ip);
-  }
-}, 5 * 60_000);
+const isRateLimited = createRateLimiter({
+  perParticipant: 60,
+  perAnonymous: 30,
+  perAddress: 400,
+});
 
 const VOICE_MAP = {
   man: 'he-IL-AvriNeural',
@@ -40,8 +25,7 @@ function escapeSsml(text: string): string {
 }
 
 router.post('/', async (req: Request, res: Response) => {
-  const ip = req.ip || req.socket.remoteAddress || 'unknown';
-  if (isRateLimited(ip)) {
+  if (isRateLimited(req)) {
     res.status(429).json({ error: 'Too many requests. Please try again later.' });
     return;
   }

@@ -422,7 +422,6 @@
     "server/src/routes/gameFolders.ts": 4,
     "server/src/routes/games.ts": 6,
     "server/src/routes/help.i18n.ts": 6,
-    "server/src/routes/help.ts": 12,
     "server/src/routes/library.ts": 8,
     "server/src/routes/manage.ts": 6,
     "server/src/routes/manageCalendar.ts": 3,
