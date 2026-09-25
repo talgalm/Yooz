@@ -13,7 +13,7 @@ import { ownReportFilter } from '../utils/participantAuth';
 import { resolveCeiling, normalizeScore } from '../utils/scoreNormalization';
 import { startOfTodayIsrael, israelDayString } from '../utils/israelTime';
 import { readLang } from '../utils/requestLang';
-import { translateContent } from '../services/contentTranslation';
+import { translateContent, applyTranslations } from '../services/contentTranslation';
 import { visibleOrderedIndices } from '../utils/moduleItems';
 import { onGroupMemberCompleted } from '../services/groupRewardService';
 import activityGroupsRouter from './activityGroups';
@@ -54,6 +54,12 @@ function publicStationSettings(
       };
     }),
   };
+}
+
+function withReviewedTranslations<T>(built: T, source: { translations?: Record<string, Record<string, string>> }, lang: string): T {
+  const reviewed = lang === 'he' ? undefined : source.translations?.[lang];
+  if (!reviewed) return built;
+  return applyTranslations(built, new Map(Object.entries(reviewed)));
 }
 
 // Group self-service routes — must be registered before /:code
@@ -214,6 +220,9 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   const moduleItems = visibleOrderedIndices(activity.module, participantGroup)
     .map((i) => activity.module!.items[i]);
 
+  const requested = readLang(req);
+  const lang = activity.languages?.includes(requested) ? requested : 'he';
+
   // Build populated items array in order
   const populatedItems = moduleItems.map((item) => {
     if (item.type === 'mission') {
@@ -237,7 +246,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
       : stationMap.get(item.ref.toString());
     if (!data) return null;
     if (item.type === 'game') {
-      return {
+      return withReviewedTranslations({
         type: 'game' as const,
         _id: data._id,
         name: data.name,
@@ -248,9 +257,9 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.isFinal && { isFinal: true }),
         ...(item.revisitable && { revisitable: true }),
         ...(item.location && { location: item.location }),
-      };
+      }, data, lang);
     } else {
-      return {
+      return withReviewedTranslations({
         type: 'station' as const,
         _id: data._id,
         name: data.name,
@@ -262,7 +271,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.revisitable && { revisitable: true }),
         ...(item.collageSplit && { collageSplit: item.collageSplit }),
         ...(item.location && { location: item.location }),
-      };
+      }, data, lang);
     }
   }).filter(Boolean);
 
@@ -328,8 +337,6 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   };
 
   res.setHeader('Cache-Control', 'no-store');
-  const requested = readLang(req);
-  const lang = activity.languages?.includes(requested) ? requested : 'he';
   res.json(await translateContent({
     code: activity.code,
     name: activity.name,

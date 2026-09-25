@@ -11,6 +11,7 @@ export interface IStation {
   theme?: string;
   tags?: string[];
   settings: Record<string, unknown>;
+  translations?: Record<string, Record<string, string>>;
   createdAt: Date;
   createdByEmail?: string;
   /** Admin Stations-tab folder this station is filed under (null = ungrouped). */
@@ -25,6 +26,7 @@ const stationSchema = new Schema<IStation>({
   theme: { type: String },
   tags: { type: [String], default: [] },
   settings: { type: Schema.Types.Mixed, default: {} },
+  translations: { type: Schema.Types.Mixed, default: undefined },
   createdAt: { type: Date, default: Date.now },
   createdByEmail: { type: String, lowercase: true, trim: true },
   folderId: { type: Schema.Types.ObjectId, ref: 'StationFolder', default: null, index: true },
