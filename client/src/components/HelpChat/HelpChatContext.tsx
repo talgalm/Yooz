@@ -43,8 +43,6 @@ interface ChatMessage {
   text: string;
 }
 
-/** Live "where is the participant right now" snapshot, sent with every /api/help
- *  message so the bot can give station-specific answers. Set by StoryModulePage. */
 export interface HelpActivityContext {
   activityName?: string;
   phase?: string;
@@ -54,16 +52,11 @@ export interface HelpActivityContext {
   itemType?: string;
 }
 
-// Module-level store — pages write it as the participant moves; the chat reads
-// it at send time. No re-render needed, so no state/context plumbing.
 let helpActivityContext: HelpActivityContext | null = null;
 export function setHelpChatActivityContext(ctx: HelpActivityContext | null): void {
   helpActivityContext = ctx;
 }
 
-// Some canned responses are plain strings; the ones that mention "the
-// activity organizer"/"your facilitator" are functions of the contact so they
-// can name a real person instead. This resolves either shape to text.
 function resolveResponse(entry: string | ((contact?: OrganizerContact) => string), contact?: OrganizerContact): string {
   return typeof entry === 'function' ? entry(contact) : entry;
 }
@@ -77,9 +70,7 @@ interface HelpChatContextValue {
   open: boolean;
   hiddenForBallGame: boolean;
   toggle: () => void;
-  /** True while the header ? button should wiggle + show its "need help?" bubble. */
   nudgeActive: boolean;
-  /** Wiggle the ? button and show the bubble for `ms` (default 3000). */
   nudge: (ms?: number) => void;
 }
 
@@ -120,8 +111,6 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
   const bodyRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // This activity's named support contact (if set) and hidden FAQ categories —
-  // both admin-configured per activity, fetched once from the public config.
   useEffect(() => {
     if (!code) return;
     let cancelled = false;
@@ -206,7 +195,6 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
   useEffect(() => () => {
     if (nudgeTimerRef.current) clearTimeout(nudgeTimerRef.current);
   }, []);
-  // Opening the chat dismisses the nudge immediately.
   useEffect(() => {
     if (open) setNudgeActive(false);
   }, [open]);
@@ -221,7 +209,6 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
     | 'responseTaskStuck'
     | 'responseVideoMissing';
 
-  // Matches server VALID_HELP_CATEGORIES / AdminCreateActivityPage.i18n HELP_CATEGORIES keys.
   const FAQ_KEY_TO_CATEGORY: Record<FaqKey, string> = {
     responseFaq1: 'login',
     responseFaq2: 'game_start',
@@ -254,8 +241,6 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
     const text = inputValue.trim();
     if (!text) return;
 
-    // Capture current messages as history before appending the new user message
-    // Filter out the continuePrompt bot message so it doesn't confuse Gemini
     const continuePromptText = t.continuePrompt;
     const history = messages.filter((m) => m.text !== continuePromptText);
 
@@ -281,7 +266,7 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
       setTyping(false);
       setMessages((prev) => [...prev, { from: 'bot', text: data.response }]);
     } catch {
-      const match = matchTopic(text, lang);
+      const match = matchTopic(text);
       setTyping(false);
 
       if (match) {

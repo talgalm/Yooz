@@ -85,14 +85,17 @@ Each has its own React context (`AdminAuthContext`, `AuthContext`, `ManagerAuthC
 
 - **Use `_id`, not `id`**, for Mongoose document references on the client. Population is one level deep for activity module endpoints.
 - **i18n is co-located**: every page/component that has user-facing text has a sibling `.i18n.ts` file exporting Hebrew (default) + English strings, consumed via `useTranslations(texts)`. Hebrew is the *default* language and the app supports RTL.
-- **Adding a language is one line.** `LANGS` in `client/src/context/LanguageContext.tsx` is the
-  single registry (`code`, `label`, `flag`, `dir`); `Lang` is derived from it, and both language
-  switchers (`LangDrawer`, `AdminSettingsTab`) render from it. Add a row and the language is
-  selectable everywhere — **no edits to the ~59 existing `.i18n.ts` files**, which is verified
-  by typechecking with a third language added. Translate incrementally: `Texts<T>` requires a
-  complete `he` and accepts a *deep-partial* object for every other language, and
-  `useTranslations` fills the gaps from Hebrew per key (`fillFrom`, covered by
-  `LanguageContext.test.ts`). Functions and arrays are taken whole, never merged into.
+- **Adding a language is one row on each side.** `client/src/utils/languages.ts` (`code`, `label`,
+  `short`, `flag`, `dir`, `locale`) and `server/src/utils/languages.ts` (`code`, `name`, `locale`,
+  `voices`). Everything else derives from those two: `Lang`, `SUPPORTED_LANGS`, both language
+  switchers, the translation tabs, the TTS voice, and the line that tells an AI character which
+  language to answer in. `LanguageContext` re-exports `LANGS`, so existing imports keep working.
+  `languages.test.ts` fails if a row is missing a field or if the two sides disagree — they used
+  to, and the symptom was a participant hearing silence. **No edits to the ~59 existing
+  `.i18n.ts` files**: `Texts<T>` requires a complete `he` and accepts a *deep-partial* object for
+  every other language, and `useTranslations` fills the gaps from Hebrew per key (`fillFrom`,
+  covered by `LanguageContext.test.ts`). Functions and arrays are taken whole, never merged into.
+  Verified by adding a third language (Arabic, RTL) and running the gate: nothing else changed.
 - **Game configs live in `game.settings`** as `Record<string, unknown>` server-side, typed per game type client-side. When adding a new game type, add the settings interface in `server/src/types/index.ts`, the type to `validTypes` in `AdminGameConfigPage/index.tsx`, and the matching config form beside it. (`StationType` is a real union, but it lives in `server/src/models/Station.ts`.)
 - **No comments in code.** Say it with a name — a well-named function, variable or type. The
   why of a change goes in the commit message, how the system works goes in MEMORY.md. ~4,800

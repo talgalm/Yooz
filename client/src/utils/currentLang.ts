@@ -1,4 +1,6 @@
 
+import { DEFAULT_LANG, languageOf } from './languages';
+
 export type LangScope = 'participant' | 'admin' | 'site';
 
 const KEYS: Record<LangScope, string> = {
@@ -30,9 +32,9 @@ function path(): string {
 
 export function langInScope(scope: LangScope): string {
   try {
-    return localStorage.getItem(langStorageKey(scope)) || 'he';
+    return localStorage.getItem(langStorageKey(scope)) || DEFAULT_LANG;
   } catch {
-    return 'he';
+    return DEFAULT_LANG;
   }
 }
 
@@ -55,11 +57,6 @@ export function langHeader(): Record<string, string> {
   return { 'X-Yooz-Lang': currentLang() };
 }
 
-const LOCALES: Record<string, string> = {
-  he: 'he-IL',
-  en: 'en-US',
-};
-
 export function currentLocale(lang: string = currentLang()): string {
-  return LOCALES[lang] || LOCALES.he;
+  return languageOf(lang).locale;
 }
