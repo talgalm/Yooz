@@ -361,7 +361,6 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     code: activity.code,
     name: activity.name,
     module: moduleResponse,
-    /** So the language control inside the activity offers only what was prepared. */
     ...(activity.languages?.length && { languages: activity.languages }),
     guidelines: activity.guidelines || undefined,
     customInstructions: activity.customInstructions || undefined,

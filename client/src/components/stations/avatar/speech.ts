@@ -12,15 +12,6 @@ export interface SpeechHandle {
   stop: () => void;
 }
 
-/**
- * The last-resort voice, used when the TTS endpoint cannot be reached.
- *
- * It speaks in the participant's language: this used to be pinned to Hebrew,
- * so an English activity that fell back here either mispronounced every word
- * or, far more often, said nothing at all - the browser has no voice for a
- * language it was not asked for, and `speak()` on a voiceless language is
- * silent without raising anything.
- */
 export function speakBrowser(
   text: string,
   voiceType: 'man' | 'woman',
@@ -49,8 +40,6 @@ export function speakBrowser(
       );
       u.voice = gendered || matching[0];
     } else if (voices.length > 0) {
-      // Nothing installed for this language: say so, because the symptom is
-      // pure silence and there is no other way to tell it from a working clip.
       console.warn(`[speech] no ${u.lang} voice in this browser - the fallback will be silent`);
     }
     if (onEnd) {
@@ -84,14 +73,6 @@ export interface PreparedSpeech {
   durationMs?: number;
 }
 
-/**
- * The participant's own session, when there is one.
- *
- * These endpoints are public - they have to be, the avatar starts talking
- * before anything is submitted - but the token identifies who is asking, and
- * the server spends its per-participant allowance rather than lumping a whole
- * venue behind one shared address into a single quota.
- */
 function authHeader(): Record<string, string> {
   try {
     const token = localStorage.getItem('yooz_token');
@@ -177,9 +158,6 @@ export async function prepareSpeech(
       },
     };
   } catch (err) {
-    // The fallback below is often inaudible - most desktops carry no Hebrew
-    // voice - so a refused or failed clip must leave a trace. Without this the
-    // station just goes quiet and looks like a broken voice setting.
     console.warn('[speech] TTS unavailable, falling back to the browser voice:', err);
     let browserHandle: SpeechHandle | null = null;
     let stopped = false;

@@ -1,4 +1,3 @@
-/** Takes `currentColor` from the button it sits in. */
 export function GlobeIcon({ size = 24 }: { size?: number }) {
   return (
     <svg
@@ -14,13 +13,11 @@ export function GlobeIcon({ size = 24 }: { size?: number }) {
     >
       <circle cx="12" cy="12" r="9" />
       <path d="M3 12h18" />
-      {/* The meridian that makes it read as a globe rather than a target. */}
       <path d="M12 3c2.6 2.7 4 5.7 4 9s-1.4 6.3-4 9c-2.6-2.7-4-5.7-4-9s1.4-6.3 4-9Z" />
     </svg>
   );
 }
 
-/** Marks the language in force, in the list. */
 export function CheckIcon() {
   return (
     <svg
