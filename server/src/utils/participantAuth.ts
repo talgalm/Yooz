@@ -151,7 +151,7 @@ export async function createParticipantSession(
     email?: string;
     phoneNumber?: string;
     group?: string;
-    /** What the participant is reading, so an SMS sent hours later matches. */
+    /** What they are reading, so an SMS sent hours later matches. */
     lang?: string;
   },
 ): Promise<LoginResponse> {

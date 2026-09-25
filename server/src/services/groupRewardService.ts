@@ -51,7 +51,7 @@ async function sendWinnerSms(
     ? buildRewardDownloadUrl(activity.groupReward!.downloadToken)
     : '';
   const rawTemplate = activity.groupReward!.messageTemplate?.trim() || DEFAULT_SMS_TEMPLATE;
-  // Sent hours after the game, so it follows the language the winner played in.
+  // Sent hours later, so it follows the language the winner played in.
   const template = await translateText(rawTemplate, winner.lang || DEFAULT_LANG);
   const message = renderWinnerSms(template, {
     name: winner.participantName,

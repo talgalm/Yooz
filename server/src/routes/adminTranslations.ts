@@ -1,21 +1,15 @@
+/**
+ * Reviewing what the machine wrote: every translatable string in a station or
+ * game next to its machine translation, with corrections stored on the document
+ * itself. A correction is keyed by the exact Hebrew it replaces, so editing the
+ * Hebrew retires the correction written for that wording.
+ */
 import { Router, Request, Response } from 'express';
 import { authenticateAdmin } from '../middleware/adminAuth';
 import { Activity, Game, Station } from '../models';
 import { cachedTranslations, collectProse, translationsFor } from '../services/contentTranslation';
 import { normaliseLang, SUPPORTED_LANGS } from '../utils/requestLang';
 
-/**
- * Reviewing what the machine wrote.
- *
- * Content is translated on demand and cached by content hash, which is cheap
- * and needs no upkeep - but it leaves nobody able to fix a clumsy sentence.
- * These two endpoints are that missing half: they list every translatable
- * string in a station or a game next to its machine translation, and store the
- * corrections on the document itself, where a person can see them.
- *
- * A correction is keyed by the exact Hebrew it replaces, so editing the Hebrew
- * retires the correction with the wording it was written for.
- */
 const router = Router();
 
 type Kind = 'stations' | 'games';
@@ -34,12 +28,9 @@ function translatableParts(doc: { name?: string; description?: string; settings?
 }
 
 /**
- * What an activity holds in each language, across all of its content.
- *
- * Registered before the `:kind` routes below, which would otherwise swallow
- * `/activity/...` and answer 404. Used by the activity's language picker to
- * show that work already exists for a language - including one that is no
- * longer offered, so turning it back on is visibly free.
+ * The same counts rolled up across an activity's content, for its language
+ * picker. Registered before the `:kind` routes, which would otherwise swallow
+ * `/activity/...` and answer 404.
  */
 router.get(
   '/activity/:id/languages',
@@ -98,13 +89,10 @@ async function languagesInUse(kind: Kind, id: string): Promise<Set<string>> {
 }
 
 /**
- * What exists, per language, before any of it is opened.
- *
- * Drives the language tabs: how many sentences a person has corrected, and
- * whether the language is still offered by an activity that uses this item. A
- * translation is never deleted when an activity stops offering its language -
- * the work was paid for and the language may come back - so `inUse: false` is
- * the honest way to say "kept, but nobody is reading it".
+ * What exists per language, for the tabs: how many sentences a person has
+ * corrected, and whether an activity using this item still offers the language.
+ * Translations are never deleted when it stops, so `inUse: false` means "kept,
+ * but nobody is reading it".
  */
 router.get(
   '/:kind/:id/languages',
@@ -145,14 +133,9 @@ router.get(
   }
 );
 
-// Every translatable string, with what the machine made of it and what a person
-// corrected it to.
-//
-// Nothing is translated by opening this. Reading the screen used to translate
-// the whole item, which spends real money at the model - and most of all for a
-// language no activity offers, where nobody would ever read the result. Pass
-// `?translate=1` to fill in what is missing; that is what the button on the
-// screen does.
+// Nothing is translated by opening this: reading the screen used to translate
+// the whole item, most pointlessly for a language no activity offers. Pass
+// `?translate=1` to fill in what is missing - what the button on the screen does.
 router.get('/:kind/:id', authenticateAdmin, async (req: Request<{ kind: string; id: string }>, res: Response) => {
   const { kind, id } = req.params;
   if (!isKind(kind)) {

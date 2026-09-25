@@ -97,9 +97,8 @@ const Box = styled('input')<{ edited?: boolean }>(({ edited }) => ({
   fontFamily: 'inherit',
   outline: 'none',
   boxSizing: 'border-box',
-  // The box reads in its own language's direction, not the panel's. Without
-  // this, English inside a Hebrew screen shows its full stops and question
-  // marks at the wrong end of the line.
+  // Reads in its own language's direction, not the panel's: English inside a
+  // Hebrew screen otherwise shows its full stops at the wrong end.
   textAlign: 'start',
   '&:focus': { borderColor: ACCENT },
 }));
@@ -151,17 +150,14 @@ const ResetButton = styled('button')({
 });
 
 /**
- * This item's content in one language, editable in place.
+ * This item's content in one language, editable in place. Each box opens on
+ * what will actually be shown - a person's wording if there is one, otherwise
+ * the machine's.
  *
- * Each box opens holding what will actually be shown - a person's own wording
- * if there is one, otherwise the machine's - so the screen reads like the
- * station's form rather than like a review queue.
- *
- * Only boxes whose text differs from the machine's are stored. A box left as
- * the machine wrote it stays the machine's, so a better translation later
- * flows through instead of being frozen as a correction; clearing a box hands
- * that sentence back the same way. Rows are keyed by the Hebrew they replace,
- * so editing the Hebrew retires the correction written for it.
+ * Only boxes whose text differs from the machine's are stored, so a box left
+ * alone keeps improving with the model instead of being frozen as a correction,
+ * and clearing one hands that sentence back. Rows are keyed by the Hebrew they
+ * replace, so editing the Hebrew retires the correction written for it.
  */
 export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: TranslationsPanelProps) {
   const t = useTranslations(texts);
@@ -178,7 +174,7 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
     setRows(null);
     setFailed(null);
     setSavedAt(0);
-    // No `translate=1`: opening a tab reads what exists and translates nothing.
+    // No `translate=1`: opening a tab translates nothing.
     adminApiFetch<{ rows: Row[]; missing: number }>(
       `/api/admin/translations/${kind}/${id}?lang=${lang}`
     )
@@ -197,7 +193,7 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
     };
   }, [kind, id, lang]);
 
-  /** Asks for the sentences that have none. The only thing that spends a model call. */
+  /** The only thing here that spends a model call. */
   const translateMissing = async () => {
     setTranslating(true);
     setFailed(null);
@@ -207,7 +203,7 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
       );
       setRows(data.rows);
       setMissing(data.missing);
-      // Anything already in a box is the person's own work; only fill the blanks.
+      // Only fill the blanks; anything typed is the person's own work.
       setEdits((prev) =>
         Object.fromEntries(
           data.rows.map((r) => [r.source, prev[r.source]?.trim() || r.reviewed || r.machine || ''])
@@ -222,11 +218,8 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
 
   /** The direction this language reads in, from the one language registry. */
   const dir = LANGS.find((l) => l.code === lang)?.dir ?? 'ltr';
-  /**
-   * An empty box shows a hint written in the admin's own language, not in the
-   * one being translated into - so it reads in the admin's direction until
-   * there is something in the box to read the other way.
-   */
+  // An empty box shows a hint in the admin's language, so it reads that way
+  // until there is something in the box to read the other way.
   const uiDir = useLang().dir;
 
   const isEdited = (row: Row) => {
@@ -268,11 +261,7 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
     <Wrap>
       <Hint>{t.hint}</Hint>
 
-      {/*
-        Nothing was translated, and for a language no activity offers, nothing
-        would have been - so say that plainly and let it be asked for, rather
-        than quietly spending a model call on a screen nobody reads.
-      */}
+      {/* Said plainly, and asked for rather than spent on a screen nobody reads. */}
       {rows !== null && missing > 0 && (
         <UnusedNote>
           <UnusedTitle>

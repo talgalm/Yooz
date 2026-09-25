@@ -135,16 +135,9 @@ async function askGemini(lang: string, sources: string[]): Promise<string[] | nu
 }
 
 /**
- * Translations for these strings, from cache where possible. Anything the model
- * could not translate is simply absent from the map, which leaves the Hebrew in
- * place downstream.
- */
-/**
- * What has already been translated, without translating anything new.
- *
- * Reading a screen should never spend money at the model on its own. The admin
- * translation screen opens with this, and only asks for the rest when someone
- * says to.
+ * What has already been translated, without translating anything new. Reading a
+ * screen should never spend a model call on its own; the admin translation
+ * screen opens with this and asks for the rest only when told to.
  */
 export async function cachedTranslations(
   sources: string[],
@@ -159,6 +152,10 @@ export async function cachedTranslations(
   return map;
 }
 
+/**
+ * The same, filling in whatever is missing. Anything the model could not
+ * translate is simply absent from the map, leaving the Hebrew in place.
+ */
 export async function translationsFor(sources: string[], lang: string): Promise<Map<string, string>> {
   const map = await cachedTranslations(sources, lang);
   if (sources.length === 0 || lang === DEFAULT_LANG) return map;
@@ -178,7 +175,7 @@ export async function translationsFor(sources: string[], lang: string): Promise<
       translated: translated[j],
     }));
     for (const row of rows) map.set(row.source, row.translated);
-    /** Two participants can open the same station at once; the loser is a no-op. */
+    // Two participants can open the same station at once; the loser is a no-op.
     await ContentTranslation.insertMany(rows, { ordered: false }).catch(() => undefined);
   }
 
@@ -186,20 +183,14 @@ export async function translationsFor(sources: string[], lang: string): Promise<
 }
 
 /**
- * One line, translated the same way everything else is - through the cache, so
- * a fixed phrase costs a model call once and is free forever after.
- *
- * For the sentences the server writes itself rather than taking from an
- * activity: an avatar's stock reactions, the line it says when it cannot
- * answer, the buttons on the collage share page. Translating them rather than
- * keeping a per-language table means a new language needs no new table.
- *
- * Returns the original on any failure, so the worst case is the authored text.
+ * One line, through the same cache - so a fixed phrase costs a model call once.
+ * For the sentences the server writes itself (an avatar's stock reactions, the
+ * collage share page): translating them means a new language needs no new
+ * table. Returns the original on any failure.
  */
 export async function translateText(text: string, lang: string): Promise<string> {
   if (!text || !lang || lang === DEFAULT_LANG) return text;
-  // Nothing in the source language means there is nothing to translate - an
-  // answer a model already wrote in the participant's language passes straight
+  // An answer a model already wrote in the target language passes straight
   // through instead of being round-tripped.
   if (!HEBREW.test(text)) return text;
   try {
