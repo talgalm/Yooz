@@ -44,6 +44,23 @@ export function israelDayString(date = new Date()): string {
   }).format(date);
 }
 
+/** Israel wall-clock hour (0-23) at a given instant. */
+export function israelHour(date = new Date()): number {
+  const formatted = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Jerusalem',
+    hour: '2-digit',
+    hour12: false,
+  }).format(date);
+  // Some ICU builds render midnight as "24" rather than "00" — same quirk as israelOffsetMs.
+  const hour = Number(formatted);
+  return hour === 24 ? 0 : hour;
+}
+
+/** Day of week for the Israel calendar day at a given instant, 0 = Sunday. */
+export function israelDayOfWeek(date = new Date()): number {
+  return new Date(`${israelDayString(date)}T12:00:00Z`).getUTCDay();
+}
+
 /** UTC window `[start, end)` covering one Israel calendar day (`YYYY-MM-DD`). */
 export function israelDayRange(day: string): { start: Date; end: Date } {
   const start = startOfIsraelDay(day);

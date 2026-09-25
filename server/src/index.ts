@@ -66,6 +66,7 @@ import manageEmployeesRouter from './routes/manageEmployees';
 import manageSettingsRouter from './routes/manageSettings';
 import { startManageScheduler } from './services/manageScheduler';
 import { startDailyResetScheduler } from './services/activityReset';
+import { startScheduledReportsScheduler } from './services/scheduledReports';
 
 const app = express();
 
@@ -216,6 +217,7 @@ async function start() {
   await dropManageProjectCodeIndex();
   startManageScheduler();
   startDailyResetScheduler();
+  startScheduledReportsScheduler();
   await seedBuiltInMission();
 
   if (TEXTME_API_TOKEN && TEXTME_USERNAME) {

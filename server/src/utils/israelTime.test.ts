@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { israelDayRange, israelDayString, isIsraelDayString, israelDayFromDdMmYyyy } from './israelTime';
+import { israelDayRange, israelDayString, isIsraelDayString, israelDayFromDdMmYyyy, israelHour, israelDayOfWeek } from './israelTime';
 
 /** A day window must start and end on that day's own Israel midnight. */
 test('covers exactly one Israel calendar day', () => {
@@ -39,4 +39,17 @@ test('israelDayFromDdMmYyyy converts and rejects junk', () => {
   assert.equal(israelDayFromDdMmYyyy('2026-09-08'), null);
   assert.equal(israelDayFromDdMmYyyy('8-9-2026'), null);
   assert.equal(israelDayFromDdMmYyyy(''), null);
+});
+
+/** The scheduled-report cron reads the wall-clock hour, across the DST offset change. */
+test('israelHour reads the Israel wall-clock hour, including the midnight quirk', () => {
+  assert.equal(israelHour(new Date('2026-01-15T10:00:00Z')), 12); // winter, UTC+2
+  assert.equal(israelHour(new Date('2026-07-15T10:00:00Z')), 13); // summer, UTC+3
+  assert.equal(israelHour(new Date('2026-01-14T22:00:00Z')), 0); // Israel midnight, not "24"
+});
+
+/** dayOfWeek in scheduledReport is 0 = Sunday, matching Date#getDay(). */
+test('israelDayOfWeek matches the Israel calendar day, 0 = Sunday', () => {
+  assert.equal(israelDayOfWeek(new Date('2026-01-15T10:00:00Z')), 4); // Thursday
+  assert.equal(israelDayOfWeek(new Date('2026-09-07T10:00:00Z')), 1); // Monday
 });

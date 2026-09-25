@@ -802,6 +802,202 @@ export const PassGradePreset = styled('button')({
   '&:disabled': { opacity: 0.5, cursor: 'default' },
 });
 
+// ─── Automated report form ───
+
+export const ReportForm = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 14,
+  paddingTop: 4,
+});
+
+export const ReportField = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+});
+
+export const ReportFieldLabel = styled('label')({
+  fontSize: 13,
+  fontWeight: 700,
+  color: TEXT_DARK,
+});
+
+export const ReportSelect = styled('select')({
+  width: '100%',
+  maxWidth: 320,
+  height: 38,
+  boxSizing: 'border-box',
+  border: `1px solid ${BORDER}`,
+  borderRadius: 8,
+  padding: '0 12px',
+  fontSize: 14,
+  fontFamily: 'inherit',
+  color: TEXT_DARK,
+  background: '#f7f8fa',
+  cursor: 'pointer',
+  '&:focus': {
+    outline: 'none',
+    borderColor: PRIMARY,
+    background: '#fff',
+  },
+});
+
+export const ReportPreviewCard = styled('div')({
+  border: `1px solid ${BORDER}`,
+  borderRadius: 12,
+  background: '#faf9fd',
+  padding: 14,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+  minWidth: 0,
+});
+
+export const ReportPreviewTitle = styled('div')({
+  fontSize: 13,
+  fontWeight: 800,
+  color: TEXT_DARK,
+});
+
+export const ReportPreviewHint = styled('div')({
+  fontSize: 11,
+  color: TEXT_LIGHT,
+});
+
+export const ReportPreviewSections = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 12,
+  maxHeight: 420,
+  overflowY: 'auto',
+  paddingInlineEnd: 2,
+});
+
+export const ReportPreviewSheetName = styled('div')({
+  fontSize: 11,
+  fontWeight: 800,
+  color: PRIMARY,
+  marginBottom: 4,
+});
+
+export const ReportPreviewTableWrap = styled('div')({
+  overflowX: 'auto',
+  border: `1px solid ${BORDER}`,
+  borderRadius: 8,
+  background: '#fff',
+});
+
+export const ReportPreviewTable = styled('table')({
+  width: '100%',
+  borderCollapse: 'collapse',
+  background: '#fff',
+  borderRadius: 8,
+  '& th': {
+    textAlign: 'start',
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#8d86a3',
+    padding: '6px 8px',
+    whiteSpace: 'nowrap',
+    background: '#f7f8fa',
+    borderBottom: `1px solid ${BORDER}`,
+  },
+  '& td': {
+    textAlign: 'start',
+    fontSize: 12,
+    color: TEXT_DARK,
+    padding: '6px 8px',
+    whiteSpace: 'nowrap',
+    borderBottom: '1px solid #f4f2f9',
+  },
+  '& tbody tr:last-child td': {
+    borderBottom: 'none',
+  },
+});
+
+export const ReportFrequencyGroup = styled('div')({
+  display: 'inline-flex',
+  border: `1px solid ${BORDER}`,
+  borderRadius: 8,
+  padding: 3,
+  gap: 4,
+  background: '#f7f8fa',
+});
+
+export const ReportFrequencyButton = styled('button')<{ active?: boolean }>(({ active }) => ({
+  border: 'none',
+  borderRadius: 6,
+  minHeight: 32,
+  padding: '0 18px',
+  fontSize: 13,
+  fontWeight: 800,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+  color: active ? '#fff' : '#425466',
+  background: active ? PRIMARY : 'transparent',
+  boxShadow: active ? '0 1px 3px rgba(39, 43, 58, 0.16)' : 'none',
+  '&:hover': { background: active ? PRIMARY : '#fff' },
+}));
+
+export const ChipsInput = styled('div')({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: 6,
+  width: '100%',
+  minHeight: 38,
+  boxSizing: 'border-box',
+  border: `1px solid ${BORDER}`,
+  borderRadius: 8,
+  padding: '6px 8px',
+  background: '#f7f8fa',
+  '&:focus-within': {
+    borderColor: PRIMARY,
+    background: '#fff',
+  },
+});
+
+export const Chip = styled('span')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  height: 26,
+  padding: '0 6px 0 10px',
+  borderRadius: 999,
+  background: '#eee9ff',
+  color: PRIMARY,
+  fontSize: 12,
+  fontWeight: 700,
+  direction: 'ltr',
+});
+
+export const ChipRemove = styled('button')({
+  border: 'none',
+  background: 'none',
+  cursor: 'pointer',
+  color: PRIMARY,
+  fontSize: 14,
+  fontWeight: 900,
+  lineHeight: 1,
+  padding: 4,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
+
+export const ChipsFieldInput = styled('input')({
+  flex: 1,
+  minWidth: 120,
+  border: 'none',
+  outline: 'none',
+  background: 'transparent',
+  fontSize: 14,
+  fontFamily: 'inherit',
+  color: TEXT_DARK,
+  height: 26,
+});
+
 // ─── Share link control ───
 
 export const ShareRow = styled('div')({

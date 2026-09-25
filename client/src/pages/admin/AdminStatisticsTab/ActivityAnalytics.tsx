@@ -84,6 +84,7 @@ import ItemAnalyticsTable from './ItemAnalyticsTable';
 import GroupComparison from './GroupComparison';
 import ParticipantsRoster from './ParticipantsRoster';
 import ExportSection from './ExportSection';
+import AutomatedReportSection from './AutomatedReportSection';
 import { setReportActivity } from '../../../components/AdminHelpChat/reportScope';
 
 interface Props {
@@ -275,6 +276,7 @@ export default function ActivityAnalytics({ activityId }: Props) {
     // read-only public share view.
     ...(shared ? [] : [{ key: 'participants' as ActivitySubTab, label: t.participantsTab }]),
     { key: 'export', label: t.exportTab },
+    { key: 'automated', label: t.automatedTab },
   ];
   const days = daysQuery.data ?? [];
   const selectedDay = period.startsWith('day:') ? period.slice(4) : '';
@@ -668,6 +670,8 @@ export default function ActivityAnalytics({ activityId }: Props) {
       )}
 
       {subTab === 'export' && <ExportSection activityId={activityId} period={period} />}
+
+      {subTab === 'automated' && <AutomatedReportSection activityId={activityId} period={period} />}
     </>
   );
 }
