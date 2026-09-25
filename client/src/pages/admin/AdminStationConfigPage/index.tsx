@@ -7,6 +7,7 @@ import { adminApiFetch } from '../../../utils/adminApi';
 import FileUploadButton from '../../../components/FileUploadButton';
 import ImagePositionPicker from '../../../components/ImagePositionPicker';
 import EditOnly from '../../../components/EditOnly';
+import ContentLanguageTabs from '../../../components/TranslationsPanel/ContentLanguageTabs';
 import {
   AdminPage,
   AdminHeader,
@@ -995,6 +996,7 @@ export default function AdminStationConfigPage() {
         <SmallOutlineButton onClick={() => navigate('/admin/dashboard?tab=stations')}>{t.back}</SmallOutlineButton>
       </AdminHeader>
       <AdminContent>
+        <ContentLanguageTabs kind="stations" id={id}>
         <AdminCardWide>
           <PageTopRow>
             <PageTitle style={{ marginBottom: 0 }}>{t.title}</PageTitle>
@@ -2408,6 +2410,7 @@ export default function AdminStationConfigPage() {
             </FormSectionCardWide>
           </Form>
         </AdminCardWide>
+        </ContentLanguageTabs>
       </AdminContent>
     </AdminPage>
   );

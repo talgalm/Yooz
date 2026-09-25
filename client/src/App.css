@@ -100,6 +100,25 @@ select {
 }
 
 /*
+ * Unless the field says otherwise. A rule like the one above outranks the HTML
+ * `dir` attribute, which silently defeated it - an English translation typed
+ * into a field on a Hebrew screen kept the page's direction, so its full stops
+ * and question marks sat at the wrong end. A field that declares its own
+ * direction means it, whichever way round.
+ */
+input[dir='ltr'],
+textarea[dir='ltr'],
+select[dir='ltr'] {
+  direction: ltr;
+}
+
+input[dir='rtl'],
+textarea[dir='rtl'],
+select[dir='rtl'] {
+  direction: rtl;
+}
+
+/*
  * Modal blur.
  *
  * `backdrop-filter` on an overlay samples a composited copy of the page, and in

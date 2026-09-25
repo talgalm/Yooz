@@ -6,6 +6,7 @@ import { texts } from './AdminGameConfigPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
 import EditOnly from '../../../components/EditOnly';
 import FileUploadButton from '../../../components/FileUploadButton';
+import ContentLanguageTabs from '../../../components/TranslationsPanel/ContentLanguageTabs';
 import {
   AdminPage,
   AdminHeader,
@@ -260,6 +261,7 @@ export default function AdminGameConfigPage() {
         <SmallOutlineButton onClick={() => navigate('/admin/dashboard?tab=stations')}>{t.back}</SmallOutlineButton>
       </AdminHeader>
       <AdminContent>
+        <ContentLanguageTabs kind="games" id={id}>
         <AdminCardWide>
           <PageTopRow>
             <PageTitle style={{ marginBottom: 0 }}>{t.title}</PageTitle>
@@ -474,6 +476,7 @@ export default function AdminGameConfigPage() {
             </FormSectionCardWide>
           </Form>
         </AdminCardWide>
+        </ContentLanguageTabs>
       </AdminContent>
     </AdminPage>
   );

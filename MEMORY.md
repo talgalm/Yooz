@@ -423,14 +423,62 @@ No admin auth — the `statsShareToken` is the credential.
   Hebrew content in an English shell.
 - **`routes/adminTranslations.ts`** (`/api/admin/translations/:kind/:id`, `kind` = `stations` |
   `games`) — the review half. `GET ?lang=en` lists every translatable string in the item with its
-  machine translation (produced on the spot if the cache has none) and any human correction;
+  machine translation and any human correction. **It translates nothing on its own**: it reads
+  the cache (`cachedTranslations`, split out of `translationsFor` for exactly this) and reports
+  `missing`, the count with no translation yet. `?translate=1` fills those in, and is only ever
+  sent by the button on the screen — opening a tab used to translate the whole item, which
+  spends real money at the model, most pointlessly for a language no activity offers. Measured:
+  opening a cold tab is ~7ms and writes nothing; the button takes ~2.7s for 36 sentences;
   `PUT` stores the corrections on the document itself, in `Station.translations` /
   `Game.translations`: `{ en: { '<the Hebrew>': '<the English>' } }`. Keyed by source text, not
   by field path, because `settings` is free-form per type. `GET /api/activities/:code/module`
   applies these **before** the machine pass (`withReviewedTranslations`), so a corrected sentence
   is no longer Hebrew by the time `translateContent` runs and the model only fills the rest.
-  Editing the Hebrew retires the correction with it. Admin UI: `TranslationsModal.tsx`, opened
-  from an item's settings in the activity wizard.
+  Editing the Hebrew retires the correction with it.
+  Two more endpoints drive the language tabs: `GET /:kind/:id/languages` returns, per language,
+  how many sentences were hand-edited (`reviewed`), whether an activity that includes this item
+  still offers it (`inUse`), and whether the registry still has it (`supported`); and
+  `GET /activity/:id/languages` rolls the same counts up across an activity's items for its
+  language picker (registered **before** the `:kind` routes, which would otherwise swallow it).
+  Turning a language off an activity never deletes translations - `inUse: false` is how the UI
+  says "kept, but nobody is reading it".
+  Admin UI: **`components/TranslationsPanel/ContentLanguageTabs`** wraps the page's whole
+  `AdminCardWide` and renders browser-style tabs *above* it - "כללי (עברית)" is the form as
+  authored, every other tab is the same content in that language. Three things make the active
+  tab read as part of the card rather than as a shape above it: the active tab repeats the card's
+  own 1px border and `box-shadow`, with a *white* bottom border, and the strip is pulled down by
+  exactly that 1px (`margin-bottom: -1`, `position: relative; z-index: 1`, since the card is a
+  later sibling and would otherwise paint on top) so that white row lands on the card's top
+  border and hides it - deeper, and the tab's side borders carry on into the card as two stubs.
+  That white row is an `::after` bar spanning the *padding* box, not the border itself: as a
+  border it is mitered against the side borders, and on a HiDPI screen the miter bled one device
+  pixel of white past the card's edge (`background-clip: padding-box` keeps the background out
+  of it too). The bottom border keeps the card's colour, so both corner pixels match the outline;
+  the shadow is clipped at the tab's bottom (`clip-path: inset(… 0)`) so it wraps the top and
+  sides without smudging across the card, and the strip carries 24px of padding with an equal
+  negative margin purely to give that shadow room, because a sideways-scrolling strip clips its
+  contents; and the card gives up the corner the tabs sit on (`border-start-start-radius: 0`, applied to
+  whatever the component wraps), since a tab flush with the edge otherwise sits over a 16px
+  curve and shows a wedge of page beneath it - the tabs stay aligned with the card's edge and
+  the silhouette runs straight down into it. The property is logical, so the squared corner
+  follows the page direction. Only the active tab is opaque,
+  so the card's own top border still runs under the inactive ones. `overflow-y` is pinned to
+  `hidden`: a box with `overflow-x: auto` has a `visible` y-axis promoted to `auto`, so one pixel
+  of downward overflow grew a scrollbar on the tab strip - which is also why the overlap is done
+  by moving the strip rather than the tabs, and why a bridging `box-shadow` would not work. Built for the registry reaching ~7 languages - verified that eight tabs neither
+  clip nor scroll vertically once the strip scrolls sideways - and a language's rows load only
+  when its tab is first opened, since asking is what produces the translation. The card is
+  hidden with `display: contents → none` rather than unmounted, so unsaved edits survive a look
+  at a translation and the layout around it keeps its own spacing.
+  **`TranslationsPanel`** is one language: each box opens holding what participants would see
+  (a person's wording if any, else the machine's) and is edited in place. Only boxes whose text
+  differs from the machine's are stored - a box left alone stays machine-driven and keeps
+  improving, and clearing one hands it back. Each box carries its own language's `dir` from
+  `LANGS`, which needed `App.css` to stop `input { direction: inherit }` outranking the `dir`
+  attribute (English in a Hebrew screen had its full stops at the wrong end).
+  Mounted in `AdminStationConfigPage` / `AdminGameConfigPage` (edit mode only); the activity
+  wizard's `TranslationsModal.tsx` renders the same tabs with no form, so it opens on the first
+  language.
 - **`services/activityAnalyticsService.ts`** — analytics aggregations (funnel/items/questions/
   groups/anomalies/report-card/export builders).
 - **`services/reportContext.ts`** — builds LLM context for DumbDumbBot's report answers.
@@ -1508,7 +1556,10 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   - **`FinishScreen.tsx`** — final score/stars/time/items + share (video collage / badge) +
     countdown. **`LeaderboardView.tsx`** — individual + group standings (`/leaderboard`);
     row selection is hoisted into `rows` so the empty state matches what actually renders.
-  - **`ActivitySessionHeader.tsx`** — top bar (progress, leaderboard trophy, logout, mute).
+  - **`ActivitySessionHeader.tsx`** — top bar (progress, leaderboard trophy, logout, mute). The
+    button row keeps `direction: ltr` so the score reads as a number, and mirrors itself with
+    `flex-direction: row-reverse` under `[dir="ltr"]`: exit at the edge the language ends on,
+    score at the edge it starts from, in both languages.
 - **`MissionPage/index.tsx`** (`/mission/:code`) — standalone 3-part mission: explanation screens
   → `MissionPuzzle.tsx` → `MissionTrashSort.tsx` (+ `MissionFrame`, `MissionTopMenu`); posts
   `mission-event` analytics.

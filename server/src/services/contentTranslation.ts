@@ -102,13 +102,22 @@ async function askGemini(lang: string, sources: string[]): Promise<string[] | nu
   }
 }
 
-export async function translationsFor(sources: string[], lang: string): Promise<Map<string, string>> {
+export async function cachedTranslations(
+  sources: string[],
+  lang: string
+): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   if (sources.length === 0 || lang === 'he') return map;
 
   const keys = sources.map((s) => cacheKey(lang, s));
   const cached = await ContentTranslation.find({ key: { $in: keys } }).lean();
   for (const row of cached) map.set(row.source, row.translated);
+  return map;
+}
+
+export async function translationsFor(sources: string[], lang: string): Promise<Map<string, string>> {
+  const map = await cachedTranslations(sources, lang);
+  if (sources.length === 0 || lang === 'he') return map;
 
   const missing = sources.filter((s) => !map.has(s));
   if (missing.length === 0 || !GEMINI_API_KEY) return map;

@@ -35,6 +35,9 @@ const RoadmapHeaderButtonRow = styled('div')({
   width: '100%',
   gap: 14,
   direction: 'ltr',
+  '[dir="ltr"] &': {
+    flexDirection: 'row-reverse',
+  },
 });
 
 const RoadmapHeaderItem = styled('div')({
@@ -233,7 +236,9 @@ export interface ActivitySessionHeaderProps {
 }
 
 /**
- * Single session header: exit → help → third slot → points (LTR).
+ * Single session header: exit → help → third slot → points, in the direction
+ * the language reads - so exit sits at the far edge and the score at the near
+ * one, mirrored between Hebrew and English.
  * Same chrome as the roadmap; use during roadmap, games, and stations.
  */
 export default function ActivitySessionHeader({
