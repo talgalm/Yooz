@@ -1,12 +1,6 @@
 import { currentLang } from './currentLang';
 
 const cache = new Map<string, unknown>();
-/**
- * Bumped when the shape or the meaning of a cached module changes. Anything
- * stored under an older prefix is never read again, so a browser holding a
- * module from before a fix does not keep serving it - clearing site data is not
- * something a participant in the field will do.
- */
 const MODULE_STORAGE_PREFIX = 'yooz_module_v2_';
 
 function cacheKey(code: string, group: string): string {
