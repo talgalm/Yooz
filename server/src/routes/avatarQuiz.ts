@@ -18,7 +18,9 @@ import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
 import { Station } from '../models/Station';
 import { coverage, containsPhrase, containsPhraseNear, tokens } from '../utils/hebrewText';
 import { replyLanguageInstruction } from '../utils/promptLanguage';
+import { DEFAULT_LANG } from '../utils/languages';
 import { readLang } from '../utils/requestLang';
+import { translateText } from '../services/contentTranslation';
 import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
@@ -129,7 +131,11 @@ function buildSystemPrompt(settings: AvatarQuizSettings, question: AvatarQuizQue
   lines.push(
     `אתם ${name || 'המדריכים'}, מדריכים בנושא ${topic || 'ההדרכה'}. המשתתף הוא הלומד.`
   );
-  lines.push('דברו בעברית, בגוף ראשון, בטון ידידותי וקצר. אל תצאו מהדמות.');
+  lines.push(
+    lang === DEFAULT_LANG
+      ? 'דברו בעברית, בגוף ראשון, בטון ידידותי וקצר. אל תצאו מהדמות.'
+      : 'דברו בגוף ראשון, בטון ידידותי וקצר. אל תצאו מהדמות.'
+  );
   lines.push(self);
   if (settings.personaInstructions?.trim()) {
     lines.push(settings.personaInstructions.trim());
@@ -502,13 +508,13 @@ router.post('/', async (req: Request, res: Response) => {
     // question rather than responding to what was asked — better to say plainly
     // that she can't expand right now. Follow-ups are the one feature that is
     // genuinely inert without a key.
-    const fallback = () =>
+    const fallback = async () =>
       res.json({
-        reply: FOLLOW_UP_UNAVAILABLE,
+        reply: await translateText(FOLLOW_UP_UNAVAILABLE, readLang(req)),
         source: 'fallback' as const,
       });
     if (!GEMINI_API_KEY) {
-      fallback();
+      await fallback();
       return;
     }
     try {
@@ -516,38 +522,44 @@ router.post('/', async (req: Request, res: Response) => {
       res.json({ reply, source: 'gemini' });
     } catch (err) {
       console.error('Avatar quiz follow-up error:', err);
-      fallback();
+      await fallback();
     }
     return;
   }
 
   const reactionVideos = settings.reactionVideos || {};
 
-  const respond = (judgement: Judgement, source: 'gemini' | 'fallback') => {
+  const lang = readLang(req);
+
+  const respond = async (judgement: Judgement, source: 'gemini' | 'fallback') => {
     const videoUrl =
       judgement.verdict === 'correct' ? reactionVideos.correct
       : judgement.verdict === 'partial' ? reactionVideos.partial
       : reactionVideos.incorrect;
+    const [reaction, teaching] = await Promise.all([
+      translateText(judgement.reaction, lang),
+      translateText(judgement.teaching ?? '', lang),
+    ]);
     res.json({
       verdict: judgement.verdict,
       scoreRatio: judgement.scoreRatio,
-      reaction: judgement.reaction,
-      teaching: judgement.teaching,
+      reaction,
+      teaching: judgement.teaching === undefined ? undefined : teaching,
       ...(videoUrl?.trim() ? { videoUrl: videoUrl.trim() } : {}),
       source,
     });
   };
 
   if (!GEMINI_API_KEY) {
-    respond(judgeLocally(question, safeAnswer), 'fallback');
+    await respond(judgeLocally(question, safeAnswer), 'fallback');
     return;
   }
 
   try {
-    respond(await judgeWithGemini(settings, question, safeAnswer, safeHistory, readLang(req)), 'gemini');
+    await respond(await judgeWithGemini(settings, question, safeAnswer, safeHistory, lang), 'gemini');
   } catch (err) {
     console.error('Avatar quiz endpoint error:', err);
-    respond(judgeLocally(question, safeAnswer), 'fallback');
+    await respond(judgeLocally(question, safeAnswer), 'fallback');
   }
 });
 

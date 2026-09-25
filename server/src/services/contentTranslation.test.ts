@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { collectProse, applyTranslations, cacheKey } from './contentTranslation';
+import { collectProse, applyTranslations, cacheKey, translateText } from './contentTranslation';
 
 test('Hebrew prose is collected, once per distinct sentence', () => {
   const payload = {
@@ -59,4 +59,15 @@ test('the cache key is per language and per exact wording', () => {
   assert.notEqual(cacheKey('en', 'שלום'), cacheKey('ru', 'שלום'));
   assert.notEqual(cacheKey('en', 'שלום'), cacheKey('en', 'שלום!'));
   assert.equal(cacheKey('en', 'שלום'), cacheKey('en', 'שלום'));
+});
+
+test('the default language is handed straight back, untouched', async () => {
+  assert.equal(await translateText('שלום', 'he'), 'שלום');
+  assert.equal(await translateText('שלום', ''), 'שלום');
+});
+
+test('text already in another language is not round-tripped', async () => {
+  const english = "Hmm, that's not quite the safest approach.";
+  assert.equal(await translateText(english, 'en'), english);
+  assert.equal(await translateText('', 'en'), '');
 });

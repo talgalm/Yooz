@@ -2,6 +2,7 @@ export interface Language {
   code: string;
   name: string;
   locale: string;
+  dir: 'rtl' | 'ltr';
   voices: { man: string; woman: string };
 }
 
@@ -10,12 +11,14 @@ export const LANGUAGES = [
     code: 'he',
     name: 'Hebrew',
     locale: 'he-IL',
+    dir: 'rtl',
     voices: { man: 'he-IL-AvriNeural', woman: 'he-IL-HilaNeural' },
   },
   {
     code: 'en',
     name: 'English',
     locale: 'en-US',
+    dir: 'ltr',
     voices: { man: 'en-US-GuyNeural', woman: 'en-US-JennyNeural' },
   },
 ] as const satisfies readonly Language[];

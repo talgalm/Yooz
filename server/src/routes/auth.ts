@@ -3,6 +3,7 @@ import { LoginRequest, LoginResponse } from '../types';
 import { Activity, Portal } from '../models';
 import { resolveGroupName, createParticipantSession, checkGroupCapacity } from '../utils/participantAuth';
 import { getGroupStatus } from '../utils/groupStatus';
+import { readLang } from '../utils/requestLang';
 
 const router = Router();
 
@@ -88,6 +89,7 @@ router.post('/login', async (req: Request<{}, {}, LoginRequest>, res: Response<L
     || 'Participant';
 
   const session = await createParticipantSession(activity, {
+    lang: readLang(req),
     activityCode,
     displayName,
     email: email || undefined,

@@ -1468,6 +1468,19 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 - **`LanguageContext`** — `useLang()` → `{lang('he'|'en'), dir('rtl'|'ltr'), setLang,
   restrictToLanguages, useScopeOf}`; sets `<html lang/dir>`. **`useTranslations(texts)`** → active
   language slice of a `{he,en}` object (the co-located `.i18n.ts` pattern).
+- **The server's own sentences are translated too**, via `translateText(text, lang)` in
+  `contentTranslation` - one line, through the same content cache, so a fixed phrase costs one
+  model call ever. It returns the input untouched for the default language *and* for text with
+  no Hebrew in it, so a model answer already written in the participant's language passes
+  through the same boundary unharmed. Used by: the avatar's stock reactions and "cannot expand"
+  line (`avatarQuiz`), the chat fallback (`avatarChat`), the collage share page and its SMS, and
+  the group-reward winner SMS. `CollageJob.lang` and `Report.lang` exist for exactly this - both
+  are read long after the request that created them, so the language has to be stored, not
+  inferred.
+- **A persona prompt must not name a language.** `avatarChat` and `avatarQuiz` said, in Hebrew,
+  "always answer in Hebrew"; the English `replyLanguageInstruction` appended at the end lost to
+  it and the character kept answering in Hebrew. The clause is now only emitted for the default
+  language. Found by calling the endpoint, not by reading the prompt.
 - **One language registry per side.** `client/src/utils/languages.ts` holds `code`, `label`,
   `short`, `flag`, `dir`, `locale`; `server/src/utils/languages.ts` holds `code`, `name` (English,
   for model prompts), `locale`, `voices`. `SUPPORTED_LANGS`, `Lang`, `DEFAULT_LANG`, the TTS

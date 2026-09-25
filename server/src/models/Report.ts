@@ -1,7 +1,5 @@
 import { Schema, model, Types } from 'mongoose';
 
-// ─── Per-question answer record (trivia, trueFalse, etc.) ───
-
 export interface IQuestionAnswer {
   questionIndex: number;
   questionText?: string;
@@ -11,8 +9,6 @@ export interface IQuestionAnswer {
   pointsEarned: number;
   timeSpentMs: number;
 }
-
-// ─── Per-item (game or station) detailed record ───
 
 export interface IItemResult {
   itemIndex: number;
@@ -32,8 +28,6 @@ export interface IItemResult {
   metadata?: Record<string, unknown>;
 }
 
-// ─── Report data (stored in `data` field) ───
-
 export interface IReportData {
   scores?: { gameName: string; score: number }[];
   totalScore: number;
@@ -49,6 +43,7 @@ export interface IReport {
   participantName: string;
   email?: string;
   phoneNumber?: string;
+  lang?: string;
   connectionType: string;
   group?: string;
   joinedAt: Date;
@@ -61,8 +56,6 @@ export interface IReport {
   totalItemsInModule?: number;
   lastActiveItemIndex: number;
 }
-
-// ─── Sub-schemas ───
 
 const questionAnswerSchema = new Schema<IQuestionAnswer>(
   {
@@ -98,14 +91,13 @@ const itemResultSchema = new Schema<IItemResult>(
   { _id: false },
 );
 
-// ─── Main Report schema ───
-
 const reportSchema = new Schema<IReport>({
   activityId: { type: Schema.Types.ObjectId, ref: 'Activity', required: true },
   activityCode: { type: String, required: true },
   participantName: { type: String, required: true },
   email: { type: String },
   phoneNumber: { type: String },
+  lang: { type: String },
   connectionType: { type: String, required: true },
   group: { type: String },
   joinedAt: { type: Date, default: Date.now },

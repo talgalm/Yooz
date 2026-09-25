@@ -141,6 +141,17 @@ export async function translationsFor(sources: string[], lang: string): Promise<
   return map;
 }
 
+export async function translateText(text: string, lang: string): Promise<string> {
+  if (!text || !lang || lang === DEFAULT_LANG) return text;
+  if (!HEBREW.test(text)) return text;
+  try {
+    const map = await translationsFor([text], lang);
+    return map.get(text) ?? text;
+  } catch {
+    return text;
+  }
+}
+
 export async function translateContent<T>(payload: T, lang: string): Promise<T> {
   if (!lang || lang === DEFAULT_LANG) return payload;
   const sources = [...collectProse(payload)];
