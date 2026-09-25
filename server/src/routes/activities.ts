@@ -12,6 +12,8 @@ import { getGroupStatus } from '../utils/groupStatus';
 import { ownReportFilter } from '../utils/participantAuth';
 import { resolveCeiling, normalizeScore } from '../utils/scoreNormalization';
 import { startOfTodayIsrael, israelDayString } from '../utils/israelTime';
+import { readLang } from '../utils/requestLang';
+import { translateContent } from '../services/contentTranslation';
 import { visibleOrderedIndices } from '../utils/moduleItems';
 import { onGroupMemberCompleted } from '../services/groupRewardService';
 import activityGroupsRouter from './activityGroups';
@@ -110,6 +112,7 @@ router.get('/:code', async (req: Request<{ code: string }>, res: Response<Activi
       helpCategoryResponses: activity.helpCategoryResponses,
     }),
     ...(activity.helpOtherCategoryEnabled === true && { helpOtherCategoryEnabled: true }),
+    ...(activity.languages?.length && { languages: activity.languages }),
   };
 
   activityConfigCache.set(code, { data, expiresAt: Date.now() + ACTIVITY_CONFIG_TTL_MS });
@@ -325,7 +328,8 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   };
 
   res.setHeader('Cache-Control', 'no-store');
-  res.json({
+  const lang = readLang(req);
+  res.json(await translateContent({
     code: activity.code,
     name: activity.name,
     module: moduleResponse,
@@ -340,7 +344,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     lockedFromIndex: typeof activity.lockedFromIndex === 'number' ? activity.lockedFromIndex : null,
     ...(activity.includeOnRoadmap && { includeOnRoadmap: true }),
     ...(activity.smsForCollage && { smsForCollage: true }),
-  });
+  }, lang));
 });
 
 // SSE: live updates of the manager-controlled progress lock for an activity.

@@ -132,6 +132,7 @@ export interface Activity {
     }[];
   };
   guidelines?: string;
+  languages?: string[];
   extraSupportInfo?: string;
   organizerContactName?: string;
   organizerContactPhone?: string;

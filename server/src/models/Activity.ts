@@ -107,6 +107,7 @@ export interface IActivity {
   opening?: IOpening;
   module?: IModuleConfig;
   guidelines?: string;
+  languages?: string[];
   extraSupportInfo?: string;
   /** Optional named contact (name + phone) for this activity's participant
    *  support bot to point participants to. When unset, all "contact the
@@ -330,6 +331,7 @@ const activitySchema = new Schema<IActivity>({
   opening: { type: openingSchema },
   module: { type: moduleConfigSchema },
   guidelines: { type: String },
+  languages: { type: [String], default: undefined },
   extraSupportInfo: { type: String },
   organizerContactName: { type: String },
   organizerContactPhone: { type: String },

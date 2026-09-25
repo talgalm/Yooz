@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, FormEvent, Fragment } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
-import { useTranslations, useLang } from '../../../context/LanguageContext';
+import { LANGS, useTranslations, useLang } from '../../../context/LanguageContext';
 import { texts, HELP_CATEGORIES } from './AdminCreateActivityPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
 import FileUploadButton from '../../../components/FileUploadButton';
@@ -511,6 +511,7 @@ export default function AdminCreateActivityPage() {
   const [userControl, setUserControl] = useState(false);
 
   const [guidelines, setGuidelines] = useState('');
+  const [languages, setLanguages] = useState<string[]>([]);
   const [extraSupportInfo, setExtraSupportInfo] = useState('');
   const [organizerContactName, setOrganizerContactName] = useState('');
   const [organizerContactPhone, setOrganizerContactPhone] = useState('');
@@ -679,6 +680,7 @@ export default function AdminCreateActivityPage() {
         if (a.managerEmail) setManagerEmail(a.managerEmail);
         setUserControl(a.userControl === true);
         if (a.guidelines) setGuidelines(a.guidelines);
+        if (a.languages) setLanguages(a.languages);
         if (a.organizerContactName) setOrganizerContactName(a.organizerContactName);
         if (a.organizerContactPhone) setOrganizerContactPhone(a.organizerContactPhone);
         if (a.extraSupportInfo) setExtraSupportInfo(a.extraSupportInfo);
@@ -1237,6 +1239,7 @@ export default function AdminCreateActivityPage() {
         payload.module = modulePayload;
       }
       payload.guidelines = guidelines.trim() || undefined;
+      payload.languages = languages.length > 0 ? languages : undefined;
       payload.organizerContactName = organizerContactName.trim() || undefined;
       payload.organizerContactPhone = organizerContactPhone.trim() || undefined;
       payload.extraSupportInfo = extraSupportInfo.trim() || undefined;
@@ -2074,6 +2077,27 @@ export default function AdminCreateActivityPage() {
                     />
                     {t.leaderboardCurrentDayOnly}
                   </label>
+                </SectionCardWide>
+
+                <SectionCardWide>
+                  <SectionHeader>
+                    <SectionHeaderTitle>{t.languagesSection}</SectionHeaderTitle>
+                  </SectionHeader>
+                  <SectionDescription style={{ margin: 0 }}>{t.languagesDesc}</SectionDescription>
+                  {LANGS.filter((l) => l.code !== 'he').map((l) => (
+                    <label key={l.code} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 4 }}>
+                      <input
+                        type="checkbox"
+                        checked={languages.includes(l.code)}
+                        onChange={(e) =>
+                          setLanguages((prev) =>
+                            e.target.checked ? [...prev, l.code] : prev.filter((c) => c !== l.code),
+                          )
+                        }
+                      />
+                      {l.label}
+                    </label>
+                  ))}
                 </SectionCardWide>
 
                 <SectionCardWide>

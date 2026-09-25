@@ -14,6 +14,8 @@ import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginFiel
 import { Activity, ActivityFolder, ActivityGroup, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
 import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
+import { SUPPORTED_LANGS } from '../utils/requestLang';
+import { pretranslateActivity } from '../services/activityPretranslate';
 import { IActivity, IScheduledReport } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
 import { getSmsProvider } from '../services/sms/smsProvider';
@@ -75,12 +77,17 @@ async function provisionActivityManager(
   return provisionManagerCustomer(managerEmail.trim(), managerPassword);
 }
 
+function warmTranslations(activityId: string, languages?: string[]): void {
+  if (!languages?.length) return;
+  pretranslateActivity(activityId, languages).catch(() => undefined);
+}
+
 async function buildActivityData(
   body: CreateActivityRequest,
   existingPasswordHash?: string,
   existing?: IActivity,
 ): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, userControl, guidelines, extraSupportInfo, organizerContactName, organizerContactPhone, helpCategoriesDisabled, helpCategoryResponses, helpOtherCategoryEnabled, customInstructions, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, dailyReset, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
+  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, userControl, guidelines, extraSupportInfo, organizerContactName, organizerContactPhone, helpCategoriesDisabled, helpCategoryResponses, helpOtherCategoryEnabled, customInstructions, languages, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, dailyReset, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -184,6 +191,13 @@ async function buildActivityData(
 
   // Handle guidelines
   data.guidelines = guidelines?.trim() || null;
+
+  data.languages = Array.isArray(languages)
+    ? languages.filter(
+        (l: unknown): l is string =>
+          typeof l === 'string' && l !== 'he' && (SUPPORTED_LANGS as readonly string[]).includes(l),
+      )
+    : undefined;
 
   // Free-text context for the "something else" open free-text chat only,
   // appended to the Gemini prompt for this activity.
@@ -448,6 +462,7 @@ router.post('/activities', authenticateAdmin, async (req: Request<{}, {}, Create
     createdByEmail: createdByEmailForNewResource(req),
   });
   const managerProvision = await provisionActivityManager(req.body.managerEmail, req.body.managerPassword);
+  warmTranslations(activity._id.toString(), activity.languages);
   logAdminAction(req, 'create_activity', 'activity', activity._id.toString(), activity.name);
   res.status(201).json({ activity: stripManagerPassword(activity), managerProvision });
 });
@@ -480,6 +495,7 @@ router.put('/activities/:id', authenticateAdmin, async (req: Request<{ id: strin
     { new: true, runValidators: true },
   );
   const managerProvision = await provisionActivityManager(req.body.managerEmail, req.body.managerPassword);
+  if (activity) warmTranslations(activity._id.toString(), activity.languages);
   logAdminAction(req, 'update_activity', 'activity', req.params.id, req.body.name);
   res.json({ activity: activity ? stripManagerPassword(activity) : activity, managerProvision });
 });

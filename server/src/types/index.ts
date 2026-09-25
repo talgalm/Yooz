@@ -279,6 +279,7 @@ export interface CreateActivityRequest {
   opening?: OpeningConfig | null;
   module?: ModuleConfigRequest;
   guidelines?: string;
+  languages?: string[];
   extraSupportInfo?: string;
   organizerContactName?: string;
   organizerContactPhone?: string;
@@ -311,6 +312,7 @@ export interface CreateActivityRequest {
 }
 
 export interface ActivityConfigResponse {
+  languages?: string[];
   code: string;
   name: string;
   loginFields: LoginField[];

@@ -402,6 +402,22 @@ No admin auth — the `statsShareToken` is the credential.
   timer, polled every 30s from `index.ts`), SMS the top scorer a coupon. Day-scoped by the
   group's `createdAt` (§8). `processExpiredRewardTimers()`.
 - **`services/sms/`** — `smsProvider` (stub default) / `textmeSmsProvider` (textme.co.il).
+- **`services/contentTranslation.ts`** — machine translation of admin-authored activity content
+  (station names, riddles, questions, popups) for a participant running in a language other than
+  Hebrew. `translateContent(payload, lang)` walks whatever a route was about to send, collects
+  the Hebrew prose (skipping ids, URLs, colours and the other non-prose keys), translates the
+  misses through Gemini in batches of 40, and caches each one in **`ContentTranslation`**
+  (`contenttranslations`), keyed by sha256 of `lang:source`. Editing the text in the admin
+  changes its hash, so there is nothing to invalidate. It never fails a request: a model error,
+  a timeout or a missing `GEMINI_API_KEY` leaves the Hebrew in place. The UI chrome around it is
+  hand-translated in the `.i18n.ts` files — this is only for content nobody can pre-translate.
+- **`services/activityPretranslate.ts`** — `Activity.languages` (chosen in the wizard's settings
+  step, e.g. `['en']`) is the set of languages an activity is offered in besides Hebrew. Saving
+  the activity warms the cache for each of them in the background — module copy, stations, games
+  and missions — so the first participant to pick that language does not wait for the model.
+  Fire-and-forget: if it fails, the participant path still translates what it finds missing.
+  The participant config (`GET /api/activities/:code`) reports `languages` so the picker can
+  offer exactly what the activity was prepared for.
 - **`services/activityAnalyticsService.ts`** — analytics aggregations (funnel/items/questions/
   groups/anomalies/report-card/export builders).
 - **`services/reportContext.ts`** — builds LLM context for DumbDumbBot's report answers.

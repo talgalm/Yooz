@@ -1,0 +1,62 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { collectProse, applyTranslations, cacheKey } from './contentTranslation';
+
+test('Hebrew prose is collected, once per distinct sentence', () => {
+  const payload = {
+    items: [
+      { name: 'תחנת הפתיחה', settings: { question: 'מה גובה המגדל?' } },
+      { name: 'תחנת הפתיחה', settings: { question: 'כמה מדרגות יש?' } },
+    ],
+  };
+  assert.deepEqual([...collectProse(payload)].sort(), ['כמה מדרגות יש?', 'מה גובה המגדל?', 'תחנת הפתיחה'].sort());
+});
+
+test('anything without Hebrew is left out', () => {
+  assert.deepEqual([...collectProse({ title: 'Welcome aboard', count: 4, on: true })], []);
+});
+
+test('technical fields are never translated, Hebrew or not', () => {
+  const payload = {
+    _id: 'abc',
+    type: 'station',
+    url: 'https://example.com/תמונה.png',
+    backgroundImage: '/images/רקע.png',
+    color: '#FF00AA',
+    name: 'תחנה ראשונה',
+  };
+  assert.deepEqual([...collectProse(payload)], ['תחנה ראשונה']);
+});
+
+test('a URL sitting in a prose field is still not prose', () => {
+  assert.deepEqual([...collectProse({ body: 'https://example.com/עמוד' })], []);
+  assert.deepEqual([...collectProse({ body: '/media/קובץ.mp4' })], []);
+});
+
+test('applying a translation keeps the shape and leaves the unknown alone', () => {
+  const payload = { items: [{ name: 'תחנה', hint: 'רמז' }], meta: { code: 'ABC123' } };
+  const out = applyTranslations(payload, new Map([['תחנה', 'Station']]));
+  assert.deepEqual(out, { items: [{ name: 'Station', hint: 'רמז' }], meta: { code: 'ABC123' } });
+});
+
+test('applying does not mutate the payload it was given', () => {
+  const payload = { name: 'תחנה' };
+  applyTranslations(payload, new Map([['תחנה', 'Station']]));
+  assert.equal(payload.name, 'תחנה');
+});
+
+test('a translated string in a skipped field stays untouched', () => {
+  const out = applyTranslations({ code: 'תחנה', name: 'תחנה' }, new Map([['תחנה', 'Station']]));
+  assert.deepEqual(out, { code: 'תחנה', name: 'Station' });
+});
+
+test('numbers, booleans and null survive the round trip', () => {
+  const payload = { score: 10, done: false, next: null, name: 'תחנה' };
+  assert.deepEqual(applyTranslations(payload, new Map()), payload);
+});
+
+test('the cache key is per language and per exact wording', () => {
+  assert.notEqual(cacheKey('en', 'שלום'), cacheKey('ru', 'שלום'));
+  assert.notEqual(cacheKey('en', 'שלום'), cacheKey('en', 'שלום!'));
+  assert.equal(cacheKey('en', 'שלום'), cacheKey('en', 'שלום'));
+});
