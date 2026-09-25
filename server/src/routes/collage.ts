@@ -819,10 +819,6 @@ router.post('/jobs/:jobId/start', loadShed, async (req: Request<{ jobId: string 
 // Public: when smsForCollageShare is enabled, the SMS {link} points here instead
 // of the raw video URL — video player + native share sheet + back-to-activity link.
 
-/**
- * The page the SMS link opens. It has no session of its own, so the language
- * rides along on the job that produced the video and is passed in here.
- */
 async function renderVideoSharePage(
   videoUrl: string,
   pageUrl: string,
@@ -903,7 +899,6 @@ router.get('/share/:jobId', async (req: Request<{ jobId: string }>, res: Respons
   }
   const base = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '')
     || `${req.protocol}://${req.get('host')}`;
-  // `?lang=` on the link wins; the job's own language is the fallback.
   const lang = req.query.lang ? readLang(req) : (job.lang || readLang(req));
   res.send(await renderVideoSharePage(job.resultUrl, `${base}/api/collage/share/${job.jobId}`, `${base}/play/${job.activityCode}`, lang));
 });
@@ -1190,9 +1185,6 @@ export async function sendCollageReadySms(jobId: string): Promise<void> {
 
   const activity = await Activity.findOne({ code: claimed.activityCode }).select('smsForCollageMessage smsForCollageShare').lean();
   const rawTemplate = activity?.smsForCollageMessage?.trim() || 'הסרטון שלך מוכן! צפה והורד כאן: {link}';
-  // The text an admin wrote is Hebrew like the rest of their content, so it is
-  // translated the same way; the link carries the language to the share page,
-  // which has no session of its own.
   const lang = claimed.lang || DEFAULT_LANG;
   const template = await translateText(rawTemplate, lang);
   const base = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '') || 'http://localhost:3000';

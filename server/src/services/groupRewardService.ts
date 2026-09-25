@@ -8,7 +8,6 @@ import { israelDayString } from '../utils/israelTime';
 import { translateText } from './contentTranslation';
 import { DEFAULT_LANG } from '../utils/languages';
 
-/** After the last finish in a group, wait this long before SMS (resets on each new finish). */
 export const GROUP_REWARD_IDLE_MS = 5 * 60 * 1000;
 
 export const DEFAULT_SMS_TEMPLATE =
@@ -23,7 +22,6 @@ function isRewardEnabled(activity: IActivity): boolean {
   );
 }
 
-/** Highest score among completed players; ties broken by earliest finish. */
 function pickGroupWinner(reports: IReport[]): IReport | null {
   const completed = reports.filter((r) => r.completionStatus === 'completed');
   if (completed.length === 0) return null;
@@ -51,7 +49,6 @@ async function sendWinnerSms(
     ? buildRewardDownloadUrl(activity.groupReward!.downloadToken)
     : '';
   const rawTemplate = activity.groupReward!.messageTemplate?.trim() || DEFAULT_SMS_TEMPLATE;
-  // Sent hours after the game, so it follows the language the winner played in.
   const template = await translateText(rawTemplate, winner.lang || DEFAULT_LANG);
   const message = renderWinnerSms(template, {
     name: winner.participantName,
@@ -141,20 +138,12 @@ async function awardGroupWinner(
   return true;
 }
 
-/**
- * Called when a group member marks their session complete.
- * - If everyone in the group finished → SMS winner immediately.
- * - Otherwise → start/reset a 5-minute idle timer (SMS when it expires).
- */
 export async function onGroupMemberCompleted(
   activity: IActivity,
   groupName: string,
 ): Promise<void> {
   if (!isRewardEnabled(activity)) return;
 
-  // Day-scoped: resolve today's group doc (names can repeat across days) and only
-  // consider today's members, so a prior day's same-named group can't block or skew
-  // this day's reward.
   const activityGroup = await ActivityGroup.findOne({
     activityId: activity._id,
     activityDay: israelDayString(),
@@ -182,7 +171,6 @@ export async function onGroupMemberCompleted(
   );
 }
 
-/** Poll due idle timers and SMS the top scorer among members who have finished. */
 export async function processExpiredRewardTimers(): Promise<void> {
   const now = new Date();
   const dueGroups = await ActivityGroup.find({
@@ -197,8 +185,6 @@ export async function processExpiredRewardTimers(): Promise<void> {
       continue;
     }
 
-    // Only this group's own members (same-named groups on other days have a
-    // different createdAt, so their reports are excluded).
     const reports = await Report.find({
       activityId: activityGroup.activityId,
       group: activityGroup.name,
@@ -215,7 +201,6 @@ export async function processExpiredRewardTimers(): Promise<void> {
   }
 }
 
-/** @deprecated Use onGroupMemberCompleted */
 export async function processGroupRewardIfReady(
   activity: IActivity,
   groupName: string,

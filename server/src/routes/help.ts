@@ -9,10 +9,6 @@ import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
 
-// ─── In-memory rate limiter, counted per participant ───
-// Ten a minute for a whole venue meant a group of twenty could ask for help
-// twice between them. Each participant now has their own ten.
-
 const isRateLimited = createRateLimiter({
   perParticipant: 10,
   perAnonymous: 10,
@@ -29,14 +25,6 @@ async function fetchActivityExtras(code?: string): Promise<{ extraSupportInfo?: 
   return { extraSupportInfo: activity.extraSupportInfo || undefined, contact };
 }
 
-// ─── System prompt for Gemini ───
-
-/**
- * `examples` picks which authored wording the model is shown - those exist in
- * Hebrew and English only. `replyLang` is the language it must answer in, and
- * comes from the registry, so a third language gets the English examples and is
- * still answered in its own language.
- */
 function buildSystemPrompt(examples: 'en' | 'he', replyLang: string, contact?: OrganizerContact): string {
   const langName = languageOf(replyLang).name;
 
@@ -283,7 +271,6 @@ async function askGemini(message: string, examples: 'en' | 'he', replyLang: stri
 }
 
 router.post('/', async (req: Request, res: Response) => {
-  // Rate limit
   if (isRateLimited(req)) {
     res.status(429).json({ error: 'Too many requests. Please try again later.' });
     return;
@@ -296,8 +283,6 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   const safeLang = normaliseLang(lang);
-  // The authored examples exist in two languages; anything else uses the
-  // English set and is answered in its own language.
   const examples: 'en' | 'he' = safeLang === 'he' ? 'he' : 'en';
   const safeMessage = message.trim().slice(0, 500);
   const safeHistory: HistoryEntry[] = Array.isArray(history)

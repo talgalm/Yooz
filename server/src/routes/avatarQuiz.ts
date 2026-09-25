@@ -131,7 +131,6 @@ function buildSystemPrompt(settings: AvatarQuizSettings, question: AvatarQuizQue
   lines.push(
     `אתם ${name || 'המדריכים'}, מדריכים בנושא ${topic || 'ההדרכה'}. המשתתף הוא הלומד.`
   );
-  // See avatarChat: naming Hebrew here overrode the reply-language line below.
   lines.push(
     lang === DEFAULT_LANG
       ? 'דברו בעברית, בגוף ראשון, בטון ידידותי וקצר. אל תצאו מהדמות.'
@@ -532,12 +531,6 @@ router.post('/', async (req: Request, res: Response) => {
 
   const lang = readLang(req);
 
-  /**
-   * The one place the judgement reaches the participant, so the one place that
-   * has to be in their language. The stock reactions and the admin's rebuttals
-   * are written in Hebrew; anything a model already wrote in the right language
-   * passes through untouched.
-   */
   const respond = async (judgement: Judgement, source: 'gemini' | 'fallback') => {
     const videoUrl =
       judgement.verdict === 'correct' ? reactionVideos.correct
