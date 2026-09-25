@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import TranslationsModal from './TranslationsModal';
 import { styled } from '@mui/material/styles';
 import { Input } from '../../../components/styled';
 import FileUploadButton from '../../../components/FileUploadButton';
@@ -305,11 +306,35 @@ export default function ItemSettingsModal({
 }: ItemSettingsModalProps) {
   const isCollage = item.itemType === 'station' && item.subType === 'collage';
   const currentGroups = item.groups || [];
+  const [reviewing, setReviewing] = useState(false);
+  // Missions keep their text in their own config screen, not here.
+  const translatable = item.itemType === 'station' || item.itemType === 'game';
+
+  if (reviewing && translatable) {
+    return (
+      <TranslationsModal
+        kind={item.itemType === 'game' ? 'games' : 'stations'}
+        id={item.ref}
+        title={item.name}
+        onClose={() => setReviewing(false)}
+      />
+    );
+  }
 
   return (
     <Overlay onClick={onClose}>
       <Card onClick={(e) => e.stopPropagation()}>
         <Title>{item.name}</Title>
+
+        {translatable && (
+          <Section style={{ borderTop: 'none', paddingTop: 0 }}>
+            <SectionTitle>{t.translationsTitle}</SectionTitle>
+            <Hint>{t.translationsHint}</Hint>
+            <SecondaryBtn type="button" onClick={() => setReviewing(true)}>
+              {t.translationsOpen}
+            </SecondaryBtn>
+          </Section>
+        )}
 
         {connectionType === 'group' && groupNames.length > 0 && (
           <Section style={{ borderTop: 'none', paddingTop: 0 }}>
