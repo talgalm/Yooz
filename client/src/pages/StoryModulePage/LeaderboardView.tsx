@@ -264,7 +264,6 @@ function formatDuration(ms: number): string {
 // ─── Component ───
 
 interface LeaderboardViewProps {
-  /** Languages the activity was prepared in; none means no language control. */
   languages?: string[];
   activityName: string;
   leaderboard: LeaderboardEntry[];

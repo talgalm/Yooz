@@ -279,7 +279,6 @@ export interface CreateActivityRequest {
   opening?: OpeningConfig | null;
   module?: ModuleConfigRequest;
   guidelines?: string;
-  /** Languages this activity is offered in besides Hebrew, e.g. ['en']. */
   languages?: string[];
   extraSupportInfo?: string;
   organizerContactName?: string;
@@ -313,7 +312,6 @@ export interface CreateActivityRequest {
 }
 
 export interface ActivityConfigResponse {
-  /** Languages this activity is offered in besides Hebrew. Absent = Hebrew only. */
   languages?: string[];
   code: string;
   name: string;

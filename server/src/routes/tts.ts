@@ -5,22 +5,12 @@ import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
 
-/**
- * A station speaks a line per turn, so a participant gets a generous minute's
- * worth of clips of their own. See `participantRateLimit` for why counting
- * these per address instead is what made a whole group go quiet.
- */
 const isRateLimited = createRateLimiter({
   perParticipant: 60,
   perAnonymous: 30,
   perAddress: 400,
 });
 
-/**
- * One voice per language and gender. A Hebrew voice reading English does not
- * sound accented - it mispronounces the words outright, because it is sounding
- * out Latin letters with Hebrew phonetics.
- */
 const VOICES = {
   he: { locale: 'he-IL', man: 'he-IL-AvriNeural', woman: 'he-IL-HilaNeural' },
   en: { locale: 'en-US', man: 'en-US-GuyNeural', woman: 'en-US-JennyNeural' },

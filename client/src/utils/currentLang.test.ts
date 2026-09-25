@@ -34,7 +34,6 @@ test('the marketing site and anything public is the site scope', () => {
 });
 
 test('the marketing home is not the participant home', () => {
-  // `/` and `/home` are different products; a prefix match would merge them.
   assert.equal(langScope('/'), 'site');
   assert.equal(langScope('/home'), 'participant');
 });
@@ -46,8 +45,6 @@ test('a path that merely starts with a scope word is not that scope', () => {
 });
 
 test('manager and manage are told apart, and neither leaks to the other', () => {
-  // Both are staff, so both land on the same key - but by matching, not by
-  // one being a prefix of the other.
   assert.equal(langScope('/manager'), 'admin');
   assert.equal(langScope('/manage'), 'admin');
 });
@@ -61,6 +58,5 @@ test('the three scopes are stored under three different keys', () => {
 });
 
 test('the retired shared key is not one of them', () => {
-  // `yooz_lang` was the single key all three used; nothing may read it again.
   assert.ok(!allLangStorageKeys().includes('yooz_lang'));
 });

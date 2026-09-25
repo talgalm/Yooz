@@ -4,7 +4,6 @@ import { texts } from './TranslationsModal.i18n';
 import { useTranslations } from '../../../context/LanguageContext';
 
 interface TranslationsModalProps {
-  /** Which collection the item lives in. */
   kind: 'stations' | 'games';
   id: string;
   title: string;
