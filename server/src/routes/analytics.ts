@@ -38,7 +38,6 @@ import crypto from 'crypto';
 
 const router = Router();
 
-// All endpoints require admin or super_admin role
 router.use(authenticateAdmin, requireRole('admin', 'super_admin', 'customer'));
 
 function withCustomerActivityScope(req: Request, baseFilter: Record<string, unknown>): Record<string, unknown> {
@@ -63,8 +62,6 @@ async function reportMatchForRequest(req: Request, extraMatch: Record<string, un
   };
 }
 
-// ─── Helper: compute median of sorted number array ───
-
 function analyticsPeriod(req: Request): AnalyticsPeriod {
   return parsePeriod(req.query.period);
 }
@@ -88,10 +85,6 @@ function median(arr: number[]): number {
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
-
-// ════════════════════════════════════════════
-// ─── Global Overview ───
-// ════════════════════════════════════════════
 
 router.get('/overview', async (req: Request, res: Response) => {
   const now = new Date();
@@ -125,10 +118,6 @@ router.get('/overview', async (req: Request, res: Response) => {
     ).lean(),
   ]);
 
-  // Normalize every score to 0-100 against that report's own achievable maximum.
-  // Activities live on wildly different raw scales, so a per-report ceiling is the
-  // only meaningful denominator for a cross-activity average. Reports without
-  // max-score data fall back to their raw value so legacy data still counts.
   const scores = allReports
     .map((r) => {
       const raw = (r.data as { totalScore?: number })?.totalScore ?? 0;
@@ -156,8 +145,6 @@ router.get('/overview', async (req: Request, res: Response) => {
   });
 });
 
-// ─── Global timeline (participants per day) ───
-
 router.get('/overview/timeline', async (req: Request, res: Response) => {
   const days = Math.min(Number(req.query.days) || 30, 90);
   const since = new Date();
@@ -177,10 +164,6 @@ router.get('/overview/timeline', async (req: Request, res: Response) => {
 
   res.json({ timeline: pipeline.map((d) => ({ date: d._id, count: d.count })) });
 });
-
-// ════════════════════════════════════════════
-// ─── Per-Activity Analytics ───
-// ════════════════════════════════════════════
 
 router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
@@ -202,8 +185,6 @@ router.get('/activities/:id', async (req: Request<{ id: string }>, res: Response
   res.json(await getActivityAnalytics(activity, analyticsPeriod(req)));
 });
 
-// ─── Activity Funnel ───
-
 router.get('/activities/:id/funnel', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
   if (!Types.ObjectId.isValid(activityId)) {
@@ -220,8 +201,6 @@ router.get('/activities/:id/funnel', async (req: Request<{ id: string }>, res: R
   res.json({ funnel: await getFunnel(activityId, analyticsPeriod(req), activity.excludedReportIds) });
 });
 
-// ─── Per-Item Stats ───
-
 router.get('/activities/:id/items', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
   if (!Types.ObjectId.isValid(activityId)) {
@@ -237,8 +216,6 @@ router.get('/activities/:id/items', async (req: Request<{ id: string }>, res: Re
 
   res.json({ items: await getItems(activityId, analyticsPeriod(req), activity.excludedReportIds) });
 });
-
-// ─── Per-Question Stats (for question-based games) ───
 
 router.get('/activities/:id/items/:index/questions', async (req: Request<{ id: string; index: string }>, res: Response) => {
   const activityId = req.params.id;
@@ -258,8 +235,6 @@ router.get('/activities/:id/items/:index/questions', async (req: Request<{ id: s
   res.json({ questions: await getQuestions(activityId, itemIndex, analyticsPeriod(req), activity.excludedReportIds) });
 });
 
-// ─── Group Comparison ───
-
 router.get('/activities/:id/groups', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
   if (!Types.ObjectId.isValid(activityId)) {
@@ -276,8 +251,6 @@ router.get('/activities/:id/groups', async (req: Request<{ id: string }>, res: R
   res.json({ groups: await getGroups(activityId, analyticsPeriod(req), activity.excludedReportIds) });
 });
 
-// ─── Anomaly Detection ───
-
 router.get('/activities/:id/anomalies', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
   if (!Types.ObjectId.isValid(activityId)) {
@@ -293,10 +266,6 @@ router.get('/activities/:id/anomalies', async (req: Request<{ id: string }>, res
 
   res.json({ alerts: await getAnomalies(activityId, analyticsPeriod(req), activity.excludedReportIds) });
 });
-
-// ════════════════════════════════════════════
-// ─── Export (CSV / Excel) ───
-// ════════════════════════════════════════════
 
 router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
@@ -338,16 +307,9 @@ router.get('/activities/:id/export', async (req: Request<{ id: string }>, res: R
   await sendWorkbook(activity as ExportActivity, reports as ExportReport[], `${exportType}_${analyticsPeriod(req)}`);
 });
 
-// ════════════════════════════════════════════
-// ─── Combined multi-activity report card ───
-// ════════════════════════════════════════════
-
-// Parse ?ids=a,b,c → the owned activity docs, preserving the requested order.
 const MAX_COMBINED_ACTIVITIES = 50;
 
 async function loadCombinedActivities(req: Request, res: Response): Promise<CombinedReportActivity[] | null> {
-  // De-duplicate (preserving first-seen order) so a repeated id can't double-count
-  // an activity in the grade average or duplicate its sheets/columns.
   const ids = [...new Set(
     String(req.query.ids || '')
       .split(',')
@@ -362,8 +324,6 @@ async function loadCombinedActivities(req: Request, res: Response): Promise<Comb
     res.status(400).json({ error: `Too many activities (max ${MAX_COMBINED_ACTIVITIES})` });
     return null;
   }
-  // Full docs (not a projection) — the combined full-report export needs module,
-  // status, groups, passThreshold, etc. for each activity's report sheets.
   const activities = await Activity.find(
     { _id: { $in: ids.map((id) => new Types.ObjectId(id)) } },
   ).lean();
@@ -374,7 +334,6 @@ async function loadCombinedActivities(req: Request, res: Response): Promise<Comb
     res.status(404).json({ error: 'No matching activities found' });
     return null;
   }
-  // Keep the order the admin selected them in, dropping any not owned/found.
   return ids
     .map((id) => ownedById.get(id))
     .filter((a): a is NonNullable<typeof a> => Boolean(a)) as unknown as CombinedReportActivity[];
@@ -400,10 +359,7 @@ router.get('/combined/report-card/export', async (req: Request, res: Response) =
   res.send(buffer);
 });
 
-// Full combined report (one of executive/participants/scores/progress): a workbook
-// with the cross-activity views plus each activity's own full report sheets.
 router.get('/combined/export', async (req: Request, res: Response) => {
-  // Validate the export type before any DB work (matches the per-activity route).
   const exportType = ((req.query.type as string) || 'executive') as AnalyticsExportType;
   const validExportTypes: AnalyticsExportType[] = ['executive', 'participants', 'scores', 'progress'];
   if (!validExportTypes.includes(exportType)) {
@@ -431,11 +387,6 @@ router.get('/combined/export', async (req: Request, res: Response) => {
   res.send(buffer);
 });
 
-// ════════════════════════════════════════════
-// ─── Participants roster + exclusions ───
-// ════════════════════════════════════════════
-
-// Full roster (NOT exclusion-filtered, so excluded rows remain toggleable).
 router.get('/activities/:id/participants', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
   if (!Types.ObjectId.isValid(activityId)) {
@@ -456,7 +407,6 @@ router.get('/activities/:id/participants', async (req: Request<{ id: string }>, 
     },
   ).sort({ joinedAt: -1 }).lean();
 
-  // Normalize to the same 0-100 scale the panels use.
   const rawScores = reports.map((r) => (r.data as { totalScore?: number })?.totalScore ?? 0).filter((s) => s > 0);
   const ceiling = resolveCeiling(reports, rawScores);
   const excluded = new Set((activity.excludedReportIds ?? []).map((id) => String(id)));
@@ -474,9 +424,6 @@ router.get('/activities/:id/participants', async (req: Request<{ id: string }>, 
   });
 });
 
-// Israel calendar days that actually have reports, newest first — the options
-// for the reports day picker. Matters most for `dailyReset` activities, whose
-// participants only ever see one day but whose history is kept in full.
 router.get('/activities/:id/days', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
   if (!Types.ObjectId.isValid(activityId)) {
@@ -504,7 +451,6 @@ router.get('/activities/:id/days', async (req: Request<{ id: string }>, res: Res
   res.json({ days: agg.map((d) => ({ day: d._id as string, participants: d.participants as number })) });
 });
 
-// Replace the full set of excluded report ids for this activity.
 router.patch('/activities/:id/participants/exclusions', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
   if (!Types.ObjectId.isValid(activityId)) {
@@ -528,8 +474,6 @@ router.patch('/activities/:id/participants/exclusions', async (req: Request<{ id
   await activity.save();
   res.json({ excludedReportIds: ids.map((id) => String(id)) });
 });
-
-// ─── Pass grade (normalized 0-100 threshold for pass/fail in reports) ───
 
 router.get('/activities/:id/pass-threshold', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
@@ -566,8 +510,6 @@ router.patch('/activities/:id/pass-threshold', async (req: Request<{ id: string 
   res.json({ passThreshold });
 });
 
-// ─── Public statistics share link (token management) ───
-
 router.get('/activities/:id/share', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
   if (!Types.ObjectId.isValid(activityId)) {
@@ -582,7 +524,6 @@ router.get('/activities/:id/share', async (req: Request<{ id: string }>, res: Re
   res.json({ token: activity.statsShareToken ?? null });
 });
 
-// Create or regenerate the share token (regenerating invalidates the old link).
 router.post('/activities/:id/share', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
   if (!Types.ObjectId.isValid(activityId)) {
@@ -603,7 +544,6 @@ router.post('/activities/:id/share', async (req: Request<{ id: string }>, res: R
   res.json({ token: activity.statsShareToken });
 });
 
-// Revoke the share link.
 router.delete('/activities/:id/share', async (req: Request<{ id: string }>, res: Response) => {
   const activityId = req.params.id;
   if (!Types.ObjectId.isValid(activityId)) {
@@ -623,10 +563,6 @@ router.delete('/activities/:id/share', async (req: Request<{ id: string }>, res:
   await activity.save();
   res.json({ token: null });
 });
-
-// ════════════════════════════════════════════
-// ─── Audit Log ───
-// ════════════════════════════════════════════
 
 router.get('/audit-log', async (req: Request, res: Response) => {
   if (req.admin?.role === 'customer') {

@@ -4,17 +4,6 @@ export type ChangeRequestStatus = 'pending' | 'approved' | 'rejected' | 'done';
 
 export const CHANGE_REQUEST_STATUSES: ChangeRequestStatus[] = ['pending', 'approved', 'rejected', 'done'];
 
-/**
- * Something the client asked for after the scope was agreed.
- *
- * Without this the profitability figure lies: if a client asks for a fourth game
- * and the system does not know, the project reads as "over budget" when it
- * actually just got bigger. Approving one adds its hours to the project budget
- * and its price to revenue.
- *
- * `additionalPrice` is owner-only. The hours and the description are visible to
- * everyone — the team needs to know the work grew.
- */
 export interface IChangeRequest {
   _id: Types.ObjectId;
   projectId: Types.ObjectId;
@@ -26,7 +15,6 @@ export interface IChangeRequest {
   additionalPrice: number;
   status: ChangeRequestStatus;
   approvedAt?: Date;
-  /** Guards against a double-approve adding the same hours to the budget twice. */
   appliedToBudget: boolean;
   createdBy: Types.ObjectId;
   createdAt: Date;

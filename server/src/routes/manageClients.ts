@@ -16,8 +16,6 @@ import { serializeClient } from '../serializers/manageClient';
 
 const router = Router();
 
-// Everything below needs a manage token. Editing clients is pm/owner;
-// a member may read and log interactions (permission matrix, ch.02).
 router.use(authenticateManage);
 
 const canEdit = requireManageRole('owner', 'pm');
@@ -32,7 +30,6 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/** Whitelist of client-writable fields — never spread req.body into a document. */
 function pickClientFields(body: Record<string, unknown>, role: string): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const k of ['name', 'website', 'driveUrl', 'notes', 'brief', 'nextActionText']) {
@@ -52,7 +49,6 @@ function pickClientFields(body: Record<string, unknown>, role: string): Record<s
     out.ownerUserId = body.ownerUserId;
   }
 
-  // Agreement terms are owner-only on the way IN as well as on the way out.
   if (role === 'owner' && typeof body.contract === 'object' && body.contract !== null) {
     const c = body.contract as Record<string, unknown>;
     const contract: Record<string, unknown> = {};
@@ -80,8 +76,6 @@ function pickContactFields(body: Record<string, unknown>): Record<string, unknow
   return out;
 }
 
-// ─── Clients ───
-
 router.get('/', async (req: Request, res: Response) => {
   const { status, domain, q, archived } = req.query as Record<string, string | undefined>;
   const filter: Record<string, unknown> = { archived: archived === 'true' };
@@ -89,8 +83,6 @@ router.get('/', async (req: Request, res: Response) => {
   if (domain && CLIENT_DOMAINS.includes(domain as ClientDomain)) filter.domain = domain;
   if (q && q.trim()) filter.name = { $regex: escapeRegex(q.trim()), $options: 'i' };
 
-  // Oldest contact first — the list doubles as the "who have we forgotten" screen.
-  // Never-contacted clients sort first, which is the correct kind of loud.
   const clients = await Client.find(filter).sort({ lastContactDate: 1, name: 1 }).lean();
   res.json({ clients: clients.map((c) => serializeClient(c as never, req.manageUser!.role)) });
 });
@@ -102,8 +94,6 @@ router.post('/', canEdit, async (req: Request, res: Response) => {
     res.status(400).json({ error: 'Client name is required' });
     return;
   }
-  // Contacts can arrive with the client — the first two come out of the same
-  // conversation as the name, and a separate screen for them just loses them.
   const contacts = Array.isArray(body.contacts)
     ? (body.contacts as Record<string, unknown>[])
       .map(pickContactFields)
@@ -140,10 +130,6 @@ router.patch('/:id', canEdit, async (req: Request, res: Response) => {
   res.json({ client: serializeClient(client as never, req.manageUser!.role) });
 });
 
-// Owner only. Removes the client and the interactions that hang off it —
-// orphaned interactions would otherwise linger with a dead clientId.
-// A client with projects is NOT deletable: the projects carry hours and money,
-// and stranding them would be worse than keeping a row nobody wants.
 router.delete('/:id', requireManageRole('owner'), async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
 
@@ -162,8 +148,6 @@ router.delete('/:id', requireManageRole('owner'), async (req: Request, res: Resp
   res.json({ ok: true });
 });
 
-// ─── Contacts (embedded in the client) ───
-
 router.post('/:id/contacts', canEdit, async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
   const fields = pickContactFields(req.body ?? {});
@@ -176,7 +160,6 @@ router.post('/:id/contacts', canEdit, async (req: Request, res: Response) => {
     res.status(404).json({ error: 'Client not found' });
     return;
   }
-  // At most one primary contact per client.
   if (fields.isPrimary) client.contacts.forEach((c) => { c.isPrimary = false; });
   client.contacts.push(fields as never);
   await client.save();
@@ -214,8 +197,6 @@ router.delete('/:id/contacts/:contactId', canEdit, async (req: Request, res: Res
   res.json({ client: serializeClient(client as never, req.manageUser!.role) });
 });
 
-// ─── Interactions ───
-
 router.get('/:id/interactions', async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
   const interactions = await Interaction.find({ clientId: String(req.params.id) })
@@ -225,8 +206,6 @@ router.get('/:id/interactions', async (req: Request, res: Response) => {
   res.json({ interactions });
 });
 
-// Logging contact is open to every role — the member who had the call must be
-// able to record it, or lastContactDate silently rots.
 router.post('/:id/interactions', async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
   const client = await Client.findById(String(req.params.id));
@@ -271,8 +250,6 @@ router.post('/:id/interactions', async (req: Request, res: Response) => {
     nextActionUserId: nextActionText ? req.manageUser!.userId : undefined,
   });
 
-  // "Last contact" is derived here, on write. A back-dated entry must not pull
-  // the date backwards, so only a later date moves it.
   if (!client.lastContactDate || date > client.lastContactDate) client.lastContactDate = date;
   if (nextActionText) {
     client.nextActionText = nextActionText;

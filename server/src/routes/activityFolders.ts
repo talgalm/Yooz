@@ -12,14 +12,11 @@ const router = Router();
 
 const VALID_COLORS = FOLDER_COLOR_HEXES as unknown as string[];
 
-// GET /api/admin/activity-folders — list folders (customer-scoped, sorted by name).
-// Activity counts are derived client-side from the already-fetched activities list.
 router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
   const folders = await ActivityFolder.find(customerMongoFilter(req)).sort({ name: 1 }).lean();
   res.json({ folders });
 });
 
-// POST /api/admin/activity-folders — create a folder
 router.post('/', authenticateAdmin, async (req: Request, res: Response) => {
   const { name, color, parentId } = req.body as { name?: unknown; color?: unknown; parentId?: unknown };
   const trimmed = typeof name === 'string' ? name.trim() : '';
@@ -56,7 +53,6 @@ router.post('/', authenticateAdmin, async (req: Request, res: Response) => {
   res.status(201).json({ folder });
 });
 
-// PATCH /api/admin/activity-folders/:id — rename / recolor a folder
 router.patch('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const folder = await ActivityFolder.findById(req.params.id);
   if (!folder || !customerOwnsDoc(req, folder)) {
@@ -86,8 +82,6 @@ router.patch('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res
   res.json({ folder });
 });
 
-// DELETE /api/admin/activity-folders/:id — delete a folder.
-// Member activities are returned to the ungrouped root (folderId = null), NOT deleted.
 router.delete('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const folder = await ActivityFolder.findById(req.params.id);
   if (!folder || !customerOwnsDoc(req, folder)) {
@@ -97,7 +91,6 @@ router.delete('/:id', authenticateAdmin, async (req: Request<{ id: string }>, re
 
   await ActivityFolder.findByIdAndDelete(folder._id);
   await Activity.updateMany({ folderId: folder._id }, { $set: { folderId: null } });
-  // Promote child folders one level up (to the deleted folder's parent), never orphan them.
   await ActivityFolder.updateMany({ parentId: folder._id }, { $set: { parentId: folder.parentId ?? null } });
   logAdminAction(req, 'delete_folder', 'activity_folder', folder._id.toString(), folder.name);
   res.json({ success: true });

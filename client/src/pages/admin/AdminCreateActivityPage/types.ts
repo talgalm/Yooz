@@ -3,13 +3,10 @@ export type ConnectionType = 'single' | 'group';
 export type GroupEntryMode = 'preset' | 'selfService';
 export type ModuleType = 'none' | 'story' | 'spiders' | 'map';
 
-/** Module types built through the item-list wizard (steps 1-3). Every module
- *  type except 'none' is one, so new types are covered without editing this. */
 export function isWizardModule(t: ModuleType): boolean {
   return t !== 'none';
 }
 
-/** Where a map-module station physically is. */
 export interface ItemLocation {
   lat: number;
   lng: number;
@@ -54,17 +51,11 @@ export interface StationOption {
 }
 
 export interface CollageSplit {
-  splitGroupId: string; // shared between all parts of the same split
-  partIndex: number; // 0-based
-  // Canonical per-part image counts. Length = number of parts in the group.
-  // Sum = total image limit on the underlying station. Each entry is the
-  // number of images that part of the split is responsible for.
+  splitGroupId: string;
+  partIndex: number;
   partSizes: number[];
-  totalParts?: number; // legacy fallback, retained for older saved data
-  /** Index of the part dedicated to video creation/sharing only (no photo capture).
-   *  When set, partSizes[videoPartIndex] === 0. */
+  totalParts?: number;
   videoPartIndex?: number | null;
-  /** Optional permutation of station.settings.missions before slicing. */
   photoOrder?: number[];
 }
 
@@ -77,12 +68,12 @@ export interface ModuleItem {
   customer?: string;
   theme?: string;
   settings?: Record<string, unknown>;
-  groups?: string[]; // when set, only these groups see this item
-  spiderSvg?: string; // optional SVG URL for spiders module display
-  isFinal?: boolean; // spiders only: locked until all others are completed
-  revisitable?: boolean; // roadmap: allow re-entering this item after it is completed
-  collageSplit?: CollageSplit; // collage stations only: split into N parts across the activity
-  location?: ItemLocation; // map modules only: where this station is on the ground
+  groups?: string[];
+  spiderSvg?: string;
+  isFinal?: boolean;
+  revisitable?: boolean;
+  collageSplit?: CollageSplit;
+  location?: ItemLocation;
 }
 
 export interface CustomInstructions {
@@ -153,7 +144,6 @@ export interface Activity {
   dailyReset?: boolean;
   leaderboardAsGrade?: boolean;
   leaderboardMode?: 'points' | 'time' | 'both';
-  /** Optional time limit in minutes (only relevant when leaderboardMode is 'time'). */
   activityDurationMinutes?: number;
   roadmapTimerMinutes?: number | null;
 }

@@ -62,7 +62,6 @@ interface AvatarVideoConfig {
   matchingWords: string[];
 }
 
-/** One entry in an avatarQuiz question bank (admin-side shape — strings for numeric inputs). */
 interface AvatarQuizQuestionConfig {
   text: string;
   idealAnswer: string;
@@ -127,17 +126,7 @@ const HintToggleRow = styled(InlineRowGap12)({
   marginBottom: 8,
 });
 
-/**
- * Station-type picker. The shared `SelectionGroup` is a non-wrapping flex row
- * and `SelectionButton` is `flex: 1` with the default `min-width: auto`, so
- * items can't shrink past their content — past ~8 types the row overflowed the
- * card. Scoped here rather than changing the shared components, which other
- * admin screens size around.
- */
 const StationTypeGroup = styled(SelectionGroupWrap)({
-  // Grid rather than wrapping flex: with `flex: 1` the last row's leftover
-  // tile stretches to the full card width. Even columns keep every tile the
-  // same size no matter how many types exist.
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
   gap: 8,
@@ -168,9 +157,6 @@ export default function AdminStationConfigPage() {
   const t = useTranslations(texts);
 
   const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle', 'avatar', 'avatarQuiz', 'enteringText'];
-  // avatarQuiz has a per-question hint (with its own point penalty); the
-  // station-level clue on top of that is redundant and surfaced a clue button
-  // in stations where nobody asked for one.
   const stationTypesWithoutHint: StationTypeOption[] = ['feedback', 'avatar', 'avatarQuiz'];
   const typeFromUrl = searchParams.get('type') as StationTypeOption | null;
   const defaultType: StationTypeOption =
@@ -178,7 +164,6 @@ export default function AdminStationConfigPage() {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  /** avatar + avatarQuiz only: render `description` as an arrival popup instead of static text. */
   const [descriptionAsPopup, setDescriptionAsPopup] = useState(false);
   const [customer, setCustomer] = useState('');
   const [theme, setTheme] = useState('');
@@ -186,27 +171,21 @@ export default function AdminStationConfigPage() {
   const [tagInput, setTagInput] = useState('');
   const [stationType, setStationType] = useState<StationTypeOption>(defaultType);
 
-  // Hint
   const [hintEnabled, setHintEnabled] = useState(false);
   const [hintText, setHintText] = useState('');
   const [hintImageUrl, setHintImageUrl] = useState('');
   const [hintFree, setHintFree] = useState(false);
 
-  // Text station
   const [textContent, setTextContent] = useState('');
-  // Video/Image station
   const [mediaUrl, setMediaUrl] = useState('');
   const [descPosition, setDescPosition] = useState<'before' | 'after'>('before');
-  // Narrative station
   const [narrativeTitle, setNarrativeTitle] = useState('');
   const [narrativeBody, setNarrativeBody] = useState('');
   const [narrativeButtonText, setNarrativeButtonText] = useState('');
   const [narrativeBgImage, setNarrativeBgImage] = useState('');
-  // Badge station
   const [badgeTitle, setBadgeTitle] = useState('');
   const [badgeSubtitle, setBadgeSubtitle] = useState('');
   const [badgeImageUrl, setBadgeImageUrl] = useState('');
-  // Collage station
   const [collageHeader, setCollageHeader] = useState('');
   const [collageDescription, setCollageDescription] = useState('');
   const [collageLogoUrl, setCollageLogoUrl] = useState('');
@@ -218,13 +197,11 @@ export default function AdminStationConfigPage() {
   const [collageMultiSelectCount, setCollageMultiSelectCount] = useState('6');
   const [collageTemplate, setCollageTemplate] = useState<'default' | 'gan-yehoshua'>('default');
   const [collageDisclaimer, setCollageDisclaimer] = useState('');
-  // Feedback station
   const [feedbackTitle, setFeedbackTitle] = useState('');
   const [feedbackIntroText, setFeedbackIntroText] = useState('');
   const [feedbackQuestions, setFeedbackQuestions] = useState<{ text: string }[]>([{ text: '' }]);
   const [feedbackNotesEnabled, setFeedbackNotesEnabled] = useState(true);
   const [feedbackNotesPlaceholder, setFeedbackNotesPlaceholder] = useState('');
-  // Riddle station
   const [riddleClue, setRiddleClue] = useState('');
   const [riddleAnswer, setRiddleAnswer] = useState('');
   const [riddleMediaUrl, setRiddleMediaUrl] = useState('');
@@ -235,7 +212,6 @@ export default function AdminStationConfigPage() {
   const [riddleContinueBtnText, setRiddleContinueBtnText] = useState('');
   const [riddleSuccessImageUrl, setRiddleSuccessImageUrl] = useState('');
   const [riddleUnlimitedAttempts, setRiddleUnlimitedAttempts] = useState(false);
-  // Avatar station
   const [avatarCharacterName, setAvatarCharacterName] = useState('');
   const [avatarCharacterImageUrl, setAvatarCharacterImageUrl] = useState('');
   const [avatarCharacterImagePosition, setAvatarCharacterImagePosition] = useState('');
@@ -249,7 +225,6 @@ export default function AdminStationConfigPage() {
   const [avatarKnowledgeGates, setAvatarKnowledgeGates] = useState<AvatarKnowledgeGate[]>([]);
   const [avatarHintStrategy, setAvatarHintStrategy] = useState('');
   const [avatarVoiceType, setAvatarVoiceType] = useState<'man' | 'woman'>('man');
-  // Entering text station
   const [quizCharacterName, setQuizCharacterName] = useState('');
   const [quizCharacterImageUrl, setQuizCharacterImageUrl] = useState('');
   const [quizCharacterImagePosition, setQuizCharacterImagePosition] = useState('');
@@ -289,7 +264,6 @@ export default function AdminStationConfigPage() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(!!id);
 
-  /** Shared by the edit-load and the library-prefill paths. */
   const applyQuizSettings = (settings: Record<string, unknown>) => {
     if (settings.characterName) setQuizCharacterName(settings.characterName as string);
     if (settings.characterImageUrl) setQuizCharacterImageUrl(settings.characterImageUrl as string);
@@ -457,9 +431,8 @@ export default function AdminStationConfigPage() {
       .catch(() => navigate('/admin/dashboard?tab=stations'));
   }, [id, navigate]);
 
-  // Prefill from library item (export from Content Library)
   useEffect(() => {
-    if (id) return; // only in create mode
+    if (id) return;
     const lib = (location.state as { libraryItem?: { name: string; type: string; description?: string; customer?: string; tags?: string[]; settings?: Record<string, unknown> } })?.libraryItem;
     if (!lib) return;
 
@@ -571,7 +544,6 @@ export default function AdminStationConfigPage() {
         setEnteringTextSolutionHintEnabled(!!sh.enabled);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -676,9 +648,6 @@ export default function AdminStationConfigPage() {
         settings.descriptionAsPopup = descriptionAsPopup;
       }
       if (stationType === 'avatarQuiz') {
-        // A question is only usable if all three judging inputs are present —
-        // the server can't grade without an ideal answer, and the participant
-        // must learn something even when they answer correctly.
         const filled = quizQuestions.filter(
           (q) => q.text.trim() || q.idealAnswer.trim() || q.teachingPoint.trim()
         );
@@ -822,7 +791,6 @@ export default function AdminStationConfigPage() {
     enteringText: 'תחנת מילוי טקסט - טסט',
   };
 
-  /** The information-security bank from the spec — a realistic starting point. */
   const infoSecurityQuizQuestions = (): AvatarQuizQuestionConfig[] => [
     {
       ...emptyQuizQuestion(),
@@ -1184,7 +1152,6 @@ export default function AdminStationConfigPage() {
               )}
             </DesktopFormGrid>
 
-            {/* Type-specific settings */}
             <FormSectionCardWide>
               {stationType === 'text' && (
                 <div>
@@ -1464,7 +1431,6 @@ export default function AdminStationConfigPage() {
                 </VerticalStack>
               )}
 
-              {/* Feedback config */}
               {stationType === 'feedback' && (
                 <VerticalStack>
                   <SectionLabel>{t.feedbackTitle}</SectionLabel>
@@ -1530,7 +1496,6 @@ export default function AdminStationConfigPage() {
                   )}
                 </VerticalStack>
               )}
-              {/* Riddle config */}
               {stationType === 'riddle' && (
                 <VerticalStack>
                   <SectionLabel>{t.riddleClue}</SectionLabel>
@@ -1641,7 +1606,6 @@ export default function AdminStationConfigPage() {
                   )}
                 </VerticalStack>
               )}
-              {/* Avatar config */}
               {stationType === 'avatar' && (
                 <VerticalStack>
                   <SectionLabel>{t.avatarCharacterName}</SectionLabel>
@@ -1937,7 +1901,6 @@ export default function AdminStationConfigPage() {
               )}
               {stationType === 'avatarQuiz' && (
                 <VerticalStack>
-                  {/* ─── Part A: the character ─── */}
                   <SectionLabelNoMargin>{t.avatarCharacterName}</SectionLabelNoMargin>
                   <Input
                     placeholder={t.quizCharacterNamePlaceholder}
@@ -1972,7 +1935,6 @@ export default function AdminStationConfigPage() {
                     </SelectionButton>
                   </InlineRowGap12>
 
-                  {/* ─── Part B: the training ─── */}
                   <SectionLabel style={{ marginTop: 20 }}>{t.quizTopic}</SectionLabel>
                   <Input
                     placeholder={t.quizTopicPlaceholder}
@@ -2053,7 +2015,6 @@ export default function AdminStationConfigPage() {
                   </InlineRowGap12>
                   <SectionDescription>{t.quizBehaviourHelp}</SectionDescription>
 
-                  {/* ─── Part C: the question bank ─── */}
                   <SectionLabel style={{ marginTop: 20 }}>{t.quizQuestions}</SectionLabel>
                   {quizQuestions.map((q, qi) => {
                     const invalid = quizInvalidRows.includes(qi);
@@ -2213,7 +2174,6 @@ export default function AdminStationConfigPage() {
                     + {t.quizAddQuestion}
                   </button>
 
-                  {/* ─── Part D: reaction videos ─── */}
                   <SectionLabel style={{ marginTop: 20 }}>{t.quizReactionVideos}</SectionLabel>
                   {([
                     { label: t.quizVideoAsking, value: quizVideoAsking, set: setQuizVideoAsking },

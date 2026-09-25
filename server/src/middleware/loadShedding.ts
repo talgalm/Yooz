@@ -1,17 +1,3 @@
-/**
- * Circuit-breaker middleware. Refuses new expensive collage work when the
- * box is under stress, so existing in-flight requests can finish instead of
- * the whole process being OOM-killed.
- *
- * Three signals — first one tripped wins:
- *   - event-loop lag mean over a rolling 10s window  (CPU/GC starvation)
- *   - process RSS                                    (memory pressure)
- *   - encode queue depth                             (work backlog)
- *
- * Returns 503 Service Unavailable + Retry-After: 30. The participant's
- * apiFetchWithRetry already retries on 503, so most users see a slightly
- * longer wait, not an error.
- */
 
 import { Request, Response, NextFunction } from 'express';
 import { monitorEventLoopDelay } from 'perf_hooks';
@@ -21,7 +7,7 @@ const lagMonitor = monitorEventLoopDelay({ resolution: 20 });
 lagMonitor.enable();
 
 const MAX_LAG_MS         = Number(process.env.LOAD_MAX_LAG_MS         || 500);
-const MAX_RSS_MB         = Number(process.env.LOAD_MAX_RSS_MB         || 800);   // 80% of 1000M PM2 cap
+const MAX_RSS_MB         = Number(process.env.LOAD_MAX_RSS_MB         || 800);
 const MAX_QUEUE_DEPTH    = Number(process.env.LOAD_MAX_QUEUE_DEPTH    || 10);
 const RETRY_AFTER_SECS   = Number(process.env.LOAD_RETRY_AFTER_SECS   || 30);
 

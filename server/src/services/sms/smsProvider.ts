@@ -9,10 +9,6 @@ export interface SmsProvider {
   send(to: string, message: string): Promise<SmsSendResult>;
 }
 
-/**
- * Stub SMS provider — logs messages and marks them sent.
- * Replace with a real provider (Twilio, etc.) when credentials are available.
- */
 export class StubSmsProvider implements SmsProvider {
   readonly name = 'stub';
 
@@ -33,7 +29,6 @@ export function getSmsProvider(): SmsProvider {
   return activeProvider;
 }
 
-/** For tests or future wiring to a real provider. */
 export function setSmsProvider(provider: SmsProvider): void {
   activeProvider = provider;
 }

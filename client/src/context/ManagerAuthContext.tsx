@@ -32,7 +32,7 @@ function decodeToken(token: string): Manager | null {
     return {
       email: payload.email,
       activityCode: payload.activityCode,
-      activityName: '', // will be set from login response
+      activityName: '',
     };
   } catch {
     return null;
@@ -48,7 +48,6 @@ export function ManagerAuthProvider({ children }: { children: ReactNode }) {
     if (saved) {
       const decoded = decodeToken(saved);
       if (decoded) {
-        // Restore activity name from localStorage
         const savedName = localStorage.getItem('yooz_manager_activity_name');
         if (savedName) decoded.activityName = savedName;
         setToken(saved);

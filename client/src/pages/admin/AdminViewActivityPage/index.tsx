@@ -34,8 +34,6 @@ const ProvisionWarning = styled('div')({
   lineHeight: 1.5,
 });
 
-// ─── Styled Components ───
-
 const PageBg = styled('div')({
   minHeight: '100vh',
   background: 'linear-gradient(160deg, #f5edf4 0%, #eee8f8 40%, #f5f5f7 100%)',
@@ -438,8 +436,6 @@ const ManagerIconBtn = styled('button')({
   '&:active': { transform: 'scale(0.97)' },
 });
 
-// ─── Types ───
-
 interface Activity {
   _id: string;
   code: string;
@@ -460,8 +456,6 @@ interface Activity {
   managerHasPassword?: boolean;
   userControl?: boolean;
 }
-
-// ─── Game/module icons ───
 
 const GAME_ICONS: Record<string, string> = {
   trivia: '❓', order: '🔢', puzzle: '🧩', trueFalse: '✅',
@@ -518,8 +512,6 @@ export default function AdminViewActivityPage() {
         .catch(() => { if (onError) onError(); });
     };
     fetchActivity(() => navigate('/admin/dashboard'));
-    // Refresh on focus / tab visibility so edits to nested games/stations
-    // (made in another page) are reflected here without a manual reload.
     const refresh = () => fetchActivity();
     const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
     window.addEventListener('focus', refresh);
@@ -531,9 +523,6 @@ export default function AdminViewActivityPage() {
   }, [id, navigate]);
 
   const playUrl = activity ? `${window.location.origin}/play/${activity.code}` : '';
-  // Only the QR carries ?qr=1 — it is the one entry point we know lands in a
-  // scanner app, and it is what tells the participant page to offer the browser
-  // handoff. A link opened by hand must stay silent.
   const qrUrl = playUrl ? `${playUrl}?${QR_SCAN_PARAM}=1` : '';
 
   const handleDownloadQr = useCallback(() => {
@@ -578,7 +567,6 @@ export default function AdminViewActivityPage() {
       });
       setActivity(data.activity);
     } catch {
-      // silently fail
     } finally {
       setLockSaving(false);
     }
@@ -597,7 +585,7 @@ export default function AdminViewActivityPage() {
         method: 'PATCH', body: JSON.stringify({ status: newStatus }),
       });
       setActivity(data.activity);
-    } catch { /* ignore */ }
+    } catch { }
     setTogglingStatus(false);
   };
 
@@ -609,7 +597,7 @@ export default function AdminViewActivityPage() {
         method: 'PATCH', body: JSON.stringify({ status: 'live' }),
       });
       setActivity(data.activity);
-    } catch { /* ignore */ }
+    } catch { }
     setTogglingStatus(false);
   };
 
@@ -644,7 +632,6 @@ export default function AdminViewActivityPage() {
 
       <ContentWrapper>
         {provisionWarning && <ProvisionWarning>{provisionWarning}</ProvisionWarning>}
-        {/* Page title */}
         <PageTitleText>{activity.name}</PageTitleText>
         <StatusRow>
           <StatusBadge status={activity.status}>
@@ -661,9 +648,7 @@ export default function AdminViewActivityPage() {
         </StatusRow>
         <PageDateText>{new Date(activity.createdAt).toLocaleDateString()}</PageDateText>
 
-        {/* Two-column cards */}
         <TopGrid>
-          {/* Activity & Access card */}
           <CardBox>
             <CardHeaderDark>{t.activityAndAccess}</CardHeaderDark>
             <CardContent>
@@ -698,7 +683,6 @@ export default function AdminViewActivityPage() {
             </CardContent>
           </CardBox>
 
-          {/* Activity Review card */}
           <CardBox>
             <CardHeaderLight>{t.activityReview}</CardHeaderLight>
             <CardContent>
@@ -752,7 +736,6 @@ export default function AdminViewActivityPage() {
           </CardBox>
         </TopGrid>
 
-        {/* QR code card */}
         <QrCardBox>
           <QrTextSection>
             <QrMainTitle>{t.qrQuickAccess}</QrMainTitle>
@@ -772,7 +755,6 @@ export default function AdminViewActivityPage() {
           </QrImageWrapper>
         </QrCardBox>
 
-        {/* Action buttons */}
         <ButtonsRow>
           <ActionGroup>
             {canEditContent && (

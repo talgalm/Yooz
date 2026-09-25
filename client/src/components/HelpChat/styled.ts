@@ -11,8 +11,6 @@ import {
   BG_INPUT,
 } from '../styled';
 
-// ─── Animations ───
-
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(20px) scale(0.95); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -22,8 +20,6 @@ const fadeIn = keyframes`
   from { opacity: 0; }
   to { opacity: 1; }
 `;
-
-// ─── Floating Button ───
 
 export const HelpFab = styled('button')({
   position: 'fixed',
@@ -53,8 +49,6 @@ export const HelpFab = styled('button')({
     transform: 'scale(0.95)',
   },
 });
-
-// ─── Chat Panel ───
 
 export const ChatBackdrop = styled('div')({
   position: 'fixed',
@@ -129,8 +123,6 @@ export const ChatCloseButton = styled('button')({
   },
 });
 
-// ─── Chat Body ───
-
 export const ChatBody = styled('div')({
   flex: 1,
   overflowY: 'auto',
@@ -139,8 +131,6 @@ export const ChatBody = styled('div')({
   flexDirection: 'column',
   gap: 10,
 });
-
-// ─── Messages ───
 
 export const BotMessage = styled('div')({
   background: '#f0eefa',
@@ -172,8 +162,6 @@ export const UserMessage = styled('div')({
     borderRadius: '16px 16px 16px 4px',
   },
 });
-
-// ─── FAQ Options ───
 
 export const OptionsGrid = styled('div')({
   display: 'flex',
@@ -212,8 +200,6 @@ export const OptionIcon = styled('span')({
   flexShrink: 0,
 });
 
-// ─── Phone Bar ───
-
 export const PhoneBar = styled('div')({
   display: 'flex',
   alignItems: 'center',
@@ -235,8 +221,6 @@ export const PhoneLink = styled('a')({
     textDecoration: 'underline',
   },
 });
-
-// ─── Input Area ───
 
 export const InputArea = styled('div')({
   display: 'flex',
@@ -293,8 +277,6 @@ export const SendButton = styled('button')({
   },
 });
 
-// ─── Typing indicator ───
-
 const dotBounce = keyframes`
   0%, 80%, 100% { transform: translateY(0); }
   40% { transform: translateY(-4px); }
@@ -321,8 +303,6 @@ export const TypingDots = styled('div')({
   },
 });
 
-// ─── Back button ───
-
 export const BackButton = styled('button')({
   background: 'none',
   border: 'none',
@@ -339,13 +319,10 @@ export const BackButton = styled('button')({
   },
 });
 
-/** Same as logout / playing header icons — one shared dark style in `styled.ts`. */
 export const HelpHeaderIconButton = DarkHeaderActionIconButton;
 
-/** Puzzle activity play — dark icon fill, black outline. */
 export const HelpHeaderIconButtonPuzzle = PuzzleDarkHeaderActionIconButton;
 
-/** Same control on light bars (e.g. home) */
 export const HelpHeaderIconButtonLight = styled(HeaderActionIconButton)({
   margin: 0,
   color: PRIMARY,
@@ -364,8 +341,6 @@ export const HelpHeaderIconButtonLight = styled(HeaderActionIconButton)({
   },
 });
 
-// ─── Post-guidelines nudge: wiggle the ? button + "need help?" pindrop bubble ───
-
 const wiggle = keyframes`
   0%, 100% { transform: rotate(0); }
   15% { transform: rotate(-14deg) scale(1.1); }
@@ -375,7 +350,6 @@ const wiggle = keyframes`
   75% { transform: rotate(-4deg); }
 `;
 
-/** Wraps the header ? button; anchors the bubble and applies the wiggle. */
 export const NudgeWrap = styled('span')<{ active?: boolean }>(({ active }) => ({
   position: 'relative',
   display: 'inline-flex',
@@ -401,7 +375,6 @@ export const NudgeBubble = styled('span')({
   whiteSpace: 'nowrap',
   pointerEvents: 'none',
   animation: `${fadeIn} 0.25s ease-out both`,
-  // Pindrop arrow pointing up at the button
   '&::before': {
     content: '""',
     position: 'absolute',

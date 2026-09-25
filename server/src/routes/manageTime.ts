@@ -19,10 +19,6 @@ function badId(res: Response, id: string): boolean {
   return true;
 }
 
-/**
- * A time entry carries cost. Only the owner ever sees the money on it —
- * a member asking for their own hours gets minutes and nothing else.
- */
 function serializeTimeEntry(doc: any, role: string) {
   const base = {
     _id: doc._id,
@@ -44,7 +40,6 @@ function serializeTimeEntry(doc: any, role: string) {
   return { ...base, costRateSnapshot: doc.costRateSnapshot, costAmount: doc.costAmount };
 }
 
-/** Local midnight — a time entry is a day, not a moment. */
 function toLocalMidnight(input: string | Date): Date {
   const d = new Date(input);
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -54,26 +49,19 @@ function endOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
 }
 
-/**
- * Whose entries may this request read?
- * A member sees only their own — spec ch.02: hours are not shared between
- * employees, not even on a project they share.
- */
 function scopeUserId(req: Request, requested?: string): string | null {
   const { role, userId } = req.manageUser!;
   if (role === 'member') return userId;
   if (requested && Types.ObjectId.isValid(requested)) return requested;
-  return null; // pm/owner with no filter: everyone
+  return null;
 }
 
-/** Every write rule from spec ch.04 §8, in one place. */
 async function validateEntry(
   userId: string,
   body: { date: Date; minutes: number; category: TimeCategory; projectId?: string },
   excludeEntryId?: string,
 ): Promise<{ error: string; detail?: unknown } | null> {
   const { date, minutes, category, projectId } = body;
-  // Live values, not module constants — this is what makes Settings real.
   const settings = await getSettings();
   const maxHours = settings.defaults.maxHoursPerDay;
   const needsProject = settings.timeCategories.filter((c) => c.requiresProject).map((c) => c.key);
@@ -82,18 +70,12 @@ async function validateEntry(
   if (!Number.isInteger(minutes) || minutes < 1) return { error: 'minutes_must_be_positive' };
   if (minutes > maxHours * 60) return { error: 'exceeds_daily_max', detail: { max: maxHours } };
 
-  // No reporting into the future.
   if (date.getTime() > endOfDay(new Date()).getTime()) return { error: 'future_date' };
 
   if (needsProject.includes(category) && !projectId) {
     return { error: 'project_required', detail: { category } };
   }
 
-  // Day total, excluding the entry being edited and any running timer.
-  //
-  // These ids MUST be cast. An aggregation pipeline does no schema casting the
-  // way find() does, so a string userId matches zero documents — the cap then
-  // silently passes and someone can log 30 hours in a day.
   const dayFilter: Record<string, unknown> = {
     userId: new Types.ObjectId(userId),
     date: { $gte: date, $lte: endOfDay(date) },
@@ -111,7 +93,6 @@ async function validateEntry(
   return null;
 }
 
-/** Cost is stamped once, at write time. See the model comment. */
 async function costFor(userId: string, minutes: number) {
   const user = await ManageUser.findById(userId).select('hourlyCost employerCostFactor').lean();
   const rate = user ? effectiveHourlyCost(user) : 0;
@@ -124,8 +105,6 @@ async function projectClosedFlag(projectId?: string): Promise<boolean> {
   return p ? p.status === 'done' || p.status === 'cancelled' : false;
 }
 
-// ─── Categories (so the client never hardcodes the list) ───
-
 router.get('/categories', async (_req: Request, res: Response) => {
   const settings = await getSettings();
   res.json({
@@ -134,17 +113,11 @@ router.get('/categories', async (_req: Request, res: Response) => {
   });
 });
 
-// ─── The running timer ───
-
 router.get('/timer', async (req: Request, res: Response) => {
   const timer = await TimeEntry.findOne({ userId: req.manageUser!.userId, endedAt: null }).lean();
   res.json({ timer: timer ? serializeTimeEntry(timer, req.manageUser!.role) : null });
 });
 
-/**
- * Starting a timer stops any timer already running and SAVES it — losing the
- * previous stretch of work silently would be worse than any error message.
- */
 router.post('/timer/start', async (req: Request, res: Response) => {
   const userId = req.manageUser!.userId;
   const body = (req.body ?? {}) as Record<string, unknown>;
@@ -192,11 +165,6 @@ router.post('/timer/stop', async (req: Request, res: Response) => {
   res.json({ entry: serializeTimeEntry(stopped, req.manageUser!.role) });
 });
 
-/**
- * Closes a running timer and writes its real duration. Shared by start, stop
- * and the scheduled auto-stop so the three can never disagree.
- * A timer under a minute is discarded rather than stored as a 0-minute row.
- */
 export async function stopRunningTimer(
   userId: string,
   opts: { autoStopped?: boolean } = {},
@@ -220,8 +188,6 @@ export async function stopRunningTimer(
   await timer.save();
   return timer.toObject();
 }
-
-// ─── Entries ───
 
 router.get('/', async (req: Request, res: Response) => {
   const { from, to, userId, projectId, category } = req.query as Record<string, string | undefined>;
@@ -292,7 +258,6 @@ router.patch('/:id', async (req: Request, res: Response) => {
     res.status(404).json({ error: 'not_found' });
     return;
   }
-  // You may only edit your own hours; the owner may edit anyone's.
   if (String(entry.userId) !== req.manageUser!.userId && req.manageUser!.role !== 'owner') {
     res.status(403).json({ error: 'not_your_entry' });
     return;
@@ -318,8 +283,6 @@ router.patch('/:id', async (req: Request, res: Response) => {
     return;
   }
 
-  // The rate snapshot is NOT refreshed on edit — see the model comment. Only
-  // the amount is recomputed, from the rate this entry was born with.
   entry.date = date;
   entry.minutes = minutes;
   entry.category = category;
@@ -350,16 +313,6 @@ router.delete('/:id', async (req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
-// ─── Weekly sheet ───
-
-/**
- * One week of one person's hours, grouped by day. Sunday-start, per spec ch.04 §13.
- *
- * The given date is SNAPPED BACK to its Sunday rather than used as-is. Taking it
- * literally would happily return "a week" running Tue-Mon, so any caller passing
- * a plain date would file hours under the wrong week and no total would tie out.
- * Enforced here, not in the caller, so every caller gets it right for free.
- */
 router.get('/week/:startDate', async (req: Request, res: Response) => {
   const given = toLocalMidnight(String(req.params.startDate));
   if (Number.isNaN(given.getTime())) {
@@ -400,14 +353,6 @@ router.get('/week/:startDate', async (req: Request, res: Response) => {
   });
 });
 
-/**
- * One calendar month of one person's hours, grouped by day.
- *
- * The primary view: people work irregular days, so a fixed Sun-Sat week hides
- * the shape of the month and makes "which days did I miss" hard to see. Every
- * day of the month is returned, including empty ones, so the client can draw a
- * full grid without inventing the gaps.
- */
 router.get('/month/:month', async (req: Request, res: Response) => {
   const m = String(req.params.month).match(/^(\d{4})-(\d{2})$/);
   if (!m) {
@@ -449,12 +394,9 @@ router.get('/month/:month', async (req: Request, res: Response) => {
     userId,
     days,
     totalMinutes: days.reduce((a, d) => a + d.minutes, 0),
-    // Days actually worked — the number that matters when nobody works a fixed week.
     daysWorked: days.filter((d) => d.minutes > 0).length,
   });
 });
-
-// ─── Month lock (owner only) ───
 
 router.post('/lock', requireManageRole('owner'), async (req: Request, res: Response) => {
   const { from, to, locked } = (req.body ?? {}) as Record<string, unknown>;

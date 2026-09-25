@@ -7,7 +7,6 @@ import TaskModal from '../TaskModal';
 import { Task } from '../manageTypes';
 import { Button, ErrorNote, Toolbar } from '../manageUi';
 
-/** Tasks belonging to one project. Same list component as the global screen. */
 export default function TasksTab({ projectId }: { projectId: string }) {
   const t = useTranslations(texts);
   const [tasks, setTasks] = useState<Task[]>([]);

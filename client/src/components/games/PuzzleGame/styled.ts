@@ -1,43 +1,32 @@
 import { styled, keyframes } from '@mui/material/styles';
 import { GameHeaderMuteButton, DESKTOP_STATION_WIDTH } from '../styled';
 
-// ─── Colors ───
-
 const WHITE = '#fff';
 
-// Box/Card styling
 const BOX_BG = '#e3ebf3';
 const BOX_BORDER = '#4a6572';
 const BOX_SHADOW = '#3a5562';
 
-// Text
 const TEXT_DARK = '#2c3e50';
 
-// Buttons
 const BTN_RED = '#e74c3c';
 const BTN_RED_DARK = '#c0392b';
 const BTN_GREEN = '#2ecc71';
 const BTN_GREEN_DARK = '#27ae60';
 const BTN_WRONG_RED = BTN_RED;
 
-// Title
 const TITLE_BLUE = '#2980b9';
 
-// Finish screen & primary actions (purple — matches other stations / trivia)
 const FINISH_PURPLE = '#6c5ce7';
 const FINISH_PURPLE_DARK = '#5b4cd4';
 const BTN_PURPLE = FINISH_PURPLE;
 const BTN_PURPLE_DARK = FINISH_PURPLE_DARK;
 
-// Finish banner (purple)
 const LEAF_BANNER_BG = FINISH_PURPLE;
 const LEAF_BANNER_DARK = FINISH_PURPLE_DARK;
 
-// Puzzle piece
 const PIECE_UNREVEALED = '#4a6572';
 const PIECE_BORDER = 'rgba(255,255,255,0.35)';
-
-// ─── Animations ───
 
 const pulse = keyframes`
   0%, 100% { transform: scale(1); }
@@ -78,17 +67,11 @@ const overlayFadeIn = keyframes`
   to { opacity: 1; }
 `;
 
-// Suppress unused warnings
 void pulse;
-
-// ═══════════════════════════════════════════
-// ─── Background Images ───
-// ═══════════════════════════════════════════
 
 export const PUZZLE_INTRO_BG_URL = '/images/puzzle-bg.png';
 export const PUZZLE_PLAY_BG_URL = '/images/puzzle-rest-bg.png';
 
-/** Full viewport backdrop for intro/opening screen — puzzle piece sunburst */
 export const IntroFullScreenSceneBackdrop = styled('div')({
   position: 'fixed',
   inset: 0,
@@ -101,7 +84,6 @@ export const IntroFullScreenSceneBackdrop = styled('div')({
   backgroundRepeat: 'no-repeat',
 });
 
-/** Full viewport backdrop for play / countdown / finish — plain sunburst */
 export const PlayFullScreenSceneBackdrop = styled('div')({
   position: 'fixed',
   inset: 0,
@@ -114,11 +96,6 @@ export const PlayFullScreenSceneBackdrop = styled('div')({
   backgroundRepeat: 'no-repeat',
 });
 
-/**
- * Root wrapper for play / finish phases.
- * When no ThemedSceneOverlay exists (admin preview), paints the play-phase
- * background inline via ::before pseudo-element.
- */
 export const PlayPhaseRoot = styled('div', {
   shouldForwardProp: (prop) => prop !== '$inlineBackdrop',
 })<{ $inlineBackdrop?: boolean }>(({ $inlineBackdrop }) => ({
@@ -148,10 +125,6 @@ export const PlayPhaseRoot = styled('div', {
       }
     : {}),
 }));
-
-// ═══════════════════════════════════════════
-// ─── Opening / Intro Screen ───
-// ═══════════════════════════════════════════
 
 const INTRO_FONT_FAMILY = "'Rubik', sans-serif";
 
@@ -212,8 +185,6 @@ export const IntroContent = styled('div')({
   minHeight: 0,
 });
 
-// ─── Intro Title (yellow fill + olive stroke — matches TrueFalse) ───
-
 const GAME_TITLE_YELLOW = '#ffff00';
 const GAME_TITLE_OUTLINE = '#666600';
 
@@ -241,14 +212,11 @@ export const IntroTitleLine = styled('span')({
   marginTop: '16px',
 });
 
-/** Fills space so description sits at bottom — matches True/False. */
 export const IntroMidSpacer = styled('div')({
   flex: '1 1 0',
   minHeight: 0,
   width: '100%',
 });
-
-// ─── Intro Description Card + Overlapping Start Button ───
 
 const INTRO_DESC_PURPLE = '#4a148c';
 const INTRO_DESC_PANEL_BG = '#f8f8ff';
@@ -354,10 +322,6 @@ export const IntroYoozLogo = styled('div')({
   filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
 });
 
-// ═══════════════════════════════════════════
-// ─── Playing / Puzzle Screen ───
-// ═══════════════════════════════════════════
-
 export const PuzzleContainer = styled('div')({
   position: 'relative',
   width: '100%',
@@ -378,7 +342,6 @@ export const PuzzleContainer = styled('div')({
   },
 });
 
-/** Scrollable question body; bottom bar stays fixed. */
 export const PuzzleMainScroll = styled('div')({
   flex: 1,
   minHeight: 0,
@@ -395,7 +358,6 @@ export const PuzzleMainScroll = styled('div')({
   boxSizing: 'border-box',
 });
 
-/** Fixed footer for Check / Next — safe area inset. */
 export const PuzzleBottomBar = styled('div')({
   width: '100%',
   maxWidth: '100%',
@@ -422,8 +384,6 @@ export const PuzzleHill = styled('div')<{ variant: 1 | 2 }>(({ variant }) => ({
     ? { backgroundColor: '#8ecf7a', bottom: '15%', left: '-50%', opacity: 0.5 }
     : { backgroundColor: '#6dba5e', bottom: '-12%', right: '-30%', opacity: 0.4 }),
 }));
-
-// ─── Top Bar ───
 
 export const TopBar = styled('div')({
   display: 'flex',
@@ -477,7 +437,6 @@ export const TopBarTimer = styled('span')<{ critical?: boolean }>(({ critical })
   transition: 'color 0.3s ease',
 }));
 
-/** Black outline on the in-game stats bar (replaces default slate border). */
 const PUZZLE_GAME_BAR_BORDER = '#000000';
 
 export const PuzzleGameTopBar = styled(TopBar)({
@@ -497,7 +456,6 @@ export const PuzzleGameMuteButton = styled(GameHeaderMuteButton)({
   color: '#1a1a1a',
 });
 
-/** Mute row with dark rule under (preview / no activity host — aligns with session header line). */
 export const PuzzleGameIntroHeaderBar = styled('div')({
   width: '100%',
   alignSelf: 'stretch',
@@ -509,8 +467,6 @@ export const PuzzleGameIntroHeaderBar = styled('div')({
   boxSizing: 'border-box',
   borderBottom: '1px solid rgba(0,0,0,0.42)',
 });
-
-// ─── Puzzle Grid ───
 
 export const PuzzleGridWrap = styled('div')({
   position: 'relative',
@@ -544,9 +500,6 @@ export const PuzzleGridOverlay = styled('div')<{ cols: number; rows: number }>((
   gridTemplateRows: `repeat(${rows}, 1fr)`,
   borderRadius: 9,
   zIndex: 1,
-  // Cell index must align with the puzzle image's LTR coordinate system
-  // (DraggablePiece computes backgroundPosition from col = pieceIndex % cols).
-  // The parent container is RTL, which would otherwise mirror the column order.
   direction: 'ltr',
 }));
 
@@ -567,8 +520,6 @@ export const PuzzlePiece = styled('div')<{ revealed?: boolean; justRevealed?: bo
     ? `${pieceReveal} 0.5s ease-out`
     : 'none',
 }));
-
-// ─── Question area (same yellow + olive stroke as summary / intro title) ───
 
 export const QuestionBox = styled('div')({
   background: 'transparent',
@@ -614,8 +565,6 @@ export const QuestionContent = styled('p')({
   textAlign: 'center',
   whiteSpace: 'pre-wrap',
 });
-
-// ─── Answer Grid (2×2) ───
 
 export const AnswerGrid = styled('div')({
   display: 'grid',
@@ -687,8 +636,6 @@ export const AnswerButton = styled('button')<{
   };
 });
 
-// ─── Action Button ───
-
 export const ActionButton = styled('button')<{ disabled?: boolean }>(({ disabled }) => ({
   background: disabled ? '#bdc3c7' : BTN_PURPLE,
   color: WHITE,
@@ -711,8 +658,6 @@ export const ActionButton = styled('button')<{ disabled?: boolean }>(({ disabled
     boxShadow: `0 0 0 ${BTN_PURPLE_DARK}`,
   } : {},
 }));
-
-// ─── Center-screen feedback toast (~1s, matches trivia) ───
 
 export const CenterToastOverlay = styled('div')({
   position: 'fixed',
@@ -779,8 +724,6 @@ export const RetryBadge = styled('div')({
   border: '2px solid #f0c36d',
 });
 
-// ─── Media ───
-
 export const NatureMediaContainer = styled('div')({
   textAlign: 'center',
   marginBottom: 12,
@@ -796,8 +739,6 @@ export const NatureMediaImage = styled('img')({
   border: `3px solid rgba(74,101,114,0.3)`,
 });
 
-// ─── Yooz logo (game screen) ───
-
 export const PuzzleYoozLogo = styled('div')({
   marginTop: 'auto',
   paddingTop: 16,
@@ -810,8 +751,6 @@ export const PuzzleYoozLogo = styled('div')({
   position: 'relative',
   zIndex: 1,
 });
-
-// ─── Puzzle Reveal Overlay (shown after correct answer) ───
 
 export const PuzzleRevealOverlay = styled('div')({
   position: 'absolute',
@@ -852,16 +791,10 @@ export const PuzzleRevealCounter = styled('div')({
   textAlign: 'center',
 });
 
-// ─── Hint Spacer (prevents layout jump when hint disappears) ───
-
 export const HintSpacer = styled('div')({
   height: 32,
   flexShrink: 0,
 });
-
-// ═══════════════════════════════════════════
-// ─── Drag & Drop Puzzle Grid ───
-// ═══════════════════════════════════════════
 
 const dragPieceAppear = keyframes`
   from { opacity: 0; transform: scale(0.5); }
@@ -876,7 +809,6 @@ const wrongShake = keyframes`
   80% { transform: translateX(6px); }
 `;
 
-/** Full-screen container for the drag phase (replaces question area). */
 export const DragPhaseContainer = styled('div')({
   flex: 1,
   display: 'flex',
@@ -915,7 +847,6 @@ export const DragInstruction = styled('div')({
   animation: `${slideUp} 0.3s ease-out`,
 });
 
-/** The puzzle grid wrapper for drag phase. */
 export const DragGridWrapper = styled('div')({
   position: 'relative',
   width: '85%',
@@ -928,7 +859,6 @@ export const DragGridWrapper = styled('div')({
   background: '#f0f0f0',
 });
 
-/** Each cell in the drag grid */
 export const DragGridCell = styled('div', {
   shouldForwardProp: (prop) => !['revealed', 'isTarget', 'wrongAttempt'].includes(prop as string),
 })<{ revealed?: boolean; isTarget?: boolean; wrongAttempt?: boolean }>(({ revealed, isTarget, wrongAttempt }) => ({
@@ -947,16 +877,12 @@ export const DragGridCell = styled('div', {
   animation: wrongAttempt ? `${wrongShake} 0.4s ease-out` : 'none',
 }));
 
-/** The draggable puzzle piece that floats. */
 export const DraggablePiece = styled('div', {
   shouldForwardProp: (prop) => !['cols', 'rows', 'pieceIndex', 'isDragging', 'gridWidth'].includes(prop as string),
 })<{ cols: number; rows: number; pieceIndex: number; isDragging?: boolean; gridWidth?: number }>(
   ({ cols, rows, pieceIndex, isDragging, gridWidth }) => {
     const col = pieceIndex % cols;
     const row = Math.floor(pieceIndex / cols);
-    // With backgroundSize: (cols*100%) x (rows*100%), CSS background-position
-    // percent aligns the same-percent point of the image with the same point
-    // of the container — so the right column needs 100%, not (col/cols)*100.
     const pctX = cols > 1 ? (col / (cols - 1)) * 100 : 0;
     const pctY = rows > 1 ? (row / (rows - 1)) * 100 : 0;
 
@@ -979,11 +905,9 @@ export const DraggablePiece = styled('div', {
       userSelect: 'none' as const,
       WebkitUserSelect: 'none' as const,
       zIndex: isDragging ? 100 : 10,
-      // Show correct portion of image via background
       backgroundSize: `${cols * 100}% ${rows * 100}%`,
       backgroundPosition: `${pctX}% ${pctY}%`,
       backgroundRepeat: 'no-repeat',
-      // clip to just this piece
       '& img': {
         display: 'none',
       },
@@ -991,7 +915,6 @@ export const DraggablePiece = styled('div', {
   }
 );
 
-/** Feedback badge shown after wrong/correct drag */
 export const DragFeedbackBadge = styled('div', {
   shouldForwardProp: (prop) => prop !== 'variant',
 })<{ variant: 'correct' | 'wrong' }>(({ variant }) => ({
@@ -1005,10 +928,6 @@ export const DragFeedbackBadge = styled('div', {
   animation: `${feedbackPop} 0.3s ease-out`,
   textAlign: 'center',
 }));
-
-// ═══════════════════════════════════════════
-// ─── Finish / Game Complete Screen ───
-// ═══════════════════════════════════════════
 
 export const FinishContainer = styled('div')({
   flex: 1,
@@ -1044,7 +963,6 @@ export const FinishContent = styled('div')({
   boxSizing: 'border-box',
 });
 
-/** Finish summary: centers puzzle image between title and pinned Continue (matches True/False layout rhythm). */
 export const FinishSummaryMiddle = styled('div')({
   flex: '1 1 0',
   minHeight: 0,

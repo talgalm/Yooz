@@ -5,9 +5,6 @@ import { installIosTapRescue } from '../utils/iosTapRescue';
 import { useTranslations } from '../context/LanguageContext';
 import { texts } from './MobileContainer.i18n';
 
-// ponytail: Network Information API is Chrome/Android only — on iOS this falls
-// back to the online/offline flag, so the banner shows there only when the
-// connection drops entirely. Poll a ping endpoint if that proves too coarse.
 const connection = (navigator as Navigator & {
   connection?: EventTarget & { effectiveType?: string };
 }).connection;
@@ -88,7 +85,6 @@ const ReceptionBanner = styled('div')({
 export function MobileContainer({ children }: { children: ReactNode }) {
   const weakReception = useWeakReception();
   const t = useTranslations(texts);
-  // iOS drops the click when the layout shifts under the finger — see iosTapRescue.
   useEffect(installIosTapRescue, []);
   return (
     <Outer>

@@ -25,8 +25,6 @@ function itemTypeLabel(itemType: ModuleItem['itemType'], t: Record<string, strin
   return t.popupStepMission;
 }
 
-// ─── Props ───
-
 interface PopupMessagesSectionProps {
   popups: PopupMessage[];
   selectedItems: ModuleItem[];
@@ -35,8 +33,6 @@ interface PopupMessagesSectionProps {
   onUpdatePopup: (index: number, field: keyof PopupMessage, value: string | number | boolean) => void;
   t: Record<string, string>;
 }
-
-// ─── Component ───
 
 export default function PopupMessagesSection({
   popups,
@@ -52,7 +48,6 @@ export default function PopupMessagesSection({
       <VerticalStackGap12>
         {popups.map((popup, i) => (
           <PopupCard key={i} enabled={popup.enabled}>
-            {/* Row 1: enabled toggle + title + remove */}
             <InlineRowWrap>
               <PopupLabel>
                 <input
@@ -75,7 +70,6 @@ export default function PopupMessagesSection({
               </PopupTinyDangerButton>
             </InlineRowWrap>
 
-            {/* Row 2: content type toggle + text or image input */}
             <InlineRowWrap>
               <SelectionGroupNoFlex>
                 <SmallSelectionButton
@@ -124,7 +118,6 @@ export default function PopupMessagesSection({
               )}
             </InlineRowWrap>
 
-            {/* Row 3: trigger + condition */}
             <InlineRowWrap>
               <PopupFieldColumn>
                 <TinyLabel>{t.popupTrigger}</TinyLabel>

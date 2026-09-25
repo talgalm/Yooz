@@ -8,11 +8,6 @@ const cache = new Map<string, { count: number; expiresAt: number }>();
 const cacheKey = (activityId: Types.ObjectId | string, dayScoped: boolean) =>
   `${activityId.toString()}${dayScoped ? ':today' : ''}`;
 
-/**
- * `dayScoped` counts only today's joins — used by `dailyReset` activities,
- * whose reports now outlive the day, so an all-time count would make a
- * participant-count popup threshold fire on the first join every morning.
- */
 export async function getParticipantCount(
   activityId: Types.ObjectId | string,
   dayScoped = false,
@@ -30,7 +25,6 @@ export async function getParticipantCount(
   return count;
 }
 
-/** Call when a new report is created so popup thresholds stay reasonably fresh. */
 export function bumpParticipantCount(activityId: Types.ObjectId | string): void {
   cache.delete(cacheKey(activityId, false));
   cache.delete(cacheKey(activityId, true));

@@ -32,8 +32,6 @@ interface Props {
   onLogin: (data: LoginData) => Promise<void>;
 }
 
-// ─── Styled for purple login page ───
-
 const LoginInput = styled('input')({
   width: '100%',
   padding: '16px 20px',
@@ -136,7 +134,6 @@ export default function ActivityLogin({
   const [smsConsent, setSmsConsent] = useState(false);
   const t = useTranslations(texts);
 
-  // Ref for group so Google popup callback can read latest value
   const selectedGroupRef = useRef(selectedGroup);
   selectedGroupRef.current = selectedGroup;
   const nameRef = useRef(name);

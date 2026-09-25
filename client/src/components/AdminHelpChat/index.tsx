@@ -1,8 +1,3 @@
-/**
- * DumbDumbBot — floating chatbot on all admin pages.
- * FAB starts bottom-left, is draggable anywhere, and remembers where it was put
- * (useFabPosition). The chat panel anchors to whichever corner the FAB sits in.
- */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -328,7 +323,6 @@ export default function AdminHelpChat() {
 
   const onLeftHalf = pos.left + FAB_SIZE / 2 < viewport.width / 2;
 
-  // Under 600px the panel is full-width via its own media query — leave it alone.
   const panelStyle = useMemo<CSSProperties>(() => {
     if (viewport.width <= 600) return {};
     const inLowerHalf = pos.top + FAB_SIZE / 2 > viewport.height / 2;

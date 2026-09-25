@@ -19,10 +19,6 @@ import { styled } from '@mui/material/styles';
 const DesktopCell = styled('td')({ [MOBILE]: { display: 'none' } });
 const DesktopHead = styled('th')({ [MOBILE]: { display: 'none' } });
 
-/**
- * Hours across the team. A member only ever sees themselves — the server
- * enforces that, so the person filter is simply hidden for them.
- */
 export default function ManageHoursPage() {
   const t = useTranslations(texts);
   const { user } = useManageAuth();
@@ -97,7 +93,6 @@ export default function ManageHoursPage() {
         <MonthSheet
           key={personId}
           userId={personId || undefined}
-          // Editing someone else's sheet is not a thing; the server refuses it anyway.
           editable={!personId || personId === user?._id}
         />
       ) : (

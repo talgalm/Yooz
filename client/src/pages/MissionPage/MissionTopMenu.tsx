@@ -1,11 +1,3 @@
-/**
- * MissionTopMenu — a single info "i" button anchored top-right of the frame.
- * Tapping it opens a dropdown of logout / music / help rows. Tapping anywhere
- * else closes the menu.
- *
- * Each row is shown only when its handler is supplied. This replaces the
- * older three-separate-icons row that was rendered on every mission screen.
- */
 import { useEffect, useRef, useState } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 import { useTranslations } from '../../context/LanguageContext';
@@ -104,7 +96,6 @@ export default function MissionTopMenu({ onLogout, toggleMute, muted, onHelp }: 
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close on any pointerdown outside the menu container.
   useEffect(() => {
     if (!open) return;
     const handler = (e: PointerEvent) => {

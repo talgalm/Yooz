@@ -75,7 +75,6 @@ export default function AdminUsersTab() {
       const data = await adminApiFetch<{ users: User[] }>('/api/admin/users');
       setUsers(data.users);
     } catch {
-      // silently fail
     } finally {
       setInitialLoading(false);
     }
@@ -111,7 +110,6 @@ export default function AdminUsersTab() {
     setLoading(true);
     try {
       if (editingId) {
-        // Update
         const body: Record<string, unknown> = { email, role, name };
         if (password) body.password = password;
         await adminApiFetch(`/api/admin/users/${editingId}`, {
@@ -119,7 +117,6 @@ export default function AdminUsersTab() {
           body: JSON.stringify(body),
         });
       } else {
-        // Create
         await adminApiFetch('/api/admin/users', {
           method: 'POST',
           body: JSON.stringify({ email, password, role, name }),
@@ -158,7 +155,6 @@ export default function AdminUsersTab() {
   };
 
   const isSelf = (userId: string) => {
-    // Compare by email since old tokens may not have userId
     const user = users.find((u) => u._id === userId);
     return !!(user && admin && user.email === admin.email);
   };

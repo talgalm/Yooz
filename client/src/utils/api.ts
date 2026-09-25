@@ -29,7 +29,6 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
   return res.json();
 }
 
-/** Retry transient network failures and gateway overload (502/503/504/429). */
 export async function apiFetchWithRetry<T>(
   url: string,
   options: RequestInit = {},
@@ -48,10 +47,6 @@ export async function apiFetchWithRetry<T>(
   throw lastError;
 }
 
-/**
- * Best-effort write: retry on the wire, then queue locally and flush when
- * connectivity returns. Returns true when the server acknowledged the write.
- */
 export async function apiFetchPersistSilent(url: string, options: RequestInit = {}): Promise<boolean> {
   ensureOfflineQueueListeners();
   try {
@@ -60,8 +55,6 @@ export async function apiFetchPersistSilent(url: string, options: RequestInit = 
     return true;
   } catch (err) {
     const method = (options.method || 'GET').toUpperCase();
-    // Queue only what a later attempt could still deliver. A non-retryable 4xx
-    // is a permanent rejection — queueing it just replays the same failure.
     if (
       isRetryableFetchError(err)
       && (method === 'POST' || method === 'PATCH' || method === 'PUT' || method === 'DELETE')

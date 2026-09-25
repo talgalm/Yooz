@@ -59,7 +59,6 @@ interface TrashSortSettings {
   fallSpeedMs?: number;
 }
 
-// Pause between one item leaving and the next starting to fall.
 const ITEM_GAP_MS = 900;
 
 export default function TrashSortGame({ game, onComplete }: GameProps) {
@@ -87,7 +86,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
   const [itemY, setItemY] = useState(0);
   const [binFlash, setBinFlash] = useState<Record<string, 'correct' | 'wrong' | null>>({});
 
-  // Drag state
   const [isDragging, setIsDragging] = useState(false);
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -104,7 +102,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
   const currentItem = allItems[currentItemIdx];
   const remainingItems = allItems.slice(currentItemIdx + 1);
 
-  // ─── Countdown ───
   useEffect(() => {
     if (phase !== 'countdown') return;
     if (countdownValue <= 0) {
@@ -119,14 +116,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
     return () => clearTimeout(timer);
   }, [phase, countdownValue]);
 
-  // ─── Fall animation ───
-  // `handleMissed` is recreated on every item change (its deps include
-  // currentItemIdx). But startFalling is memoized on [fallSpeedMs] only, so
-  // the `animate` closure inside it would otherwise capture the FIRST
-  // render's handleMissed forever — meaning after the first natural miss,
-  // every later "missed" call records against currentItemIdx=0 and the
-  // game freezes on item 1 / item 2. A ref keeps the latest handleMissed
-  // available to animate without forcing startFalling to re-create.
   const handleMissedRef = useRef<() => void>(() => {});
   const startFalling = useCallback(() => {
     setItemY(0);
@@ -140,7 +129,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
       setItemY(progress);
 
       if (progress >= 1) {
-        // Item fell to bottom — missed!
         handleMissedRef.current();
         return;
       }
@@ -170,8 +158,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
     advanceToNext();
   }, [currentItemIdx, allItems, bins]);
 
-  // Keep handleMissedRef pointing at the latest handleMissed so the
-  // memoized animate() loop in startFalling always calls the current one.
   useEffect(() => { handleMissedRef.current = handleMissed; }, [handleMissed]);
 
   const advanceToNext = useCallback(() => {
@@ -180,8 +166,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
       finishGame();
     } else {
       setCurrentItemIdx(nextIdx);
-      // Park the next item back at the top for the whole gap — otherwise it
-      // renders at the previous item's drop position until startFalling runs.
       setItemY(0);
       setTimeout(() => startFalling(), ITEM_GAP_MS);
     }
@@ -203,7 +187,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
     }, 500);
   };
 
-  // ─── Drop handler ───
   const handleDrop = useCallback((binId: string) => {
     if (!currentItem) return;
     stopFalling();
@@ -232,7 +215,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
     advanceToNext();
   }, [currentItem, currentItemIdx, bins, correctPoints, stopFalling, sounds, advanceToNext]);
 
-  // ─── Pointer handlers ───
   const handlePointerDown = (e: React.PointerEvent) => {
     if (phase !== 'playing' || !currentItem) return;
     stopFalling();
@@ -246,13 +228,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
     setIsDragging(true);
   };
 
-  // Pointer move/up/cancel are wired to `window` (not the SortContainer) while
-  // dragging. If we bound them on SortContainer the gesture would break the
-  // moment the finger slid past the container's edge (off the screen, into
-  // mobile safe-areas, etc.) — pointerup would never fire and the game would
-  // be stuck with isDragging=true and the fall animation cancelled.
-  // pointercancel covers OS-level interruptions (multi-touch zoom, swipe-in
-  // notification) — treat them as a release outside any bin → resume falling.
   useEffect(() => {
     if (!isDragging) return;
 
@@ -274,7 +249,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
           return;
         }
       }
-      // Released outside any bin (including off-screen) — resume falling.
       startFalling();
     };
 
@@ -286,8 +260,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onCancel);
-    // If the tab/window loses focus mid-drag (e.g. iOS gesture switching
-    // apps), recover the same way as a cancel.
     window.addEventListener('blur', onCancel);
 
     return () => {
@@ -314,7 +286,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
     onComplete(result);
   };
 
-  // Cleanup
   useEffect(() => {
     return () => {
       cancelAnimationFrame(fallAnimRef.current);
@@ -322,7 +293,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
     };
   }, []);
 
-  // ─── Tutorial ───
   if (phase === 'tutorial') {
     return (
       <SortContainer>
@@ -344,7 +314,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
     );
   }
 
-  // ─── Finish ───
   if (phase === 'finish') {
     return (
       <SortContainer>
@@ -358,8 +327,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
     );
   }
 
-  // ─── Countdown ───
-  // ─── Playing ───
   return (
     <SortContainer>
       {phase === 'countdown' && (
@@ -413,7 +380,6 @@ export default function TrashSortGame({ game, onComplete }: GameProps) {
         </BinsRow>
       </GameArea>
 
-      {/* Dragging ghost */}
       {isDragging && currentItem && (
         <FallingItem
           isDragging

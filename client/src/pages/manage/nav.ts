@@ -1,10 +1,3 @@
-/**
- * The whole /manage menu, in one place. Short on purpose — the spec's rule is
- * "one short main menu, not dozens of modules".
- * `ownerOnly` items are a UI convenience; the real gate is requireManageRole on the server.
- * Labels live in `nav.i18n.ts`, keyed by `path`.
- */
-/** Spelled out so the compiler catches a label the i18n file forgot. */
 export type ManageNavPath =
   | 'my-work'
   | 'dashboard'

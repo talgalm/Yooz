@@ -12,7 +12,6 @@ export interface IContact {
   _id: Types.ObjectId;
   name: string;
   role?: string;
-  /** Mobile. `officePhone` is the desk line — people ask for both. */
   phone?: string;
   officePhone?: string;
   email?: string;
@@ -27,24 +26,14 @@ export interface IClient {
   status: ClientStatus;
   leadSource: LeadSource;
   website?: string;
-  /**
-   * What the first meeting taught us about the organisation. Open to every
-   * employee on purpose: whoever walks into the next meeting needs it.
-   */
   brief?: string;
   contacts: IContact[];
   ownerUserId?: Types.ObjectId;
 
-  /**
-   * The commercial agreement. Owner-only — stripped by serializeClient for
-   * everyone else, exactly like a project's price.
-   */
   contract?: {
     startDate?: Date;
     endDate?: Date;
-    /** One-off build fee agreed in the contract. */
     initialFee?: number;
-    /** Recurring monthly charge. */
     monthlyFee?: number;
     notes?: string;
   };
@@ -92,7 +81,6 @@ const clientSchema = new Schema<IClient>(
       notes: { type: String },
     },
 
-    // Maintained by the server on every Interaction write — never trust a client-sent value.
     lastContactDate: { type: Date },
     nextActionText: { type: String, trim: true },
     nextActionDate: { type: Date },
@@ -101,7 +89,6 @@ const clientSchema = new Schema<IClient>(
     driveUrl: { type: String, trim: true },
     tags: { type: [String], default: [] },
     notes: { type: String },
-    // Business entities are archived, never hard-deleted — history has to survive.
     archived: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: 'ManageUser', required: true },
   },

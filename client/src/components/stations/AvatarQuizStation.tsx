@@ -1,17 +1,3 @@
-/**
- * avatarQuiz — the avatar station with the conversation reversed: the
- * character asks, the participant answers in free text, the server judges,
- * and the character reacts *and teaches* before moving on.
- *
- * Shares all chrome and TTS with AvatarStation (see ./avatar/*). The parts
- * that are genuinely different live here: the question state machine, the
- * scoring, and the feedback card.
- *
- * The answer key never reaches this component — `idealAnswer`,
- * `acceptableKeywords` and `commonWrongAnswers` are stripped server-side
- * (activities.ts → publicStationSettings), and judging happens over
- * POST /api/avatar-quiz keyed by stationId + questionIndex.
- */
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { styled, keyframes } from '@mui/material/styles';
@@ -60,12 +46,9 @@ import {
   CHARACTER_WIDTH,
 } from './avatar/styled';
 
-// ─── Types ───
-
 type Verdict = 'correct' | 'partial' | 'incorrect' | 'unrelated';
 type Phase = 'intro' | 'asking' | 'answering' | 'evaluating' | 'feedback' | 'summary';
 
-/** Only the public half of the question — the answer key stays on the server. */
 interface PublicQuestion {
   text: string;
   mediaUrl?: string;
@@ -132,18 +115,9 @@ interface SavedProgress {
 
 const DEFAULT_POINTS = 10;
 const DEFAULT_HINT_PENALTY = 2;
-/**
- * Safety net for TTS that never fires `onEnd` (iOS silent mode, blocked audio).
- *
- * Once the clip is loaded we know its exact length and arm the watchdog against
- * that (see `say`), so it only ever fires when playback has genuinely stalled.
- * The word estimate below is just the opening guess covering the fetch, and the
- * fallback for browser speech, which reports no duration.
- */
 const SPEECH_WATCHDOG_FLOOR_MS = 8000;
 const SPEECH_WATCHDOG_CEILING_MS = 30_000;
 const MS_PER_SPOKEN_WORD = 450;
-/** Slack added to a known clip length before the watchdog gives up on it. */
 const SPEECH_WATCHDOG_SLACK_MS = 2500;
 
 function speechWatchdogMs(words: number): number {
@@ -153,18 +127,12 @@ function speechWatchdogMs(words: number): number {
   );
 }
 
-/** Last-resort unblock if a callback is swallowed entirely — never during speech. */
 const FLOW_FAILSAFE_MS = SPEECH_WATCHDOG_CEILING_MS + 10_000;
 const TTS_MAX_CHARS = 600;
-/** Quiet gap after she finishes before she moves on — cancelled while typing. */
 const PAUSE_BEFORE_NEXT_MS = 6000;
-/** Minimum time any spoken line stays on screen, so it can be read even when
- *  audio is unavailable and playback "ends" instantly. */
 const MIN_DWELL_MS = 2500;
 const MAX_DWELL_MS = 9000;
 const MS_PER_WORD = 320;
-
-// ─── Quiz-only styled ───
 
 const VERDICT_COLOR: Record<Verdict, string> = {
   correct: '#22c55e',
@@ -173,15 +141,6 @@ const VERDICT_COLOR: Record<Verdict, string> = {
   unrelated: '#ef4444',
 };
 
-/**
- * In-flow variant of the shared bubble.
- *
- * The original is absolutely positioned below the character and floats over
- * whatever follows — tolerable in AvatarStation, where it appears briefly
- * after a reply. Here the character is asking or teaching most of the time,
- * and the bubble covered ~65px of the chat bar, so the answer input couldn't
- * be tapped. Rendering it in normal flow pushes the chat bar down instead.
- */
 const QuizSpeakingBubble = styled(SpeakingBubble)({
   position: 'relative',
   top: 'auto',
@@ -189,19 +148,10 @@ const QuizSpeakingBubble = styled(SpeakingBubble)({
   insetInlineEnd: 'auto',
   width: '100%',
   maxWidth: CHARACTER_WIDTH,
-  // Container uses gap: 28 — pull the bubble back toward the figure it belongs to.
   marginTop: -14,
   '@media (min-width: 768px)': { maxWidth: 380 },
 });
 
-/**
- * Scrollable variant of the shared Container.
- *
- * The page root is `height: 100dvh; overflow: hidden`, so this column was
- * clipped rather than scrolled: on shorter viewports its 140px bottom padding
- * fell off-screen and the chat bar ended up underneath the fixed action button
- * (measured: 28px overlap at 393x600, 87px and fully hidden at 430x560).
- */
 const QuizContainer = styled(Container)({
   minHeight: 0,
   overflowY: 'auto',
@@ -210,7 +160,6 @@ const QuizContainer = styled(Container)({
   '&::-webkit-scrollbar': { display: 'none' },
 });
 
-/** Capped so the figure can't push the answer input off a short screen. */
 const QuizCharacterImage = styled(CharacterImage)({
   maxHeight: 'min(42vh, 340px)',
   objectFit: 'cover',
@@ -231,11 +180,6 @@ const cardIn = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `;
 
-/**
- * The verdict now rides inside the speech bubble rather than in a second card
- * below it — the old layout printed her reaction twice, once as speech and
- * once as feedback.
- */
 const VerdictRow = styled('div')<{ variant: Verdict }>(({ variant }) => ({
   display: 'flex',
   alignItems: 'center',
@@ -387,8 +331,6 @@ const HintModalImage = styled('img')({
   borderRadius: 12,
 });
 
-// ─── Helpers ───
-
 async function judgeAnswer(body: {
   stationId: string;
   questionIndex: number;
@@ -402,7 +344,6 @@ async function judgeAnswer(body: {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    // 429: one retry after 2s, then give up — never block progress.
     if (res.status === 429) {
       await new Promise((r) => setTimeout(r, 2000));
       const retry = await fetchWithNetworkRetry('/api/avatar-quiz', {
@@ -419,8 +360,6 @@ async function judgeAnswer(body: {
     return null;
   }
 }
-
-// ─── Component ───
 
 interface AvatarQuizStationProps {
   station: StationItemData;
@@ -444,13 +383,8 @@ export default function AvatarQuizStation({
   const descriptionAsPopup = !!settings.descriptionAsPopup && !!station.description;
   const pointsPerQuestion = settings.pointsPerQuestion ?? DEFAULT_POINTS;
   const voiceType = settings.voiceType || 'man';
-  // The character's own gender is known from the chosen voice, so self-reference
-  // is gendered. Only how she addresses the *participant* stays neutral — we
-  // don't know their gender.
   const thinkingLabel = voiceType === 'woman' ? t.thinkingFemale : t.thinkingMale;
 
-  // Question order is decided once and persisted, so a refresh can't reshuffle
-  // the participant into a different quiz mid-station.
   const [saved] = useState<SavedProgress | null>(() => {
     if (typeof window === 'undefined' || !sessionStorageKey) return null;
     try {
@@ -466,7 +400,6 @@ export default function AvatarQuizStation({
 
   const [order] = useState<number[]>(() => {
     if (saved?.order?.length) {
-      // Drop indices that no longer exist (admin edited the bank mid-session).
       const valid = saved.order.filter((i) => i >= 0 && i < allQuestions.length);
       if (valid.length > 0) return valid;
     }
@@ -478,12 +411,6 @@ export default function AvatarQuizStation({
     return ordered.slice(0, limit);
   });
 
-  /**
-   * A stored entry alone is not a resume. Progress is written the moment the
-   * first question is asked, so after one visit `saved` was always truthy and
-   * the opening line was skipped for good. Only treat it as resuming when the
-   * participant actually got somewhere.
-   */
   const resuming =
     saved != null && (saved.currentIndex > 0 || (saved.answers?.length ?? 0) > 0);
 
@@ -498,14 +425,8 @@ export default function AvatarQuizStation({
   const [hintUsedThisQuestion, setHintUsedThisQuestion] = useState(false);
   const [usedAnyHint, setUsedAnyHint] = useState(false);
   const [judgement, setJudgement] = useState<JudgeResponse | null>(null);
-  /**
-   * What this question was actually worth, normalised to 100 for display.
-   * Taken from the points really awarded, so the retry halving and any hint
-   * penalty are visible rather than hidden behind a raw verdict.
-   */
   const [questionScore, setQuestionScore] = useState<{ earned: number; max: number } | null>(null);
   const [retryOffered, setRetryOffered] = useState(false);
-  /** True once she has finished speaking — starts the quiet gap before moving on. */
   const [speechSettled, setSpeechSettled] = useState(false);
 
   const [bubbleText, setBubbleText] = useState<string | null>(null);
@@ -515,7 +436,6 @@ export default function AvatarQuizStation({
   const [descriptionPopupOpen, setDescriptionPopupOpen] = useState(descriptionAsPopup);
   const [hintWarningOpen, setHintWarningOpen] = useState(false);
   const [hintTextOpen, setHintTextOpen] = useState(false);
-  /** Set once a follow-up comes back unanswered — the input is then pointless. */
   const [followUpUnavailable, setFollowUpUnavailable] = useState(false);
   useModalBlur(popupOpen || hintWarningOpen || hintTextOpen);
 
@@ -559,11 +479,6 @@ export default function AvatarQuizStation({
 
   useEffect(() => () => stopSpeaking(), [stopSpeaking]);
 
-  /**
-   * Show text first, then speak. The bubble is never gated on TTS — if audio
-   * is blocked (iOS silent mode) the participant still reads everything, and
-   * the watchdog releases `onDone` so the flow can't stall.
-   */
   const say = useCallback(
     async (text: string, videoUrl: string | undefined, onDone?: () => void) => {
       stopSpeaking();
@@ -572,15 +487,8 @@ export default function AvatarQuizStation({
       setBubbleText(text);
       setSpeakingId(id);
 
-      // A line must stay on screen long enough to read, independently of the
-      // audio. Without this the opening line vanished instantly: with TTS
-      // unavailable the browser fallback fires `onEnd` right away, so the
-      // bubble was replaced by the first question before anyone could read it.
       const shownAt = Date.now();
       const words = text.trim().split(/\s+/).filter(Boolean).length;
-      // Word-count guess at reading time. Used only while we don't know the
-      // real clip length — once audio is loaded its duration governs the pacing
-      // instead (see below), which is what the participant is actually hearing.
       let minDwellMs = Math.min(MAX_DWELL_MS, Math.max(MIN_DWELL_MS, words * MS_PER_WORD));
 
       let finished = false;
@@ -617,7 +525,7 @@ export default function AvatarQuizStation({
         ]);
         speech = s;
       } catch {
-        return; // watchdog still releases
+        return;
       }
 
       if (!isMountedRef.current || speakTokenRef.current !== token) {
@@ -625,9 +533,6 @@ export default function AvatarQuizStation({
         return;
       }
 
-      // Real clip length beats every estimate: re-arm the watchdog against it,
-      // and drop the reading-time floor — the audio itself is now the pacing,
-      // so a short clip no longer sits on screen waiting out a word count.
       if (speech.durationMs) {
         minDwellMs = 0;
         if (watchdogRef.current !== null) {
@@ -649,7 +554,6 @@ export default function AvatarQuizStation({
     [stopSpeaking, voiceType]
   );
 
-  // Persist after every settled step so a refresh resumes at the same question.
   useEffect(() => {
     if (typeof window === 'undefined' || !sessionStorageKey) return;
     if (phase === 'intro' || phase === 'summary') return;
@@ -657,7 +561,6 @@ export default function AvatarQuizStation({
       const payload: SavedProgress = { order, currentIndex, totalEarned, transcript, answers };
       window.sessionStorage.setItem(sessionStorageKey, JSON.stringify(payload));
     } catch {
-      /* best effort */
     }
   }, [sessionStorageKey, order, currentIndex, totalEarned, transcript, answers, phase]);
 
@@ -666,7 +569,6 @@ export default function AvatarQuizStation({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [popupOpen, transcript.length]);
 
-  /** Append a character line, skipping an immediate repeat of the same text. */
   const appendCharacterLine = useCallback((text: string) => {
     setTranscript((prev) =>
       prev[prev.length - 1]?.text === text ? prev : [...prev, { role: 'character', text }]
@@ -688,15 +590,6 @@ export default function AvatarQuizStation({
     void say(question.text, settings.reactionVideos?.asking, () => setPhase('answering'));
   }, [question, say, settings.reactionVideos?.asking, appendCharacterLine]);
 
-  // Intro line, first visit only. A resumed session skips straight to the
-  // question it left off on.
-  //
-  // Gated on `introDone` state rather than a ref: a ref survives React's
-  // StrictMode remount, and the remount's cleanup calls `stopSpeaking()`,
-  // which bumps the speech token so the in-flight `say` never fires its
-  // callback. The old ref guard then blocked the retry, leaving the station
-  // parked on the intro with no input — forever. State re-runs cleanly, and
-  // the failsafe below means a swallowed callback can never strand it again.
   const [introDone, setIntroDone] = useState(false);
   useEffect(() => {
     if (introDone) return;
@@ -744,10 +637,6 @@ export default function AvatarQuizStation({
     [questionPoints, hintPenalty, questionIndex, question?.text]
   );
 
-  /**
-   * Free-form follow-up once the question is already graded. Never re-scores:
-   * the first reply to each question is final, so this is conversation only.
-   */
   const handleFollowUp = async (message: string) => {
     setPhase('evaluating');
     setSpeechSettled(false);
@@ -770,9 +659,6 @@ export default function AvatarQuizStation({
       if (!isMountedRef.current) return;
       setPhase('summary');
 
-      // `source: 'fallback'` means no AI answered — there is no offline way to
-      // respond to an open question, so whatever came back is canned. Say so
-      // once and take the box away rather than let her parrot content.
       if (!data || data.source !== 'gemini') {
         setFollowUpUnavailable(true);
         appendCharacterLine(t.followUpUnavailable);
@@ -798,7 +684,6 @@ export default function AvatarQuizStation({
     setBubbleText(null);
     setDraft('');
 
-    // Only after the last question: open conversation, never re-scored.
     if (phase === 'summary') {
       await handleFollowUp(text);
       return;
@@ -819,8 +704,6 @@ export default function AvatarQuizStation({
     });
     if (!isMountedRef.current) return;
 
-    // Network/limiter failure: the station must never dead-end. Treat it as an
-    // unscored pass and still show the character's teaching point.
     const settled: JudgeResponse = result || {
       verdict: 'unrelated',
       scoreRatio: 0,
@@ -838,10 +721,6 @@ export default function AvatarQuizStation({
     setPhase('feedback');
     setRetryOffered(canRetry);
 
-    // While a second attempt is on the table the teaching point is withheld:
-    // saying it now hands over the answer and makes the retry pointless. It is
-    // revealed once the attempt is final — on the retry's result, or when the
-    // participant declines (see handleDeclineRetry).
     const spoken = canRetry
       ? settled.reaction
       : [settled.reaction, settled.teaching].filter(Boolean).join(' ');
@@ -852,8 +731,6 @@ export default function AvatarQuizStation({
     }
 
     if (spoken) {
-      // `speechSettled` starts the quiet gap before she moves on; the pause
-      // effect owns advancing so typing can cancel it.
       void say(spoken, settled.videoUrl, () => setSpeechSettled(true));
     } else {
       setSpeechSettled(true);
@@ -873,31 +750,19 @@ export default function AvatarQuizStation({
     setCurrentIndex((prev) => prev + 1);
   }, [isLastQuestion, settings.outroText, say, stopSpeaking]);
 
-  /**
-   * She moves on by herself after a quiet gap — there is no "next question"
-   * button. Typing cancels it (the effect re-runs with a non-empty draft and
-   * clears the timer), and clearing the box starts the gap again, so a
-   * participant mid-thought is never cut off.
-   */
   useEffect(() => {
     if (phase !== 'feedback' || retryOffered || !speechSettled) return;
     if (draft.trim()) return;
     const id = window.setTimeout(() => advance(), PAUSE_BEFORE_NEXT_MS);
     return () => window.clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, retryOffered, speechSettled, draft]);
 
-  // Single owner of "ask the current question" — both the first question and
-  // every advance route through here, so a resumed session can't double-ask.
   const askedIndexRef = useRef<number | null>(null);
   useEffect(() => {
     if (!introDone) return;
     if (askedIndexRef.current === currentIndex) return;
     askedIndexRef.current = currentIndex;
     askCurrentQuestion();
-    // Same StrictMode hazard as the intro: clearing the guard lets the remount
-    // re-ask (the transcript dedupes), and the failsafe releases the input if
-    // the question's speech callback is swallowed.
     const failsafe = window.setTimeout(
       () => setPhase((p) => (p === 'asking' ? 'answering' : p)),
       FLOW_FAILSAFE_MS
@@ -906,7 +771,6 @@ export default function AvatarQuizStation({
       askedIndexRef.current = null;
       window.clearTimeout(failsafe);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, introDone]);
 
   const handleRetry = () => {
@@ -921,9 +785,6 @@ export default function AvatarQuizStation({
   };
 
   const handleDeclineRetry = () => {
-    // Keep the incorrect verdict on the record rather than dropping the question,
-    // then pay out the lesson that was held back while the retry was offered —
-    // skipping straight to the next question would teach them nothing.
     const lastUserAnswer = [...transcript].reverse().find((e) => e.role === 'user')?.text || '';
     if (judgement) recordAnswer(lastUserAnswer, judgement, attempt, hintUsedThisQuestion);
     setRetryOffered(false);
@@ -958,7 +819,7 @@ export default function AvatarQuizStation({
   const handleFinish = () => {
     stopSpeaking();
     if (typeof window !== 'undefined' && sessionStorageKey) {
-      try { window.sessionStorage.removeItem(sessionStorageKey); } catch { /* noop */ }
+      try { window.sessionStorage.removeItem(sessionStorageKey); } catch { }
     }
     const maxPossibleScore = order.reduce(
       (sum, i) => sum + (allQuestions[i]?.points ?? pointsPerQuestion),
@@ -991,8 +852,6 @@ export default function AvatarQuizStation({
     setHintTextOpen(true);
   };
 
-  // ─── Render ───
-
   if (allQuestions.length === 0 || totalQuestions === 0) {
     return (
       <Container>
@@ -1018,9 +877,6 @@ export default function AvatarQuizStation({
   const answeredVerdicts = new Map(answers.map((a) => [a.questionIndex, a.verdict]));
   void answeredVerdicts;
 
-  // Live through `feedback` too: that is where follow-up questions happen.
-  // Between questions the character just gives her feedback and moves on; the
-  // input only comes back at the end, once every question has been answered.
   const showChat =
     phase === 'asking' || phase === 'answering' || phase === 'evaluating' ||
     (phase === 'summary' && !followUpUnavailable);
@@ -1074,7 +930,6 @@ export default function AvatarQuizStation({
         </QuizSpeakingBubble>
       ) : bubbleText ? (
         <QuizSpeakingBubble>
-          {/* Verdict rides in the bubble; there is no second feedback card. */}
           {phase === 'feedback' && judgement && (
             <VerdictRow variant={judgement.verdict}>
               <VerdictIcon variant={judgement.verdict}>{verdictGlyph(judgement.verdict)}</VerdictIcon>
@@ -1147,14 +1002,6 @@ export default function AvatarQuizStation({
         </InputWrap>
       )}
 
-      {/* Portalled to <body> on purpose. These overlays use `backdrop-filter`,
-          and rendering them inside the station meant the filter sampled the
-          animated stage above it (AnimatedStage/AnimatedContent run keyframes
-          with fill-mode `both`, which keeps that subtree on its own compositing
-          layer and makes it the backdrop root). The blur then picked up a
-          stale, offset frame and painted a ghosted copy of the page behind the
-          modal. From <body> the backdrop root is the real page, so the blur
-          stays and the ghost goes. */}
       {popupOpen && createPortal(
         <>
           <PopupBackdrop onClick={() => setPopupOpen(false)} />
@@ -1221,8 +1068,6 @@ export default function AvatarQuizStation({
         document.body,
       )}
 
-      {/* No "next question" button — she moves on herself after a quiet gap.
-          The only fixed action left is leaving the station at the end. */}
       {phase === 'summary' && (
         <FixedContinue onClick={handleFinish}>{t.finish}</FixedContinue>
       )}

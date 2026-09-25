@@ -85,10 +85,7 @@ export type { OrderSurveySubmitPayload };
 
 type CardStatus = 'neutral' | 'correct' | 'incorrect';
 
-// ─── Nature SVG decorations ───
 
-
-/** Tree ring lines inside stump score circle */
 function StumpRingsSvg() {
   return (
     <svg
@@ -109,8 +106,6 @@ function StumpRingsSvg() {
   );
 }
 
-// ─── Nature-themed card colors ───
-
 const CARD_COLORS = {
   neutral: { border: '#4a6572', bg: '#e3ebf3' },
   correct: { border: '#27ae60', bg: '#d5f5e3' },
@@ -118,8 +113,6 @@ const CARD_COLORS = {
   tapped: { border: '#2980b9', bg: '#dbeeff' },
   over: { border: '#2980b9', bg: '#eef5ff' },
 };
-
-// ─── Component ───
 
 interface OrderGameProps extends GameProps {
   activityCode?: string;
@@ -149,19 +142,16 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
   const [attempts, setAttempts] = useState(0);
   const gameStartTime = useRef(Date.now());
 
-  // Refs for timeout-safe access (avoid stale closures)
   const currentRoundRef = useRef(0);
   const roundsRef = useRef<OrderRound[]>([]);
   const initRoundRef = useRef<(idx: number) => void>(() => {});
 
-  // Golf challenge
   const golfEnabled = (settings as unknown as Record<string, unknown>).golfChallenge !== false;
   const [showGolf, setShowGolf] = useState(false);
   const [golfBonus, setGolfBonus] = useState(0);
   const [golfDone, setGolfDone] = useState(false);
   const golfT = useTranslations(golfTexts);
 
-  // Timer
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -182,7 +172,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
 
   useEffect(() => {
     if (!setThemedSceneOverlay) return;
-    // Golf playing — show grass background behind header too
     if (showGolf) {
       setThemedSceneOverlay(<GolfFullScreenSceneBackdrop aria-hidden />);
       return () => setThemedSceneOverlay(null);
@@ -202,7 +191,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
 
   const inlineBackdrop = !setThemedSceneOverlay;
 
-  // Pointer-based drag reordering (works on touch + mouse)
   const [dragInfo, setDragInfo] = useState<{
     index: number;
     startY: number;
@@ -212,7 +200,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
   const didDragRef = useRef(false);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Touch-based swap: tap two cards to swap (fallback for quick taps)
   const [tapIndex, setTapIndex] = useState<number | null>(null);
 
   const rounds = useMemo(() => {
@@ -223,7 +210,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     [settings.scoring],
   );
 
-  // Initialize round
   const initRound = useCallback((roundIdx: number) => {
     const round = rounds[roundIdx];
     if (!round) return;
@@ -249,12 +235,10 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     }
   }, [rounds, scoring]);
 
-  // Keep refs in sync
   currentRoundRef.current = currentRound;
   roundsRef.current = rounds;
   initRoundRef.current = initRound;
 
-  // Only init the first round after instructions are dismissed (so timer doesn't start early)
   const didInitRef = useRef(false);
   useEffect(() => {
     if (rounds.length === 0) {
@@ -262,14 +246,12 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
       setGameComplete(true);
       return;
     }
-    // Skip init while instructions screen is showing
     if (showInstructions && settings.instructions) return;
     if (didInitRef.current) return;
     didInitRef.current = true;
     initRound(0);
   }, [showInstructions]);
 
-  // Timer countdown — uses functional updater to avoid stale closure
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0 || checked) return;
     timerRef.current = setInterval(() => {
@@ -286,7 +268,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     };
   }, [timeLeft === null, timeLeft === 0, checked]);
 
-  // Time's up
   useEffect(() => {
     if (timeLeft === 0 && !checked) {
       handleCheck();
@@ -319,7 +300,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
       sounds.playWrong();
     }
 
-    // Auto-advance to next round after brief feedback (refs avoid stale closures)
     setTimeout(() => {
       const next = currentRoundRef.current + 1;
       if (next >= roundsRef.current.length) {
@@ -343,7 +323,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     });
   };
 
-  // Instructions screen — matches Trivia intro design
   if (showInstructions && settings.instructions) {
     return (
       <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
@@ -387,7 +366,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     );
   }
 
-  // Golf challenge — playing
   if (showGolf) {
     return (
       <OrderPhaseRoot>
@@ -399,7 +377,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     );
   }
 
-  // Finish screen — shown AFTER golf (or when golf disabled)
   if (gameComplete && (!golfEnabled || golfDone)) {
     if (noContent) {
       return null;
@@ -435,8 +412,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     );
   }
 
-  // Golf intro popup — shown after rounds complete, before golf starts
-  // Uses the same order game background with a centered instructions card
   if (gameComplete && golfEnabled && !golfDone) {
     return (
       <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
@@ -457,16 +432,13 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
   const round = rounds[currentRound];
   if (!round) return null;
 
-  // ─── Pointer-based drag reordering ───
-
   const handlePointerDown = (index: number, e: React.PointerEvent) => {
     if (checked) return;
-    // Measure card height from the list grid
     const listEl = listRef.current;
     if (!listEl) return;
     const firstCard = listEl.children[0] as HTMLElement | undefined;
     if (!firstCard) return;
-    const cardHeight = firstCard.getBoundingClientRect().height + 5; // include gap
+    const cardHeight = firstCard.getBoundingClientRect().height + 5;
     didDragRef.current = false;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     setDragInfo({ index, startY: e.clientY, currentY: e.clientY, cardHeight });
@@ -498,7 +470,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     setDragInfo(null);
   };
 
-  // Tap-to-swap fallback (fires only on quick taps, not drags)
   const handleCardTap = (index: number) => {
     if (checked || didDragRef.current) return;
     if (tapIndex === null) {
@@ -515,12 +486,10 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     }
   };
 
-  // Helper: compute translateY for each card during drag
   const getCardDragStyle = (index: number): React.CSSProperties => {
     if (!dragInfo) return {};
     const deltaY = dragInfo.currentY - dragInfo.startY;
     if (index === dragInfo.index) {
-      // Dragged card follows the pointer
       return {
         transform: `translateY(${deltaY}px) scale(1.03)`,
         zIndex: 10,
@@ -528,7 +497,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
         transition: 'box-shadow 0.15s ease',
       };
     }
-    // Shift other cards to make room
     const shift = Math.round(deltaY / dragInfo.cardHeight);
     const targetIdx = Math.max(0, Math.min(cards.length - 1, dragInfo.index + shift));
     const draggedFrom = dragInfo.index;
@@ -546,7 +514,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
     <OrderContainer>
 
-      {/* Top bar (glass effect) */}
       <OrderTopBar>
         <OrderTopBarItem>
           {t.roundOf} {currentRound + 1} {t.of} {rounds.length}
@@ -561,14 +528,12 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
         </OrderTopBarItem>
       </OrderTopBar>
 
-      {/* Round title (yellow outlined text) */}
       {round.title && (
         <OrderRoundBanner>
           <OrderRoundBannerText>{round.title}</OrderRoundBannerText>
         </OrderRoundBanner>
       )}
 
-      {/* Hint button */}
       {settings.hint?.enabled && (settings.hint.text || settings.hint.imageUrl) && !checked && (
         <NatureHintWrapper>
           <HintButton
@@ -580,7 +545,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
         </NatureHintWrapper>
       )}
 
-      {/* Cards list */}
       <NatureCardsList
         ref={listRef}
         cardCount={cards.length}
@@ -630,14 +594,12 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
         })}
       </NatureCardsList>
 
-      {/* Check button — stays visible (disabled) after check to prevent layout shift */}
       <OrderActionBar>
         <NatureCheckButton onClick={!checked ? handleCheck : undefined} disabled={checked || timeLeft === 0}>
           {t.checkAnswer}
         </NatureCheckButton>
       </OrderActionBar>
 
-      {/* Feedback (fixed center toast — matches Puzzle) */}
       {showFeedback && (
         <OrderFeedbackFloater>
           <OrderFeedbackContainer variant={showFeedback === 'correct' ? 'correct' : 'incorrect'}>

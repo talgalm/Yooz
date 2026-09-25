@@ -1,10 +1,3 @@
-/**
- * Dev tasks — employees submit features/bugs/changes; developers manage via /Dev panel.
- *
- * GET    /api/admin/dev-tasks       — list (admin/super_admin)
- * POST   /api/admin/dev-tasks       — create (all admin roles)
- * PATCH  /api/admin/dev-tasks/:id   — update status (admin/super_admin)
- */
 
 import { Router, Request, Response } from 'express';
 import { authenticateAdminAllowViewerWrites, requireRole } from '../middleware/adminAuth';

@@ -11,16 +11,16 @@ export interface ITutorialStep {
 export interface ITutorial {
   _id: Types.ObjectId;
   title: string;
-  description: string; // user's text describing what the video should show
+  description: string;
   status: 'pending' | 'generating' | 'ready' | 'failed';
   videoUrl?: string;
-  publicId?: string; // Cloudinary public_id
+  publicId?: string;
   thumbnailUrl?: string;
   error?: string;
   steps: ITutorialStep[];
   startedAt?: Date;
   createdAt: Date;
-  createdBy: string; // admin email
+  createdBy: string;
 }
 
 const stepSchema = new Schema<ITutorialStep>({

@@ -1,13 +1,7 @@
-// Closed set of pastel folder colors, tuned to the app's existing tints (brand purple
-// #6c5ce7; admin chips already use lavender/mint/sky). Single source of truth for both the
-// swatch picker and folder-row rendering. Keep in sync with the server enum in
-// server/src/models/ActivityFolder.ts (FOLDER_COLOR_HEXES).
 
 export interface FolderColor {
   id: string;
-  /** Pastel surface color (also the persisted value). */
   hex: string;
-  /** Slightly deeper tone for borders / the folder icon, derived from the same hue. */
   accent: string;
 }
 
@@ -24,7 +18,6 @@ export const FOLDER_COLORS: FolderColor[] = [
 
 export const DEFAULT_FOLDER_COLOR = FOLDER_COLORS[0].hex;
 
-/** Resolve a stored hex to its FolderColor entry, falling back to the default. */
 export function resolveFolderColor(hex?: string | null): FolderColor {
   return FOLDER_COLORS.find((c) => c.hex === hex) ?? FOLDER_COLORS[0];
 }

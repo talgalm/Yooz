@@ -1,14 +1,10 @@
 import { styled, keyframes } from '@mui/material/styles';
 import { PRIMARY, PRIMARY_LIGHT, ERROR, BORDER, TEXT_LIGHT, TEXT } from '../styled';
 
-/** Shared breakpoint for participant desktop layout (Figma laptop frames). */
 export const DESKTOP_BREAKPOINT = '@media (min-width: 768px)';
-/** Canonical content column width on desktop — matches Figma ~960px panels. */
 export const DESKTOP_STATION_WIDTH = 'min(960px, 72vw)';
-/** Video/image stations on desktop — 70% of canonical width so header + media fit one screen. */
 export const DESKTOP_MEDIA_STATION_WIDTH = 'min(672px, 50.4vw)';
 
-// ─── Colors (game-specific) ───
 export const GREEN = '#28a745';
 export const RED = '#e74c3c';
 const CORRECT_BG = '#d4edda';
@@ -18,8 +14,6 @@ const INCORRECT_TEXT = '#721c24';
 const PARTIAL_BG = '#fff3cd';
 const PARTIAL_TEXT = '#856404';
 const TIMEOUT_BG = '#f5f5f5';
-
-// ─── Game Layout ───
 
 export const GameLayout = styled('div')({
   flex: 1,
@@ -43,11 +37,8 @@ export const GameCenteredLayout = styled('div')({
   },
 });
 
-// ─── Shared intro / phase header (mute aligned with trivia top bar) ───
-
 const GAME_CHROME_BORDER = '#4a6572';
 
-/** Full-width row at top of intro, countdown, or finish screens — place mute on the end. */
 export const GameIntroHeaderBar = styled('div')({
   width: '100%',
   alignSelf: 'stretch',
@@ -59,7 +50,6 @@ export const GameIntroHeaderBar = styled('div')({
   boxSizing: 'border-box',
 });
 
-/** Matches trivia/puzzle `TopBarMute` so music control stays in the header strip. */
 export const GameHeaderMuteButton = styled('button')({
   width: 28,
   height: 28,
@@ -79,8 +69,6 @@ export const GameHeaderMuteButton = styled('button')({
   },
 });
 
-// ─── Game Header ───
-
 export const GameHeader = styled('div')({
   display: 'flex',
   justifyContent: 'space-between',
@@ -99,8 +87,6 @@ export const GameHeaderScore = styled('span')({
   fontSize: 13,
   color: PRIMARY,
 });
-
-// ─── Timer ───
 
 export const TimerWrapper = styled('div')({
   textAlign: 'center',
@@ -135,8 +121,6 @@ export const TimerDisplay = styled('span')<{ critical?: boolean }>(({ critical }
   color: critical ? RED : TEXT_LIGHT,
 }));
 
-// ─── Feedback Banner ───
-
 type FeedbackVariant = 'correct' | 'incorrect' | 'partial' | 'timeout';
 
 const feedbackStyles: Record<FeedbackVariant, { background: string; color: string }> = {
@@ -156,15 +140,12 @@ export const FeedbackBanner = styled('div')<{ variant: FeedbackVariant }>(({ var
   ...feedbackStyles[variant],
 }));
 
-// Slightly larger variant used in TrueFalseGame
 export const FeedbackBannerLg = styled(FeedbackBanner)({
   padding: '10px 16px',
   borderRadius: 10,
   marginBottom: 12,
   fontSize: 16,
 });
-
-// ─── Answer Option (shared by Trivia, Puzzle) ───
 
 export const AnswerOptionRow = styled('div')<{
   borderColor: string;
@@ -183,7 +164,6 @@ export const AnswerOptionRow = styled('div')<{
   userSelect: 'none',
 }));
 
-// Compact variant for PuzzleGame
 export const AnswerOptionRowCompact = styled(AnswerOptionRow)({
   padding: '10px 14px',
 });
@@ -200,8 +180,6 @@ export const AnswersListCompact = styled(AnswersList)({
   gap: 6,
   marginBottom: 12,
 });
-
-// ─── Checkbox Indicator (Trivia) ───
 
 export const AnswerCheckbox = styled('span')<{
   borderColor: string;
@@ -221,8 +199,6 @@ export const AnswerCheckbox = styled('span')<{
   transition: 'all 0.15s ease',
 }));
 
-// ─── Radio Indicator (Puzzle) ───
-
 export const AnswerRadio = styled('span')<{
   borderColor: string;
   bgColor: string;
@@ -241,8 +217,6 @@ export const AnswerRadio = styled('span')<{
   transition: 'all 0.15s ease',
 }));
 
-// ─── Answer Text ───
-
 export const AnswerText = styled('span')<{ textColor?: string }>(({ textColor }) => ({
   flex: 1,
   fontSize: 15,
@@ -254,8 +228,6 @@ export const AnswerTextCompact = styled(AnswerText)({
   fontSize: 14,
 });
 
-// ─── Explanation (Trivia post-check) ───
-
 export const ExplanationBox = styled('div')<{ correct?: boolean }>(({ correct }) => ({
   marginTop: 4,
   marginInlineStart: 32,
@@ -266,8 +238,6 @@ export const ExplanationBox = styled('div')<{ correct?: boolean }>(({ correct })
   borderRadius: 6,
   borderInlineStart: `3px solid ${correct ? GREEN : ERROR}`,
 }));
-
-// ─── Order Game Cards ───
 
 export const OrderCardsList = styled('div')({
   flex: 1,
@@ -322,8 +292,6 @@ export const DragHandle = styled('span')({
   fontSize: 18,
 });
 
-// ─── Question / Statement Text ───
-
 export const QuestionText = styled('p')<{ size?: number }>(({ size }) => ({
   fontWeight: 700,
   color: '#333',
@@ -362,8 +330,6 @@ export const RoundTitle = styled('p')({
   margin: '0 0 12px',
 });
 
-// ─── Media Container ───
-
 export const MediaContainer = styled('div')({
   textAlign: 'center',
   marginBottom: 12,
@@ -383,8 +349,6 @@ export const MediaImageSmall = styled(MediaImage)({
 export const MediaImageLarge = styled(MediaImage)({
   maxHeight: 160,
 });
-
-// ─── True/False Buttons ───
 
 export const TrueFalseButtonRow = styled('div')({
   display: 'flex',
@@ -442,8 +406,6 @@ export const TrueFalseButton = styled('button')<{
   };
 });
 
-// ─── Statement text (TrueFalse) ───
-
 export const StatementTextContainer = styled('div')({
   flex: 1,
   display: 'flex',
@@ -461,8 +423,6 @@ export const StatementText = styled('p')({
   lineHeight: 1.5,
   margin: 0,
 });
-
-// ─── Countdown (3-2-1) ───
 
 export const CountdownContainer = styled('div')({
   flex: 1,
@@ -487,8 +447,6 @@ export const CountdownNumber = styled('div')({
   color: PRIMARY,
   animation: 'pulse 1s ease-in-out',
 });
-
-// ─── Puzzle ───
 
 export const PuzzlePreviewContainer = styled('div')({
   position: 'relative',
@@ -577,15 +535,11 @@ export const PuzzleExtraInfo = styled('p')({
   margin: '0 0 4px',
 });
 
-// ─── Hint Button wrapper ───
-
 export const HintButtonWrapper = styled('div')({
   textAlign: 'center',
   marginTop: 14,
   marginBottom: 14,
 });
-
-// ─── Modal Helpers ───
 
 export const ModalButtonRow = styled('div')({
   display: 'flex',
@@ -593,7 +547,6 @@ export const ModalButtonRow = styled('div')({
   justifyContent: 'center',
 });
 
-/** Stacked full-width modal actions (hint dialogs) */
 export const ModalButtonColumn = styled('div')({
   display: 'flex',
   flexDirection: 'column',
@@ -608,7 +561,6 @@ export const HintModalBulbWrap = styled('div')({
   marginBottom: 12,
 });
 
-/** Grey label above hint content (e.g. “Hint”) */
 export const HintModalHeading = styled('p')({
   fontWeight: 600,
   fontSize: 15,
@@ -616,7 +568,6 @@ export const HintModalHeading = styled('p')({
   margin: '0 0 8px',
 });
 
-/** Hint copy — dark body text */
 export const HintModalHintBody = styled('p')({
   margin: '0 0 20px',
   whiteSpace: 'pre-wrap',
@@ -625,7 +576,6 @@ export const HintModalHintBody = styled('p')({
   lineHeight: 1.45,
 });
 
-/** Optional hint image */
 export const HintModalImage = styled('img')({
   display: 'block',
   width: '100%',
@@ -656,8 +606,6 @@ export const ModalBodySmall = styled(ModalBody)({
   margin: '0 0 8px',
 });
 
-// ─── Confetti ───
-
 export const ConfettiContainer = styled('div')({
   position: 'fixed',
   inset: 0,
@@ -665,8 +613,6 @@ export const ConfettiContainer = styled('div')({
   zIndex: 100,
   overflow: 'hidden',
 });
-
-// ─── StoryModule: Finish Page ───
 
 export const FinishScoreNumber = styled('div')({
   fontSize: 52,
@@ -683,8 +629,6 @@ export const FinishActionsColumn = styled('div')({
   width: '100%',
   maxWidth: 280,
 });
-
-// ─── StoryModule: Leaderboard ───
 
 export const LeaderboardContainer = styled('div')({
   width: '100%',
@@ -738,8 +682,6 @@ export const LeaderboardScore = styled('span')({
   color: PRIMARY,
 });
 
-// ─── StoryModule: Summary ───
-
 export const SummaryScoresList = styled('div')({
   marginBottom: 24,
   width: '100%',
@@ -758,8 +700,6 @@ export const SummaryScoreValue = styled('span')({
   fontWeight: 700,
 });
 
-// ─── StoryModule: Playing Phase ───
-
 export const PlayingContent = styled('div')({
   flex: 1,
   minHeight: 0,
@@ -777,13 +717,6 @@ export const StationSubtitle = styled('div')({
   color: TEXT_LIGHT,
   marginTop: 2,
 });
-
-// ─── StoryModule: Media Station ───
-// Desktop sizing notes (QA Jun 2026):
-//  - Mobile target stays 400px wide for phone column.
-//  - At ≥768px video/image use DESKTOP_MEDIA_STATION_WIDTH (70% of the
-//    canonical column) and max-height 49vh so header + media + Continue fit
-//    on one screen.
 
 export const MediaStationWrapper = styled('div')({
   marginBottom: 24,
@@ -843,8 +776,6 @@ export const MediaStationImage = styled('img')({
   },
 });
 
-// ─── Station Design (unified: purple window, white headline, white btn + purple text) ───
-
 export const STATION_PURPLE = '#632e7d';
 export const STATION_PURPLE_DARK = '#9248a3';
 
@@ -858,9 +789,6 @@ export const StationWindow = styled('div', {
   width: '100%',
   maxWidth: 400,
   marginInline: 'auto',
-  // Desktop: the purple text panel grows so the message doesn't look stranded
-  // on big screens. `isDynamic` (used by video/image wrappers) gets even more
-  // room because its child is a media frame, not a paragraph.
   [DESKTOP_BREAKPOINT]: {
     maxWidth: DESKTOP_STATION_WIDTH,
     padding: isDynamic ? '32px 0px' : '28px 36px',
@@ -919,7 +847,6 @@ export const StationContinueButton = styled('button')({
   },
 });
 
-/** Figma laptop header band — title + description grouped on desktop. */
 export const DesktopStationHeaderBand = styled('div')({
   display: 'contents',
   [DESKTOP_BREAKPOINT]: {
@@ -937,8 +864,6 @@ export const DesktopStationHeaderBand = styled('div')({
   },
 });
 
-// ─── StoryModule: Popup ───
-
 export const PopupImage = styled('img')({
   maxWidth: '100%',
   maxHeight: 300,
@@ -950,8 +875,6 @@ export const PopupImageWrapper = styled('div')({
   marginBottom: 20,
   textAlign: 'center',
 });
-
-// ─── Media loading spinner (shown while images/videos preload) ───
 
 const _spinAnim = keyframes`to { transform: rotate(360deg); }`;
 

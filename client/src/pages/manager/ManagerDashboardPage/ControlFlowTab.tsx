@@ -20,8 +20,6 @@ interface Props {
   t: Record<string, string>;
 }
 
-// ─── Styled ───
-
 const Card = styled('div')({
   background: '#fff',
   borderRadius: 14,
@@ -191,8 +189,6 @@ const ErrorBanner = styled('div')({
   fontSize: 13,
   marginBottom: 12,
 });
-
-// ─── Component ───
 
 export default function ControlFlowTab({ t }: Props) {
   const [data, setData] = useState<ControlFlowResponse | null>(null);

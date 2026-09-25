@@ -28,10 +28,6 @@ const Row = styled('div')({
 const Amount = styled('b')({ minWidth: 90 });
 const Meta = styled('span')({ flex: 1, minWidth: 120, color: TEXT_LIGHT, fontSize: 13 });
 
-/**
- * Expenses for one project, or — with no projectId — every expense in the
- * business with a project picker on the form. Same component either way.
- */
 export default function ExpensesPanel({ projectId, onChanged }: { projectId?: string; onChanged: () => void }) {
   const t = useTranslations(texts);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -88,7 +84,6 @@ export default function ExpensesPanel({ projectId, onChanged }: { projectId?: st
             <Row key={e._id}>
               <Amount>{formatMoney(e.amount)}</Amount>
               <Meta>
-                {/* Only worth naming the project when the list spans several. */}
                 {!projectId && refName(e.projectId) ? `${refName(e.projectId)} · ` : ''}
                 {t.categories[e.category]}
                 {e.vendor ? ` · ${e.vendor}` : ''}

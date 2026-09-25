@@ -1,7 +1,5 @@
 import { styled, keyframes } from '@mui/material/styles';
 
-// ─── Animations ───
-
 const scanlineMove = keyframes`
   0% { transform: translateY(-100%); }
   100% { transform: translateY(100vh); }
@@ -11,8 +9,6 @@ const blinkGlow = keyframes`
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 `;
-
-// ─── Main Frame ───
 
 export const SpyFrame = styled('div')({
   position: 'relative',
@@ -32,8 +28,6 @@ export const SpyContent = styled('div')({
   flexDirection: 'column',
   zIndex: 2,
 });
-
-// ─── Viewfinder Corners ───
 
 const cornerBase = {
   position: 'absolute' as const,
@@ -77,8 +71,6 @@ export const CornerBR = styled('div')({
   borderRight: cornerBorder,
 });
 
-// ─── HUD Elements ───
-
 export const HudOverlay = styled('div')({
   position: 'absolute',
   top: 0,
@@ -105,8 +97,6 @@ export const HudRow = styled('div')({
   alignItems: 'center',
 });
 
-// ─── Scanline effect ───
-
 export const Scanline = styled('div')({
   position: 'absolute',
   top: 0,
@@ -118,8 +108,6 @@ export const Scanline = styled('div')({
   pointerEvents: 'none',
   animation: `${scanlineMove} 6s linear infinite`,
 });
-
-// ─── Spy-themed Button ───
 
 export const SpyButton = styled('button')({
   background: 'linear-gradient(180deg, #1fd5c8 0%, #0ea89e 100%)',
@@ -140,8 +128,6 @@ export const SpyButton = styled('button')({
     boxShadow: '0 1px 0 #087a72',
   },
 });
-
-// ─── Panel (for text content) ───
 
 export const SpyPanel = styled('div')({
   background: 'rgba(0, 30, 60, 0.7)',
@@ -168,8 +154,6 @@ export const SpyBodyText = styled('p')({
   color: '#c8e6ff',
   margin: 0,
 });
-
-// ─── Battery Icon ───
 
 export const BatteryIcon = styled('div')({
   display: 'flex',

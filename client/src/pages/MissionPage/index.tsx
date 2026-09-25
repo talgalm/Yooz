@@ -50,8 +50,6 @@ function useFrameReady(imageSrcs: string[]) {
 
 const API = import.meta.env.VITE_API_URL || '';
 
-// ─── Types ───
-
 interface MissionScreen {
   header?: string;
   description?: string;
@@ -93,8 +91,6 @@ interface MissionModule {
   mission: MissionData;
 }
 
-// ─── Loading animation ───
-
 const pulse = keyframes`
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }
@@ -135,8 +131,6 @@ const ErrorWrapper = styled('div')({
   fontFamily: "'Rubik', sans-serif",
 });
 
-// ─── Session helpers ───
-
 type Phase = 'screens' | 'puzzle' | 'done';
 
 function sessionKey(code: string) { return `mission_${code}`; }
@@ -148,15 +142,13 @@ function loadSession(code: string): { phase: Phase; currentScreen: number } {
       const data = JSON.parse(raw);
       return { phase: data.phase ?? 'screens', currentScreen: data.currentScreen ?? 0 };
     }
-  } catch { /* ignore */ }
+  } catch { }
   return { phase: 'screens', currentScreen: 0 };
 }
 
 function saveSession(code: string, phase: Phase, currentScreen: number) {
   sessionStorage.setItem(sessionKey(code), JSON.stringify({ phase, currentScreen }));
 }
-
-// ─── Component ───
 
 const FRAME_IMAGES = ['/images/mission-frame.svg', '/images/mission-header.svg', '/images/mission-footer.svg'];
 
@@ -229,7 +221,6 @@ export default function MissionPage() {
     };
   }, []);
 
-  // Fetch mission module data
   useEffect(() => {
     if (!code) return;
     let cancelled = false;
@@ -269,10 +260,8 @@ export default function MissionPage() {
     };
     fetchMission();
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
-  // Silently retry load while error screen is shown.
   useEffect(() => {
     if (!error || !code) return;
     const id = setInterval(() => {
@@ -292,15 +281,12 @@ export default function MissionPage() {
         .finally(() => setLoading(false));
     }, 8000);
     return () => clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error, code]);
 
-  // Persist session on phase/screen changes
   useEffect(() => {
     if (code) saveSession(code, phase, currentScreen);
   }, [code, phase, currentScreen]);
 
-  // Track when puzzle phase starts
   useEffect(() => {
     if (phase === 'puzzle') {
       puzzleStartRef.current = Date.now();
@@ -349,11 +335,10 @@ export default function MissionPage() {
   const handleNext = useCallback(() => {
     if (!mission) return;
     sounds.playClick();
-    sounds.startBg(); // starts on first user interaction
+    sounds.startBg();
     if (currentScreen < mission.explanationScreens.length - 1) {
       setCurrentScreen((prev) => prev + 1);
     } else {
-      // Explanation screens done → start the puzzle
       setPhase('puzzle');
     }
   }, [mission, currentScreen, sounds]);
@@ -377,8 +362,6 @@ export default function MissionPage() {
     return <ErrorWrapper>{error || t.errorNotFound}</ErrorWrapper>;
   }
 
-  // ─── Puzzle phase ───
-  // The puzzle image is used as the blurred background in step 3 and during the puzzle
   const PUZZLE_BG = '/images/puzzle-env.png';
 
   if (phase === 'puzzle') {
@@ -400,7 +383,6 @@ export default function MissionPage() {
     );
   }
 
-  // ─── Trash sort phase (Part 2 — after puzzle) ───
   if (phase === 'done') {
     return (
       <MissionTrashSort
@@ -431,7 +413,6 @@ export default function MissionPage() {
     );
   }
 
-  // ─── Explanation screens phase ───
   const screens = mission.explanationScreens;
   const screen = screens[currentScreen];
 
@@ -444,7 +425,6 @@ export default function MissionPage() {
   const hasImage = !!screen.image;
   const hasButton = !!screen.buttonText;
 
-  // Step 3 (index 3) uses the puzzle image as blurred background
   const screenBg = currentScreen === 3 ? PUZZLE_BG : screen.backgroundImage;
   const showFrameHeaderFooter = currentScreen >= 3;
 
@@ -458,17 +438,14 @@ export default function MissionPage() {
           </>
         )}
 
-        {/* Info menu (top-right): tap to open menu with mute/help/logout rows */}
         <MissionTopMenu onLogout={handleLogout} toggleMute={sounds.toggleMute} muted={sounds.muted} />
 
-        {/* Header - only shown if has content */}
         {hasHeader && (
           <MissionHeader>
             <HeaderText>{screen.header}</HeaderText>
           </MissionHeader>
         )}
 
-        {/* Content */}
         <MissionContent>
           {hasDescription && (
             <DescriptionText step={currentScreen}>{screen.description}</DescriptionText>
@@ -480,7 +457,6 @@ export default function MissionPage() {
 
         </MissionContent>
 
-        {/* CTA Button - only shown if has text */}
         {hasButton && (
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <MissionButton step={currentScreen} onClick={handleNext}>

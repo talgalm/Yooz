@@ -66,7 +66,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <Navigate to={participantPlayPath(activityCode)} replace />;
 }
 
-/** Unknown paths: keep participants on their activity login, not the marketing landing page. */
 function FallbackRedirect() {
   const { pathname } = useLocation();
   if (
@@ -136,7 +135,6 @@ export default function App() {
             <BrowserRouter>
               <LangScopeSync />
               <Routes>
-                {/* Admin routes — full width desktop */}
                 <Route path="/admin/login" element={<AdminPublicRoute><AdminLoginPage /></AdminPublicRoute>} />
                 <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboardPage /></AdminProtectedRoute>} />
                 <Route path="/admin/activities/new" element={<AdminProtectedRoute><AdminCreateActivityPage /></AdminProtectedRoute>} />
@@ -151,13 +149,11 @@ export default function App() {
                 <Route path="/admin/portals/new" element={<AdminProtectedRoute><AdminPortalConfigPage /></AdminProtectedRoute>} />
                 <Route path="/admin/portals/:id" element={<AdminProtectedRoute><AdminPortalConfigPage /></AdminProtectedRoute>} />
 
-                {/* Manager routes — full width desktop */}
                 <Route path="/control/:id" element={<ControlPage />} />
                 <Route path="/manager" element={<ManagerPublicRoute><ManagerLoginPage /></ManagerPublicRoute>} />
                 <Route path="/manager/dashboard" element={<ManagerProtectedRoute><ManagerDashboardPage /></ManagerProtectedRoute>} />
                 <Route path="/manager/present" element={<ManagerProtectedRoute><OrderSurveyPresentPage /></ManagerProtectedRoute>} />
 
-                {/* Yooz-Manage routes — internal business management, full width desktop */}
                 <Route path="/manage/login" element={<ManagePublicRoute><ManageLoginPage /></ManagePublicRoute>} />
                 <Route
                   path="/manage"
@@ -184,26 +180,20 @@ export default function App() {
                   <Route path=":section" element={<ManagePlaceholderPage />} />
                 </Route>
 
-                {/* Participant routes — mobile layout */}
                 <Route path="/play/:code/join/:inviteToken" element={<ParticipantActivityScope><MobileContainer><HelpChatProvider variant="fab"><PlayPage /><HelpChatFab /></HelpChatProvider></MobileContainer></ParticipantActivityScope>} />
                 <Route path="/play/:code" element={<ParticipantActivityScope><MobileContainer><HelpChatProvider variant="fab"><PlayPage /><HelpChatFab /></HelpChatProvider></MobileContainer></ParticipantActivityScope>} />
                 <Route path="/home" element={<ParticipantActivityScope><MobileContainer><HelpChatProvider variant="header"><ProtectedRoute><HomePage /></ProtectedRoute></HelpChatProvider></MobileContainer></ParticipantActivityScope>} />
                 <Route path="/story/:code" element={<ParticipantActivityScope><MobileContainer><HelpChatProvider variant="header" hideLogin><ProtectedRoute><StoryModulePage /></ProtectedRoute></HelpChatProvider></MobileContainer></ParticipantActivityScope>} />
                 <Route path="/mission/:code" element={<ParticipantActivityScope><MobileContainer><HelpChatProvider variant="fab" hideLogin><ProtectedRoute><MissionPage /></ProtectedRoute><HelpChatFab /></HelpChatProvider></MobileContainer></ParticipantActivityScope>} />
 
-                {/* Portal route — public */}
                 <Route path="/portal/:code" element={<PortalPage />} />
 
-                {/* Privacy policy — public, responsive */}
                 <Route path="/privacy" element={<PrivacyPage />} />
 
-                {/* AR demo (camera + GPS + compass) */}
                 <Route path="/ar-demo" element={<ArDemoPage />} />
 
-                {/* Public read-only statistics share link */}
                 <Route path="/stats/:token" element={<SharedStatsPage />} />
 
-                {/* Public marketing site - responsive (mobile + desktop), shared nav/footer */}
                 <Route element={<MarketingLayout />}>
                   <Route path="/" element={<MarketingHomePage />} />
                   <Route path="/business" element={<BusinessPage />} />

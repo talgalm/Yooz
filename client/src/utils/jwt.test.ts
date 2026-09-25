@@ -2,7 +2,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { isStaleDailyResetToken } from './jwt';
 
-/** Minimal unsigned JWT — only the payload is read. */
 function tokenFor(payload: Record<string, unknown>): string {
   const body = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
   return `header.${body}.sig`;

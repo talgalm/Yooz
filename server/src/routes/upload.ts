@@ -7,20 +7,17 @@ import { resolveFolder } from '../utils/mediaFolders';
 
 const router = Router();
 
-// Configure Cloudinary
 cloudinary.config({
   cloud_name: CLOUDINARY_CLOUD_NAME,
   api_key: CLOUDINARY_API_KEY,
   api_secret: CLOUDINARY_API_SECRET,
 });
 
-// Multer: store in memory (files sent to Cloudinary, not disk)
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB max
+  limits: { fileSize: 100 * 1024 * 1024 },
 });
 
-// Upload file to Cloudinary (admin only)
 router.post('/', authenticateAdmin, upload.single('file'), async (req: Request, res: Response) => {
   if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
     res.status(500).json({ error: 'Cloudinary not configured. Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET to .env' });
@@ -32,7 +29,6 @@ router.post('/', authenticateAdmin, upload.single('file'), async (req: Request, 
     return;
   }
 
-  // Validate file type
   const ALLOWED_MIMETYPES = new Set([
     'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
     'video/mp4', 'video/webm', 'video/quicktime',
@@ -61,10 +57,6 @@ router.post('/', authenticateAdmin, upload.single('file'), async (req: Request, 
     const isAudio = req.file.mimetype.startsWith('audio/');
     const resourceType = isDocument ? 'raw' : isVideo || isAudio ? 'video' : 'image';
 
-    // Upload buffer to Cloudinary
-    // Optional: land straight in the folder the media library has open.
-    // Anything unrecognised falls back to the root rather than failing an
-    // upload over a folder name.
     const folder = resolveFolder(req.body?.folder) ?? 'yooz';
 
     const result = await new Promise<{ secure_url: string; public_id: string; resource_type: string; format: string; bytes: number }>((resolve, reject) => {
@@ -72,9 +64,6 @@ router.post('/', authenticateAdmin, upload.single('file'), async (req: Request, 
         {
           resource_type: resourceType,
           folder,
-          // Keep the original name in the public_id (suffixed to stay unique).
-          // Without it Cloudinary assigns a random string, which makes the
-          // media library a wall of `pws2bqxuslybrwmzyrsn` nobody can search.
           use_filename: true,
           unique_filename: true,
         },

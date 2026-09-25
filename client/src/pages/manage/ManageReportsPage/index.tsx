@@ -66,11 +66,6 @@ export default function ManageReportsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  /**
-   * Export goes through fetch directly rather than manageApiFetch, which parses
-   * JSON. The token is attached the same way, and the server drops money
-   * columns for a pm — the file can never carry more than the screen.
-   */
   const exportExcel = async () => {
     setExporting(true);
     setError('');
@@ -110,7 +105,6 @@ export default function ManageReportsPage() {
 
       <Hint>{t.hints[key]}</Hint>
 
-      {/* Estimate vs actual spans all finished projects, so a range means nothing there. */}
       {key !== 'estimate_vs_actual' && key !== 'profitability_by_client' && (
         <Toolbar>
           <SmallInput type="date" value={from} onChange={(e) => setFrom(e.target.value)} />

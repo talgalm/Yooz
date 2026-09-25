@@ -87,7 +87,6 @@ export default function CreateGroupForm({
         throw new Error(data.error === 'not_registered' ? t.notRegistered : (data.error || 'Failed to create group'));
       }
       onEstablishSession(data.token);
-      // Use the current browser origin so dev links work on :5173 (server returns :3000).
       const inviteUrl = `${window.location.origin}/play/${activityCode}/join/${data.group.inviteToken}`;
       onCreated({
         groupName: data.group.name,

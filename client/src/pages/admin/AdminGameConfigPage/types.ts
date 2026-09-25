@@ -38,7 +38,6 @@ export interface PuzzleQuestion {
   text: string;
   media: string;
   answers: PuzzleAnswer[];
-  /** Seconds to answer; omit or default 10 in UI. 0 = no per-question timer. */
   timeLimitSeconds?: number;
 }
 
@@ -60,7 +59,6 @@ export interface TrueFalseScoring {
   timeLimitSeconds: number;
 }
 
-// Ball game
 export interface BallGameAnswer {
   text: string;
   isCorrect: boolean;
@@ -75,7 +73,6 @@ export interface BallGameScoring {
   timeLimitSeconds: number;
 }
 
-// Trash sort game
 export interface TrashSortBin {
   id: string;
   label: string;

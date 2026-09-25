@@ -44,7 +44,6 @@ function deferBackgroundPreload(fn: () => void): void {
 }
 
 export interface PreloadActivityMediaOptions {
-  /** Preload this station and the next two first; defer the rest. */
   priorityIndex?: number;
 }
 
@@ -71,10 +70,6 @@ export function preloadActivityMedia(data: unknown, opts?: PreloadActivityMediaO
   preloadUrls(priorityImages, priorityVideos, true);
 
   deferBackgroundPreload(() => {
-    // Background pass preloads images only. Videos outside the priority window
-    // are NOT preloaded: each one is an off-DOM preload="auto" element that
-    // buffers MBs and is never released — enough to get the tab killed on
-    // memory-constrained mobile browsers (Samsung Internet).
     const allImages = new Set<string>();
     const allVideos = new Set<string>();
     for (const item of items) collect(item, allImages, allVideos);

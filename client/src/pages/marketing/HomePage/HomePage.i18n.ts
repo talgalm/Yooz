@@ -1,9 +1,3 @@
-/**
- * Copy read off the exported Figma frame `temp-imgs/אתר yooz/ראשי.png`.
- * Headings and list lead-ins are transcribed directly; a few long paragraphs were
- * reconstructed where the export blurred at small sizes, so they are worth a
- * proof-read before launch.
- */
 export const texts = {
   he: {
     heroTitleTop: 'יוצרים חוויה.',

@@ -9,14 +9,10 @@ import storySideWaveDesert from '../../assets/story-side-wave-desert.svg';
 import { ROADMAP_DECORATIONS } from './roadmapTrees';
 import { getThemeKit, getHeaderIconColor, OCEAN_DECORATIONS, DESERT_DECORATIONS, type RoadmapThemeKit } from './roadmapThemes';
 
-// ─── Constants ───
-
 const NODE_SIZE = 90;
 const SVG_SIZE = 110;
 const MIN_DIST_PX = 140;
 const EDGE_MARGIN = 65;
-
-// ─── Seeded RNG helpers ───
 
 function hashString(s: string): number {
   let h = 0;
@@ -64,8 +60,6 @@ function generatePositions(
   return positions;
 }
 
-// ─── Inline SVG components (same as RoadmapView) ───
-
 const FISH_PALETTES = [
   { body: '#FFB84D', fin: '#FF9E33', stripe: '#E89030' },
   { body: '#5ED4F5', fin: '#3BB8D8', stripe: '#2AA0C0' },
@@ -98,8 +92,6 @@ const SwimmingFishSvg = ({ size, palette }: { size: number; palette: number }) =
     </svg>
   );
 };
-
-// ─── Animations ───
 
 const fishSwim = keyframes`
   0%   { transform: translateX(-120px); }
@@ -141,19 +133,11 @@ const completedBounce = keyframes`
   100% { transform: scale(1); opacity: 1; }
 `;
 
-// ─── Styled Components ───
-
 const Container = styled('div')<{ bg?: string }>(({ bg }) => ({
   display: 'flex',
   flexDirection: 'column',
   height: '100dvh',
   overflow: 'hidden',
-  // `contain: paint` clips the drifting scenery (balloons, clouds, tumbleweeds)
-  // to this box. They are `position: fixed` and start ~180px off the left edge,
-  // and `overflow: hidden` does not clip fixed descendants — so in this RTL
-  // document they were widening the page past the screen (scrollWidth 555 vs a
-  // 375 screen). Samsung Internet then let the page pan sideways, dragging the
-  // roadmap and the fixed popup overlay along with it.
   contain: 'paint',
   position: 'relative',
   background: bg || '#8fb247',
@@ -199,8 +183,6 @@ const CanvasInner = styled('div')<{ h: number }>(({ h }) => ({
   height: h,
 }));
 
-// Custom always-visible scroll indicator overlay. Native mobile scrollbars
-// auto-hide on Android, so we paint our own.
 const ScrollIndicatorTrack = styled('div')({
   position: 'absolute',
   top: 8,
@@ -419,8 +401,6 @@ const TumbleweedSpinWrap = styled('img')<{ spinDuration: number }>(({ spinDurati
   animation: `${tumbleweedSpin} ${spinDuration}s linear infinite`,
 }));
 
-// ─── Scene gradient background ───
-
 function SceneBackground({ width: W, height: H, kit }: { width: number; height: number; kit: RoadmapThemeKit }) {
   return (
     <svg style={{ position: 'absolute', top: 0, left: 0, zIndex: 0 }}
@@ -436,8 +416,6 @@ function SceneBackground({ width: W, height: H, kit }: { width: number; height: 
     </svg>
   );
 }
-
-// ─── Component ───
 
 interface SpidersViewProps {
   items: ModuleItemData[];
@@ -455,10 +433,8 @@ interface SpidersViewProps {
   leaderboardMode?: 'points' | 'time' | 'both';
   elapsedSeconds?: number;
   activityDurationMinutes?: number;
-  /** Cosmetic roadmap timer: turns red after this many minutes (counts up from 0). */
   roadmapTimerMinutes?: number;
   finalItemIndex?: number;
-  /** Manager-controlled progress lock: items with index >= this are blocked. */
   lockedFromIndex?: number | null;
 }
 
@@ -491,8 +467,6 @@ export default function SpidersView({
     visible: false,
   });
 
-  // Track scroll position to drive the custom always-visible scroll indicator.
-  // Native scrollbars auto-hide on mobile (Android Chrome), so we render our own.
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
@@ -536,7 +510,6 @@ export default function SpidersView({
     return generatePositions(items.length, canvasSize.w, canvasSize.h, seed);
   }, [canvasSize, items.length, seed]);
 
-  // ─── Tree / decoration placements ───
   const themedDecorations = useMemo(() => {
     if (theme === 'ocean') return OCEAN_DECORATIONS;
     if (theme === 'desert') return DESERT_DECORATIONS;
@@ -551,7 +524,6 @@ export default function SpidersView({
     const { w: W, h: H } = canvasSize;
     const rng = createSeededRandom(hashString(seed) + 42);
 
-    // Forbidden zones: around each item node
     const forbidden: Array<{ left: number; right: number; top: number; bottom: number }> = [
       ...positions.map((pos) => ({
         left: pos.x - NODE_SIZE * 0.7,
@@ -561,17 +533,13 @@ export default function SpidersView({
       })),
     ];
 
-    // Forbidden zones: around the two side waves
-    // Wave SVG aspect ratio is 676×1260 ≈ 1.86 tall per unit of width
     if (kit.showSideWaves) {
       const wRng = createSeededRandom(hashString(seed) + 77);
       const waveW = 65 + wRng() * 20;
       const waveH = waveW * 1.86;
       const leftY  = H * 0.3 + wRng() * H * 0.25;
       const rightY = H * 0.3 + wRng() * H * 0.25;
-      // Left wave hugs left edge, extends inward by waveW; add padding
       forbidden.push({ left: -10, right: waveW + 20, top: leftY  - waveH / 2 - 10, bottom: leftY  + waveH / 2 + 10 });
-      // Right wave hugs right edge, extends inward by waveW; add padding
       forbidden.push({ left: W - waveW - 20, right: W + 10, top: rightY - waveH / 2 - 10, bottom: rightY + waveH / 2 + 10 });
     }
 
@@ -605,7 +573,6 @@ export default function SpidersView({
     return placements;
   }, [canvasSize, positions, seed, themedDecorations, kit, items.length, customTheme, theme]);
 
-  // ─── Wave placements — exactly 1 left edge, 1 right edge ───
   const wavePlacements = useMemo(() => {
     if (!canvasSize || !kit.showSideWaves || customTheme) return [];
     const { w: W, h: H } = canvasSize;
@@ -617,7 +584,6 @@ export default function SpidersView({
     ];
   }, [canvasSize, seed, kit.showSideWaves, customTheme]);
 
-  // ─── Animated fish ───
   const [fish, setFish] = useState<Array<{
     id: number; top: number; duration: number; wobbleDuration: number; size: number; palette: number;
   }>>([]);
@@ -650,7 +616,6 @@ export default function SpidersView({
     return () => clearInterval(interval);
   }, [kit.showFish, customTheme]);
 
-  // ─── Drifting clouds ───
   const [clouds, setClouds] = useState<Array<{ id: number; top: number; duration: number; size: number }>>([]);
   const cloudIdRef = useRef(0);
 
@@ -672,7 +637,6 @@ export default function SpidersView({
     return () => clearInterval(interval);
   }, [kit.showClouds, customTheme]);
 
-  // ─── Drifting balloons (ganei-yehoshua) ───
   const [balloons, setBalloons] = useState<Array<{
     id: number; top: number; duration: number;
     wobbleDuration: number; size: number;
@@ -702,7 +666,6 @@ export default function SpidersView({
     return () => clearInterval(interval);
   }, [kit.showBalloon, customTheme]);
 
-  // ─── Animated tumbleweeds ───
   const [tumbleweeds, setTumbleweeds] = useState<Array<{
     id: number; top: number; duration: number;
     bounceDuration: number; spinDuration: number; size: number;
@@ -731,7 +694,6 @@ export default function SpidersView({
     return () => clearInterval(interval);
   }, [kit.showTumbleweed, customTheme]);
 
-  // ─── Derived values ───
   const containerBg: React.CSSProperties = customTheme?.roadmapImage
     ? { backgroundImage: `url(${customTheme.roadmapImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: kit.containerBg };
@@ -766,12 +728,10 @@ export default function SpidersView({
         <Canvas ref={scrollContainerRef}>
           <CanvasInner ref={canvasRef} h={canvasH}>
 
-          {/* Scene background gradient */}
           {!customTheme && canvasW > 0 && (
             <SceneBackground width={canvasW} height={canvasH} kit={kit} />
           )}
 
-          {/* Ganei Yehoshua scenery (ropes park + lake, behind everything) */}
           {!customTheme && theme === 'ganei-yehoshua' && canvasW > 0 && (() => {
             const ropesW = Math.min(canvasW * 0.42, 200);
             const ropesH = ropesW * (500 / 680);
@@ -805,7 +765,6 @@ export default function SpidersView({
             );
           })()}
 
-          {/* Static tree / decoration elements */}
           {treePlacements.map((p, i) => (
             <TreeDecoration
               key={`tree-${i}`}
@@ -824,7 +783,6 @@ export default function SpidersView({
             />
           ))}
 
-          {/* Ganei Yehoshua fixed trees (top + bottom edges) */}
           {!customTheme && theme === 'ganei-yehoshua' && canvasW > 0 && (() => {
             const tree = ROADMAP_DECORATIONS.find((d) => d.name === 'Tall dark green tree');
             if (!tree) return null;
@@ -858,7 +816,6 @@ export default function SpidersView({
             ));
           })()}
 
-          {/* Side wave decorations — 1 left, 1 right */}
           {wavePlacements.map((w, i) => (
             <RoadsideWaveDecoration
               key={`wave-${i}`}
@@ -875,7 +832,6 @@ export default function SpidersView({
             />
           ))}
 
-          {/* Drifting clouds (nature) */}
           {kit.showClouds && !customTheme && (
             <CloudSkyLayer aria-hidden>
               {clouds.map((c) => (
@@ -887,7 +843,6 @@ export default function SpidersView({
             </CloudSkyLayer>
           )}
 
-          {/* Station / game nodes */}
           {positions.length > 0 && items.map((item, index) => {
             const pos = positions[index];
             if (!pos) return null;
@@ -945,7 +900,6 @@ export default function SpidersView({
         )}
       </CanvasArea>
 
-      {/* Animated fish (ocean) — fixed, outside scroll */}
       {kit.showFish && !customTheme && fish.map((f) => (
         <FishOuter key={`fish-${f.id}`} duration={f.duration} top={f.top}>
           <FishWobbleWrap wobbleDuration={f.wobbleDuration}>
@@ -954,7 +908,6 @@ export default function SpidersView({
         </FishOuter>
       ))}
 
-      {/* Drifting balloons (ganei-yehoshua) — fixed, outside scroll */}
       {kit.showBalloon && !customTheme && balloons.map((b) => (
         <BalloonOuter key={`balloon-${b.id}`} duration={b.duration} top={b.top}>
           <BalloonWobbleWrap wobbleDuration={b.wobbleDuration}>
@@ -968,7 +921,6 @@ export default function SpidersView({
         </BalloonOuter>
       ))}
 
-      {/* Tumbleweeds (desert) — fixed, outside scroll */}
       {kit.showTumbleweed && !customTheme && tumbleweeds.map((tw) => (
         <TumbleweedOuter key={`tw-${tw.id}`} duration={tw.duration} top={tw.top}>
           <TumbleweedBounceWrap bounceDuration={tw.bounceDuration}>

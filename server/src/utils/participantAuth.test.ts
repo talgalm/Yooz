@@ -3,7 +3,6 @@ import assert from 'node:assert';
 import { Types } from 'mongoose';
 import { ownReportFilter } from './participantAuth';
 
-// Run: npx tsx --test server/src/utils/participantAuth.test.ts
 test('a pinned session addresses its own report by id, never by name', () => {
   const id = new Types.ObjectId().toString();
   const filter = ownReportFilter({ reportId: id, activityCode: 'dy1q6m', participantName: 'מור קפויה' });

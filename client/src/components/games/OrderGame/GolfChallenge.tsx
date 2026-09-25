@@ -3,12 +3,10 @@ import { styled, keyframes } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { golfTexts } from './GolfChallenge.i18n';
 
-// ─── Constants ───
-
 const MAX_HITS = 7;
 const FRICTION = 0.982;
-const HILL_FRICTION = 0.94;       // slows ball when climbing toward hill center
-const DOWNHILL_BOOST = 1.025;     // speeds ball up when going downhill
+const HILL_FRICTION = 0.94;
+const DOWNHILL_BOOST = 1.025;
 const WALL_DAMPEN = 0.65;
 const MIN_VELOCITY = 0.25;
 const HOLE_RADIUS = 22;
@@ -16,30 +14,23 @@ const HOLE_SPEED = 4;
 const BALL_R = 15;
 const SPEED_FACTOR = 0.28;
 const MAX_SPEED = 14;
-const MAX_DRAG_DIST = MAX_SPEED / SPEED_FACTOR; // ~50px
+const MAX_DRAG_DIST = MAX_SPEED / SPEED_FACTOR;
 
 const COURSE_W = 340;
 const COURSE_H = 520;
 
 const BALL_START = { x: 170, y: 460 };
-/** Desktop: tee higher so the ball + swipe room stay above the skip button. */
 const BALL_START_DESKTOP = { x: 170, y: 400 };
 const DESKTOP_MQ = '(min-width: 768px)';
 
-// ─── Hills layout (2x size) ───
-// Flag hill: top-right area — hole lives on this hill
 const FLAG_HILL = { cx: 210, cy: 110, r: 130 };
-// Regular hill: left-center
 const REGULAR_HILL = { cx: 90, cy: 280, r: 120 };
-// Small hill (uses regular hill SVG): right-center-lower
 const SMALL_HILL = { cx: 230, cy: 380, r: 80 };
 
 const HILLS = [FLAG_HILL, REGULAR_HILL, SMALL_HILL];
 
-// Hole is on the flag hill — offset slightly up-right to match the dark spot in the SVG
 const HOLE_POS = { x: FLAG_HILL.cx + 15, y: FLAG_HILL.cy - 20 };
 
-// Hill image dimensions for positioning (2x previous sizes)
 const FLAG_HILL_W = 340;
 const FLAG_HILL_H = 340;
 const REGULAR_HILL_W = 320;
@@ -47,19 +38,14 @@ const REGULAR_HILL_H = 320;
 const SMALL_HILL_W = 220;
 const SMALL_HILL_H = 220;
 
-// ─── Types ───
-
 interface GolfChallengeProps {
   onComplete: (bonusScore: number) => void;
   onSkip: () => void;
 }
 
-// ─── Component ───
-
 export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps) {
   const t = useTranslations(golfTexts);
 
-  // Golf swing sound
   const swingSoundRef = useRef<HTMLAudioElement | null>(null);
   useEffect(() => {
     swingSoundRef.current = new Audio('/sounds/golf-swing.mp3');
@@ -99,7 +85,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
-  // ─── Measure available space and compute scale to fill 100% ───
   useEffect(() => {
     const el = scalerRef.current;
     if (!el) return;
@@ -114,8 +99,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
       if (width > 0 && height > 0) {
         const desktop = window.matchMedia(DESKTOP_MQ).matches;
         if (desktop) {
-          // Uniform scale + horizontal centering keeps the full course (and ball)
-          // visible on wide screens; non-uniform stretch was clipping the tee.
           const sx = width / COURSE_W;
           const sy = height / COURSE_H;
           const s = Math.min(sx, sy);
@@ -135,25 +118,18 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
     return () => ro.disconnect();
   }, [isDesktop]);
 
-  // ─── Ball DOM update (no React re-render) ───
   const updateBallDOM = useCallback(() => {
     if (ballRef.current) {
       ballRef.current.style.transform = `translate(${ballPos.current.x - BALL_R}px, ${ballPos.current.y - BALL_R}px)`;
     }
   }, []);
 
-  // ─── Hill physics helper ───
-  // Returns: which hill the ball is on (if any), distance from center, and
-  // whether ball is moving toward center (uphill) or away (downhill)
   const getHillEffect = useCallback((x: number, y: number, vx: number, vy: number) => {
     for (const hill of HILLS) {
       const dx = x - hill.cx;
       const dy = y - hill.cy;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < hill.r + BALL_R) {
-        // Dot product of velocity and direction-from-center
-        // Positive = moving away from center (downhill)
-        // Negative = moving toward center (uphill)
         const dot = dist > 0 ? (vx * dx / dist + vy * dy / dist) : 0;
         return { onHill: true, dist, hill, goingDownhill: dot > 0 };
       }
@@ -167,16 +143,13 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
     return dx * dx + dy * dy < HOLE_RADIUS * HOLE_RADIUS && speed < HOLE_SPEED;
   }, []);
 
-  // ─── Physics loop ───
   const physicsLoop = useCallback(() => {
     const pos = ballPos.current;
     const vel = ballVel.current;
 
-    // Apply velocity
     pos.x += vel.vx;
     pos.y += vel.vy;
 
-    // Wall bouncing
     if (pos.x < BALL_R) { pos.x = BALL_R; vel.vx = -vel.vx * WALL_DAMPEN; }
     if (pos.x > COURSE_W - BALL_R) { pos.x = COURSE_W - BALL_R; vel.vx = -vel.vx * WALL_DAMPEN; }
     if (pos.y < BALL_R) { pos.y = BALL_R; vel.vy = -vel.vy * WALL_DAMPEN; }
@@ -184,7 +157,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
 
     const speed = Math.sqrt(vel.vx * vel.vx + vel.vy * vel.vy);
 
-    // Hole check — animate ball sinking into hole
     if (inHole(pos.x, pos.y, speed)) {
       vel.vx = 0;
       vel.vy = 0;
@@ -192,7 +164,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
       pos.y = HOLE_POS.y;
       isMoving.current = false;
       updateBallDOM();
-      // Animate: shrink + drop into hole
       if (ballRef.current) {
         const el = ballRef.current;
         el.style.transition = 'transform 0.35s ease-in, opacity 0.35s ease-in';
@@ -203,25 +174,20 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
       return;
     }
 
-    // Hill physics + friction
     const hillFx = getHillEffect(pos.x, pos.y, vel.vx, vel.vy);
     if (hillFx.onHill) {
       if (hillFx.goingDownhill) {
-        // Going away from hill center — boost speed
         vel.vx *= DOWNHILL_BOOST;
         vel.vy *= DOWNHILL_BOOST;
       } else {
-        // Going toward hill center — extra friction (slow down)
         vel.vx *= HILL_FRICTION;
         vel.vy *= HILL_FRICTION;
       }
     } else {
-      // Normal grass friction
       vel.vx *= FRICTION;
       vel.vy *= FRICTION;
     }
 
-    // Stop check
     if (speed < MIN_VELOCITY) {
       vel.vx = 0;
       vel.vy = 0;
@@ -237,7 +203,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
     animRef.current = requestAnimationFrame(physicsLoop);
   }, [inHole, getHillEffect, updateBallDOM]);
 
-  // Initial ball position (re-seat when switching mobile ↔ desktop)
   useEffect(() => {
     const start = isDesktop ? BALL_START_DESKTOP : BALL_START;
     ballPos.current = { ...start };
@@ -251,7 +216,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
     return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
   }, [isDesktop, updateBallDOM]);
 
-  // ─── Shared hit calculation ───
   const calcHit = (startPos: { x: number; y: number }, endPos: { x: number; y: number }) => {
     const dx = startPos.x - endPos.x;
     const dy = startPos.y - endPos.y;
@@ -287,7 +251,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
     });
   };
 
-  // ─── Coordinate conversion (screen pixels → internal course coords) ───
   const toCoursePx = useCallback((clientX: number, clientY: number) => {
     if (!courseRef.current) return { x: 0, y: 0 };
     const rect = courseRef.current.getBoundingClientRect();
@@ -297,7 +260,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
     };
   }, []);
 
-  // ─── Touch handlers ───
   const getCoursePos = useCallback((touch: React.Touch) => {
     return toCoursePx(touch.clientX, touch.clientY);
   }, [toCoursePx]);
@@ -332,7 +294,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
     if (vel) fireHit(vel);
   }, [gameState, getCoursePos, physicsLoop]);
 
-  // ─── Mouse handlers (for desktop testing) ───
   const mouseDown = useRef(false);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -366,7 +327,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
     if (vel) fireHit(vel);
   }, [gameState, toCoursePx, physicsLoop]);
 
-  // ─── Result handling ───
   const handleContinue = () => {
     if (gameState === 'success') {
       onComplete(25);
@@ -377,7 +337,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
 
   return (
     <GolfContainer>
-      {/* Header (glass effect, black border — matches order game) */}
       <GolfHeader>
         <TitleBadge>
           <span style={{ fontSize: 20 }}>⛳</span>
@@ -386,10 +345,8 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
         <HitCounter>{t.hits}: {hits}</HitCounter>
       </GolfHeader>
 
-      {/* Instruction text */}
       <TapToHit>{t.tapToHit}</TapToHit>
 
-      {/* Scalable course area — fills remaining space */}
       <CourseScaler ref={scalerRef}>
         <CourseWrapper
           ref={courseRef}
@@ -405,7 +362,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
           onMouseUp={handleMouseUp}
           onMouseLeave={() => { mouseDown.current = false; touchStart.current = null; setAimLine(null); }}
         >
-          {/* Hill with flag (top-right) — hole is here */}
           <HillImage
             src="/images/golf-hill-flag.svg"
             style={{
@@ -417,7 +373,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
             draggable={false}
           />
 
-          {/* Regular hill (left-center) */}
           <HillImage
             src="/images/golf-hill-regular.svg"
             style={{
@@ -429,7 +384,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
             draggable={false}
           />
 
-          {/* Small hill (right-lower) — uses regular hill SVG */}
           <HillImage
             src="/images/golf-hill-regular.svg"
             style={{
@@ -441,7 +395,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
             draggable={false}
           />
 
-          {/* Trail dots — white golf-style power indicator */}
           {aimLine && (
             <svg style={{ position: 'absolute', inset: 0, width: COURSE_W, height: COURSE_H, zIndex: 5, pointerEvents: 'none' }}>
               {Array.from({ length: 12 }).map((_, i) => {
@@ -478,7 +431,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
             </svg>
           )}
 
-          {/* Flashing drag hint — only before the first hit, and never while aiming */}
           {gameState === 'playing' && hits === 0 && !aimLine && (() => {
             const tailY = ballStart.y + BALL_R + 8;
             const tipY = Math.min(ballStart.y + 100, COURSE_H - 8);
@@ -498,17 +450,14 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
             );
           })()}
 
-          {/* Ball */}
           <BallEl ref={ballRef} />
         </CourseWrapper>
       </CourseScaler>
 
-      {/* Skip button */}
       {gameState === 'playing' && (
         <SkipBtn onClick={onSkip}>{t.skip}</SkipBtn>
       )}
 
-      {/* Full-screen result — replaces entire background */}
       {gameState !== 'playing' && (
         <ResultScreen>
           {gameState === 'success' ? (
@@ -522,8 +471,6 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
     </GolfContainer>
   );
 }
-
-// ─── Styled Components ───
 
 const LEAF_BANNER_BG = '#3d6b4f';
 const LEAF_BANNER_DARK = '#2e5a3e';
@@ -600,7 +547,6 @@ const TapToHit = styled('div')({
   flexShrink: 0,
 });
 
-/** Fills remaining vertical space so the course can scale into it */
 const CourseScaler = styled('div')({
   flex: 1,
   width: '100%',
@@ -608,7 +554,6 @@ const CourseScaler = styled('div')({
   position: 'relative',
   overflow: 'hidden',
   '@media (min-width: 768px)': {
-    // Keep the tee above the skip button on laptop viewports.
     paddingBottom: 12,
     boxSizing: 'border-box',
   },
@@ -639,8 +584,6 @@ const flashHint = keyframes`
   50% { opacity: 1; }
 `;
 
-/** First-hit hint: points from the ball down-course — the way to drag, i.e. the
- *  opposite of where the ball will fly. Hidden as soon as the player aims. */
 const HintArrow = styled('svg')({
   position: 'absolute',
   inset: 0,
@@ -663,8 +606,6 @@ const BallEl = styled('div')({
   top: 0,
   left: 0,
 });
-
-// ─── Overlays ───
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: scale(0.8); }

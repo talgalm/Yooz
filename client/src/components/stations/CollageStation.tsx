@@ -1,13 +1,3 @@
-/**
- * CollageStation – full flow for the "Collage" station type.
- *
- * Phases:
- *   intro      → instructions screen with numbered photo-mission cards
- *   capture    → take / upload a photo for each mission
- *   review     → see all collected photos, set a title, then generate
- *   generating → animated progress bar (upload XHR progress + server-side ticker)
- *   result     → play the finished MP4 collage video, download or continue
- */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
@@ -43,12 +33,9 @@ import { fetchCollageProgress } from '../../utils/collageApi';
 import { useAuth } from '../../context/AuthContext';
 import { participantSessionId } from '../../utils/participantActivity';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface CollageMission {
   title: string;
   description?: string;
-  /** Optional example/reference image shown inside the capture frame (70% opacity) before a photo is taken. */
   referenceImageUrl?: string;
 }
 
@@ -65,12 +52,8 @@ interface Props {
   station: StationItemData;
   onContinue: () => void;
   code?: string;
-  /** Activity-level toggle from admin: lets participant skip the wait and receive
-   *  the rendered video by SMS. Shown only when participant has a phone number. */
   smsForCollage?: boolean;
 }
-
-// ─── Styled components ────────────────────────────────────────────────────────
 
 function serverWording(message: string | undefined): boolean {
   return Boolean(message) && currentLang() === 'he';
@@ -79,8 +62,6 @@ function serverWording(message: string | undefined): boolean {
 const fadeIn = keyframes`from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}`;
 
 const Wrap = styled('div')({
-  // position:fixed so CollageStation always fills the whole viewport,
-  // regardless of which wrapper it is rendered inside (PlayingContent, NatureBackground, etc.)
   position: 'fixed',
   inset: 0,
   zIndex: 200,
@@ -95,7 +76,6 @@ const Wrap = styled('div')({
   animation: `${fadeIn} 400ms ease both`,
 });
 
-/** Scrollable body for intro / review (many list items). */
 const Content = styled('div')({
   flex: 1,
   minHeight: 0,
@@ -104,9 +84,6 @@ const Content = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   WebkitOverflowScrolling: 'touch',
-  // Desktop: center the intro/review column at a comfortable reading width.
-  // Previously stretched the full viewport on big screens (QA Jun 2026 pages
-  // 2-3) which made the panel look stranded.
   '@media (min-width: 768px)': {
     width: 'min(720px, 90vw)',
     marginInline: 'auto',
@@ -114,7 +91,6 @@ const Content = styled('div')({
   },
 });
 
-/** Capture fits one screen: compact header, preview grows to fill space, actions pinned at bottom. */
 const CaptureLayout = styled('div')({
   flex: 1,
   minHeight: 0,
@@ -126,8 +102,6 @@ const CaptureLayout = styled('div')({
   width: '100%',
   margin: '0 auto',
   boxSizing: 'border-box',
-  // Desktop: a bit wider for the camera preview, but capped so the preview
-  // area below (CaptureArea) doesn't blow up to viewport height (QA #5).
   '@media (min-width: 768px)': {
     maxWidth: 'min(640px, 80vw)',
     padding: '24px 24px calc(24px + env(safe-area-inset-bottom, 0px))',
@@ -214,7 +188,6 @@ const OutlineBtn = styled('button')({
   padding: '8px 0', fontFamily: 'inherit', width: '100%', textAlign: 'center', marginTop: 4,
 });
 
-// Capture phase
 const ProgressDots = styled('div')({ display: 'flex', gap: 6, justifyContent: 'center', margin: '6px 0 8px' });
 const Dot = styled('div')<{ active?: boolean; done?: boolean }>(({ active, done }) => ({
   width: 8, height: 8, borderRadius: '50%',
@@ -240,7 +213,6 @@ const CaptureArea = styled('div')({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  // Keep the capture frame portrait on all screens; flex shrink keeps the next button visible.
   '@media (min-width: 768px)': {
     width: 'min(380px, 60vw)',
     margin: '12px auto 16px',
@@ -251,7 +223,6 @@ const ReferenceImg = styled('img')({
   position: 'absolute', inset: 0, width: '100%', height: '100%',
   objectFit: 'cover', opacity: 0.7, pointerEvents: 'none',
 });
-// position:relative so these paint above the absolutely-positioned ReferenceImg
 const PlaceholderIcon = styled('div')({ fontSize: 56, marginBottom: 12, opacity: 0.55, position: 'relative' });
 const PlaceholderText = styled('div')({ fontSize: 17, fontWeight: 700, color: 'rgba(255,255,255,0.78)', lineHeight: 1.4, position: 'relative' });
 
@@ -264,7 +235,6 @@ const HalfBtn = styled('button')({
   '&:disabled': { opacity: 0.35, cursor: 'not-allowed' },
 });
 
-// Review phase
 const ReviewItem = styled('div')({
   display: 'flex', gap: 12, alignItems: 'center',
   background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
@@ -280,7 +250,6 @@ const TitleInput = styled('input')({
   '&::placeholder': { color: 'rgba(255,255,255,0.32)' },
 });
 
-// Generating phase
 const GeneratingWrap = styled('div')({ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32, minHeight: '100%' });
 const GeneratingCard = styled('div')({
   width: '100%', background: 'rgba(255,255,255,0.06)',
@@ -293,7 +262,6 @@ const GeneratingIntro = styled('p')({
 const LoadingGif = styled('img')({
   width: 180, height: 180, objectFit: 'contain',
   margin: '0 auto 18px', display: 'block',
-  // The gif already animates; no CSS animation needed.
 });
 const ProgressTrack = styled('div')({
   width: '100%', height: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 999, overflow: 'hidden', marginBottom: 16,
@@ -308,8 +276,6 @@ const ProgressSub = styled('p')({ fontSize: 13, color: 'rgba(255,255,255,0.5)', 
 const ProgressEta = styled('p')({ fontSize: 12, color: 'rgba(255,255,255,0.42)', margin: '4px 0 0', fontVariantNumeric: 'tabular-nums' });
 const ProgressOffline = styled('p')({ fontSize: 12, color: '#fde68a', margin: '8px 0 0', fontWeight: 700 });
 
-// SMS-when-ready callout — deliberately loud so nobody waits at this screen
-// without noticing they can leave and get the video by SMS.
 const smsPulse = keyframes`
   0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(236,94,156,0.55), 0 10px 24px rgba(236,94,156,0.35); }
   50%      { transform: scale(1.05); box-shadow: 0 0 0 14px rgba(236,94,156,0), 0 10px 28px rgba(236,94,156,0.5); }
@@ -332,7 +298,6 @@ const SmsCalloutBtn = styled('button')({
   '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
 });
 
-// Result phase
 const VideoWrap = styled('div')({ borderRadius: 16, overflow: 'hidden', width: '100%', marginBottom: 20, background: '#000', position: 'relative' });
 const ResultVideo = styled('video')({ width: '100%', display: 'block' });
 const VideoPlayOverlay = styled('button')({
@@ -359,17 +324,9 @@ const VideoPlayIcon = styled('span')({
   paddingLeft: 6,
 });
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export default function CollageStation({ station, onContinue, code, smsForCollage }: Props) {
   const t = useTranslations(texts);
   const { lang } = useLang();
-  // Scope every collage storage/server key to this login session so one
-  // participant's job can't be picked up by a different participant logging in
-  // on the same device (was: User B re-using the same activity code instantly
-  // got User A's already-encoded video). The tag used to be derived from
-  // email/phone/name, which collided whenever the phone number was reused or
-  // the name was Hebrew — see participantSessionId().
   const { participant } = useAuth();
   const userTag = participantSessionId();
   const splitGroupId = station.collageSplit
@@ -395,23 +352,12 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
         ? rawMissions
         : [{ title: t.takePhoto, description: '' }]);
 
-  // ── Split metadata ────────────────────────────────────────────────────────
-  // When the station is split, each part owns a slice of the full image set.
-  // Photos captured in earlier parts are persisted in IndexedDB so the last
-  // part can stitch the whole collage together.
-  //
-  // The canonical shape stores `partSizes` — each entry is the image count that
-  // part is responsible for. We fall back to even distribution for legacy data
-  // that only saved `totalParts`.
   const splitMeta = station.collageSplit;
-  // Apply optional per-activity photo reorder before slicing.
   const fullMissions: CollageMission[] =
     splitMeta?.photoOrder && splitMeta.photoOrder.length === baseMissions.length
       ? splitMeta.photoOrder.map((i) => baseMissions[i] ?? baseMissions[0])
       : baseMissions;
   const totalImages = fullMissions.length;
-  // When a dedicated video-only part exists, partSizes[videoPartIndex] === 0
-  // and the sum of photo parts still equals totalImages.
   const videoPartIndex = splitMeta?.videoPartIndex ?? null;
   const hasVideoPart = typeof videoPartIndex === 'number' && videoPartIndex >= 0;
   const partSizes: number[] = (() => {
@@ -422,9 +368,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     };
     if (splitMeta?.partSizes && splitMeta.partSizes.length > 0) {
       const sum = splitMeta.partSizes.reduce((a, b) => a + b, 0);
-      // Self-heal stale partSizes whose sum no longer matches the station's
-      // total image count — redistribute evenly across the photo parts only
-      // (preserving the video-only zero entry if present).
       if (sum === totalImages) return splitMeta.partSizes;
       if (hasVideoPart) {
         const photoParts = splitMeta.partSizes.length - 1;
@@ -448,19 +391,14 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   const isFirstPart = partIndex === 0;
   const isLastPart = partIndex === totalParts - 1;
   const isVideoPart = hasVideoPart && partIndex === videoPartIndex;
-  // The participant only finalizes (review + generate) on a non-video terminal part.
-  // When a dedicated video part exists, photo parts always save & continue.
   const finalizesCollage = isVideoPart || (isLastPart && !hasVideoPart);
   const partSize = isVideoPart ? 0 : Math.max(1, partSizes[partIndex] ?? 1);
   const partStartIndex = partSizes.slice(0, partIndex).reduce((a, b) => a + b, 0);
-  // The list of missions this part is responsible for (local-index 0..partSize-1).
   const missions: CollageMission[] = isVideoPart
     ? []
     : fullMissions.slice(partStartIndex, partStartIndex + partSize);
   const partMultiSelectCount = multiSelect ? Math.max(1, partSize) : multiSelectCount;
 
-  // Every photo part (including split parts 2+) starts on intro so the disclaimer
-  // and mission list are shown before capture.
   const initialPhase: Phase = isVideoPart ? 'generating' : 'intro';
   const [phase, setPhase] = useState<Phase>(initialPhase);
   const [currentMission, setCurrentMission] = useState(0);
@@ -478,7 +416,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   const [activeJobId, setActiveJobId] = useState<string>('');
   const [smsRequestState, setSmsRequestState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
-  // Capture state
   const [previewUrl, setPreviewUrl] = useState('');
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewIsVideo, setPreviewIsVideo] = useState(false);
@@ -488,9 +425,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   const resultVideoRef = useRef<HTMLVideoElement>(null);
   const serverPollRef = useRef<(() => void) | null>(null);
 
-  // Progress poll with backoff: 1s normally, 5s after 3 consecutive failures
-  // (and surfaces a "reconnecting…" banner). Lets the UI degrade gracefully
-  // on bad signal instead of silently hammering a dead link.
   const stopPoll = useCallback(() => {
     if (serverPollRef.current) { serverPollRef.current(); serverPollRef.current = null; }
     setPollOffline(false);
@@ -523,8 +457,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   }, [stopPoll]);
   const bgUnsubRef = useRef<(() => void) | null>(null);
 
-  // Skipping any split part means the final part can't reach the required
-  // photo count — propagate the skip to remaining parts in the group.
   const handleSkip = useCallback(() => {
     if (isSplit && splitMeta && code) markCollageSkipped(code, splitGroupId);
     onContinue();
@@ -569,7 +501,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     );
   };
 
-  /** Map split parts to global mission indices 0..N-1 (part 1 → 0,1,2; part 2 → 3,4,5). */
   const mergeSplitPhotos = (
     prior: { partIndex: number; photos: { blob: Blob; isVideo?: boolean }[] }[],
     local: CapturedPhoto[],
@@ -604,12 +535,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       .sort((a, b) => a.missionIndex - b.missionIndex)
       .map((p) => ({ blob: p.blob, isVideo: p.isVideo }));
 
-  // ── Split-part completion ──────────────────────────────────────────────────
-  // When the user finishes capturing this part's slice:
-  //  - non-last parts save photos to IndexedDB and call onContinue (advance to
-  //    the next station; the user will return later for the next split part);
-  //  - the last part loads prior parts, merges them with the local capture, and
-  //    moves to the review/generate flow with the full set.
   const finishLocalPart = async (localPhotos: CapturedPhoto[]) => {
     if (isSplit && !finalizesCollage) {
       const activityCode = code ?? '';
@@ -619,8 +544,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
             partIndex,
             photos: photosForStorage(localPhotos),
           });
-          // Upload this part's photos to Cloudinary in the background so the
-          // video-creation station only needs to trigger ffmpeg stitch.
           uploadSplitPhotosInBackground(
             activityCode,
             splitGroupId,
@@ -636,7 +559,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
             },
             '',
           );
-        } catch { /* swallow — onContinue still advances */ }
+        } catch { }
       }
       onContinue();
       return;
@@ -668,7 +591,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     setPhase('review');
   };
 
-  // ── Capture navigation ──────────────────────────────────────────────────────
   const confirmPhoto = () => {
     if (!previewBlob || !previewUrl) return;
     const updated = [
@@ -688,7 +610,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     }
   };
 
-  // ── Collage generation ──────────────────────────────────────────────────────
   const generateCollage = async (photosOverride?: CapturedPhoto[]) => {
     const source = photosOverride ?? photos;
     if (source.length !== totalImages) {
@@ -709,8 +630,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
 
     const activityCode = code ?? '';
     const orderedPhotos = [...source].sort((a, b) => a.missionIndex - b.missionIndex);
-    // Use a stable groupId for non-split stations too, so the IndexedDB +
-    // server lookup pipeline can resume after reload.
     const effectiveGroupId = isSplit && splitMeta
       ? splitGroupId
       : singleGroupId;
@@ -760,7 +679,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
             clearCollageSkipped(activityCode, splitGroupId);
           }
           await cleanupCollageJobPersistence(activityCode, effectiveGroupId);
-        } catch { /* ignore */ }
+        } catch { }
       }
 
       setResultUrl(result.url);
@@ -774,7 +693,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     }
   };
 
-  // Stop polling + detach from background job on unmount.
   useEffect(() => () => {
     stopPoll();
     if (bgUnsubRef.current) { bgUnsubRef.current(); bgUnsubRef.current = null; }
@@ -783,8 +701,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   const formatEta = (secs: number): string => {
     if (secs <= 0) return t.almostDone;
     if (secs < 60) return t.secondsLeft(secs);
-    // ponytail: server ETA extrapolates from createdAt, so a resumed/stale job
-    // can show absurd values (hours). Cap the honest signal at "a few minutes".
     if (secs > 10 * 60) return t.fewMinutesLeft;
     const m = Math.floor(secs / 60);
     const s = secs % 60;
@@ -859,11 +775,9 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2500);
     } catch {
-      /* clipboard unavailable */
     }
   }, [getResultVideoFile, shareUrl]);
 
-  // ── Download ────────────────────────────────────────────────────────────────
   const handleDownload = async () => {
     try {
       const a = document.createElement('a');
@@ -875,7 +789,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       }
       a.download = `${collageTitle || 'collage'}.${resultIsVideo ? 'mp4' : 'png'}`;
       a.click();
-    } catch { /* user can long-press to save */ }
+    } catch { }
   };
 
   const handlePlayResultVideo = useCallback(async () => {
@@ -895,13 +809,10 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     }
   }, []);
 
-  // Reset play overlay when a new result loads.
   useEffect(() => {
     setResultVideoStarted(false);
   }, [resultUrl]);
 
-  // Persist non-split captures to IndexedDB so a refresh before upload finishes
-  // doesn't lose the photos. Split flow already persists via finishLocalPart.
   useEffect(() => {
     if (isSplit) return;
     const activityCode = code ?? '';
@@ -914,10 +825,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     }).catch(() => {});
   }, [photos, phase, isSplit, code, station._id]);
 
-  // ── Non-split reload recovery ───────────────────────────────────────────────
-  // If user reloaded mid-encode, jump straight to generating/result instead of
-  // restarting from intro. (Split case is handled by the video-part bootstrap
-  // below; this only fires for !isSplit.)
   const recoverRef = useRef(false);
   useEffect(() => {
     if (isSplit || recoverRef.current) return;
@@ -967,19 +874,15 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
             setResultIsVideo(result.isVideo);
             setPhase('result');
           } catch {
-            // Server job died — try local photos first; otherwise back to intro.
             if (!(await restoreFromIdb())) setPhase('intro');
           }
           return;
         }
-        // No active server job — restore captures if any survived the reload.
         await restoreFromIdb();
-      } catch { /* swallow — stay on intro */ }
+      } catch { }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Video-only part bootstrap ───────────────────────────────────────────────
   const bootstrappedRef = useRef(false);
   useEffect(() => {
     if (!isVideoPart || bootstrappedRef.current) return;
@@ -993,8 +896,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       }
 
       const bgKey = `${activityCode}::${splitGroupId}`;
-      // Video-only part: user never sees the review screen, so there's no
-      // title to set. Stay blank instead of falling back to the station header.
       const effectiveTitle = '';
 
       const finishWithResult = async (url: string, isVideo: boolean) => {
@@ -1006,7 +907,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
           await clearCollageParts(activityCode, splitGroupId);
           clearCollageSkipped(activityCode, splitGroupId);
           await cleanupCollageJobPersistence(activityCode, splitGroupId);
-        } catch { /* */ }
+        } catch { }
         consumeBackgroundCollage(bgKey);
         setResultUrl(url);
         setResultIsVideo(isVideo);
@@ -1099,17 +1000,12 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
 
       await runFreshGeneration();
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Helpers ─────────────────────────────────────────────────────────────────
   const currentPhotoForMission = photos.find((p) => p.missionIndex === currentMission);
   const displayUrl = previewUrl || currentPhotoForMission?.previewUrl || '';
   const hasCapture = !!(previewBlob || currentPhotoForMission);
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // INTRO
-  // ════════════════════════════════════════════════════════════════════════════
   if (phase === 'intro') {
     return (
       <Wrap>
@@ -1159,9 +1055,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     );
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // CAPTURE — multiSelect mode (single page, pick up to X items at once)
-  // ════════════════════════════════════════════════════════════════════════════
   if (phase === 'capture' && multiSelect) {
     const remaining = Math.max(0, partMultiSelectCount - photos.length);
     return (
@@ -1225,7 +1118,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
             )}
           </CaptureActions>
 
-          {/* Camera input: image-only + capture so Android opens the camera directly instead of the picker. */}
           <input ref={quickCaptureRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleMultiFilesSelected} />
           <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple style={{ display: 'none' }} onChange={handleMultiFilesSelected} />
         </CaptureLayout>
@@ -1233,9 +1125,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     );
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // CAPTURE
-  // ════════════════════════════════════════════════════════════════════════════
   if (phase === 'capture') {
     const mission = missions[currentMission];
     return (
@@ -1308,7 +1197,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
             )}
           </CaptureActions>
 
-          {/* Camera input: image-only + capture so Android opens the camera directly instead of the picker. */}
           <input ref={quickCaptureRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFileSelected} />
           <input ref={fileInputRef} type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={handleFileSelected} />
         </CaptureLayout>
@@ -1316,9 +1204,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     );
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // REVIEW
-  // ════════════════════════════════════════════════════════════════════════════
   if (phase === 'review') {
     return (
       <Wrap>
@@ -1332,7 +1217,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
           <TitleInput value={collageTitle} onChange={(e) => setCollageTitle(e.target.value)} placeholder={t.videoTitlePlaceholder} />
 
           {[...photos].sort((a, b) => a.missionIndex - b.missionIndex).map((photo) => {
-            // Merged split photos use global indices (0..totalImages-1); use fullMissions, not this part's slice.
             const mission = fullMissions[photo.missionIndex];
             return (
               <ReviewItem key={photo.missionIndex}>
@@ -1364,9 +1248,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     );
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // GENERATING
-  // ════════════════════════════════════════════════════════════════════════════
   if (phase === 'generating') {
     return (
       <Wrap>
@@ -1407,9 +1288,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     );
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // RESULT
-  // ════════════════════════════════════════════════════════════════════════════
   if (phase === 'result') {
     return (
       <Wrap>

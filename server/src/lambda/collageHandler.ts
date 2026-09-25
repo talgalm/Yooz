@@ -1,12 +1,3 @@
-// Lambda entrypoint for collage ffmpeg encoding.
-//
-// Invoked async by the API server with { jobId }. Pulls the job from Mongo,
-// downloads photos from Cloudinary, runs ffmpeg, streams the result back to
-// Cloudinary, and updates the same Mongo job document throughout.
-//
-// ponytail: reuses runFfmpeg+TEMPLATES from routes/collage.ts so encoder
-//           parameters stay in one place. Add a separate ffmpeg module if the
-//           route file ever becomes hard to import here.
 
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
@@ -28,8 +19,6 @@ cloudinary.config({
   api_secret: CLOUDINARY_API_SECRET,
 });
 
-// Lambda freezes the container between invocations. Keep the Mongo connection
-// alive across warm invocations so we don't pay the ~300ms handshake every call.
 let mongoReady: Promise<void> | null = null;
 async function ensureMongo(): Promise<void> {
   if (mongoose.connection.readyState === 1) return;
@@ -58,8 +47,6 @@ async function patchJob(
 ): Promise<void> {
   const job = await CollageJob.findOne({ jobId });
   if (!job) return;
-  // Terminal phases are sticky — late progress callbacks would otherwise
-  // resurrect a failed job.
   if (job.phase === 'done' || job.phase === 'error') return;
   if (patch.percent !== undefined) job.percent = Math.max(job.percent, patch.percent);
   if (patch.phase !== undefined) job.phase = patch.phase as typeof job.phase;
@@ -95,14 +82,12 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
     return { ok: false, jobId };
   }
 
-  // Templates are baked into the container image at /var/task/assets.
   const templatePath = path.join(process.cwd(), 'assets', template.videoFile);
   if (!fs.existsSync(templatePath)) {
     await patchJob(jobId, { phase: 'error', error: `Template missing: ${template.videoFile}`, message: 'שגיאת שרת' });
     return { ok: false, jobId };
   }
 
-  // /tmp is the only writable path on Lambda (10GB).
   const tmpDir = path.join('/tmp', `collage_${jobId}_${Date.now()}`);
   fs.mkdirSync(tmpDir, { recursive: true });
 
@@ -125,7 +110,7 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
         } catch {
           fs.copyFileSync(raw, dest);
         }
-        try { fs.unlinkSync(raw); } catch { /* ignore */ }
+        try { fs.unlinkSync(raw); } catch { }
         return dest;
       }),
     );
@@ -193,7 +178,6 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
       resultUrl: cloudResult.secure_url,
       isVideo: true,
     });
-    // Re-read so we catch a smsPhone that the participant set mid-encode.
     const finalJob = await CollageJob.findOne({ jobId }).select('smsPhone').lean();
     if (finalJob?.smsPhone) {
       console.log(`[lambda-collage] done job=${jobId} → SMS will be sent to ${finalJob.smsPhone}`);
@@ -207,6 +191,6 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
     await patchJob(jobId, { phase: 'error', error: msg, message: 'שגיאה ביצירת הסרטון' });
     return { ok: false, jobId };
   } finally {
-    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { }
   }
 }

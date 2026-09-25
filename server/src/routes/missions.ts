@@ -60,7 +60,6 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: 
   res.json({ mission });
 });
 
-// Move a mission into a folder, or out to the ungrouped root (folderId: null).
 router.patch('/:id/folder', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const { folderId } = req.body as { folderId?: unknown };
   if (folderId !== null && typeof folderId !== 'string') {

@@ -7,29 +7,15 @@ import {
 } from '../utils/currentLang';
 import { LANGS, DEFAULT_LANG, type Lang } from '../utils/languages';
 
-/**
- * The registry itself lives in `utils/languages`, so that code outside React
- * can read it too. Re-exported here because most of the app has always
- * imported `LANGS` from this module.
- */
 export { LANGS, DEFAULT_LANG };
 export type { Lang };
 
-/**
- * A language other than Hebrew may translate as much or as little as it likes —
- * anything it leaves out is filled in from Hebrew at runtime. Functions and
- * arrays are all-or-nothing, matching how `fillFrom` merges them.
- */
 type PartialTexts<T> =
   T extends (...args: never[]) => unknown ? T
   : T extends readonly unknown[] ? T
   : T extends object ? { [K in keyof T]?: PartialTexts<T[K]> }
   : T;
 
-/**
- * The shape of a component's `.i18n.ts` export. Hebrew is required and complete;
- * every other language supplies whatever it has translated so far.
- */
 export type Texts<T> = { he: T } & { [K in Exclude<Lang, typeof DEFAULT_LANG>]?: PartialTexts<T> };
 
 function langDir(lang: Lang): 'ltr' | 'rtl' {
@@ -38,7 +24,6 @@ function langDir(lang: Lang): 'ltr' | 'rtl' {
 
 function readStoredLang(scope: LangScope): Lang {
   const stored = langInScope(scope);
-  // Guards a stale value left behind by a language that no longer exists.
   return LANGS.some((l) => l.code === stored) ? (stored as Lang) : DEFAULT_LANG;
 }
 
@@ -104,7 +89,6 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
-/** `override` wins wherever it says something; `fallback` fills in the rest. */
 export function fillFrom<T>(fallback: T, override: unknown): T {
   if (override === undefined) return fallback;
   if (!isPlainObject(fallback) || !isPlainObject(override)) return override as T;
@@ -113,28 +97,12 @@ export function fillFrom<T>(fallback: T, override: unknown): T {
   return out as T;
 }
 
-// Keyed by the module-level `texts` object, so each (texts, lang) pair merges
-// once for the life of the page and `t` keeps a stable identity across renders
-// (some components list `t` in a hook dependency array).
 const mergedCache = new WeakMap<object, Partial<Record<Lang, unknown>>>();
 
-/**
- * Hook to get translations for a component.
- * Pass an object like `{ he: { ... }, en: { ... } }` and it returns the active
- * language's texts, with anything it is missing filled in from Hebrew.
- *
- * Usage:
- *   import { texts } from './MyComponent.i18n';
- *   const t = useTranslations(texts);
- */
 export function useTranslations<T>(texts: Texts<T>): T {
   return translate(texts, useLang().lang);
 }
 
-/**
- * The non-hook twin of `useTranslations`, for the utilities that format text
- * outside a component and are handed the language by their caller.
- */
 export function translate<T>(texts: Texts<T>, lang: Lang): T {
   if (lang === DEFAULT_LANG) return texts.he;
 

@@ -1,17 +1,13 @@
 import { styled, keyframes } from '@mui/material/styles';
 import { DESKTOP_STATION_WIDTH } from '../styled';
 
-// ─── Colors ───
-
 const WHITE = '#fff';
 const TIMER_RED = '#c0392b';
 
-// Timer circle — flat purple + dark rim (reference: countdown “6” on hills)
 const TIMER_PURPLE_FILL = '#8E24AA';
 const TIMER_PURPLE_BORDER = '#4A148C';
 const TIMER_NUMBER_STROKE = '#000000';
 
-// Game screen palette
 const HILL_1 = '#9dbb76';
 const HILL_2 = '#8dae63';
 const QUESTION_BG = '#2b492b';
@@ -21,10 +17,7 @@ const BTN_RED_BORDER = '#a84343';
 const BTN_GREEN_BG = '#6cac5e';
 const BTN_GREEN_BORDER = '#2d5626';
 
-/** Matches app body typography */
 const TF_FONT_FAMILY = "'Rubik', sans-serif";
-
-// ─── Animations ───
 
 const pulse = keyframes`
   0%, 100% { transform: scale(1); }
@@ -46,8 +39,6 @@ const floatIn = keyframes`
   from { opacity: 0; transform: translateY(30px) scale(0.9); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 `;
-
-// ─── Game Layout ───
 
 export const NatureContainer = styled('div')({
   position: 'relative',
@@ -86,8 +77,6 @@ export const Hill = styled('div')<{ variant: 1 | 2 }>(({ variant }) => ({
     ? { backgroundColor: HILL_1, bottom: '20%', left: '-50%' }
     : { backgroundColor: HILL_2, bottom: '-10%', right: '-30%' }),
 }));
-
-// ─── Header ───
 
 export const TFHeader = styled('div')({
   display: 'flex',
@@ -140,16 +129,12 @@ export const TFProgressBadge = styled('div')({
   color: '#2c3e50',
 });
 
-// ─── Question banner — same panel as intro description (IntroDescCard / IntroDescLine) ───
-
 const FINISH_PURPLE = '#6c5ce7';
 const FINISH_PURPLE_DARK = '#5b4cd4';
-/** Trivia-matched finish stump score typography */
 const FINISH_STUMP_TEXT_COLOR = '#fff';
 const LEAF_BANNER_BG = FINISH_PURPLE;
 const LEAF_BANNER_DARK = FINISH_PURPLE_DARK;
 
-/** Shared with intro instructions card (`IntroDescCard`) */
 const INTRO_DESC_PURPLE = '#4a148c';
 const INTRO_DESC_PANEL_BG = '#f8f8ff';
 
@@ -189,8 +174,6 @@ export const QuestionBannerText = styled('p')({
   whiteSpace: 'pre-wrap',
 });
 
-// ─── Timer Circle (double-ring design) ───
-
 export const TimerCircleWrapper = styled('div')({
   display: 'flex',
   alignItems: 'center',
@@ -200,11 +183,9 @@ export const TimerCircleWrapper = styled('div')({
   flex: '1 0 auto',
   minHeight: 'clamp(150px, 28vh, 200px)',
   width: '100%',
-  // Nudge toward vertical screen center (flex slot sits low due to header + question + buttons)
   transform: 'translateY(clamp(-28px, -5.5vh, -10px))',
 });
 
-/** Single flat purple disc + thick dark purple rim (reference image) */
 export const TimerCircle = styled('div')<{ critical?: boolean }>(({ critical }) => ({
   width: 'clamp(150px, 28vh, 200px)',
   aspectRatio: '1 / 1',
@@ -234,8 +215,6 @@ export const TimerCircleNumber = styled('span')<{ critical?: boolean }>(({ criti
   transition: 'color 0.3s ease, -webkit-text-stroke 0.3s ease',
 }));
 
-// ─── True/False Action Buttons ───
-
 export const NatureButtonRow = styled('div')({
   display: 'flex',
   gap: 'clamp(18px, 5vw, 30px)',
@@ -259,7 +238,6 @@ export const WrongButton = styled('button')<{
     if (isCorrectAnswer) {
       borderColor = '#3d8b37';
     } else if (wasSelected) {
-      // wrong selection stays red
     } else {
       opacity = 0.4;
     }
@@ -331,8 +309,6 @@ export const CorrectButton = styled('button')<{
   };
 });
 
-// ─── Feedback Overlay (fixed center; transform only on inner card so timer layout is stable) ───
-
 export const FeedbackOverlayRoot = styled('div')({
   position: 'fixed',
   inset: 0,
@@ -367,8 +343,6 @@ export const FeedbackOverlayCard = styled('div')<{ variant: 'correct' | 'incorre
     maxWidth: 'min(92vw, 400px)',
   };
 });
-
-// ─── Countdown ───
 
 export const NatureCountdown = styled('div')({
   flex: 1,
@@ -410,8 +384,6 @@ export const NatureCountdownNumber = styled('div')({
   zIndex: 1,
 });
 
-// ─── Media ───
-
 export const NatureMediaContainer = styled('div')({
   textAlign: 'center',
   position: 'relative',
@@ -428,15 +400,11 @@ export const NatureMediaImage = styled('img')({
   objectFit: 'contain',
   border: '3px solid rgba(255,255,255,0.3)',
   cursor: 'zoom-in',
-  // Desktop: photo of the statement should be a real image, not a thumbnail.
-  // QA Jun 2026 page 11: "image is too small, can't be enlarged."
   '@media (min-width: 768px)': {
     maxWidth: 'min(420px, 40vw)',
     maxHeight: 'min(36vh, 320px)',
   },
 });
-
-// ─── Yooz logo ───
 
 export const YoozLogo = styled('div')({
   marginTop: 30,
@@ -450,13 +418,8 @@ export const YoozLogo = styled('div')({
   zIndex: 1,
 });
 
-// ═══════════════════════════════════════════
-// ─── Opening / Instructions Screen (welcome art + readable chrome) ───
-// ═══════════════════════════════════════════
-
 const TRUE_FALSE_SCENE_BG_URL = '/images/true-false-scene-bg.png';
 export const TRUE_FALSE_WELCOME_BG_URL = TRUE_FALSE_SCENE_BG_URL;
-/** In-game phases (countdown, play, finish) — full-bleed behind UI */
 export const TRUE_FALSE_PLAY_BG_URL = '/images/true-false-play-bg.png';
 const INTRO_GOLD_TOP = '#5cb85c';
 const INTRO_GOLD_MID = '#28a745';
@@ -465,13 +428,11 @@ const INTRO_GOLD_BORDER = '#155724';
 const INTRO_GOLD_SHADOW = '#0f3d18';
 const INTRO_BTN_TEXT = '#fff';
 
-/** Match NatureBackground sky (#b8e8f0) — embedded intro only (admin preview / no themed shell). */
 const WELCOME_SKY_TOP = '#d2f0fa';
 const WELCOME_SKY_MID = '#b8e8f0';
 const WELCOME_SKY_LOW = '#93d4ec';
 const WELCOME_SKY_BOTTOM = '#72bfe0';
 
-/** Full viewport, under session header — pointer-events none so chrome stays clickable. */
 export const IntroFullScreenSceneBackdrop = styled('div')({
   position: 'fixed',
   inset: 0,
@@ -488,7 +449,6 @@ export const IntroFullScreenSceneBackdrop = styled('div')({
   backgroundRepeat: 'no-repeat',
 });
 
-/** Same stacking as intro backdrop — covers themed scene for countdown / play / finish */
 export const PlayFullScreenSceneBackdrop = styled('div')({
   position: 'fixed',
   inset: 0,
@@ -501,10 +461,6 @@ export const PlayFullScreenSceneBackdrop = styled('div')({
   backgroundRepeat: 'no-repeat',
 });
 
-/**
- * When True False runs without ThemedSceneOverlay (e.g. admin preview), paints the play-phase
- * background inside the preview shell instead of the viewport-fixed overlay.
- */
 export const PlayPhaseRoot = styled('div', {
   shouldForwardProp: (prop) => prop !== '$inlineBackdrop',
 })<{ $inlineBackdrop?: boolean }>(({ $inlineBackdrop }) => ({
@@ -537,7 +493,6 @@ export const PlayPhaseRoot = styled('div', {
 }));
 
 const embeddedIntroSurface = {
-  // Bleed past PlayingContent horizontal padding when there is no full-screen scene overlay.
   width: 'calc(100% + 32px)',
   maxWidth: 'none',
   marginLeft: '-16px',
@@ -617,7 +572,6 @@ export const IntroContent = styled('div')({
   minHeight: 0,
 });
 
-/** Intro title: white fill + green stroke; no panel (shows welcome art behind). */
 const GAME_TITLE_YELLOW = '#ffffff';
 const GAME_TITLE_OUTLINE = '#155724';
 
@@ -642,17 +596,15 @@ export const IntroGameTitleLine = styled('span')({
   color: GAME_TITLE_YELLOW,
   WebkitTextStroke: `4px ${GAME_TITLE_OUTLINE}`,
   paintOrder: 'stroke fill',
-  marginTop: '16px', // move text a little bit down
+  marginTop: '16px',
 });
 
-/** Fills space so instructions sit low (below welcome-art circles), above Start. */
 export const IntroWelcomeMidSpacer = styled('div')({
   flex: '1 1 0',
   minHeight: 0,
   width: '100%',
 });
 
-/** Instructions just above Start: white type, no panel (welcome art shows through). */
 export const IntroInstructions = styled('div')({
   textAlign: 'center',
   marginBottom: 12,
@@ -662,8 +614,6 @@ export const IntroInstructions = styled('div')({
   boxSizing: 'border-box',
   animation: `${floatIn} 0.5s ease-out 0.08s both`,
 });
-
-/** Intro: white card + overlapping start button (reference layout). */
 
 export const IntroDescStack = styled('div')({
   display: 'flex',
@@ -773,10 +723,6 @@ export const IntroYoozLogo = styled('div')({
   filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
 });
 
-// ═══════════════════════════════════════════
-// ─── Finish / Game Complete Screen ───
-// ═══════════════════════════════════════════
-
 export const FinishContainer = styled('div')({
   flex: 1,
   display: 'flex',
@@ -822,7 +768,6 @@ export const FinishContent = styled('div', {
       }),
 }));
 
-/** Centers gold score disc vertically in finish area (matches TriviaGame). */
 export const FinishStumpStage = styled('div')({
   position: 'absolute',
   inset: 0,
@@ -833,7 +778,6 @@ export const FinishStumpStage = styled('div')({
   justifyContent: 'center',
 });
 
-// Title banner (leaf-shaped, like question banner)
 export const FinishTitleBanner = styled('div')({
   background: `linear-gradient(135deg, ${LEAF_BANNER_BG} 0%, ${LEAF_BANNER_DARK} 100%)`,
   color: WHITE,
@@ -850,7 +794,6 @@ export const FinishTitleBanner = styled('div')({
   animation: `${floatIn} 0.4s ease-out`,
 });
 
-/** Gold score disc — matches TriviaGame finish stump */
 export const FinishStump = styled('div')({
   width: 'clamp(160px, 48vw, 220px)',
   height: 'clamp(160px, 48vw, 220px)',
@@ -947,7 +890,6 @@ export const FinishScoreLabel = styled('span')({
   textShadow: '0 1px 2px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.35)',
 });
 
-/** Shared finish copy — used by BallGame and others importing from this file */
 export const FinishFinalLabel = styled('div')({
   fontSize: 'clamp(15px, 3.9vw, 18px)',
   fontWeight: 700,

@@ -39,7 +39,6 @@ export const HelpFab = styled('button')({
   fontSize: 28,
   lineHeight: 1,
   zIndex: 901,
-  // The wrap owns grab/grabbing; the button covers all of it.
   cursor: 'inherit',
   fontFamily: 'inherit',
   animation: `${float} 3s ease-in-out infinite`,
@@ -54,14 +53,12 @@ export const HelpFab = styled('button')({
   },
 });
 
-// Placed by inline left/top from useFabPosition — the bot is draggable.
 export const FabWrap = styled('div')<{ dragging?: boolean }>(({ dragging }) => ({
   position: 'fixed',
   zIndex: 901,
   touchAction: 'none',
   userSelect: 'none',
   cursor: dragging ? 'grabbing' : 'grab',
-  // A wobbling target is hard to drop precisely.
   ...(dragging ? { '& button': { animation: 'none' } } : null),
 }));
 

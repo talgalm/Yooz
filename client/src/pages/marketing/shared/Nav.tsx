@@ -18,13 +18,6 @@ const Bar = styled('header')({
   borderBottom: `1px solid ${C.ruleSoft}`,
 });
 
-/**
- * One row on desktop, two below 900.
- *
- * The brand and the actions already fill a phone's width, so the destinations
- * wrap onto a row of their own rather than collapsing behind a menu button -
- * `Links` is ordered last and given the full width, and the bar grows to suit.
- */
 const Inner = styled('div')({
   maxWidth: CONTAINER,
   marginInline: 'auto',
@@ -45,10 +38,6 @@ const Inner = styled('div')({
   [BP.mobile]: { paddingInline: 16 },
 });
 
-/**
- * The wordmark asset already carries the "Engage, Share, Grow" lockup, so the
- * tagline must not be rendered again beside it.
- */
 const Brand = styled(Link)({
   display: 'flex',
   alignItems: 'center',
@@ -57,12 +46,6 @@ const Brand = styled(Link)({
   '@media (max-width: 900px)': { order: 0 },
 });
 
-/**
- * Measured: the wordmark's ink is 57.6px tall in the 1512-wide frame, and the
- * asset carries ~7px of transparent padding a side, so ink is 80% of its height.
- * 72px renders the mark at its true size - sizing to the ink alone would come
- * out a fifth too small.
- */
 const BrandMark = styled('img')({
   height: 72,
   width: 'auto',
@@ -73,12 +56,6 @@ const BrandMark = styled('img')({
 const Links = styled('nav')({
   display: 'flex',
   alignItems: 'stretch',
-  /**
-   * Full-bleed below 900: the row breaks out of `Inner`'s gutter with a negative
-   * inline margin so it spans the whole viewport. The tabs then tile it with no
-   * gap, which is what lets an active first or last tab's tinted block run all
-   * the way to the screen edge instead of stopping at the container.
-   */
   '@media (max-width: 900px)': {
     order: 2,
     width: 'calc(100% + 48px)',
@@ -100,9 +77,7 @@ const itemStyle = {
   whiteSpace: 'nowrap' as const,
   transition: 'background 0.15s ease, color 0.15s ease',
   '&:hover': { color: C.purple },
-  /** The active page is a full-height tinted block, not a pill. */
   '&.active': { background: C.paperSoft, color: C.magenta, fontWeight: 800 },
-  /** Equal shares, so the items together tile the full-bleed row edge to edge. */
   '@media (max-width: 900px)': {
     flex: 1,
     justifyContent: 'center',
@@ -117,11 +92,6 @@ const itemStyle = {
 const Item = styled(NavLink)(itemStyle);
 const AnchorItem = styled('a')(itemStyle);
 
-/**
- * Home and About collapse to an icon on a phone. They take a narrow fixed slot
- * rather than an equal share, which hands the width they free to the three
- * sector names - the longest labels in the row.
- */
 const IconItem = styled(Item)({ [BP.mobile]: { flex: '0 0 50px', paddingInline: 0 } });
 
 const ItemIcon = styled('span')({
@@ -129,10 +99,6 @@ const ItemIcon = styled('span')({
   [BP.mobile]: { display: 'flex' },
 });
 
-/**
- * Visually hidden on a phone, not `display: none`: the icon is aria-hidden, so
- * this text is what gives the link its accessible name there.
- */
 const CollapsibleLabel = styled('span')({
   [BP.mobile]: {
     position: 'absolute',
@@ -160,7 +126,6 @@ const Actions = styled('div')({
   '@media (max-width: 900px)': { order: 1, gap: 10 },
 });
 
-/** Flat violet - the gradient is reserved for the hero buttons. */
 const NavCta = styled('a')({
   display: 'inline-flex',
   alignItems: 'center',
@@ -179,11 +144,6 @@ const NavCta = styled('a')({
   [BP.mobile]: { padding: '10px 18px', fontSize: 13 },
 });
 
-/**
- * A drawn globe, not a flag emoji: the shared `LangDrawer` renders 🇮🇱, which on
- * Windows falls back to the letters "IL" in a box. The comps show a plain
- * outline globe with no chrome around it.
- */
 const GlobeButton = styled('button')({
   display: 'inline-flex',
   alignItems: 'center',
@@ -202,7 +162,6 @@ export default function Nav() {
   const t = useTranslations(texts);
   const { lang } = useLang();
 
-  // Language is read from storage at boot, so switching persists and reloads.
   const cycleLang = () => {
     const i = LANGS.findIndex((l) => l.code === lang);
     const next = LANGS[(i + 1) % LANGS.length];
@@ -213,7 +172,6 @@ export default function Nav() {
   return (
     <Bar>
       <Inner>
-        {/* RTL puts the first child on the right, which is where the comps have the brand. */}
         <Brand to="/">
           <BrandMark src="/images/marketing/logo-yooz.png" alt={t.logoAlt} />
         </Brand>
@@ -223,7 +181,6 @@ export default function Nav() {
             if (r.path.startsWith('#')) {
               return <AnchorItem key={r.key} href={r.path}>{t[r.key]}</AnchorItem>;
             }
-            // `end` on "/" only: without it every path starts with "/" and Home stays highlighted.
             const end = r.path === '/';
             const Icon = NAV_ICONS[r.key];
             if (!Icon) {

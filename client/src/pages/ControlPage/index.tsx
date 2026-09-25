@@ -25,8 +25,6 @@ const SuccessText = styled('p')({
   textAlign: 'center',
 });
 
-// ponytail: credentials hardcoded on the client per spec — move behind an API
-// check before this page guards anything real.
 const USERNAME = 'register';
 const PASSWORD = '123456';
 

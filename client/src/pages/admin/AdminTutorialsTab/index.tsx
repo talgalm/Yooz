@@ -14,8 +14,6 @@ import {
   SectionLabel,
 } from '../styled';
 
-// ─── Types ───
-
 interface TutorialStep {
   name: string;
   status: 'pending' | 'running' | 'done' | 'failed';
@@ -36,8 +34,6 @@ interface Tutorial {
   startedAt?: string;
   createdAt: string;
 }
-
-// ─── Styled ───
 
 const Container = styled('div')({
   display: 'flex',
@@ -306,8 +302,6 @@ const CloseButton = styled('button')({
   '&:hover': { background: '#f5f5f5' },
 });
 
-// ─── Helpers ───
-
 function formatElapsed(startedAt: string): string {
   const diff = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
   const m = Math.floor(diff / 60);
@@ -322,11 +316,8 @@ function stepIcon(status: string): string {
   return '\u2022';
 }
 
-// ─── Component ───
-
 export default function AdminTutorialsTab() {
   const t = useTranslations(texts);
-  // Admins and customers watch the library; only super_admins generate/delete.
   const canManage = useAdminAuth().admin?.role === 'super_admin';
   const [tutorials, setTutorials] = useState<Tutorial[]>([]);
   const [title, setTitle] = useState('');
@@ -348,7 +339,6 @@ export default function AdminTutorialsTab() {
     fetchTutorials();
   }, [fetchTutorials]);
 
-  // Poll for pending/generating tutorials
   useEffect(() => {
     const hasPending = tutorials.some((tut) => tut.status === 'pending' || tut.status === 'generating');
     if (!hasPending) return;
@@ -357,7 +347,6 @@ export default function AdminTutorialsTab() {
     return () => clearInterval(interval);
   }, [tutorials, fetchTutorials]);
 
-  // Poll progress for selected tutorial
   useEffect(() => {
     if (!progressId) return;
     let cancelled = false;
@@ -366,7 +355,6 @@ export default function AdminTutorialsTab() {
       try {
         const data = await adminApiFetch<{ steps: TutorialStep[]; startedAt?: string; status: string; error?: string }>(`/api/admin/tutorials/${progressId}/progress`);
         if (!cancelled) setProgressData(data);
-        // Auto-close if done or failed + refresh list
         if (data.status === 'ready' || data.status === 'failed') {
           fetchTutorials();
         }
@@ -378,7 +366,6 @@ export default function AdminTutorialsTab() {
     return () => { cancelled = true; clearInterval(interval); };
   }, [progressId, fetchTutorials]);
 
-  // Update elapsed timer
   useEffect(() => {
     if (!progressId || !progressData?.startedAt) return;
     if (progressData.status === 'ready' || progressData.status === 'failed') {
@@ -420,7 +407,6 @@ export default function AdminTutorialsTab() {
     <Container>
       <PageTitle>{t.title}</PageTitle>
 
-      {/* Generate form */}
       {canManage && (
       <GenerateForm>
         <FormField>
@@ -453,7 +439,6 @@ export default function AdminTutorialsTab() {
 
       {error && <ErrorText>{error}</ErrorText>}
 
-      {/* Video grid */}
       {tutorials.length === 0 ? (
         <EmptyState>{t.noVideos}</EmptyState>
       ) : (
@@ -520,7 +505,6 @@ export default function AdminTutorialsTab() {
           ))}
         </VideoGrid>
       )}
-      {/* Progress popup */}
       {progressId && progressData && (
         <ProgressOverlay onClick={() => setProgressId(null)}>
           <ProgressCard onClick={(e) => e.stopPropagation()}>

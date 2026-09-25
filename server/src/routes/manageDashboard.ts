@@ -15,11 +15,6 @@ function startOfToday(): Date {
   return new Date(n.getFullYear(), n.getMonth(), n.getDate());
 }
 
-/**
- * The whole dashboard in ONE request. Spec ch.06: "the dashboard loads in a
- * single network call" — a screen assembled from eight requests is a screen
- * that shows eight different loading states and lies during four of them.
- */
 router.get('/', async (req: Request, res: Response) => {
   const { role, userId } = req.manageUser!;
   const mine = new Types.ObjectId(userId);
@@ -28,14 +23,12 @@ router.get('/', async (req: Request, res: Response) => {
 
   const alerts = await buildAlerts({ userId, role });
 
-  // My own open work, always scoped to the requester.
   const myTaskFilter = { assigneeUserId: mine, archived: false, status: { $ne: 'done' } };
   const [myOpenTasks, myOverdueTasks] = await Promise.all([
     Task.countDocuments(myTaskFilter),
     Task.countDocuments({ ...myTaskFilter, dueDate: { $lt: today } }),
   ]);
 
-  // Hours logged this week by the requester.
   const weekStart = new Date(today);
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
   const [weekAgg] = await TimeEntry.aggregate<{ total: number }>([
@@ -54,7 +47,6 @@ router.get('/', async (req: Request, res: Response) => {
     return;
   }
 
-  // pm and owner also get the business view.
   const [activeProjects, health, staleClients, openTasksAll] = await Promise.all([
     Project.countDocuments({ archived: false, status: { $in: ['active', 'maintenance'] } }),
     Project.aggregate<{ _id: string; n: number }>([
@@ -79,7 +71,6 @@ router.get('/', async (req: Request, res: Response) => {
       health: healthCounts,
       activeClients: staleClients,
       openTasks: openTasksAll,
-      // "What is waiting for me" — the table the brief asked for by name.
     },
   });
 });

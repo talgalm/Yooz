@@ -6,10 +6,6 @@ export interface ManagerProvisionResult {
   warning?: string;
 }
 
-/**
- * Upsert a customer User when a manager is assigned to an activity.
- * Syncs password when a new plain-text password is provided.
- */
 export async function provisionManagerCustomer(
   email: string,
   plainPassword?: string,

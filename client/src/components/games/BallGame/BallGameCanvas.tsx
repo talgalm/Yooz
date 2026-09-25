@@ -9,7 +9,6 @@ interface BallGameCanvasProps {
   onBallBounce: () => void;
 }
 
-// Canonical game dimensions (portrait mobile)
 const GAME_WIDTH = 360;
 const GAME_HEIGHT = 640;
 
@@ -22,7 +21,6 @@ export default function BallGameCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Size canvas to fill container while maintaining aspect ratio
   useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
@@ -42,7 +40,6 @@ export default function BallGameCanvas({
         h = w / aspect;
       }
 
-      // Use integer device pixels for sharp rendering
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);

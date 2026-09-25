@@ -31,7 +31,6 @@ export default function BusinessPage() {
             {t.salesCards.map((c, i) => (
               <Reveal key={c.title} delay={i * 80}>
                 <Card style={{ textAlign: 'center' }}>
-                  {/* 30px is the icons' own size in the frame. */}
                   <IconDisc bg={C.vennEngage} imgSize={30}>
                     <img src={c.icon} alt="" loading="lazy" />
                   </IconDisc>

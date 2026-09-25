@@ -9,7 +9,6 @@ interface Props {
   activityCode: string;
   groupToken: string;
   onClose: () => void;
-  /** Called after the code is redeemed — retry the join, the cap is now higher. */
   onSuccess: () => void;
 }
 

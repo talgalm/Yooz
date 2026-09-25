@@ -10,21 +10,8 @@ import Reveal from '../shared/Reveal';
 import { Band, Container, H2, H3, Body, Card, CardGrid, IconTile, SectionIntro } from '../shared/styled';
 import { C, BP } from '../shared/tokens';
 
-/**
- * The Academy frame lays its content out on a 1216 column (both card rows run
- * 147..1365 of the 1512 frame), narrower than the shared 1356. 1216 + the two 24
- * gutters gives the wrapper width.
- */
 const ACADEMY_COLUMN = 1264;
 
-/**
- * Each value card has one colour, used for its icon, tile, tag (the small line
- * above the title) and proof line; the title is the same on every card. The comp
- * mixed colours within a card - a green tag over a purple icon - which read as
- * noise. By position (colour is not copy, so it lives here, not in the i18n).
- * Under RTL the 2x2 grid fills top-right, top-left, bottom-right, bottom-left,
- * so this order puts the two violets on a diagonal.
- */
 const VALUE_ICONS = [
   { fg: '#5A1B87', bg: '#F3E8FF' },
   { fg: '#DB2777', bg: '#FCE7F3' },
@@ -32,10 +19,6 @@ const VALUE_ICONS = [
   { fg: '#4F46E5', bg: '#E0E7FF' },
 ];
 
-/**
- * The icon drawn as a mask and filled with the card's colour, so one value
- * drives both glyph and tile - the SVG files' own stroke colour is ignored.
- */
 const MaskIcon = styled('span', { shouldForwardProp: (p) => p !== 'src' && p !== 'fg' })<{ src: string; fg: string }>(
   ({ src, fg }) => ({
     display: 'block',
@@ -53,7 +36,6 @@ const MaskIcon = styled('span', { shouldForwardProp: (p) => p !== 'src' && p !==
   }),
 );
 
-/** Icon sits at the card's inline start - the top right under RTL, as the comps have it. */
 const CardHead = styled('div')({ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 });
 
 const Tag = styled('span')<{ color: string }>(({ color }) => ({
@@ -65,7 +47,6 @@ const Tag = styled('span')<{ color: string }>(({ color }) => ({
   marginBottom: 8,
 }));
 
-/** The coloured "proof" line closing each value card. */
 const Proof = styled('div')<{ color: string }>(({ color }) => ({
   display: 'flex',
   alignItems: 'center',
@@ -77,7 +58,6 @@ const Proof = styled('div')<{ color: string }>(({ color }) => ({
   '& svg': { flexShrink: 0 },
 }));
 
-/** Ringed tick in `currentColor`, so it takes the card's colour from `Proof`. */
 function CheckIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -89,7 +69,6 @@ function CheckIcon() {
 
 const TitleRow = styled('div')({ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 });
 
-/** Tinted per card, with dark purple text. */
 const AiBadge = styled('span', { shouldForwardProp: (p) => p !== 'bg' })<{ bg?: string }>(({ bg }) => ({
   fontSize: 9.5,
   fontWeight: 800,
@@ -125,10 +104,8 @@ export default function AcademyPage() {
 
       <Band bg={C.paperSoft}>
         <Container max={ACADEMY_COLUMN}>
-          {/* Two lines on desktop; balanced so the second is not a one-word stub. */}
           <H2 style={{ textWrap: 'balance' }}>{t.valueTitle}</H2>
           <SectionIntro>{t.valueIntro}</SectionIntro>
-          {/* 2x2 in the comp: cards 147..745 and 767..1365, so 598 wide on a 22 gap. */}
           <CardGrid min={560} gap={22}>
             {t.valueCards.map((c, i) => (
               <Reveal key={c.title} delay={i * 90}>
@@ -156,7 +133,6 @@ export default function AcademyPage() {
         <Container max={ACADEMY_COLUMN}>
           <H2>{t.experienceTitle}</H2>
           <SectionIntro>{t.experienceIntro}</SectionIntro>
-          {/* Four across at 286 on a 24 gap - cards 148..434, 458..744, 768..1054, 1078..1364. */}
           <CardGrid min={230} gap={24}>
             {t.experienceCards.map((c, i) => (
               <Reveal key={c.title} delay={i * 80}>
@@ -166,8 +142,6 @@ export default function AcademyPage() {
                       <img src={c.icon} alt="" width={24} height={24} style={{ display: 'block' }} />
                     </IconTile>
                   </CardHead>
-                  {/* Badge trails the title: first flex child lands rightmost under RTL,
-                      and the comp puts the pill on the title's left. */}
                   <TitleRow>
                     <CardTitle>{c.title}</CardTitle>
                     {'badge' in c && c.badge ? (
@@ -186,7 +160,6 @@ export default function AcademyPage() {
 
       <CustomerLogos title={t.customersTitle} items={t.customers} />
 
-      {/* Questions first, then the form - a visitor's doubts are answered before they are asked to write. */}
       <Faq title={t.faqTitle} items={t.faq} />
 
       <ContactForm tone="purple" closing />

@@ -1,17 +1,3 @@
-/**
- * CollageSplitEditor — popup for configuring how a collage station is split
- * across multiple sub-stations in an activity.
- *
- * Shape:
- *   parts: Array<{ photoIndices: number[], isVideoOnly: boolean }>
- *
- * Each `photoIndices` entry references a "global" photo slot 0..totalPhotos-1.
- * Drag-and-drop moves a photo between sub-stations. The video-only flag marks
- * a sub-station that has no photos but renders the result/share flow.
- *
- * Drag-and-drop matches the hand-rolled HTML5 pattern used elsewhere in the
- * admin pages (no library).
- */
 
 import { useState, useEffect, useRef } from 'react';
 import { styled } from '@mui/material/styles';
@@ -19,30 +5,20 @@ import { styled } from '@mui/material/styles';
 interface PhotoLabel { title: string; description?: string }
 
 export interface SplitEditorResult {
-  /** Per-sub-station photo counts (0 for video-only sub-stations). */
   partSizes: number[];
-  /** Index of the video-only sub-station, or null if video lives at the end of the last photo part. */
   videoPartIndex: number | null;
-  /** The new global ordering of photos. Length = totalPhotos. Each entry is
-   *  an index into the original mission array; used to reorder
-   *  station.settings.missions on Save so capture order matches the popup. */
   photoOrder: number[];
 }
 
 interface Props {
   stationName: string;
-  /** All photo labels for this station, in their CURRENT order. */
   photos: PhotoLabel[];
-  /** Initial sub-station boundaries (per-part photo counts; sum = photos.length). */
   initialPartSizes: number[];
-  /** Initial index of the video-only sub-station (or null). */
   initialVideoPartIndex: number | null;
   onCancel: () => void;
   onSave: (result: SplitEditorResult) => void;
   t: Record<string, string>;
 }
-
-// ─── Styled ────────────────────────────────────────────────────────────────
 
 const Overlay = styled('div')({
   position: 'fixed',
@@ -137,7 +113,6 @@ const PhotoRow = styled('div')<{ dragging?: boolean }>(({ dragging }) => ({
   '&:hover': { background: 'rgba(245,158,11,0.08)' },
 }));
 
-/** Drag handle — a plain dot-grid drawn in CSS, no glyph. */
 const DragGrip = styled('span')({
   width: 12,
   height: 16,
@@ -222,8 +197,6 @@ const VideoOnlyTag = styled('div')({
   textAlign: 'center',
 });
 
-// ─── Component ─────────────────────────────────────────────────────────────
-
 interface PartState {
   photoIndices: number[];
   isVideoOnly: boolean;
@@ -261,14 +234,12 @@ export default function CollageSplitEditor({
   const [dragging, setDragging] = useState<{ partIdx: number; photoIdx: number } | null>(null);
   const [dragOverPart, setDragOverPart] = useState<number | null>(null);
 
-  // Esc closes the popup
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onCancel]);
 
-  // Whether the popup has at least one video-only part
   const videoPartIndex = parts.findIndex((p) => p.isVideoOnly);
   const hasVideoPart = videoPartIndex >= 0;
 
@@ -281,11 +252,8 @@ export default function CollageSplitEditor({
     setParts((prev) => {
       const removed = prev[idx];
       const rest = prev.filter((_, i) => i !== idx);
-      // Photos from the removed part go to the first remaining photo part (or
-      // the previous one if available).
       if (removed.photoIndices.length === 0) return rest;
       const targetIdx = (() => {
-        // Prefer the previous photo part; fall back to first non-video part.
         for (let i = idx - 1; i >= 0; i--) {
           if (!rest[i]?.isVideoOnly) return i;
         }
@@ -295,8 +263,6 @@ export default function CollageSplitEditor({
         return -1;
       })();
       if (targetIdx === -1) {
-        // No photo part exists — convert the first sub-station back to photo
-        // and dump the orphans there.
         return rest.map((p, i) => i === 0
           ? { isVideoOnly: false, photoIndices: [...removed.photoIndices, ...p.photoIndices] }
           : p);
@@ -310,15 +276,11 @@ export default function CollageSplitEditor({
   const toggleVideoPart = () => {
     setParts((prev) => {
       if (hasVideoPart) {
-        // Remove the video-only part entirely (it has no photos to redistribute).
         return prev.filter((p) => !p.isVideoOnly);
       }
-      // Append a new video-only part at the end.
       return [...prev, { photoIndices: [], isVideoOnly: true }];
     });
   };
-
-  // ─── Drag handlers ─────────────────────────────────────────────────────────
 
   const dragHandle = useRef<{ srcPart: number; srcIdx: number } | null>(null);
 
@@ -326,8 +288,7 @@ export default function CollageSplitEditor({
     dragHandle.current = { srcPart: partIdx, srcIdx: photoIdx };
     setDragging({ partIdx, photoIdx });
     e.dataTransfer.effectAllowed = 'move';
-    // Required for Firefox to start a drag.
-    try { e.dataTransfer.setData('text/plain', 'collage-photo'); } catch { /* */ }
+    try { e.dataTransfer.setData('text/plain', 'collage-photo'); } catch { }
   };
 
   const onPhotoDragEnd = () => {
@@ -353,7 +314,7 @@ export default function CollageSplitEditor({
     setDragging(null);
     setDragOverPart(null);
     if (!src) return;
-    if (parts[targetPart]?.isVideoOnly) return; // can't drop a photo into the video part
+    if (parts[targetPart]?.isVideoOnly) return;
     setParts((prev) => {
       const next = prev.map((p) => ({ ...p, photoIndices: [...p.photoIndices] }));
       const photoId = next[src.srcPart].photoIndices.splice(src.srcIdx, 1)[0];
@@ -362,8 +323,6 @@ export default function CollageSplitEditor({
       return next;
     });
   };
-
-  // ─── Save ──────────────────────────────────────────────────────────────────
 
   const save = () => {
     const photoOrder: number[] = [];

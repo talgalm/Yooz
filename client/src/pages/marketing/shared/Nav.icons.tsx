@@ -1,7 +1,3 @@
-/**
- * The nav's own drawings. They take `currentColor`, so each one picks up the
- * link's hover and active colour rather than carrying its own.
- */
 
 export function HomeIcon() {
   return (
@@ -24,10 +20,6 @@ export function HomeIcon() {
   );
 }
 
-/**
- * The plain "i" in a circle. A team mark, a business card and a speech bubble
- * were all tried instead and dropped - the "i" is the one that reads at a glance.
- */
 export function InfoIcon() {
   return (
     <svg
@@ -48,7 +40,6 @@ export function InfoIcon() {
   );
 }
 
-/** The language switcher's globe. */
 export function GlobeIcon() {
   return (
     <svg

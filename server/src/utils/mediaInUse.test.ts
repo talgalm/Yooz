@@ -2,7 +2,6 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { docMentions } from './mediaInUse';
 
-// Run: npx tsx --test server/src/utils/mediaInUse.test.ts
 const PUBLIC_ID = 'yooz/abc123';
 const url = (id: string) => `https://res.cloudinary.com/drhc5tpmg/image/upload/v1787818231/${id}.png`;
 

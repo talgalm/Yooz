@@ -1,17 +1,14 @@
 import { Schema, model, Types } from 'mongoose';
 
-/** Closed set of pastel folder colors. Keep in sync with the client palette in
- *  client/src/pages/admin/folderColors.ts (FOLDER_COLORS). Folder colors are a
- *  fixed set (unlike free-form theme colors), so we validate against it. */
 export const FOLDER_COLOR_HEXES = [
-  '#E7E3FA', // lavender (default)
-  '#E3F2FD', // sky
-  '#E4F5E9', // mint
-  '#FBF3C4', // lemon
-  '#FCE7D6', // peach
-  '#FCE0E4', // rose
-  '#D7F2EE', // aqua
-  '#E7E9EF', // slate
+  '#E7E3FA',
+  '#E3F2FD',
+  '#E4F5E9',
+  '#FBF3C4',
+  '#FCE7D6',
+  '#FCE0E4',
+  '#D7F2EE',
+  '#E7E9EF',
 ] as const;
 
 export const DEFAULT_FOLDER_COLOR = FOLDER_COLOR_HEXES[0];
@@ -19,12 +16,9 @@ export const DEFAULT_FOLDER_COLOR = FOLDER_COLOR_HEXES[0];
 export interface IActivityFolder {
   _id: Types.ObjectId;
   name: string;
-  color: string; // hex, one of FOLDER_COLOR_HEXES
-  /** Parent folder for nesting (sub-folders). null/undefined = top-level. */
+  color: string;
   parentId?: Types.ObjectId | null;
-  /** Scopes the folder to its creator, mirroring Activity.createdByEmail. */
   createdByEmail?: string;
-  /** Reserved for future manual folder ordering; currently sorted by name. */
   order: number;
   createdAt: Date;
   updatedAt: Date;

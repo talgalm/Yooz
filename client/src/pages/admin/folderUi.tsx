@@ -1,10 +1,6 @@
 import { styled } from '@mui/material/styles';
 import type { CSSProperties } from 'react';
 
-// Shared presentational pieces for the folder feature (activities + stations tabs).
-// Logic (drag/drop, state) is kept per-component per the codebase's copy-paste convention;
-// only these pure visual helpers are shared.
-
 export interface Folder {
   _id: string;
   name: string;
@@ -94,8 +90,6 @@ export function FolderGlyph({ color, size = 20 }: { color: string; size?: number
   );
 }
 
-// Suppress text-selection / iOS long-press callout so press-and-hold starts a clean drag;
-// dim the row while it is being lifted.
 export function dragRowStyle(dragging: boolean): CSSProperties {
   return {
     userSelect: 'none',
@@ -105,9 +99,6 @@ export function dragRowStyle(dragging: boolean): CSSProperties {
   };
 }
 
-// Fixed-position coords for a row action menu, computed from its anchor button's viewport
-// rect. Opens downward, flipping up when there isn't room below (so bottom rows aren't clipped
-// by an overflow:hidden container).
 const ACTION_MENU_EST_HEIGHT = 170;
 export function actionMenuStyle(rect: DOMRect | null): CSSProperties {
   if (!rect) return { visibility: 'hidden' };

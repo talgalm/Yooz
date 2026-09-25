@@ -24,13 +24,6 @@ const router = Router();
 const activityConfigCache = new Map<string, { data: ActivityConfigResponse; expiresAt: number }>();
 const ACTIVITY_CONFIG_TTL_MS = 30_000;
 
-/**
- * Strip answer keys before a station's settings go to the browser.
- *
- * avatarQuiz judges answers server-side (POST /api/avatar-quiz) precisely so
- * `idealAnswer` never ships. Without this filter any participant could read
- * every answer out of the Network tab before typing a word.
- */
 function publicStationSettings(
   stationType: string,
   settings: Record<string, unknown>
@@ -41,8 +34,6 @@ function publicStationSettings(
     ...settings,
     questions: questions.map((raw) => {
       const q = (raw || {}) as Record<string, unknown>;
-      // Allow-list, not a delete-list: a field added to the config later must
-      // be opted in here explicitly rather than leaking by default.
       return {
         text: q.text,
         mediaUrl: q.mediaUrl,
@@ -62,11 +53,9 @@ function withReviewedTranslations<T>(built: T, source: { translations?: Record<s
   return applyTranslations(built, new Map(Object.entries(reviewed)));
 }
 
-// Group self-service routes — must be registered before /:code
 router.use(activityGroupsRouter);
 router.use(mapRunRouter);
 
-// Public: get activity config by code (for /play/:code)
 router.get('/:code', async (req: Request<{ code: string }>, res: Response<ActivityConfigResponse | { error: string }>) => {
   const { code } = req.params;
   const cached = activityConfigCache.get(code);
@@ -81,7 +70,6 @@ router.get('/:code', async (req: Request<{ code: string }>, res: Response<Activi
     return;
   }
 
-  // Backward compat: if old activity with loginComponent but no loginFields
   let loginFields = activity.loginFields || [];
   let emailGoogle = activity.emailGoogle;
   let connectionType = activity.connectionType || 'single';
@@ -125,7 +113,6 @@ router.get('/:code', async (req: Request<{ code: string }>, res: Response<Activi
   res.json(data);
 });
 
-// Public: get full activity module config by code (for participant game flow)
 router.get('/:code/module', async (req: Request<{ code: string }>, res: Response) => {
   const activity = await Activity.findOne({ code: req.params.code }).lean();
 
@@ -166,7 +153,6 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     }
   }
 
-  // Handle mission module type
   if (activity.module.type === 'mission' && activity.module.missionRef) {
     const mission = await Mission.findById(activity.module.missionRef).lean();
     if (!mission) {
@@ -190,7 +176,6 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     return;
   }
 
-  // Collect IDs by type from module items
   const gameIds: string[] = [];
   const stationIds: string[] = [];
   const missionIds: string[] = [];
@@ -200,30 +185,22 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     else if (item.type === 'mission') missionIds.push(item.ref.toString());
   }
 
-  // Batch fetch games, stations, and missions
   const [games, stations, missions] = await Promise.all([
     gameIds.length > 0 ? Game.find({ _id: { $in: gameIds } }).lean() : [],
     stationIds.length > 0 ? Station.find({ _id: { $in: stationIds } }).lean() : [],
     missionIds.length > 0 ? Mission.find({ _id: { $in: missionIds } }).lean() : [],
   ]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gameMap = new Map(games.map((g: any) => [g._id.toString(), g]));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stationMap = new Map(stations.map((s: any) => [s._id.toString(), s]));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const missionMap = new Map(missions.map((m: any) => [m._id.toString(), m]));
 
-  // Hide items this group isn't addressed to, then apply the group's own
-  // visiting order (map modules). Both shift indices — the client's 0..n-1 is
-  // the index space progress is recorded in.
   const moduleItems = visibleOrderedIndices(activity.module, participantGroup)
     .map((i) => activity.module!.items[i]);
 
   const requested = readLang(req);
   const lang = activity.languages?.includes(requested) ? requested : 'he';
 
-  // Build populated items array in order
   const populatedItems = moduleItems.map((item) => {
     if (item.type === 'mission') {
       const data = missionMap.get(item.ref.toString());
@@ -250,7 +227,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         type: 'game' as const,
         _id: data._id,
         name: data.name,
-        gameType: data.type, // 'order', 'trivia', 'puzzle', 'trueFalse'
+        gameType: data.type,
         description: data.description,
         settings: data.settings || {},
         spiderSvg: item.spiderSvg,
@@ -263,7 +240,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         type: 'station' as const,
         _id: data._id,
         name: data.name,
-        stationType: data.type, // 'text', 'video', 'image'
+        stationType: data.type,
         description: data.description,
         settings: publicStationSettings(data.type, data.settings || {}),
         spiderSvg: item.spiderSvg,
@@ -275,7 +252,6 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     }
   }).filter(Boolean);
 
-  // Filter popups by conditions (e.g. participant count threshold)
   let filteredPopups: typeof activity.module.popups = [];
   if (activity.module.popups && activity.module.popups.length > 0) {
     const reportCount = await getParticipantCount(activity._id, activity.dailyReset === true);
@@ -284,11 +260,10 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
       if (p.condition && p.condition.type === 'participantCount') {
         return reportCount >= p.condition.threshold;
       }
-      return true; // no condition = always show
+      return true;
     });
   }
 
-  // If theme is a custom theme ID, fetch and embed it so the client doesn't need a second request
   let customThemeData: {
     mainColor: string;
     roadmapImage?: string;
@@ -315,7 +290,6 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     }
   }
 
-  // Build module response with filtered popups (strip condition data — client doesn't need it)
   const moduleResponse = {
     type: activity.module.type,
     theme: activity.module.theme,
@@ -356,8 +330,6 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   }, lang));
 });
 
-// SSE: live updates of the manager-controlled progress lock for an activity.
-// Public stream — nothing sensitive flows through it.
 router.get('/:code/lock-stream', async (req: Request<{ code: string }>, res: Response) => {
   const activity = await Activity.findOne({ code: req.params.code });
   if (!activity) {
@@ -368,16 +340,14 @@ router.get('/:code/lock-stream', async (req: Request<{ code: string }>, res: Res
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no'); // disable proxy buffering (nginx)
+  res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
 
-  // Initial payload: current state.
   const initial = typeof activity.lockedFromIndex === 'number' ? activity.lockedFromIndex : null;
   sendLockEvent(res, initial);
 
-  // Heartbeat every 25s to keep the connection alive through proxies.
   const heartbeat = setInterval(() => {
-    try { res.write(': ping\n\n'); } catch { /* ignore */ }
+    try { res.write(': ping\n\n'); } catch { }
   }, 25000);
 
   const unsubscribe = subscribe(activity.code, res);
@@ -387,7 +357,6 @@ router.get('/:code/lock-stream', async (req: Request<{ code: string }>, res: Res
   });
 });
 
-// Get leaderboard for activity (public)
 router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Response) => {
   const { code } = req.params;
   const activity = await Activity.findOne({ code });
@@ -398,23 +367,14 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
 
   const isTimeMode = activity.leaderboardMode === 'time';
   const isBothMode = activity.leaderboardMode === 'both';
-  // Show points as a normalized 0-100 grade (never applies to time-only mode).
-  // Normalization is monotonic, so ranks stay correct without re-sorting.
   const asGrade = activity.leaderboardAsGrade === true && !isTimeMode;
   const gradeScore = (raw: number, ceiling: number) => (asGrade ? normalizeScore(raw, ceiling) : raw);
 
-  // Group activities show every teammate of the viewer's group, so the row cap
-  // has to clear all groups combined — not just the top handful overall.
   const rowLimit = activity.connectionType === 'group' ? 500 : 50;
 
-  // Default ON (undefined → true) — matches the model default. `dailyReset`
-  // forces it: that activity's whole promise is a board that starts empty each
-  // morning, and its reports are now kept rather than deleted, so nothing else
-  // hides yesterday from the participants.
   const currentDayOnly = activity.dailyReset === true || activity.leaderboardCurrentDayOnly !== false;
   const dateFilter: Record<string, unknown> = {};
   if (currentDayOnly) {
-    // Reports have no createdAt (schema has no timestamps) — joinedAt is the creation time.
     dateFilter.joinedAt = { $gte: startOfTodayIsrael() };
   }
 
@@ -436,9 +396,6 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
       durationMs: r.sessionDurationMs as number,
     }));
   } else if (isBothMode) {
-    // Rank primarily by points (desc); duration is shown alongside but not a
-    // tiebreaker (kept simple — most natural reading is "leaderboard by score,
-    // with how long it took").
     const reports = await Report.find(
       { activityId: activity._id, 'data.totalScore': { $exists: true }, ...dateFilter },
       { participantName: 1, group: 1, data: 1, sessionDurationMs: 1 }
@@ -473,19 +430,12 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
     }));
   }
 
-  // Group activities: also return per-group standings (sum of member scores).
-  // ponytail: time-mode group ranking not supported — groups always rank by points.
   let groups;
   if (activity.module?.type === 'map') {
-    // A map activity's team score is kept on the shared run: only one member
-    // plays each station, so summing members' reports would still be right but
-    // the run doc is what the map itself is scored against.
     const runs = await MapGroupState.find(
       { activityId: activity._id, activityDay: israelDayString() },
       { groupName: 1, score: 1, completedIndices: 1 },
     ).sort({ score: -1 }).lean();
-    // No `members` here: the run doc doesn't track headcount, and inventing a
-    // number for a field nobody renders is worse than leaving it out.
     groups = runs.map((r, i) => ({
       rank: i + 1,
       name: r.groupName,
@@ -505,7 +455,6 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
   res.json({ leaderboard, ...(groups && { groups }), leaderboardMode: activity.leaderboardMode || 'points', leaderboardAsGrade: asGrade });
 });
 
-// Save incremental progress after each game/station
 router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
   const { itemResult, totalItemsCompleted, lastActiveItemIndex, runningTotal, progressOnly } = req.body;
   const { activityCode, participantName } = req.participant!;
@@ -538,24 +487,15 @@ router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: s
     updatePayload.$push = { 'data.itemResults': itemResult };
   }
 
-  // Never touch a report that already finished. A progress PATCH can land after
-  // the final save — replayed from the offline queue, or a second tab — and
-  // `completionStatus: 'in_progress'` would drag the finished run backwards,
-  // dropping the participant off the leaderboard (time mode counts only
-  // completed reports). Late progress is stale by definition; ignore it.
   const report = await Report.findOneAndUpdate(
     { ...ownReportFilter(req.participant!), completionStatus: { $ne: 'completed' } },
     updatePayload,
     { new: true, sort: { joinedAt: -1 } },
   );
 
-  // No match = already completed, or the report is gone (the final save
-  // rebuilds it). Either way there is nothing a retry could fix, so don't hand
-  // the client a failure it would queue and replay forever.
   res.json({ success: true, ...(report ? {} : { ignored: true }) });
 });
 
-// Delete participant's report (continuous activity early exit)
 router.delete('/:code/my-report', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
   const { activityCode, participantName } = req.participant!;
   if (req.params.code !== activityCode) {
@@ -573,7 +513,6 @@ router.delete('/:code/my-report', authenticateToken, async (req: Request<{ code:
   res.json({ success: true });
 });
 
-// Get current participant's progress (for session resume)
 router.get('/:code/my-progress', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
   const { activityCode, participantName } = req.participant!;
 
@@ -602,7 +541,6 @@ router.get('/:code/my-progress', authenticateToken, async (req: Request<{ code: 
   });
 });
 
-// Order survey session status (for participants waiting after submit)
 router.get('/:code/order-survey/status', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
   const { activityCode } = req.participant!;
   if (req.params.code !== activityCode) {
@@ -620,7 +558,6 @@ router.get('/:code/order-survey/status', authenticateToken, async (req: Request<
   res.json(live);
 });
 
-// Save scores for participant (final save — also marks session complete)
 router.post('/:code/scores', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
   const { scores, sessionDurationMs } = req.body;
   const { activityCode, participantName } = req.participant!;
@@ -635,7 +572,6 @@ router.post('/:code/scores', authenticateToken, async (req: Request<{ code: stri
     return;
   }
 
-  // Validate each score entry
   const isValid = scores.every((s: unknown) =>
     typeof s === 'object' && s !== null &&
     typeof (s as { gameName?: unknown }).gameName === 'string' &&
@@ -670,19 +606,6 @@ router.post('/:code/scores', authenticateToken, async (req: Request<{ code: stri
     updateOps.sessionDurationMs = sessionDurationMs;
   }
 
-  // Upsert, not update: the final save is the participant's only record of a
-  // finished run, and a 404 here is unrecoverable for them (the client retries
-  // the same failing request forever behind a "could not save" banner). The
-  // report can legitimately be gone — flipping the activity to `live` wipes all
-  // reports, and a continuous-activity early exit deletes the participant's —
-  // so rebuild it from the token rather than dropping the scores on the floor.
-  // ponytail: two concurrent saves for a participant with no report (retry timer
-  // racing an offline-queue flush) could each insert one. Both would carry the
-  // same scores, so the cost is a duplicate leaderboard row, not lost data —
-  // add a unique index on (activityCode, participantName) if it ever shows up.
-  // Insert-only fields the filter no longer carries: an `_id` filter says
-  // nothing about who the report belongs to, so name them explicitly (they must
-  // NOT be repeated when the legacy filter already matches on them).
   const ownFilter = ownReportFilter(req.participant!);
   const report = await Report.findOneAndUpdate(
     ownFilter,
@@ -709,7 +632,6 @@ router.post('/:code/scores', authenticateToken, async (req: Request<{ code: stri
   res.json({ success: true });
 });
 
-// Track mission phase completions (public — no auth required)
 router.post('/:code/mission-event', async (req: Request<{ code: string }>, res: Response) => {
   const { event, score } = req.body as { event?: string; score?: number };
   const validEvents = ['puzzle_completed', 'trashsort_completed'];
@@ -728,7 +650,6 @@ router.post('/:code/mission-event', async (req: Request<{ code: string }>, res: 
   res.json({ success: true });
 });
 
-// Track share button events (public — no auth required)
 router.post('/:code/share-event', async (req: Request<{ code: string }>, res: Response) => {
   const { event } = req.body as { event?: string };
   if (event !== 'click' && event !== 'completed') {

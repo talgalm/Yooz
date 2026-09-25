@@ -47,16 +47,13 @@ export default function ExportSection({ activityId, period }: Props) {
   const [downloading, setDownloading] = useState<AnalyticsExportType | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Pass grade and share link are admin-only — skip the fetches in shared mode.
   const { data: loadedThreshold } = usePassThreshold(shared ? null : activityId);
-  // null = no pass grade (pass/fail disabled).
   const [threshold, setThreshold] = useState<number | null>(70);
 
   useEffect(() => {
     if (loadedThreshold !== undefined) setThreshold(loadedThreshold);
   }, [loadedThreshold]);
 
-  // Persist silently — no on-screen "saving" status.
   const commitThreshold = (value: number | null) => {
     if (!activityId) return;
     const next = value === null ? null : clampGrade(value);
@@ -64,7 +61,6 @@ export default function ExportSection({ activityId, period }: Props) {
     savePassThreshold(activityId, next).catch(() => {});
   };
 
-  // ── Share link state (admin only) ──
   const { data: loadedShareToken } = useShareLink(shared ? null : activityId);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
@@ -82,7 +78,6 @@ export default function ExportSection({ activityId, period }: Props) {
     try {
       setShareToken(await createShareLink(activityId));
     } catch {
-      /* ignore */
     } finally {
       setShareBusy(false);
     }
@@ -95,7 +90,6 @@ export default function ExportSection({ activityId, period }: Props) {
       await revokeShareLink(activityId);
       setShareToken(null);
     } catch {
-      /* ignore */
     } finally {
       setShareBusy(false);
     }
@@ -108,7 +102,6 @@ export default function ExportSection({ activityId, period }: Props) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
-      /* ignore */
     }
   };
 

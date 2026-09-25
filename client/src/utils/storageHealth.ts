@@ -1,7 +1,3 @@
-// Probes localStorage + sessionStorage on import. iOS Safari private mode
-// silently no-ops these writes — without detection the offline queue and
-// session cache vanish on tab close. We expose a getter so a banner in the
-// participant shell can warn the user before they lose progress.
 
 let healthy = true;
 

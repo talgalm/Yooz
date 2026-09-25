@@ -1,11 +1,3 @@
-/**
- * Look up a library station by name (fuzzy) and dump its Firestore source
- * configuration so we can see the raw shape — used to understand "קופסאות"
- * (riddle/boxes) configs that were wrongly mapped to other station types.
- *
- * Usage:
- *   npx tsx src/scripts/diagnose-station-by-name.ts "station name fragment"
- */
 import fs from 'fs';
 import path from 'path';
 import mongoose from 'mongoose';

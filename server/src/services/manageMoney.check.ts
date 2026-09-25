@@ -1,19 +1,9 @@
-/**
- * Standalone self-check for the money formulas.
- * No test framework — run it directly:
- *   npx tsx server/src/services/manageMoney.check.ts
- *
- * The reference case is the worked example from the needs document:
- *   agreed 28,000 · labour 9,800 + freelancer 2,000 + AI 800 + graphics 1,500
- *   -> cost 14,100, gross profit 13,900, margin 49.6%
- */
 import assert from 'assert';
 import { projectMoney, recurringToDate, monthsElapsed, mrrOf } from './manageMoney';
 import { IProject } from '../models/manage/Project';
 
 const noRecurring = { enabled: false, monthlyAmount: 0, billingDay: 1, autoRenew: false } as IProject['recurring'];
 
-// ── The needs-document example, number for number ──
 const example = projectMoney(
   { agreedPrice: 28000, recurring: noRecurring },
   { laborCost: 9800, expenseTotal: 2000 + 800 + 1500, changeRequestRevenue: 0, actualHours: 92 },
@@ -26,7 +16,6 @@ assert.strictEqual(example.effectiveRatePerHour, round2(28000 / 92), 'effective 
 
 function round2(n: number) { return Math.round(n * 100) / 100; }
 
-// ── Divide-by-zero guards: these must never produce NaN or Infinity ──
 const empty = projectMoney(
   { agreedPrice: 0, recurring: noRecurring },
   { laborCost: 0, expenseTotal: 0, changeRequestRevenue: 0, actualHours: 0 },
@@ -35,7 +24,6 @@ assert.strictEqual(empty.margin, 0, 'no revenue = 0% margin, not NaN');
 assert.strictEqual(empty.effectiveRatePerHour, 0, 'no hours = 0 rate, not Infinity');
 assert.ok(Number.isFinite(empty.grossProfit));
 
-// A loss is a negative margin, not a clamped zero.
 const loss = projectMoney(
   { agreedPrice: 1000, recurring: noRecurring },
   { laborCost: 3000, expenseTotal: 0, changeRequestRevenue: 0, actualHours: 10 },
@@ -43,7 +31,6 @@ const loss = projectMoney(
 assert.strictEqual(loss.grossProfit, -2000, 'a loss stays negative');
 assert.strictEqual(loss.margin, -2, 'margin can be negative');
 
-// ── Change requests grow revenue, which is the whole point of tracking them ──
 const withCr = projectMoney(
   { agreedPrice: 28000, recurring: noRecurring },
   { laborCost: 9800, expenseTotal: 4300, changeRequestRevenue: 2000, actualHours: 92 },
@@ -51,14 +38,12 @@ const withCr = projectMoney(
 assert.strictEqual(withCr.oneTimeRevenue, 30000, 'approved change requests add to revenue');
 assert.strictEqual(withCr.grossProfit, 15900);
 
-// ── Month counting ──
 assert.strictEqual(monthsElapsed(new Date('2026-01-15'), new Date('2026-01-14')), 0, 'not a month yet');
 assert.strictEqual(monthsElapsed(new Date('2026-01-15'), new Date('2026-01-15')), 1, 'day-of-month reached');
 assert.strictEqual(monthsElapsed(new Date('2026-01-15'), new Date('2026-06-15')), 6);
 assert.strictEqual(monthsElapsed(new Date('2026-01-15'), new Date('2026-06-14')), 5, 'one day short');
 assert.strictEqual(monthsElapsed(new Date('2026-06-01'), new Date('2026-01-01')), 0, 'future start floors at 0');
 
-// ── Recurring revenue to date ──
 const retainer = {
   enabled: true, monthlyAmount: 4500, billingDay: 1, autoRenew: false,
   startDate: new Date('2026-01-01'),
@@ -70,11 +55,6 @@ assert.strictEqual(
   0,
   'disabled recurring = 0',
 );
-// An ended contract stops accruing rather than billing forever.
-// Billing dates are counted inclusively on the start day-of-month, so a
-// Jan 1 - Mar 1 contract bills on Jan 1, Feb 1 and Mar 1 = three payments.
-// This is the same rule that makes Jan 1 -> Jun 1 six payments above; the two
-// assertions have to agree or the function is counting two different things.
 assert.strictEqual(
   recurringToDate({ ...retainer, endDate: new Date('2026-03-01') }, new Date('2026-12-01')),
   4500 * 3,
@@ -91,7 +71,6 @@ assert.strictEqual(
   'a contract that has not started yet earns nothing',
 );
 
-// ── MRR ──
 const p = (status: string, enabled: boolean, amount: number, endDate?: Date) => ({
   status, recurring: { enabled, monthlyAmount: amount, billingDay: 1, autoRenew: false, endDate },
 } as unknown as IProject);

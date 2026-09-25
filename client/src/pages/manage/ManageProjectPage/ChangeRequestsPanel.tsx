@@ -28,10 +28,6 @@ const TopLine = styled('div')({ display: 'flex', alignItems: 'center', gap: 10, 
 const Desc = styled('span')({ flex: 1, minWidth: 140, fontWeight: 600 });
 const Meta = styled('div')({ fontSize: 12.5, color: TEXT_LIGHT, marginTop: 4 });
 
-/**
- * Change requests are what stop an agreed scope increase from reading as an
- * overrun. Approving one grows the hour budget on the server.
- */
 export default function ChangeRequestsPanel({ projectId, onChanged }: {
   projectId: string; onChanged: () => void;
 }) {

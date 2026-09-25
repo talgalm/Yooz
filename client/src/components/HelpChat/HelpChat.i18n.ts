@@ -3,7 +3,6 @@ export interface OrganizerContact {
   phone: string;
 }
 
-/** "contact"-style clause: "contact the activity organizer" / "contact Dani at 050-...". */
 function contactClause(lang: 'en' | 'he', contact?: OrganizerContact): string {
   if (contact) {
     return lang === 'he' ? `פנו ל${contact.name} בטלפון ${contact.phone}` : `contact ${contact.name} at ${contact.phone}`;
@@ -11,7 +10,6 @@ function contactClause(lang: 'en' | 'he', contact?: OrganizerContact): string {
   return lang === 'he' ? 'פנו למארגן הפעילות' : 'contact the activity organizer';
 }
 
-/** "ask"-style clause: "ask your facilitator" / "ask Dani at 050-...". */
 function askClause(lang: 'en' | 'he', contact?: OrganizerContact): string {
   if (contact) {
     return lang === 'he' ? `בקשו מ${contact.name} בטלפון ${contact.phone}` : `ask ${contact.name} at ${contact.phone}`;
@@ -43,7 +41,6 @@ export const texts = {
       "I'm not sure I understood. Please try rephrasing, or call our support line for personal help.",
     thinkingDots: 'Thinking...',
 
-    // FAQ responses
     responseFaq1:
       "Fill in your name, and email or phone if required — no password or code needed. Make sure the details are spelled correctly. If using Google login, allow the popup. Try refreshing the page and entering again.",
     responseFaq2:
@@ -53,7 +50,6 @@ export const texts = {
     responseFaq4:
       'Try refreshing the page. Make sure you have a stable internet connection. If the problem continues, try a different browser or clear your cache.',
 
-    // Auto-response topics
     responseLogin:
       "For login issues: No password or activity code is needed — just fill in your name and any other required fields (email or phone, depending on the activity). Make sure the details are spelled correctly. The login is valid for 24 hours. Try refreshing the page. If using Google login, allow the popup.",
     responseEmail:
@@ -81,7 +77,6 @@ export const texts = {
     responseGeneral: (contact?: OrganizerContact) =>
       `If you're having trouble, try refreshing the page first. If the issue persists, ${contactClause('en', contact)} or call our support line.`,
 
-    // Field troubleshooting sheet
     responseKickedOut: (contact?: OrganizerContact) =>
       `Open the activity again from the link you were sent. If you don't have the link any more, ${askClause('en', contact)} for a new one.\n\nWhen you log back in, pick your group from the list and type exactly the same name you used before — that's how your progress is found again.`,
     responseButtonStuck:
@@ -149,7 +144,6 @@ export const texts = {
     responseGeneral: (contact?: OrganizerContact) =>
       `אם אתם חווים בעיות, נסו לרענן את הדף קודם. אם הבעיה ממשיכה, ${contactClause('he', contact)} או התקשרו לקו התמיכה שלנו.`,
 
-    // רשימת תקלות אפשריות ופתרונן
     responseKickedOut: (contact?: OrganizerContact) =>
       `היכנסו שוב מהקישור שנשלח אליכם. אם אין לכם יותר את הקישור — ${askClause('he', contact)} קישור חדש לפעילות.\n\nבכניסה מחדש בחרו את שם הקבוצה מהרשימה, והזינו בדיוק את אותו השם שהזנתם קודם — כך ההתקדמות שלכם נמצאת שוב.`,
     responseButtonStuck:

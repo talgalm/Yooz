@@ -1,10 +1,3 @@
-/**
- * Background collage job orchestration.
- *
- * Photos upload to Cloudinary as each split part completes. Video encode runs
- * asynchronously on the server — the client only polls for progress. State is
- * mirrored in IndexedDB so a tab reload can resume.
- */
 
 import {
   ensureCollageJob,
@@ -37,7 +30,6 @@ export interface CollageResult {
 
 export interface CollageUploadParams {
   photos: CollagePhoto[];
-  /** Global panel index per photo */
   photoIndices: number[];
   title: string;
   logoUrl: string;
@@ -80,7 +72,7 @@ function notify(key: string): void {
   if (!j) return;
   const snap = snapshot(j);
   for (const cb of j.subscribers) {
-    try { cb(snap); } catch { /* ignore */ }
+    try { cb(snap); } catch { }
   }
 }
 
@@ -177,13 +169,6 @@ async function runAsyncCollageJob(
   return result;
 }
 
-/**
- * Upload photos for a split part in the background. If this upload completes
- * the full set (every part's photos now on Cloudinary), also kicks off the
- * encode — so by the time the user reaches the video station, ffmpeg is
- * either already running or done. Server's /start is idempotent if two parts
- * race to start it.
- */
 export function uploadSplitPhotosInBackground(
   activityCode: string,
   splitGroupId: string,
@@ -216,8 +201,6 @@ export function uploadSplitPhotosInBackground(
         updatedAt: Date.now(),
       });
 
-      // If this part's upload completed the full set, kick the encode off
-      // right away — don't wait for the participant to reach the video station.
       const job = await fetchCollageJob(jobId);
       const uploaded = (job.imageUrls || []).filter(Boolean).length;
       if (uploaded >= jobParams.requiredImages && job.phase === 'collecting') {
@@ -227,12 +210,10 @@ export function uploadSplitPhotosInBackground(
         await startCollageJob(jobId, effectiveTitle).catch(() => {});
       }
     } catch {
-      /* video part will retry missing uploads + start */
     }
   })();
 }
 
-/** Start full async collage (upload remaining + encode). Idempotent per key. */
 export function startBackgroundCollage(key: string, params: CollageUploadParams): BackgroundJob {
   const existing = jobs.get(key);
   if (existing && existing.status !== 'error') return snapshot(existing);
@@ -301,7 +282,6 @@ export function consumeBackgroundCollage(key: string): void {
   jobs.delete(key);
 }
 
-/** Immediate result from storage/server if encode already finished. */
 export async function getCompletedCollageResult(
   activityCode: string,
   splitGroupId: string,
@@ -318,7 +298,6 @@ export async function getCompletedCollageResult(
   return null;
 }
 
-/** Poll an in-flight server encode (after reload). */
 export async function waitForServerCollageJob(
   jobId: string,
   onProgress: (snap: CollageProgressSnapshot) => void,

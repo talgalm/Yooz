@@ -3,16 +3,6 @@ import { styled } from '@mui/material/styles';
 import { SectionLabelSmall, SectionDescription } from '../styled';
 import type { ModuleItem } from './types';
 
-/**
- * Per-group visiting order for a map module.
- *
- * Only preset groups can be ordered: self-service teams don't exist until
- * participants create them on the day, so there is nothing to attach an order
- * to — those activities all walk the item list's own order.
- *
- * An order is a permutation of indices into `items`. Items a group can't see
- * (item-level group visibility) are left out; the server drops anything stale.
- */
 const Row = styled('div')<{ dragging?: boolean }>(({ dragging }) => ({
   display: 'flex',
   alignItems: 'center',
@@ -37,7 +27,6 @@ const GroupBlock = styled('div')({
 const GroupTitle = styled('div')({ fontWeight: 600, fontSize: 13, color: '#6c5ce7', marginBottom: 6 });
 const List = styled('div')({ display: 'flex', flexDirection: 'column', gap: 4 });
 
-/** Drag handle — a plain dot-grid drawn in CSS, no glyph. */
 const Handle = styled('span')({
   width: 12,
   height: 16,
@@ -50,8 +39,6 @@ const Handle = styled('span')({
 
 const Num = styled('span')({ color: '#999', fontSize: 12, width: 18, flexShrink: 0 });
 
-/** Same red "no location" pill the module item rows use, so one glance reads
- *  the same everywhere. */
 const MissingLocation = styled('span')({
   marginInlineStart: 'auto',
   flexShrink: 0,
@@ -64,7 +51,6 @@ const MissingLocation = styled('span')({
   whiteSpace: 'nowrap',
 });
 
-/** Indices of `items` this group actually sees, in the group's saved order. */
 function orderFor(items: ModuleItem[], group: string, saved?: number[]): number[] {
   const visible = items
     .map((item, i) => ({ item, i }))
@@ -72,10 +58,6 @@ function orderFor(items: ModuleItem[], group: string, saved?: number[]): number[
     .map(({ i }) => i);
   if (!saved?.length) return visible;
 
-  // Same rule the server applies (utils/moduleItems.ts): a saved order is a
-  // hint, so unknown/duplicate entries are dropped and anything it forgot keeps
-  // its stored place at the end. Duplicated across the client/server boundary
-  // because there is no shared package in this monorepo.
   const isVisible = new Set(visible);
   const taken = new Set<number>();
   const ordered: number[] = [];
@@ -142,8 +124,6 @@ export default function GroupOrderEditor({
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => { if (drag?.group === group) move(group, order, drag.from, pos); setDrag(null); }}
                   onDragEnd={() => setDrag(null)}
-                  // Touch fallback: tap one row then another to swap them, the same
-                  // affordance the module item list uses. No dnd library anywhere.
                   onClick={() => {
                     if (!drag || drag.group !== group) { setDrag({ group, from: pos }); return; }
                     move(group, order, drag.from, pos);

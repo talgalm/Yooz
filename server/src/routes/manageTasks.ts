@@ -26,7 +26,6 @@ function pickTaskFields(body: Record<string, unknown>, role: string): Record<str
   if (TASK_PRIORITIES.includes(body.priority as TaskPriority)) out.priority = body.priority;
   if (typeof body.plannedHours === 'number' && body.plannedHours >= 0) out.plannedHours = body.plannedHours;
   if (typeof body.archived === 'boolean') out.archived = body.archived;
-  // Publishing a task to the whole team is a management call, not a member's.
   if (typeof body.visibleToAll === 'boolean' && (role === 'owner' || role === 'pm')) {
     out.visibleToAll = body.visibleToAll;
   }
@@ -54,8 +53,6 @@ function pickTaskFields(body: Record<string, unknown>, role: string): Record<str
   return out;
 }
 
-// ─── Tasks ───
-
 router.get('/', async (req: Request, res: Response) => {
   const { status, priority, assigneeUserId, projectId, clientId, scope, overdue } =
     req.query as Record<string, string | undefined>;
@@ -67,7 +64,6 @@ router.get('/', async (req: Request, res: Response) => {
   if (assigneeUserId && Types.ObjectId.isValid(assigneeUserId)) filter.assigneeUserId = assigneeUserId;
   if (projectId && Types.ObjectId.isValid(projectId)) filter.projectId = projectId;
   if (clientId && Types.ObjectId.isValid(clientId)) filter.clientId = clientId;
-  // Tasks with no project at all — the standalone todo list.
   if (scope === 'standalone') filter.projectId = { $exists: false };
   if (overdue === 'true') {
     const t = new Date();
@@ -81,8 +77,6 @@ router.get('/', async (req: Request, res: Response) => {
     .populate('clientId', 'name')
     .lean();
 
-  // Sorted in code, not Mongo: priority is a string enum whose alphabetical
-  // order is meaningless ("high" < "low" < "normal" < "urgent").
   tasks.sort((a, b) => {
     const pr = PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
     if (pr !== 0) return pr;
@@ -102,11 +96,9 @@ router.post('/', async (req: Request, res: Response) => {
     res.status(400).json({ error: 'title_required' });
     return;
   }
-  // A member creates work for themselves only; owner and pm assign to anyone.
   if (role === 'member') fields.assigneeUserId = userId;
   const task = await Task.create({
     ...fields,
-    // Unassigned work is nobody's work — default it to whoever created it.
     assigneeUserId: fields.assigneeUserId ?? userId,
     createdBy: req.manageUser!.userId,
   });
@@ -131,7 +123,6 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.patch('/:id', async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
   const { role } = req.manageUser!;
-  // Same gate as reading it: you cannot edit a task you are not allowed to see.
   const task = await Task.findOne({ _id: String(req.params.id), ...visibilityFilter(req) });
   if (!task) {
     res.status(404).json({ error: 'not_found' });
@@ -140,13 +131,11 @@ router.patch('/:id', async (req: Request, res: Response) => {
 
   const body = (req.body ?? {}) as Record<string, unknown>;
   const fields = pickTaskFields(body, role);
-  // A member cannot hand their task to someone else, or take someone else's.
   if (role === 'member') delete fields.assigneeUserId;
   Object.assign(task, fields);
 
   if (typeof body.status === 'string' && TASK_STATUSES.includes(body.status as TaskStatus)) {
     const next = body.status as TaskStatus;
-    // completedAt is stamped, never sent — it is what "finished late" is measured from.
     if (next === 'done' && task.status !== 'done') task.completedAt = new Date();
     if (next !== 'done') task.completedAt = undefined;
     task.status = next;
@@ -171,8 +160,6 @@ router.delete('/:id', async (req: Request, res: Response) => {
   await task.deleteOne();
   res.json({ ok: true });
 });
-
-// ─── Comments ───
 
 router.post('/:id/comments', async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
@@ -205,7 +192,6 @@ router.delete('/:id/comments/:commentId', async (req: Request, res: Response) =>
     res.status(404).json({ error: 'comment_not_found' });
     return;
   }
-  // You delete your own words; the owner can delete anyone's.
   if (String(comment.userId) !== req.manageUser!.userId && req.manageUser!.role !== 'owner') {
     res.status(403).json({ error: 'not_your_comment' });
     return;

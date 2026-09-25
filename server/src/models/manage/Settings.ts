@@ -2,13 +2,6 @@ import { Schema, model, Types } from 'mongoose';
 import { DEFAULT_STAGE_TEMPLATE } from '../../services/manageMetrics';
 import { TIME_CATEGORIES, CATEGORIES_REQUIRING_PROJECT, MAX_HOURS_PER_DAY } from './TimeEntry';
 
-/**
- * One settings document for the whole system.
- *
- * Only values that something actually reads live here. A settings screen full
- * of knobs nothing consumes is worse than no screen: it looks configurable and
- * silently isn't.
- */
 export interface IStageTemplateEntry { key: string; name: string; percent: number }
 
 export interface ITimeCategorySetting {
@@ -25,15 +18,10 @@ export interface ISettings {
   timeCategories: ITimeCategorySetting[];
 
   thresholds: {
-    /** Utilization at which a project turns orange, then red. */
     nearBudget: number;
     overBudget: number;
-    /** Under this much progress a week before target is also orange. */
     lowProgress: number;
-    /** An active client unspoken-to for this long is flagged. */
     staleClientDays: number;
-    /** A decision waiting longer than this turns critical. */
-    /** Contracts inside this window show on the finance screen. */
     contractEndingDays: number;
   };
 
@@ -48,7 +36,6 @@ export interface ISettings {
 
 const settingsSchema = new Schema<ISettings>(
   {
-    // Unique index makes a second settings document impossible.
     singleton: { type: String, default: 'settings', unique: true, enum: ['settings'] },
 
     stageTemplate: {

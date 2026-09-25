@@ -21,10 +21,6 @@ import {
   ROOM_FLOOR_COLOR,
 } from './styled';
 
-// The phaser game inside the iframe scales to whatever box it gets. On phones
-// that's the full viewport; on desktop we shrink the box to a portrait stage
-// so balls/buckets/question card stay readable instead of stretching wide
-// across a monitor (QA Jun 2026 page 10).
 const BallGameIframe = styled('iframe')({
   position: 'absolute',
   top: 100,
@@ -47,7 +43,6 @@ const BallGameIframe = styled('iframe')({
 });
 
 function RoomCornersSvg() {
-  // L/R = side wall width, T = ceiling height, B = floor top — all in %
   const L = 5, R = 95, T = 4, B = 96;
   return (
     <svg
@@ -55,14 +50,10 @@ function RoomCornersSvg() {
       preserveAspectRatio="none"
       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}
     >
-      {/* Side walls */}
       <polygon points={`0,0 ${L},${T} ${L},${B} 0,100`} fill={ROOM_SIDE_WALL_COLOR} />
       <polygon points={`100,0 ${R},${T} ${R},${B} 100,100`} fill={ROOM_SIDE_WALL_COLOR} />
-      {/* Ceiling */}
       <polygon points={`0,0 100,0 ${R},${T} ${L},${T}`} fill={ROOM_SIDE_WALL_COLOR} opacity="0.75" />
-      {/* Floor */}
       <polygon points={`${L},${B} ${R},${B} 100,100 0,100`} fill={ROOM_FLOOR_COLOR} />
-      {/* Corner edge lines */}
       <line x1={L} y1={T} x2="0" y2="0" stroke="rgba(0,0,0,0.15)" strokeWidth="0.4" />
       <line x1={R} y1={T} x2="100" y2="0" stroke="rgba(0,0,0,0.15)" strokeWidth="0.4" />
       <line x1={L} y1={B} x2="0" y2="100" stroke="rgba(0,0,0,0.12)" strokeWidth="0.35" />
@@ -170,7 +161,6 @@ export default function BallGame({
       sendInit();
       window.setTimeout(sendInit, 250);
       window.setTimeout(sendInit, 700);
-      // Keep focus in the iframe so Phaser receives the next pointer events after host UI interaction.
       window.requestAnimationFrame(() => {
         iframe.focus();
       });
@@ -187,9 +177,6 @@ export default function BallGame({
         { source: 'yooz-host', type: 'BALLGAME_TOGGLE_MUTE' },
         '*'
       );
-      // ponytail: refocus iframe synchronously + rAF so the first answer tap isn't
-      // eaten by Safari/iOS re-engaging the iframe. Mute button itself uses
-      // preventDefault on mouse/touch-down to avoid stealing focus in the first place.
       iframe?.focus();
       window.requestAnimationFrame(() => {
         iframe?.focus();
@@ -199,19 +186,6 @@ export default function BallGame({
     return () => window.removeEventListener('yooz:ballgame-audio-toggle', handleToggleMute as EventListener);
   }, []);
 
-  /**
-   * Hand focus back to the host document before the game iframe is destroyed.
-   *
-   * We `focus()` the iframe so Phaser gets the pointer events (see the mute
-   * handler above — the same "tap eaten while Safari re-engages the frame"
-   * problem). But when the game ends we unmount that focused iframe, and iOS
-   * leaves focus orphaned in the dead frame: from then on taps still fire
-   * touch/pointer events while no `click` reaches the page at all. Every
-   * click-driven control after this screen is dead until a reload — the finish
-   * button, the story popup's אישור, the next roadmap node, the station's
-   * continue button — which is why patching them one at a time just moved the
-   * problem to whichever one came next.
-   */
   const hostRef = useRef<HTMLDivElement | null>(null);
   const releaseIframeFocus = useCallback(() => {
     iframeRef.current?.blur();
@@ -219,7 +193,6 @@ export default function BallGame({
     hostRef.current?.focus({ preventScroll: true });
   }, []);
 
-  // Leaving the station any other way (exit, timer) unmounts the iframe too.
   useEffect(() => releaseIframeFocus, [releaseIframeFocus]);
 
   useEffect(() => {
@@ -319,11 +292,6 @@ export default function BallGame({
     );
   }, []);
 
-  // iOS Safari can swallow the `click` on the finish button even though the tap
-  // clearly lands (the :active transform fires): the screen mounts straight off a
-  // focused game iframe, and the Safari toolbar re-expanding reflows the button out
-  // from under the finger between touchstart and touchend. `pointerup` survives both,
-  // so listen for either — the ref keeps them from advancing twice.
   const handleContinue = useCallback(() => {
     if (continuedRef.current || !pendingResult) return;
     continuedRef.current = true;
@@ -342,10 +310,6 @@ export default function BallGame({
 
   const src = `/assets/games/ballgame/index.html?v=8&embedded=1&lang=${encodeURIComponent(lang)}&dir=${encodeURIComponent(dir)}&gameId=${encodeURIComponent(game._id)}&timeLimit=${encodeURIComponent(String(settings.scoring?.timeLimitSeconds ?? 30))}`;
   if (pendingResult) {
-    // iOS Safari resolves `inset: 0` against the LARGE viewport, so the bottom
-    // ~100px of a fixed box sits behind the bottom toolbar — exactly where the
-    // continue button is pinned, making taps land on the toolbar (iPhone 13).
-    // 100dvh tracks the visible viewport instead.
     return (
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '100dvh', paddingBottom: 'env(safe-area-inset-bottom, 0px)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 50 }}>
         <BallGameRoomBackground>
@@ -406,14 +370,6 @@ export default function BallGame({
       <BallGameRoomBackground>
         <RoomCornersSvg />
       </BallGameRoomBackground>
-      {/*
-        Desktop frame: on screens >= 768px we cap the phaser iframe to a
-        portrait stage centered in the viewport so the question card,
-        answer pods, balls and buckets stay proportional. Without this,
-        stretching the iframe to full-width makes the question text look
-        small and the buckets line up off-screen on wide monitors
-        (QA Jun 2026 page 10).
-      */}
       {!embeddedInActivity && (
         <div
           ref={(el) => {

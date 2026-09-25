@@ -48,8 +48,6 @@ import {
   MobileCardDate,
 } from '../styled';
 
-// ─── Local styled ───
-
 const SOURCE_TAGS = new Set(['imported', 'IMPORTED', 'from-library']);
 
 const fadeIn = keyframes`
@@ -200,7 +198,6 @@ const RowActionIconButton = styled('button')({
   },
 });
 
-// position:fixed (coords set inline) so the menu escapes the card's overflow:hidden.
 const RowActionMenu = styled('div')({
   position: 'fixed',
   zIndex: 1000,
@@ -345,7 +342,6 @@ interface AdminGamesTabProps {
   folders: Folder[];
   onRefresh: () => void;
   hideCreateButton?: boolean;
-  /** Driven by the dashboard sidebar sub-nav. */
   gameType?: string;
 }
 
@@ -353,12 +349,10 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
   const navigate = useNavigate();
   const t = useTranslations(texts);
 
-  // filters
   const [search, setSearch] = useState('');
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [tagDrawerOpen, setTagDrawerOpen] = useState(false);
 
-  // folder view + row menus
   const [openFolderId, setOpenFolderId] = useState<string | null>(null);
   const [actionsGameId, setActionsGameId] = useState<string | null>(null);
   const [actionsFolderId, setActionsFolderId] = useState<string | null>(null);
@@ -369,7 +363,6 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
   const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
   const [folderModal, setFolderModal] = useState<{ mode: 'create' | 'edit'; folder?: Folder } | null>(null);
 
-  // drag-and-drop
   const [draggingGameId, setDraggingGameId] = useState<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [touchGhost, setTouchGhost] = useState<{ name: string; x: number; y: number } | null>(null);
@@ -407,7 +400,7 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
     try {
       await adminApiFetch(`/api/admin/games/${gameId}/folder`, { method: 'PATCH', body: JSON.stringify({ folderId }) });
       onRefresh();
-    } catch { /* ignore */ }
+    } catch { }
   }, [canEdit, onRefresh]);
 
   const submitFolder = async (name: string, color: string) => {
@@ -431,11 +424,10 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
     }
   };
 
-  // ── drag: mouse (HTML5) ──
   const onMouseDragStart = (e: React.DragEvent, id: string) => {
     mouseDragIdRef.current = id;
     setDraggingGameId(id);
-    try { e.dataTransfer.setData('text/plain', id); } catch { /* Firefox */ }
+    try { e.dataTransfer.setData('text/plain', id); } catch { }
     e.dataTransfer.effectAllowed = 'move';
   };
   const onMouseDragEnd = () => { mouseDragIdRef.current = null; setDraggingGameId(null); setDragOverKey(null); };
@@ -455,7 +447,6 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
     if (id) moveGameToFolder(id, folderId);
   };
 
-  // ── drag: touch (press-and-hold) ──
   const hitTestKey = useCallback((x: number, y: number): string | null => {
     for (const [key, el] of dropTargetRefs.current.entries()) {
       const r = el.getBoundingClientRect();
@@ -598,10 +589,7 @@ export default function AdminGamesTab({ games, folders, onRefresh, hideCreateBut
 
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(visibleGames);
 
-  // usePagination only resets when the list length changes; switching between two
-  // equally-sized types would otherwise strand you on page 2.
   useEffect(() => { setPage(1); },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [gameType]);
 
   useEffect(() => {

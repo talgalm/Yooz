@@ -1,6 +1,5 @@
 import { Schema, model, Types } from 'mongoose';
 
-/** Every editable text field is bilingual. */
 export interface LocalizedText {
   he: string;
   en: string;
@@ -14,7 +13,7 @@ export interface IProject {
 }
 
 export interface IAudience {
-  key: string; // stable id: tourism | business | academy | organizations
+  key: string;
   title: LocalizedText;
   description: LocalizedText;
   imageUrl?: string;
@@ -22,7 +21,7 @@ export interface IAudience {
 }
 
 export interface IBooster {
-  key: string; // share | stay | spend
+  key: string;
   title: LocalizedText;
   subtitle: LocalizedText;
   description: LocalizedText;
@@ -118,7 +117,6 @@ export const SiteContent = model<ISiteContent>('SiteContent', siteContentSchema,
 
 const T = (he: string, en: string): LocalizedText => ({ he, en });
 
-/** Content shipped on first load — mirrors the deck. Admin edits from here. */
 export const DEFAULT_SITE_CONTENT = {
   brandLogoUrl: '/images/logo-purple.png',
   hero: {

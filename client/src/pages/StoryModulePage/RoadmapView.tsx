@@ -9,10 +9,8 @@ import storySideWaveDesert from '../../assets/story-side-wave-desert.svg';
 import { ROADMAP_DECORATIONS } from './roadmapTrees';
 import { getThemeKit, getHeaderIconColor, NATURE_THEME, OCEAN_DECORATIONS, DESERT_DECORATIONS, type RoadmapThemeKit } from './roadmapThemes';
 
-// ─── Constants ───
-
 const NODE_SIZE = 80;
-const VERTICAL_SPACING = 190;   // vertical distance between rows
+const VERTICAL_SPACING = 190;
 const PADDING_TOP = 80;
 const PADDING_BOTTOM = 100;
 const TRACK_LEFT_PCT = 12;
@@ -21,8 +19,6 @@ const NODE_LEFT_PCT = 24;
 const NODE_RIGHT_PCT = 76;
 const ROAD_WIDTH = 11;
 const ROAD_BORDER = 16;
-
-// ─── Animations ───
 
 const pulse = keyframes`
   0%, 100% {
@@ -57,7 +53,6 @@ const airplaneWobble = keyframes`
   25%      { transform: translateY(-6px) rotate(-2deg); }
   75%      { transform: translateY(6px) rotate(2deg); }
 `;
-/** Nature sky: straight L→R drift; width from --roadmap-w on PathCanvas (scrolls with layout). */
 const cloudDrift = keyframes`
   0%   { transform: translateX(-140px); }
   100% { transform: translateX(calc(var(--roadmap-w, 100vw) + 140px)); }
@@ -89,17 +84,9 @@ const tumbleweedSpin = keyframes`
   to   { transform: rotate(360deg); }
 `;
 
-// ─── Styled Components ───
-
 const RoadmapContainer = styled('div')({
   display: 'flex', flexDirection: 'column', height: '100svh',
   overflow: 'hidden',
-  // `contain: paint` clips the drifting scenery (balloons, clouds, tumbleweeds)
-  // to this box. They are `position: fixed` and start ~180px off the left edge,
-  // and `overflow: hidden` does not clip fixed descendants — so in this RTL
-  // document they were widening the page past the screen (scrollWidth 555 vs a
-  // 375 screen). Samsung Internet then let the page pan sideways, dragging the
-  // roadmap and the fixed popup overlay along with it.
   contain: 'paint',
 });
 
@@ -142,7 +129,6 @@ const NodeWrapper = styled('div')<{ state: 'completed' | 'active' | 'locked'; an
     border: `${state === 'active' ? 8 : 5}px solid var(--node-${state}-border)`,
     background: `var(--node-${state}-bg)`,
     boxShadow: state === 'active' ? '0 6px 20px rgba(0,0,0,.3)' : '0 4px 12px rgba(0,0,0,.2)',
-    // Revisitable completed nodes read as "still open": brighter, with a light ring.
     ...(revisit && {
       filter: 'saturate(1.5) brightness(1.18)',
       boxShadow: '0 0 0 3px rgba(255,255,255,.6), 0 4px 14px rgba(0,0,0,.25)',
@@ -304,7 +290,6 @@ const BalloonSvg = ({ size }: { size: number }) => (
   />
 );
 
-/** Clips cloud transforms so they don’t widen scroll overflow and shift the roadmap horizontally. */
 const CloudSkyLayer = styled('div')({
   position: 'absolute',
   left: 0,
@@ -313,7 +298,6 @@ const CloudSkyLayer = styled('div')({
   height: 280,
   overflow: 'hidden',
   pointerEvents: 'none',
-  // Above road, trees, and station nodes (10); below sticky header (30)
   zIndex: 15,
 });
 
@@ -400,8 +384,6 @@ const SwimmingFishSvg = ({ size, palette }: { size: number; palette: number }) =
   );
 };
 
-// ─── Background ───
-
 function SceneBackground({ width: W, height: H, kit }: { width: number; height: number; kit: RoadmapThemeKit }) {
   const gridSize = kit.gridSize || 32;
   return (
@@ -432,16 +414,9 @@ function SceneBackground({ width: W, height: H, kit }: { width: number; height: 
   );
 }
 
-// ─── Decorations ───
-
 function WorldDecorations(_: { W: number; numRows: number; totalH: number }) {
   return null;
 }
-
-// ─── Path Helpers ───
-// Layout:
-// - Rows alternate between 2 stations and 1 centred station.
-// - The road snakes vertically with rounded quarter-circle turns.
 
 function getRowY(row: number) {
   return PADDING_TOP + row * VERTICAL_SPACING;
@@ -503,7 +478,6 @@ function rectsOverlap(a: Rect, b: Rect, padding = 0): boolean {
   );
 }
 
-/** X/Y of station `index` on screen of width `W`. */
 function getNodePosition(index: number, W: number): { x: number; y: number } {
   const { nodeLeft, nodeRight, center } = getTrackMetrics(W);
   let remainingIndex = index;
@@ -527,9 +501,6 @@ function getNodePosition(index: number, W: number): { x: number; y: number } {
   }
 }
 
-/**
- * Builds a thick top-to-bottom snake with circular side turns.
- */
 function buildSvgPath(items: ModuleItemData[], W: number): string {
   if (!items.length || W <= 0) return '';
   const numRows = getNumRows(items.length);
@@ -565,7 +536,6 @@ function buildSvgPath(items: ModuleItemData[], W: number): string {
   return d;
 }
 
-/** Linear interpolation along the segment between two consecutive stations (used for footsteps). */
 function getPointsAlongSegment(
   fromIndex: number, toIndex: number, W: number, count: number, totalItems: number,
 ): { x: number; y: number }[] {
@@ -696,8 +666,6 @@ function getPointsAlongSegment(
   return result;
 }
 
-// ─── Component ───
-
 interface RoadmapViewProps {
   items: ModuleItemData[];
   currentItemIndex: number;
@@ -718,11 +686,8 @@ interface RoadmapViewProps {
   leaderboardMode?: 'points' | 'time' | 'both';
   elapsedSeconds?: number;
   activityDurationMinutes?: number;
-  /** Cosmetic roadmap timer: turns red after this many minutes (counts up from 0). */
   roadmapTimerMinutes?: number;
-  /** Manager-controlled progress lock: items with index >= this are blocked. */
   lockedFromIndex?: number | null;
-  /** When set, show activity name between header and path. */
   activityNameOnRoadmap?: string;
 }
 
@@ -747,8 +712,6 @@ export default function RoadmapView({
   const [W, setW]               = useState(0);
   const [scrollAreaH, setScrollAreaH] = useState(0);
 
-  // Measure width from the scroll container (stable), not PathCanvas — animated cloud transforms
-  // must not affect layout width or stations will appear to drift with the clouds.
   useLayoutEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -810,7 +773,6 @@ export default function RoadmapView({
     const left: Array<{ left: number; top: number; width: number }> = [];
     const right: Array<{ left: number; top: number; width: number }> = [];
 
-    // Left-side waves: stations 1-3, 4-6, 7-9, ...
     for (let start = 0; start + 2 < items.length; start += 3) {
       const from = getNodePosition(start, W);
       const to = getNodePosition(start + 2, W);
@@ -821,7 +783,6 @@ export default function RoadmapView({
       });
     }
 
-    // Right-side waves: stations 3-5, 6-8, 9-11, ...
     for (let start = 2; start + 2 < items.length; start += 3) {
       const from = getNodePosition(start, W);
       const to = getNodePosition(start + 2, W);
@@ -976,35 +937,30 @@ export default function RoadmapView({
     return placements;
   }, [W, totalHeight, items, numRows, kit, themedDecorations, theme]);
 
-  // ─── House placements (2 small houses anywhere except on the road) ───
   const housePlacements = useMemo(() => {
     if (W <= 0 || totalHeight <= 0 || items.length < 3) return [];
     const { trackLeft, trackRight } = getTrackMetrics(W);
     const seed = hashString(items.map((i) => i._id).join('~')) + W * 7 + 999;
     const rng = createSeededRandom(seed);
 
-    // Forbidden: thin rects around horizontal road segments + vertical segments
     const roadPad = ROAD_BORDER / 2 + 10;
     const forbidden: Rect[] = [];
     for (let row = 0; row < numRows; row++) {
       const y = getRowY(row);
-      // Horizontal segment at this row (thin vertical band)
       forbidden.push({ left: trackLeft - roadPad, right: trackRight + roadPad, top: y - roadPad, bottom: y + roadPad });
-      // Vertical segment between this row and next
       if (row < numRows - 1) {
         const nextY = getRowY(row + 1);
         const x = row % 2 === 0 ? trackRight : trackLeft;
         forbidden.push({ left: x - roadPad, right: x + roadPad, top: y, bottom: nextY });
       }
     }
-    // Station nodes
     for (let i = 0; i < items.length; i++) {
       const pos = getNodePosition(i, W);
       const r = NODE_SIZE / 2 + 20;
       forbidden.push({ left: pos.x - r, right: pos.x + r, top: pos.y - r, bottom: pos.y + r });
     }
 
-    const houseSize = 45 + rng() * 15; // 45-60px (half of previous)
+    const houseSize = 45 + rng() * 15;
     const houseH = houseSize * 1.1;
     const result: Array<{ left: number; top: number; width: number; flipX: boolean }> = [];
 
@@ -1021,7 +977,6 @@ export default function RoadmapView({
     return result;
   }, [W, totalHeight, items, numRows]);
 
-  // ─── Ganei Yehoshua fixed trees (extras along top + bottom edges) ───
   const ganeiYehoshuaFixedTrees = useMemo(() => {
     if (theme !== 'ganei-yehoshua' || W <= 0 || totalHeight <= 0) {
       return [] as Array<{ svg: string; left: number; top: number; width: number; height: number; flipX: boolean }>;
@@ -1046,7 +1001,6 @@ export default function RoadmapView({
     return trees;
   }, [theme, W, totalHeight]);
 
-  // ─── Ganei Yehoshua scenery (lake + ropes park, one of each, behind the road) ───
   const ganeiYehoshuaScenery = useMemo(() => {
     if (theme !== 'ganei-yehoshua' || W <= 0 || totalHeight <= 0) {
       return [] as Array<{ src: string; left: number; top: number; width: number; height: number }>;
@@ -1056,12 +1010,9 @@ export default function RoadmapView({
     const lakeW = Math.min(W * 0.5, 220);
     const lakeH = lakeW * (320 / 680);
 
-    // Ropes course: upper-left triangle between stations 1 and 3, shifted past the left side wave
     const ropesTop = PADDING_TOP + 15;
     const ropesLeft = W * 0.28;
 
-    // Lake: keep it near the lower part of the map so it appears
-    // toward the final stations, while staying above bottom trees.
     const lakeTop = Math.max(
       getRowY(1) + (VERTICAL_SPACING - lakeH) / 2,
       totalHeight - PADDING_BOTTOM - lakeH - 12,
@@ -1085,7 +1036,6 @@ export default function RoadmapView({
     ];
   }, [theme, W, totalHeight, items.length]);
 
-  // ─── Office item placements (per-station counts, scattered freely incl. over the path) ───
   const officeItemPlacements = useMemo(() => {
     if (theme !== 'office' || W <= 0 || totalHeight <= 0 || items.length < 1) {
       return [] as Array<{ src: string; left: number; top: number; width: number; height: number }>;
@@ -1111,7 +1061,6 @@ export default function RoadmapView({
       forbidden.push({ left: pos.x - r, right: pos.x + r, top: pos.y - r, bottom: pos.y + r });
     }
 
-    // Counts scale with station count so the canvas always feels populated.
     const stationFactor = Math.max(1, items.length / 5);
     const itemSpecs: Array<{ src: string; count: number; width: number; ratio: number }> = [
       { src: '/images/office/desk_chair_no_bg.svg', count: Math.round(7 * stationFactor), width: 92, ratio: 1 },
@@ -1122,7 +1071,6 @@ export default function RoadmapView({
       { src: '/images/office/water_cooler_filing_cabinet.svg', count: Math.round(3 * stationFactor), width: 78, ratio: 1 },
     ];
 
-    // Flatten + shuffle so item types interleave (not block-grouped).
     const queue: Array<{ src: string; width: number; ratio: number }> = [];
     for (const spec of itemSpecs) {
       for (let n = 0; n < spec.count; n += 1) {
@@ -1154,7 +1102,6 @@ export default function RoadmapView({
     return result;
   }, [theme, W, totalHeight, items, numRows]);
 
-  // ─── Animated fish ───
   const [fish, setFish] = useState<Array<{
     id: number; top: number; duration: number;
     wobbleDuration: number; size: number; palette: number;
@@ -1189,7 +1136,6 @@ export default function RoadmapView({
     return () => clearInterval(interval);
   }, [kit.showFish]);
 
-  // ─── Animated paper airplanes (office) ───
   const [airplanes, setAirplanes] = useState<Array<{
     id: number; top: number; duration: number;
     wobbleDuration: number; size: number;
@@ -1217,7 +1163,6 @@ export default function RoadmapView({
     return () => clearInterval(interval);
   }, [kit.showAirplane]);
 
-  // ─── Animated hot-air balloons (ganei-yehoshua) ───
   const [balloons, setBalloons] = useState<Array<{
     id: number; top: number; duration: number;
     wobbleDuration: number; size: number;
@@ -1248,7 +1193,6 @@ export default function RoadmapView({
     return () => clearInterval(interval);
   }, [kit.showBalloon]);
 
-  // ─── Drifting clouds (nature sky only): straight L→R, quick, max 2 on screen ───
   const [clouds, setClouds] = useState<Array<{ id: number; top: number; duration: number; size: number }>>([]);
   const cloudIdRef = useRef(0);
 
@@ -1271,7 +1215,6 @@ export default function RoadmapView({
     return () => clearInterval(interval);
   }, [kit.showClouds]);
 
-  // ─── Animated tumbleweeds (desert) ───
   const [tumbleweeds, setTumbleweeds] = useState<Array<{
     id: number; top: number; duration: number;
     bounceDuration: number; spinDuration: number; size: number;
@@ -1301,12 +1244,6 @@ export default function RoadmapView({
     return () => clearInterval(interval);
   }, [kit.showTumbleweed]);
 
-  // Snap-scroll to active station before first paint.
-  //
-  // Deliberately not re-run on height changes: Android browsers resize the
-  // viewport while their address bar slides in and out, and re-centering on
-  // every one of those made the map jump around behind the guidelines popup.
-  // Height is read live off the element instead of the observed state.
   const centerScrollRef = useRef(getCenteredScrollTop);
   centerScrollRef.current = getCenteredScrollTop;
 
@@ -1316,7 +1253,6 @@ export default function RoadmapView({
     el.scrollTop = centerScrollRef.current(currentItemIndex, W, el.clientHeight);
   }, [currentItemIndex, W]);
 
-  // Smooth-scroll to active station after footstep animation
   useEffect(() => {
     if (!showFootsteps) return;
     const t = setTimeout(() => {
@@ -1339,12 +1275,6 @@ export default function RoadmapView({
     [lockedFromIndex],
   );
 
-  // Same iOS Safari swallow the popup's dismiss button hits: coming off the ball
-  // game's focused iframe, the first tap on the map produces no `click` at all
-  // (a plain div gets none — the header's real <button>s still work, which is how
-  // this shows up: the map looks fine, the node just won't open until a refresh).
-  // Activate on pointerup too, but only for a real tap — the map scrolls by
-  // dragging, and a drag that ends over a node must not open it.
   const tapStartRef = useRef<{ x: number; y: number; index: number } | null>(null);
   const tapHandledRef = useRef(false);
   const TAP_SLOP_PX = 10;
@@ -1468,7 +1398,6 @@ export default function RoadmapView({
             </svg>
           )}
 
-          {/* Footsteps */}
           {showFootsteps && footstepPoints.map((pt, i) => (
             <FootprintEl key={`fp${i}`} style={{ left: pt.x, top: pt.y }}
               delay={i * 0.22} isRight={i % 2 === 1}>
@@ -1593,12 +1522,10 @@ export default function RoadmapView({
             </CloudSkyLayer>
           )}
 
-          {/* Station nodes */}
           {items.map((item, index) => {
             const pos   = getNodePosition(index, W);
             const state = getNodeState(index);
             const managerLocked = state === 'locked' && isManagerLocked(index);
-            // Completed items the admin marked revisitable stay open for re-entry.
             const canRevisit = state === 'completed' && !!item.revisitable && !isManagerLocked(index);
             return (
               <div key={item._id}

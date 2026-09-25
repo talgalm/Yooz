@@ -1,27 +1,9 @@
-/**
- * Migration script: Import old Firestore customer data into the Yooz Content Library
- *
- * All imported data goes into the `library_items` collection (separate from real games/stations).
- * From the Content Library tab, items can be previewed and copied to real games/stations.
- *
- * Maps:
- * - gamesConfigurationSets → LibraryItem (kind: 'game', type: 'trivia')
- * - componentsConfigurationSets → LibraryItem (kind: 'station', type: 'video'|'image'|'text')
- *
- * Tags added: customer name, language, "imported", and category-specific tags.
- * Skips unsupported game types (memory, escape answer verify, etc.) — logs them for review.
- *
- * Usage:
- *   npx ts-node src/scripts/migrate-customers.ts [--dry-run]
- */
 
 import mongoose from 'mongoose';
 import path from 'path';
 import fs from 'fs';
 import { MONGODB_URI } from '../config';
 import { LibraryItem } from '../models/LibraryItem';
-
-// ─── Old Firestore Types ───
 
 interface OldCustomer {
   _id: string;
@@ -47,16 +29,11 @@ interface OldGameConfig {
   configurations: unknown[] | Record<string, unknown>;
 }
 
-// ─── Component ID → Station type mapping ───
-
 const COMPONENT_TO_STATION: Record<string, { type: 'text' | 'video' | 'image'; category: string }> = {
-  // Video stations (link/vimeo)
   'U3yrqsw4kEGlJgkPeZxo': { type: 'video', category: 'video' },
-  // Image stations (url-based)
   '5KoJq3O7vAW7bRxwvrY7': { type: 'image', category: 'image-challenge' },
   '5qXp60HM1svkMPK0RW8i': { type: 'image', category: 'image' },
   '2abQGeFZDptEImTWMTgr': { type: 'image', category: 'image' },
-  // Q&A / text stations
   'oauHQ7TJitlMDOL6v2bx': { type: 'text', category: 'qa-station' },
   'AqwsCjAR7AqPCEJOjGaU': { type: 'text', category: 'riddle' },
   'ruvelQ6mbSE1Nm1W0dkc': { type: 'text', category: 'survey' },
@@ -65,39 +42,32 @@ const COMPONENT_TO_STATION: Record<string, { type: 'text' | 'video' | 'image'; c
   'fUAI7x8K3mN9QvR2WzY5': { type: 'text', category: 'ai-prompt' },
 };
 
-// Component IDs to skip (game launchers, escape verify, complex escape frames)
 const SKIP_COMPONENTS = new Set([
-  'Uv34KePwYvCxVC9gToWu',   // Game launcher (bridge to game, not a station)
-  'AsjHpeJqyGJpZYzMqcpz',   // Escape room answer verification
-  'MQjFnoMsSMMJZ9YFlTzD',   // Multi-frame escape challenge
+  'Uv34KePwYvCxVC9gToWu',
+  'AsjHpeJqyGJpZYzMqcpz',
+  'MQjFnoMsSMMJZ9YFlTzD',
 ]);
 
-// ─── Game ID → mapping info ───
-
-// Games with trivia-style question arrays
 const TRIVIA_GAME_IDS = new Set([
-  'I7wBOeWZqdDXUkpIN3g2',   // Puzzle trivia (question, realAnswer, fakeAnswer1, fakeAnswer2)
-  'unItB2jC2iH3ShsFJirl',   // Trivia with images (question, realAnswer, fakeAnswer1-3, img)
-  'Yd0mqvfhejqye8k1H0oy',  // Multi-answer trivia (question, trueAnswers, wrongAnswers)
-  'u7HhTRF7IjznvxRQ6JXw',  // Ball game trivia (question, answer, fakeAnswer1-3)
+  'I7wBOeWZqdDXUkpIN3g2',
+  'unItB2jC2iH3ShsFJirl',
+  'Yd0mqvfhejqye8k1H0oy',
+  'u7HhTRF7IjznvxRQ6JXw',
 ]);
 
-// Game IDs to skip (no question data / unsupported types)
 const SKIP_GAME_IDS = new Set([
-  'mhPqktjWFCLNEfqFhOhO',  // True/False — no questions in configs
-  'L3txSVIbfBX93EoqEj7C',   // Memory game — no question data
-  'abC8EiFAcCimZYc9KYRr',   // Station-type game
-  'tw1RGhpI9Kp7MQqEdsGh',  // Decision simulator
-  'NhInVTDrjAeUJQNbEg8M',  // Matchsticks
-  'jyeKPwy8f2CUmq1emCM9',  // Pairs
-  'MKJ32JRmurrkIxXAuhvB',  // Numbers
-  'NNdr1NRKTfWQlFwKfM5d',  // Factory
-  'kugSqiCRCMlC0bXidF26',  // Unknown
-  'cqJQ0eq9pKX3T7get995',  // Unknown
-  '9IGdQJ6usjztYUgiVBc7',  // Unknown
+  'mhPqktjWFCLNEfqFhOhO',
+  'L3txSVIbfBX93EoqEj7C',
+  'abC8EiFAcCimZYc9KYRr',
+  'tw1RGhpI9Kp7MQqEdsGh',
+  'NhInVTDrjAeUJQNbEg8M',
+  'jyeKPwy8f2CUmq1emCM9',
+  'MKJ32JRmurrkIxXAuhvB',
+  'NNdr1NRKTfWQlFwKfM5d',
+  'kugSqiCRCMlC0bXidF26',
+  'cqJQ0eq9pKX3T7get995',
+  '9IGdQJ6usjztYUgiVBc7',
 ]);
-
-// ─── Question normalization ───
 
 interface NormalizedQuestion {
   text: string;
@@ -114,13 +84,11 @@ function normalizeQuestion(raw: Record<string, unknown>, gameId: string): Normal
   const answers: { text: string; isCorrect: boolean }[] = [];
 
   if (gameId === 'Yd0mqvfhejqye8k1H0oy') {
-    // Multi-answer format: trueAnswers[], wrongAnswers[]
     const trueAns = raw.trueAnswers as unknown[];
     const wrongAns = raw.wrongAnswers as unknown[];
     if (Array.isArray(trueAns)) trueAns.forEach(a => { const s = String(a || '').trim(); if (s) answers.push({ text: s, isCorrect: true }); });
     if (Array.isArray(wrongAns)) wrongAns.forEach(a => { const s = String(a || '').trim(); if (s) answers.push({ text: s, isCorrect: false }); });
   } else {
-    // Standard format: realAnswer + fakeAnswer1/2/3
     const real = String((raw.realAnswer || raw.answer || '')).trim();
     if (real) answers.push({ text: real, isCorrect: true });
 
@@ -130,7 +98,7 @@ function normalizeQuestion(raw: Record<string, unknown>, gameId: string): Normal
     }
   }
 
-  if (answers.length < 2) return null; // Need at least correct + 1 wrong
+  if (answers.length < 2) return null;
 
   return {
     text: question,
@@ -139,8 +107,6 @@ function normalizeQuestion(raw: Record<string, unknown>, gameId: string): Normal
     answers,
   };
 }
-
-// ─── Station settings builder ───
 
 function buildStationSettings(cfg: Record<string, unknown>, stationType: string): Record<string, unknown> {
   const settings: Record<string, unknown> = {};
@@ -154,7 +120,6 @@ function buildStationSettings(cfg: Record<string, unknown>, stationType: string)
     settings.header = cfg.header || '';
     settings.description = cfg.description || '';
   } else {
-    // text type
     settings.header = cfg.header || cfg.question || '';
     settings.description = cfg.description || '';
     settings.content = cfg.answer || cfg.description || '';
@@ -170,8 +135,6 @@ function buildStationSettings(cfg: Record<string, unknown>, stationType: string)
 
   return settings;
 }
-
-// ─── Main migration ───
 
 async function migrate() {
   const dryRun = process.argv.includes('--dry-run');
@@ -204,7 +167,6 @@ async function migrate() {
     const lang = customer.language || 'he';
     const baseTags = ['imported', customerName, lang];
 
-    // ── Migrate games ──
     for (const gameCfg of subs.gamesConfigurationSets || []) {
       const gameId = gameCfg.gameId;
       const gameName = gameCfg.name?.trim();
@@ -227,7 +189,6 @@ async function migrate() {
         continue;
       }
 
-      // Normalize questions
       const rawQuestions = Array.isArray(gameCfg.configurations) ? gameCfg.configurations : [];
       const questions: NormalizedQuestion[] = [];
       for (const raw of rawQuestions) {
@@ -271,7 +232,6 @@ async function migrate() {
       gamesCreated++;
     }
 
-    // ── Migrate component configs → stations ──
     for (const compCfg of subs.componentsConfigurationSets || []) {
       const compId = compCfg.componentId;
       const compName = compCfg.name?.trim();
@@ -318,7 +278,6 @@ async function migrate() {
     }
   }
 
-  // ── Summary ──
   console.log('\n═══════════════════════════════════════');
   console.log(`${dryRun ? '🔍 DRY RUN' : '✅ MIGRATION'} COMPLETE`);
   console.log(`═══════════════════════════════════════`);

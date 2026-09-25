@@ -45,15 +45,12 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
   const t = useTranslations(texts);
   const { lang } = useLang();
   const { admin } = useAdminAuth();
-  // Customers only see their own activities' reports — the audit log is a
-  // cross-tenant, admin-only view, so hide its entry point for them.
   const isCustomer = admin?.role === 'customer';
   const formatDuration = (ms: number) => formatDurationLoc(ms, lang);
   const { data: overview, loading: overviewLoading } = useOverview();
   const { data: timeline } = useTimeline(30);
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(activities);
 
-  // Multi-select for building a combined report card (selection survives paging).
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const toggleSelected = (id: string) => {
     setSelected((prev) => {
@@ -67,7 +64,7 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
   const chartData = useMemo(() => {
     if (!timeline) return [];
     return timeline.map((p) => ({
-      date: p.date.slice(5), // MM-DD
+      date: p.date.slice(5),
       count: p.count,
     }));
   }, [timeline]);
@@ -86,7 +83,6 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
 
   return (
     <>
-      {/* ── KPI Cards ── */}
       <KpiRow>
         <KpiCard>
           <KpiValue>{overview.totalParticipants.toLocaleString()}</KpiValue>
@@ -118,7 +114,6 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
         </KpiCard>
       </KpiRow>
 
-      {/* ── Timeline Chart ── */}
       {chartData.length > 0 && (
         <ChartCard>
           <ChartTitle>{t.joinTimeline}</ChartTitle>
@@ -146,7 +141,6 @@ export default function OverviewSection({ activities, onSelectActivity, onViewAu
         </ChartCard>
       )}
 
-      {/* ── Activities Table ── */}
       <SectionHeader>
         <SectionTitle>{t.activitiesTable}</SectionTitle>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

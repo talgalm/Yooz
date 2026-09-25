@@ -1,10 +1,8 @@
-/** Shared by the timer bar, My Work and the Hours screen. */
 export const texts = {
   he: {
     myWork: 'העבודה שלי',
     hours: 'שעות',
 
-    // timer
     start: 'התחלה',
     stop: 'עצירה',
     running: 'טיימר פועל',
@@ -13,7 +11,6 @@ export const texts = {
     stoppedPrevious: 'הטיימר הקודם נעצר ונשמר.',
     autoStopped: 'נעצר אוטומטית',
 
-    // entry form
     logHours: 'דיווח שעות',
     addEntry: 'הוספת דיווח',
     editEntry: 'עריכת דיווח',
@@ -34,7 +31,6 @@ export const texts = {
     confirmDelete: 'למחוק את הדיווח?',
     invalidDuration: 'משך לא תקין. אפשר 1.5, 90, 1:30 או 90m.',
 
-    // month sheet
     total: 'סה״כ החודש',
     daysWorked: 'ימי עבודה',
     noEntriesThisDay: 'לא דווחו שעות ביום הזה. אפשר להוסיף.',

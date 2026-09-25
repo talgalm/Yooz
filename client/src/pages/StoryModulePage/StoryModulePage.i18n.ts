@@ -37,7 +37,6 @@ export const texts = {
     videoWatchToContinue: 'Watch the video to continue',
     videoSkip: 'Skip the video',
     imageZoomHint: 'Enlarge image',
-    // Finish page
     finishTitle: 'LESSON COMPLETE!',
     finishScore: 'Your Score',
     finishStars: 'Points',
@@ -56,7 +55,6 @@ export const texts = {
     exitConfirmCancel: 'Cancel',
     autoExitIn: 'Auto exit in',
     seconds: 's',
-    // Leaderboard
     leaderboardTitle: 'Leaderboard',
     leaderboardBack: 'Back',
     leaderboardRank: '#',
@@ -67,11 +65,9 @@ export const texts = {
     leaderboardGroupsTitle: 'Group Scores',
     leaderboardPlayersTitle: 'Players',
     leaderboardMyGroupTitle: 'My Group',
-    // Roadmap
     tapToStart: 'Tap to start!',
     completed: 'Completed',
     locked: 'Locked',
-    // Guidelines popup
     guidelinesTitle: 'MISSIONS & GUIDELINES',
     guidelinesSubHeader: 'Your Adventure Awaits',
     guidelinesMissionTitle: 'MISSION',
@@ -134,7 +130,6 @@ export const texts = {
     videoWatchToContinue: 'צפו בסרטון עד הסוף כדי להמשיך',
     videoSkip: 'דלגו על הסרטון',
     imageZoomHint: 'להגדלת התמונה',
-    // Finish page
     finishTitle: 'השלמת את המסלול!',
     finishScore: 'הניקוד שלך',
     finishStars: 'נקודות',
@@ -153,7 +148,6 @@ export const texts = {
     exitConfirmCancel: 'ביטול',
     autoExitIn: 'יציאה אוטומטית בעוד',
     seconds: 'שנ׳',
-    // Leaderboard
     leaderboardTitle: 'טבלת מובילים',
     leaderboardBack: 'חזרה',
     leaderboardRank: '#',
@@ -164,11 +158,9 @@ export const texts = {
     leaderboardGroupsTitle: 'ניקוד קבוצות',
     leaderboardPlayersTitle: 'שחקנים',
     leaderboardMyGroupTitle: 'הקבוצה שלי',
-    // Roadmap
     tapToStart: 'לחצו להתחיל!',
     completed: 'הושלם',
     locked: 'נעול',
-    // Guidelines popup
     guidelinesTitle: 'משימות והנחיות',
     guidelinesSubHeader: 'ההרפתקה מחכה לכם',
     guidelinesMissionTitle: 'משימה',

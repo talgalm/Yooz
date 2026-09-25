@@ -28,7 +28,6 @@ const VALID_ROLES: ManageRole[] = ['owner', 'pm', 'member'];
 const TOKEN_KEY = 'yz_manage_token';
 const USER_KEY = 'yz_manage_user';
 
-/** Only trusts a token that carries the manage realm claim and has not expired. */
 function readSavedToken(): string | null {
   const saved = localStorage.getItem(TOKEN_KEY);
   if (!saved) return null;

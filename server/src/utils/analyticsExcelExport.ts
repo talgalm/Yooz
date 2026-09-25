@@ -25,7 +25,6 @@ export interface ExportActivity {
   missionPuzzleCompletions?: number;
   missionTrashSortCompletions?: number;
   missionTrashSortScoreSum?: number;
-  /** Normalized (0-100) pass grade. Defaults to 70. null = no pass grade. */
   passThreshold?: number | null;
 }
 
@@ -298,9 +297,6 @@ function safeSheetName(name: string) {
   return name.replace(/[\\/*?:[\]]/g, '').slice(0, 31) || 'Sheet';
 }
 
-// Add a worksheet with a sanitized, GUARANTEED-UNIQUE name (≤31 chars). Needed
-// for combined workbooks where the same base name (e.g. "משתתפים") recurs per
-// activity — Excel rejects duplicate sheet names.
 function addSheet(workbook: ExcelJS.Workbook, name: string): ExcelJS.Worksheet {
   const base = safeSheetName(name);
   let candidate = base;
@@ -698,13 +694,12 @@ function buildRecommendations(
 
 function buildStats(activity: ExportActivity, reports: ExportReport[]): ExportStats {
   const totalItemsInModule = getTotalItems(activity, reports);
-  // Resolve the 0-100 scale and the configurable pass grade, then build rows.
   const rawScoresAll = reports.map((report) => getReportScore(report)).filter((score) => score > 0);
   const scoreCeiling = resolveCeiling(reports, rawScoresAll);
-  const passThreshold = resolvePassThreshold(activity.passThreshold); // null = no pass grade
+  const passThreshold = resolvePassThreshold(activity.passThreshold);
   const participants = buildParticipants(reports, totalItemsInModule, scoreCeiling, passThreshold);
   const scoredParticipants = participants.filter((participant) => participant.totalScore > 0);
-  const scores = scoredParticipants.map((participant) => participant.normalizedScore); // 0-100
+  const scores = scoredParticipants.map((participant) => participant.normalizedScore);
   const durations = participants.map((participant) => participant.durationMs).filter((duration) => duration > 0);
   const completedCount = participants.filter((participant) => participant.status === 'completed').length;
   const inProgressCount = participants.filter((participant) => participant.status === 'in_progress').length;
@@ -894,7 +889,6 @@ function addSummarySheet(workbook: ExcelJS.Workbook, activity: ExportActivity, s
     10,
   );
 
-  // Pass-grade display (null = no pass grade configured).
   const passRateText = stats.passRate === null ? 'ללא' : `${stats.passRate}%`;
   const passRateTone: Tone = stats.passRate === null ? 'slate' : pctTone(stats.passRate);
   const passGradeNote = stats.passThreshold === null
@@ -997,8 +991,8 @@ function addParticipantsSheet(workbook: ExcelJS.Workbook, stats: ExportStats, na
     stats.participants,
     'ParticipantsTable',
   );
-  stylePercentColumn(worksheet, headerRow, 8, stats.participants.length); // ציון (0-100)
-  stylePercentColumn(worksheet, headerRow, 10, stats.participants.length); // התקדמות %
+  stylePercentColumn(worksheet, headerRow, 8, stats.participants.length);
+  stylePercentColumn(worksheet, headerRow, 10, stats.participants.length);
   configureWorksheet(worksheet);
 }
 
@@ -1107,8 +1101,8 @@ function addItemsSheet(workbook: ExcelJS.Workbook, stats: ExportStats, nameSuffi
     stats.items,
     'ItemsTable',
   );
-  stylePercentColumn(worksheet, headerRow, 8, stats.items.length); // השלמה %
-  stylePercentColumn(worksheet, headerRow, 9, stats.items.length); // ציון ממוצע (0-100)
+  stylePercentColumn(worksheet, headerRow, 8, stats.items.length);
+  stylePercentColumn(worksheet, headerRow, 9, stats.items.length);
   configureWorksheet(worksheet);
 }
 
@@ -1244,10 +1238,6 @@ interface FeedbackAnswer {
   label: string;
 }
 
-// Feedback ("משוב") stations: each is an itemResult whose metadata holds
-// { feedbackType:'rating_6_level', answers:[{questionIndex,questionText,value,label}],
-//   notes, averageRating }. One sheet, a block per feedback station: per-question
-// averages (1-6) + a per-participant table of ratings and their free-text notes.
 function addFeedbackSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], nameSuffix = '') {
   interface FbRow {
     itemIndex: number;
@@ -1296,7 +1286,6 @@ function addFeedbackSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], n
   [...groups.entries()].sort((a, b) => a[0] - b[0]).forEach(([itemIndex, groupRows]) => {
     const itemName = groupRows[0]?.itemName || `תחנה ${itemIndex + 1}`;
 
-    // Union of questions across this station's responses, ordered by index.
     const questionMap = new Map<number, string>();
     groupRows.forEach((r) => r.answers.forEach((a) => {
       if (!questionMap.has(a.questionIndex)) {
@@ -1310,7 +1299,6 @@ function addFeedbackSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], n
     titleCell.font = { name: 'Arial', bold: true, size: 13, color: { argb: COLORS.dark } };
     rowPtr += 2;
 
-    // Per-question averages.
     addSectionHeader(worksheet, rowPtr, 'ממוצע דירוג לכל שאלה (1-6)', Math.max(3, questions.length + 1));
     rowPtr += 1;
     questions.forEach(([qIndex, qText]) => {
@@ -1329,7 +1317,6 @@ function addFeedbackSheet(workbook: ExcelJS.Workbook, reports: ExportReport[], n
     });
     rowPtr += 1;
 
-    // Per-participant detail: name | rating per question | average | notes.
     const headers = ['שם', ...questions.map(([, text]) => text), 'ממוצע', 'הערות'];
     const headerRowObj = worksheet.getRow(rowPtr);
     headers.forEach((header, idx) => {
@@ -1412,8 +1399,6 @@ function addScoreDistributionSheet(workbook: ExcelJS.Workbook, stats: ExportStat
   configureWorksheet(worksheet);
 }
 
-// Adds one activity's full set of report sheets (per export type) to a workbook.
-// `nameSuffix` disambiguates sheet names when several activities share a workbook.
 function addActivityReportSheets(
   workbook: ExcelJS.Workbook,
   activity: ExportActivity,
@@ -1495,11 +1480,6 @@ export async function buildAnalyticsWorkbookBuffer(
   return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
 }
 
-// ─────────────────────────────────────────────────────────────
-// Combined multi-activity report card workbook.
-// One sheet: a person per row, their grade per activity, and a final grade.
-// ─────────────────────────────────────────────────────────────
-
 export interface CombinedReportCardActivityMeta {
   _id: string;
   name: string;
@@ -1527,7 +1507,7 @@ export interface CombinedReportCardData {
 function addCombinedReportCardSheet(workbook: ExcelJS.Workbook, data: CombinedReportCardData) {
   const worksheet = addSheet(workbook, 'דוח משולב');
   const activityCount = data.activities.length;
-  const totalCols = 3 + activityCount + 2; // #, name, contact, per-activity..., played, final
+  const totalCols = 3 + activityCount + 2;
 
   addTitle(
     worksheet,
@@ -1557,7 +1537,7 @@ function addCombinedReportCardSheet(workbook: ExcelJS.Workbook, data: CombinedRe
 
   const headerRow = 4;
   addTable(worksheet, headerRow, columns, rows, 'CombinedReportCardTable');
-  stylePercentColumn(worksheet, headerRow, totalCols, rows.length); // final grade column (last)
+  stylePercentColumn(worksheet, headerRow, totalCols, rows.length);
   configureWorksheet(worksheet);
 }
 
@@ -1575,19 +1555,11 @@ export async function buildCombinedReportCardWorkbook(data: CombinedReportCardDa
   return Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
 }
 
-// ─────────────────────────────────────────────────────────────
-// Combined multi-activity full report (executive/participants/scores/progress).
-// Cross-activity views (report card + pooled participants) followed by each
-// activity's own full report sheets — every activity keeps its own ceiling/items.
-// ─────────────────────────────────────────────────────────────
-
 export interface CombinedExportActivity {
   activity: ExportActivity;
   reports: ExportReport[];
 }
 
-// A flat list of every report across all selected activities, tagged with its
-// activity and the participant's normalized 0-100 grade for that activity.
 function addCombinedParticipantsSheet(workbook: ExcelJS.Workbook, perActivity: CombinedExportActivity[]) {
   type Row = ParticipantRow & { activityName: string };
   const rows: Row[] = [];
@@ -1619,8 +1591,8 @@ function addCombinedParticipantsSheet(workbook: ExcelJS.Workbook, perActivity: C
     rows,
     'CombinedAllParticipantsTable',
   );
-  stylePercentColumn(worksheet, headerRow, 7, rows.length); // ציון (0-100)
-  stylePercentColumn(worksheet, headerRow, 9, rows.length); // התקדמות %
+  stylePercentColumn(worksheet, headerRow, 7, rows.length);
+  stylePercentColumn(worksheet, headerRow, 9, rows.length);
   configureWorksheet(worksheet);
 }
 

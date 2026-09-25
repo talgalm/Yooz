@@ -54,7 +54,6 @@ function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
   const lines: string[] = [];
   const name = settings.characterName?.trim();
 
-  // 1. Role — the witness being interrogated
   lines.push('1. התפקיד שלך:');
   if (name) {
     lines.push(`את/ה ${name}, עד בחקירה בלשית אינטראקטיבית. המשתמש הוא הבלש החוקר אותך.`);
@@ -68,14 +67,12 @@ function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
   );
   lines.push('אל תצא/י מהדמות. אל תחשוף/י שאת/ה בינה מלאכותית.');
 
-  // 2. Absolute truth
   if (settings.detectiveRiddle?.trim()) {
     lines.push('');
     lines.push('2. האמת מאחורי התעלומה (ידע רק שלך, אל תחשוף/י אותו ישירות):');
     lines.push(settings.detectiveRiddle.trim());
   }
 
-  // 3. Characters & Clues
   const characters = (settings.characters || []).filter((c) => c.name?.trim() || c.description?.trim());
   const clues = (settings.clues || []).filter((c) => c.name?.trim() || c.description?.trim());
   if (characters.length > 0 || clues.length > 0) {
@@ -93,7 +90,6 @@ function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
     });
   }
 
-  // 4. Strict boundaries
   const forbidden = (settings.forbiddenPhrases || []).map((p) => p.trim()).filter(Boolean);
   lines.push('');
   lines.push('4. חוקים שחובה לשמור עליהם:');
@@ -105,7 +101,6 @@ function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
     forbidden.forEach((p) => lines.push(`  • ${p}`));
   }
 
-  // 5. Knowledge gates / path to solution / hint strategy
   const gates = (settings.knowledgeGates || []).filter((g) => g.trigger?.trim() && g.reveal?.trim());
   const optional = (settings.optionalAnswers || []).map((a) => a.trim()).filter(Boolean);
   const hasGateSection = gates.length > 0 || optional.length > 0 || settings.hintStrategy?.trim() || settings.instructions?.trim();
@@ -129,7 +124,6 @@ function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
     }
   }
 
-  // Videos (separate section — matching words)
   const videos = (settings.videos || []).filter((v) => v.url?.trim());
   if (videos.length > 0) {
     lines.push('');
@@ -200,27 +194,17 @@ async function askGemini(
   }
 }
 
-// ─── Snap-to-config: if Gemini's response is "very close" to one of the
-// configured optional answers, return the configured answer verbatim. This
-// keeps the chat text + TTS reading aligned with what the admin authored.
-
 function snapToOptionalAnswer(response: string, optionalAnswers: string[] | undefined): string {
   const candidates = (optionalAnswers || []).map((a) => a.trim()).filter(Boolean);
   if (candidates.length === 0) return response;
 
   const normResp = normalizeText(response);
 
-  // 1. Substring match — Gemini said the answer almost verbatim with extras.
-  //    Require the answer to have meaningful length so trivial words don't snap.
   for (const ans of candidates) {
     const normAns = normalizeText(ans);
     if (normAns.length >= 8 && normResp.includes(normAns)) return ans;
   }
 
-  // 2. Coverage + Jaccard — Gemini paraphrased but reused most of the answer's
-  //    words. Coverage ≥ 0.8 means almost every word of the answer appears in
-  //    the response; Jaccard ≥ 0.55 prevents matching when the response is
-  //    dramatically longer/different.
   let best: { ans: string; cov: number; jac: number } | null = null;
   for (const ans of candidates) {
     const cov = coverage(ans, response);

@@ -27,7 +27,6 @@ function decodeToken(token: string): Admin | null {
   try {
     const payload = decodeJwtPayload<{ role: AdminRole; email: string; name?: string; exp?: number }>(token);
     if (!VALID_ROLES.includes(payload.role)) return null;
-    // Reject expired tokens
     if (payload.exp && payload.exp * 1000 < Date.now()) return null;
     return { email: payload.email, role: payload.role, name: payload.name };
   } catch {
@@ -80,7 +79,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     setAdmin(null);
   };
 
-  // Auto-logout when any API call returns 401 (expired token)
   useEffect(() => {
     const handler = () => {
       localStorage.removeItem('yooz_admin_token');

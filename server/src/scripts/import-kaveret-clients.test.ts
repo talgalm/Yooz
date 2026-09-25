@@ -30,17 +30,16 @@ test('mapStatus', () => {
 test('cards of one organisation merge into a client holding every person', () => {
   const [client, ...rest] = buildClients([
     row({ 'כרטיס // מספר': 'סיעוד-אוניברסיטת חיפה /// 127', 'איש קשר': 'רועי', 'מיילים': 'roy@x.com', 'סטטוס': 'פולואפ', 'התקשרות אחרונה': '01/03' }),
-    // different spelling, and only the card-number map knows it is the same place
     row({ 'כרטיס // מספר': 'אוניברסיטת חיפה - החוג לסיעוד /// 114', 'איש קשר': 'רועי צמח', 'מיילים': 'roy@x.com' }),
     row({ 'כרטיס // מספר': 'סיעוד -אוניברסיטת חיפה /// 126', 'איש קשר': 'תמר', 'מיילים': 'tamar@x.com', 'לקוח': 'כן', 'מנהל תיק': 'עובד', 'התקשרות אחרונה': '20/04' }),
   ]);
   assert.strictEqual(rest.length, 0);
   assert.strictEqual(client.name, 'סיעוד - אוניברסיטת חיפה');
-  assert.deepStrictEqual(client.contacts.map((c) => c.name), ['רועי', 'תמר']); // same email folded
+  assert.deepStrictEqual(client.contacts.map((c) => c.name), ['רועי', 'תמר']);
   assert.strictEqual(client.contacts[0].isPrimary, true);
-  assert.strictEqual(client.status, 'active'); // the strongest card wins
-  assert.strictEqual(client.owner, 'ערן גלמור'); // the account manager on most cards
-  assert.strictEqual(client.lastContactDate?.toISOString(), '2026-04-20T00:00:00.000Z'); // the latest
+  assert.strictEqual(client.status, 'active');
+  assert.strictEqual(client.owner, 'ערן גלמור');
+  assert.strictEqual(client.lastContactDate?.toISOString(), '2026-04-20T00:00:00.000Z');
   assert.deepStrictEqual(client.tags, ['פולואפ']);
 });
 

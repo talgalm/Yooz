@@ -3,8 +3,6 @@ import { styled } from '@mui/material/styles';
 import PastelSwatchPicker from './PastelSwatchPicker';
 import { DEFAULT_FOLDER_COLOR } from './folderColors';
 
-// ─── Styled (matches ThemeFormModal's modal aesthetic) ───
-
 const Backdrop = styled('div')({
   position: 'fixed',
   inset: 0,

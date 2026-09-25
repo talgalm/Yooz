@@ -3,43 +3,33 @@ import type { AnalyticsExportType } from '../utils/analyticsExcelExport';
 
 export interface IPopupTrigger {
   point: 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
-  itemIndex?: number; // required when point is beforeItem/afterItem
+  itemIndex?: number;
 }
 
 export interface ICollageSplit {
   splitGroupId: string;
   partIndex: number;
   partSizes: number[];
-  totalParts?: number; // legacy fallback
-  /** Optional: index of the part dedicated to video creation/sharing only.
-   *  When set, that part has partSizes[videoPartIndex] === 0 and the participant
-   *  jumps straight to the result/share flow instead of capturing photos. */
+  totalParts?: number;
   videoPartIndex?: number | null;
-  /** Optional permutation of the underlying station.settings.missions indices.
-   *  When set, the participant reorders the mission list before slicing into
-   *  per-part chunks. Length = sum(partSizes excluding the video part). */
   photoOrder?: number[];
 }
 
-/** Where a `map` module item physically is. Lives on the module item, not on
- *  the Station: a Station is a reusable template that can appear in several
- *  activities at different addresses. */
 export interface IItemLocation {
   lat: number;
   lng: number;
-  /** What the admin typed / what geocoding resolved — display only. */
   address?: string;
 }
 
 export interface IModuleItem {
   type: 'game' | 'station' | 'mission';
   ref: Types.ObjectId;
-  location?: IItemLocation; // map modules only
-  groups?: string[]; // when set, only these groups see this item (empty/undefined = all groups)
-  spiderSvg?: string; // optional SVG URL for spiders module display
-  isFinal?: boolean; // spiders only: this item is locked until all others are completed
-  revisitable?: boolean; // roadmap: participants may re-open this item after completing it
-  collageSplit?: ICollageSplit; // collage stations only: split into N parts across the activity
+  location?: IItemLocation;
+  groups?: string[];
+  spiderSvg?: string;
+  isFinal?: boolean;
+  revisitable?: boolean;
+  collageSplit?: ICollageSplit;
 }
 
 export interface IPopupCondition {
@@ -50,9 +40,9 @@ export interface IPopupCondition {
 export interface IPopupMessage {
   _id?: Types.ObjectId;
   title: string;
-  contentType: 'text' | 'image'; // text = show text, image = show image
+  contentType: 'text' | 'image';
   text?: string;
-  image?: string; // image URL
+  image?: string;
   includeUsername?: boolean;
   trigger: IPopupTrigger;
   condition?: IPopupCondition;
@@ -60,20 +50,15 @@ export interface IPopupMessage {
 }
 
 export interface IModuleConfig {
-  type: 'story' | 'mission' | 'spiders' | 'map'; // module types
-  theme?: string; // e.g. 'spy' – visual theme wrapper
-  backgroundImage?: string; // URL or empty
-  items: IModuleItem[]; // ordered mix of games and stations
+  type: 'story' | 'mission' | 'spiders' | 'map';
+  theme?: string;
+  backgroundImage?: string;
+  items: IModuleItem[];
   popups?: IPopupMessage[];
-  missionRef?: Types.ObjectId; // reference to Mission document (when type='mission')
-  showStationNumbers?: boolean; // spiders only: show station number in top-right of each node
-  showItemTitleNumbers?: boolean; // show item index in in-station/game title (e.g. "3. ...")
-  /** Map only: per-group visiting order, group name -> permutation of `items`
-   *  indices. A group with no entry walks `items` in its stored order. */
+  missionRef?: Types.ObjectId;
+  showStationNumbers?: boolean;
+  showItemTitleNumbers?: boolean;
   groupOrders?: Record<string, number[]>;
-  /** Map only: how close (meters) a participant must be for a station to open.
-   *  Defaults to 10. Phone GPS is only good to ~5-15m, so
-   *  arrival also subtracts the fix's own reported accuracy — see `hasArrived`. */
   proximityMeters?: number;
 }
 
@@ -101,7 +86,6 @@ export interface IActivity {
   loginFields: string[];
   emailGoogle?: boolean;
   connectionType: string;
-  /** When connectionType is 'group': preset = admin-defined groups; selfService = participants create teams */
   groupEntryMode?: 'preset' | 'selfService';
   groups: { name: string }[];
   opening?: IOpening;
@@ -109,84 +93,43 @@ export interface IActivity {
   guidelines?: string;
   languages?: string[];
   extraSupportInfo?: string;
-  /** Optional named contact (name + phone) for this activity's participant
-   *  support bot to point participants to. When unset, all "contact the
-   *  organizer"/"ask your facilitator" copy falls back to generic wording. */
   organizerContactName?: string;
   organizerContactPhone?: string;
-  /** Participant help-chat FAQ menu categories to hide for this activity
-   *  (e.g. 'video_missing' when the activity has no collage station).
-   *  Keys: login, game_start, score, loading, kicked_out, button_stuck,
-   *  task_stuck, video_missing. Unset/empty = show all categories. */
   helpCategoriesDisabled?: string[];
-  /** Per-category custom text overriding the default FAQ menu answer, keyed by
-   *  the same category keys as helpCategoriesDisabled. Missing key = default. */
   helpCategoryResponses?: Record<string, string>;
-  /** The "something else" open free-text chat is opt-in, off by default —
-   *  it's an edge case for activities needing a category/issue not covered
-   *  by the standard list, not shown otherwise. */
   helpOtherCategoryEnabled?: boolean;
   customInstructions?: ICustomInstructions;
   scheduledStart?: Date;
   scheduledEnd?: Date;
   managerEmail?: string;
-  managerPassword?: string; // bcrypt hash
-  /** When true, exposes the /control/:id operator console for this activity */
+  managerPassword?: string;
   userControl?: boolean;
-  stations: string[]; // legacy
+  stations: string[];
   createdAt: Date;
-  /** Set when created via admin API — used to scope customer role */
   createdByEmail?: string;
-  /** When true, customer role cannot modify this activity */
   customerEditLocked?: boolean;
-  /** Portal this activity is attached to */
   portalId?: Types.ObjectId;
-  /** Admin-dashboard folder this activity is filed under (null = ungrouped). */
   folderId?: Types.ObjectId | null;
-  /** When true, participants must login via portal username */
   isContinuous?: boolean;
-  loginComponent?: string; // legacy
-  /** Leaderboard scoring mode */
+  loginComponent?: string;
   leaderboardMode?: 'points' | 'time' | 'both';
-  /** When true, leaderboard points are shown as a 0-100 grade (normalized
-   *  against the activity's max possible score). Ignored in 'time' mode. */
   leaderboardAsGrade?: boolean;
-  /** When true, hide the leaderboard trophy button from the session header */
   hideLeaderboardInHeader?: boolean;
-  /** When true (default), leaderboard only includes reports completed today in Israel time */
   leaderboardCurrentDayOnly?: boolean;
-  /** When true, all participant data is wiped at midnight Israel time each day */
   dailyReset?: boolean;
-  /** Israel day (YYYY-MM-DD) the daily reset last ran / was armed on */
   lastDailyResetDay?: string;
-  /** Optional time limit in minutes (only relevant when leaderboardMode is 'time') */
   activityDurationMinutes?: number;
-  /** When set (> 0), shows a cosmetic count-up timer on the roadmap that turns red
-   *  after this many minutes. Purely visual — does not affect play. null = off. */
   roadmapTimerMinutes?: number | null;
-  /** Normalized (0-100) score at/above which a participant is considered to have
-   *  passed, used in statistics and exported reports. Defaults to 70.
-   *  null = no pass grade (pass/fail is not applied). */
   passThreshold?: number | null;
-  /** Unguessable token for a public, read-only statistics share link.
-   *  null/undefined = no active share link. */
   statsShareToken?: string | null;
-  /** Report `_id`s excluded from all statistics, exports and the public share
-   *  link. Non-destructive and reversible — the reports themselves are kept. */
   excludedReportIds?: Types.ObjectId[];
-  /** Share button analytics */
   shareClicks?: number;
   shareCompleted?: number;
-  /** Mission aggregate analytics */
   missionPuzzleCompletions?: number;
   missionTrashSortCompletions?: number;
   missionTrashSortScoreSum?: number;
-  /** Manager-controlled progress lock — items with index >= this are blocked.
-   *  null/undefined = nothing locked. */
   lockedFromIndex?: number | null;
-  /** When true, show activity name on the story roadmap between header and path. */
   includeOnRoadmap?: boolean;
-  /** Live order-game survey session (presenter + Borda aggregation). */
   orderSurveySession?: {
     itemIndex: number;
     gameId: string;
@@ -196,21 +139,11 @@ export interface IActivity {
     aggregatedRanking?: { item: string; bordaScore: number; rank: number }[];
     updatedAt: Date;
   };
-  /** Self-service groups: minimum members before play can start (default 2). */
   groupMinMembers?: number;
-  /** Self-service groups: maximum members allowed per group (0/undef = no cap). */
   groupMaxMembers?: number;
-  /** When enabled, collage station shows a "get the video by SMS" button so the
-   *  participant can skip the wait — server SMS's them the result when ready.
-   *  Requires phoneNumber in loginFields. */
   smsForCollage?: boolean;
-  /** Custom SMS body for collage-ready notification. Use {link} as a placeholder
-   *  for the video URL; if absent the URL is appended on a new line. */
   smsForCollageMessage?: string;
-  /** When true, the collage SMS {link} opens a share landing page (video + share button)
-   *  instead of the raw video URL. */
   smsForCollageShare?: boolean;
-  /** When enabled, highest-scoring group member gets an SMS coupon after all members finish. */
   groupReward?: {
     enabled: boolean;
     couponCode: string;
@@ -219,8 +152,6 @@ export interface IActivity {
     attachmentType?: 'image' | 'pdf';
     downloadToken?: string;
   };
-  /** Automated recurring report emailed to a fixed recipient list. Yooz-admin-only
-   *  (no manager/customer self-service). */
   scheduledReport?: IScheduledReport;
 }
 
@@ -229,14 +160,10 @@ export interface IScheduledReport {
   reportType: AnalyticsExportType;
   recipients: string[];
   frequency: 'daily' | 'weekly';
-  /** Day of week (0-6, 0 = Sunday), relevant only when frequency is 'weekly'. */
   dayOfWeek?: number;
-  /** Hour of day (0-23, Israel time) the report is sent. */
   scheduleHour: number;
   skipIfUnchanged: boolean;
-  /** Set only after a send actually happens. */
   lastSentAt?: Date;
-  /** Snapshot of the data sent last time, for skipIfUnchanged comparison — set once the cron is built. */
   lastSentSnapshot?: string;
 }
 
@@ -344,14 +271,14 @@ const activitySchema = new Schema<IActivity>({
   managerEmail: { type: String },
   managerPassword: { type: String },
   userControl: { type: Boolean, default: false },
-  stations: { type: [String], default: [] }, // legacy
+  stations: { type: [String], default: [] },
   createdAt: { type: Date, default: Date.now },
   createdByEmail: { type: String, lowercase: true, trim: true },
   customerEditLocked: { type: Boolean, default: false },
   portalId: { type: Schema.Types.ObjectId, ref: 'Portal' },
   folderId: { type: Schema.Types.ObjectId, ref: 'ActivityFolder', default: null, index: true },
   isContinuous: { type: Boolean, default: false },
-  loginComponent: { type: String }, // legacy
+  loginComponent: { type: String },
   leaderboardMode: { type: String, enum: ['points', 'time', 'both'], default: 'points' },
   leaderboardAsGrade: { type: Boolean, default: false },
   hideLeaderboardInHeader: { type: Boolean, default: false },
@@ -360,7 +287,7 @@ const activitySchema = new Schema<IActivity>({
   lastDailyResetDay: { type: String },
   activityDurationMinutes: { type: Number },
   roadmapTimerMinutes: { type: Number },
-  passThreshold: { type: Number, default: 70 }, // null = no pass grade; range validated in code
+  passThreshold: { type: Number, default: 70 },
   statsShareToken: { type: String, default: null, index: true, sparse: true },
   excludedReportIds: { type: [Schema.Types.ObjectId], default: [] },
   shareClicks: { type: Number, default: 0 },

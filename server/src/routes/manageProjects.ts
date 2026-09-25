@@ -26,11 +26,6 @@ function badId(res: Response, id: string): boolean {
   return true;
 }
 
-/**
- * A member sees only projects they are on; pm and owner see everything.
- * This is a query filter, not a UI filter — a member hitting the API directly
- * gets the same restricted set.
- */
 function visibilityFilter(req: Request): Record<string, unknown> {
   const { role, userId } = req.manageUser!;
   if (role === 'owner' || role === 'pm') return {};
@@ -64,8 +59,6 @@ function pickProjectFields(body: Record<string, unknown>, role: string): Record<
       .filter((x) => typeof x === 'string' && Types.ObjectId.isValid(x));
   }
 
-  // Money is owner-only on the way IN as well as on the way out. A pm who posts
-  // agreedPrice must not be able to set it just because the field is unguarded.
   if (role === 'owner') {
     if (typeof body.agreedPrice === 'number' && body.agreedPrice >= 0) out.agreedPrice = body.agreedPrice;
     if (typeof body.recurring === 'object' && body.recurring !== null) {
@@ -83,13 +76,9 @@ function pickProjectFields(body: Record<string, unknown>, role: string): Record<
   return out;
 }
 
-// ─── Templates (read-only until the Settings screen exists) ───
-
 router.get('/stage-template', async (_req: Request, res: Response) => {
   res.json({ template: (await getSettings()).stageTemplate });
 });
-
-// ─── Projects ───
 
 router.get('/', async (req: Request, res: Response) => {
   const { status, type, clientId, health, billing, q, archived } = req.query as Record<string, string | undefined>;
@@ -99,7 +88,6 @@ router.get('/', async (req: Request, res: Response) => {
   if (type && PROJECT_TYPES.includes(type as ProjectType)) filter.type = type;
   if (health && ['green', 'orange', 'red'].includes(health)) filter.health = health;
   if (clientId && Types.ObjectId.isValid(clientId)) filter.clientId = clientId;
-  // The one-off vs retainer split the brief asked for — reuses recurring.enabled.
   if (billing === 'recurring') filter['recurring.enabled'] = true;
   if (billing === 'one_time') filter['recurring.enabled'] = false;
   if (q && q.trim()) {
@@ -131,8 +119,6 @@ router.post('/', canEdit, async (req: Request, res: Response) => {
     return;
   }
   const type = (fields.type as ProjectType) ?? 'client';
-  // Internal work and sales demos have no client — that is the whole point of
-  // the type field, so do not require one for them.
   if (type === 'client' && !fields.clientId) {
     res.status(400).json({ error: 'A client project needs a client' });
     return;
@@ -188,14 +174,12 @@ router.patch('/:id', canEdit, async (req: Request, res: Response) => {
   const body = (req.body ?? {}) as Record<string, unknown>;
   const fields = pickProjectFields(body, req.manageUser!.role);
 
-  // Status is handled separately because it carries rules.
   if (typeof body.status === 'string' && PROJECT_STATUSES.includes(body.status as ProjectStatus)) {
     const next = body.status as ProjectStatus;
     if (!canTransition(project.status, next)) {
       res.status(400).json({ error: `Cannot move a project from ${project.status} to ${next}` });
       return;
     }
-    // The spec's one hard gate: nothing is "done" without a go-live date.
     const goLive = (fields.goLiveDate as Date | undefined) ?? project.goLiveDate;
     if (next === 'done' && !goLive) {
       res.status(400).json({ error: 'needs_go_live_date' });
@@ -208,8 +192,6 @@ router.patch('/:id', canEdit, async (req: Request, res: Response) => {
 
   Object.assign(project, fields);
 
-  // Rebuilding stage hours from a changed budget would wipe manual edits, so the
-  // split is only applied when the project has no stages yet.
   if (typeof fields.plannedHours === 'number' && project.stages.length === 0) {
     project.stages = buildStages(fields.plannedHours, (await getSettings()).stageTemplate) as never;
   }
@@ -237,8 +219,6 @@ router.delete('/:id', requireManageRole('owner'), async (req: Request, res: Resp
   res.json({ ok: true });
 });
 
-// ─── Stages ───
-
 router.patch('/:id/stages/:stageKey', canEdit, async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
   const project = await Project.findById(String(req.params.id));
@@ -264,8 +244,6 @@ router.patch('/:id/stages/:stageKey', canEdit, async (req: Request, res: Respons
 
   if (typeof body.status === 'string' && STAGE_STATUSES.includes(body.status as StageStatus)) {
     const next = body.status as StageStatus;
-    // startedAt/completedAt are stamped by the transition, never sent by the client.
-    // This is what makes planned-vs-actual on the timeline real rather than two planned bars.
     if (next === 'in_progress' && !stage.startedAt) stage.startedAt = new Date();
     if (next === 'done' && !stage.completedAt) stage.completedAt = new Date();
     if (next === 'not_started') { stage.startedAt = undefined; stage.completedAt = undefined; }
@@ -273,7 +251,6 @@ router.patch('/:id/stages/:stageKey', canEdit, async (req: Request, res: Respons
     if (next === 'in_progress') project.currentStageKey = stage.key;
   }
 
-  // Total budget stays the sum of its stages, so the two never disagree.
   project.plannedHours = Math.round(project.stages.reduce((a, s) => a + s.plannedHours, 0) * 10) / 10;
 
   const overdueTasks = await Task.countDocuments({

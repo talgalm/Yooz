@@ -15,12 +15,6 @@ export function shouldDeferVideoPrefetch(): boolean {
 }
 const MAX_MEDIA_RETRIES = 6;
 const RETRY_BASE_MS = 1500;
-// Some mobile browsers (notably iOS Safari) never fire load OR error for an
-// off-DOM <video>/<img> — they defer buffering until the element is in the DOM.
-// Without a watchdog the preload callback never resolves and the UI spins
-// forever. After this bound we treat the media as ready; the real in-DOM
-// element loads normally on render. ponytail: fixed 12s ceiling, no per-media
-// tuning — bump only if slow networks legitimately need longer.
 const MEDIA_WATCHDOG_MS = 12000;
 
 export function isVideoMediaUrl(url: string): boolean {
@@ -165,7 +159,6 @@ export function loadParticipantVideo(
     const succeed = () => {
       if (!cancelled) { clearTimers(); onSuccess(); }
     };
-    // loadedmetadata fires earlier and more reliably than loadeddata on mobile.
     vid.onloadedmetadata = succeed;
     vid.onloadeddata = succeed;
     vid.onerror = () => {

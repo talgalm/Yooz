@@ -24,14 +24,12 @@ import {
 import { useLang, useTranslations } from '../../context/LanguageContext';
 import { texts } from './MissionPage.i18n';
 
-// ─── Design tokens ───
 const MISSION_FONT = "'Rubik', sans-serif";
 const MISSION_TEXT = '#F2F7FF';
 const MISSION_TEAL = '#39CABC';
 
 function buildFacebookShareUrl(activityUrl: string): string {
   const u = encodeURIComponent(activityUrl);
-  // Only `u` is supported; extra params are ignored and can break mobile deep links.
   return `https://www.facebook.com/sharer/sharer.php?u=${u}`;
 }
 
@@ -41,7 +39,6 @@ function openFacebookShare(activityUrl: string): void {
   if (!w) window.location.assign(url);
 }
 
-/** SVG textPath ignores bidi on Safari; reverse + bidi-override renders RTL correctly everywhere. */
 function textForSvgTextPath(text: string): string {
   return [...text].reverse().join('');
 }
@@ -61,8 +58,6 @@ const popOut = keyframes`
   0%   { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(0.3); }
 `;
-
-// ─── Layout ───
 
 const PageWrapper = styled('div')({
   position: 'fixed',
@@ -102,8 +97,6 @@ const ScoreBox = styled('div')<{ $flash?: 'positive' | 'negative' | null }>(({ $
   transformOrigin: 'center',
   transition: 'color 0.18s ease, transform 0.18s ease',
 }));
-
-// ─── Share modal overlay ───
 
 const ShareModalOverlay = styled('div')({
   position: 'fixed',
@@ -209,8 +202,6 @@ const ShareButtonLabel = styled('span')({
   textAlign: 'start',
 });
 
-// ─── Funnel ───
-
 const FunnelArea = styled('div')({
   width: '100%',
   zIndex: 3,
@@ -254,8 +245,6 @@ const FunnelTrashItem = styled('img')<{
   outline: 'none',
   WebkitTapHighlightColor: 'transparent',
 }));
-
-// ─── Center Content ───
 
 const ContentArea = styled('div')({
   flex: 1,
@@ -307,16 +296,12 @@ const BinIconStatic = styled('img')({
   animation: `${fadeIn} 0.5s ease-out 0.3s both`,
 });
 
-// ─── Flying BinIcon (absolute positioned clone) ───
-
 const FlyingBin = styled('img')({
   position: 'fixed',
   zIndex: 2,
   pointerEvents: 'none',
   willChange: 'transform, opacity, top, left, width',
 });
-
-// ─── Bottom Bins ───
 
 const BinsRow = styled('div')({
   display: 'flex',
@@ -332,8 +317,6 @@ const BinsRow = styled('div')({
   animation: `${fadeIn} 0.5s ease-out 0.25s both`,
 });
 
-// Intro-only CTA — sits centered in the ContentArea, directly under the
-// description box, replacing the bins+box that appear once the game starts.
 const StartGameButton = styled('button')({
   background: '#39CABC',
   color: '#F2F7FF',
@@ -365,8 +348,6 @@ const BinImg = styled('img')({
   display: 'block',
 });
 
-// ─── Countdown Overlay ───
-
 const CountdownOverlay = styled('div')({
   position: 'absolute',
   inset: 0,
@@ -387,10 +368,6 @@ const StartImg = styled('img')<{ $leaving?: boolean }>(({ $leaving }) => ({
   width: 'clamp(250px, 75vw, 450px)',
   animation: `${$leaving ? popOut : popIn} ${$leaving ? '0.25s' : '0.45s'} ease-out forwards`,
 }));
-
-// ─── Types & Data ───
-
-// ─── Props ───
 
 interface MissionTrashSortProps {
   score?: number;
@@ -421,7 +398,6 @@ interface MissionTrashSortProps {
   onComplete?: (score: number) => void;
 }
 
-// Countdown steps: 3, 2, 1, "start!"
 const COUNTDOWN_STEPS = [
   { src: '/images/countdown-1.svg', duration: 1100, isStart: false },
   { src: '/images/countdown-2.svg', duration: 1100, isStart: false },
@@ -444,8 +420,6 @@ const FUNNEL_TRASH_ITEMS = [
   { src: '/images/trash-items/cans.svg', top: '45%', left: '50%', width: '15%', rotate: -120, z: 2 },
 ];
 
-// ─── Flying Trash Item (animates to bin) ───
-
 const FlyingTrashItem = styled('img')<{ $animate: boolean }>(({ $animate }) => ({
   position: 'fixed',
   zIndex: 20,
@@ -454,7 +428,6 @@ const FlyingTrashItem = styled('img')<{ $animate: boolean }>(({ $animate }) => (
   transition: $animate ? 'top 0.6s cubic-bezier(0.25, 0.1, 0.25, 1), left 0.6s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s ease 0.4s, width 0.6s ease' : 'none',
 }));
 
-// ─── Item-to-bin mapping ───
 const ITEM_BIN_MAP: Record<string, string> = {
   'apple': 'brown',
   'banana': 'brown',
@@ -478,7 +451,7 @@ const getItemName = (src: string): string => {
 const TARGET_TOP_POINT = 65;
 const TARGET_LEFT_POINT = 40;
 const APPROACH_STEP_PER_SECOND = 2;
-const FALL_PX_PER_TICK = 4; // ~160px/s at 50ms ticks
+const FALL_PX_PER_TICK = 4;
 const CORRECT_BIN_SOUND_SRC = '/sounds/correct-bin-sound.wav';
 const WRONG_BIN_SOUND_SRC = '/sounds/wrong-bin-sound.mp3';
 const TOTAL_TRASH_ITEMS = FUNNEL_TRASH_ITEMS.length;
@@ -493,8 +466,6 @@ const moveToward = (current: number, target: number, step: number) => {
   if (current > target) return Math.max(current - step, target);
   return current;
 };
-
-// ─── Component ───
 
 export default function MissionTrashSort({
   score: initialScore = 0,
@@ -554,13 +525,12 @@ export default function MissionTrashSort({
   type FallingScreenItem = {
     id: string;
     src: string;
-    x: number;   // viewport left px
-    y: number;   // viewport top px
+    x: number;
+    y: number;
     width: number;
     rotate: number;
   };
 
-  // Hide body background while this component is mounted
   useEffect(() => {
     const prev = document.body.style.backgroundColor;
     document.body.style.backgroundColor = '#1a0a2e';
@@ -583,7 +553,6 @@ export default function MissionTrashSort({
 
   const shareUrl = activityCode ? `${window.location.origin}/play/${activityCode}` : window.location.href;
 
-  // Compose a full share image: background + badge + text
   const getBadgeBlob = useCallback(async (): Promise<Blob | null> => {
     if (badgeBlob) return badgeBlob;
     try {
@@ -606,19 +575,15 @@ export default function MissionTrashSort({
       canvas.height = H;
       const ctx = canvas.getContext('2d')!;
 
-      // Background
       ctx.drawImage(bgImg, 0, 0, W, H);
 
-      // Dark overlay for readability
       ctx.fillStyle = 'rgba(10, 4, 30, 0.55)';
       ctx.fillRect(0, 0, W, H);
 
-      // Teal frame border
       ctx.strokeStyle = '#39CABC';
       ctx.lineWidth = 4;
       ctx.strokeRect(16, 16, W - 32, H - 32);
 
-      // Badge title text (curved arc approximated as straight with letter spacing)
       ctx.save();
       ctx.font = 'bold 46px Rubik, Arial, sans-serif';
       ctx.fillStyle = '#ffffff';
@@ -629,13 +594,11 @@ export default function MissionTrashSort({
       ctx.fillText(badgeCurveText, W / 2, 130);
       ctx.restore();
 
-      // Badge image centered
       const badgeSize = 320;
       const badgeX = (W - badgeSize) / 2;
       const badgeY = 160;
       ctx.drawImage(badgeImg, badgeX, badgeY, badgeSize, badgeSize);
 
-      // Award text box
       const boxX = 60, boxY = 530, boxW = W - 120, boxH = 130;
       ctx.save();
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
@@ -686,7 +649,6 @@ export default function MissionTrashSort({
       ctx.fillText(share.badge, W / 2, 758);
       ctx.restore();
 
-      // Bottom URL hint
       ctx.save();
       ctx.font = '16px Rubik, Arial, sans-serif';
       ctx.fillStyle = 'rgba(242,247,255,0.5)';
@@ -754,7 +716,6 @@ export default function MissionTrashSort({
         await shareViaFacebookDialog(shareUrl);
         trackShareEvent('completed');
       } catch {
-        // SDK unavailable, user cancelled, or app not configured — fall back to sharer.php
         openFacebookShare(shareUrl);
         trackShareEvent('completed');
       }
@@ -803,7 +764,6 @@ export default function MissionTrashSort({
         trackShareEvent('completed');
         setTimeout(() => setCopiedLink(false), 2000);
       } catch {
-        // clipboard not available
       }
     }
   }, [shareUrl, trackShareEvent, lang]);
@@ -840,11 +800,9 @@ export default function MissionTrashSort({
       if (!raw) return 'intro';
       const data = JSON.parse(raw) as { phase?: string };
       const savedPhase = data.phase;
-      // Active game → back to intro
       if (savedPhase === 'game' || savedPhase === 'throwing' || savedPhase === 'countdown') {
         return 'intro';
       }
-      // Game finished → jump straight to badge (skip intermediate complete screen)
       if (savedPhase === 'complete') {
         return 'badge';
       }
@@ -852,7 +810,6 @@ export default function MissionTrashSort({
         return savedPhase;
       }
     } catch {
-      // ignore broken session data and start fresh
     }
     return 'intro';
   });
@@ -860,7 +817,6 @@ export default function MissionTrashSort({
   const [countdownStep, setCountdownStep] = useState(0);
   const [stepLeaving, setStepLeaving] = useState(false);
 
-  // Silence all background music during the finish video; resume after the user taps next.
   useEffect(() => {
     if (phase === 'complete') {
       stopTrashBg?.();
@@ -875,20 +831,16 @@ export default function MissionTrashSort({
     startTrashBg?.();
   }, [phase, startTrashBg, stopTrashBg, stopBg, startBg]);
 
-  // Refs for measuring positions
   const binIconRef = useRef<HTMLImageElement>(null);
   const funnelAreaRef = useRef<HTMLDivElement>(null);
   const blueBinRef = useRef<HTMLDivElement>(null);
   const orangeBinRef = useRef<HTMLDivElement>(null);
   const brownBinRef = useRef<HTMLDivElement>(null);
-  // Flying bin state
   const [flyStyle, setFlyStyle] = useState<React.CSSProperties | null>(null);
   const [showStaticBin, setShowStaticBin] = useState(true);
 
-  // Game state
   const [gameScore, setGameScore] = useState(initialScore);
 
-  // Save analytics when game ends — fire-and-forget, no navigation side-effects
   const analyticsSavedRef = useRef(false);
   useEffect(() => {
     if (phase !== 'complete' || analyticsSavedRef.current) return;
@@ -947,7 +899,6 @@ export default function MissionTrashSort({
     }
   }, []);
 
-  // Persist trash-sort internal station so refresh keeps current screen.
   useEffect(() => {
     sessionStorage.setItem(
       getTrashSortSessionKey(activityCode),
@@ -955,8 +906,6 @@ export default function MissionTrashSort({
     );
   }, [activityCode, phase]);
 
-  // Intro CTA — bins and the small box are hidden on intro now; clicking
-  // "קדימה!" skips the throwing animation and jumps straight to the countdown.
   const handleStartGame = useCallback(() => {
     if (phase !== 'intro') return;
     setPhase('countdown');
@@ -1008,11 +957,9 @@ export default function MissionTrashSort({
     }, 1200);
   }, [phase]);
 
-  // ─── Game phase: click on bin ───
   const handleGameBinClick = useCallback((binColor: string) => {
     if (phase !== 'game' || flyingItem || isFinalizing) return;
 
-    // Active item is always the lowest currently falling item.
     const item = [...fallingScreenItems].sort((a, b) => b.y - a.y)[0];
     if (!item) return;
 
@@ -1043,7 +990,6 @@ export default function MissionTrashSort({
       startTop: item.y,
       startLeft: item.x,
       startWidth: item.width,
-      // Aim to the top area of the selected bin.
       targetTop: binRect.top + 6,
       targetLeft: binRect.left + (binRect.width - targetWidth) / 2,
       targetWidth,
@@ -1072,7 +1018,6 @@ export default function MissionTrashSort({
     }, 700);
   }, [phase, fallingScreenItems, flyingItem, isFinalizing, playFx, triggerScoreFlash]);
 
-  // Countdown ticker
   useEffect(() => {
     if (phase !== 'countdown') return;
     if (countdownStep >= COUNTDOWN_STEPS.length) {
@@ -1089,12 +1034,10 @@ export default function MissionTrashSort({
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [phase, countdownStep]);
 
-  // Keep animatedTrashItemsRef in sync to avoid stale closures in interval
   useEffect(() => {
     animatedTrashItemsRef.current = animatedTrashItems;
   }, [animatedTrashItems]);
 
-  // Main game effect: items approach center, then graduate to screen-space falling
   useEffect(() => {
     if (phase !== 'game') {
       setSortedItemsCount(0);
@@ -1121,7 +1064,6 @@ export default function MissionTrashSort({
     setAnimatedTrashItems(initialItems);
     animatedTrashItemsRef.current = initialItems;
 
-    // 1000ms tick: move items toward funnel center, graduate when reached
     const movementTick = window.setInterval(() => {
       const current = animatedTrashItemsRef.current;
       const funnelEl = funnelAreaRef.current;
@@ -1146,7 +1088,6 @@ export default function MissionTrashSort({
       if (toGraduate.length > 0 && funnelEl) {
         const rect = funnelEl.getBoundingClientRect();
         const newFalling: FallingScreenItem[] = toGraduate.map((item) => ({
-          // Preserve the exact rendered top-left + rendered width to avoid a visual jump.
           width: Math.min((toPercentNumber(item.width) / 100) * rect.width, 72),
           id: item.id,
           src: item.src,
@@ -1158,10 +1099,6 @@ export default function MissionTrashSort({
       }
     }, 1000);
 
-    // 50ms tick: move falling items down the screen in viewport pixels.
-    // Items past the bottom are removed (no points) and counted toward
-    // sortedItemsCount — otherwise the finish screen never triggers when an
-    // item is missed, since only correct bin clicks bump that counter.
     const fallingTick = window.setInterval(() => {
       setFallingScreenItems((prev) => {
         if (prev.length === 0) return prev;
@@ -1190,12 +1127,10 @@ export default function MissionTrashSort({
     };
   }, [phase]);
 
-  // ─── Wait for images before showing any phase ───
   if (!imagesReady && (phase === 'intro' || phase === 'throwing' || phase === 'countdown' || phase === 'game')) {
     return <PageWrapper />;
   }
 
-  // ─── Game phase ───
   if (phase === 'game') {
     return (
       <PageWrapper>
@@ -1229,7 +1164,6 @@ export default function MissionTrashSort({
 
         <ContentArea style={{ flex: 1 }} />
 
-        {/* Items falling in screen-space (fixed position) */}
         {fallingScreenItems.map((item) => (
           <img
             key={item.id}
@@ -1250,7 +1184,6 @@ export default function MissionTrashSort({
           />
         ))}
 
-        {/* Flying trash item animation */}
         {flyingItem && (
           <FlyingTrashItem
             src={flyingItem.src}
@@ -1289,12 +1222,10 @@ export default function MissionTrashSort({
     );
   }
 
-  // ─── Completion phase ───
   if (phase === 'complete') {
     return (
       <MissionWrapper bg={undefined} step={1}>
         <FrameContainer style={{ background: 'transparent', backgroundImage: 'none' }}>
-          {/* Background video — fills the whole frame, mission-frame.svg sits on top */}
           <video
             ref={(el) => { if (el) el.volume = 0.3; }}
             src="/videos/env-finish-video.mp4"
@@ -1346,7 +1277,6 @@ export default function MissionTrashSort({
     );
   }
 
-  // ─── Badge phase ───
   if (phase === 'badge') {
     const badgeName = participantName?.trim() || t.anonymousParticipant;
     return (
@@ -1360,13 +1290,6 @@ export default function MissionTrashSort({
           </MissionHeader>
 
           <MissionContent style={{ paddingTop: 0, gap: 8 }}>
-            {/*
-              Original badge-first order — curve → image → award box, tightened
-              vertically so all three blocks sit higher in the MissionContent
-              box (top:23%, bottom:14%, overflow:hidden). The SVG's marginTop
-              reserves room for the curved text's glyphs that extend above the
-              viewBox; without it, Galaxy S23 clips the top of "תג סוכן הפארק".
-            */}
             <svg
               viewBox="0 0 300 80"
               style={{ width: '80%', maxWidth: 300, overflow: 'visible', marginTop: 32, marginBottom: -50 }}
@@ -1431,7 +1354,6 @@ export default function MissionTrashSort({
         </FrameContainer>
       </MissionWrapper>
 
-      {/* Share modal (desktop fallback) */}
       {showShareModal && (
         <ShareModalOverlay onClick={() => setShowShareModal(false)}>
           <ShareModalBox onClick={(e) => e.stopPropagation()}>
@@ -1463,7 +1385,6 @@ export default function MissionTrashSort({
               </a>
             </p>
 
-            {/* Badge image preview */}
             {badgePreviewUrl && (
               <img
                 src={badgePreviewUrl}
@@ -1472,7 +1393,6 @@ export default function MissionTrashSort({
               />
             )}
 
-            {/* Download image button */}
             <ShareCopyBtn
               onClick={handleDownloadImage}
               style={{ width: '100%', padding: '9px 0', fontSize: 13 }}
@@ -1520,19 +1440,15 @@ export default function MissionTrashSort({
     );
   }
 
-  // ─── Intro / Throwing / Countdown phases ───
-
   const showCountdownOverlay = phase === 'countdown' && countdownStep < COUNTDOWN_STEPS.length;
   const currentStep = showCountdownOverlay ? COUNTDOWN_STEPS[countdownStep] : null;
 
   return (
     <PageWrapper>
-      {/* Flying bin clone */}
       {flyStyle && (
         <FlyingBin src="/images/bin-icon.svg" alt="" style={flyStyle} />
       )}
 
-      {/* Countdown overlay */}
       {showCountdownOverlay && currentStep && (
         <CountdownOverlay>
           {currentStep.isStart ? (
@@ -1543,7 +1459,6 @@ export default function MissionTrashSort({
         </CountdownOverlay>
       )}
 
-      {/* Top bar: score only — info menu floats top-right via MissionTopMenu */}
       <TopBar>
         <ScoreBox $flash={scoreFlash}>
           <span>{scoreLabel}</span>

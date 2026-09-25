@@ -29,7 +29,6 @@ const Subtitle = styled('div')({
 export default function AdminMediaTab() {
   const t = useTranslations(texts);
   const [refreshKey, setRefreshKey] = useState(0);
-  // Uploads land in whichever folder the browser has open.
   const [folder, setFolder] = useState('yooz');
 
   return (

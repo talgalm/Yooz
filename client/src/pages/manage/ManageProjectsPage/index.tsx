@@ -18,7 +18,6 @@ import {
 const DesktopCell = styled('td')({ [MOBILE]: { display: 'none' } });
 const DesktopHead = styled('th')({ [MOBILE]: { display: 'none' } });
 
-/** The health light. Colour is the signal; the reason is the tooltip. */
 const HealthDot = styled('span')<{ tone: string }>(({ tone }) => ({
   display: 'inline-block',
   width: 9,

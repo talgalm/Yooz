@@ -11,7 +11,6 @@ import {
   FieldGrid, Field, SmallSelect, SmallInput, Button, GhostButton, ErrorNote,
 } from './manageUi';
 
-/** Picks what the timer is for. Starting one always stops and saves any other. */
 export default function StartTimerModal({ onClose }: { onClose: () => void }) {
   const t = useTranslations(texts);
   const { start } = useManageTimer();

@@ -28,10 +28,6 @@ interface State {
   error?: Error;
 }
 
-/**
- * React ErrorBoundary — catches render errors in the component tree
- * and shows a fallback UI instead of crashing the whole page.
- */
 export default class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);

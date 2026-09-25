@@ -25,11 +25,6 @@ interface Props {
   onProjectChange: (p: Project) => void;
 }
 
-/**
- * Stage hours and statuses. startedAt/completedAt are read-only here — the
- * server stamps them on the status transition, which is what makes the
- * planned-vs-actual comparison meaningful later.
- */
 export default function StagesTab({ project, canEdit, onProjectChange }: Props) {
   const t = useTranslations(texts);
   const [error, setError] = useState('');

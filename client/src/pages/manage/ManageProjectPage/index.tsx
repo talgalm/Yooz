@@ -103,7 +103,6 @@ export default function ManageProjectPage() {
       setData((d) => (d ? { ...d, project: res.project } : d));
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed';
-      // The server answers with a code so the UI can say something useful.
       setError(msg === 'needs_go_live_date' ? t.needsGoLive : msg);
     } finally {
       setBusy(false);
@@ -154,7 +153,6 @@ export default function ManageProjectPage() {
           {t.tabStages} ({p.stages.length})
         </Tab>
         <Tab active={tab === 'tasks'} onClick={() => setTab('tasks')}>{t.tabTasks}</Tab>
-        {/* Money is owner-only in the UI; the API refuses everyone else regardless. */}
         {isOwner && <Tab active={tab === 'money'} onClick={() => setTab('money')}>{t.tabMoney}</Tab>}
       </Tabs>
 
@@ -205,7 +203,6 @@ export default function ManageProjectPage() {
               <ReadField>{t.start}<b>{p.startDate ? formatDate(p.startDate) : t.none}</b></ReadField>
               <ReadField>{t.target}<b>{p.targetDate ? formatDate(p.targetDate) : t.none}</b></ReadField>
               <ReadField>{t.goLive}<b>{p.goLiveDate ? formatDate(p.goLiveDate) : t.none}</b></ReadField>
-              {/* Billing model is money talk — members never see it. */}
               {canEdit && (
                 <ReadField>
                   {t.billing}

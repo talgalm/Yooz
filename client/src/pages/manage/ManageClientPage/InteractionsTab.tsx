@@ -32,7 +32,6 @@ interface Props {
   onClientChange: (c: Client) => void;
 }
 
-/** Every role can log an interaction — see the route comment in manageClients.ts. */
 export default function InteractionsTab({ client, onClientChange }: Props) {
   const t = useTranslations(texts);
   const [interactions, setInteractions] = useState<Interaction[]>([]);
@@ -84,7 +83,6 @@ export default function InteractionsTab({ client, onClientChange }: Props) {
           onSaved={(interaction, updated) => {
             setLogging(false);
             setInteractions((prev) => [interaction, ...prev]);
-            // The server recomputed lastContactDate — reflect it without a refetch.
             onClientChange(updated);
           }}
         />

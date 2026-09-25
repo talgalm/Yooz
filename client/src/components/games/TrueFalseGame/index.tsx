@@ -59,8 +59,6 @@ import {
   FinishScoreLabel,
 } from './styled';
 
-// ─── SVG Icons ───
-
 function CrossIcon() {
   return (
     <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
@@ -97,8 +95,6 @@ function WrongMark() {
   );
 }
 
-// ─── Types ───
-
 interface TrueFalseStatement {
   text: string;
   isTrue: boolean;
@@ -122,11 +118,8 @@ interface TrueFalseSettings {
 
 const FEEDBACK_POPUP_MS = 3000;
 
-// ─── Session progress helpers ───
-
 const PROGRESS_KEY_PREFIX = 'yooz_game_progress_';
 
-/** Derive a user-scoped storage key so different participants on the same device don't share progress. */
 function getProgressKey(gameId: string): string {
   try {
     const token = localStorage.getItem('yooz_token');
@@ -162,8 +155,6 @@ function clearGameProgress(gameId: string) {
   try { sessionStorage.removeItem(getProgressKey(gameId)); } catch {}
 }
 
-// ─── Component ───
-
 export default function TrueFalseGame({ game, onComplete }: GameProps) {
   const settings = game.settings as unknown as TrueFalseSettings;
   const t = useTranslations(texts);
@@ -178,7 +169,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
 
   const statements = settings.statements || [];
 
-  // Check for saved progress on mount
   const savedProgress = useRef(loadGameProgress(game._id));
   const isResuming = savedProgress.current !== null && savedProgress.current.nextIndex < statements.length;
 
@@ -197,16 +187,12 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
   const [noContent, setNoContent] = useState(false);
   const [questionAnswers, setQuestionAnswers] = useState<QuestionAnswerRecord[]>([]);
 
-  // Per-question state
   const [answered, setAnswered] = useState(false);
   const [userAnswer, setUserAnswer] = useState<boolean | null>(null);
   const [isCorrect, setIsCorrect] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
 
-  // Timer per question
   const [timeLeft, setTimeLeft] = useState<number>(scoring.timeLimitSeconds);
-  // QA Jun 2026 page 11: image in TF was a tiny thumbnail and not clickable.
-  // Click-to-zoom mirrors the same UX used by image / riddle stations.
   const [zoomedImageUrl, setZoomedImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -221,7 +207,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Refs to avoid stale closures in handleAnswer
   const currentIndexRef = useRef(currentIndex);
   const answeredRef = useRef(answered);
 
@@ -253,10 +238,8 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     return () => setThemedSceneOverlay(null);
   }, [showInstructions, setThemedSceneOverlay]);
 
-  /** Admin preview has no themed shell — paint play background inside the game area */
   const playPhaseInlineBackdrop = !setThemedSceneOverlay;
 
-  // Auto-complete if no statements
   useEffect(() => {
     if (statements.length === 0) {
       setNoContent(true);
@@ -264,7 +247,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     }
   }, []);
 
-  // Countdown effect (3-2-1)
   useEffect(() => {
     if (countdown === null) return;
     if (countdown <= 0) {
@@ -289,7 +271,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     questionStartTime.current = Date.now();
   }, [scoring.timeLimitSeconds]);
 
-  // Question timer countdown
   useEffect(() => {
     if (countdown !== null || showInstructions || gameComplete || answered) return;
     if (timeLeft <= 0) return;
@@ -309,7 +290,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     };
   }, [countdown, showInstructions, gameComplete, answered, timeLeft <= 0]);
 
-  // Time's up — auto handle as unanswered
   useEffect(() => {
     if (timeLeft === 0 && !answered && countdown === null && !showInstructions && !gameComplete) {
       handleAnswer(null);
@@ -341,7 +321,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     setShowFeedback(true);
     setTotalScore((prev) => Math.max(0, prev + points));
 
-    // Track question answer for analytics
     setQuestionAnswers((prev) => [...prev, {
       questionIndex: currentIndexRef.current,
       questionText: statement.text,
@@ -352,12 +331,11 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
       timeSpentMs: Date.now() - questionStartTime.current,
     }]);
 
-    // Play answer SFX
     if (answer !== null) {
       if (correct) sounds.playCorrect();
       else sounds.playWrong();
     } else {
-      sounds.playWrong(); // timeout = wrong
+      sounds.playWrong();
     }
 
     if (feedbackHideTimerRef.current) clearTimeout(feedbackHideTimerRef.current);
@@ -378,14 +356,12 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     }, advanceAfterMs);
   }, [statements, scoring, feedbackDuration, startQuestion]);
 
-  // Play game over sound when game completes
   useEffect(() => {
     if (gameComplete && !noContent) {
       sounds.playGameOver();
     }
   }, [gameComplete, noContent]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -394,11 +370,10 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     };
   }, []);
 
-  // Save progress to sessionStorage after each answered question
   useEffect(() => {
     if (questionAnswers.length === 0 || gameComplete) return;
     saveGameProgress(game._id, {
-      nextIndex: questionAnswers.length, // next unanswered question
+      nextIndex: questionAnswers.length,
       totalScore,
       questionAnswers,
       hintUsed: gameHint.hintUsed,
@@ -406,7 +381,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     });
   }, [questionAnswers, totalScore, gameComplete]);
 
-  // Clear progress when game is complete
   useEffect(() => {
     if (gameComplete) clearGameProgress(game._id);
   }, [gameComplete]);
@@ -426,7 +400,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     setShowInstructions(false);
     sounds.startBgMusic();
 
-    // Restore saved progress if resuming
     const saved = savedProgress.current;
     if (saved && saved.nextIndex < statements.length) {
       setCurrentIndex(saved.nextIndex);
@@ -434,7 +407,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
       setQuestionAnswers(saved.questionAnswers);
       gameStartTime.current = saved.gameStartTime;
       if (saved.hintUsed) gameHint.forceHintUsed();
-      savedProgress.current = null; // consumed
+      savedProgress.current = null;
       startQuestion();
       return;
     }
@@ -446,7 +419,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     }
   };
 
-  // ─── Opening / Instructions screen ───
   if (showInstructions) {
     return (
       <IntroContainer $externalBackdrop={Boolean(setThemedSceneOverlay)}>
@@ -493,7 +465,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     );
   }
 
-  // ─── Countdown screen (3-2-1) ───
   if (countdown !== null) {
     return (
       <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
@@ -514,7 +485,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     );
   }
 
-  // ─── Game complete ───
   if (gameComplete) {
     if (noContent) return null;
     return (
@@ -548,7 +518,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
     );
   }
 
-  // ─── Playing ───
   const statement = statements[currentIndex];
   if (!statement) return null;
 
@@ -557,7 +526,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
   return (
     <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
       <NatureContainer>
-      {/* Header */}
       <TFHeader>
         <TFHeaderLeft>
           <TFScoreBadge>{totalScore} {t.points}</TFScoreBadge>
@@ -572,12 +540,10 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
         </TFHeaderRight>
       </TFHeader>
 
-      {/* Question — same panel style as intro description (IntroDescCard) */}
       <QuestionBanner key={currentIndex}>
         <QuestionBannerText>{statement.text}</QuestionBannerText>
       </QuestionBanner>
 
-      {/* Statement media */}
       {statement.media && (
         <NatureMediaContainer>
           <NatureMediaImage
@@ -588,7 +554,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
         </NatureMediaContainer>
       )}
 
-      {/* Image zoom modal — portaled so it covers the session header */}
       {zoomedImageUrl && createPortal(
         <div
           onClick={() => setZoomedImageUrl(null)}
@@ -638,7 +603,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
         document.body
       )}
 
-      {/* Hint: keep mounted when answered so flex layout (timer position) does not jump */}
       {settings.hint?.enabled && (settings.hint.text || settings.hint.imageUrl) && (
         <div
           style={{
@@ -656,7 +620,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
         </div>
       )}
 
-      {/* Timer — flat purple disc + stroked digit */}
       <TimerCircleWrapper>
         <TimerCircle critical={timerCritical}>
           <TimerCircleNumber critical={timerCritical}>{timeLeft}</TimerCircleNumber>
@@ -680,7 +643,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
           document.body
         )}
 
-      {/* Wrong / Correct buttons */}
       <NatureButtonRow>
         <WrongButton
           answered={answered}

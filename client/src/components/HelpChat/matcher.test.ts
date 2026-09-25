@@ -2,13 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { matchTopic } from './matcher';
 
-/**
- * The risk when adding topics to this file is keyword collision: a new phrase
- * hijacking an existing topic, or an existing one shadowing the new sheet.
- * These are the sentences from the field troubleshooting sheet plus the
- * neighbours most likely to be stolen from.
- */
-
 function topicOf(input: string) {
   return matchTopic(input)?.topicId ?? null;
 }

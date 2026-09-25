@@ -80,8 +80,6 @@ export default function AdminLoginPage() {
     try {
       const accessToken = await openGooglePopup();
       await loginWithGoogle(accessToken);
-      // No explicit navigate — AdminPublicRoute redirects to /admin/dashboard
-      // once isAdminAuthenticated becomes true, avoiding a state-timing flash.
     } catch (err) {
       if (err instanceof Error && err.message !== 'Popup closed') {
         setError(err.message);

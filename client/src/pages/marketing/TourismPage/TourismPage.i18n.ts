@@ -1,9 +1,3 @@
-/**
- * Copy read off the exported Figma frame `temp-imgs/אתר yooz/תיירות.png`.
- *
- * Card rows are listed in DOM order, which in RTL renders right-to-left - so the
- * first entry is the rightmost column in the comp.
- */
 export const texts = {
   he: {
     heroTitleTop: 'הופכים כל סיור',
@@ -44,11 +38,6 @@ export const texts = {
     caseSubtitle: '״פארקוד״ בגני יהושוע',
     caseIntro: '3 שלבים פשוטים שמחברים את המבקר לסיפור, מעלים מעורבות ומייצרים שיתופים ברשתות',
     caseSteps: ['1. סרטון פתיחה לסדרה', '2. חידות שטח אינטראקטיביות', '3. סרטון מזכרת AI אישי'],
-    /**
-     * One entry per chip in `caseSteps`. Stage 1 is transcribed from the frame;
-     * stages 2 and 3 are written, since the comp only renders the first tab.
-     * Worth a proof-read.
-     */
     caseStages: [
       {
         label: 'שלב 1: הצתה וחיבור ראשוני',

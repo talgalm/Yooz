@@ -1,6 +1,3 @@
-/**
- * IndexedDB persistence for collage encode jobs — survives tab reload.
- */
 
 export interface PersistedCollageJob {
   jobId: string;

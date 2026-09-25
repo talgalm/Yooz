@@ -1,6 +1,5 @@
 import { styled, keyframes } from '@mui/material/styles';
 
-// ─── Colors ───
 export const PRIMARY = '#6c5ce7';
 export const PRIMARY_GREEN = '#27ae60';
 export const PRIMARY_LIGHT = '#f0eefa';
@@ -10,8 +9,6 @@ export const TEXT = '#333';
 export const TEXT_LIGHT = '#888';
 export const BORDER = '#e0e0e0';
 export const BG_INPUT = '#fafafa';
-
-// ─── Layout ───
 
 export const PageContainer = styled('div')({
   minHeight: '100dvh',
@@ -86,8 +83,6 @@ export const HeaderActions = styled('div')({
   gap: 8,
 });
 
-// ─── Form ───
-
 export const Form = styled('form')({
   display: 'flex',
   flexDirection: 'column',
@@ -114,8 +109,6 @@ export const Input = styled('input')({
     color: '#bbb',
   },
 });
-
-// ─── Buttons ───
 
 export const PrimaryButton = styled('button')({
   width: '100%',
@@ -171,7 +164,6 @@ export const IconButton = styled('button')({
   },
 });
 
-/** Uniform 36×36 touch target for sticky headers (help, exit, mute, leaderboard, …). */
 export const HeaderActionIconButton = styled('button')({
   width: 36,
   height: 36,
@@ -191,7 +183,6 @@ export const HeaderActionIconButton = styled('button')({
   WebkitTapHighlightColor: 'transparent',
 });
 
-/** Single dark-header style: same border, fill, and hover for help / exit / mute / trophy / hint. */
 export const DarkHeaderActionIconButton = styled(HeaderActionIconButton, {
   shouldForwardProp: (prop) => prop !== 'iconColor',
 })<{ iconColor?: string }>(({ iconColor }) => ({
@@ -209,13 +200,6 @@ export const DarkHeaderActionIconButton = styled(HeaderActionIconButton, {
   },
 }));
 
-/**
- * Puzzle session header: **dark icons** on light pill, black outline (mint/light bg).
- *
- * Filters `iconColor` like its sibling above: callers pass the same props to
- * either variant, and without this the prop reached the DOM and React logged
- * "does not recognize the `iconColor` prop on a DOM element".
- */
 export const PuzzleDarkHeaderActionIconButton = styled(HeaderActionIconButton, {
   shouldForwardProp: (prop) => prop !== 'iconColor',
 })<{ iconColor?: string }>({
@@ -235,7 +219,6 @@ export const PuzzleDarkHeaderActionIconButton = styled(HeaderActionIconButton, {
   },
 });
 
-/** Text control — matches puzzle icon pills. */
 export const PuzzleDarkHeaderTextButton = styled('button')({
   margin: 0,
   minHeight: 36,
@@ -268,7 +251,6 @@ export const PuzzleDarkHeaderTextButton = styled('button')({
   },
 });
 
-/** Text action on the same dark header row — matches `DarkHeaderActionIconButton` border and height. */
 export const DarkHeaderTextButton = styled('button')({
   margin: 0,
   minHeight: 36,
@@ -298,8 +280,6 @@ export const DarkHeaderTextButton = styled('button')({
     background: 'rgba(255,255,255,0.2)',
   },
 });
-
-// ─── Typography ───
 
 export const Logo = styled('h1')({
   fontSize: 48,
@@ -339,8 +319,6 @@ export const AccentText = styled('span')({
   fontSize: 16,
   color: PRIMARY,
 });
-
-// ─── Admin Layout ───
 
 export const AdminPage = styled('div')({
   minHeight: '100vh',
@@ -440,8 +418,6 @@ export const Table = styled('table')({
     },
   },
 });
-
-// ─── Selection Group ───
 
 export const SelectionGroup = styled('div')({
   display: 'flex',
@@ -543,8 +519,6 @@ export const ConfirmButton = styled('button')({
 });
 
 
-// ─── Tabs ───
-
 export const TabBar = styled('div')({
   display: 'flex',
   gap: 0,
@@ -574,8 +548,6 @@ export const Tab = styled('button')<{ active?: boolean }>(({ active }) => ({
     fontSize: 14,
   },
 }));
-
-// ─── Segmented Control ───
 
 export const SegmentedControl = styled('div')({
   display: 'inline-flex',
@@ -624,8 +596,6 @@ export const SegmentedButton = styled('button')<{ active?: boolean }>(({ active 
   },
 }));
 
-// ─── Game Sub-Tabs (connected segmented bar) ───
-
 export const GameTabBar = styled('div')({
   display: 'flex',
   justifyContent: 'center',
@@ -671,8 +641,6 @@ export const GameTab = styled('button')<{ active?: boolean }>(({ active }) => ({
   },
 }));
 
-// ─── Chip / Tag ───
-
 export const Chip = styled('span')({
   display: 'inline-block',
   padding: '3px 9px',
@@ -683,8 +651,6 @@ export const Chip = styled('span')({
   color: '#7a7391',
   letterSpacing: 0.2,
 });
-
-// ─── Status Badge ───
 
 export const StatusBadge = styled('span')<{ status?: 'preview' | 'live' }>(({ status }) => ({
   display: 'inline-block',
@@ -697,8 +663,6 @@ export const StatusBadge = styled('span')<{ status?: 'preview' | 'live' }>(({ st
   color: status === 'live' ? '#22803c' : '#c9670a',
   border: `1px solid ${status === 'live' ? '#c9e9d1' : '#f7dfbd'}`,
 }));
-
-// ─── Modal Overlay ───
 
 export const ModalOverlay = styled('div')({
   position: 'fixed',
@@ -721,8 +685,6 @@ export const ModalCard = styled('div')({
   boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
   textAlign: 'center',
 });
-
-// ─── Divider ───
 
 export const Divider = styled('div')({
   display: 'flex',
@@ -767,8 +729,6 @@ export const GoogleButton = styled('button')({
   },
 });
 
-// ─── Positioning ───
-
 export const TopEndCorner = styled('div')({
   position: 'absolute',
   top: 16,
@@ -789,8 +749,6 @@ export const CenteredContent = styled('div')({
     marginInline: 'auto',
   },
 });
-
-// ─── Mobile Helpers ───
 
 export const HideOnDesktop = styled('div')({
   display: 'none',

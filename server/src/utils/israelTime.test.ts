@@ -2,16 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { israelDayRange, israelDayString, isIsraelDayString, israelDayFromDdMmYyyy, israelHour, israelDayOfWeek } from './israelTime';
 
-/** A day window must start and end on that day's own Israel midnight. */
 test('covers exactly one Israel calendar day', () => {
   const { start, end } = israelDayRange('2026-09-07');
   assert.equal(israelDayString(start), '2026-09-07');
   assert.equal(israelDayString(new Date(end.getTime() - 1)), '2026-09-07');
-  // The exclusive bound already belongs to the next day.
   assert.equal(israelDayString(end), '2026-09-08');
 });
 
-/** Winter is UTC+2, summer UTC+3 — both must still land on midnight. */
 test('holds across the DST boundary', () => {
   for (const day of ['2026-01-15', '2026-07-15', '2026-03-27', '2026-10-25']) {
     const { start, end } = israelDayRange(day);
@@ -22,7 +19,6 @@ test('holds across the DST boundary', () => {
   }
 });
 
-/** The registration API takes a caller-supplied day — it must reject junk. */
 test('isIsraelDayString accepts real days and rejects the rest', () => {
   assert.equal(isIsraelDayString('2026-09-07'), true);
   assert.equal(isIsraelDayString('2026-02-30'), false);
@@ -31,7 +27,6 @@ test('isIsraelDayString accepts real days and rejects the rest', () => {
   assert.equal(isIsraelDayString(''), false);
 });
 
-/** The public API takes DD-MM-YYYY; everything internal is YYYY-MM-DD. */
 test('israelDayFromDdMmYyyy converts and rejects junk', () => {
   assert.equal(israelDayFromDdMmYyyy('08-09-2026'), '2026-09-08');
   assert.equal(israelDayFromDdMmYyyy(' 31-12-2026 '), '2026-12-31');
@@ -41,15 +36,13 @@ test('israelDayFromDdMmYyyy converts and rejects junk', () => {
   assert.equal(israelDayFromDdMmYyyy(''), null);
 });
 
-/** The scheduled-report cron reads the wall-clock hour, across the DST offset change. */
 test('israelHour reads the Israel wall-clock hour, including the midnight quirk', () => {
-  assert.equal(israelHour(new Date('2026-01-15T10:00:00Z')), 12); // winter, UTC+2
-  assert.equal(israelHour(new Date('2026-07-15T10:00:00Z')), 13); // summer, UTC+3
-  assert.equal(israelHour(new Date('2026-01-14T22:00:00Z')), 0); // Israel midnight, not "24"
+  assert.equal(israelHour(new Date('2026-01-15T10:00:00Z')), 12);
+  assert.equal(israelHour(new Date('2026-07-15T10:00:00Z')), 13);
+  assert.equal(israelHour(new Date('2026-01-14T22:00:00Z')), 0);
 });
 
-/** dayOfWeek in scheduledReport is 0 = Sunday, matching Date#getDay(). */
 test('israelDayOfWeek matches the Israel calendar day, 0 = Sunday', () => {
-  assert.equal(israelDayOfWeek(new Date('2026-01-15T10:00:00Z')), 4); // Thursday
-  assert.equal(israelDayOfWeek(new Date('2026-09-07T10:00:00Z')), 1); // Monday
+  assert.equal(israelDayOfWeek(new Date('2026-01-15T10:00:00Z')), 4);
+  assert.equal(israelDayOfWeek(new Date('2026-09-07T10:00:00Z')), 1);
 });

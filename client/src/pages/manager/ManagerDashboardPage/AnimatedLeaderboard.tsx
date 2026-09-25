@@ -1,40 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 
-// ─── Types ───
-
 export interface LeaderboardRow {
   id: string;
   name: string;
   score: number;
-  /** Optional secondary line under the name (email/phone/group) */
   meta?: string;
-  /** Optional group badge text */
   group?: string;
 }
 
 interface Props {
   rows: LeaderboardRow[];
-  /** When true, gold badges are shown for ranks 1–3 */
   highlightTop?: boolean;
-  /** Localized empty-state text */
   emptyText: string;
 }
-
-// ─── Constants ───
 
 const ROW_HEIGHT = 64;
 const ROW_GAP = 8;
 const ANIM_MS = 600;
 
-// ─── Animations ───
-
 const flashIn = keyframes`
   0%   { background: rgba(108,92,231,0.22); }
   100% { background: rgba(255,255,255,1); }
 `;
-
-// ─── Styled ───
 
 const Frame = styled('div')<{ count: number }>(({ count }) => ({
   position: 'relative',
@@ -137,14 +125,11 @@ const Empty = styled('div')({
   border: '1px solid #ece8f0',
 });
 
-// ─── Component ───
-
 export default function AnimatedLeaderboard({ rows, highlightTop = true, emptyText }: Props) {
   const prevScoreRef = useRef<Record<string, number>>({});
   const [bumping, setBumping] = useState<Record<string, boolean>>({});
   const [flashing, setFlashing] = useState<Record<string, boolean>>({});
 
-  // Detect score changes (bump score, flash row)
   useEffect(() => {
     const prev = prevScoreRef.current;
     const changes: string[] = [];

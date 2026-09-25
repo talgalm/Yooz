@@ -1,6 +1,5 @@
 export const texts = {
   en: {
-    // Overview
     overview: 'Overview',
     totalParticipants: 'Total Participants',
     completionRate: 'Completion Rate',
@@ -60,15 +59,12 @@ export const texts = {
     readyForClient: 'Ready for client reporting',
     readyForClientBody: 'Completion, score, and player activity are all in a presentable range for a client or boss summary.',
 
-    // Anomaly messages (built client-side from structured data)
     anomalyDropout: '"{item}" has {pct}% drop-off rate',
     anomalySlow: '"{item}" takes {sec}s avg — {mult}x the average',
 
-    // Generic labels
     statusHeader: 'Status',
     station: 'Station',
 
-    // Activity drill-down
     activityAnalytics: 'Activity Analytics',
     overviewTab: 'Overview',
     funnelTab: 'Funnel',
@@ -77,14 +73,12 @@ export const texts = {
     exportTab: 'Export',
     automatedTab: 'Automated Reports',
 
-    // Funnel
     joined: 'Joined',
     started: 'Started Playing',
     halfway: 'Halfway',
     completedStep: 'Completed',
     dropOff: 'drop-off',
 
-    // Items
     itemName: 'Name',
     itemType: 'Type',
     avgItemScore: 'Avg Score (0-100)',
@@ -97,12 +91,10 @@ export const texts = {
     successRate: 'Success Rate',
     avgTime: 'Avg Time',
 
-    // Groups
     group: 'Group',
     members: 'Members',
     noGroups: 'This activity has no group data',
 
-    // Export
     exportExecutive: 'Export Executive Report',
     exportParticipants: 'Export Participants',
     exportScores: 'Export Scores',
@@ -114,7 +106,6 @@ export const texts = {
     downloading: 'Downloading...',
     exportFailed: 'Export failed. Please try again.',
 
-    // Automated reports
     automatedReportsEnable: 'Enable automated reports',
     reportTypeLabel: 'Report Type',
     reportTypeExecutive: 'Executive Report',
@@ -155,7 +146,6 @@ export const texts = {
     automatedReportsSent: 'Sent',
     automatedReportsSendFailed: 'Send failed. Please try again.',
 
-    // Participants roster
     participantsTab: 'Participants',
     included: 'In stats',
     excludeFromStats: 'Include in statistics',
@@ -167,7 +157,6 @@ export const texts = {
     excludeHint: 'Unchecked players are removed from all statistics — the dashboard panels, the Excel exports, and the public share link. Reversible at any time.',
     exclusionSaveFailed: 'Could not save the change. Please try again.',
 
-    // Combined report card
     combinedReport: 'Combined report',
     selectActivities: 'Select activities to combine',
     uniqueParticipants: 'Participants',
@@ -180,12 +169,10 @@ export const texts = {
     combinedReports: 'Reports',
     combinedReportsHint: 'Every download bundles the cross-activity views (report card + all participants) with each selected activity\'s full report.',
 
-    // Pass grade
     passGrade: 'Pass grade',
     passGradeDesc: 'Participants whose normalized score (0-100) is at or above this value count as passing in reports and statistics. Choose None to skip pass/fail entirely.',
     passGradeNone: 'None',
 
-    // Share link
     shareTitle: 'Share statistics page',
     shareDesc: 'Anyone with this link can view this activity\'s statistics and download the reports (including participant names, emails and phone numbers) — with no access to the admin panel.',
     shareCreate: 'Create share link',
@@ -194,11 +181,9 @@ export const texts = {
     shareRegenerate: 'Regenerate',
     shareRevoke: 'Revoke',
 
-    // Alerts
     alerts: 'Alerts',
     noAlerts: 'No anomalies detected',
 
-    // Audit log
     auditLog: 'Admin Audit Log',
     adminEmail: 'Admin',
     action: 'Action',
@@ -207,29 +192,24 @@ export const texts = {
     page: 'Page',
     of: 'of',
 
-    // Score distribution
     scoreDistribution: 'Score Distribution',
     scores: 'Scores',
     count: 'Count',
 
-    // Share stats
     periodSpecificDay: 'Specific day',
     shareClicks: 'Share Clicks',
     shareCompleted: 'Actual Shares',
 
-    // Mission stats
     missionStats: 'Mission Stats',
     puzzleCompletions: 'Puzzle Completions',
     avgPuzzleDuration: 'Avg Puzzle Time',
     trashSortCompletions: 'Trash Sort Completions',
     avgTrashSortScore: 'Avg Trash Sort Score',
 
-    // Duration formatting
     seconds: 's',
     minutes: 'm',
   },
   he: {
-    // Overview
     overview: 'סקירה',
     totalParticipants: 'סה״כ משתתפים',
     completionRate: 'אחוז סיום',
@@ -289,15 +269,12 @@ export const texts = {
     readyForClient: 'מוכן לדוח לקוח',
     readyForClientBody: 'ההשלמה, הציונים ופעילות השחקנים נמצאים בטווח שניתן להציג ללקוח או מנהל.',
 
-    // Anomaly messages (built client-side from structured data)
     anomalyDropout: '"{item}" עם {pct}% נשירה',
     anomalySlow: '"{item}" אורכת {sec} שניות בממוצע — פי {mult} מהממוצע',
 
-    // Generic labels
     statusHeader: 'סטטוס',
     station: 'תחנה',
 
-    // Activity drill-down
     activityAnalytics: 'ניתוח פעילות',
     overviewTab: 'סקירה',
     funnelTab: 'משפך',
@@ -306,14 +283,12 @@ export const texts = {
     exportTab: 'ייצוא',
     automatedTab: 'דוחות אוטומטיים',
 
-    // Funnel
     joined: 'הצטרפו',
     started: 'התחילו לשחק',
     halfway: 'הגיעו לאמצע',
     completedStep: 'סיימו',
     dropOff: 'נטישה',
 
-    // Items
     itemName: 'שם',
     itemType: 'סוג',
     avgItemScore: 'ציון ממוצע (0-100)',
@@ -326,12 +301,10 @@ export const texts = {
     successRate: 'אחוז הצלחה',
     avgTime: 'זמן ממוצע',
 
-    // Groups
     group: 'קבוצה',
     members: 'חברים',
     noGroups: 'לפעילות זו אין נתוני קבוצות',
 
-    // Export
     exportExecutive: 'ייצוא דוח מנהלים מלא',
     exportParticipants: 'ייצוא משתתפים',
     exportScores: 'ייצוא ציונים',
@@ -343,7 +316,6 @@ export const texts = {
     downloading: 'מוריד...',
     exportFailed: 'הייצוא נכשל. נסה שוב.',
 
-    // Automated reports
     automatedReportsEnable: 'הפעל דוחות אוטומטיים',
     reportTypeLabel: 'סוג דוח',
     reportTypeExecutive: 'דוח מנהלים מלא',
@@ -384,7 +356,6 @@ export const texts = {
     automatedReportsSent: 'נשלח',
     automatedReportsSendFailed: 'השליחה נכשלה. נסה/י שוב.',
 
-    // Participants roster
     participantsTab: 'משתתפים',
     included: 'בסטטיסטיקה',
     excludeFromStats: 'כלול בסטטיסטיקה',
@@ -396,7 +367,6 @@ export const texts = {
     excludeHint: 'שחקנים שאינם מסומנים מוסרים מכל הסטטיסטיקות — מהפאנלים בלוח הבקרה, מקובצי האקסל ומקישור השיתוף הציבורי. ניתן לבטל בכל רגע.',
     exclusionSaveFailed: 'לא ניתן לשמור את השינוי. נסה שוב.',
 
-    // Combined report card
     combinedReport: 'דוח משולב',
     selectActivities: 'בחר פעילויות לדוח משולב',
     uniqueParticipants: 'משתתפים',
@@ -409,12 +379,10 @@ export const texts = {
     combinedReports: 'דוחות',
     combinedReportsHint: 'כל הורדה כוללת את התצוגות החוצות-פעילויות (גליון ציונים + כל המשתתפים) יחד עם הדוח המלא של כל פעילות שנבחרה.',
 
-    // Pass grade
     passGrade: 'ציון מעבר',
     passGradeDesc: 'משתתפים שהציון המנורמל שלהם (0-100) שווה לערך הזה או גבוה ממנו ייחשבו כעוברים בדוחות ובסטטיסטיקות. בחירה ב"ללא" מבטלת את חישוב העובר/נכשל.',
     passGradeNone: 'ללא',
 
-    // Share link
     shareTitle: 'שיתוף דף הסטטיסטיקה',
     shareDesc: 'כל מי שיש לו את הקישור יכול לצפות בסטטיסטיקה של הפעילות ולהוריד את הדוחות (כולל שמות, אימיילים וטלפונים של המשתתפים) — ללא גישה לפאנל הניהול.',
     shareCreate: 'צור קישור שיתוף',
@@ -423,11 +391,9 @@ export const texts = {
     shareRegenerate: 'צור מחדש',
     shareRevoke: 'בטל קישור',
 
-    // Alerts
     alerts: 'התראות',
     noAlerts: 'לא זוהו חריגות',
 
-    // Audit log
     auditLog: 'יומן פעולות מנהל',
     adminEmail: 'מנהל',
     action: 'פעולה',
@@ -436,42 +402,25 @@ export const texts = {
     page: 'עמוד',
     of: 'מתוך',
 
-    // Score distribution
     scoreDistribution: 'התפלגות ציונים',
     scores: 'ציונים',
     count: 'כמות',
 
-    // Share stats
     periodSpecificDay: 'יום מסוים',
     shareClicks: 'לחיצות שיתוף',
     shareCompleted: 'שיתופים בפועל',
 
-    // Mission stats
     missionStats: 'נתוני משימה',
     puzzleCompletions: 'השלמות פאזל',
     avgPuzzleDuration: 'זמן פאזל ממוצע',
     trashSortCompletions: 'השלמות מיון פסולת',
     avgTrashSortScore: 'ציון מיון ממוצע',
 
-    // Duration formatting
     seconds: 'שניות',
     minutes: 'דקות',
   },
 };
 
-// A preview of what each automated-report type's Excel actually looks like — one section
-// per real sheet the export produces, each with its FULL real column list (every header
-// exactly as defined in server/src/utils/analyticsExcelExport.ts, nothing left out) and 1-2
-// fabricated sample rows for illustration only. Sections and their sheet order mirror
-// addActivityReportSheets' per-exportType dispatch exactly (excluding the order-survey /
-// feedback sheets, which only appear conditionally). The scores/progress sheets append one
-// dynamic column per station on top of their fixed columns in the real export (the exact
-// count and station names depend on the activity's module) — illustrated here with two
-// placeholder stations, clearly not a claim about any specific activity's real stations.
-// Kept as a separate export (not part of `texts` above) because that object is also
-// consumed by helpers typed `Record<string, string>` elsewhere (ActivityAnalytics.tsx),
-// which a non-string-valued key here would break. Not translated: the generated Excel
-// file's columns are always Hebrew, regardless of admin UI language.
 export interface ReportPreviewSection {
   sheetName: string;
   columns: string[];

@@ -22,8 +22,6 @@ import {
 } from '../styled';
 import { styled } from '@mui/material/styles';
 
-// ─── Types ───
-
 interface MissionScreen {
   header: string;
   description: string;
@@ -62,15 +60,11 @@ interface MissionData {
   trashSortConfig?: Partial<TrashSortConfig>;
 }
 
-// ─── Preset backgrounds ───
-
 const PRESET_BACKGROUNDS = [
   { key: 'bg1', url: '/images/mission-bg-1.svg', label: 'Park' },
   { key: 'bg23', url: '/images/mission-bg-23.svg', label: 'Suitcase' },
   { key: 'blur', url: '/images/mission-bg-blur.svg', label: 'Blur' },
 ];
-
-// ─── Styled ───
 
 const FormSection = styled('div')({
   marginBottom: 32,
@@ -162,7 +156,6 @@ const RemoveImageBtn = styled('button')({
   '&:hover': { background: '#ffeaea' },
 });
 
-// Background picker
 const BgPickerRow = styled('div')({
   display: 'flex',
   gap: 10,
@@ -230,7 +223,6 @@ const PreviewBox = styled('div')<{ bgUrl?: string }>(({ bgUrl }) => ({
   justifyContent: 'space-between',
   overflow: 'hidden',
   fontFamily: "'Rubik One', sans-serif",
-  // Background layers: background image behind, frame on top
   background: bgUrl
     ? `url(/images/mission-frame.svg) center/cover no-repeat, url(${bgUrl}) center/cover no-repeat, #1a0a2e`
     : `url(/images/mission-frame.svg) center/cover no-repeat, #1a0a2e`,
@@ -281,8 +273,6 @@ const PreviewButton = styled('div')({
   fontFamily: "'Rubik One', sans-serif",
 });
 
-// ─── Default screens ───
-
 const EMPTY_SCREEN: MissionScreen = { header: '', description: '', buttonText: '', image: '', backgroundImage: '' };
 
 const DEFAULT_SCREENS: MissionScreen[] = [
@@ -311,8 +301,6 @@ const DEFAULT_TRASH: TrashSortConfig = {
   continueButton: 'המשך',
 };
 
-// ─── Component ───
-
 export default function AdminMissionConfigPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -329,7 +317,6 @@ export default function AdminMissionConfigPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(isEdit);
 
-  // Load existing mission for edit
   useEffect(() => {
     if (!isEdit) return;
     const load = async () => {
@@ -402,7 +389,6 @@ export default function AdminMissionConfigPage() {
 
     setSaving(true);
     try {
-      // Clean up screens: send fields only if non-empty
       const cleanScreens = screens.map((s) => ({
         header: s.header.trim() || undefined,
         description: s.description.trim() || undefined,
@@ -458,7 +444,6 @@ export default function AdminMissionConfigPage() {
     }
   };
 
-  // Check if a background is a custom upload (not a preset)
   const isCustomBg = (url: string) => {
     if (!url) return false;
     return !PRESET_BACKGROUNDS.some((p) => p.url === url);
@@ -487,7 +472,6 @@ export default function AdminMissionConfigPage() {
         <PageTitle>{isEdit ? t.editTitle : t.createTitle}</PageTitle>
 
         <AdminCard>
-          {/* Basic Info */}
           <FormSection>
             <SectionTitle>{t.basicInfo}</SectionTitle>
             <FieldGroup>
@@ -518,7 +502,6 @@ export default function AdminMissionConfigPage() {
             </FieldGroup>
           </FormSection>
 
-          {/* Explanation Screens (Part 1) */}
           <FormSection>
             <SectionTitle>{t.part1Title}</SectionTitle>
             <SectionLabel style={{ marginBottom: 16 }}>
@@ -536,11 +519,9 @@ export default function AdminMissionConfigPage() {
                   )}
                 </ScreenTitle>
 
-                {/* Background image picker */}
                 <FieldGroup>
                   <SectionLabel>{t.backgroundImage}</SectionLabel>
                   <BgPickerRow>
-                    {/* No background option */}
                     <BgNoneThumb
                       selected={!screen.backgroundImage}
                       onClick={() => updateScreen(index, 'backgroundImage', '')}
@@ -548,7 +529,6 @@ export default function AdminMissionConfigPage() {
                       {t.none}
                     </BgNoneThumb>
 
-                    {/* Preset backgrounds */}
                     {PRESET_BACKGROUNDS.map((preset) => (
                       <BgPresetThumb
                         key={preset.key}
@@ -559,7 +539,6 @@ export default function AdminMissionConfigPage() {
                       />
                     ))}
 
-                    {/* Custom uploaded background */}
                     {isCustomBg(screen.backgroundImage) && (
                       <BgCustomThumb
                         selected
@@ -567,7 +546,6 @@ export default function AdminMissionConfigPage() {
                       />
                     )}
 
-                    {/* Upload custom background */}
                     <FileUploadButton
                       accept="image/*"
                       onUploaded={(url) => updateScreen(index, 'backgroundImage', url)}
@@ -626,7 +604,6 @@ export default function AdminMissionConfigPage() {
                   </ImageRow>
                 </FieldGroup>
 
-                {/* Live preview */}
                 {(screen.header || screen.description || screen.buttonText || screen.image || screen.backgroundImage) && (
                   <PreviewBox bgUrl={screen.backgroundImage || undefined}>
                     <PreviewOverlay src="/images/mission-header.svg" alt="" style={{ top: 0 }} />
@@ -647,7 +624,6 @@ export default function AdminMissionConfigPage() {
             </OutlineButton>
           </FormSection>
 
-          {/* Part 2 — Puzzle */}
           <FormSection>
             <SectionTitle>{t.part2Title}</SectionTitle>
             <SectionLabel style={{ marginBottom: 16 }}>{t.part2Desc}</SectionLabel>
@@ -671,7 +647,6 @@ export default function AdminMissionConfigPage() {
             </FieldGroup>
           </FormSection>
 
-          {/* Part 3 — Trash Sort */}
           <FormSection>
             <SectionTitle>{t.part3Title}</SectionTitle>
             <SectionLabel style={{ marginBottom: 16 }}>{t.part3Desc}</SectionLabel>

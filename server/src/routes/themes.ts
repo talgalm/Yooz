@@ -5,13 +5,11 @@ import { CustomTheme } from '../models';
 
 const router = Router();
 
-// GET /api/admin/themes — list all custom themes
 router.get('/', authenticateAdmin, async (_req: Request, res: Response) => {
   const themes = await CustomTheme.find().sort({ createdAt: -1 }).lean();
   res.json({ themes });
 });
 
-// POST /api/admin/themes — create a new custom theme
 router.post('/', authenticateAdmin, async (req: Request, res: Response) => {
   const {
     name,
@@ -43,7 +41,6 @@ router.post('/', authenticateAdmin, async (req: Request, res: Response) => {
   res.status(201).json({ theme });
 });
 
-// PATCH /api/admin/themes/:id — update a custom theme
 router.patch('/:id', authenticateAdmin, async (req: Request, res: Response) => {
   const existing = await CustomTheme.findById(req.params.id).lean();
   if (!existing || !customerOwnsDoc(req, existing)) {
@@ -85,7 +82,6 @@ router.patch('/:id', authenticateAdmin, async (req: Request, res: Response) => {
   res.json({ theme });
 });
 
-// DELETE /api/admin/themes/:id — delete a custom theme
 router.delete('/:id', authenticateAdmin, async (req: Request, res: Response) => {
   const existing = await CustomTheme.findById(req.params.id).lean();
   if (!existing || !customerOwnsDoc(req, existing)) {

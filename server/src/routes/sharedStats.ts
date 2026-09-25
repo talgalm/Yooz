@@ -18,15 +18,6 @@ import {
   type ExportReport,
 } from '../utils/analyticsExcelExport';
 
-// ─────────────────────────────────────────────────────────────
-// Public, read-only statistics share links.
-//
-// There is NO admin auth here — the unguessable per-activity share token in
-// the URL is the only credential, and it grants read-only access to exactly
-// one activity's statistics (and its Excel exports). No mutation, no other
-// activity, no admin surface.
-// ─────────────────────────────────────────────────────────────
-
 const router = Router();
 
 type ShareActivity = AnalyticsActivity & {
@@ -38,11 +29,8 @@ type ShareActivity = AnalyticsActivity & {
   module?: { type?: string; items?: unknown[] };
 };
 
-// Resolve the :token param to its activity, or send 404.
 async function resolveActivity(req: Request, res: Response): Promise<ShareActivity | null> {
   const token = req.params.token;
-  // Real tokens are 32+ url-safe chars; reject anything that could match a
-  // null/empty stored token.
   if (typeof token !== 'string' || token.length < 16) {
     res.status(404).json({ error: 'Share link not found' });
     return null;

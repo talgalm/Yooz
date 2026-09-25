@@ -368,7 +368,6 @@ interface EnteringTextStationProps {
   stationHintUsed?: boolean;
   onStationHintClick?: () => void;
   hintLabel?: string;
-  /** Called when the participant confirms the "show solution" hint — parent applies the 4-min penalty. */
   onSolutionHintUsed?: () => void;
   solutionHintLabel?: string;
   solutionHintWarning?: string;
@@ -456,7 +455,6 @@ export default function EnteringTextStation({
         JSON.stringify({ attempts, failedRoundCount, solutionHintUsed }),
       );
     } catch {
-      /* best effort */
     }
   }, [attempts, failedRoundCount, solutionHintUsed, sessionStorageKey]);
 
@@ -474,8 +472,6 @@ export default function EnteringTextStation({
   const handleSuccessContinue = isLastStep && onFinishActivity ? onFinishActivity : onContinue;
   const solutionHintConfig = station.settings?.solutionHint as { enabled?: boolean } | undefined;
   const solutionHintEnabled = !!solutionHintConfig?.enabled;
-  // Visibility rule: solution hint enabled AND user has failed at least one
-  // round AND has used the regular hint AND hasn't used solution hint yet.
   const showSolutionHintIcon =
     solutionHintEnabled && failedRoundCount >= 1 && !!stationHintUsed && !solutionHintUsed;
 
@@ -483,7 +479,6 @@ export default function EnteringTextStation({
     if (attempts >= maxAttempts && !showSuccess) {
       setShowRetryPopup(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleBack = () => {
@@ -499,7 +494,6 @@ export default function EnteringTextStation({
     try {
       window.sessionStorage.removeItem(sessionStorageKey);
     } catch {
-      /* best effort */
     }
   };
 
@@ -517,10 +511,8 @@ export default function EnteringTextStation({
   const handleSolutionHintConfirm = () => {
     setShowSolutionHintWarning(false);
     setSolutionHintUsed(true);
-    // Fill each input with the configured rightAnswer.
     setValues(fields.map((f) => (f.rightAnswer || '').toString()));
     setError('');
-    // Apply the 4-minute time penalty via parent.
     if (onSolutionHintUsed) onSolutionHintUsed();
   };
 
@@ -535,7 +527,6 @@ export default function EnteringTextStation({
       img.onload = () => setShowSuccess(true);
       img.onerror = () => setShowSuccess(true);
       img.src = successMediaUrl;
-      // Fallback: show after 3s even if image stalls
       setTimeout(() => setShowSuccess(true), 3000);
     } else {
       setShowSuccess(true);

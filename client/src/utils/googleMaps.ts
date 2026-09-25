@@ -1,10 +1,3 @@
-/**
- * Google Maps JS API loader.
- *
- * Deliberately a script tag and a cached promise rather than an npm wrapper:
- * the API already ships the map, the geocoder and walking directions, and a
- * React binding would only add a dependency on top of the same global.
- */
 import type { LatLng } from './geo';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
@@ -17,7 +10,6 @@ export function isMapsAvailable(): boolean {
 
 let loading: Promise<typeof google.maps> | null = null;
 
-/** Loads the API once per page; every caller shares the same promise. */
 export function loadGoogleMaps(): Promise<typeof google.maps> {
   if (!API_KEY) return Promise.reject(new Error('maps_key_missing'));
   if (window.google?.maps) return Promise.resolve(window.google.maps);
@@ -31,21 +23,12 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
     script.src =
       `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(API_KEY)}` +
       `&loading=async&callback=${CALLBACK}`;
-    // `callback` is the API's own ready signal. The script's `load` event fires
-    // earlier, while `google.maps` is still a stub whose `importLibrary` is not
-    // attached yet -- calling it there throws out of the event handler, leaving
-    // this promise pending forever and every map silently blank.
     (window as unknown as Record<string, () => void>)[CALLBACK] = () => {
       const maps = window.google?.maps;
       if (!maps?.importLibrary) {
         reject(new Error('maps_load_failed'));
         return;
       }
-      // The bootstrap is ready before the individual libraries are attached, so
-      // `new maps.Geocoder()` at this point throws "not a constructor". Awaiting
-      // them puts the classes on the namespace (importLibrary attaches them for
-      // compatibility), so every call site can keep using `new maps.X` instead
-      // of threading library handles around.
       Promise.all([
         maps.importLibrary('maps'),
         maps.importLibrary('marker'),
@@ -56,7 +39,6 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
         .catch(() => reject(new Error('maps_load_failed')));
     };
     script.onerror = () => {
-      // Let a later attempt retry instead of caching the failure forever.
       loading = null;
       script.remove();
       reject(new Error('maps_load_failed'));
@@ -66,7 +48,6 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
   return loading;
 }
 
-/** Address -> coordinates, for the admin station editor. Null when not found. */
 export async function geocodeAddress(address: string): Promise<(LatLng & { address: string }) | null> {
   const maps = await loadGoogleMaps();
   const geocoder = new maps.Geocoder();
@@ -80,6 +61,6 @@ export async function geocodeAddress(address: string): Promise<(LatLng & { addre
       address: best.formatted_address || address,
     };
   } catch {
-    return null; // ZERO_RESULTS rejects rather than returning an empty list
+    return null;
   }
 }

@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert';
 import { normalizePhone } from './phone';
 
-/** Every way a till or a participant might write one Israeli mobile. */
 test('normalizePhone folds Israeli mobile formats to one form', () => {
   const expected = '0501234567';
   for (const raw of [
@@ -17,14 +16,12 @@ test('normalizePhone folds Israeli mobile formats to one form', () => {
     '972501234567',
     '00972501234567',
     '011972501234567',
-    '+9720501234567', // country code glued onto a local number
+    '+9720501234567',
   ]) {
     assert.strictEqual(normalizePhone(raw), expected, raw);
   }
 });
 
-/** Landlines: the local form has an 8-digit subscriber, so a plain
- *  "last 9 digits" rule would get this wrong. */
 test('normalizePhone folds Israeli landline formats', () => {
   for (const raw of ['031234567', '03-123-4567', '+972-3-1234567', '00972 3 1234567']) {
     assert.strictEqual(normalizePhone(raw), '031234567', raw);

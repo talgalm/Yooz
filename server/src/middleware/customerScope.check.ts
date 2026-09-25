@@ -1,10 +1,3 @@
-/**
- * Standalone self-check for customerMongoFilter (customer role → activity scope).
- * No test framework — run it directly:  npx tsx server/src/middleware/customerScope.check.ts
- *
- * Guards the case-insensitive managerEmail match: managerEmail is stored as typed,
- * so an exact-match filter silently hid managed activities (and their stats).
- */
 import assert from 'assert';
 import { Request } from 'express';
 import { customerMongoFilter } from './customerScope';

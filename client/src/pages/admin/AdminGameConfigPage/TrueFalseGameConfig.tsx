@@ -53,7 +53,6 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
     const [showCountdown, setShowCountdown] = useState(true);
     const [feedbackDurationMs, setFeedbackDurationMs] = useState(1500);
 
-    // Load initial settings
     useEffect(() => {
       if (!initialSettings) return;
       const s = initialSettings;
@@ -121,7 +120,6 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
       },
     }));
 
-    // ─── Statement management ───
     const addTfStatement = () => {
       setTfStatements((prev) => [...prev, { text: '', media: '', isTrue: true }]);
     };
@@ -140,7 +138,6 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
 
     return (
       <>
-        {/* Statements */}
         <div>
           <SectionSubHeaderRow>
             <SectionLabelNoMargin>{t.statements}</SectionLabelNoMargin>
@@ -183,7 +180,6 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
                 />
               </MediaUploadRow>
 
-              {/* True/False toggle */}
               <TruthRow>
                 <InlineSubLabel>
                   {t.markCorrect}:
@@ -201,7 +197,6 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
           ))}
         </div>
 
-        {/* Scoring & Timing */}
         <div>
           <SectionLabel>{t.scoring}</SectionLabel>
           <VerticalStackGap10>

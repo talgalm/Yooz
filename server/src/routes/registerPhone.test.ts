@@ -5,16 +5,9 @@ import type { AddressInfo } from 'node:net';
 import { Activity, PhoneRegistration } from '../models';
 import { israelDayString } from '../utils/israelTime';
 
-// The shared secret is read from config at import time, so it has to be in the
-// environment before the router (and the config it pulls in) is loaded — hence
-// require() here, whose order is guaranteed where a hoisted import's is not.
 process.env.REGISTER_PHONE_KEY = 'test-key';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const activityGroupsRouter: Router = require('./activityGroups').default;
 
-// The route only ever asks Mongo two things — "is there such a user-control
-// activity" and "upsert this registration" — so stubbing both keeps the test
-// on the param handling and off a database.
 let upserted: Record<string, unknown> | null;
 const knownCode = 'ABC123';
 
@@ -73,6 +66,5 @@ test('the shared secret is required, by header or by query param', async () => {
   assert.equal(upserted, null);
   assert.deepEqual(await call('?phone=0501234567', 'wrong-key'), { status: 401, body: { error: 'unauthorized' } });
   assert.equal(upserted, null);
-  // A till that can only fire a bare URL passes it as ?key= instead.
   assert.equal((await call('?phone=0501234567&key=test-key', '')).status, 200);
 });

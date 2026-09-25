@@ -37,7 +37,6 @@ const HeadCell = styled('div')({
   fontSize: 12, fontWeight: 600, color: TEXT_LIGHT,
 });
 
-/** One day. Colour carries "worked / didn't", not another label to read. */
 const DayCell = styled('button')<{ selected?: boolean; today?: boolean; filler?: boolean }>(
   ({ selected, today, filler }) => ({
     background: filler ? '#fbfbfd' : selected ? PRIMARY_LIGHT : '#fff',
@@ -95,11 +94,6 @@ interface Props {
   editable?: boolean;
 }
 
-/**
- * Month calendar + day detail. Replaces the old week strip: people here do not
- * work fixed days, so a month grid is what shows which days were actually
- * worked and which were missed. Pick any day, fill it in.
- */
 export default function MonthSheet({ userId, editable = true }: Props) {
   const t = useTranslations(texts);
   const { version, notify } = useManageTimer();
@@ -148,7 +142,6 @@ export default function MonthSheet({ userId, editable = true }: Props) {
   };
 
   const days = data?.days ?? [];
-  // Blank cells so the 1st lands under its real weekday.
   const leading = days.length > 0 ? new Date(days[0].date).getDay() : 0;
   const todayKey = toDateInput(new Date().toISOString());
   const selectedDay = days.find((d) => toDateInput(d.date) === selected);
@@ -157,7 +150,6 @@ export default function MonthSheet({ userId, editable = true }: Props) {
     <>
       <Toolbar>
         <GhostButton onClick={() => shiftMonth(-1)}>‹</GhostButton>
-        {/* Native month picker — no date library, and it is the OS control people know. */}
         <MonthInput type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} />
         <GhostButton onClick={() => shiftMonth(1)}>›</GhostButton>
         {editable && <Button onClick={() => setAdding(selected)}>{t.addEntry}</Button>}
@@ -193,7 +185,6 @@ export default function MonthSheet({ userId, editable = true }: Props) {
                 </DayCell>
               );
             })}
-            {/* Close the final row, or the grid's border colour shows as a grey gap. */}
             {Array.from({ length: (7 - ((leading + days.length) % 7)) % 7 }, (_, i) => (
               <DayCell key={`tail-${i}`} filler disabled />
             ))}

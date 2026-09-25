@@ -62,8 +62,6 @@ import PlayingPhase from './PlayingPhase';
 import { useLockStream } from '../../hooks/useLockStream';
 import { useWakeLock } from '../../hooks/useWakeLock';
 
-// ─── Local styled components (only those used in this file) ───
-
 const PageShell = styled('div')<{ shellColor?: string }>(({ shellColor }) => ({
   minHeight: '100dvh',
   background: shellColor || '#9cd060',
@@ -88,7 +86,6 @@ const ORDER_BROWSER_ORANGE = '#ce6b42';
 const GOLF_BROWSER_GREEN = '#355a24';
 const BALL_BROWSER_BLUE = '#7ec7e1';
 
-/** Rounded square — reference purple, dark ring, glossy top (no drop shadow) */
 const PopupDismissButton = styled('button')({
   position: 'relative',
   boxSizing: 'border-box',
@@ -255,7 +252,6 @@ const SceneTransitionOverlay = styled('div')<{ stage: 'closing' | 'opening'; tra
     : `${sceneTransitionOpen} 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards`,
 }));
 
-// ─── Session persistence ───
 const ENTRY_TRANSITION_CLOSE_MS = 320;
 const ENTRY_TRANSITION_OPEN_MS = 480;
 
@@ -271,18 +267,11 @@ export default function StoryModulePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const hasModuleData = useRef(false);
-  // Live manager-controlled progress lock (SSE). Initial value comes from the
-  // module fetch; SSE updates override it as soon as the manager toggles.
   const lockedFromIndex = useLockStream(code, data?.lockedFromIndex ?? null);
-  // Map modules: shared group progress + GPS. Inert for every other module type.
-  // The shared run is group state, so a solo map activity has none — it still
-  // walks the map, it just advances sequentially like any other module.
   const isMap = data?.module?.type === 'map';
   const isGroupMap = isMap && !!participant?.group;
   const mapRun = useMapRun(code || '', isGroupMap);
 
-  // Keep the screen awake for the whole activity session — a locked screen can
-  // get the tab discarded on mobile (Samsung Internet), losing mid-game state.
   useWakeLock(true);
   const { nudge: nudgeHelp } = useHelpChat();
 
@@ -292,13 +281,9 @@ export default function StoryModulePage() {
 
   const [phase, setPhase] = useState<Phase>('roadmap');
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
-  /** Set while re-entering an already-completed item (module item flagged
-   *  `revisitable`): holds the real progress index to restore on the way out.
-   *  A revisit never persists progress, re-awards points, or advances. */
   const revisitReturnIndex = useRef<number | null>(null);
   const [scores, setScores] = useState<GameScore[]>([]);
 
-  // Keep the help chatbot aware of where the participant is right now.
   useEffect(() => {
     const item = data?.module?.items?.[currentItemIndex];
     setHelpChatActivityContext({
@@ -330,69 +315,47 @@ export default function StoryModulePage() {
   })());
   const itemStartTime = useRef(Date.now());
 
-  // Guidelines popup (shown once on first roadmap entry)
   const [showGuidelines, setShowGuidelines] = useState(true);
-  // Guidelines must wait for the server progress check — otherwise a participant
-  // who already started on another device sees them flash before my-progress
-  // comes back and hides them.
   const [progressChecked, setProgressChecked] = useState(false);
   const hasProcessedEntry = useRef(false);
 
-  // Spiders mode: track which items have been completed (any order)
   const [completedSpiderItems, setCompletedSpiderItems] = useState<Set<number>>(new Set());
 
-  // Station hint
   const [stationHintUsed, setStationHintUsed] = useState<Set<number>>(new Set());
   const [showStationHintWarning, setShowStationHintWarning] = useState(false);
   const [showStationHintText, setShowStationHintText] = useState(false);
   const stationHintPenalty = GAME_CONSTANTS.HINT_PENALTY;
 
-  // Popup messages
   const [popupQueue, setPopupQueue] = useState<PopupData[]>([]);
   const [currentPopup, setCurrentPopup] = useState<PopupData | null>(null);
   const shownPopupIds = useRef<Set<string>>(new Set());
   const pendingAction = useRef<(() => void) | null>(null);
-  /** After completing a step (not the last), show afterItem popups only once the roadmap is visible and footsteps finished */
   const pendingAfterItemPopupRef = useRef<number | null>(null);
 
-  // Finish page state
   const [countdown, setCountdown] = useState<number | null>(90);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Once the user presses "Stay Here", the auto-exit countdown is permanently
-  // disabled for this finish-screen visit (re-armed only when leaving and
-  // returning via leaderboard, which clears this ref).
   const userStayedRef = useRef(false);
-  // Locked at the instant phase becomes 'finish' so the displayed time matches
-  // what's posted to the leaderboard (and doesn't keep ticking on screen).
   const [finalDurationMs, setFinalDurationMs] = useState<number | null>(null);
 
-  // Leaderboard state
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [groupLeaderboard, setGroupLeaderboard] = useState<GroupLeaderboardEntry[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
-  // Live timer for time-mode leaderboard
   const [elapsedSeconds, setElapsedSeconds] = useState(() =>
     Math.floor((Date.now() - sessionStartedAt.current) / 1000)
   );
   const [showTimeWarning, setShowTimeWarning] = useState(false);
   const timeWarningShown = useRef(false);
-  // 'time' AND 'both' modes show a live timer in the header — both need the
-  // setInterval driving elapsedSeconds. ('both' also shows points alongside.)
   const isTimeMode = data?.leaderboardMode === 'time';
   const showsTimer = isTimeMode || data?.leaderboardMode === 'both';
-  // The cosmetic roadmap timer also needs the elapsed clock ticking, regardless
-  // of leaderboard mode.
   const hasRoadmapTimer = (data?.roadmapTimerMinutes ?? 0) > 0;
   const needsElapsedTimer = showsTimer || hasRoadmapTimer;
   useEffect(() => {
     if (!needsElapsedTimer) return;
-    if (phase === 'finish') return; // lock final time once activity ends
+    if (phase === 'finish') return;
     const id = setInterval(() => {
       const secs = Math.floor((Date.now() - sessionStartedAt.current) / 1000);
       setElapsedSeconds(secs);
-      // The 1-minute warning popup belongs only to the real leaderboard time limit,
-      // not the cosmetic roadmap timer.
       const limitMins = data?.activityDurationMinutes;
       if (
         showsTimer
@@ -409,18 +372,14 @@ export default function StoryModulePage() {
   }, [needsElapsedTimer, showsTimer, data?.activityDurationMinutes, phase]);
   const [ballGameMuted, setBallGameMuted] = useState(false);
 
-  /** Roadmap header: animate points from → to after a game (ATM-style tally). */
   const [pointsRoll, setPointsRoll] = useState<{ from: number; to: number } | null>(null);
 
   const handlePointsRollComplete = useCallback(() => {
     setPointsRoll(null);
   }, []);
 
-  // ─── Session persistence ───
-  // Must be STATE (not ref) so the save effect only runs after restored values are in state
   const [sessionRestored, setSessionRestored] = useState(false);
 
-  // Restore session on mount
   useEffect(() => {
     if (!code) return;
     const raw = loadStorySessionRaw(code);
@@ -457,7 +416,6 @@ export default function StoryModulePage() {
     if (phase !== 'roadmap') setPointsRoll(null);
   }, [phase]);
 
-  // Save session on state changes — only after restore is complete
   useEffect(() => {
     if (!code || !sessionRestored) return;
     const session = {
@@ -543,8 +501,6 @@ export default function StoryModulePage() {
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
       if (err instanceof Error && err.message === 'group_not_ready') {
-        // Only kick to login on the initial load — a background refetch must not
-        // eject the participant mid-activity when the connection flickers.
         if (opts?.soft && hasModuleData.current) return;
         navigate(participantPlayPath(code), { replace: true });
         return;
@@ -573,7 +529,6 @@ export default function StoryModulePage() {
     return () => controller.abort();
   }, [code, fetchModule]);
 
-  // Silently retry module load while the error screen is visible (no UI change).
   useEffect(() => {
     if (!error || !code) return;
     const id = setInterval(() => {
@@ -583,7 +538,6 @@ export default function StoryModulePage() {
     return () => clearInterval(id);
   }, [error, code, fetchModule]);
 
-  // Refetch module content when the tab regains visibility (catches edits made in other tabs)
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
@@ -594,17 +548,11 @@ export default function StoryModulePage() {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [fetchModule]);
 
-  // Priority media prefetch: current station + next two, then background rest.
   useEffect(() => {
     if (!data) return;
     preloadActivityMedia(data, { priorityIndex: currentItemIndex });
   }, [data, currentItemIndex]);
 
-  // The server save is the source of truth. On every mount/refresh, pull the
-  // saved progress and adopt it; the local sessionStorage session (restored
-  // above) is only a fast-paint fallback used when the server has no progress
-  // yet. This is what makes a refreshed desktop tab jump to the station the
-  // participant advanced to on their phone.
   useEffect(() => {
     if (!sessionRestored || !data || !code) return;
     apiFetch<{
@@ -633,9 +581,8 @@ export default function StoryModulePage() {
           }
           setShowGuidelines(false);
         }
-        // No server progress → keep the restored local session as-is.
       })
-      .catch(() => { /* offline / fresh start → keep local session */ })
+      .catch(() => { })
       .finally(() => setProgressChecked(true));
   }, [sessionRestored, data, code]);
 
@@ -659,7 +606,6 @@ export default function StoryModulePage() {
 
   const handleConfirmExit = useCallback(async () => {
     setShowExitConfirm(false);
-    // Delete report data for continuous activity
     if (code) {
       try {
         const token = localStorage.getItem('yooz_token');
@@ -670,21 +616,19 @@ export default function StoryModulePage() {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
-      } catch { /* best effort */ }
+      } catch { }
     }
     doExit();
   }, [code, doExit]);
 
-  // Lock the final session duration the moment we arrive at the finish screen.
   useEffect(() => {
     if (phase !== 'finish') return;
     setFinalDurationMs((prev) => prev ?? Date.now() - sessionStartedAt.current);
   }, [phase]);
 
-  // Auto-exit countdown for finish page
   useEffect(() => {
     if (phase !== 'finish') return;
-    if (userStayedRef.current) return; // user opted to stay — don't re-arm
+    if (userStayedRef.current) return;
     setCountdown(GAME_CONSTANTS.FINISH_COUNTDOWN_SECONDS);
     countdownRef.current = setInterval(() => {
       setCountdown((prev) => {
@@ -701,7 +645,6 @@ export default function StoryModulePage() {
     };
   }, [phase, handleExit]);
 
-  // Pause countdown when viewing leaderboard
   useEffect(() => {
     if (phase === 'leaderboard' && countdownRef.current) {
       clearInterval(countdownRef.current);
@@ -709,11 +652,9 @@ export default function StoryModulePage() {
     }
   }, [phase]);
 
-  // Resume previous phase when returning from leaderboard
   const handleBackFromLeaderboard = () => {
     const returnTo = preLeaderboardPhase.current;
     setPhase(returnTo);
-    // Only restart countdown if returning to finish AND user hasn't opted to stay
     if (returnTo === 'finish' && !userStayedRef.current) {
       if (countdownRef.current) clearInterval(countdownRef.current);
       countdownRef.current = setInterval(() => {
@@ -729,7 +670,6 @@ export default function StoryModulePage() {
     }
   };
 
-  // Popup helpers
   const getPopupsForTrigger = useCallback((point: string, itemIndex?: number): PopupData[] => {
     if (!data?.module.popups) return [];
     return data.module.popups.filter((p) => {
@@ -769,13 +709,6 @@ export default function StoryModulePage() {
     }
   };
 
-  // iOS Safari can swallow the `click` on the dismiss button even though the tap
-  // lands (iPhone 13): this popup mounts straight off the ball game's focused
-  // iframe, and the Safari toolbar re-expanding reflows the button out from under
-  // the finger between touchstart and touchend — the same failure the ball game's
-  // own finish button hit. `pointerup` survives both, so dismiss on either; the
-  // flag drops the trailing click so one tap never clears two queued popups.
-  // (A keyboard Enter sends no pointerup, so it still dismisses via click.)
   const dismissedByPointerRef = useRef(false);
 
   const handleDismissPointerUp = () => {
@@ -791,7 +724,6 @@ export default function StoryModulePage() {
     dismissPopup();
   };
 
-  // Process afterLogin popups on first data load (replaces welcome screen Start button)
   useEffect(() => {
     if (!data || hasProcessedEntry.current) return;
     hasProcessedEntry.current = true;
@@ -801,13 +733,11 @@ export default function StoryModulePage() {
       afterLoginPopups.forEach((p) => shownPopupIds.current.add(p._id));
       setPopupQueue(afterLoginPopups.slice(1));
       setCurrentPopup(afterLoginPopups[0]);
-      // No pending action — guidelines popup handles the transition
     }
   }, [data, getPopupsForTrigger]);
 
   const handleGuidelinesDismiss = () => {
     setShowGuidelines(false);
-    // Draw the eye to the header ? button now that the guidelines are gone.
     nudgeHelp();
   };
 
@@ -824,14 +754,10 @@ export default function StoryModulePage() {
     if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const completedIdx = currentItemIndex;
 
-    // Map mode: the *group* advances, not the person. Whoever finishes a
-    // station finishes it for the team, so the next target comes back from the
-    // server rather than being computed here — teammates pick it up on their
-    // next poll.
     if (isGroupMap) {
       void mapRun.complete(completedIdx, justScored).then((next) => {
         if (!next) {
-          setPhase('roadmap'); // offline: stay on the map, the poll will catch up
+          setPhase('roadmap');
           return;
         }
         if (next.finished) {
@@ -844,7 +770,6 @@ export default function StoryModulePage() {
       return;
     }
 
-    // Spiders mode: all items can be played in any order, track completed set
     if (data.module.type === 'spiders') {
       const newCompleted = new Set([...completedSpiderItems, completedIdx]);
       setCompletedSpiderItems(newCompleted);
@@ -859,7 +784,6 @@ export default function StoryModulePage() {
       return;
     }
 
-    // Sequential (story) mode
     const nextIdx = completedIdx + 1;
     const isLast = nextIdx >= data.module.items.length;
 
@@ -877,8 +801,6 @@ export default function StoryModulePage() {
     }
   };
 
-  // A teammate completing a station moves the whole group. Only adopt it while
-  // this device is on the map — never yank someone out of a station mid-play.
   useEffect(() => {
     if (!isGroupMap || !mapRun.run || phase !== 'roadmap') return;
     if (mapRun.run.finished) {
@@ -894,10 +816,8 @@ export default function StoryModulePage() {
 
   const handleSpidersNodeTap = (index: number) => {
     if (entryTransitionStage !== 'idle') return;
-    // Manager-controlled progress lock — block opening locked items.
     if (typeof lockedFromIndex === 'number' && index >= lockedFromIndex) return;
 
-    // Block entry to the final station until all others are completed
     if (spidersFinalItemIndex !== -1 && index === spidersFinalItemIndex) {
       const nonFinalCount = data!.module.items.length - 1;
       if (completedSpiderItems.size < nonFinalCount) return;
@@ -923,11 +843,8 @@ export default function StoryModulePage() {
 
   const handleNodeTap = (index: number) => {
     if (entryTransitionStage !== 'idle') return;
-    // Manager-controlled progress lock — block opening locked items.
     if (typeof lockedFromIndex === 'number' && index >= lockedFromIndex) return;
 
-    // Tapping anything other than the current node is a re-entry: only allowed
-    // for completed items the admin marked revisitable.
     if (index !== currentItemIndex) {
       if (index >= currentItemIndex || !data?.module.items[index]?.revisitable) return;
       revisitReturnIndex.current = currentItemIndex;
@@ -970,9 +887,6 @@ export default function StoryModulePage() {
     }
   }, [showPopupsOrRun]);
 
-  // Skip roadmap entirely when there's only 1 station — go directly to playing
-  // immediately (not for spiders, and not for map: a one-station map activity
-  // still has to be walked to, which is the whole point of it).
   const singleItemAutoEntered = useRef(false);
   useEffect(() => {
     if (
@@ -1012,7 +926,6 @@ export default function StoryModulePage() {
       },
     ]);
 
-    // Build IItemResult for incremental progress saving
     const itemResult = {
       itemIndex: currentItemIndex,
       itemId: currentItem._id,
@@ -1038,9 +951,6 @@ export default function StoryModulePage() {
     );
 
     if (code) {
-      // Fire-and-forget: this is a best-effort write that retries for ~a minute and
-      // falls back to the offline queue. Awaiting it made the continue button look
-      // dead whenever the request was slow — match handleOrderSurveyComplete below.
       void apiFetchPersistSilent(`/api/activities/${code}/progress`, {
         method: 'PATCH',
         body: JSON.stringify({
@@ -1134,8 +1044,6 @@ export default function StoryModulePage() {
     setPhase('roadmap');
   };
 
-  /** Triggered by a "last step" station to end the activity immediately,
-   *  skipping any remaining roadmap items and going straight to finish. */
   const handleStationFinishActivity = async () => {
     if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     await saveItemProgress();
@@ -1150,7 +1058,6 @@ export default function StoryModulePage() {
     if (!data) return;
     if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const currentItem = data.module.items[currentItemIndex];
-    // Save feedback answers as part of progress
     const now = new Date();
     const itemResult = {
       itemIndex: currentItemIndex,
@@ -1204,14 +1111,10 @@ export default function StoryModulePage() {
     return { text: hint.text || '', imageUrl: hint.imageUrl || '', free: !!hint.free };
   };
 
-  // True when the hint configured on the current item is marked "free" — no
-  // point penalty, no confirmation, and (in time mode) no 4-minute time penalty.
   const isCurrentStationHintFree = (): boolean =>
     !!(data && getStationHint(data.module.items[currentItemIndex])?.free);
 
   const handleStationHintClick = () => {
-    // Free hints skip the cost warning and never enter `stationHintUsed`, so no
-    // point/time penalty is applied — clicking just reveals the clue.
     if (isCurrentStationHintFree()) {
       setShowStationHintText(true);
       return;
@@ -1223,8 +1126,6 @@ export default function StoryModulePage() {
     setShowStationHintWarning(true);
   };
 
-  // Push the session start backward to apply a time penalty. Persisted so it
-  // survives reload (the activities API computes durationMs from this).
   const applyTimePenalty = (penaltyMs: number) => {
     const newStart = sessionStartedAt.current - penaltyMs;
     sessionStartedAt.current = newStart;
@@ -1239,9 +1140,6 @@ export default function StoryModulePage() {
       setShowStationHintText(true);
       return;
     }
-    // Defense in depth: a free hint should never reach this confirm flow (the
-    // warning is skipped in handleStationHintClick), but gate the penalties here
-    // too so the cost can never be charged for a free hint via any future path.
     if (!isCurrentStationHintFree()) {
       setStationHintUsed((prev) => new Set(prev).add(currentItemIndex));
       if (isTimeMode) {
@@ -1251,18 +1149,11 @@ export default function StoryModulePage() {
     setShowStationHintText(true);
   };
 
-  // EnteringText "show solution" hint: costs 4 minutes (regardless of mode —
-  // even in points mode the time is still recorded for the leaderboard), unless
-  // the station's hint is marked free, in which case no time is charged.
   const handleEnteringTextSolutionHintUsed = () => {
     if (isCurrentStationHintFree()) return;
     applyTimePenalty(GAME_CONSTANTS.SOLUTION_HINT_TIME_PENALTY_MS);
   };
 
-  // Persist scores to server when finish phase is reached (with retry).
-  // Always run on entering finish (even when there are no game scores) so the
-  // session is marked completed and sessionDurationMs is saved — required for
-  // the participant to appear on the leaderboard (especially time mode).
   const scoresUrl = code ? `/api/activities/${code}/scores` : '';
   const saveScoresBodyRef = useRef('');
 
@@ -1281,10 +1172,6 @@ export default function StoryModulePage() {
     }
   }, [code, scoresUrl]);
 
-  // True once the scores POST has been seen sitting in the offline queue. The
-  // only way out of that queue is a successful send, so leaving it means the
-  // scores landed — without this the banner stayed up forever after the queue
-  // flushed them, because scoresSaved was left false by the failed attempt.
   const scoresWereQueued = useRef(false);
 
   useEffect(() => {
@@ -1329,7 +1216,6 @@ export default function StoryModulePage() {
     return () => clearInterval(interval);
   }, [phase, code, scores, stationHintUsed, stationHintPenalty, attemptSaveScores]);
 
-  // Fetch leaderboard
   const leaderboardAbortRef = useRef<AbortController | null>(null);
   const fetchLeaderboard = useCallback(async () => {
     if (!code) return;
@@ -1431,8 +1317,6 @@ export default function StoryModulePage() {
     };
   }, [activeThemeTopColor, activeThemeBottomColor]);
 
-  // ─── Loading / Error ───
-
   if (loading) {
     return (
       <PageShell shellColor="#8B2FC9">
@@ -1475,8 +1359,6 @@ export default function StoryModulePage() {
     );
   }
 
-  // ─── Derived values ───
-
   const bgStyle = data.module.backgroundImage
     ? {
         backgroundImage: `url(${data.module.backgroundImage})`,
@@ -1488,7 +1370,6 @@ export default function StoryModulePage() {
   const activityTheme = data.module.theme;
   const transitionBg = getThemeTransitionBackground(activityTheme);
 
-  // 1-minute time warning popup — rendered in every phase so it shows wherever the user is.
   const timeWarningPopup = showTimeWarning ? (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9998,
@@ -1514,7 +1395,6 @@ export default function StoryModulePage() {
     </div>
   ) : null;
 
-  // Popup modal (shared across all phases)
   const popupModal = currentPopup ? (
     <PopupModalOverlay key={currentPopup._id}>
       <PopupModalCard onClick={(e) => e.stopPropagation()}>
@@ -1543,12 +1423,9 @@ export default function StoryModulePage() {
     </PopupModalOverlay>
   ) : null;
 
-  // ─── Phase rendering ───
-
   if (phase === 'roadmap') {
     const isSingleItem = data.module.items.length === 1;
 
-    // Single-item activity (non-spiders): useEffect immediately sets phase to 'playing' — render nothing here
     if (isSingleItem && data.module.type !== 'spiders' && data.module.type !== 'map') return null;
 
     const roadmapTotalPoints = Math.max(
@@ -1556,7 +1433,6 @@ export default function StoryModulePage() {
       scores.reduce((sum, s) => sum + s.score, 0) - stationHintUsed.size * stationHintPenalty,
     );
 
-    // Map module: the roadmap is a real map the team walks.
     if (data.module.type === 'map') {
       return (
         <>
@@ -1588,7 +1464,6 @@ export default function StoryModulePage() {
       );
     }
 
-    // Spiders module: scatter view with free-order item selection
     if (data.module.type === 'spiders') {
       return (
         <>
@@ -1741,7 +1616,6 @@ export default function StoryModulePage() {
     );
   }
 
-  // Summary screen (legacy fallback)
   if (phase === 'summary') {
     const rawTotal = scores.reduce((sum, s) => sum + s.score, 0);
     const totalHintPenalty = stationHintUsed.size * stationHintPenalty;
@@ -1821,8 +1695,6 @@ export default function StoryModulePage() {
     );
   }
 
-  // ─── Playing phase ───
-
   const currentItem = data.module.showItemTitleNumbers
     ? { ...data.module.items[currentItemIndex], name: `${currentItemIndex + 1}. ${data.module.items[currentItemIndex].name}` }
     : data.module.items[currentItemIndex];
@@ -1876,7 +1748,6 @@ export default function StoryModulePage() {
       {entryTransitionStage !== 'idle' && (
         <SceneTransitionOverlay stage={entryTransitionStage} transitionBg={transitionBg} />
       )}
-      {/* Guidelines overlay on top of station — for single-item activities */}
       {showGuidelines && progressChecked && !currentPopup && data.module.items.length === 1 && (
         <GuidelinesPopup
           itemCount={data.module.items.length}
@@ -1889,7 +1760,6 @@ export default function StoryModulePage() {
 
       {timeWarningPopup}
 
-      {/* Exit confirmation for continuous activities */}
       {showExitConfirm && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,

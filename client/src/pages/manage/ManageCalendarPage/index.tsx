@@ -70,12 +70,6 @@ const Legend = styled('div')({
 });
 const LegendItem = styled('span')({ display: 'flex', alignItems: 'center', gap: 6 });
 
-/**
- * Month view over records that already carry a date — task due dates, logged
- * meetings, client follow-ups, project start / target / go-live. The only thing
- * creatable here is a task, and it is a real task (same modal as the tasks page)
- * due on the selected day — there is no calendar-only entity to drift.
- */
 export default function ManageCalendarPage() {
   const t = useTranslations(texts);
   const now = new Date();
@@ -107,7 +101,6 @@ export default function ManageCalendarPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  /** A task opens in place; everything else lives on another page. */
   const openEvent = async (e: CalendarEvent) => {
     if (e.kind !== 'task_due') { navigate(e.href); return; }
     try {
@@ -170,7 +163,6 @@ export default function ManageCalendarPage() {
                 >
                   <DayNum>{i + 1}</DayNum>
                   <Dots>
-                    {/* Cap the dots — a busy day should not blow the row height out. */}
                     {dayEvents.slice(0, 4).map((e, n) => (
                       <Dot key={n} tone={e.color ?? CALENDAR_COLORS[e.kind]} title={e.title} />
                     ))}
@@ -179,7 +171,6 @@ export default function ManageCalendarPage() {
                 </DayCell>
               );
             })}
-            {/* Close the final row, or the grid's border colour shows as a grey gap. */}
             {Array.from({ length: (7 - ((leading + daysInMonth) % 7)) % 7 }, (_, i) => (
               <DayCell key={`tail-${i}`} filler disabled />
             ))}
@@ -198,7 +189,6 @@ export default function ManageCalendarPage() {
             )}
           </DayHead>
           {selectedEvents.length === 0 ? (
-            /* An empty day has one sensible action, so offer it instead of a dead end. */
             <EmptyState>
               <div>{t.nothingOnThisDay}</div>
               <Button style={{ marginTop: 12 }} onClick={() => setCreating(true)}>{t.addTaskThisDay}</Button>

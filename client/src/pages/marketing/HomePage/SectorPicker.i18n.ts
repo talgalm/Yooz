@@ -1,8 +1,3 @@
-/**
- * Only the strings the sector chooser adds. Everything else on the page - hero,
- * logos, testimonials, FAQ - is read from `HomePage.i18n`, and the tile labels
- * from `Nav.i18n`, so they always match the nav.
- */
 export const texts = {
   he: {
     title: 'באיזה מגזר תרצו לשמוע פירוט על הפתרונות?',

@@ -6,7 +6,6 @@ import Reveal from './Reveal';
 
 export interface Customer {
   name: string;
-  /** What the client did with Yooz - the caption under each logo. */
   caption?: string;
   logoUrl?: string;
   linkUrl?: string;
@@ -15,17 +14,10 @@ export interface Customer {
 interface CustomerLogosProps {
   title: string;
   items: Customer[];
-  /** Ground for the band. Home and Business run this on pink. */
   bg?: string;
-  /**
-   * Scroll the row continuously instead of laying it out as a static divided
-   * row, pausing while the pointer is over it. Off by default: Business,
-   * Tourism and Academy share this component and keep the static row.
-   */
   marquee?: boolean;
 }
 
-/** `#RRGGBB` at zero alpha. The `transparent` keyword is `rgba(0,0,0,0)` and greys the gradient's middle. */
 const fadeOut = (hex: string) => {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return 'transparent';
@@ -33,7 +25,6 @@ const fadeOut = (hex: string) => {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, 0)`;
 };
 
-/** Fades to nothing rather than to a named colour, so this need not know what follows it. */
 const Root = styled('section')<{ bg?: string }>(({ bg }) => ({
   background: bg ? `linear-gradient(to bottom, ${bg} 0%, ${bg} 70%, ${fadeOut(bg)} 100%)` : 'transparent',
   paddingBlock: 62,
@@ -48,11 +39,6 @@ const Col = styled('div')({
   gap: 6,
 });
 
-/**
- * Logo and name sizes read custom properties so the marquee can run them larger
- * (see `MarqueeItem`) while the static row keeps the frame's measured sizes as
- * the fallbacks.
- */
 const LogoBox = styled('div')({
   height: 'var(--logo-h, 76px)',
   display: 'flex',
@@ -63,23 +49,15 @@ const LogoBox = styled('div')({
 
 const LogoImg = styled('img')({ maxHeight: 'var(--logo-h, 76px)', maxWidth: '100%', objectFit: 'contain' });
 
-/** Measured: name ink 22px, caption two lines 32px apart at ~20px type. */
 const Name = styled('div')({ fontSize: 'var(--logo-name, 22px)', fontWeight: 800, color: C.heading });
 
 const Caption = styled('div')({ fontSize: 19.5, lineHeight: 1.55, color: C.ink, maxWidth: 250, textWrap: 'balance' });
-
-// ─── Marquee ───
 
 const scrollX = keyframes`
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 `;
 
-/**
- * LTR on purpose: under RTL the overflow runs off the left, so -50% slides the
- * content away instead of looping. Each column centres its own text, so the
- * Hebrew still reads correctly inside.
- */
 const Viewport = styled('div')({
   overflow: 'hidden',
   direction: 'ltr',
@@ -93,26 +71,15 @@ const Track = styled('div', { shouldForwardProp: (p) => p !== 'seconds' })<{ sec
     width: 'max-content',
     animation: `${scrollX} ${seconds}s linear infinite`,
     '&:hover': { animationPlayState: 'paused' },
-    /** Keyboard users get the same pause when a link inside takes focus. */
     '&:focus-within': { animationPlayState: 'paused' },
     [REDUCED_MOTION]: { animation: 'none' },
   }),
 );
 
-/** Desktop cell width. Wide on purpose: with only a handful of clients, a dense row makes the repeat obvious. */
 const MARQUEE_CELL = 300;
 
-/**
- * Pixels per second. Speed is fixed rather than derived from the client count,
- * so a phone and a wide screen scroll at the same calm pace.
- */
 const MARQUEE_SPEED = 25;
 
-/**
- * Fixed width so the two halves measure identically, which the loop depends on.
- * The rule sits on every item - skipping the first, as `DividedRow` does, leaves
- * a gap in the pattern at the seam.
- */
 const MarqueeItem = styled('div')({
   flex: '0 0 auto',
   width: MARQUEE_CELL,
@@ -124,16 +91,6 @@ const MarqueeItem = styled('div')({
   [BP.mobile]: { width: 220, padding: '8px 22px', '--logo-h': '84px', '--logo-name': '21px' },
 });
 
-/**
- * How many times the client list repeats inside ONE half of the marquee track,
- * and how long that half takes to scroll past.
- *
- * The track is two identical halves and the animation slides it by exactly one
- * half, so the loop is only seamless while a half is at least as wide as the
- * viewport - otherwise the trailing edge comes into view and an empty strip
- * opens on the right before the loop resets. Measured, not guessed: the cell
- * width changes at the mobile breakpoint and the viewport changes on resize.
- */
 function useMarqueeLayout(enabled: boolean, count: number) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState({ reps: 1, setWidth: count * MARQUEE_CELL });
@@ -163,7 +120,6 @@ function useMarqueeLayout(enabled: boolean, count: number) {
 
 export default function CustomerLogos({ title, items, bg, marquee }: CustomerLogosProps) {
   const { viewportRef, reps, seconds } = useMarqueeLayout(Boolean(marquee), items.length);
-  /** One half of the track: the list, repeated until it spans the viewport. */
   const half = Array.from({ length: reps }, () => items).flat();
 
   const cell = (c: Customer) => {
@@ -190,16 +146,8 @@ export default function CustomerLogos({ title, items, bg, marquee }: CustomerLog
       </Container>
 
       {marquee ? (
-        /* Full-bleed rather than inside `Container`, so the row runs edge to edge
-           and the mask fades it out instead of stopping at a hard column edge. */
         <Reveal>
           <Viewport ref={viewportRef}>
-            {/* Two identical halves: the animation ends one half along, which is
-                the same frame it started on, so the loop has no visible jump. Each
-                half is the list repeated `reps` times so it always spans the
-                viewport, and its duration comes from its measured length at
-                `MARQUEE_SPEED` (see `useMarqueeLayout`). Only the first copy of
-                the list is exposed to assistive tech. */}
             <Track seconds={seconds}>
               {[...half, ...half].map((c, i) => (
                 <MarqueeItem key={`${c.name}-${i}`} data-marquee-item aria-hidden={i >= items.length}>

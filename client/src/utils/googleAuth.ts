@@ -47,7 +47,6 @@ export function openGooglePopup(): Promise<string> {
           }
         }
       } catch {
-        // Cross-origin — popup is still on Google's domain, keep waiting
       }
     }, 200);
   });

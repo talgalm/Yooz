@@ -13,7 +13,6 @@ const REPORT_TYPE_LABELS: Record<string, string> = {
   progress: 'דוח התקדמות',
 };
 
-/** Deterministic fingerprint of the current report data, for skipIfUnchanged. Exported for testing. */
 export function computeReportsSnapshot(reports: ExportReport[]): string {
   const summary = reports
     .map((r) => `${r.participantName}|${r.completionStatus ?? ''}|${r.data?.totalScore ?? 0}|${r.sessionCompletedAt ?? ''}`)
@@ -22,17 +21,10 @@ export function computeReportsSnapshot(reports: ExportReport[]): string {
   return crypto.createHash('sha256').update(summary).digest('hex');
 }
 
-/** Exported for testing — the same-hour idempotency guard runScheduledReports applies first. */
 export function sameIsraelHour(a: Date, b: Date): boolean {
   return israelDayString(a) === israelDayString(b) && israelHour(a) === israelHour(b);
 }
 
-/**
- * Builds the activity's configured report and emails it to its saved recipients via
- * Resend, then stamps lastSentAt/lastSentSnapshot. The one place that actually sends —
- * used by both the hourly cron (runScheduledReports) and the manual "Send now" admin
- * action, so a test send and a scheduled send always go through the same path.
- */
 export async function sendScheduledReportNow(activity: HydratedDocument<IActivity>): Promise<{ resendId?: string }> {
   const settings = activity.scheduledReport;
   if (!settings) throw new Error('No scheduledReport configured for this activity');
@@ -66,13 +58,6 @@ export async function sendScheduledReportNow(activity: HydratedDocument<IActivit
   return { resendId: data?.id };
 }
 
-/**
- * Hourly sweep, per activity with scheduledReport.enabled: skip unless the Israel hour
- * (and, for weekly, the day) matches scheduleHour/dayOfWeek; skip if already sent within
- * this same Israel hour (idempotency guard — see startScheduledReportsScheduler); skip if
- * skipIfUnchanged and nothing changed since lastSentSnapshot; otherwise send. Does not
- * mutate report data — only reads it and stamps the schedule's own lastSentAt/lastSentSnapshot.
- */
 export async function runScheduledReports(options: { verbose?: boolean } = {}): Promise<number> {
   const { verbose = false } = options;
   const now = new Date();
@@ -87,9 +72,6 @@ export async function runScheduledReports(options: { verbose?: boolean } = {}): 
     const settings = activity.scheduledReport;
     if (!settings) continue;
     try {
-      // Every `continue` below is a real reason to skip — logged only in verbose
-      // mode (the manual check-scheduled-reports.ts script) so the normal 5-min
-      // production poll doesn't spam the log for every not-yet-due activity.
       if (settings.lastSentAt && sameIsraelHour(settings.lastSentAt, now)) {
         if (verbose) console.log(`[scheduledReports] skip ${activity.code}: already sent within this Israel hour (lastSentAt=${settings.lastSentAt.toISOString()})`);
         continue;
@@ -125,18 +107,6 @@ export async function runScheduledReports(options: { verbose?: boolean } = {}): 
 
 const ONE_HOUR_MS = 60 * 60_000;
 
-/**
- * Runs exactly once per hour, aligned to the top of the hour — not a 5-minute
- * poll. Israel's UTC offset is always a whole number of hours (+2/+3), so a UTC
- * hour boundary is always an Israel wall-clock hour boundary too; no timezone
- * math needed for the alignment itself, only for reading *which* hour it is
- * (israelHour, used inside runScheduledReports).
- *
- * Trade-off, chosen deliberately over activityReset.ts's 5-min poll: a single
- * per-hour tick has no self-healing if that exact tick is missed (e.g. a
- * restart landing on the boundary) — it simply waits for the next hour. That's
- * the intentional cost of not running more often than once an hour.
- */
 export function startScheduledReportsScheduler(): void {
   const run = () => runScheduledReports().catch((err) => console.error('[scheduledReports] sweep crashed', err));
   const scheduleNextTick = () => {

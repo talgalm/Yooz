@@ -1,6 +1,5 @@
 export const texts = {
   en: {
-    // Auth
     login: 'Login',
     register: 'Register',
     username: 'Username / Email',
@@ -18,11 +17,9 @@ export const texts = {
     portalNotFound: 'Portal not found',
     loading: 'Loading...',
 
-    // Google sign-in
     googleSignIn: 'Continue with Google',
     or: 'or',
 
-    // Force password change
     changePasswordTitle: 'Change Your Password',
     changePasswordDesc: 'For security, you must set a new password before continuing.',
     newPasswordLabel: 'New Password',
@@ -31,17 +28,14 @@ export const texts = {
     passwordsMismatch: 'Passwords do not match',
     passwordTooShortChange: 'Password must be at least 4 characters',
 
-    // Header
     logout: 'Logout',
     menu: 'Menu',
 
-    // Sidebar
     sidebarActivities: 'Activities',
     sidebarCompetitions: 'Competitions',
     sidebarHistory: 'History',
     sidebarProfile: 'Profile',
 
-    // Activities tab
     activitiesTitle: 'Activities',
     noActivities: 'No activities available right now.',
     play: 'Play',
@@ -49,11 +43,9 @@ export const texts = {
     statusClosed: 'Closed',
     statusInProgress: 'In Progress',
 
-    // Competitions tab
     competitionsTitle: 'Competitions',
     competitionsComingSoon: 'Coming soon...',
 
-    // History tab
     historyTitle: 'History',
     noHistory: 'No activity history yet.',
     score: 'Score',
@@ -72,7 +64,6 @@ export const texts = {
     sortByDate: 'Date',
     sortByScore: 'Best Score',
 
-    // Profile tab
     profileTitle: 'Profile',
     displayName: 'Display Name',
     currentPassword: 'Current Password',
@@ -85,11 +76,9 @@ export const texts = {
     profileSecurityDesc: 'Change your password to keep your account secure.',
     memberSince: 'Member since',
 
-    // Header
     greeting: 'Hey',
   },
   he: {
-    // Auth
     login: 'התחברות',
     register: 'הרשמה',
     username: 'שם משתמש/אימייל',
@@ -107,11 +96,9 @@ export const texts = {
     portalNotFound: 'הפורטל לא נמצא',
     loading: 'טוען...',
 
-    // Google sign-in
     googleSignIn: 'המשך עם Google',
     or: 'או',
 
-    // Force password change
     changePasswordTitle: 'שנו את הסיסמה',
     changePasswordDesc: 'מסיבות אבטחה, יש להגדיר סיסמה חדשה לפני שממשיכים.',
     newPasswordLabel: 'סיסמה חדשה',
@@ -120,17 +107,14 @@ export const texts = {
     passwordsMismatch: 'הסיסמאות לא תואמות',
     passwordTooShortChange: 'הסיסמה חייבת להכיל לפחות 4 תווים',
 
-    // Header
     logout: 'יציאה',
     menu: 'תפריט',
 
-    // Sidebar
     sidebarActivities: 'פעילויות',
     sidebarCompetitions: 'תחרויות',
     sidebarHistory: 'היסטוריה',
     sidebarProfile: 'פרופיל',
 
-    // Activities tab
     activitiesTitle: 'פעילויות',
     noActivities: 'אין פעילויות זמינות כרגע.',
     play: 'שחק',
@@ -138,11 +122,9 @@ export const texts = {
     statusClosed: 'סגור',
     statusInProgress: 'בתהליך',
 
-    // Competitions tab
     competitionsTitle: 'תחרויות',
     competitionsComingSoon: 'בקרוב...',
 
-    // History tab
     historyTitle: 'היסטוריה',
     noHistory: 'אין היסטוריית פעילויות עדיין.',
     score: 'ניקוד',
@@ -161,7 +143,6 @@ export const texts = {
     sortByDate: 'תאריך',
     sortByScore: 'ניקוד הכי גבוה',
 
-    // Profile tab
     profileTitle: 'פרופיל',
     displayName: 'שם תצוגה',
     currentPassword: 'סיסמה נוכחית',
@@ -174,7 +155,6 @@ export const texts = {
     profileSecurityDesc: 'שנו את הסיסמה כדי לשמור על החשבון מאובטח.',
     memberSince: 'חבר מאז',
 
-    // Header
     greeting: 'היי',
   },
 };

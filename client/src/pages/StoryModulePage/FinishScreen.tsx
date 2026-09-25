@@ -5,16 +5,12 @@ import { styled, keyframes } from '@mui/material/styles';
 import { HeaderBar, HeaderActions, AccentText } from '../../components/styled';
 import type { ConfettiPiece } from './types';
 
-// ─── Colors ───
-
 const C_PURPLE_MAIN = '#7c3aed';
 const C_PURPLE_DARK = '#4c1d95';
 const C_PURPLE_LIGHT = '#c4b5fd';
 const C_YELLOW_STAR = '#ffca28';
 const C_BG_TOP = '#5c1a9e';
 const C_BG_BOT = '#1e0050';
-
-// ─── Animations ───
 
 const badgePop = keyframes`
   0% { transform: scale(0); opacity: 0; }
@@ -47,8 +43,6 @@ const sparkle = keyframes`
   0%, 100% { opacity: 0.3; transform: scale(1); }
   50%       { opacity: 0.8; transform: scale(1.4); }
 `;
-
-// ─── Confetti ───
 
 const CONFETTI_COLORS = ['#ffca28', '#ff7043', '#66bb6a', '#42a5f5', '#ab47bc', '#26c6da', '#ffa726', '#ec407a'];
 
@@ -156,8 +150,6 @@ function SparklesBg() {
     </div>
   );
 }
-
-// ─── Styled Components ───
 
 const Content = styled('div')({
   position: 'relative',
@@ -393,8 +385,6 @@ const SaveRetryButton = styled('button')({
   cursor: 'pointer',
 });
 
-// ─── SVG Icons ───
-
 function CheckmarkIcon() {
   return (
     <svg width="48" height="48" viewBox="0 0 48 48">
@@ -422,8 +412,6 @@ function TrophyIcon() {
   );
 }
 
-// ─── Component ───
-
 interface FinishScreenProps {
   activityName: string;
   totalScore: number;
@@ -445,7 +433,6 @@ interface FinishScreenProps {
   t: Record<string, string>;
 }
 
-/** Format milliseconds as m:ss (e.g. 75300 → "1:15") */
 function formatDuration(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const minutes = Math.floor(totalSeconds / 60);
@@ -474,8 +461,6 @@ export default function FinishScreen({
   const isTimeMode = leaderboardMode === 'time';
   const isBothMode = leaderboardMode === 'both';
   const timeDisplay = (isTimeMode || isBothMode) && finalDurationMs != null ? formatDuration(finalDurationMs) : null;
-  // In 'both' mode the badge shows points (matches the leaderboard's primary
-  // sort); the time card still appears in the row of stat cards.
   const badgeShowsTime = isTimeMode && timeDisplay !== null;
   return (
     <PageRoot>

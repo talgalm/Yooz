@@ -81,8 +81,6 @@ export default function AdminSettingsTab({ onLogout }: { onLogout: () => void })
   const displayName = admin?.name || admin?.email || '';
   const initials = displayName.trim().charAt(0).toUpperCase() || '?';
 
-  // Matches LangDrawer: the language is read from storage at boot, so the
-  // switch has to persist and reload rather than just set context state.
   const pickLang = (next: Lang) => {
     if (next === lang) return;
     storeLang(next);

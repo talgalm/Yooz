@@ -59,8 +59,6 @@ import { useAdminAuth } from '../../../context/AdminAuthContext';
 import EditOnly from '../../../components/EditOnly';
 import CollageSplitEditor, { type SplitEditorResult } from './CollageSplitEditor';
 
-// ─── Clean section card with icon ───
-
 const SectionCard = styled('section')({
   display: 'flex',
   flexDirection: 'column',
@@ -118,8 +116,6 @@ const CollapsibleSectionHeader = styled('button')({
   color: 'inherit',
 });
 
-/** Disclosure caret drawn from borders rather than a glyph — points down when
- *  collapsed, up when open. */
 const CollapseChevron = styled('span')<{ expanded?: boolean }>(({ expanded }) => ({
   display: 'inline-block',
   width: 0,
@@ -170,8 +166,6 @@ const TextArea = styled('textarea')({
     background: '#fff',
   },
 });
-
-// ─── Progress rail — plain numbered circles + labels, no icons ───
 
 const ProgressRail = styled('div')({
   display: 'flex',
@@ -225,8 +219,6 @@ const ProgressLabel = styled('span')<{ state: 'done' | 'current' | 'upcoming' }>
   },
 }));
 
-/** Marks a step the admin has already been through that still has something
- *  outstanding — colour only, no glyph. */
 const IssueDot = styled('span')({
   position: 'absolute',
   top: -1,
@@ -274,8 +266,6 @@ const StepNav = styled('div')({
   flexWrap: 'wrap',
 });
 
-// ─── Module type — large text-only selectable cards ───
-
 const ModuleTypeGrid = styled('div')({
   display: 'grid',
   gridTemplateColumns: 'repeat(4, 1fr)',
@@ -316,8 +306,6 @@ const ModuleTypeCardDesc = styled('div')({
   lineHeight: 1.4,
 });
 
-// ─── Review card (final step) ───
-
 const ReviewRow = styled('div')({
   display: 'flex',
   justifyContent: 'space-between',
@@ -336,8 +324,6 @@ const ReviewValue = styled('span')({
   color: '#333',
   textAlign: 'end',
 });
-
-// ─── Validation callouts — color + text, no warning icon ───
 
 const IssueBanner = styled('div')({
   display: 'flex',
@@ -409,8 +395,6 @@ const SmsVarChip = styled('button')({
 });
 
 
-/** Collapsed theme control: current theme as a miniature + its name + Change.
- *  The full gallery lives in ThemePickerModal so the form stays short. */
 const ThemeRow = styled('button')({
   display: 'flex',
   alignItems: 'center',
@@ -451,8 +435,6 @@ const ThemeRowAction = styled('span')({
   color: '#6c5ce7',
 });
 
-/** Sub-block inside a card. Only a block that follows another one draws the
- *  hairline, so it never doubles up with the card header's own rule. */
 const SubBlock = styled('div')({
   display: 'flex',
   flexDirection: 'column',
@@ -499,7 +481,6 @@ export default function AdminCreateActivityPage() {
   const [moduleTheme, setModuleTheme] = useState<string>('');
   const [backgroundImage, setBackgroundImage] = useState('');
   const [selectedItems, setSelectedItems] = useState<ModuleItem[]>([]);
-  // Map modules: per-group visiting order, group name -> permutation of item indices.
   const [groupOrders, setGroupOrders] = useState<Record<string, number[]>>({});
   const [proximityMeters, setProximityMeters] = useState(DEFAULT_PROXIMITY_METERS);
 
@@ -519,7 +500,6 @@ export default function AdminCreateActivityPage() {
   const [helpCategoriesDisabled, setHelpCategoriesDisabled] = useState<string[]>([]);
   const [helpCategoryResponses, setHelpCategoryResponses] = useState<Record<string, string>>({});
   const [helpOtherCategoryEnabled, setHelpOtherCategoryEnabled] = useState(false);
-  // UI-only — never sent to the server, never persisted on the activity.
   const [helpChatSectionExpanded, setHelpChatSectionExpanded] = useState(false);
 
   const [alwaysOpen, setAlwaysOpen] = useState(true);
@@ -553,7 +533,6 @@ export default function AdminCreateActivityPage() {
   const [portalId, setPortalId] = useState('');
   const [portals, setPortals] = useState<{ _id: string; name: string; code: string }[]>([]);
 
-  // Custom themes
   const [customThemes, setCustomThemes] = useState<CustomTheme[]>([]);
   const [themeModalOpen, setThemeModalOpen] = useState(false);
   const [themePickerOpen, setThemePickerOpen] = useState(false);
@@ -567,10 +546,6 @@ export default function AdminCreateActivityPage() {
 
   const [step, setStep] = useState<StepId>(1);
 
-  // Steps the admin has actually been through. An outstanding issue is only
-  // flagged on the rail for one of these, so a fresh form never opens already
-  // scolding you about steps you haven't reached. An activity being edited is
-  // fully "visited" — its problems are worth surfacing straight away.
   const [visitedSteps, setVisitedSteps] = useState<Set<number>>(
     () => new Set(isEditMode ? [1, 2, 3, 4, 5, 6] : [1]),
   );
@@ -578,7 +553,6 @@ export default function AdminCreateActivityPage() {
     setVisitedSteps((prev) => (prev.has(step) ? prev : new Set(prev).add(step)));
   }, [step]);
 
-  // Split-editor popup state: index into selectedItems of the collage being edited.
   const [splitEditorIndex, setSplitEditorIndex] = useState<number | null>(null);
 
   const [error, setError] = useState('');
@@ -586,7 +560,6 @@ export default function AdminCreateActivityPage() {
   const [initialLoading, setInitialLoading] = useState(isEditMode);
   const smsTemplateRef = useRef<HTMLTextAreaElement>(null);
 
-  // Fetch custom themes on mount
   useEffect(() => {
     adminApiFetch<{ themes: CustomTheme[] }>('/api/admin/themes')
       .then((data) => setCustomThemes(data.themes))
@@ -600,11 +573,9 @@ export default function AdminCreateActivityPage() {
       setCustomThemes((prev) => prev.filter((t) => t._id !== id));
       if (moduleTheme === id) setModuleTheme('');
     } catch {
-      // silent
     }
   };
 
-  // Fetch portals list for continuous activity dropdown
   useEffect(() => {
     if (!isContinuous && portals.length === 0) return;
     if (portals.length > 0) return;
@@ -648,7 +619,6 @@ export default function AdminCreateActivityPage() {
           setOpeningUrl(a.opening.url || '');
         }
         if (a.module) {
-          // Legacy mission-type activities are treated as story for editing
           const mType = a.module.type === 'mission' ? 'story' : a.module.type;
           setModuleType(mType as ModuleType);
           setModuleTheme(a.module.theme || '');
@@ -747,10 +717,6 @@ export default function AdminCreateActivityPage() {
       .catch(() => navigate('/admin/dashboard'));
   }, [id, navigate]);
 
-  // Re-fetch each item's underlying game/station data when the window regains
-  // focus. This way, edits made to a game/station in another tab/page show up
-  // here without requiring a manual reload — preserving any unsaved order /
-  // groups / spider config in `selectedItems`.
   useEffect(() => {
     if (!id) return;
     const refreshItems = () => {
@@ -783,7 +749,7 @@ export default function AdminCreateActivityPage() {
               };
             })
           );
-        }).catch(() => { /* silent */ });
+        }).catch(() => { });
         return prev;
       });
     };
@@ -834,9 +800,6 @@ export default function AdminCreateActivityPage() {
 
   const addItem = (item: ModuleItem) => setSelectedItems((prev) => [...prev, item]);
 
-  // Compute the total image limit for a collage station from its settings.
-  // Mode-aware: multiSelect mode uses `multiSelectCount`; otherwise the mission
-  // count. (Taking the max of both can over-count when both fields are set.)
   const getCollageLimit = (settings: Record<string, unknown> | undefined): number => {
     if (!settings) return 1;
     if (settings.multiSelect) {
@@ -850,34 +813,24 @@ export default function AdminCreateActivityPage() {
     return Array.isArray(missions) && missions.length > 0 ? missions.length : 1;
   };
 
-  // Even distribution helper for legacy entries that only stored totalParts.
   const derivePartSizesEvenly = (total: number, parts: number): number[] => {
     const base = Math.floor(total / parts);
     const extras = total % parts;
     return Array.from({ length: parts }, (_, i) => Math.max(1, base + (i < extras ? 1 : 0)));
   };
 
-  // Get the part-sizes array for a group member, falling back to even
-  // distribution if the legacy totalParts shape is present. Also self-heals
-  // when the stored partSizes don't sum to the current limit (e.g. limit was
-  // reduced after the split was saved, or older buggy data) by redistributing
-  // evenly across the same number of parts.
   const getPartSizes = (item: ModuleItem, limit: number): number[] => {
     const split = item.collageSplit;
     if (!split) return [limit];
     if (split.partSizes && split.partSizes.length > 0) {
       const sum = split.partSizes.reduce((a, b) => a + b, 0);
       if (sum === limit) return split.partSizes;
-      // Stale — redistribute over the same number of parts to match the limit.
       return derivePartSizesEvenly(limit, split.partSizes.length);
     }
     if (split.totalParts && split.totalParts > 0) return derivePartSizesEvenly(limit, split.totalParts);
     return [limit];
   };
 
-  // Walk items in order; for every item in `groupId`, overwrite collageSplit
-  // with the new partSizes array and re-assign partIndex sequentially. When
-  // videoPartIndex / photoOrder are provided they are stamped on every member.
   const applyGroupPartSizes = (
     items: ModuleItem[],
     groupId: string,
@@ -901,8 +854,6 @@ export default function AdminCreateActivityPage() {
     });
   };
 
-  // After a split part is removed: merge its allocation into a neighbor so the
-  // total image count is preserved. If only one part remains, clear the split.
   const handleSplitPartRemoved = (items: ModuleItem[], removed: ModuleItem): ModuleItem[] => {
     const split = removed.collageSplit;
     if (!split) return items;
@@ -920,7 +871,6 @@ export default function AdminCreateActivityPage() {
     const removedSize = oldSizes[removedIdx] ?? 1;
     const sizesAfter = oldSizes.filter((_, i) => i !== removedIdx);
     if (sizesAfter.length === 0) return items;
-    // Merge removed's images into the previous part (or the new first if it was first).
     const mergeInto = removedIdx === 0 ? 0 : removedIdx - 1;
     sizesAfter[mergeInto] = (sizesAfter[mergeInto] ?? 0) + removedSize;
     return applyGroupPartSizes(items, groupId, sizesAfter);
@@ -933,18 +883,12 @@ export default function AdminCreateActivityPage() {
     return next;
   });
 
-  // Open the split-editor popup for the collage station at `index`. The editor
-  // shows every part in the same group at once and rebuilds the module items
-  // array on Save (see applySplitEditorResult).
   const openSplitEditor = (index: number) => {
     const target = selectedItems[index];
     if (!target || target.itemType !== 'station' || target.subType !== 'collage') return;
     setSplitEditorIndex(index);
   };
 
-  // Save handler: rebuild the group's module items to match the editor result.
-  // - Adjusts item count to match result.partSizes.length (insert/remove).
-  // - Stamps partSizes / videoPartIndex / photoOrder on every member.
   const applySplitEditorResult = (
     index: number,
     result: { partSizes: number[]; videoPartIndex: number | null; photoOrder: number[] },
@@ -953,26 +897,18 @@ export default function AdminCreateActivityPage() {
       const target = prev[index];
       if (!target || target.itemType !== 'station' || target.subType !== 'collage') return prev;
 
-      // Ensure the group has an id (first time any split is saved on this item).
       const groupId = target.collageSplit?.splitGroupId
         ?? `csg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
       const groupIndices = prev
         .map((it, i) => (it.collageSplit?.splitGroupId === groupId || i === index ? i : -1))
         .filter((i) => i >= 0);
-      // Anchor: where the group starts in the items array. If the item isn't
-      // yet in the group (first split), use its own position as the anchor.
       const anchor = groupIndices[0] ?? index;
       const oldGroupLen = groupIndices.length || 1;
       const newGroupLen = result.partSizes.length;
 
-      // Template item used for any newly-inserted parts — clone the clicked
-      // item (same ref / settings / etc.) and let applyGroupPartSizes assign
-      // a partIndex.
       const template: ModuleItem = { ...target, collageSplit: undefined };
 
-      // Splice in `newGroupLen` clones starting at `anchor`, replacing the
-      // existing `oldGroupLen` group members.
       const before = prev.slice(0, anchor);
       const after = prev.slice(anchor + oldGroupLen);
       const fresh: ModuleItem[] = Array.from({ length: newGroupLen }, () => ({
@@ -981,8 +917,6 @@ export default function AdminCreateActivityPage() {
       }));
       const next = [...before, ...fresh, ...after];
 
-      // photoOrder identity check — store only if it's an actual permutation
-      // (not the trivial 0..N-1). Saves bytes on the wire for the common case.
       const isIdentity = result.photoOrder.every((v, i) => v === i);
       const photoOrder = isIdentity ? null : result.photoOrder;
 
@@ -1036,18 +970,10 @@ export default function AdminCreateActivityPage() {
   const hasAnyField = loginFields.size > 0;
   const isWizard = isWizardModule(moduleType);
 
-  // How many map-module items are still missing a location — drives the live
-  // banner on the content step and the forward-navigation gate.
   const mapMissingLocationsCount = moduleType === 'map' ? selectedItems.filter((i) => !i.location).length : 0;
 
-  // Which steps exist for this module type, in order. Steps 3-5 (content,
-  // rules & texts, follow-up SMS) only apply when there's a module to fill
-  // with items; the summary is always last.
   const stepSequence: StepId[] = isWizard ? [1, 2, 3, 4, 5, 6] : [1, 2, 6];
 
-  // Whether each step can be reached going forward. Going back is always
-  // allowed; going forward requires the previous step to be minimally valid,
-  // so a broken configuration can't be carried all the way to submit.
   const canReachStep2 = name.trim().length > 0;
   const canReachStep3 = isWizard && canReachStep2 && hasAnyField;
   const canReachStep4 = canReachStep3 && selectedItems.length > 0 && mapMissingLocationsCount === 0;
@@ -1061,15 +987,12 @@ export default function AdminCreateActivityPage() {
   const prevStepId = stepSequence[currentStepIdx - 1];
   const nextDisabled = !nextStepId || !canReach[nextStepId];
 
-  // A submit error belongs to the attempt that bounced you here, not to
-  // wherever you navigate next — so any deliberate step change clears it.
   const goToStep = (s: StepId) => { setError(''); setStep(s); };
   const goNext = () => { if (nextStepId && canReach[nextStepId]) goToStep(nextStepId); };
   const goBack = () => { if (prevStepId) goToStep(prevStepId); };
 
   useEffect(() => {
     if (!stepSequence.includes(step)) setStep(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWizard, step]);
 
   const STEP_META: Record<StepId, { title: string; subtitle: string }> = {
@@ -1192,9 +1115,6 @@ export default function AdminCreateActivityPage() {
       } else if (openingUrl.trim()) {
         payload.opening = { type: openingType, url: openingUrl.trim() };
       }
-      // Orders are keyed by group name, so a renamed or deleted group leaves a
-      // dead entry behind. The server ignores unknown groups already — this just
-      // stops them accumulating in the document forever.
       const liveGroupOrders = (): Record<string, number[]> =>
         Object.fromEntries(
           groupNames
@@ -1276,13 +1196,10 @@ export default function AdminCreateActivityPage() {
       payload.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly;
       payload.dailyReset = dailyReset;
       payload.userControl = userControl;
-      // Time limit field is shown for both 'time' and 'both' modes — it drives
-      // the live timer + warning popup in either case.
       if ((leaderboardMode === 'time' || leaderboardMode === 'both') && activityDurationMinutes.trim()) {
         const parsed = parseInt(activityDurationMinutes, 10);
         if (!isNaN(parsed) && parsed > 0) payload.activityDurationMinutes = parsed;
       }
-      // Cosmetic roadmap timer (omitted when off → server clears it on edit).
       if (roadmapTimerEnabled && roadmapTimerMinutes.trim()) {
         const parsed = parseInt(roadmapTimerMinutes, 10);
         if (!isNaN(parsed) && parsed > 0) payload.roadmapTimerMinutes = parsed;
@@ -1322,12 +1239,8 @@ export default function AdminCreateActivityPage() {
 
   if (initialLoading) return null;
 
-  // ─── Step 6 summary — review values + any outstanding issue, each pointing
-  // back to the step that fixes it. ───
   const moduleTypeLabel = moduleType === 'map' ? t.map : moduleType === 'spiders' ? t.spiders : moduleType === 'story' ? t.story : t.noModule;
 
-  // Every theme the picker offers, and whichever one is currently selected —
-  // the form shows only the selected one, collapsed to a single row.
   const themeOptions = [...builtInThemeOptions(t), ...customThemes.map(customThemeOption)];
   const selectedTheme = themeOptions.find((o) => o.id === moduleTheme) ?? themeOptions[0];
   const loginFieldLabel = (f: LoginField) => (f === 'name' ? t.fieldName : f === 'email' ? t.fieldEmail : t.fieldPhone);
@@ -1356,8 +1269,6 @@ export default function AdminCreateActivityPage() {
     reviewIssues.push({ text: t.groupRewardAttachmentRequired, step: 5 });
   }
 
-  // A step is flagged on the rail only once it has been visited, and never
-  // while you are standing on it — there the inline banner already says so.
   const stepsWithIssues = new Set(reviewIssues.map((i) => i.step));
   const stepHasIssue = (s: StepId) =>
     s !== step && visitedSteps.has(s) && stepsWithIssues.has(s);
@@ -1400,12 +1311,9 @@ export default function AdminCreateActivityPage() {
             <StepIntroSubtitle>{STEP_META[step].subtitle}</StepIntroSubtitle>
           </StepIntro>
 
-          {/* handleSubmit sends you back to the step that broke — steps 2, 3
-            and 5 all get here, so the message is rendered once, for all of them. */}
           {error && <ErrorText>{error}</ErrorText>}
 
           <Form onSubmit={handleSubmit}>
-            {/* ──── STEP 1 — Type & look ──── */}
             {step === 1 && (
               <>
                 <NameInput
@@ -1514,11 +1422,9 @@ export default function AdminCreateActivityPage() {
               </>
             )}
 
-            {/* ──── STEP 2 — Access & timing ──── */}
             {step === 2 && (
               <>
                 <FormGrid>
-                  {/* LEFT COLUMN */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <SectionCard>
                       <SectionHeader>
@@ -1579,8 +1485,6 @@ export default function AdminCreateActivityPage() {
                               <SelectionSubtext>{t.groupEntrySelfServiceDesc}</SelectionSubtext>
                             </SelectionButton>
                           </SelectionGroup>
-                          {/* The after-activity SMS reward is gated on this choice
-                              two steps later — say so here, where it is decided. */}
                           <SectionDescription style={{ margin: '8px 0 0' }}>
                             {groupEntryMode === 'selfService' ? t.smsUnlockedNote : t.smsGatedNote}
                           </SectionDescription>
@@ -1642,7 +1546,6 @@ export default function AdminCreateActivityPage() {
                     </SectionCard>
                   </div>
 
-                  {/* RIGHT COLUMN */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <SectionCard>
                       <SectionHeader>
@@ -1917,7 +1820,6 @@ export default function AdminCreateActivityPage() {
               </>
             )}
 
-            {/* ──── STEP 3 — Content ──── */}
             {step === 3 && isWizard && (
               <>
                 <SectionCardWide>
@@ -2013,7 +1915,6 @@ export default function AdminCreateActivityPage() {
               </>
             )}
 
-            {/* ──── STEP 4 — Rules & texts ──── */}
             {step === 4 && isWizard && (
               <>
                 <SectionCardWide>
@@ -2288,7 +2189,6 @@ export default function AdminCreateActivityPage() {
               </>
             )}
 
-            {/* ──── STEP 5 — Follow-up (SMS) ──── */}
             {step === 5 && (
               <>
                 {isWizard && (
@@ -2509,7 +2409,6 @@ export default function AdminCreateActivityPage() {
               </>
             )}
 
-            {/* ──── STEP 6 — Summary ──── */}
             {step === 6 && (
               <>
                 <SectionCardWide>
@@ -2588,13 +2487,11 @@ export default function AdminCreateActivityPage() {
         const target = selectedItems[splitEditorIndex];
         if (!target || target.itemType !== 'station' || target.subType !== 'collage') return null;
         const limit = getCollageLimit(target.settings);
-        // Source photo labels — prefer the missions array, else generic names.
         const settings = target.settings ?? {};
         const rawMissions = (settings as { missions?: { title?: string; description?: string }[] }).missions;
         const photoLabels = Array.isArray(rawMissions) && rawMissions.length > 0
           ? rawMissions.map((m, i) => ({ title: m?.title?.trim() || `${t.photoLabel} ${i + 1}`, description: m?.description }))
           : Array.from({ length: limit }, (_, i) => ({ title: `${t.photoLabel} ${i + 1}` }));
-        // Reorder by existing photoOrder if set, so the popup shows current order.
         const existingOrder = target.collageSplit?.photoOrder;
         const orderedLabels = existingOrder && existingOrder.length === photoLabels.length
           ? existingOrder.map((idx) => photoLabels[idx] ?? { title: `${t.photoLabel} ${idx + 1}` })
@@ -2611,7 +2508,6 @@ export default function AdminCreateActivityPage() {
             initialVideoPartIndex={initialVideoPartIndex}
             onCancel={() => setSplitEditorIndex(null)}
             onSave={(res: SplitEditorResult) => {
-              // Map the editor's "ordered-index" result back to original mission indices.
               const baseOrder = existingOrder && existingOrder.length === photoLabels.length
                 ? existingOrder
                 : photoLabels.map((_, i) => i);

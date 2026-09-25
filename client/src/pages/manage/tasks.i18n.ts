@@ -1,4 +1,3 @@
-/** Shared by the tasks list, the project tasks tab, and the task modal. */
 export const texts = {
   he: {
     title: 'משימות',

@@ -34,7 +34,6 @@ async function seed() {
   await mongoose.connect(process.env.MONGODB_URI!);
   console.log('Connected to MongoDB');
 
-  // ── 1. Create Games ──
   const triviaGame = await Game.create({
     name: 'חידון ידע כללי',
     type: 'trivia',
@@ -105,7 +104,6 @@ async function seed() {
   });
   console.log('Created ball game:', ballGame.name);
 
-  // ── 2. Create Stations ──
   const welcomeStation = await Station.create({
     name: 'ברוכים הבאים',
     type: 'text',
@@ -145,7 +143,6 @@ async function seed() {
   });
   console.log('Created 3 stations');
 
-  // ── 3. Create Activity with module ──
   const games = [triviaGame, orderGame, trueFalseGame, ballGame];
   const stations = [welcomeStation, videoStation, badgeStation];
 
@@ -180,7 +177,6 @@ async function seed() {
   });
   console.log('Created activity:', activity.name, '| code:', activity.code);
 
-  // Second activity (simpler)
   const activity2 = await Activity.create({
     name: 'אתגר המדע',
     status: 'live',
@@ -201,7 +197,6 @@ async function seed() {
   });
   console.log('Created activity:', activity2.name, '| code:', activity2.code);
 
-  // Third activity (preview)
   const activity3 = await Activity.create({
     name: 'טריוויה חגיגית',
     status: 'preview',
@@ -219,16 +214,14 @@ async function seed() {
   });
   console.log('Created activity:', activity3.name, '| code:', activity3.code, '(preview)');
 
-  // ── 4. Create Reports (participants with scores) ──
   const groupNames = ['קבוצה א', 'קבוצה ב', 'קבוצה ג'];
   const reports: InstanceType<typeof Report>[] = [];
 
-  // Activity 1: 25 participants
   for (let i = 0; i < 25; i++) {
     const name = hebrewNames[i];
     const group = groupNames[i % 3];
     const joinedAt = randomDate(14);
-    const completed = Math.random() > 0.15; // 85% completion
+    const completed = Math.random() > 0.15;
     const inProgress = !completed && Math.random() > 0.5;
     const completionStatus = completed ? 'completed' : inProgress ? 'in_progress' : 'joined';
     const itemsCompleted = completed ? 7 : inProgress ? randomBetween(1, 5) : 0;
@@ -245,7 +238,7 @@ async function seed() {
       : gameScores.slice(0, Math.min(itemsCompleted, 4)).reduce((s, g) => s + g.score, 0);
 
     const sessionStart = new Date(joinedAt.getTime() + 10000);
-    const sessionDuration = randomBetween(180000, 900000); // 3-15 min
+    const sessionDuration = randomBetween(180000, 900000);
 
     const itemResults = [];
     const allItems = [
@@ -281,7 +274,6 @@ async function seed() {
       if (item.type === 'game' && item.gameType) {
         result.gameType = item.gameType;
       }
-      // Add question answers for trivia/trueFalse
       if (item.gameType === 'trivia' || item.gameType === 'trueFalse') {
         result.questionAnswers = Array.from({ length: 5 }, (_, qi) => {
           const isCorrect = Math.random() > 0.35;
@@ -324,9 +316,8 @@ async function seed() {
   }
   console.log(`Created ${reports.length} reports for activity 1`);
 
-  // Activity 2: 12 participants
   for (let i = 0; i < 12; i++) {
-    const name = hebrewNames[i + 5]; // offset names
+    const name = hebrewNames[i + 5];
     const joinedAt = randomDate(7);
     const completed = Math.random() > 0.2;
     const totalScore = completed ? randomBetween(40, 200) : randomBetween(0, 80);
@@ -355,7 +346,6 @@ async function seed() {
   }
   console.log('Created 12 reports for activity 2');
 
-  // ── 5. Create Portal with users ──
   const portal = await Portal.create({
     name: 'פורטל צוות פיתוח',
     description: 'פורטל לצוות הפיתוח של Yooz',
@@ -371,7 +361,6 @@ async function seed() {
     createdByEmail: CUSTOMER_EMAIL,
   });
 
-  // Mark those activities as attached to portal
   await Activity.updateMany(
     { _id: { $in: [activity._id, activity2._id] } },
     { $set: { portalId: portal._id, isContinuous: true } }
@@ -379,7 +368,6 @@ async function seed() {
 
   console.log('Created portal:', portal.name, '| code:', portal.code);
 
-  // ── Summary ──
   console.log('\n═══════════════════════════════════════');
   console.log('✅ Seed complete!');
   console.log(`   Customer: ${CUSTOMER_EMAIL}`);

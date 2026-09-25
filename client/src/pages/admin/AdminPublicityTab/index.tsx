@@ -8,7 +8,6 @@ import { PrimaryButton, OutlineButton, Input, ErrorText } from '../../../compone
 import { PageTitle, SectionLabel } from '../styled';
 import type { SiteContent, LocalizedText, ContactLead } from '../../../types/publicity';
 
-// ─── Styled ───
 const Container = styled('div')({ display: 'flex', flexDirection: 'column', gap: 20 });
 const SubTabBar = styled('div')({ display: 'flex', gap: 8 });
 const SubTab = styled('button')<{ active?: boolean }>(({ active }) => ({
@@ -43,7 +42,6 @@ const Table = styled('table')({ width: '100%', borderCollapse: 'collapse', fontS
 const Th = styled('th')({ textAlign: 'start', padding: '10px 12px', borderBottom: '2px solid #ececf4', color: '#5a4a72' });
 const Td = styled('td')({ padding: '10px 12px', borderBottom: '1px solid #f2f0f8', verticalAlign: 'top' });
 
-// ─── Helpers ───
 type T = typeof texts.en;
 
 function LocalizedField({ label, value, onChange, t }: { label: string; value: LocalizedText; onChange: (v: LocalizedText) => void; t: T }) {
@@ -93,7 +91,6 @@ export default function AdminPublicityTab() {
   }, []);
   useEffect(() => { if (sub === 'leads') loadLeads(); }, [sub, loadLeads]);
 
-  // Immutable patch via structuredClone — content trees are small.
   const patch = (fn: (c: SiteContent) => void) =>
     setContent((prev) => { if (!prev) return prev; const next = structuredClone(prev); fn(next); return next; });
 
@@ -126,13 +123,11 @@ export default function AdminPublicityTab() {
 
       {sub === 'content' && content && (
         <>
-          {/* Branding */}
           <SectionCard>
             <SectionHead>{t.sectionBranding}</SectionHead>
             <ImageField label={t.logo} url={content.brandLogoUrl} onChange={(u) => patch((c) => { c.brandLogoUrl = u; })} t={t} />
           </SectionCard>
 
-          {/* Hero */}
           <SectionCard>
             <SectionHead>{t.sectionHero}</SectionHead>
             <LocalizedField label={t.badge} value={content.hero.badge} onChange={(v) => patch((c) => { c.hero.badge = v; })} t={t} />
@@ -146,7 +141,6 @@ export default function AdminPublicityTab() {
             <ImageField label={t.phoneImage} url={content.hero.phoneImageUrl} onChange={(u) => patch((c) => { c.hero.phoneImageUrl = u; })} t={t} />
           </SectionCard>
 
-          {/* Audiences */}
           <SectionCard>
             <SectionHead>{t.sectionAudiences}</SectionHead>
             {content.audiences.map((a, ai) => (
@@ -175,7 +169,6 @@ export default function AdminPublicityTab() {
             ))}
           </SectionCard>
 
-          {/* Engine */}
           <SectionCard>
             <SectionHead>{t.sectionEngine}</SectionHead>
             <LocalizedField label={t.title} value={content.engine.title} onChange={(v) => patch((c) => { c.engine.title = v; })} t={t} />
@@ -190,7 +183,6 @@ export default function AdminPublicityTab() {
             ))}
           </SectionCard>
 
-          {/* Customers */}
           <SectionCard>
             <SectionHead>{t.sectionCustomers}</SectionHead>
             <LocalizedField label={t.title} value={content.customers.title} onChange={(v) => patch((c) => { c.customers.title = v; })} t={t} />
@@ -215,7 +207,6 @@ export default function AdminPublicityTab() {
             </Row>
           </SectionCard>
 
-          {/* Contact */}
           <SectionCard>
             <SectionHead>{t.sectionContact}</SectionHead>
             <LocalizedField label={t.title} value={content.contact.title} onChange={(v) => patch((c) => { c.contact.title = v; })} t={t} />

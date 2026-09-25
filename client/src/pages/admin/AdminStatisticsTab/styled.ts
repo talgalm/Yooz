@@ -5,8 +5,6 @@ const TEXT_DARK = '#333';
 const TEXT_LIGHT = '#888';
 const BORDER = '#ecebf4';
 
-// ─── KPI Cards ───
-
 export const KpiRow = styled('div')({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -53,8 +51,6 @@ export const KpiSub = styled('div')({
   marginTop: 2,
 });
 
-// ─── Chart Containers ───
-
 export const ChartCard = styled('div')({
   background: '#fff',
   borderRadius: 16,
@@ -74,8 +70,6 @@ export const ChartTitle = styled('h3')({
   color: TEXT_DARK,
   margin: '0 0 16px',
 });
-
-// ─── Section Headers ───
 
 export const SectionHeader = styled('div')({
   display: 'flex',
@@ -107,8 +101,6 @@ export const BackButton = styled('button')({
     background: '#f5f5f7',
   },
 });
-
-// ─── Activity Table (clickable rows) ───
 
 export const StatsTable = styled('table')({
   width: '100%',
@@ -142,8 +134,6 @@ export const StatsTable = styled('table')({
   },
 });
 
-// ─── Funnel ───
-
 export const FunnelContainer = styled('div')({
   display: 'flex',
   flexDirection: 'column',
@@ -175,8 +165,6 @@ export const FunnelCount = styled('span')({
   fontSize: 13,
   opacity: 0.85,
 });
-
-// ─── Alerts ───
 
 export const AlertBanner = styled('div')<{ severity: 'warning' | 'error' }>(({ severity }) => ({
   background: severity === 'error' ? '#fff5f5' : '#fffbeb',
@@ -307,7 +295,6 @@ export const PeriodButton = styled('button')<{ active?: boolean }>(({ active }) 
   },
 }));
 
-/** Day picker beside the period pills — a year of days will not fit as buttons. */
 export const DaySelect = styled('select')<{ active?: boolean }>(({ active }) => ({
   border: 'none',
   borderRadius: 7,
@@ -658,8 +645,6 @@ export const EmptyState = styled('div')({
   fontSize: 13,
 });
 
-// ─── Sub-tab bar ───
-
 export const SubTabBar = styled('div')({
   display: 'flex',
   gap: 0,
@@ -691,8 +676,6 @@ export const SubTab = styled('button')<{ active?: boolean }>(({ active }) => ({
     color: active ? PRIMARY : TEXT_DARK,
   },
 }));
-
-// ─── Export Buttons ───
 
 export const ExportGrid = styled('div')({
   display: 'grid',
@@ -731,8 +714,6 @@ export const ExportDescription = styled('div')({
   color: TEXT_LIGHT,
   marginTop: 4,
 });
-
-// ─── Pass grade control ───
 
 export const PassGradeCard = styled('div')({
   border: `1px solid ${BORDER}`,
@@ -800,8 +781,6 @@ export const PassGradePreset = styled('button')({
   '&:hover': { background: '#eef1f6' },
   '&:disabled': { opacity: 0.5, cursor: 'default' },
 });
-
-// ─── Automated report form ───
 
 export const ReportForm = styled('div')({
   display: 'flex',
@@ -997,8 +976,6 @@ export const ChipsFieldInput = styled('input')({
   height: 26,
 });
 
-// ─── Share link control ───
-
 export const ShareRow = styled('div')({
   display: 'flex',
   alignItems: 'center',
@@ -1021,8 +998,6 @@ export const ShareUrlInput = styled('input')({
   direction: 'ltr',
   textOverflow: 'ellipsis',
 });
-
-// ─── Participants roster ───
 
 export const RosterSearchInput = styled('input')({
   width: '100%',
@@ -1065,8 +1040,6 @@ export const RosterActions = styled('div')({
   flexWrap: 'wrap',
 });
 
-// ─── Badge/Tag ───
-
 export const ImprovementBadge = styled('span')({
   background: '#fef3c7',
   color: '#92400e',
@@ -1076,8 +1049,6 @@ export const ImprovementBadge = styled('span')({
   borderRadius: 6,
   whiteSpace: 'nowrap',
 });
-
-// ─── Mobile cards (for responsive tables) ───
 
 export const StatsMobileCard = styled('div')({
   background: '#fff',

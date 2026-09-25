@@ -14,7 +14,6 @@ interface UsePhysicsEngineReturn {
   resetBall: () => void;
 }
 
-// Preload images
 const imageCache = new Map<string, HTMLImageElement>();
 function getImage(src: string): HTMLImageElement {
   if (imageCache.has(src)) return imageCache.get(src)!;
@@ -24,7 +23,7 @@ function getImage(src: string): HTMLImageElement {
   return img;
 }
 
-const BALL_RADIUS_FRAC = 0.04; // fraction of canvas width
+const BALL_RADIUS_FRAC = 0.04;
 const ACCELERATION = 5;
 const RESTITUTION = 0.6;
 
@@ -55,7 +54,6 @@ export function usePhysicsEngine({
   enabledRef.current = enabled;
   levelConfigRef.current = levelConfig;
 
-  // Preload level images
   useEffect(() => {
     getImage(levelConfig.bgImage);
     getImage(levelConfig.basketImage);
@@ -73,7 +71,6 @@ export function usePhysicsEngine({
     const config = levelConfigRef.current;
     const ballRadius = w * BALL_RADIUS_FRAC;
 
-    // Cleanup previous
     if (engineRef.current) {
       Matter.Engine.clear(engineRef.current);
     }
@@ -87,7 +84,6 @@ export function usePhysicsEngine({
     engineRef.current = engine;
     scoredRef.current = false;
 
-    // Boundary walls
     const wallThickness = 20;
     const floor = Matter.Bodies.rectangle(w / 2, h + wallThickness / 2, w * 2, wallThickness, {
       isStatic: true,
@@ -105,7 +101,6 @@ export function usePhysicsEngine({
       label: 'wall',
     });
 
-    // Level-specific walls
     const levelWalls = config.walls.map((wc) =>
       Matter.Bodies.rectangle(
         wc.x * w,
@@ -122,7 +117,6 @@ export function usePhysicsEngine({
       )
     );
 
-    // Basket sensor (invisible, detects ball entry)
     const bx = config.basketPosition.x * w;
     const by = config.basketPosition.y * h;
     const sensorW = w * 0.08;
@@ -134,7 +128,6 @@ export function usePhysicsEngine({
     });
     basketSensorRef.current = basketSensor;
 
-    // Ball
     const spawnX = config.ballSpawn.x * w;
     const spawnY = config.ballSpawn.y * h;
     const ball = Matter.Bodies.circle(spawnX, spawnY, ballRadius, {
@@ -154,7 +147,6 @@ export function usePhysicsEngine({
       ball,
     ]);
 
-    // Collision detection
     Matter.Events.on(engine, 'collisionStart', (event) => {
       for (const pair of event.pairs) {
         const labels = [pair.bodyA.label, pair.bodyB.label];
@@ -168,7 +160,6 @@ export function usePhysicsEngine({
       }
     });
 
-    // Rendering loop
     const bgImg = getImage(config.bgImage);
     const basketImg = getImage(config.basketImage);
     const ballImg = getImage('/images/ballgame/yellowBall.png');
@@ -188,12 +179,10 @@ export function usePhysicsEngine({
 
       ctx.clearRect(0, 0, w, h);
 
-      // Draw background
       if (bgImg.complete) {
         ctx.drawImage(bgImg, 0, h * 0.45, w, h * 0.55);
       }
 
-      // Draw basket
       if (basketImg.complete) {
         const basketW = w * 0.22;
         const basketH = basketW * (basketImg.naturalHeight / (basketImg.naturalWidth || 1));
@@ -206,7 +195,6 @@ export function usePhysicsEngine({
         );
       }
 
-      // Draw flippers (static decorative elements near ball spawn)
       const flipW = w * 0.08;
       const flipH = flipW * 2.5;
       const flipY = spawnY + ballRadius * 2;
@@ -225,7 +213,6 @@ export function usePhysicsEngine({
         ctx.restore();
       }
 
-      // Draw ball
       if (ballRef.current && ballImg.complete) {
         const pos = ballRef.current.position;
         const size = ballRadius * 2.2;
@@ -242,7 +229,6 @@ export function usePhysicsEngine({
     renderLoopRef.current = requestAnimationFrame(renderLoop);
   }, [canvasRef]);
 
-  // Setup and teardown
   useEffect(() => {
     if (!enabled) return;
     setupWorld();
@@ -258,7 +244,6 @@ export function usePhysicsEngine({
     };
   }, [enabled, setupWorld]);
 
-  // Pointer events for drag-to-throw
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !enabled) return;

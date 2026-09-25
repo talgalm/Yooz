@@ -1,11 +1,3 @@
-/**
- * Chrome shared by AvatarStation and AvatarQuizStation — character window,
- * speech bubble, chat bar, and the transcript popup.
- *
- * Extracted from AvatarStation with no visual change, so the quiz variant
- * inherits the same look and the desktop-overlap fixes recorded there
- * (QA Jun 2026 page 18) apply to both.
- */
 import { styled, keyframes } from '@mui/material/styles';
 import { StationContinueButton } from '../../games/styled';
 
@@ -20,10 +12,6 @@ export const Container = styled('div')({
   padding: '24px 20px 140px',
   gap: 28,
   textAlign: 'center',
-  // Desktop: cap to a centered column. The character image (CharacterWindow)
-  // grows to 520px on desktop but its own `aspect-ratio: 1` made it tall
-  // enough that the chat input + fixed Continue button overlapped on
-  // shorter desktop windows (QA Jun 2026 page 18).
   '@media (min-width: 768px)': {
     width: 'min(720px, 88vw)',
     marginInline: 'auto',
@@ -203,10 +191,6 @@ export const CharacterWindow = styled('div')({
   width: '100%',
   maxWidth: CHARACTER_WIDTH,
   marginTop: -18,
-  // Desktop: keep the figure presentable but shorter than the viewport so
-  // there's room for the chat input + fixed Continue button below. With the
-  // old 1:1 ratio at 520px wide, the figure ate ~520px of vertical space
-  // and the Continue button slid on top of the chat bar (QA Jun 2026 page 18).
   '@media (min-width: 768px)': {
     maxWidth: 380,
     aspectRatio: 'auto',

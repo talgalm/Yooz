@@ -148,8 +148,6 @@ export default function ItemAnalyticsTable({ activityId, period, data, questions
   );
 }
 
-// ── Question Breakdown (nested table) ──
-
 function QuestionBreakdown({
   activityId,
   period,

@@ -40,7 +40,6 @@ const ColorDot = styled('span')<{ tone: string }>(({ tone }) => ({
   background: tone, marginInlineEnd: 8, verticalAlign: 'middle',
 }));
 
-/** Owner manages people here; a pm sees the same table without any money. */
 export default function ManageEmployeesPage() {
   const t = useTranslations(texts);
   const { user } = useManageAuth();
@@ -260,7 +259,6 @@ function EmployeeModal({ employee, onClose, onSaved }: {
               <SmallInput type="number" min="0" value={hourlyCost} onChange={(e) => setHourlyCost(e.target.value)} />
             </Field>
             <Field>
-              {/* One colour per person — it is how their tasks read on every board. */}
               {t.color}
               <SmallInput
                 type="color"

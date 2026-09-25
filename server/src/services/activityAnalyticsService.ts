@@ -8,22 +8,6 @@ import {
   resolveCeiling,
 } from '../utils/scoreNormalization';
 
-// ─────────────────────────────────────────────────────────────
-// Per-activity analytics computations.
-//
-// These functions are the single source of truth for a single activity's
-// statistics. They are consumed both by the admin analytics router
-// (behind admin auth) and the public share-link router (behind a share
-// token) so the two views never diverge.
-// ─────────────────────────────────────────────────────────────
-
-/**
- * A rolling window, or `day:YYYY-MM-DD` for one Israel calendar day. The
- * single-day form is what makes the reports readable for `dailyReset`
- * activities: their history is kept, so the admin needs to slice it back into
- * the days the participants actually experienced. Carrying the day inside the
- * period value means every panel, export and share link already threads it.
- */
 export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'year' | `day:${string}`;
 
 const SINGLE_DAY_RE = /^day:\d{4}-\d{2}-\d{2}$/;
@@ -34,7 +18,6 @@ export function parsePeriod(value: unknown): AnalyticsPeriod {
   return 'year';
 }
 
-/** The `YYYY-MM-DD` of a `day:` period, or null for the rolling windows. */
 export function periodDay(period: AnalyticsPeriod): string | null {
   return SINGLE_DAY_RE.test(period) ? period.slice(4) : null;
 }
@@ -57,7 +40,6 @@ export function periodStart(period: AnalyticsPeriod): Date {
   return new Date(now.getFullYear(), 0, 1);
 }
 
-/** Exclusive upper bound — only a single-day period has one. */
 export function periodEnd(period: AnalyticsPeriod): Date | null {
   const day = periodDay(period);
   return day ? israelDayRange(day).end : null;
@@ -100,7 +82,6 @@ export interface AnalyticsActivity {
   missionTrashSortScoreSum?: number;
   shareClicks?: number;
   shareCompleted?: number;
-  /** Report `_id`s to drop from every statistic (see Activity.excludedReportIds). */
   excludedReportIds?: ExcludeIds;
 }
 
@@ -120,12 +101,10 @@ export async function getActivityAnalytics(activity: AnalyticsActivity, period: 
   ).lean();
 
   const totalParticipants = reports.length;
-  const passThreshold = resolvePassThreshold(activity.passThreshold); // null = no pass grade
+  const passThreshold = resolvePassThreshold(activity.passThreshold);
   const rawScores = reports
     .map((r) => (r.data as { totalScore?: number })?.totalScore ?? 0)
     .filter((s) => s > 0);
-  // Rescale to 0-100 against the activity's maximum achievable score so the pass
-  // grade, distribution buckets and tone thresholds are all meaningful.
   const scoreCeiling = resolveCeiling(reports, rawScores);
   const scores = rawScores.map((s) => normalizeScore(s, scoreCeiling));
   const durations = reports
@@ -147,8 +126,6 @@ export async function getActivityAnalytics(activity: AnalyticsActivity, period: 
     ? Math.round(progressValues.reduce((sum, value) => sum + value, 0) / progressValues.length)
     : 0;
 
-  // Score distribution histogram: ten 0-100 buckets (scores are normalized to
-  // 0-100, so a perfect 100 lands in the 90-100 bucket — no "100-110" bucket).
   const buckets = Array.from({ length: 10 }, (_, i) => ({ min: i * 10, max: i * 10 + 10, count: 0 }));
   scores.forEach((s) => {
     const idx = Math.min(Math.floor(s / 10), 9);
@@ -300,7 +277,6 @@ export async function getItems(activityId: string | Types.ObjectId, period: Anal
       participantCount: item.participantCount,
       avgScore,
       avgMaxScore,
-      // Per-station score on the shared 0-100 scale (score as % of the station's max).
       scoreRate: avgMaxScore > 0 ? Math.round((avgScore / avgMaxScore) * 100) : avgScore,
       avgDurationMs: Math.round(item.avgDurationMs ?? 0),
       hintUsagePct: item.participantCount > 0 ? Math.round((item.hintUsageCount / item.participantCount) * 100) : 0,
@@ -354,7 +330,6 @@ export async function getGroups(activityId: string | Types.ObjectId, period: Ana
     { $sort: { avgScore: -1 } },
   ]);
 
-  // Resolve the activity ceiling so per-group averages share the 0-100 scale.
   const ceilingReports = await Report.find(
     { ...reportMatch(activityId, period, excludeIds), 'data.itemResults': { $exists: true } },
     { 'data.itemResults.itemIndex': 1, 'data.itemResults.maxPossibleScore': 1, 'data.totalScore': 1 },
@@ -392,8 +367,6 @@ export async function getAnomalies(activityId: string | Types.ObjectId, period: 
     ? itemStats.reduce((s, i) => s + (i.avgDurationMs ?? 0), 0) / itemStats.length
     : 0;
 
-  // Alerts carry structured numbers (not pre-built strings) so the client can
-  // render the message in the active language (Hebrew/English).
   const alerts: {
     type: string;
     severity: 'warning' | 'error';
@@ -433,19 +406,9 @@ export async function getAnomalies(activityId: string | Types.ObjectId, period: 
   return alerts;
 }
 
-/** Reports for the export workbook (single activity, scoped by period). */
 export async function getExportReports(activityId: string | Types.ObjectId, period: AnalyticsPeriod, excludeIds?: ExcludeIds) {
   return Report.find(reportMatch(activityId, period, excludeIds)).lean();
 }
-
-// ─────────────────────────────────────────────────────────────
-// Combined multi-activity report card.
-//
-// Follows the SAME person across several activities: their normalized grade in
-// each, plus a final grade = the average of their own grades. Each activity is
-// normalized against its own ceiling so grades are comparable. Exclusions and
-// the period filter are honored per activity (via reportMatch).
-// ─────────────────────────────────────────────────────────────
 
 export interface CombinedReportActivity {
   _id: unknown;
@@ -459,23 +422,17 @@ export interface ReportCardParticipant {
   name: string;
   email: string;
   phone: string;
-  /** activityId → normalized 0-100 grade, or null when they didn't play it. */
   grades: Record<string, number | null>;
-  /** null = the participant appears but has no score in any selected activity. */
   finalGrade: number | null;
   activitiesPlayed: number;
 }
 
-/** Match the same person across activities: email → phone (digits) → name. */
 function identityKey(r: { _id?: unknown; email?: string; phoneNumber?: string; participantName?: string }): string {
   const email = (r.email || '').trim().toLowerCase();
   if (email) return `e:${email}`;
   const phone = (r.phoneNumber || '').replace(/\D/g, '');
   if (phone) return `p:${phone}`;
   const name = (r.participantName || '').trim().toLowerCase();
-  // Anonymous quick-join (empty loginFields) leaves the name as the literal
-  // 'Participant' placeholder with no email/phone — that is NOT an identifier, so
-  // key by report id to avoid collapsing every anonymous player into one row.
   if (!name || name === 'participant') return `r:${String(r._id ?? '')}`;
   return `n:${name}`;
 }
@@ -503,11 +460,9 @@ export async function getCombinedReportCard(activities: CombinedReportActivity[]
       },
     ).lean();
 
-    // Per-activity ceiling so grades land on a comparable 0-100 scale.
     const rawScores = reports.map((r) => (r.data as { totalScore?: number })?.totalScore ?? 0).filter((s) => s > 0);
     const ceiling = resolveCeiling(reports, rawScores);
 
-    // Deterministic order so "most recent attempt" is stable on joinedAt ties.
     reports.sort((a, b) => {
       const ta = a.joinedAt ? new Date(a.joinedAt).getTime() : 0;
       const tb = b.joinedAt ? new Date(b.joinedAt).getTime() : 0;
@@ -524,10 +479,6 @@ export async function getCombinedReportCard(activities: CombinedReportActivity[]
         entry = { key, name: '', email: '', phone: '', latestJoinedAt: -1, perActivity: new Map() };
         map.set(key, entry);
       }
-      // Only a scored attempt counts as "played" (mirrors the s > 0 filter the
-      // per-activity analytics use). Join-only / zero-score reports create no
-      // grade, so they never deflate the final-grade average. Keep the most
-      // recent scored attempt per activity.
       if (raw > 0) {
         const grade = normalizeScore(raw, ceiling);
         const existing = entry.perActivity.get(activityId);
@@ -535,8 +486,6 @@ export async function getCombinedReportCard(activities: CombinedReportActivity[]
           entry.perActivity.set(activityId, { grade, joinedAt });
         }
       }
-      // Display identity = the person's most recent report across all activities
-      // (updated even for join-only reports so a scored-elsewhere person resolves).
       if (joinedAt >= entry.latestJoinedAt) {
         entry.latestJoinedAt = joinedAt;
         entry.name = r.participantName || entry.name;
@@ -566,15 +515,11 @@ export async function getCombinedReportCard(activities: CombinedReportActivity[]
       email: entry.email,
       phone: entry.phone,
       grades,
-      // Everyone with a report appears. A participant with no score in any
-      // selected activity gets a null final grade (shown as "—") rather than a 0,
-      // so they neither vanish nor deflate the average.
       finalGrade: count > 0 ? Math.round(sum / count) : null,
       activitiesPlayed: count,
     };
   });
 
-  // Highest graded first; ungraded ("—") participants sink to the bottom.
   participants.sort((a, b) => (b.finalGrade ?? -1) - (a.finalGrade ?? -1));
 
   const totalParticipants = participants.length;

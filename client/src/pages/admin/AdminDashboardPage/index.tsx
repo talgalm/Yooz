@@ -40,21 +40,13 @@ import {
   MobileCardCode,
 } from '../styled';
 
-// ─── Local styled components ───
-
 const PageBg = styled('div')({
   minHeight: '100vh',
   display: 'flex',
   alignItems: 'stretch',
   background: '#f6f6fb',
-  // `clip`, not `hidden`: overflow-x:hidden forces overflow-y to auto, which makes this a
-  // scroll container and silently breaks position:sticky for everything inside it (the
-  // topbar, and the publicity tab's save bar). `clip` guards the same overflow without
-  // establishing one.
   overflowX: 'clip',
 });
-
-// ─── Sidebar ───
 
 const SIDEBAR_WIDTH = 244;
 
@@ -65,8 +57,6 @@ const Sidebar = styled('aside')<{ open?: boolean }>(({ open }) => ({
   flexDirection: 'column',
   background: '#fff',
   borderInlineEnd: '1px solid #ece8f3',
-  // Fixed on every size: the nav stays put while the content column scrolls.
-  // PageBg is not a containing block for fixed descendants, so this is not clipped.
   position: 'fixed',
   top: 0,
   insetInlineStart: 0,
@@ -171,14 +161,11 @@ const SidebarFooter = styled('div')({
   borderTop: '1px solid #f1eef8',
 });
 
-// ─── Top bar + content column ───
-
 const MainCol = styled('div')({
   flex: 1,
   minWidth: 0,
   display: 'flex',
   flexDirection: 'column',
-  // Reserve the fixed sidebar's width (RTL: inline-start is the right edge).
   marginInlineStart: SIDEBAR_WIDTH,
   '@media (max-width: 900px)': {
     marginInlineStart: 0,
@@ -238,8 +225,6 @@ const TabFade = styled('div')({
   animation: 'yoozTabIn 0.22s ease both',
   minWidth: 0,
 });
-
-// ─── Nav icons ───
 
 const NAV_ICONS: Record<string, ReactNode> = {
   activities: (
@@ -485,8 +470,6 @@ const MobileCard = styled('div')({
   },
 });
 
-// ─── Row action menu (matches AdminStationsTab) ───
-
 const RowActionWrapper = styled('div')({
   position: 'relative',
   display: 'inline-flex',
@@ -513,8 +496,6 @@ const RowActionIconButton = styled('button')({
 });
 
 const RowActionMenu = styled('div')({
-  // position:fixed (coords set inline from the anchor button's rect) so the menu escapes
-  // TableCard's overflow:hidden and is never clipped for bottom rows.
   position: 'fixed',
   zIndex: 1000,
   background: '#fff',
@@ -562,8 +543,6 @@ function PencilIcon() {
     </svg>
   );
 }
-
-// ─── Folder styled components ───
 
 const HeaderButtons = styled('div')({
   display: 'flex',
@@ -614,7 +593,7 @@ const FolderNameWrap = styled('div')({
   alignItems: 'center',
   gap: 10,
   minWidth: 0,
-  lineHeight: 1, // tighten the text line-box so it centers against the folder glyph
+  lineHeight: 1,
 });
 
 const DragGhost = styled('div')({
@@ -637,8 +616,6 @@ const DragGhost = styled('div')({
   touchAction: 'none',
 });
 
-// Draggable activity rows: suppress text-selection / iOS long-press callout so press-and-hold
-// starts a clean drag, and dim the row while it is being lifted.
 function dragRowStyle(dragging: boolean): CSSProperties {
   return {
     userSelect: 'none',
@@ -648,8 +625,6 @@ function dragRowStyle(dragging: boolean): CSSProperties {
   };
 }
 
-// Fixed-position coords for a row action menu, computed from its anchor button's viewport
-// rect. Opens downward, flipping up when there isn't room below (so bottom rows aren't clipped).
 const ACTION_MENU_EST_HEIGHT = 170;
 function actionMenuStyle(rect: DOMRect | null): CSSProperties {
   if (!rect) return { visibility: 'hidden' };
@@ -670,8 +645,6 @@ function FolderGlyph({ color, size = 20 }: { color: string; size?: number }) {
     </svg>
   );
 }
-
-// ─── Create Modal styled components ───
 
 const ModalOverlay = styled('div')({
   position: 'fixed',
@@ -813,8 +786,6 @@ const TypeTileEmoji = styled('span')({
   flexShrink: 0,
 });
 
-// ─── Types ───
-
 type MainTab = 'activities' | 'statistics' | 'stations' | 'library' | 'media' | 'users' | 'portals' | 'tutorials' | 'publicity' | 'settings';
 type StationsSection = 'stations' | 'games' | 'missions';
 type CreateStep = 'main' | 'game' | 'station';
@@ -908,7 +879,6 @@ export default function AdminDashboardPage() {
 
   const role = admin?.role || 'viewer';
 
-  // Same derivation the stations tab uses, so the sub-nav never offers an empty filter.
   const stationTypes = useMemo(() => {
     const set = new Set<string>();
     stations.forEach((station) => { if (station.type) set.add(station.type); });
@@ -945,13 +915,11 @@ export default function AdminDashboardPage() {
     }
   }, [visibleTabKeys, activeTab]);
 
-  // Sync tab from URL when navigating back to this page (e.g. after creating a game/station)
   useEffect(() => {
     const tab = searchParams.get('tab') as MainTab | null;
     if (tab && visibleTabKeys.includes(tab) && tab !== activeTab) {
       setActiveTab(tab);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location]);
 
   const fetchAll = useCallback(async () => {
@@ -977,7 +945,6 @@ export default function AdminDashboardPage() {
       setMissionFolders(missionFoldersRes.folders);
       setPortals(portalsRes.portals);
     } catch {
-      // silently fail — data stays empty
     } finally {
       setLoading(false);
     }
@@ -1047,8 +1014,6 @@ export default function AdminDashboardPage() {
 
   const activeLabel = visibleTabs.find((tab) => tab.key === activeTab)?.label ?? t.title;
 
-  // Picking a leaf filter closes the mobile drawer; picking a section keeps it open
-  // because a fresh list of types is about to appear underneath.
   const pickSection = (section: StationsSection) => {
     setStationsSection(section);
     if (section === 'missions') setMobileMenuOpen(false);
@@ -1142,10 +1107,6 @@ export default function AdminDashboardPage() {
           {navItems('main')}
           {otherNav.length > 0 && <NavGroupLabel>{t.navOther}</NavGroupLabel>}
           {otherNav}
-          {/* Leaves the dashboard for /manage — its own auth realm, so it is never
-              an activeTab here and gets no `active` state. Hidden from viewer/customer
-              accounts: /manage has its own login, but the link shouldn't advertise the
-              internal business system to them. */}
           {(role === 'admin' || role === 'super_admin') && (
             <NavItem onClick={() => navigate('/manage')}>
               <NavIcon name="clients" />
@@ -1173,22 +1134,18 @@ export default function AdminDashboardPage() {
 
         <DashContent>
           <TabFade key={`${activeTab}:${activeTab === 'stations' ? stationsSection : ''}`}>
-          {/* ── Activities Tab ── */}
           {activeTab === 'activities' && (
             <ActivitiesSection activities={activities} folders={folders} navigate={navigate} t={t} onRefresh={fetchAll} />
           )}
 
-          {/* ── Statistics Tab ── */}
           {activeTab === 'statistics' && (role === 'admin' || role === 'super_admin' || role === 'customer') && (
             <AdminStatisticsTab activities={activities} initialActivityId={initialActivityId} />
           )}
 
-          {/* ── Media Tab ── */}
           {activeTab === 'media' && (role === 'admin' || role === 'super_admin') && (
             <AdminMediaTab />
           )}
 
-          {/* ── Stations Tab (stations + games + missions) ── */}
           {activeTab === 'stations' && (
             <>
               <div style={{ display: role === 'viewer' ? 'none' : 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
@@ -1240,38 +1197,31 @@ export default function AdminDashboardPage() {
             </>
           )}
 
-          {/* ── Portals Tab ── */}
           {activeTab === 'portals' && (
             <AdminPortalsTab portals={portals} onRefresh={refreshPortals} />
           )}
 
-          {/* ── Content Library Tab ── */}
           {activeTab === 'library' && (
             <AdminLibraryTab />
           )}
 
-          {/* ── Users Tab (super_admin only) ── */}
           {activeTab === 'users' && role === 'super_admin' && (
             <AdminUsersTab />
           )}
 
-          {/* ── Tutorials Tab (super_admin generates, everyone else watches) ── */}
           {activeTab === 'tutorials' && (
             <AdminTutorialsTab />
           )}
 
-          {/* ── Publicity Tab (admin + super_admin) ── */}
           {activeTab === 'publicity' && (role === 'admin' || role === 'super_admin') && (
             <AdminPublicityTab />
           )}
 
-          {/* ── Settings Tab ── */}
           {activeTab === 'settings' && <AdminSettingsTab onLogout={handleLogout} />}
           </TabFade>
         </DashContent>
       </MainCol>
 
-      {/* ── Create Modal ── */}
       {createModalOpen && (
         <ModalOverlay onClick={() => setCreateModalOpen(false)}>
           <ModalCard onClick={(e) => e.stopPropagation()}>
@@ -1364,31 +1314,25 @@ export default function AdminDashboardPage() {
   );
 }
 
-// ─── Activities sub-section with pagination ───
-
 function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { activities: Activity[]; folders: Folder[]; navigate: ReturnType<typeof useNavigate>; t: Record<string, string>; onRefresh: () => void }) {
   const [search, setSearch] = useState('');
   const [openFolderId, setOpenFolderId] = useState<string | null>(null);
 
-  // activity action menu
   const [actionsActivityId, setActionsActivityId] = useState<string | null>(null);
   const [confirmDeleteInDrawer, setConfirmDeleteInDrawer] = useState(false);
   const [moveMenuOpen, setMoveMenuOpen] = useState(false);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // anchor rect of the currently-open row menu (for fixed positioning)
   const [menuAnchorRect, setMenuAnchorRect] = useState<DOMRect | null>(null);
 
-  // folder action menu + modal
   const [actionsFolderId, setActionsFolderId] = useState<string | null>(null);
   const [confirmDeleteFolderId, setConfirmDeleteFolderId] = useState<string | null>(null);
   const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null);
   const [folderModal, setFolderModal] = useState<{ mode: 'create' | 'edit'; folder?: Folder } | null>(null);
 
-  // drag-and-drop
   const [draggingActivityId, setDraggingActivityId] = useState<string | null>(null);
-  const [dragOverKey, setDragOverKey] = useState<string | null>(null); // folder _id, '__root__', or null
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [touchGhost, setTouchGhost] = useState<{ name: string; x: number; y: number } | null>(null);
   const mouseDragIdRef = useRef<string | null>(null);
   const touchDragRef = useRef<{ activityId: string } | null>(null);
@@ -1448,12 +1392,11 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
     }
   };
 
-  // Persist a folder move immediately (there is no surrounding save form on the dashboard).
   const moveActivityToFolder = useCallback(async (activityId: string, folderId: string | null) => {
     if (!canEdit) return;
     const current = activitiesRef.current.find((a) => a._id === activityId);
     if (!current) return;
-    if ((current.folderId ?? null) === folderId) return; // already there — no-op
+    if ((current.folderId ?? null) === folderId) return;
     try {
       await adminApiFetch(`/api/admin/activities/${activityId}/folder`, {
         method: 'PATCH',
@@ -1461,7 +1404,6 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
       });
       onRefresh();
     } catch {
-      /* ignore — activity stays where it was */
     }
   }, [canEdit, onRefresh]);
 
@@ -1472,7 +1414,6 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
         body: JSON.stringify({ name, color }),
       });
     } else {
-      // New folders are created inside the folder currently open (null = top level).
       await adminApiFetch('/api/admin/activity-folders', {
         method: 'POST',
         body: JSON.stringify({ name, color, parentId: openFolderId }),
@@ -1497,11 +1438,10 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
     }
   };
 
-  // ── drag: mouse (HTML5 Drag API) ──
   const onMouseDragStart = (e: React.DragEvent, id: string) => {
     mouseDragIdRef.current = id;
     setDraggingActivityId(id);
-    try { e.dataTransfer.setData('text/plain', id); } catch { /* Firefox requires setData to start a drag */ }
+    try { e.dataTransfer.setData('text/plain', id); } catch { }
     e.dataTransfer.effectAllowed = 'move';
   };
   const onMouseDragEnd = () => {
@@ -1527,22 +1467,19 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
     if (id) moveActivityToFolder(id, folderId);
   };
 
-  // ── drag: touch (press-and-hold to lift, then drag — Finder-style, no visible handle) ──
   const hitTestKey = useCallback((x: number, y: number): string | null => {
     for (const [key, el] of dropTargetRefs.current.entries()) {
       const r = el.getBoundingClientRect();
-      if (r.width === 0 && r.height === 0) continue; // hidden in the other (desktop/mobile) layout
+      if (r.width === 0 && r.height === 0) continue;
       if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return key;
     }
     return null;
   }, []);
-  // Blocks page scroll only while a drag is actually active (registered non-passive).
   const onTouchMovePrevent = useCallback((e: TouchEvent) => {
     if (touchDragRef.current) e.preventDefault();
   }, []);
   const onTouchPointerMove = useCallback((e: PointerEvent) => {
     if (!touchDragRef.current) {
-      // Long-press still pending: if the finger travels first, it's a scroll — cancel the lift.
       const lp = longPressRef.current;
       if (lp && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 12) {
         clearTimeout(lp.timer);
@@ -1566,14 +1503,14 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
     setDraggingActivityId(null);
     setDragOverKey(null);
     if (st) {
-      justDraggedRef.current = true; // suppress the click that follows the lifted gesture
+      justDraggedRef.current = true;
       const key = hitTestKey(e.clientX, e.clientY);
       if (key) moveActivityToFolder(st.activityId, key === '__root__' ? null : key);
     }
   }, [onTouchPointerMove, onTouchMovePrevent, hitTestKey, moveActivityToFolder]);
   const onRowPointerDown = useCallback((e: React.PointerEvent, id: string) => {
-    if (e.pointerType !== 'touch') return; // mouse uses the HTML5 path
-    if ((e.target as HTMLElement).closest('[data-row-actions]')) return; // don't lift from the ⋯ menu
+    if (e.pointerType !== 'touch') return;
+    if ((e.target as HTMLElement).closest('[data-row-actions]')) return;
     justDraggedRef.current = false;
     const x = e.clientX, y = e.clientY;
     const timer = setTimeout(() => {
@@ -1625,7 +1562,6 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
     window.removeEventListener('touchmove', onTouchMovePrevent);
   }, [onTouchPointerMove, onTouchPointerUp, onTouchMovePrevent]);
 
-  // If the open folder is deleted (here or elsewhere), fall back to the root view.
   useEffect(() => {
     if (openFolderId && !folders.some((f) => f._id === openFolderId)) setOpenFolderId(null);
   }, [folders, openFolderId]);
@@ -1635,7 +1571,6 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
   const folderById = useMemo(() => new Map(folders.map((f) => [f._id, f])), [folders]);
   const openFolder = openFolderId ? folderById.get(openFolderId) || null : null;
 
-  // Ancestor chain of the open folder, root-first, including the open folder itself.
   const ancestors = useMemo(() => {
     const chain: Folder[] = [];
     let cur: Folder | null = openFolder;
@@ -1653,20 +1588,17 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
       a.name.toLowerCase().includes(q) ||
       (a.createdByEmail || '').toLowerCase().includes(q) ||
       (a.code || '').toLowerCase().includes(q);
-    if (searching) return activities.filter(matches); // flat search across all folders
+    if (searching) return activities.filter(matches);
     if (openFolderId) return activities.filter((a) => (a.folderId ?? null) === openFolderId);
-    return activities.filter((a) => !a.folderId); // root: ungrouped only
+    return activities.filter((a) => !a.folderId);
   }, [activities, searching, q, openFolderId]);
 
-  // Root (not searching): top-level folders. Inside a folder: its direct sub-folders.
-  // While searching: any folder whose name matches (flat).
   const visibleFolders = useMemo(() => {
     if (searching) return folders.filter((f) => f.name.toLowerCase().includes(q));
     return folders.filter((f) => (f.parentId ?? null) === openFolderId);
   }, [folders, searching, q, openFolderId]);
   const countFor = (folderId: string) => activities.filter((a) => (a.folderId ?? null) === folderId).length;
 
-  // Flattened folder tree (DFS, alphabetical per level) with depth — for the indented "move to folder" menu.
   const orderedFolders = useMemo(() => {
     const byParent = new Map<string | null, Folder[]>();
     for (const f of folders) {
@@ -2053,8 +1985,6 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
   );
 }
 
-// ─── Missions sub-section with pagination ───
-
 function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missions: Mission[]; folders: Folder[]; navigate: ReturnType<typeof useNavigate>; t: Record<string, string>; onRefresh: () => void }) {
   const [openFolderId, setOpenFolderId] = useState<string | null>(null);
   const [actionsMissionId, setActionsMissionId] = useState<string | null>(null);
@@ -2092,7 +2022,7 @@ function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missio
     try {
       await adminApiFetch(`/api/admin/missions/${id}/folder`, { method: 'PATCH', body: JSON.stringify({ folderId }) });
       onRefresh();
-    } catch { /* ignore */ }
+    } catch { }
   }, [canEdit, onRefresh]);
 
   const submitFolder = async (name: string, color: string) => {
@@ -2116,11 +2046,10 @@ function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missio
     }
   };
 
-  // mouse drag (HTML5)
   const onMouseDragStart = (e: React.DragEvent, id: string) => {
     mouseDragIdRef.current = id;
     setDraggingId(id);
-    try { e.dataTransfer.setData('text/plain', id); } catch { /* Firefox */ }
+    try { e.dataTransfer.setData('text/plain', id); } catch { }
     e.dataTransfer.effectAllowed = 'move';
   };
   const onMouseDragEnd = () => { mouseDragIdRef.current = null; setDraggingId(null); setDragOverKey(null); };
@@ -2140,7 +2069,6 @@ function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missio
     if (id) moveToFolder(id, folderId);
   };
 
-  // touch drag (press-and-hold)
   const hitTestKey = useCallback((x: number, y: number): string | null => {
     for (const [key, el] of dropTargetRefs.current.entries()) {
       const r = el.getBoundingClientRect();
@@ -2266,7 +2194,7 @@ function MissionsSection({ missions, folders, navigate, t, onRefresh }: { missio
 
   const renderMissionMenu = (m: Mission) => {
     if (!canEdit) return null;
-    if (folders.length === 0 && !m.folderId) return null; // nothing to move to
+    if (folders.length === 0 && !m.folderId) return null;
     return (
       <RowActionWrapper data-row-actions onClick={(e) => e.stopPropagation()}>
         <RowActionIconButton type="button" aria-label={t.moveToFolder} title={t.moveToFolder}

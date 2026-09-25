@@ -1,4 +1,3 @@
-/** Shared /manage domain types + the small helpers every screen needs. */
 
 export type ClientDomain = 'tourism' | 'academia' | 'organization' | 'other';
 export type ClientStatus = 'active' | 'prospect' | 'paused' | 'past' | 'irrelevant';
@@ -28,10 +27,8 @@ export interface Client {
   status: ClientStatus;
   leadSource: LeadSource;
   website?: string;
-  /** First-meeting brief on the organisation — every employee can read it. */
   brief?: string;
   contacts: Contact[];
-  /** Owner-only — the server strips it for everyone else. */
   contract?: {
     startDate?: string;
     endDate?: string;
@@ -68,7 +65,6 @@ export function daysSince(iso?: string): number | null {
   return Math.floor((Date.now() - then) / 86_400_000);
 }
 
-/** Israel-local date, the format every screen in this system displays. */
 export function formatDate(iso?: string): string {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -76,15 +72,12 @@ export function formatDate(iso?: string): string {
   return d.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-/** Value for an <input type="date">, which wants YYYY-MM-DD in local time. */
 export function toDateInput(iso?: string): string {
   const d = iso ? new Date(iso) : new Date();
   if (Number.isNaN(d.getTime())) return '';
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
-
-// ─── Projects ───
 
 export type ProjectType = 'client' | 'internal' | 'demo';
 export type ProjectStatus =
@@ -118,7 +111,6 @@ export interface ProjectHours {
   overrunHours: number;
 }
 
-/** Money fields are optional here because the server strips them for pm/member. */
 export interface Project {
   _id: string;
   name: string;
@@ -161,12 +153,9 @@ export const HEALTH_COLORS: Record<ProjectHealth, string> = {
   red: '#c62828',
 };
 
-/** Statuses that mean the project is finished — used to grey rows out. */
 export function isClosed(status: ProjectStatus): boolean {
   return status === 'done' || status === 'cancelled';
 }
-
-// ─── Time entries ───
 
 export type TimeCategory =
   | 'client_project' | 'infrastructure' | 'demo' | 'content'
@@ -177,7 +166,6 @@ export const TIME_CATEGORIES: TimeCategory[] = [
   'sales', 'marketing', 'admin', 'support', 'bizdev',
 ];
 
-/** Mirrors the server list; the server is still the authority that rejects. */
 export const CATEGORIES_REQUIRING_PROJECT: TimeCategory[] = [
   'client_project', 'infrastructure', 'demo', 'content',
 ];
@@ -213,13 +201,11 @@ export interface MonthSheetData {
   daysWorked: number;
 }
 
-/** Name off a field that may be an id or a populated object. */
 export function refName(v: unknown): string | undefined {
   if (v && typeof v === 'object' && 'name' in v) return (v as { name: string }).name;
   return undefined;
 }
 
-/** The person's colour off a populated ref — one colour per employee, every board. */
 export function refColor(v: unknown): string | undefined {
   if (v && typeof v === 'object' && 'color' in v) return (v as { color?: string }).color;
   return undefined;
@@ -232,14 +218,11 @@ export function refId(v: unknown): string | undefined {
   return undefined;
 }
 
-/** Sunday-start week containing `d`, per spec ch.04 §13. */
 export function weekStart(d: Date = new Date()): Date {
   const s = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   s.setDate(s.getDate() - s.getDay());
   return s;
 }
-
-// ─── Tasks ───
 
 export type TaskStatus = 'not_started' | 'in_progress' | 'waiting' | 'needs_approval' | 'done';
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
@@ -275,14 +258,12 @@ export interface Task {
   startDate?: string;
   dueDate?: string;
   completedAt?: string;
-  /** Owner/pm flag: off means the task is the assignee's alone. */
   visibleToAll?: boolean;
   checklist: { text: string; done: boolean }[];
   comments: TaskComment[];
   archived: boolean;
 }
 
-/** Days late, or null if not overdue. Open tasks only — a finished task is never late. */
 export function overdueDays(task: Pick<Task, 'dueDate' | 'status'>): number | null {
   if (!task.dueDate || task.status === 'done') return null;
   const due = new Date(task.dueDate);
@@ -300,8 +281,6 @@ export function isDueToday(task: Pick<Task, 'dueDate' | 'status'>): boolean {
   const t = new Date();
   return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate();
 }
-
-// ─── Dashboard ───
 
 export type AlertSeverity = 'critical' | 'warning' | 'info';
 
@@ -327,8 +306,6 @@ export interface DashboardData {
   };
 }
 
-// ─── Calendar ───
-
 export type CalendarKind =
   | 'task_due' | 'meeting' | 'next_action'
   | 'project_start' | 'project_target' | 'project_go_live';
@@ -351,8 +328,6 @@ export const CALENDAR_COLORS: Record<CalendarKind, string> = {
   project_target: '#ed6c02',
   project_go_live: '#2e7d32',
 };
-
-// ─── Money (owner only — the server refuses these routes for anyone else) ───
 
 export type ExpenseCategory =
   | 'freelancer' | 'graphics' | 'ai_api' | 'hosting' | 'content' | 'travel' | 'other';
@@ -428,12 +403,10 @@ export interface FinanceSummary {
   excludesManagementHours: boolean;
 }
 
-/** Shekels, no decimals — nobody reads agorot on a dashboard. */
 export function formatMoney(n: number): string {
   return `${Math.round(n).toLocaleString('he-IL')} ₪`;
 }
 
-/** Percentages get one decimal (spec ch.04). */
 export function formatPercent(ratio: number): string {
   return `${Math.round(ratio * 1000) / 10}%`;
 }

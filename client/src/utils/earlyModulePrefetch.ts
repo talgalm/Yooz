@@ -22,7 +22,6 @@ export async function prefetchActivityModule(code: string, group = ''): Promise<
   return optimized;
 }
 
-/** Fire-and-forget: fetch module JSON + start media downloads before story page mounts. */
 export function startEarlyModulePrefetch(code: string, group = ''): void {
   void prefetchActivityModule(code, group).catch(() => {});
 }

@@ -9,7 +9,6 @@ export const texts = {
     theme: 'Theme (optional)',
     tags: 'Tags',
     addTag: 'Add tag...',
-    // Shared
     instructions: 'Instructions for participants',
     startButtonText: 'Start button text (optional)',
     startButtonTextPlaceholder: 'Override default start button label',
@@ -27,7 +26,6 @@ export const texts = {
     scoring: 'Scoring',
     save: 'Save',
     saving: 'Saving...',
-    // Order game
     instructionsPlaceholder: 'Drag and arrange the items in the correct order',
     rounds: 'Rounds',
     addRound: 'Add Round',
@@ -44,7 +42,6 @@ export const texts = {
     timeLimitSeconds: 'Time limit per round (seconds, 0 = no limit)',
     noRounds: 'Add at least one round with at least 2 cards.',
     round: 'Round',
-    // Trivia game
     triviaInstructionsPlaceholder: 'Select all correct answers for each question',
     answerCorrect: 'Correct',
     answerIncorrect: 'Incorrect',
@@ -74,7 +71,6 @@ export const texts = {
     ageRangeMin: 'Min Age',
     ageRangeMax: 'Max Age',
     allAges: 'All Ages',
-    // Puzzle game
     puzzleInstructionsPlaceholder: 'Answer trivia questions to reveal puzzle pieces. Complete the puzzle as fast as you can!',
     puzzleImage: 'Puzzle Image',
     puzzleImagePlaceholder: 'Image URL for the puzzle',
@@ -100,7 +96,6 @@ export const texts = {
     puzzleShuffleAnswers: 'Shuffle answer order',
     noPuzzleQuestions: 'Add at least one question with at least 2 answers.',
     noPuzzleImage: 'Puzzle image is required.',
-    // True/False game
     trueFalseInstructionsPlaceholder: 'Read each statement and decide — is it True or False? Answer before time runs out!',
     statements: 'Statements',
     addStatement: 'Add Statement',
@@ -122,12 +117,10 @@ export const texts = {
     orderModeSurvey: 'Survey — class ranking (no scoring)',
     surveyItemsLabel: 'Items to rank (order here is display only)',
     noSurveyRound: 'Survey mode requires exactly one round with at least 2 items.',
-    // Ball game
     ballGameInstructionsPlaceholder: 'Answer questions and throw the ball into the basket!',
     ballGameTimeLimitSeconds: 'Time limit per question (seconds)',
     noBallGameQuestions: 'Add at least one question with 4 answers (one correct).',
     ballGameMaxQuestions: 'Maximum 10 questions allowed.',
-    // Trash sort game
     trashSortInstructionsPlaceholder: 'Drag falling items into the correct recycling bins!',
     trashSortBins: 'Bins',
     trashSortAddBin: 'Add Bin',
@@ -157,7 +150,6 @@ export const texts = {
     theme: 'נושא (אופציונלי)',
     tags: 'תגיות',
     addTag: 'הוסף תג...',
-    // Shared
     instructions: 'הוראות למשתתפים',
     startButtonText: 'טקסט כפתור התחלה (אופציונלי)',
     startButtonTextPlaceholder: 'מחליף את ברירת המחדל של כפתור ההתחלה',
@@ -175,7 +167,6 @@ export const texts = {
     scoring: 'ניקוד',
     save: 'שמור',
     saving: 'שומר...',
-    // Order game
     instructionsPlaceholder: 'גררו וסדרו את הפריטים בסדר הנכון',
     rounds: 'סבבים',
     addRound: 'הוסף סבב',
@@ -192,7 +183,6 @@ export const texts = {
     timeLimitSeconds: 'מגבלת זמן לסבב (שניות, 0 = ללא)',
     noRounds: 'הוסיפו לפחות סבב אחד עם לפחות 2 כרטיסיות.',
     round: 'סבב',
-    // Trivia game
     triviaInstructionsPlaceholder: 'בחרו את כל התשובות הנכונות לכל שאלה',
     answerCorrect: 'נכון',
     answerIncorrect: 'לא נכון',
@@ -222,7 +212,6 @@ export const texts = {
     ageRangeMin: 'גיל מינ׳',
     ageRangeMax: 'גיל מקס׳',
     allAges: 'כל הגילאים',
-    // Puzzle game
     puzzleInstructionsPlaceholder: 'ענו על שאלות טריוויה כדי לחשוף חלקי פאזל. השלימו את הפאזל מהר ככל האפשר!',
     puzzleImage: 'תמונת פאזל',
     puzzleImagePlaceholder: 'כתובת URL לתמונת הפאזל',
@@ -248,7 +237,6 @@ export const texts = {
     puzzleShuffleAnswers: 'ערבוב סדר התשובות',
     noPuzzleQuestions: 'הוסיפו לפחות שאלה אחת עם לפחות 2 תשובות.',
     noPuzzleImage: 'תמונת פאזל נדרשת.',
-    // True/False game
     trueFalseInstructionsPlaceholder: 'קראו כל טענה והחליטו — נכון או לא נכון? ענו לפני שהזמן נגמר!',
     statements: 'טענות',
     addStatement: 'הוסף טענה',
@@ -270,12 +258,10 @@ export const texts = {
     orderModeSurvey: 'סקר — דירוג כיתתי (ללא ניקוד)',
     surveyItemsLabel: 'פריטים לדירוג (הסדר כאן הוא לתצוגה בלבד)',
     noSurveyRound: 'מצב סקר דורש סבב אחד עם לפחות 2 פריטים.',
-    // Ball game
     ballGameInstructionsPlaceholder: 'ענו על שאלות וזרקו את הכדור לסל!',
     ballGameTimeLimitSeconds: 'מגבלת זמן לשאלה (שניות)',
     noBallGameQuestions: 'הוסיפו לפחות שאלה אחת עם 4 תשובות (אחת נכונה).',
     ballGameMaxQuestions: 'מקסימום 10 שאלות.',
-    // Trash sort game
     trashSortInstructionsPlaceholder: 'גררו פריטים נופלים לפחי המיחזור הנכונים!',
     trashSortBins: 'פחים',
     trashSortAddBin: 'הוסף פח',

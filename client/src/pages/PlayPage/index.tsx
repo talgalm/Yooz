@@ -261,11 +261,9 @@ export default function PlayPage() {
   const [inviteError, setInviteError] = useState(false);
   const [createdGroup, setCreatedGroup] = useState<{ name: string; inviteUrl: string } | null>(null);
 
-  // Scheduling state
   const [scheduleStatus, setScheduleStatus] = useState<'pending' | 'active' | 'expired' | null>(null);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  // Opening state
   const [openingPhase, setOpeningPhase] = useState<OpeningPhase>('playing');
   const [showDefaultSplash, setShowDefaultSplash] = useState(false);
   const [videoStarted, setVideoStarted] = useState(false);
@@ -278,7 +276,6 @@ export default function PlayPage() {
     if (!isAuthenticated) resumeCheckedForCode.current = null;
   }, [isAuthenticated]);
 
-  // Remember activity as soon as the QR / link is opened (before login).
   useEffect(() => {
     if (code) rememberActivityCode(code);
   }, [code]);
@@ -323,7 +320,6 @@ export default function PlayPage() {
       } catch (err) {
         clearTimeout(timeoutId);
         if (cancelled) return;
-        // Auto-retry once on network/timeout failures (handles cold-start / PM2 restart windows)
         if (attempt < 1) {
           await new Promise((r) => setTimeout(r, 1500));
           if (!cancelled) await fetchWithTimeout(attempt + 1);
@@ -346,7 +342,6 @@ export default function PlayPage() {
     };
   }, [code, retryCount, inviteTokenParam]);
 
-  // Resolve invite token from URL
   useEffect(() => {
     if (!activity || !inviteTokenParam || activity.groupEntryMode !== 'selfService') return;
     let cancelled = false;
@@ -368,7 +363,6 @@ export default function PlayPage() {
     return () => { cancelled = true; };
   }, [activity, inviteTokenParam]);
 
-  // Check scheduling and run countdown
   useEffect(() => {
     if (!activity) return;
     const now = new Date();
@@ -408,14 +402,11 @@ export default function PlayPage() {
     }
   }, [activity?.moduleType]);
 
-  // Start downloading activity media while the login / opening screen is visible.
   useEffect(() => {
     if (!isAuthenticated || !activity?.code || scheduleStatus !== 'active') return;
     prefetchModuleIfNeeded(activity.code, participant?.group || '');
   }, [isAuthenticated, activity?.code, scheduleStatus, participant?.group, prefetchModuleIfNeeded]);
 
-  // If the participant still has a valid token and saved progress, skip the login
-  // screen and return them to the activity (e.g. after a connection drop).
   useEffect(() => {
     if (!isAuthenticated || !activity || !code || scheduleStatus !== 'active') return;
     if (resumeCheckedForCode.current === code) return;
@@ -447,7 +438,6 @@ export default function PlayPage() {
           navigate(participantStoryPath(activity.code), { replace: true });
         }
       } catch {
-        // Stay on login — user can sign in manually
       }
     })();
 
@@ -460,11 +450,9 @@ export default function PlayPage() {
     setOpeningPhase('fading');
     setTimeout(() => {
       setOpeningPhase('done');
-    }, 1200); // match CSS transition duration
+    }, 1200);
   }, []);
 
-  // Auto-fade: 1.5s for default splash, 5s for image opening.
-  // Video openings wait for the user to press play; fade-out is then triggered by onEnded.
   useEffect(() => {
     if (openingPhase !== 'playing') return;
     if (!hasOpening && !showDefaultSplash) return;
@@ -474,7 +462,6 @@ export default function PlayPage() {
     return () => clearTimeout(timer);
   }, [hasOpening, openingType, showDefaultSplash, openingPhase, startFadeOut]);
 
-  // Lock body scroll while opening is visible
   useEffect(() => {
     if ((hasOpening || showDefaultSplash) && openingPhase !== 'done') {
       const prev = document.body.style.overflow;
@@ -490,8 +477,6 @@ export default function PlayPage() {
   };
 
   const handleOpeningClick = () => {
-    // Don't let an outside click skip the splash before the user has chosen
-    // to start the video — they need to press the play button first.
     if (hasOpening && openingType === 'video' && !videoStarted) return;
     if (openingPhase === 'playing') {
       startFadeOut();
@@ -714,7 +699,6 @@ export default function PlayPage() {
     );
   }
 
-  // Wait for schedule check to resolve
   if (scheduleStatus === null && (activity.scheduledStart || activity.scheduledEnd)) {
     return (
       <PurpleLoadingScreen>
@@ -725,7 +709,6 @@ export default function PlayPage() {
     );
   }
 
-  // Show scheduling screens
   if (scheduleStatus === 'expired') {
     return (
       <ScheduleScreen>
@@ -768,7 +751,6 @@ export default function PlayPage() {
 
   return (
     <>
-      {/* Default splash — shown when activity has no opening media */}
       {showDefaultSplash && openingPhase !== 'done' && (
         <DefaultSplashOverlay
           fading={openingPhase === 'fading'}
@@ -779,7 +761,6 @@ export default function PlayPage() {
         </DefaultSplashOverlay>
       )}
 
-      {/* Custom opening overlay */}
       {hasOpening && openingPhase !== 'done' && activity && (
         <CustomOpeningOverlay
           activity={activity}
@@ -794,7 +775,6 @@ export default function PlayPage() {
         />
       )}
 
-      {/* Login page — full screen purple */}
       <PurpleLoginPage visible={openingPhase !== 'playing'}>
         <LangDrawer variant="fab" only={activity?.languages ?? []} />
         <LoginLogo src="/images/logo-white.png" alt="Yooz" />
@@ -805,7 +785,6 @@ export default function PlayPage() {
         </LoginFormWrapper>
       </PurpleLoginPage>
 
-      {/* Keyframe animation for skip hint */}
       {(hasOpening || showDefaultSplash) && openingPhase !== 'done' && (
         <style>{`
           @keyframes fadeInUp {

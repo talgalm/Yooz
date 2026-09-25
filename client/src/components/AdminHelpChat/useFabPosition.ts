@@ -1,10 +1,3 @@
-/**
- * Position state for the DumbDumbBot FAB.
- *
- * The bot starts bottom-left and can be dragged anywhere; the spot is remembered
- * per browser. Clamping is a pure function so it can be checked without a DOM —
- * see useFabPosition.test.ts.
- */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -13,7 +6,6 @@ export const FAB_SIZE = 58;
 const MARGIN = 12;
 const EDGE_GAP = 24;
 const STORAGE_KEY = 'yooz_bot_pos';
-/** Pointer slop below which a press is still a click, not a drag. */
 const DRAG_THRESHOLD = 4;
 
 export interface FabPos {
@@ -27,8 +19,6 @@ export interface Viewport {
 }
 
 export function clampFabPosition(pos: FabPos, viewport: Viewport, size = FAB_SIZE): FabPos {
-  // On a viewport narrower than the FAB itself the max collapses below MARGIN,
-  // so clamp the bound too rather than returning a negative offset.
   const maxLeft = Math.max(MARGIN, viewport.width - size - MARGIN);
   const maxTop = Math.max(MARGIN, viewport.height - size - MARGIN);
   return {
@@ -89,14 +79,11 @@ export function useFabPosition() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(pos));
     } catch {
-      // private mode / quota — the bot just forgets where it was put
     }
   }, [pos]);
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
     if (e.button !== 0) return;
-    // A drag whose pointer left the button fires no click, so didDrag() is never
-    // consumed — clear it here so the next real click is not swallowed.
     draggedRef.current = false;
     const rect = e.currentTarget.getBoundingClientRect();
     gesture.current = {
@@ -106,17 +93,11 @@ export function useFabPosition() {
       dy: e.clientY - rect.top,
       moved: false,
     };
-    // Deliberately no setPointerCapture here: while a pointer is captured the
-    // browser retargets the follow-up click to the capturing element, which
-    // swallowed the plain click that opens the chat. Capture is taken in
-    // onPointerMove instead, once the press has become a real drag.
   }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
     const g = gesture.current;
     if (!g) return;
-    // Released outside the element before capture was taken — no button is down,
-    // so this is a stray hover, not a drag.
     if (e.buttons === 0) {
       gesture.current = null;
       return;
@@ -137,12 +118,10 @@ export function useFabPosition() {
     if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
-    // The click that follows a drag must not also open the chat.
     draggedRef.current = g.moved;
     setDragging(false);
   }, []);
 
-  /** True once per drag, consumed by the FAB's click handler. */
   const didDrag = useCallback(() => {
     const was = draggedRef.current;
     draggedRef.current = false;

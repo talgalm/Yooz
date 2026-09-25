@@ -84,7 +84,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
 
       <rect x="0" y="0" width={W} height={H} fill="url(#oceanDepth)" />
 
-      {/* Surface ripples at top */}
       <path
         d={`M0 ${SKY_TOP * 0.3} Q${W * 0.15} ${SKY_TOP * 0.22}, ${W * 0.3} ${SKY_TOP * 0.32} Q${W * 0.5} ${SKY_TOP * 0.42}, ${W * 0.7} ${SKY_TOP * 0.28} Q${W * 0.85} ${SKY_TOP * 0.18}, ${W} ${SKY_TOP * 0.3}`}
         fill="none"
@@ -98,7 +97,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         strokeWidth="1.5"
       />
 
-      {/* Light rays from surface */}
       <polygon
         points={`${W * 0.2},0 ${W * 0.28},0 ${W * 0.38},${H * 0.6} ${W * 0.24},${H * 0.6}`}
         fill="rgba(255,255,255,0.04)"
@@ -112,7 +110,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         fill="rgba(255,255,255,0.03)"
       />
 
-      {/* Sandy ocean floor */}
       <path
         d={`M0 ${B + 60} Q${W * 0.15} ${B + 40}, ${W * 0.3} ${B + 65} Q${W * 0.5} ${B + 85}, ${W * 0.7} ${B + 50} Q${W * 0.85} ${B + 35}, ${W} ${B + 55} L${W} ${H} L0 ${H} Z`}
         fill="url(#sandFloor)"
@@ -123,7 +120,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         opacity="0.5"
       />
 
-      {/* Coral reef on the floor - left side */}
       <g transform={`translate(${W * 0.05}, ${B + 20})`}>
         <path d="M20,80 L18,55 Q15,42 12,30 Q10,20 14,12 Q18,4 22,12 Q24,20 22,30 Q19,42 18,50" fill="#E86B5A" />
         <path d="M12,30 Q6,22 4,14 Q8,18 10,24" fill="#F07A6A" opacity="0.7" />
@@ -132,7 +128,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         <circle cx="22" cy="10" r="2.5" fill="#FF9080" opacity="0.6" />
       </g>
 
-      {/* Pink fan coral - right */}
       <g transform={`translate(${W * 0.82}, ${B + 15})`}>
         <path d="M18,75 L16,55 Q14,42 12,30 Q8,16 14,6 Q18,0 22,6 Q28,16 24,30 Q22,42 20,55 Z" fill="#E87BAE" />
         <path d="M12,30 Q6,20 2,14 Q6,18 10,24" fill="#F08EC0" opacity="0.6" />
@@ -140,7 +135,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         <ellipse cx="18" cy="16" rx="8" ry="7" fill="#F8A0D0" opacity="0.35" />
       </g>
 
-      {/* Seaweed - multiple patches */}
       <g transform={`translate(${W * 0.15}, ${B - 10})`} opacity="0.8">
         <path d="M10,100 Q8,80 6,60 Q4,40 6,20 Q8,8 10,20 Q12,40 14,60 Q16,80 10,100 Z" fill="#2D8B5A" />
         <path d="M6,60 Q2,48 0,36 Q4,44 6,52" fill="#38A068" opacity="0.6" />
@@ -153,7 +147,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         <path d="M6,85 Q4,68 3,50 Q2,30 4,12 Q6,4 8,12 Q10,30 9,50 Q8,68 6,85 Z" fill="#2D8B5A" />
       </g>
 
-      {/* Ocean floor rocks */}
       <g transform={`translate(${W * 0.3}, ${B + 55})`}>
         <path d="M5,24 Q2,20 4,14 Q8,6 18,4 Q26,2 34,6 Q38,12 36,18 Q30,24 20,26 Q10,26 5,24 Z" fill="#4A6878" />
         <path d="M18,4 Q26,2 34,6 Q28,8 20,8 Q12,10 8,14 Z" fill="#5A7888" opacity="0.4" />
@@ -163,7 +156,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         <path d="M14,2 Q22,1 28,5 Q22,6 14,6 Q8,8 5,12 Z" fill="#5A7888" opacity="0.35" />
       </g>
 
-      {/* Shell on the floor */}
       <g transform={`translate(${W * 0.48}, ${B + 80})`}>
         <path d="M11,2 Q20,2 22,10 Q24,16 20,20 Q14,22 8,20 Q3,16 2,10 Q2,4 6,2 Q8,2 11,2 Z" fill="#F0D8B0" />
         <path d="M11,3 Q10,8 9,14" stroke="#D8C098" stroke-width="0.8" fill="none" />
@@ -171,13 +163,11 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         <path d="M11,3 Q11,8 11,14" stroke="#D8C098" stroke-width="0.6" fill="none" />
       </g>
 
-      {/* Starfish */}
       <g transform={`translate(${W * 0.2}, ${B + 75})`}>
         <path d="M12,1 L14,8 L22,8 L16,13 L18,21 L12,16 L6,21 L8,13 L2,8 L10,8 Z" fill="#E8785A" />
         <path d="M12,4 L13,8 L18,8 L15,12 L16,18 L12,14 L8,18 L9,12 L5,8 L10,8 Z" fill="#F08A6A" opacity="0.6" />
       </g>
 
-      {/* Small fish */}
       <g transform={`translate(${W * 0.55}, ${SKY_TOP + 60})`} opacity="0.6">
         <path d="M22,8 Q18,3 12,2 Q6,3 2,8 Q6,13 12,14 Q18,13 22,8 Z" fill="#FFB84D" />
         <path d="M22,8 L28,3 L28,13 Z" fill="#FF9E33" />

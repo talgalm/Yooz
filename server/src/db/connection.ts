@@ -14,7 +14,6 @@ export async function connectDB(): Promise<void> {
   });
   console.log('✅ Connected to MongoDB');
 
-  // Drop stale indexes that no longer match the schema
   try {
     const db = mongoose.connection.db;
     if (db) {
@@ -25,6 +24,5 @@ export async function connectDB(): Promise<void> {
       }
     }
   } catch {
-    // Ignore if index doesn't exist
   }
 }

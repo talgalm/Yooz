@@ -104,14 +104,11 @@ export default function BadgeStation({ station, onContinue }: BadgeStationProps)
           url: window.location.href,
         });
       } catch {
-        // User cancelled or share failed
       }
     } else {
-      // Fallback: copy URL to clipboard
       try {
         await navigator.clipboard.writeText(window.location.href);
       } catch {
-        // Clipboard not available
       }
     }
   };

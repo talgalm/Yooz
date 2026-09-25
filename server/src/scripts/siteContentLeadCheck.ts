@@ -1,4 +1,3 @@
-// Run: npx tsx server/src/scripts/siteContentLeadCheck.ts
 import assert from 'node:assert';
 import { validateLead } from '../routes/siteContent';
 
