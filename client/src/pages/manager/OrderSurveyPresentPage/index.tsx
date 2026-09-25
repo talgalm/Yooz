@@ -126,7 +126,7 @@ const ResultRow = styled('div')({
   borderRadius: 14,
   background: 'rgba(255,255,255,0.08)',
   border: '1px solid rgba(255,255,255,0.12)',
-  textAlign: 'right',
+  textAlign: 'start',
 });
 
 const RankBadge = styled('div')({
@@ -221,7 +221,7 @@ export default function OrderSurveyPresentPage() {
   const selectedItem = surveyItems.find((i) => i.index === selectedIndex);
 
   return (
-    <Page dir="rtl">
+    <Page>
       <TopBar>
         <Title>{t.title}</Title>
         <BackBtn type="button" onClick={() => navigate('/manager/dashboard')}>{t.back}</BackBtn>

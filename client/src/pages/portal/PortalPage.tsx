@@ -46,7 +46,6 @@ const PurplePage = styled('div')({
   padding: '40px 24px',
   boxSizing: 'border-box',
   overflow: 'auto',
-  direction: 'rtl',
 });
 
 const LogoImg = styled('img')({
@@ -218,7 +217,6 @@ const SpinnerEl = styled('div')({
 
 const ShellWrap = styled('div')({
   minHeight: '100vh',
-  direction: 'rtl',
   background: '#f7f5fa',
   display: 'flex',
   flexDirection: 'column',

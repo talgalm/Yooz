@@ -376,7 +376,7 @@ export default function GolfChallenge({ onComplete, onSkip }: GolfChallengeProps
   };
 
   return (
-    <GolfContainer dir="rtl">
+    <GolfContainer>
       {/* Header (glass effect, black border — matches order game) */}
       <GolfHeader>
         <TitleBadge>

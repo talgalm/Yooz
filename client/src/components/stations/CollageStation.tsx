@@ -191,7 +191,7 @@ const MissionNum = styled('div')({
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   fontWeight: 800, fontSize: 16, flexShrink: 0, color: '#fff',
 });
-const MissionInfo = styled('div')({ flex: 1, textAlign: 'right' });
+const MissionInfo = styled('div')({ flex: 1, textAlign: 'start' });
 const MissionTitle = styled('div')({ fontWeight: 800, fontSize: 16, color: '#fff' });
 const MissionDesc = styled('div')({ fontSize: 13, color: 'rgba(255,255,255,0.62)', marginTop: 3 });
 
@@ -271,7 +271,7 @@ const TitleInput = styled('input')({
   width: '100%', boxSizing: 'border-box', padding: '14px 16px',
   borderRadius: 12, border: '1px solid rgba(255,255,255,0.14)',
   background: 'rgba(255,255,255,0.07)', color: '#fff', fontSize: 16,
-  fontFamily: 'inherit', marginBottom: 20, outline: 'none', textAlign: 'right',
+  fontFamily: 'inherit', marginBottom: 20, outline: 'none', textAlign: 'start',
   '&::placeholder': { color: 'rgba(255,255,255,0.32)' },
 });
 
@@ -1324,7 +1324,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
           {disclaimer && <CompactDisclaimer>{disclaimer}</CompactDisclaimer>}
 
           <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.48)', marginBottom: 6 }}>{t.videoTitleLabel}</p>
-          <TitleInput value={collageTitle} onChange={(e) => setCollageTitle(e.target.value)} placeholder={t.videoTitlePlaceholder} dir="rtl" />
+          <TitleInput value={collageTitle} onChange={(e) => setCollageTitle(e.target.value)} placeholder={t.videoTitlePlaceholder} />
 
           {[...photos].sort((a, b) => a.missionIndex - b.missionIndex).map((photo) => {
             // Merged split photos use global indices (0..totalImages-1); use fullMissions, not this part's slice.

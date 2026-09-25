@@ -596,7 +596,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     return (
       <>
         {!setThemedSceneOverlay && <TriviaIntroFullScreenSceneBackdrop aria-hidden />}
-        <IntroContainer dir="rtl">
+        <IntroContainer>
           {!activityHeaderAudio && (
             <div style={{ position: 'relative', zIndex: 1 }}>
               <GameIntroHeaderBar>
@@ -645,7 +645,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   if (gameComplete) {
     if (noContent) return null;
     return (
-      <FinishContainer dir="rtl">
+      <FinishContainer>
         {!setThemedSceneOverlay && <TriviaPlayFullScreenSceneBackdrop aria-hidden />}
         {!activityHeaderAudio && (
           <GameIntroHeaderBar>
@@ -694,7 +694,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   }
 
   return (
-    <TriviaContainer dir="rtl">
+    <TriviaContainer>
       {!setThemedSceneOverlay && <TriviaPlayFullScreenSceneBackdrop aria-hidden />}
 
       {/* Top bar: score | timer | question count | mute */}

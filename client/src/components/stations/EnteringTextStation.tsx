@@ -65,7 +65,6 @@ const Wrap = styled('div')({
   padding: '26px 16px 140px',
   boxSizing: 'border-box',
   overflowY: 'auto',
-  direction: 'rtl',
   [DESKTOP_BREAKPOINT]: {
     width: '100%',
     padding: '32px 24px 180px',
@@ -152,7 +151,7 @@ const Statement = styled('div')({
   fontWeight: 700,
   color: '#111',
   marginBottom: 8,
-  textAlign: 'right',
+  textAlign: 'start',
   [DESKTOP_BREAKPOINT]: {
     fontSize: 28,
     marginBottom: 12,
@@ -171,7 +170,7 @@ const Input = styled('input')({
   boxSizing: 'border-box',
   fontFamily: 'inherit',
   outline: 'none',
-  textAlign: 'right',
+  textAlign: 'start',
   '&::placeholder': {
     color: '#888',
     opacity: 1,
@@ -230,7 +229,6 @@ const BelowCardRow = styled('div')({
   alignItems: 'center',
   justifyContent: 'space-between',
   gap: 12,
-  direction: 'rtl',
   [DESKTOP_BREAKPOINT]: {
     maxWidth: DESKTOP_STATION_WIDTH,
     marginTop: 20,
@@ -301,11 +299,10 @@ const ErrorText = styled('div')({
   fontSize: 13,
   fontWeight: 600,
   marginTop: 10,
-  textAlign: 'right',
+  textAlign: 'start',
 });
 
 const SuccessCard = styled(ModalCard)({
-  direction: 'rtl',
   textAlign: 'center',
   padding: '32px 28px 24px',
 });
@@ -644,7 +641,7 @@ export default function EnteringTextStation({
           {[...Array(maxAttempts)].map((_, i) => (
             <AttemptDot key={i} used={String(i < attempts)} />
           ))}
-          <span style={{ direction: 'rtl', unicodeBidi: 'isolate' }}>{t.attempts}</span>
+          <span style={{ unicodeBidi: 'isolate' }}>{t.attempts}</span>
         </BelowAttemptsRow>
         <HintGroup>
           {showSolutionHintIcon && (

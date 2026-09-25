@@ -36,6 +36,7 @@ import {
   LoginSubheading,
   LoginFormWrapper,
 } from '../admin/styled';
+import LangDrawer from '../../components/LangDrawer';
 
 type LoginField = 'email' | 'phoneNumber' | 'name';
 
@@ -60,6 +61,7 @@ interface ActivityConfig {
   scheduledStart?: string;
   scheduledEnd?: string;
   moduleType?: string;
+  languages?: string[];
 }
 
 type GroupFlow = 'choice' | 'create' | 'join-paste' | 'join-login' | 'success';
@@ -192,6 +194,13 @@ const ScheduleScreen = styled('div')({
   color: '#fff',
   padding: 24,
   textAlign: 'center',
+});
+
+const LoginLangSlot = styled('div')({
+  position: 'absolute',
+  top: 'calc(12px + env(safe-area-inset-top, 0px))',
+  insetInlineStart: 12,
+  zIndex: 1,
 });
 
 const ScheduleLogo = styled('img')({
@@ -790,6 +799,9 @@ export default function PlayPage() {
 
       {/* Login page — full screen purple */}
       <PurpleLoginPage visible={openingPhase !== 'playing'}>
+        <LoginLangSlot>
+          <LangDrawer only={activity?.languages ?? []} />
+        </LoginLangSlot>
         <LoginLogo src="/images/logo-white.png" alt="Yooz" />
         <LoginHeading>{loginHeading}</LoginHeading>
         <LoginSubheading>{loginSubheading}</LoginSubheading>

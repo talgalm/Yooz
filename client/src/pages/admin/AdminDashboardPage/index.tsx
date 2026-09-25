@@ -44,7 +44,6 @@ import {
 
 const PageBg = styled('div')({
   minHeight: '100vh',
-  direction: 'rtl',
   display: 'flex',
   alignItems: 'stretch',
   background: '#f6f6fb',
@@ -70,13 +69,17 @@ const Sidebar = styled('aside')<{ open?: boolean }>(({ open }) => ({
   // PageBg is not a containing block for fixed descendants, so this is not clipped.
   position: 'fixed',
   top: 0,
-  right: 0,
+  insetInlineStart: 0,
   height: '100dvh',
   zIndex: 200,
   '@media (max-width: 900px)': {
     boxShadow: '-8px 0 32px rgba(40,30,70,0.14)',
     transform: open ? 'none' : 'translateX(100%)',
     transition: 'transform 0.22s ease',
+    '[dir="ltr"] &': {
+      boxShadow: '8px 0 32px rgba(40,30,70,0.14)',
+      transform: open ? 'none' : 'translateX(-100%)',
+    },
   },
 }));
 
@@ -688,7 +691,6 @@ const ModalCard = styled('div')({
   width: '100%',
   maxWidth: 480,
   boxShadow: '0 12px 48px rgba(0,0,0,0.22)',
-  direction: 'rtl',
 });
 
 const ModalHeader = styled('div')({
@@ -747,7 +749,7 @@ const CreateTile = styled('button')<{ accent?: string }>(({ accent = '#6c5ce7' }
   borderRadius: 14,
   padding: '20px 16px 16px',
   cursor: 'pointer',
-  textAlign: 'right',
+  textAlign: 'start',
   display: 'flex',
   flexDirection: 'column',
   gap: 6,
@@ -790,7 +792,7 @@ const TypeTile = styled('button')({
   borderRadius: 12,
   padding: '16px 14px',
   cursor: 'pointer',
-  textAlign: 'right',
+  textAlign: 'start',
   display: 'flex',
   alignItems: 'center',
   gap: 10,
@@ -1761,7 +1763,7 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
                   disabled={(activity.folderId ?? null) === f._id}
                   onClick={() => { moveActivityToFolder(activity._id, f._id); closeActions(); }}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, paddingLeft: depth * 16 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, paddingInlineStart: depth * 16 }}>
                     <FolderGlyph color={resolveFolderColor(f.color).accent} size={16} />
                     {f.name}
                   </span>
@@ -1797,7 +1799,7 @@ function ActivitiesSection({ activities, folders, navigate, t, onRefresh }: { ac
         )}
       </SectionHeaderRow>
       <div style={{ position: 'relative', marginBottom: 12 }}>
-        <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#bbb', fontSize: 15, pointerEvents: 'none' }}>🔍</span>
+        <span style={{ position: 'absolute', insetInlineEnd: 14, top: '50%', transform: 'translateY(-50%)', color: '#bbb', fontSize: 15, pointerEvents: 'none' }}>🔍</span>
         <input
           type="text"
           placeholder={t.searchActivities || 'Search name, customer, or code...'}

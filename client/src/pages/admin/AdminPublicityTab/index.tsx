@@ -53,7 +53,7 @@ function LocalizedField({ label, value, onChange, t }: { label: string; value: L
       <FieldPair>
         <FieldCol>
           <LangTag>{t.he}</LangTag>
-          <Input value={value?.he || ''} dir="rtl" onChange={(e) => onChange({ he: e.target.value, en: value?.en || '' })} />
+          <Input value={value?.he || ''} onChange={(e) => onChange({ he: e.target.value, en: value?.en || '' })} />
         </FieldCol>
         <FieldCol>
           <LangTag>{t.en}</LangTag>

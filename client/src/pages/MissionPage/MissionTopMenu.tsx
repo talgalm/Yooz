@@ -25,7 +25,6 @@ const Container = styled('div')({
   top: 10,
   right: 12,
   zIndex: 15,
-  direction: 'rtl',
   fontFamily: MENU_FONT,
 });
 
@@ -78,8 +77,7 @@ const MenuItem = styled('button')({
   fontWeight: 500,
   cursor: 'pointer',
   borderRadius: 8,
-  textAlign: 'right',
-  direction: 'rtl',
+  textAlign: 'start',
   transition: 'background 0.15s',
   '&:hover': { background: 'rgba(57,202,188,0.18)' },
   '&:active': { background: 'rgba(57,202,188,0.28)' },

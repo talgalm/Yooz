@@ -132,7 +132,6 @@ const ErrorWrapper = styled('div')({
   fontSize: 18,
   textAlign: 'center',
   padding: 24,
-  direction: 'rtl',
   fontFamily: "'Rubik', sans-serif",
 });
 
