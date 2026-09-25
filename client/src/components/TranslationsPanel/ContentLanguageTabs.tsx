@@ -47,12 +47,17 @@ const CARD_BORDER = '#ecebf4';
 const CARD_SHADOW = '0 1px 2px rgba(16,12,40,0.04), 0 10px 30px rgba(16,12,40,0.05)';
 
 /**
- * Room inside the strip for that shadow to spread into.
+ * Room above the strip for that shadow to spread into.
  *
  * The strip scrolls sideways, which makes it a clipping box - a shadow on a tab
  * would be cut off flush with the tab itself. Padding gives it somewhere to go,
- * and an equal negative margin puts the tabs back exactly where they were, so
- * the first one still lines up with the card's edge.
+ * and an equal negative margin keeps the tabs where they were.
+ *
+ * Only upwards, though. The same trick sideways widened the strip past the card
+ * on both sides, and in a scroller the content moves *through* its padding - so
+ * scrolled tabs appeared outside the card's edges. The strip is now exactly as
+ * wide as the card, and a tab's sideways shadow is clipped at that edge, where
+ * the card's own shadow continues the silhouette anyway.
  */
 const SHADOW_ROOM = 24;
 
@@ -66,32 +71,52 @@ const SHADOW_ROOM = 24;
  * a browser window meets its own tabs. Logical, so it follows the page's
  * direction: the corner the tabs start at, whichever side that is.
  */
-const squareTabCorner = { '& > *': { borderStartStartRadius: 0 } } as const;
+/**
+ * The card also gives up the part of its shadow that points *upwards*.
+ *
+ * Its shadow blurs about twenty pixels past its own top edge, and an inactive
+ * tab is transparent - so that shadow washed up through the tabs and greyed
+ * their lower half. Raising the strip does not help: the shadow is already
+ * behind the tabs, it simply shows through them. Clipped flush at the top, the
+ * sides and bottom keep theirs, and the tab carries its own shadow above.
+ */
+const cardMeetingTabs = {
+  '& > *': {
+    borderStartStartRadius: 0,
+    clipPath: 'inset(0 -60px -60px -60px)',
+  },
+} as const;
 
-const Surface = styled('div')(squareTabCorner);
+const Surface = styled('div')(cardMeetingTabs);
 
-const PanelCard = styled(AdminCardWide)({ borderStartStartRadius: 0 });
+const PanelCard = styled(AdminCardWide)({
+  borderStartStartRadius: 0,
+  clipPath: 'inset(0 -60px -60px -60px)',
+});
 
 const Strip = styled('div')({
   display: 'flex',
   gap: 4,
   alignItems: 'flex-end',
-  overflowX: 'auto',
+  /**
+   * Hidden rather than `auto`: the strip is moved by clicking a tab, never by
+   * dragging or a wheel. `scrollIntoView` still works on a hidden overflow, so
+   * the strip can be scrolled programmatically while offering no scrollbar and
+   * no way to leave it half-way between two tabs.
+   */
+  overflowX: 'hidden',
   overflowY: 'hidden',
   position: 'relative',
-  zIndex: 1,
+  zIndex: 2,
   // Pulls the strip itself over the card. Done here rather than on the tabs,
   // because anything overflowing a tab downwards is clipped by `overflow-y`
   // above, and a box-shadow bridging the seam would be clipped with it.
   marginBottom: -MERGE,
   paddingBottom: 0,
   paddingTop: SHADOW_ROOM,
-  paddingInline: SHADOW_ROOM,
   marginTop: -SHADOW_ROOM,
-  marginInline: -SHADOW_ROOM,
-  scrollbarWidth: 'thin',
-  '&::-webkit-scrollbar': { height: 6 },
-  '&::-webkit-scrollbar-thumb': { background: '#ded7f0', borderRadius: 3 },
+  // Smooth by default, so a click walks the strip rather than jumping it.
+  scrollBehavior: 'smooth',
 });
 
 /**
@@ -177,7 +202,7 @@ function fadeStyle(
   const left = dir === 'rtl' ? more.end : more.start;
   const right = dir === 'rtl' ? more.start : more.end;
   if (!left && !right) return {};
-  const edge = `${SHADOW_ROOM + 12}px`;
+  const edge = '28px';
   const mask = `linear-gradient(to right, ${
     left ? 'transparent 0, #000 ' + edge : '#000 0'
   }, ${right ? `#000 calc(100% - ${edge}), transparent 100%` : '#000 100%'})`;
@@ -238,12 +263,46 @@ export default function ContentLanguageTabs({
     return () => observer.disconnect();
   }, [measure, summary]);
 
-  // With many languages the active one can sit off-screen on load.
+  /**
+   * With many languages the active one can sit off-screen when the tabs first
+   * arrive. Deliberately not keyed on `tab` as well: a click starts a smooth
+   * scroll of its own (see `reveal`), and re-running this on the same click
+   * cancelled it mid-flight - the strip simply never moved.
+   */
   useEffect(() => {
     stripRef.current
       ?.querySelector('[aria-selected="true"]')
       ?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
-  }, [tab, summary]);
+  }, [summary]);
+
+  /**
+   * Clicking a tab pulls the strip the way that tab lies, revealing the next
+   * one beyond it - so reaching the far end is just clicking towards it, rather
+   * than knowing the strip scrolls at all.
+   *
+   * It scrolls the *neighbour* into view rather than centring the tab clicked:
+   * that moves the least possible while still always showing something new, so
+   * the strip never jumps under a click in the middle.
+   */
+  const reveal = useCallback((el: HTMLElement | null) => {
+    const strip = stripRef.current;
+    if (!strip || !el) return;
+    const box = strip.getBoundingClientRect();
+    const tabBox = el.getBoundingClientRect();
+    const towardsLeft = tabBox.left + tabBox.width / 2 < box.left + box.width / 2;
+
+    const beyond = [...strip.querySelectorAll<HTMLElement>('[role="tab"]')]
+      .map((tab) => ({ tab, rect: tab.getBoundingClientRect() }))
+      .filter(({ rect }) => (towardsLeft ? rect.left < tabBox.left : rect.right > tabBox.right))
+      // The nearest one on that side.
+      .sort((a, b) => (towardsLeft ? b.rect.left - a.rect.left : a.rect.right - b.rect.right));
+
+    (beyond[0]?.tab ?? el).scrollIntoView({
+      inline: 'nearest',
+      block: 'nearest',
+      behavior: 'smooth',
+    });
+  }, []);
 
   const loadSummary = useCallback(async () => {
     if (!id) return;
@@ -288,7 +347,10 @@ export default function ContentLanguageTabs({
             role="tab"
             aria-selected={current === 'he'}
             active={current === 'he'}
-            onClick={() => setTab('he')}
+            onClick={(e) => {
+              setTab('he');
+              reveal(e.currentTarget);
+            }}
           >
             {t.generalTab}
           </Tab>
@@ -300,7 +362,10 @@ export default function ContentLanguageTabs({
             role="tab"
             aria-selected={current === l.code}
             active={current === l.code}
-            onClick={() => setTab(l.code)}
+            onClick={(e) => {
+              setTab(l.code);
+              reveal(e.currentTarget);
+            }}
             title={l.inUse ? undefined : t.unusedTitle}
           >
             <span aria-hidden>{flagFor(l.code)}</span>
