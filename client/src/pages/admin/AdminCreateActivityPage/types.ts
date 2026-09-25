@@ -132,7 +132,6 @@ export interface Activity {
     }[];
   };
   guidelines?: string;
-  /** Languages the activity is offered in besides Hebrew. */
   languages?: string[];
   extraSupportInfo?: string;
   organizerContactName?: string;

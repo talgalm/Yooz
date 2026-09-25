@@ -16,12 +16,14 @@ import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { SUPPORTED_LANGS } from '../utils/requestLang';
 import { pretranslateActivity } from '../services/activityPretranslate';
-import { IActivity } from '../models/Activity';
+import { IActivity, IScheduledReport } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
 import { getSmsProvider } from '../services/sms/smsProvider';
 import { renderWinnerSms } from '../utils/groupRewardConfig';
 import { DEFAULT_SMS_TEMPLATE } from '../services/groupRewardService';
 import { wipeActivityData } from '../services/activityReset';
+import { type AnalyticsExportType } from '../utils/analyticsExcelExport';
+import { sendScheduledReportNow } from '../services/scheduledReports';
 
 const router = Router();
 
@@ -75,11 +77,6 @@ async function provisionActivityManager(
   return provisionManagerCustomer(managerEmail.trim(), managerPassword);
 }
 
-/**
- * Pre-translates an activity's content in the background. The save has already
- * been answered by the time this runs, and a failure only means the first
- * participant in that language waits for the translation themselves.
- */
 function warmTranslations(activityId: string, languages?: string[]): void {
   if (!languages?.length) return;
   pretranslateActivity(activityId, languages).catch(() => undefined);
@@ -195,9 +192,6 @@ async function buildActivityData(
   // Handle guidelines
   data.guidelines = guidelines?.trim() || null;
 
-  // Languages this activity is offered in besides Hebrew. Its content is
-  // pre-translated into each one after the save, so the first participant to
-  // pick one does not wait on the model.
   data.languages = Array.isArray(languages)
     ? languages.filter(
         (l: unknown): l is string =>
@@ -586,6 +580,107 @@ router.patch('/activities/:id/folder', authenticateAdmin, async (req: Request<{ 
   res.json({ activity: stripManagerPassword(activity) });
 });
 
+// ─── Automated scheduled report settings (Yooz-admin-only, no manager/customer self-service) ───
+
+const VALID_SCHEDULED_REPORT_TYPES: AnalyticsExportType[] = ['executive', 'participants', 'scores', 'progress'];
+const SCHEDULED_REPORT_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function defaultScheduledReport(): IScheduledReport {
+  return {
+    enabled: false,
+    reportType: 'executive',
+    recipients: [],
+    frequency: 'daily',
+    scheduleHour: 8,
+    skipIfUnchanged: false,
+  };
+}
+
+router.get('/activities/:activityId/scheduled-report', authenticateAdmin, requireRole('admin', 'super_admin'), async (req: Request<{ activityId: string }>, res: Response) => {
+  const activity = await Activity.findById(req.params.activityId, { scheduledReport: 1 }).lean();
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  res.json({ scheduledReport: activity.scheduledReport || defaultScheduledReport() });
+});
+
+router.put('/activities/:activityId/scheduled-report', authenticateAdmin, requireRole('admin', 'super_admin'), async (
+  req: Request<{ activityId: string }, {}, {
+    enabled?: unknown;
+    reportType?: unknown;
+    recipients?: unknown;
+    frequency?: unknown;
+    dayOfWeek?: unknown;
+    scheduleHour?: unknown;
+    skipIfUnchanged?: unknown;
+  }>,
+  res: Response,
+) => {
+  const activity = await Activity.findById(req.params.activityId);
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+
+  const { body } = req;
+  if (typeof body.reportType !== 'string' || !VALID_SCHEDULED_REPORT_TYPES.includes(body.reportType as AnalyticsExportType)) {
+    res.status(400).json({ error: `reportType must be one of: ${VALID_SCHEDULED_REPORT_TYPES.join(', ')}` });
+    return;
+  }
+  const reportType = body.reportType as AnalyticsExportType;
+
+  if (body.frequency !== 'daily' && body.frequency !== 'weekly') {
+    res.status(400).json({ error: 'frequency must be "daily" or "weekly"' });
+    return;
+  }
+  const frequency = body.frequency;
+
+  let dayOfWeek: number | undefined;
+  if (frequency === 'weekly') {
+    if (typeof body.dayOfWeek !== 'number' || !Number.isInteger(body.dayOfWeek) || body.dayOfWeek < 0 || body.dayOfWeek > 6) {
+      res.status(400).json({ error: 'dayOfWeek (0-6) is required when frequency is "weekly"' });
+      return;
+    }
+    dayOfWeek = body.dayOfWeek;
+  }
+
+  if (typeof body.scheduleHour !== 'number' || !Number.isInteger(body.scheduleHour) || body.scheduleHour < 0 || body.scheduleHour > 23) {
+    res.status(400).json({ error: 'scheduleHour must be an integer between 0 and 23' });
+    return;
+  }
+  const scheduleHour = body.scheduleHour;
+
+  const recipients = Array.isArray(body.recipients)
+    ? [...new Set(body.recipients.map((r) => String(r).trim().toLowerCase()).filter(Boolean))]
+    : [];
+  if (recipients.some((r) => !SCHEDULED_REPORT_EMAIL_RE.test(r))) {
+    res.status(400).json({ error: 'recipients contains an invalid email address' });
+    return;
+  }
+
+  const enabled = Boolean(body.enabled);
+  if (enabled && recipients.length === 0) {
+    res.status(400).json({ error: 'At least one recipient is required when enabled is true' });
+    return;
+  }
+
+  activity.scheduledReport = {
+    enabled,
+    reportType,
+    recipients,
+    frequency,
+    dayOfWeek,
+    scheduleHour,
+    skipIfUnchanged: Boolean(body.skipIfUnchanged),
+    lastSentAt: activity.scheduledReport?.lastSentAt,
+    lastSentSnapshot: activity.scheduledReport?.lastSentSnapshot,
+  };
+  await activity.save();
+  logAdminAction(req, 'update_scheduled_report', 'activity', activity._id.toString(), activity.name, { enabled, reportType, frequency });
+  res.json({ scheduledReport: activity.scheduledReport });
+});
+
 // Duplicate activity — creates a clone with " (עותק)" suffix and a fresh code
 router.post('/activities/:id/duplicate', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const existing = await Activity.findById(req.params.id);
@@ -780,6 +875,29 @@ router.post('/sms/test', authenticateAdmin, requireRole('admin', 'super_admin'),
     return res.status(502).json({ error: result.error || 'SMS send failed', provider: provider.name });
   }
   res.json({ ok: true, provider: provider.name, providerMessageId: result.providerMessageId });
+});
+
+// Manual "Send now" — builds and emails the activity's configured scheduled
+// report immediately, using its saved settings. Ignores the schedule (hour/day)
+// and skipIfUnchanged entirely; this is a deliberate on-demand send, for testing
+// or for a one-off resend, through the exact same path the hourly cron uses.
+router.post('/activities/:activityId/scheduled-report/send-now', authenticateAdmin, requireRole('admin', 'super_admin'), async (req: Request<{ activityId: string }>, res: Response) => {
+  const activity = await Activity.findById(req.params.activityId);
+  if (!activity) {
+    res.status(404).json({ error: 'Activity not found' });
+    return;
+  }
+  if (!activity.scheduledReport) {
+    res.status(400).json({ error: 'No scheduled report is configured for this activity yet — save the settings first' });
+    return;
+  }
+
+  try {
+    const result = await sendScheduledReportNow(activity);
+    res.json({ ok: true, resendId: result.resendId });
+  } catch (err) {
+    res.status(502).json({ error: err instanceof Error ? err.message : 'Send failed' });
+  }
 });
 
 export default router;

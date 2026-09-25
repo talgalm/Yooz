@@ -54,6 +54,12 @@ export const TEXTME_API_TOKEN = process.env.TEXTME_API_TOKEN || '';
 export const TEXTME_USERNAME = process.env.TEXTME_USERNAME || '';
 export const TEXTME_SOURCE = process.env.TEXTME_SOURCE || 'Yooz';
 
+// Resend (https://resend.com) transactional email config
+export const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+// Sender for every outgoing email. yooz.org.il is verified in Resend, so this delivers
+// to any recipient (not just the Resend account owner, as onboarding@resend.dev did).
+export const EMAIL_FROM = 'דוחות אוטומטיים Yooz <reports@yooz.org.il>';
+
 if (!process.env.JWT_SECRET) {
   console.warn('⚠ JWT_SECRET not set in .env, using fallback (not safe for production)');
 }

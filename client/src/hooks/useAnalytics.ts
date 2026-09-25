@@ -32,6 +32,7 @@ const selectAuditLog = (response: { logs: AuditLogEntry[]; total: number; page: 
 });
 
 const selectDays = (response: { days: ActivityDay[] }) => response.days;
+const selectScheduledReport = (response: { scheduledReport: ScheduledReportSettings }) => response.scheduledReport;
 
 function periodQuery(period?: ActivityPeriod) {
   return period ? `?period=${period}` : '';
@@ -210,6 +211,43 @@ export async function saveExclusions(activityId: string, excludedReportIds: stri
     { method: 'PATCH', body: JSON.stringify({ excludedReportIds }) },
   );
   return res.excludedReportIds;
+}
+
+// ── Automated scheduled report (admin only, no shared-view equivalent) ──
+
+export interface ScheduledReportSettings {
+  enabled: boolean;
+  reportType: AnalyticsExportType;
+  recipients: string[];
+  frequency: 'daily' | 'weekly';
+  dayOfWeek?: number;
+  scheduleHour: number;
+  skipIfUnchanged: boolean;
+}
+
+export function useScheduledReport(activityId: string | null) {
+  return useApiFetch<{ scheduledReport: ScheduledReportSettings }, ScheduledReportSettings>(
+    activityId ? `/api/admin/activities/${activityId}/scheduled-report` : null,
+    selectScheduledReport,
+  );
+}
+
+export async function saveScheduledReport(
+  activityId: string,
+  settings: ScheduledReportSettings,
+): Promise<ScheduledReportSettings> {
+  const res = await adminApiFetch<{ scheduledReport: ScheduledReportSettings }>(
+    `/api/admin/activities/${activityId}/scheduled-report`,
+    { method: 'PUT', body: JSON.stringify(settings) },
+  );
+  return res.scheduledReport;
+}
+
+export async function sendScheduledReportNow(activityId: string): Promise<{ resendId?: string }> {
+  return adminApiFetch<{ ok: true; resendId?: string }>(
+    `/api/admin/activities/${activityId}/scheduled-report/send-now`,
+    { method: 'POST' },
+  );
 }
 
 // ── Export helper (triggers download) ──
