@@ -6,14 +6,26 @@
  * browsers (iOS silent mode, missing canplaythrough) and shouldn't diverge.
  */
 
+import { currentLang, currentLocale, langHeader } from '../../../utils/currentLang';
+
 export interface SpeechHandle {
   stop: () => void;
 }
 
+/**
+ * The last-resort voice, used when the TTS endpoint cannot be reached.
+ *
+ * It speaks in the participant's language: this used to be pinned to Hebrew,
+ * so an English activity that fell back here either mispronounced every word
+ * or, far more often, said nothing at all - the browser has no voice for a
+ * language it was not asked for, and `speak()` on a voiceless language is
+ * silent without raising anything.
+ */
 export function speakBrowser(
   text: string,
   voiceType: 'man' | 'woman',
-  onEnd?: () => void
+  onEnd?: () => void,
+  lang: string = currentLang()
 ): SpeechHandle {
   const noop: SpeechHandle = { stop: () => {} };
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
@@ -23,19 +35,23 @@ export function speakBrowser(
   try {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'he-IL';
+    u.lang = currentLocale(lang);
     u.rate = voiceType === 'man' ? 0.92 : 1;
     u.pitch = voiceType === 'woman' ? 1.3 : 0.4;
     const voices = window.speechSynthesis.getVoices();
-    const hebVoices = voices.filter((v) => v.lang === 'he-IL' || v.lang.startsWith('he'));
-    if (hebVoices.length > 0) {
+    const matching = voices.filter((v) => v.lang === u.lang || v.lang.startsWith(lang));
+    if (matching.length > 0) {
       const genderKey = voiceType === 'woman' ? 'female' : 'male';
-      const gendered = hebVoices.find(
+      const gendered = matching.find(
         (v) =>
           v.name.toLowerCase().includes(genderKey) ||
           (v as unknown as { gender?: string }).gender === genderKey
       );
-      u.voice = gendered || hebVoices[0];
+      u.voice = gendered || matching[0];
+    } else if (voices.length > 0) {
+      // Nothing installed for this language: say so, because the symptom is
+      // pure silence and there is no other way to tell it from a working clip.
+      console.warn(`[speech] no ${u.lang} voice in this browser - the fallback will be silent`);
     }
     if (onEnd) {
       u.onend = onEnd;
@@ -68,15 +84,36 @@ export interface PreparedSpeech {
   durationMs?: number;
 }
 
+/**
+ * The participant's own session, when there is one.
+ *
+ * These endpoints are public - they have to be, the avatar starts talking
+ * before anything is submitted - but the token identifies who is asking, and
+ * the server spends its per-participant allowance rather than lumping a whole
+ * venue behind one shared address into a single quota.
+ */
+function authHeader(): Record<string, string> {
+  try {
+    const token = localStorage.getItem('yooz_token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
 export async function fetchWithNetworkRetry(
   url: string,
   options: RequestInit,
   retries = 4
 ): Promise<Response> {
   let lastError: unknown;
+  const withLang = {
+    ...options,
+    headers: { ...langHeader(), ...authHeader(), ...(options.headers || {}) },
+  };
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      return await fetch(url, options);
+      return await fetch(url, withLang);
     } catch (err) {
       lastError = err;
       if (!(err instanceof TypeError) || attempt >= retries - 1) throw err;
@@ -139,7 +176,11 @@ export async function prepareSpeech(
         try { URL.revokeObjectURL(audioUrl); } catch { /* noop */ }
       },
     };
-  } catch {
+  } catch (err) {
+    // The fallback below is often inaudible - most desktops carry no Hebrew
+    // voice - so a refused or failed clip must leave a trace. Without this the
+    // station just goes quiet and looks like a broken voice setting.
+    console.warn('[speech] TTS unavailable, falling back to the browser voice:', err);
     let browserHandle: SpeechHandle | null = null;
     let stopped = false;
     return {

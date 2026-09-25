@@ -17,11 +17,11 @@ import { Types } from 'mongoose';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
 import { Station } from '../models/Station';
 import { coverage, containsPhrase, containsPhraseNear, tokens } from '../utils/hebrewText';
+import { replyLanguageInstruction } from '../utils/promptLanguage';
+import { readLang } from '../utils/requestLang';
 import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
-
-// ─── In-memory rate limiter (20 req/min/IP) — same policy as avatarChat ───
 
 // ─── In-memory rate limiter, per participant — same policy as avatarChat ───
 
@@ -119,7 +119,7 @@ const DONT_KNOW_PATTERNS = [
 
 // ─── System prompt ───
 
-function buildSystemPrompt(settings: AvatarQuizSettings, question: AvatarQuizQuestion): string {
+function buildSystemPrompt(settings: AvatarQuizSettings, question: AvatarQuizQuestion, lang: string): string {
   const lines: string[] = [];
   const name = settings.characterName?.trim();
   const topic = settings.topic?.trim();
@@ -198,6 +198,12 @@ function buildSystemPrompt(settings: AvatarQuizSettings, question: AvatarQuizQue
     lines.push('- דרשו את כל מרכיבי התשובה כדי לתת correct.');
   }
 
+  // Last word on the language, so a participant reading English is answered and
+  // graded in it. The gender-neutral rule above is about Hebrew and does not
+  // carry over.
+  const language = replyLanguageInstruction(lang);
+  if (language) lines.push('', language);
+
   return lines.join('\n');
 }
 
@@ -207,7 +213,8 @@ async function judgeWithGemini(
   settings: AvatarQuizSettings,
   question: AvatarQuizQuestion,
   answer: string,
-  history: HistoryEntry[]
+  history: HistoryEntry[],
+  lang: string
 ): Promise<Judgement> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
@@ -218,7 +225,7 @@ async function judgeWithGemini(
 
   const body = {
     contents: [...priorTurns, { role: 'user', parts: [{ text: answer }] }],
-    systemInstruction: { parts: [{ text: buildSystemPrompt(settings, question) }] },
+    systemInstruction: { parts: [{ text: buildSystemPrompt(settings, question, lang) }] },
     generationConfig: {
       temperature: 0.3, // judging should be consistent, not creative
       maxOutputTokens: 300,
@@ -542,7 +549,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   try {
-    respond(await judgeWithGemini(settings, question, safeAnswer, safeHistory), 'gemini');
+    respond(await judgeWithGemini(settings, question, safeAnswer, safeHistory, readLang(req)), 'gemini');
   } catch (err) {
     console.error('Avatar quiz endpoint error:', err);
     respond(judgeLocally(question, safeAnswer), 'fallback');

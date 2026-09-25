@@ -1,11 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
 import { normalizeText, coverage, jaccardSimilarity } from '../utils/hebrewText';
+import { replyLanguageInstruction } from '../utils/promptLanguage';
+import { readLang } from '../utils/requestLang';
 import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
-
-// ─── In-memory rate limiter (20 req/min/IP) ───
 
 // ─── In-memory rate limiter, counted per participant ───
 
@@ -50,7 +50,7 @@ interface HistoryEntry {
   text: string;
 }
 
-function buildSystemPrompt(settings: AvatarSettings): string {
+function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
   const lines: string[] = [];
   const name = settings.characterName?.trim();
 
@@ -139,13 +139,18 @@ function buildSystemPrompt(settings: AvatarSettings): string {
   lines.push('');
   lines.push('כללי פלט: תשובה קצרה (עד 2 משפטים), ללא אימוג׳ים, ללא מרקדאון, ללא הסברים מטה-טקסט.');
 
+  // Last word on the language, so a participant reading English is answered in it.
+  const language = replyLanguageInstruction(lang);
+  if (language) lines.push('', language);
+
   return lines.join('\n');
 }
 
 async function askGemini(
   message: string,
   settings: AvatarSettings,
-  history: HistoryEntry[]
+  history: HistoryEntry[],
+  lang: string
 ): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
@@ -158,7 +163,7 @@ async function askGemini(
 
   const body = {
     contents,
-    systemInstruction: { parts: [{ text: buildSystemPrompt(settings) }] },
+    systemInstruction: { parts: [{ text: buildSystemPrompt(settings, lang) }] },
     generationConfig: {
       temperature: 0.6,
       maxOutputTokens: 200,
@@ -274,7 +279,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   try {
-    const raw = await askGemini(safeMessage, safeSettings, safeHistory);
+    const raw = await askGemini(safeMessage, safeSettings, safeHistory, readLang(req));
     const response = snapToOptionalAnswer(raw, safeSettings.optionalAnswers);
     res.json({ response, videoUrl, source: 'gemini' });
   } catch (err) {
