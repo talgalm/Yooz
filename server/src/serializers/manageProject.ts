@@ -1,17 +1,6 @@
 import { IProject } from '../models/manage/Project';
 import { ManageRole } from '../models/manage/ManageUser';
 
-/**
- * The ONLY shape a project leaves the server in.
- *
- * Never `res.json(project)` directly — money fields live on this document from
- * M3 onward even though the money SCREENS arrive in M5, so the gate has to
- * exist the moment the fields do. Hiding them in the UI is convenience,
- * not security: a member who opens the network tab must not see agreedPrice.
- *
- * `recurring.enabled` is deliberately public — it is the one-off vs retainer
- * flag the project list filters on, and it carries no amount.
- */
 export function serializeProject(doc: IProject, role: ManageRole) {
   const base = {
     _id: doc._id,

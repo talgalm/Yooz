@@ -6,7 +6,6 @@ export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
 export const TASK_STATUSES: TaskStatus[] = ['not_started', 'in_progress', 'waiting', 'needs_approval', 'done'];
 export const TASK_PRIORITIES: TaskPriority[] = ['low', 'normal', 'high', 'urgent'];
 
-/** Sort weight, so "urgent" actually floats to the top of a list. */
 export const PRIORITY_RANK: Record<TaskPriority, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
 
 export interface ITaskComment {
@@ -18,11 +17,6 @@ export interface ITaskComment {
 
 export interface ITask {
   _id: Types.ObjectId;
-  /**
-   * Optional on purpose. A task may hang off a project, off a client, or off
-   * nothing at all — "call the bank back" has to live somewhere, and forcing a
-   * fake project on it is how a todo list stops being used.
-   */
   projectId?: Types.ObjectId;
   clientId?: Types.ObjectId;
   stageKey?: string;
@@ -45,10 +39,6 @@ export interface ITask {
 
   plannedWeek?: string;
 
-  /**
-   * Off by default: a task belongs to its assignee. Only owner/pm can publish
-   * one to the whole team, which is what makes "my board" actually mine.
-   */
   visibleToAll: boolean;
 
   checklist: { text: string; done: boolean }[];
@@ -109,7 +99,6 @@ taskSchema.index({ plannedWeek: 1 });
 
 export const Task = model<ITask>('ManageTask', taskSchema, 'mng_tasks');
 
-/** Open means "still needs doing" — used by every overdue and load calculation. */
 export function isOpen(status: TaskStatus): boolean {
   return status !== 'done';
 }

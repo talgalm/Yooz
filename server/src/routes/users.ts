@@ -6,16 +6,13 @@ import { logAdminAction } from './admin';
 
 const router = Router();
 
-// All user routes require super_admin role
 router.use(authenticateAdmin, requireRole('super_admin'));
 
-// List all users
 router.get('/', async (_req: Request, res: Response) => {
   const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 });
   res.json({ users });
 });
 
-// Create user
 router.post('/', async (req: Request, res: Response) => {
   const { email, password, role, name } = req.body;
 
@@ -50,14 +47,12 @@ router.post('/', async (req: Request, res: Response) => {
   res.status(201).json({ user: safeUser });
 });
 
-// Update user
 router.put('/:id', async (req: Request<{ id: string }>, res: Response) => {
   const { email, password, role, name } = req.body;
   const update: Record<string, unknown> = { updatedAt: new Date() };
 
   if (email) update.email = email.toLowerCase().trim();
   if (role && ['viewer', 'admin', 'super_admin', 'customer'].includes(role)) {
-    // Prevent demoting the last super_admin
     const target = await User.findById(req.params.id);
     if (target && target.role === 'super_admin' && role !== 'super_admin') {
       const superCount = await User.countDocuments({ role: 'super_admin' });
@@ -81,16 +76,13 @@ router.put('/:id', async (req: Request<{ id: string }>, res: Response) => {
   res.json({ user });
 });
 
-// Delete user
 router.delete('/:id', async (req: Request<{ id: string }>, res: Response) => {
-  // Prevent deleting yourself
   const adminUserId = req.admin?.userId;
   if (req.params.id === adminUserId) {
     res.status(400).json({ error: 'Cannot delete your own account' });
     return;
   }
 
-  // Prevent deleting the last super_admin
   const target = await User.findById(req.params.id);
   if (!target) {
     res.status(404).json({ error: 'User not found' });

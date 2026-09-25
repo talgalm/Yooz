@@ -5,29 +5,21 @@ import { angleDelta, bearingDegrees, distanceMeters, offsetMeters, type LatLng }
 import { useTranslations } from '../context/LanguageContext';
 import { texts } from './ArDemoPage.i18n';
 
-/**
- * AR treasure-hunt demo: phone camera + GPS + compass. Coins live at real
- * lat/lng points and are drawn over the camera feed at the screen position
- * matching their compass bearing. Walk within COLLECT_RADIUS_M and tap.
- */
-
-const FOV_DEGREES = 60; // rough horizontal FOV of a phone rear camera in portrait
+const FOV_DEGREES = 60;
 const COLLECT_RADIUS_M = 3;
-const HORIZON_M = 15; // distance at which a pickup sits highest on screen
-const APPARENT_SIZE = 300; // px·m — real objects grow as 1/distance, so size = this / distance
+const HORIZON_M = 15;
+const APPARENT_SIZE = 300;
 const MIN_SIZE = 44;
 const MAX_SIZE = 210;
-const HEADING_SMOOTHING = 0.25; // low-pass on the compass; raw readings jitter several degrees
-const HEADING_FPS_MS = 100; // commit heading to React 10x/sec, not on every sensor event
-const POSITION_SMOOTHING = 0.25; // GPS corrects the dead-reckoned position gently, it does not yank it
-const POSITION_JUMP_M = 20; // past this, trust the new fix outright rather than easing toward it
-const STRIDE_M = 0.7; // average walking step
-const STEP_THRESHOLD = 1.5; // m/s² above the gravity baseline that counts as a footfall
-const STEP_MIN_MS = 300; // refractory period, i.e. at most ~3 steps/sec
-const STEP_BASELINE_EASE = 0.02; // slow enough not to track the step oscillation itself
+const HEADING_SMOOTHING = 0.25;
+const HEADING_FPS_MS = 100;
+const POSITION_SMOOTHING = 0.25;
+const POSITION_JUMP_M = 20;
+const STRIDE_M = 0.7;
+const STEP_THRESHOLD = 1.5;
+const STEP_MIN_MS = 300;
+const STEP_BASELINE_EASE = 0.02;
 
-// Default course: offsets in meters (north, east) from wherever the player starts,
-// so the demo is playable anywhere. Override with ?coins=lat,lng;lat,lng
 const DEFAULT_COURSE: Array<{ north: number; east: number; emoji: string; kind?: 'quiz' }> = [
   { north: 4, east: 0, emoji: '🪙' },
   { north: 5, east: 5, emoji: '🪙' },
@@ -36,9 +28,7 @@ const DEFAULT_COURSE: Array<{ north: number; east: number; emoji: string; kind?:
   { north: -3, east: -6, emoji: '❓', kind: 'quiz' },
 ];
 
-// The question station hands out the safe code; the safe ends the game.
 const SAFE_CODE = '7391';
-// The question text lives in ArDemoPage.i18n, in this same order.
 const QUIZ_ANSWERS = [true, false];
 
 const CONFETTI_COLORS = ['#ffd54f', '#7c4dff', '#2ec4b6', '#ff8a3d', '#2f9bd6'];
@@ -105,8 +95,6 @@ export default function ArDemoPage() {
 
   const start = useCallback(async () => {
     setError(null);
-    // iOS 13+ only grants motion access when requestPermission() is called inside the
-    // tap itself. Fire it FIRST — after an `await` the gesture is spent and it throws.
     const ask = (sensor: unknown) => {
       const requestPermission = (sensor as { requestPermission?: () => Promise<string> })
         .requestPermission;
@@ -118,7 +106,7 @@ export default function ArDemoPage() {
         : Promise.resolve(true);
     };
     const compassPermission = ask(DeviceOrientationEvent);
-    ask(DeviceMotionEvent); // step counter; the compass note covers both if it is denied
+    ask(DeviceMotionEvent);
 
     try {
       streamRef.current = await navigator.mediaDevices.getUserMedia({
@@ -135,8 +123,6 @@ export default function ArDemoPage() {
     }
   }, [t]);
 
-  // Attach the camera only once the <video> is actually mounted; the start screen
-  // does not render it, so assigning srcObject inside start() hit a null ref.
   useEffect(() => {
     if (!started || !videoRef.current || !streamRef.current) return;
     videoRef.current.srcObject = streamRef.current;
@@ -150,8 +136,6 @@ export default function ArDemoPage() {
     [],
   );
 
-  // Compass. Absolute readings win; a relative `alpha` is only a last resort because
-  // it is measured from wherever the phone happened to boot, not from north.
   useEffect(() => {
     if (!started) return;
     const onOrientation = (event: Event) => {
@@ -159,7 +143,7 @@ export default function ArDemoPage() {
       let next: number | null = null;
       if (typeof e.webkitCompassHeading === 'number') {
         absoluteSeenRef.current = true;
-        next = e.webkitCompassHeading; // iOS: already degrees clockwise from north
+        next = e.webkitCompassHeading;
       } else if (e.absolute && e.alpha != null) {
         absoluteSeenRef.current = true;
         next = (360 - e.alpha) % 360;
@@ -167,7 +151,6 @@ export default function ArDemoPage() {
         next = (360 - e.alpha) % 360;
       }
       if (next === null) return;
-      // Landscape rotates the camera relative to the sensor frame.
       next = (next + (screen.orientation?.angle ?? 0) + 360) % 360;
       const previous = headingRef.current;
       headingRef.current =
@@ -189,10 +172,6 @@ export default function ArDemoPage() {
     };
   }, [started, t]);
 
-  // Dead reckoning. A step covers ~0.7m and GPS noise is several meters, so walking a
-  // couple of paces is invisible to the fix alone — count footfalls and move along the
-  // compass instead, letting each GPS fix pull the accumulated drift back.
-  // ponytail: fixed stride, no per-user calibration. Tune STRIDE_M if it over/undershoots.
   const stepForward = useCallback(() => {
     const bearing = headingRef.current;
     const current = positionRef.current;
@@ -209,7 +188,7 @@ export default function ArDemoPage() {
 
   useEffect(() => {
     if (!started) return;
-    let baseline = 9.81; // gravity, plus whatever slow tilt the phone is held at
+    let baseline = 9.81;
     let armed = false;
     let lastStep = 0;
 
@@ -225,7 +204,7 @@ export default function ArDemoPage() {
         lastStep = now;
         stepForward();
       } else if (swing < STEP_THRESHOLD * 0.3) {
-        armed = true; // must fall back to rest before the next peak counts
+        armed = true;
       }
     };
 
@@ -233,7 +212,6 @@ export default function ArDemoPage() {
     return () => window.removeEventListener('devicemotion', onMotion);
   }, [started, stepForward]);
 
-  // GPS
   useEffect(() => {
     if (!started) return;
     if (!navigator.geolocation) {
@@ -247,8 +225,6 @@ export default function ArDemoPage() {
           lng: pos.coords.longitude,
           accuracy: pos.coords.accuracy,
         };
-        // ponytail: fixed-alpha EMA so the distance eases down as you walk instead of
-        // jumping meters per fix. Accuracy-weighted filtering if that stops being enough.
         const previous = positionRef.current;
         const smoothed =
           previous && distanceMeters(previous, fix) <= POSITION_JUMP_M
@@ -261,7 +237,6 @@ export default function ArDemoPage() {
         positionRef.current = smoothed;
         setPosition(smoothed);
 
-        // No compass? GPS reports a course while you are actually walking.
         if (headingRef.current === null && pos.coords.heading != null && !Number.isNaN(pos.coords.heading)) {
           headingRef.current = pos.coords.heading;
         }
@@ -352,7 +327,6 @@ export default function ArDemoPage() {
     null,
   );
 
-  // "Am I walking the right way?" — the single thing the distance number alone does not say.
   const nearestDistance = nearest?.distance ?? null;
   useEffect(() => {
     if (nearestDistance === null) {
@@ -433,7 +407,6 @@ export default function ArDemoPage() {
         </div>
       ))}
 
-      {/* Nothing in frame is the confusing case — point at the nearest one. */}
       {nearest && !nearest.onScreen && (
         <div style={styles.arrowWrap}>
           <div style={{ ...styles.arrow, transform: `rotate(${nearest.offset}deg)` }}>⬆</div>
@@ -551,7 +524,6 @@ export default function ArDemoPage() {
   );
 }
 
-// ─── Animated bits. The app has no CSS files, so keyframes come from emotion. ───
 const bob = keyframes`
   0%, 100% { transform: translate(-50%, -50%) scale(1); }
   50% { transform: translate(-50%, -62%) scale(1.14); }
@@ -586,7 +558,7 @@ const CoinButton = styled('button', { shouldForwardProp: (prop) => prop !== 'inR
   filter: `drop-shadow(0 4px 12px rgba(0,0,0,0.6))${inRange ? ' drop-shadow(0 0 18px #ffd54f)' : ''}`,
   opacity: inRange ? 1 : 0.75,
   animation: inRange ? `${bob} 900ms ease-in-out infinite` : 'none',
-  transition: 'font-size 240ms linear', // fixes land ~1/sec; grow between them, don't snap
+  transition: 'font-size 240ms linear',
 }));
 
 const CoinLabel = styled('span', { shouldForwardProp: (prop) => prop !== 'inRange' })<{

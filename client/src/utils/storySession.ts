@@ -20,7 +20,6 @@ export function saveStorySessionRaw(code: string, json: string): void {
     try {
       sessionStorage.setItem(key, json);
     } catch {
-      /* storage full / private mode */
     }
   }
 }
@@ -31,6 +30,5 @@ export function clearStorySession(code: string): void {
     sessionStorage.removeItem(key);
     localStorage.removeItem(key);
   } catch {
-    /* noop */
   }
 }

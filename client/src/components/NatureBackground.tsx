@@ -2,12 +2,8 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { styled } from '@mui/material/styles';
 import { ThemedSceneOverlayContext } from '../context/themedSceneOverlayContext';
 
-// ─── Layout constants (same as roadmap) ───
-
 const SKY_TOP = 190;
 const BOTTOM_ZONE = 240;
-
-// ─── Styled ───
 
 const Wrapper = styled('div')({
   position: 'relative',
@@ -27,8 +23,6 @@ const ContentLayer = styled('div')({
   flexDirection: 'column',
 });
 
-// ─── Scene SVG (matching roadmap SceneBackground exactly) ───
-
 function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: number; H: number; showClouds?: boolean; showStaticTrees?: boolean }) {
   const B = H - BOTTOM_ZONE;
 
@@ -40,7 +34,6 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
     >
-      {/* ── Defs ── */}
       <defs>
         <filter id="nbTreeShadow" x="-20%" y="-20%" width="140%" height="140%">
           <feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="#00000022" />
@@ -50,13 +43,10 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
         </filter>
       </defs>
 
-      {/* ── Sky ── */}
       <rect x="0" y="0" width={W} height={SKY_TOP + 40} fill="#b8e8f0" />
 
-      {/* ── Main green field ── */}
       <rect x="0" y={SKY_TOP - 30} width={W} height={H - SKY_TOP + 30} fill="#9cd060" />
 
-      {/* ── Clouds ── */}
       {showClouds && (
         <>
           <g opacity="0.85">
@@ -72,20 +62,15 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
         </>
       )}
 
-      {/* ── Back hill (far) ── */}
       <ellipse cx={W * 0.5} cy={160} rx={W * 0.85} ry={100} fill="#8ecf72" />
 
-      {/* ── Mid hills ── */}
       <ellipse cx={W * 0.19} cy={190} rx={W * 0.55} ry={80} fill="#79bf60" />
       <ellipse cx={W * 0.88} cy={185} rx={W * 0.50} ry={75} fill="#6db852" />
 
-      {/* ── Front ground ── */}
       <ellipse cx={W * 0.5} cy={SKY_TOP + 30} rx={W * 0.77} ry={40} fill="#5aaa48" />
 
-      {/* ── Trees on the hills ── */}
       {showStaticTrees && (
         <>
-          {/* BIG RED round tree — left */}
           <g transform={`translate(${W * 0.05}, 84)`} filter="url(#nbTreeShadow)">
             <rect x="13" y="54" width="10" height="18" rx="4" fill="#7a4a28" />
             <ellipse cx="18" cy="62" rx="20" ry="6" fill="#00000015" />
@@ -95,7 +80,6 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
             <circle cx="11" cy="18" r="5" fill="#f09080" opacity="0.6" />
           </g>
 
-          {/* TALL ORANGE round tree */}
           <g transform={`translate(${W * 0.16}, 106)`} filter="url(#nbTreeShadow)">
             <rect x="10" y="46" width="8" height="16" rx="3" fill="#7a4a28" />
             <ellipse cx="14" cy="52" rx="16" ry="5" fill="#00000012" />
@@ -105,7 +89,6 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
             <circle cx="9" cy="13" r="4" fill="#f0b858" opacity="0.55" />
           </g>
 
-          {/* SMALL ORANGE round tree */}
           <g transform={`translate(${W * 0.02}, 120)`} filter="url(#nbTreeShadow)">
             <rect x="8" y="36" width="7" height="13" rx="3" fill="#7a4a28" />
             <circle cx="11" cy="28" r="14" fill="#b87030" />
@@ -114,7 +97,6 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
             <circle cx="7" cy="10" r="3" fill="#eea850" opacity="0.5" />
           </g>
 
-          {/* TALL PINE — right */}
           <g transform={`translate(${W * 0.76}, 60)`} filter="url(#nbTreeShadow)">
             <rect x="11" y="72" width="8" height="16" rx="3" fill="#6a4020" />
             <polygon points="15,72 -4,52 34,52" fill="#2d7a35" />
@@ -125,7 +107,6 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
             <polygon points="15,10 11,2 19,2" fill="#5ad064" />
           </g>
 
-          {/* MEDIUM ROUND GREEN — right */}
           <g transform={`translate(${W * 0.84}, 78)`} filter="url(#nbTreeShadowSm)">
             <rect x="11" y="44" width="8" height="14" rx="3" fill="#6a4020" />
             <ellipse cx="15" cy="50" rx="15" ry="4" fill="#00000010" />
@@ -135,7 +116,6 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
             <circle cx="10" cy="11" r="4" fill="#58b068" opacity="0.55" />
           </g>
 
-          {/* SMALL ROUND GREEN — far right */}
           <g transform={`translate(${W * 0.93}, 94)`} filter="url(#nbTreeShadowSm)">
             <rect x="9" y="36" width="6" height="12" rx="2" fill="#6a4020" />
             <circle cx="12" cy="28" r="13" fill="#3a8844" />
@@ -146,7 +126,6 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
         </>
       )}
 
-      {/* ── Flowers on hillside ── */}
       <circle cx={W * 0.58} cy={130} r="3" fill="#ff9090" />
       <circle cx={W * 0.61} cy={126} r="2" fill="#ffb0b0" />
       <circle cx={W * 0.64} cy={132} r="2.5" fill="#ff8080" />
@@ -155,7 +134,6 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
       <circle cx={W * 0.70} cy={139} r="2" fill="#a0c0ff" />
       <circle cx={W * 0.73} cy={144} r="2" fill="#80a0ee" />
 
-      {/* ── Small bushes at base of hills ── */}
       <g transform={`translate(${W * 0.06}, 148)`}>
         <ellipse cx="12" cy="10" rx="14" ry="8" fill="#558b2f" />
         <ellipse cx="24" cy="10" rx="12" ry="7" fill="#7cb342" />
@@ -167,12 +145,10 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
         <ellipse cx="15" cy="5" rx="9" ry="6" fill="#9ccc65" />
       </g>
 
-      {/* ── Subtle terrain patches ── */}
       <ellipse cx={W * 0.22} cy={SKY_TOP + 100} rx={W * 0.28} ry={30} fill="#90c850" opacity="0.25" />
       <ellipse cx={W * 0.72} cy={SKY_TOP + 200} rx={W * 0.22} ry={25} fill="#88c048" opacity="0.2" />
       <ellipse cx={W * 0.5} cy={B - 80} rx={W * 0.3} ry={28} fill="#90c850" opacity="0.15" />
 
-      {/* ── BOTTOM ZONE — calm green waves ── */}
       <path
         d={`M0 ${B} Q${W * 0.15} ${B - 25}, ${W * 0.3} ${B + 5} Q${W * 0.5} ${B + 30}, ${W * 0.7} ${B - 8} Q${W * 0.85} ${B - 28}, ${W} ${B - 3} L${W} ${H} L0 ${H} Z`}
         fill="#7cb850"
@@ -190,7 +166,6 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
         fill="#4a8a30"
       />
 
-      {/* ── Trees in bottom zone ── */}
       <g transform={`translate(${W * 0.04}, ${B - 20})`} opacity="0.55">
         <rect x="11" y="44" width="6" height="12" rx="2" fill="#5a8040" />
         <circle cx="14" cy="34" r="14" fill="#3a8844" />
@@ -204,7 +179,6 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
         <circle cx="14" cy="18" r="8" fill="#3d9050" />
       </g>
 
-      {/* Bushes in bottom zone */}
       <g transform={`translate(${W * 0.62}, ${B + 30})`} opacity="0.7">
         <ellipse cx="14" cy="10" rx="18" ry="11" fill="#5a9a3a" />
         <ellipse cx="30" cy="10" rx="16" ry="10" fill="#6aaa48" />
@@ -215,15 +189,12 @@ function SceneSvg({ W, H, showClouds = true, showStaticTrees = true }: { W: numb
         <ellipse cx="34" cy="10" rx="16" ry="9" fill="#6aaa48" />
       </g>
 
-      {/* ── Sparkle ── */}
       <g transform={`translate(${W * 0.88}, ${H - 30})`} opacity="0.6">
         <path d="M6 0 L7 4 L11 5 L7 6 L6 10 L5 6 L1 5 L5 4 Z" fill="#fff" />
       </g>
     </svg>
   );
 }
-
-// ─── Scattered world decorations (flowers, mushrooms, grass, stones) ───
 
 const Deco = styled('div')({
   position: 'absolute',
@@ -236,7 +207,6 @@ function WorldDecorations({ W, H }: { W: number; H: number }) {
   const contentEnd = H - BOTTOM_ZONE - 20;
   const span = contentEnd - contentStart;
 
-  // Flowers
   const flowerColors = ['#f48fb1', '#90caf9', '#fff176', '#ce93d8'];
   const flowerSpots: [number, number][] = [
     [0.15, 0.15], [0.8, 0.25], [0.25, 0.45], [0.7, 0.55], [0.12, 0.7], [0.85, 0.8],
@@ -255,7 +225,6 @@ function WorldDecorations({ W, H }: { W: number; H: number }) {
     );
   }
 
-  // Mushrooms
   const mushroomSpots: [number, number][] = [[0.35, 0.3], [0.6, 0.65]];
   for (let i = 0; i < mushroomSpots.length; i++) {
     const [mx, my] = mushroomSpots[i];
@@ -272,7 +241,6 @@ function WorldDecorations({ W, H }: { W: number; H: number }) {
     );
   }
 
-  // Grass tufts
   const grassSpots: [number, number][] = [[0.2, 0.2], [0.55, 0.4], [0.3, 0.6], [0.75, 0.75]];
   for (let i = 0; i < grassSpots.length; i++) {
     const [gx, gy] = grassSpots[i];
@@ -289,7 +257,6 @@ function WorldDecorations({ W, H }: { W: number; H: number }) {
     );
   }
 
-  // Stepping stones
   const stoneSpots: [number, number][] = [[0.4, 0.35], [0.65, 0.55], [0.3, 0.8]];
   for (let i = 0; i < stoneSpots.length; i++) {
     const [sx, sy] = stoneSpots[i];
@@ -306,8 +273,6 @@ function WorldDecorations({ W, H }: { W: number; H: number }) {
 
   return <>{d}</>;
 }
-
-// ─── Main Component ───
 
 interface NatureBackgroundProps {
   children: React.ReactNode;

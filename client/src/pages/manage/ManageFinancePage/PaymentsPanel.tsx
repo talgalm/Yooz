@@ -45,11 +45,6 @@ const Check = styled('label')({
   display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap',
 });
 
-/**
- * Money in, per project. Contract amount, billed and paid are three separate
- * numbers on purpose — the needs document is explicit that conflating them
- * hides who still owes what.
- */
 export default function PaymentsPanel({ onChanged }: { onChanged: () => void }) {
   const t = useTranslations(texts);
   const [rows, setRows] = useState<PaymentRow[]>([]);

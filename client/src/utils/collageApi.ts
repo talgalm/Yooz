@@ -90,10 +90,6 @@ interface SignResp {
   signature: string; folder: string; publicId: string;
 }
 
-// Direct-to-Cloudinary upload. Server only signs (cheap), then we POST the
-// file straight to api.cloudinary.com. Removes upload bandwidth from our box
-// — the bottleneck that capped concurrency at ~25 in the load test.
-// Falls back to the legacy server-streamed endpoint if signing fails.
 export async function uploadCollagePhoto(
   activityCode: string,
   jobId: string,
@@ -115,7 +111,6 @@ export async function uploadCollagePhoto(
       fd.append('signature', signRes.signature);
       fd.append('folder', signRes.folder);
       fd.append('public_id', signRes.publicId);
-      // ponytail: 45s upload timeout — native fetch hangs forever on stalled 4G otherwise.
       const cloudRes = await fetch(
         `https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`,
         { method: 'POST', body: fd, signal: AbortSignal.timeout(45_000) },
@@ -131,8 +126,6 @@ export async function uploadCollagePhoto(
       return url;
     }
 
-    // Fallback: legacy server-streamed upload (used if /upload-sign isn't
-    // deployed yet, e.g. mid-rollout).
     const formData = new FormData();
     formData.append('activityCode', activityCode);
     formData.append('jobId', jobId);
@@ -239,7 +232,6 @@ export interface CollageProgressSnapshot {
 }
 
 export async function fetchCollageProgress(jobId: string): Promise<CollageProgressSnapshot> {
-  // ponytail: 8s — poll runs every 1s, must not stack pending requests on a stalled network.
   const res = await fetch(`/api/collage/progress/${encodeURIComponent(jobId)}`, {
     signal: AbortSignal.timeout(8_000),
   });
@@ -256,9 +248,6 @@ export async function uploadCollagePhotosParallel(
 ): Promise<void> {
   let done = 0;
   const queue = [...items];
-  // ponytail: 5min wall-clock cap. Each in-flight photo still has its own 45s ×
-  // 5-retry budget, so worst-case overrun ≈ one stuck photo finishing after the
-  // deadline (~4min). Without this the parallel call could hang for ~22min.
   const deadline = Date.now() + 5 * 60_000;
   const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
     while (queue.length > 0) {
@@ -293,7 +282,6 @@ export function waitForCollageCompletion(
           reject(new Error(snap.error || 'Collage failed'));
         }
       } catch {
-        /* retry on next tick */
       }
     };
     void tick();

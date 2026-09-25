@@ -1,6 +1,5 @@
 import { styled, keyframes } from '@mui/material/styles';
 
-// ─── Mission Design ───
 const MISSION_FONT = "'Rubik', sans-serif";
 const MISSION_TEAL = '#39CABC';
 const MISSION_TEXT = '#F2F7FF';
@@ -15,7 +14,6 @@ const revealIn = keyframes`
   to { opacity: 1; }
 `;
 
-// Full-screen wrapper — the background image sits here, behind the frame
 export const MissionWrapper = styled('div')<{ bg?: string, step?: number, ready?: boolean }>(({ bg, step, ready = true }) => ({
   position: 'fixed',
   inset: 0,
@@ -30,8 +28,6 @@ export const MissionWrapper = styled('div')<{ bg?: string, step?: number, ready?
   opacity: ready ? 1 : 0,
   animation: ready ? `${revealIn} 0.3s ease-out` : 'none',
 
-  // Background image layer (behind frame)
-  // We blur this layer only, so the content (text/frame) stays sharp.
   ...(bg ? {
     '&::before': {
       content: '""',
@@ -49,7 +45,6 @@ export const MissionWrapper = styled('div')<{ bg?: string, step?: number, ready?
       opacity: step === 3 ? 0.85 : 1,
     },
 
-    // Optional: darken a bit so blur matches the design mood.
     ...(step === 3 ? {
       '&::after': {
         content: '""',
@@ -63,13 +58,6 @@ export const MissionWrapper = styled('div')<{ bg?: string, step?: number, ready?
   } : {}),
 }));
 
-// The frame container — locks its aspect ratio to the SVG (1080×1920 = 9:16)
-// so the painted SVG slots (title bar, timer band, button cradle) always map
-// to the same percentage positions of the container height. Without this lock,
-// `cover` cropped the SVG's TOP on phones shorter than 9:16 (older Androids),
-// sliding the painted timer band UP into the DOM description box. Tall phones
-// (iPhone 19.5:9 etc.) now show small dark bars top/bottom but proportions hold.
-// `vh` fallback covers older browsers without dvh support.
 export const FrameContainer = styled('div')({
   position: 'relative',
   zIndex: 2,
@@ -85,7 +73,6 @@ export const FrameContainer = styled('div')({
   overflow: 'hidden',
 });
 
-// Decorative header/footer — must sit *below* text (see MissionHeader / MissionContent z-index)
 export const FrameHeaderOverlay = styled('img')({
   position: 'absolute',
   top: 0,
@@ -104,9 +91,6 @@ export const FrameFooterOverlay = styled('img')({
   pointerEvents: 'none',
 });
 
-// Header area — absolutely positioned over the SVG's title rectangle.
-// Percentages are of FrameContainer height (now aspect-locked to the SVG),
-// so this slot always maps to the same painted band, regardless of device.
 export const MissionHeader = styled('div')({
   position: 'absolute',
   top: '3.5%',
@@ -134,9 +118,6 @@ export const HeaderText = styled('h1')({
   width: '100%',
 });
 
-// Content area (middle section) — absolutely positioned below the SVG's
-// painted timer band (~14–22% of container height) and above the button
-// cradle (~14% from bottom).
 export const MissionContent = styled('div')({
   position: 'absolute',
   top: '23%',
@@ -174,7 +155,6 @@ export const DescriptionText = styled('p')<{ step?: number }>(({ step }) => ({
   boxSizing: 'border-box',
 }));
 
-// Optional screen image (e.g. suitcase)
 export const ScreenImage = styled('img')({
   maxWidth: 200,
   maxHeight: 200,
@@ -182,16 +162,6 @@ export const ScreenImage = styled('img')({
   animation: `${fadeIn} 0.6s ease-out 0.3s both`,
 });
 
-// Teal CTA button at bottom.
-// Anchored to the bottom of FrameContainer with `position: absolute` so it lands
-// in the SVG button slot on every device:
-//   • Screens 0–2 use mission-frame.svg (1080×1920, full background, `cover` +
-//     bottom-anchored). The slot sits ~3.5% above the SVG's bottom edge, which
-//     equals 3.5% of FrameContainer height regardless of phone aspect ratio.
-//   • Screens 3+ overlay mission-footer.svg (1080×568, rendered with width:100%
-//     auto-height, so its height scales with viewport WIDTH). The slot sits
-//     roughly mid-way up that footer, so the offset has to be derived from vw,
-//     not dvh.
 export const MissionButton = styled('button', {
   shouldForwardProp: (prop) => prop !== 'step',
 })<{ step?: number }>(({ step }) => ({
@@ -221,7 +191,6 @@ export const MissionButton = styled('button', {
   transform: 'translateX(-50%)',
   zIndex: 5,
   transition: 'transform 0.15s, box-shadow 0.15s',
-  // currentScreen is 0-based: screens 0–2 keep large size; from index 3 onward use compact size.
   ...((step ?? 0) >= 3 ? {
     height: 'clamp(50px, 12vw, 64px)',
     fontSize: 'clamp(18px, 10vw, 24px)',
@@ -229,7 +198,6 @@ export const MissionButton = styled('button', {
   } : {}),
 }));
 
-// Screen indicator dots
 export const ScreenIndicator = styled('div')({
   display: 'flex',
   gap: 10,

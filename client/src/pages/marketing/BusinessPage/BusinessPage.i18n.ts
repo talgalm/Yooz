@@ -1,8 +1,3 @@
-/**
- * Copy read off the exported Figma frame `temp-imgs/אתר yooz/המגזר העסקי.png`.
- * Headings and card titles are transcribed directly; a few long paragraphs were
- * reconstructed where the export blurred at small sizes.
- */
 export const texts = {
   he: {
     heroTitleTop: 'הופכים חוויות',
@@ -18,12 +13,6 @@ export const texts = {
     salesTitle: 'להפוך זמן המתנה למנוע מכירות',
     salesIntro:
       'הפכו את הדקות המתות שבין ההזמנה לקבלת המנה או השירות לחוויה ממכרת שמעלה רווחים ומחזירה לקוחות',
-    /**
-     * DOM order, which under RTL renders right-to-left - so the first entry is
-     * the RIGHTMOST card in the comp. In the frame the row reads (left to right)
-     * מותאם / ויראליות / קנייה חוזרת / הגדלת סל / קיצור זמן at x229..x1144, so
-     * that list is inverted here. Icons are the frame's own vectors.
-     */
     salesCards: [
       { icon: '/images/marketing/icons/biz-wait.svg', title: 'קיצור זמן המתנה סובייקטיבי', desc: 'חוויית לקוח כיפית בלי תסכול בזמן שהאוכל בהכנה, בתור לקופה או בהמתנה למאמן בסטודיו.' },
       { icon: '/images/marketing/icons/biz-basket.svg', title: 'הגדלת סל הקנייה במקום', desc: 'שדרוג מנה, שתייה מוגדלת, קינוח או תוספת באמצעות זכייה בפרס מיידי תוך כדי שהלקוח יושב בעסק.' },
@@ -33,7 +22,6 @@ export const texts = {
     ],
 
     audienceTitle: 'למי Yooz יתאים?',
-    /** Already in the frame's order: רשתות מזון is rightmost at x1093. */
     audienceCards: [
       { iconUrl: '/images/marketing/icons/biz-food.svg', label: 'רשתות מזון והמבורגרים', title: 'משחקים על המגש והשולחן', body: 'משחקונים מהירים מהטלפון בזמן צליית ההמבורגר, הגדלת ארוחה בחינם או הנחה על קינוח במימוש מיידי בקופה.' },
       { iconUrl: '/images/marketing/icons/biz-pizza.svg', label: 'פיצריות', title: 'טריוויה וכרטיסיית ניקוב', body: 'אתגרי טריוויה מהנים בזמן אפיית הפיצה, הזדמנות לתת ללקוחות ללמוד על העסק ולהתחבר אליו.' },
@@ -73,7 +61,6 @@ export const texts = {
     salesTitle: 'Turn waiting time into a sales engine',
     salesIntro:
       'Turn the dead minutes between the order and the food into an experience that lifts profit and brings customers back',
-    /** Same DOM order as the Hebrew list - first entry is the rightmost card. */
     salesCards: [
       { icon: '/images/marketing/icons/biz-wait.svg', title: 'Shorter perceived wait', desc: 'An enjoyable experience instead of frustration while food is prepared or a queue moves.' },
       { icon: '/images/marketing/icons/biz-basket.svg', title: 'Real basket growth on site', desc: 'A larger dish, an upsized drink or a dessert won as an instant prize while the customer is still seated.' },

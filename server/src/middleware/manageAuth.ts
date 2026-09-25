@@ -6,11 +6,6 @@ import { ManageRole } from '../models/manage/ManageUser';
 
 const VALID_MANAGE_ROLES: ManageRole[] = ['owner', 'pm', 'member'];
 
-/**
- * The JWT secret is shared with the admin/manager realms, so the `realm` claim
- * is what keeps a Yooz admin token from opening /manage (and vice versa).
- * Never drop it — role names alone are not a boundary.
- */
 export function authenticateManage(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -33,7 +28,6 @@ export function authenticateManage(req: Request, res: Response, next: NextFuncti
   }
 }
 
-/** Route-level role gate. Money endpoints must sit behind requireManageRole('owner'). */
 export function requireManageRole(...roles: ManageRole[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.manageUser || !roles.includes(req.manageUser.role)) {

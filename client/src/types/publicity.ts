@@ -1,11 +1,6 @@
-// Mirrors server/src/models/SiteContent.ts
 
 import type { Lang } from '../context/LanguageContext';
 
-/**
- * Admin-authored copy. The server stores Hebrew and English; a UI language the
- * server has no column for reads as undefined, and callers fall back to Hebrew.
- */
 export interface LocalizedText extends Partial<Record<Lang, string>> {
   he: string;
   en: string;
@@ -74,7 +69,6 @@ export interface ContactLead {
   company?: string;
   position?: string;
   email: string;
-  /** Required on new leads, but optional here: rows saved while it was not enforced may lack it. */
   phone?: string;
   message?: string;
   handled: boolean;

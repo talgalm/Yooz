@@ -37,8 +37,6 @@ import {
   SpinKeyframe,
 } from '../styled';
 
-// ─── Types ───
-
 interface LibraryItem {
   _id: string;
   kind: 'game' | 'station';
@@ -51,8 +49,6 @@ interface LibraryItem {
   settings: Record<string, unknown>;
   createdAt: string;
 }
-
-// ─── Styled ───
 
 const SOURCE_TAGS = new Set(['imported', 'IMPORTED', 'from-library']);
 
@@ -404,8 +400,6 @@ const QuestionBlock = styled('div')({
   },
 });
 
-// ─── Component ───
-
 export default function AdminLibraryTab() {
   const t = useTranslations(texts);
   const [items, setItems] = useState<LibraryItem[]>([]);
@@ -439,7 +433,6 @@ export default function AdminLibraryTab() {
       setItems(data.items);
       setTotal(data.total);
     } catch {
-      // silent
     } finally {
       setInitialLoad(false);
     }
@@ -459,7 +452,7 @@ export default function AdminLibraryTab() {
   }, [fetchTags]);
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchItems(), 300); // debounce search
+    const timer = setTimeout(() => fetchItems(), 300);
     return () => clearTimeout(timer);
   }, [fetchItems]);
 
@@ -475,7 +468,6 @@ export default function AdminLibraryTab() {
   const validateAndExport = (item: LibraryItem) => {
     setExportError(null);
 
-    // Basic validation
     if (!item.name?.trim()) {
       setExportError(`${t.exportError} ${t.exportErrorNoName}`);
       return;
@@ -489,7 +481,6 @@ export default function AdminLibraryTab() {
         setExportError(`${t.exportError} ${t.exportErrorUnsupportedType} "${item.type}"`);
         return;
       }
-      // Check minimal settings integrity
       const s = item.settings || {};
       if (item.type === 'text' && !s.content) {
         setExportError(`${t.exportError} ${t.exportErrorCorruptData} ${t.exportSuggestManual}`);
@@ -504,7 +495,6 @@ export default function AdminLibraryTab() {
         return;
       }
 
-      // Navigate to create station with prefill
       navigate(`/admin/stations/new?type=${item.type}`, {
         state: { libraryItem: item },
       });
@@ -513,7 +503,6 @@ export default function AdminLibraryTab() {
         setExportError(`${t.exportError} ${t.exportErrorUnsupportedType} "${item.type}"`);
         return;
       }
-      // For trivia, check questions exist
       if (item.type === 'trivia') {
         const questions = (item.settings as { questions?: unknown[] })?.questions;
         if (!Array.isArray(questions) || questions.length === 0) {
@@ -522,7 +511,6 @@ export default function AdminLibraryTab() {
         }
       }
 
-      // Navigate to create game with prefill
       navigate(`/admin/games/new?type=${item.type}`, {
         state: { libraryItem: item },
       });
@@ -576,7 +564,6 @@ export default function AdminLibraryTab() {
     return { source, projects, contentTypes, general };
   }, [allTags, allCustomers, allTypes]);
 
-  // Stats
   const stats = useMemo(() => {
     const games = items.filter((i) => i.kind === 'game').length;
     const stations = items.filter((i) => i.kind === 'station').length;
@@ -604,7 +591,6 @@ export default function AdminLibraryTab() {
     <>
       <PageTitleNoMargin style={{ marginBottom: 20 }}>{t.title}</PageTitleNoMargin>
 
-      {/* Stats */}
       <StatsRow>
         <StatBox><strong>{total}</strong> {t.allKinds}</StatBox>
         <StatBox><strong>{stats.games}</strong> {t.games}</StatBox>
@@ -612,7 +598,6 @@ export default function AdminLibraryTab() {
         <StatBox><strong>{stats.customers}</strong> {t.customer}</StatBox>
       </StatsRow>
 
-      {/* Kind filter */}
       <div style={{ marginBottom: 16 }}>
         <SegmentedControl>
           <SegmentedButton active={kindFilter === 'all'} onClick={() => setKindFilter('all')}>
@@ -627,7 +612,6 @@ export default function AdminLibraryTab() {
         </SegmentedControl>
       </div>
 
-      {/* Search + Customer filter + tag drawer trigger */}
       <FilterRow>
         {allCustomers.length > 0 && (
           <CustomerSelect
@@ -659,7 +643,6 @@ export default function AdminLibraryTab() {
         />
       </FilterRow>
 
-      {/* Tag filters drawer */}
       {tagDrawerOpen && allTags.length > 0 && (
         <TagDrawerBackdrop onClick={() => setTagDrawerOpen(false)}>
           <TagDrawerPanel onClick={(e) => e.stopPropagation()}>
@@ -735,7 +718,6 @@ export default function AdminLibraryTab() {
         </TagDrawerBackdrop>
       )}
 
-      {/* Export error */}
       {exportError && (
         <div style={{
           padding: '12px 18px',
@@ -760,7 +742,6 @@ export default function AdminLibraryTab() {
         </div>
       )}
 
-      {/* Table / Cards */}
       {items.length === 0 ? (
         <AdminCard>
           <EmptyText>{total === 0 ? t.noItems : t.noResults}</EmptyText>
@@ -777,7 +758,6 @@ export default function AdminLibraryTab() {
         />
       )}
 
-      {/* Preview Modal */}
       {previewItem && (
         <PreviewOverlay onClick={() => setPreviewItem(null)}>
           <PreviewCard onClick={(e) => e.stopPropagation()}>
@@ -799,7 +779,6 @@ export default function AdminLibraryTab() {
               <CloseButton onClick={() => setPreviewItem(null)}>{t.close}</CloseButton>
             </PreviewHeader>
 
-            {/* Show questions for games */}
             {previewItem.kind === 'game' && (() => {
               const questions = (previewItem.settings as { questions?: Array<{ text: string; answers: Array<{ text: string; correct?: boolean }> }> })?.questions;
               if (!questions || questions.length === 0) return null;
@@ -822,7 +801,6 @@ export default function AdminLibraryTab() {
               );
             })()}
 
-            {/* Show settings summary for stations */}
             {previewItem.kind === 'station' && (
               <div style={{ fontSize: 13, color: '#555' }}>
                 <h4 style={{ margin: '0 0 12px', color: '#555' }}>{t.type}: {previewItem.type}</h4>

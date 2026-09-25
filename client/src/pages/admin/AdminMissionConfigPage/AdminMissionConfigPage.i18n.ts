@@ -20,14 +20,12 @@ export const texts = {
     buttonText: 'Continue Button Text',
     buttonPlaceholder: 'e.g. Start the Mission',
     addScreen: '+ Add Screen',
-    // Part 2 — Puzzle
     part2Title: 'Part 2 — Puzzle',
     part2Desc: 'Text shown on the jigsaw puzzle screen. Leave empty to use defaults.',
     puzzleCompleteHeader: 'Completion Header',
     puzzleCompleteHeaderPlaceholder: 'Default: !כל הכבוד',
     puzzleCompleteButton: 'Completion Button',
     puzzleCompleteButtonPlaceholder: 'Default: לשלב הבא',
-    // Part 3 — Trash Sort
     part3Title: 'Part 3 — Trash Sort Game',
     part3Desc: 'Text for the trash sorting game. Leave empty to use defaults.',
     trashIntroTitle: 'Intro Title',
@@ -54,7 +52,6 @@ export const texts = {
     trashShareButtonPlaceholder: 'Default: שתפו עם חברים',
     trashContinueButton: 'Continue Button',
     trashContinueButtonPlaceholder: 'Default: המשך',
-    // common
     cancel: 'Cancel',
     createMission: 'Create Mission',
     updateMission: 'Update Mission',
@@ -92,14 +89,12 @@ export const texts = {
     buttonText: 'טקסט כפתור המשך',
     buttonPlaceholder: 'לדוגמה: להתחלת המשימה',
     addScreen: '+ הוסף מסך',
-    // Part 2 — Puzzle
     part2Title: 'חלק 2 — פאזל',
     part2Desc: 'טקסטים המוצגים במסך הפאזל. השאירו ריק לשימוש בברירות המחדל.',
     puzzleCompleteHeader: 'כותרת סיום פאזל',
     puzzleCompleteHeaderPlaceholder: 'ברירת מחדל: !כל הכבוד',
     puzzleCompleteButton: 'כפתור סיום פאזל',
     puzzleCompleteButtonPlaceholder: 'ברירת מחדל: לשלב הבא',
-    // Part 3 — Trash Sort
     part3Title: 'חלק 3 — משחק מיחזור',
     part3Desc: 'טקסטים למשחק מיון הפסולת. השאירו ריק לשימוש בברירות המחדל.',
     trashIntroTitle: 'כותרת מסך פתיחה',
@@ -126,7 +121,6 @@ export const texts = {
     trashShareButtonPlaceholder: 'ברירת מחדל: שתפו עם חברים',
     trashContinueButton: 'כפתור המשך',
     trashContinueButtonPlaceholder: 'ברירת מחדל: המשך',
-    // common
     cancel: 'ביטול',
     createMission: 'צור משימה',
     updateMission: 'עדכן משימה',

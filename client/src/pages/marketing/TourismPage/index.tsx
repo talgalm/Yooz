@@ -15,7 +15,6 @@ import useStopWhenUnseen from "../shared/useStopWhenUnseen";
 import { Band, Container, H2, H3, Body, SectionIntro } from "../shared/styled";
 import { C, SHADOW, RADIUS, BP, REDUCED_MOTION } from "../shared/tokens";
 
-/** The single-line takeaway between the two card rows. */
 const BottomLine = styled("p")({
   maxWidth: 940,
   marginInline: "auto",
@@ -33,8 +32,6 @@ const BottomLine = styled("p")({
 });
 
 const BottomLabel = styled("span")({ fontWeight: 800, display: "block" });
-
-// ─── Case study ───
 
 const CaseHead = styled("div")({ textAlign: "center" });
 
@@ -69,10 +66,6 @@ const Steps = styled("div")({
   marginBottom: 30,
   flexWrap: "wrap",
   justifyContent: "center",
-  /**
-   * A phone wraps this to one chip per line anyway, so it stops being a pill row
-   * and becomes a stacked list - full width rather than three centred stubs.
-   */
   [BP.mobile]: {
     display: "flex",
     flexDirection: "column",
@@ -82,7 +75,6 @@ const Steps = styled("div")({
   },
 });
 
-/** A real button: the chips switch the card beneath them, so they are controls. */
 const Step = styled("button")<{ active?: boolean }>(({ active }) => ({
   display: "inline-flex",
   alignItems: "center",
@@ -98,12 +90,6 @@ const Step = styled("button")<{ active?: boolean }>(({ active }) => ({
   background: active ? C.purple : "transparent",
   color: active ? C.white : C.inkSoft,
   "& svg": { flexShrink: 0 },
-  /**
-   * A grid, not a centred flex row. Centring each chip's own icon-plus-label
-   * group puts the icons at a different x on every line, since the labels are
-   * different lengths. A fixed first column lines the icons up and starts every
-   * label at the same point.
-   */
   [BP.mobile]: {
     width: "100%",
     display: "grid",
@@ -117,16 +103,10 @@ const Step = styled("button")<{ active?: boolean }>(({ active }) => ({
   },
 }));
 
-/**
- * Step markers, traced from the frame at y2432. Inline rather than `<img>` so
- * they take `currentColor` from the chip - white on the active one, #675A6D on
- * the rest - letting one drawing serve both states.
- */
 function StepPlay() {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden focusable="false">
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
-      {/* Points right in both directions - a transport control, not a reading cue. */}
       <path d="M10.2 8.4 16 12l-5.8 3.6z" fill="currentColor" />
     </svg>
   );
@@ -155,17 +135,14 @@ function StepSparkles() {
   );
 }
 
-/** Positional, not translated copy - so it lives here rather than in the i18n. */
 const STEP_ICONS = [StepPlay, StepPuzzle, StepSparkles];
 
-/** Positional, like `STEP_ICONS`. A stage with no clip falls back to the placeholder panel. */
 const STAGE_VIDEOS: (string | undefined)[] = [
   "/images/marketing/case-step-1.mp4",
   "/images/marketing/case-step-2.mp4",
   "/images/marketing/case-step-3.mp4",
 ];
 
-/** The comp closes each line with a ringed tick, not a bare glyph. */
 function RingCheck() {
   return (
     <svg
@@ -191,13 +168,11 @@ const CaseCard = styled("div")({
   borderRadius: RADIUS.cardLarge,
   boxShadow: SHADOW.cardHover,
   overflow: "hidden",
-  /** The frame runs the card x214..1300, narrower than the content column it sits in. */
   width: "100%",
   maxWidth: 1086,
   marginInline: "auto",
   display: "grid",
   gridTemplateColumns: "1fr",
-  /** Measured 449 copy / 637 media - not an even split. */
   "@media (min-width: 901px)": { gridTemplateColumns: "0.7fr 1fr" },
 });
 
@@ -235,11 +210,6 @@ const Check = styled("li")({
   "& svg": { flexShrink: 0 },
 });
 
-/**
- * The clip is portrait (285x374 inside a 637-wide panel in the frame) and is
- * letterboxed against a grey ramp, not cropped to fill. Sampled down the bars:
- * FAFAFA at the top, holding F2F2F2 to halfway, then CECECE / A1A1A1 / 747474.
- */
 const MediaPanel = styled("div")({
   position: "relative",
   minHeight: 360,
@@ -253,7 +223,6 @@ const CaseVideo = styled("video")({
   inset: 0,
   width: "100%",
   height: "100%",
-  /** `contain`, not `cover` - cropping a portrait clip to fill is what made it huge. */
   objectFit: "contain",
 });
 
@@ -284,10 +253,8 @@ const PlayOverlay = styled("button")({
   },
 });
 
-/** Sampled from the frame: #252525 pill, white text, #EF4444 dot. */
 const MediaCaption = styled("div")({
   position: "absolute",
-  /** Bottom-right in the frame, which under RTL is the inline start. */
   insetInlineStart: 14,
   bottom: 14,
   display: "inline-flex",
@@ -326,12 +293,10 @@ const CaseMedia = styled("div")({
 export default function TourismPage() {
   const t = useTranslations(texts);
   const [stage, setStage] = useState(0);
-  /** The frame shows a play affordance, so the clip waits for a click. */
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const active = t.caseStages[stage];
   const video = STAGE_VIDEOS[stage];
-  /** Plays with sound, so it stops when it leaves the screen or the page. */
   useStopWhenUnseen(videoRef, { src: video });
 
   return (
@@ -378,11 +343,6 @@ export default function TourismPage() {
       <Band bg={C.paper}>
         <Container>
           <CaseHead>
-            {/* Open book with a ribbon, traced from the frame at x789..803 / y2221..2232.
-                It is NOT a play marker, and its #A855F7 is lighter than the label's
-                #6B21A8 - so it carries its own colour rather than currentColor.
-                Glyph first: the first flex child renders rightmost under RTL, which is
-                the side the comp puts it on. */}
             <CaseTag>
               <img
                 src="/images/marketing/icons/tour-book.svg"
@@ -398,8 +358,6 @@ export default function TourismPage() {
             <SectionIntro style={{ marginBottom: 26 }}>
               {t.caseIntro}
             </SectionIntro>
-            {/* Icon first: the first flex child lands at the inline start, which
-                under RTL is the right - the side the frame puts it on. */}
             <Steps>
               {t.caseSteps.map((s, i) => {
                 const Icon = STEP_ICONS[i];
@@ -437,10 +395,8 @@ export default function TourismPage() {
                   ))}
                 </Checks>
               </CaseCopy>
-              {/* Stages 2 and 3 have no footage yet, so they keep the placeholder. */}
               {video ? (
                 <MediaPanel>
-                  {/* Unmuted: `play()` comes from a click, so sound is allowed. Controls appear once running. */}
                   <CaseVideo
                     key={video}
                     ref={videoRef}
@@ -463,7 +419,6 @@ export default function TourismPage() {
                       </svg>
                     </PlayOverlay>
                   )}
-                  {/* Hidden while playing so it does not sit over the controls bar. */}
                   {!playing && (
                     <MediaCaption>
                       <RecDot aria-hidden />

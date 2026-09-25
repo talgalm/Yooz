@@ -8,7 +8,6 @@ export function buildRewardDownloadUrl(downloadToken: string): string {
 }
 
 function israelDateToday(): string {
-  // ponytail: en-GB pads day/month to 2 digits; format the Israel-tz Y/M/D parts ourselves to match the coupon's "31.7.2026" style (no leading zeros).
   const parts: Record<string, string> = {};
   for (const p of new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Jerusalem',
@@ -24,7 +23,6 @@ function israelDateToday(): string {
 export function cloudinaryAttachmentUrl(url: string): string {
   if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
   if (url.includes('/upload/fl_attachment')) return url;
-  // ponytail: today's-date overlay font/position hardcoded for current coupon template; move to per-activity config if a second coupon design appears. PDFs skip the overlay.
   const isPdf = /\.pdf(\?|$)/i.test(url);
   const overlay = isPdf
     ? ''

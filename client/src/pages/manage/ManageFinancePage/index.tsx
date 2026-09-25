@@ -40,7 +40,6 @@ const Row = styled('div')({
   '&:last-child': { borderBottom: 'none' },
 });
 
-/** Owner-only screen. The server refuses these routes for anyone else. */
 export default function ManageFinancePage() {
   const t = useTranslations(texts);
   const navigate = useNavigate();

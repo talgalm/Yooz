@@ -11,7 +11,6 @@ import { closeOrderSurveyVoting, getOrderSurveyLiveState } from '../utils/orderS
 
 const router = Router();
 
-// Manager login (supports password or Google OAuth)
 router.post('/login', async (req: Request<{}, {}, ManagerLoginRequest>, res: Response) => {
   const { activityCode, email, password, googleAccessToken } = req.body;
 
@@ -31,11 +30,9 @@ router.post('/login', async (req: Request<{}, {}, ManagerLoginRequest>, res: Res
     return;
   }
 
-  // Determine the email being authenticated
   let resolvedEmail: string | undefined;
 
   if (googleAccessToken) {
-    // Google flow: fetch email from Google and verify it matches the manager's email
     try {
       const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
         headers: { Authorization: `Bearer ${googleAccessToken}` },
@@ -55,7 +52,6 @@ router.post('/login', async (req: Request<{}, {}, ManagerLoginRequest>, res: Res
       return;
     }
   } else {
-    // Password flow: requires email + password
     if (!email || !password) {
       res.status(400).json({ error: 'Email and password are required' });
       return;
@@ -98,7 +94,6 @@ router.post('/login', async (req: Request<{}, {}, ManagerLoginRequest>, res: Res
   });
 });
 
-// Get reports for managed activity
 router.get('/reports', authenticateManager, async (req: Request, res: Response) => {
   const { activityCode } = req.manager!;
 
@@ -124,7 +119,6 @@ router.get('/reports', authenticateManager, async (req: Request, res: Response) 
     totalScore: (r.data as unknown as Record<string, unknown>)?.totalScore || 0,
   }));
 
-  // Group standings (if group activity)
   let groupStandings: { name: string; totalScore: number; memberCount: number }[] = [];
   if (activity.connectionType === 'group') {
     const groupMap = new Map<string, { totalScore: number; memberCount: number }>();
@@ -155,7 +149,6 @@ router.get('/reports', authenticateManager, async (req: Request, res: Response) 
   });
 });
 
-// Manager: list of SMS coupons sent (or attempted) for the activity.
 router.get('/sms-notifications', authenticateManager, async (req: Request, res: Response) => {
   const { activityCode } = req.manager!;
 
@@ -189,7 +182,6 @@ router.get('/sms-notifications', authenticateManager, async (req: Request, res: 
   res.json({ enabled, notifications });
 });
 
-// Manager: get module items (for the Control Flow tab) and current lock state.
 router.get('/activity', authenticateManager, async (req: Request, res: Response) => {
   const { activityCode } = req.manager!;
 
@@ -214,11 +206,8 @@ router.get('/activity', authenticateManager, async (req: Request, res: Response)
     stationIds.length ? Station.find({ _id: { $in: stationIds } }, { name: 1, type: 1 }).lean() : [],
     missionIds.length ? Mission.find({ _id: { $in: missionIds } }, { name: 1 }).lean() : [],
   ]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gameMap = new Map(games.map((g: any) => [g._id.toString(), g]));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stationMap = new Map(stations.map((s: any) => [s._id.toString(), s]));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const missionMap = new Map(missions.map((m: any) => [m._id.toString(), m]));
 
   const items = moduleItems.map((item, index) => {
@@ -227,7 +216,6 @@ router.get('/activity', authenticateManager, async (req: Request, res: Response)
     let orderMode: 'quiz' | 'survey' | undefined;
     let gameId: string | undefined;
     if (item.type === 'game') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const g = gameMap.get(item.ref.toString()) as any;
       name = g?.name || `Item ${index + 1}`;
       subType = g?.type;
@@ -237,12 +225,10 @@ router.get('/activity', authenticateManager, async (req: Request, res: Response)
         orderMode = mode === 'survey' ? 'survey' : 'quiz';
       }
     } else if (item.type === 'station') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const s = stationMap.get(item.ref.toString()) as any;
       name = s?.name || `Item ${index + 1}`;
       subType = s?.type;
     } else if (item.type === 'mission') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const m = missionMap.get(item.ref.toString()) as any;
       name = m?.name || `Item ${index + 1}`;
     }
@@ -258,7 +244,6 @@ router.get('/activity', authenticateManager, async (req: Request, res: Response)
   });
 });
 
-// Order survey: live state for presenter screen
 router.get('/order-survey/live', authenticateManager, async (req: Request, res: Response) => {
   const { activityCode } = req.manager!;
   const activity = await Activity.findOne({ code: activityCode });
@@ -270,7 +255,6 @@ router.get('/order-survey/live', authenticateManager, async (req: Request, res: 
   res.json(live);
 });
 
-// Order survey: open voting for an item
 router.post('/order-survey/start', authenticateManager, async (req: Request, res: Response) => {
   const { activityCode } = req.manager!;
   const { itemIndex, roundIndex = 0, gameId } = req.body as {
@@ -312,7 +296,6 @@ router.post('/order-survey/start', authenticateManager, async (req: Request, res
   res.json(live);
 });
 
-// Order survey: close voting and compute Borda results
 router.post('/order-survey/close', authenticateManager, async (req: Request, res: Response) => {
   const { activityCode } = req.manager!;
   const aggregatedRanking = await closeOrderSurveyVoting(activityCode);
@@ -329,7 +312,6 @@ router.post('/order-survey/close', authenticateManager, async (req: Request, res
   res.json({ aggregatedRanking, live });
 });
 
-// Order survey: reveal results to participants (enables Continue on phones)
 router.post('/order-survey/reveal', authenticateManager, async (req: Request, res: Response) => {
   const { activityCode } = req.manager!;
   const activity = await Activity.findOne({ code: activityCode });
@@ -349,7 +331,6 @@ router.post('/order-survey/reveal', authenticateManager, async (req: Request, re
   res.json(live);
 });
 
-// Manager: set the lock-from index. Pass `null` to unlock everything.
 router.post('/lock', authenticateManager, async (req: Request, res: Response) => {
   const { activityCode } = req.manager!;
   const { lockedFromIndex } = req.body as { lockedFromIndex: number | null };
@@ -376,7 +357,6 @@ router.post('/lock', authenticateManager, async (req: Request, res: Response) =>
   activity.lockedFromIndex = next;
   await activity.save();
 
-  // Push to all connected participants for this activity.
   broadcastLock(activity.code, next);
 
   res.json({ lockedFromIndex: next });

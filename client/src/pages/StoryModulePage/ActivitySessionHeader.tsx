@@ -52,8 +52,6 @@ const RoadmapHeaderItem = styled('div')({
   boxSizing: 'border-box',
   background: 'rgba(255,255,255,0.10)',
   borderRadius: 10,
-  // The help button is wrapped in an inline-flex NudgeWrap <span>; stretch it so
-  // its button fills the cell like the other (unwrapped) header buttons.
   '& > span': {
     width: '100%',
   },
@@ -146,7 +144,6 @@ const pointsDepositPulse = keyframes`
   50% { box-shadow: 0 0 14px 3px rgba(245, 210, 74, 0.28); }
 `;
 
-/** Gold star — score icon (distinct from leaderboard trophy). */
 export function SessionHeaderPointsIcon({
   variant = 'default',
   iconColor,
@@ -167,7 +164,6 @@ export function SessionHeaderPointsIcon({
   );
 }
 
-/** Leaderboard podium — three rounded bars (center tallest). */
 export function SessionHeaderTrophyIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -209,38 +205,20 @@ export interface ActivitySessionHeaderProps {
   onLogout: () => void;
   currentPoints: number;
   t: Record<string, string>;
-  /** Leaderboard, music/mute, or `<SessionHeaderIconPlaceholder />` to hold width. */
   thirdSlot: React.ReactNode;
-  /** e.g. station hint — rendered above the four-cell row. */
   topRow?: React.ReactNode;
-  /** When set, counts displayed points from `from` up to `to` (roadmap after a game). */
   pointsRoll?: { from: number; to: number } | null;
   onPointsRollComplete?: () => void;
-  /** Black control outlines instead of light gray (puzzle game). */
   chromeVariant?: 'default' | 'puzzle';
-  /** Remove backdrop blur and border — floats over content (text/video/image stations). */
   transparentChrome?: boolean;
-  /** When true, skip the third header cell (leaderboard/music) and use a 3-column layout. */
   omitThirdSlot?: boolean;
-  /** 'time' = timer only, 'both' = points + timer stacked, default = points only. */
   leaderboardMode?: 'points' | 'time' | 'both';
-  /** Elapsed seconds since activity start (used in time mode). */
   elapsedSeconds?: number;
-  /** Optional time limit in minutes — timer turns red when exceeded. */
   activityDurationMinutes?: number;
-  /** Cosmetic count-up timer shown above the button row; turns red after this
-   *  many minutes. Independent of leaderboardMode (roadmap views only). */
   roadmapTimerMinutes?: number;
-  /** Theme kit icon color — applied on default chrome only. */
   headerIconColor?: string;
 }
 
-/**
- * Single session header: exit → help → third slot → points, in the direction
- * the language reads - so exit sits at the far edge and the score at the near
- * one, mirrored between Hebrew and English.
- * Same chrome as the roadmap; use during roadmap, games, and stations.
- */
 export default function ActivitySessionHeader({
   onLogout,
   currentPoints,
@@ -262,8 +240,6 @@ export default function ActivitySessionHeader({
   const RoadmapItem = puzzleChrome ? RoadmapHeaderItemPuzzle : RoadmapHeaderItem;
   const RoadmapPoints = puzzleChrome ? RoadmapHeaderPointsPuzzle : RoadmapHeaderPoints;
   const showFakeTimer = roadmapTimerMinutes != null && roadmapTimerMinutes > 0;
-  // 'both' mode (and the cosmetic roadmap timer) add an extra cell — let cells
-  // shrink so they fit narrow phones.
   const compact = leaderboardMode === 'both' || showFakeTimer;
   const compactCellStyle: React.CSSProperties = {
     flex: '1 1 0',
@@ -360,7 +336,6 @@ export default function ActivitySessionHeader({
             const mins = Math.floor(elapsedSeconds / 60);
             const secs = elapsedSeconds % 60;
             const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            // Fake timer: only the color changes once the limit is reached.
             const isOver = elapsedSeconds >= (roadmapTimerMinutes as number) * 60;
             const color = isOver ? '#e74c3c' : (puzzleChrome ? '#1a1a1a' : (iconColor ?? '#fff'));
             return (

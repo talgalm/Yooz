@@ -34,10 +34,6 @@ const Line = styled('div')<{ strong?: boolean }>(({ strong }) => ({
   marginTop: strong ? 6 : 0,
 }));
 
-/**
- * The caveat is rendered unconditionally, never behind a toggle.
- * A margin figure without it becomes a number people trust more than it deserves.
- */
 const Caveat = styled('div')({
   padding: '10px 20px',
   fontSize: 12.5,
@@ -50,7 +46,6 @@ interface Data { cumulative: ProjectMoney; monthly: MonthMoney; actualHours: num
 
 export default function MoneyTab({ project }: { project: Project }) {
   const t = useTranslations(texts);
-  // Monthly is the default — spec ch.10 decision 3.
   const [view, setView] = useState<'monthly' | 'cumulative'>('monthly');
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);

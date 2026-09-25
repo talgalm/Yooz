@@ -17,7 +17,6 @@ export function setCachedModuleData(code: string, group: string, data: unknown):
   try {
     sessionStorage.setItem(persistKey(code, group), JSON.stringify(data));
   } catch {
-    /* module JSON too large for sessionStorage */
   }
 }
 
@@ -46,7 +45,6 @@ export function clearCachedModuleData(code?: string): void {
         if (key?.startsWith(MODULE_STORAGE_PREFIX)) sessionStorage.removeItem(key);
       }
     } catch {
-      /* noop */
     }
     return;
   }
@@ -63,6 +61,5 @@ export function clearCachedModuleData(code?: string): void {
       if (key?.startsWith(storagePrefix)) sessionStorage.removeItem(key);
     }
   } catch {
-    /* noop */
   }
 }

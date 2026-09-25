@@ -13,7 +13,6 @@ interface SurveyReport {
   data?: { itemResults?: SurveyItemResult[] };
 }
 
-/** Rank position 1 (index 0) earns N points, last earns 1 point. */
 export function computeBordaRanking(rankings: string[][], referenceItems: string[]): BordaRankedItem[] {
   const n = referenceItems.length;
   const scores = new Map<string, number>();

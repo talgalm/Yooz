@@ -1,10 +1,5 @@
 import { useEffect } from 'react';
 
-/**
- * Keeps the screen awake while `active`. Re-acquires the lock when the tab
- * regains visibility (the browser silently releases it on background/lock).
- * No-op where the Wake Lock API is unsupported or the request is denied.
- */
 export function useWakeLock(active: boolean): void {
   useEffect(() => {
     if (!active || !('wakeLock' in navigator)) return;
@@ -12,7 +7,7 @@ export function useWakeLock(active: boolean): void {
     const acquire = () => {
       navigator.wakeLock.request('screen')
         .then((l) => { lock = l; })
-        .catch(() => { /* denied (battery saver etc.) — nothing to do */ });
+        .catch(() => { });
     };
     const onVisibility = () => {
       if (document.visibilityState === 'visible') acquire();

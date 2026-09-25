@@ -12,7 +12,6 @@ const Title = styled('h1')({
   margin: 0,
   fontSize: 26,
   fontWeight: 700,
-  // The mobile top bar already names the section.
   [MOBILE]: { display: 'none' },
 });
 
@@ -27,7 +26,6 @@ const Empty = styled('div')({
   [MOBILE]: { marginTop: 0, padding: 28 },
 });
 
-/** Every menu entry lands here until its milestone builds the real screen. */
 export default function ManagePlaceholderPage() {
   const { section } = useParams<{ section: string }>();
   const t = useTranslations(texts);

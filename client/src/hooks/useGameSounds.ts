@@ -27,7 +27,6 @@ export function useGameSounds(custom?: Partial<GameSoundPaths>) {
   const gameOverRef = useRef<HTMLAudioElement | null>(null);
   const bgMusicRef = useRef<HTMLAudioElement | null>(null);
 
-  // Create audio elements on mount
   useEffect(() => {
     correctRef.current = new Audio(paths.correct);
     correctRef.current.volume = SFX_VOLUME;
@@ -62,7 +61,6 @@ export function useGameSounds(custom?: Partial<GameSoundPaths>) {
   const playCorrect = useCallback(() => playSfx(correctRef.current), [playSfx]);
   const playWrong = useCallback(() => playSfx(wrongRef.current), [playSfx]);
   const playGameOver = useCallback(() => {
-    // Stop bg music before playing game over sound
     if (bgMusicRef.current) {
       bgMusicRef.current.pause();
     }
@@ -88,10 +86,8 @@ export function useGameSounds(custom?: Partial<GameSoundPaths>) {
     setIsMuted(newMuted);
 
     if (newMuted) {
-      // Mute: pause bg music
       if (bgMusicRef.current) bgMusicRef.current.pause();
     } else {
-      // Unmute: resume bg music if it was playing (currentTime > 0)
       if (bgMusicRef.current && bgMusicRef.current.currentTime > 0) {
         bgMusicRef.current.play().catch(() => {});
       }

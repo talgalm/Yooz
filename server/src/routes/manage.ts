@@ -10,8 +10,6 @@ const router = Router();
 
 const TOKEN_TTL = '12h';
 
-// ─── Login rate limit (5/min/IP) — same in-memory policy as avatarQuiz ───
-
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 const WINDOW_MS = 60_000;
 const MAX_ATTEMPTS = 5;
@@ -34,12 +32,6 @@ setInterval(() => {
   }
 }, 5 * 60_000);
 
-// ─── Serializer ───
-
-/**
- * The only shape a ManageUser leaves the server in. hourlyCost and
- * employerCostFactor are business secrets and are added back for `owner` only.
- */
 export function serializeManageUser(u: IManageUser, role: 'owner' | 'pm' | 'member') {
   const base = {
     _id: u._id,
@@ -63,8 +55,6 @@ export function serializeManageUser(u: IManageUser, role: 'owner' | 'pm' | 'memb
   };
 }
 
-// ─── Routes ───
-
 router.post('/auth/login', async (req: Request<{}, {}, ManageLoginRequest>, res: Response) => {
   const ip = req.ip || req.socket?.remoteAddress || 'unknown';
   if (isRateLimited(ip)) {
@@ -79,7 +69,6 @@ router.post('/auth/login', async (req: Request<{}, {}, ManageLoginRequest>, res:
   }
 
   const user = await ManageUser.findOne({ email: email.toLowerCase().trim(), active: true });
-  // Same message either way — do not leak which emails exist.
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
     res.status(401).json({ error: 'Invalid email or password' });
     return;
@@ -106,10 +95,6 @@ router.get('/auth/me', authenticateManage, async (req: Request, res: Response) =
   res.json({ user: serializeManageUser(user, user.role) });
 });
 
-/**
- * Team roster. pm/owner only — it is what the person filters and assignment
- * pickers read. Cost fields are stripped for anyone but the owner, as always.
- */
 router.get('/users', authenticateManage, requireManageRole('owner', 'pm'), async (req: Request, res: Response) => {
   const users = await ManageUser.find({ active: true }).sort({ name: 1 });
   res.json({ users: users.map((u) => serializeManageUser(u, req.manageUser!.role)) });

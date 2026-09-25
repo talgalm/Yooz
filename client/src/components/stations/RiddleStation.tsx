@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'; // useEffect kept for initial focus
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 import type { GameResult } from '../games/types';
@@ -7,8 +7,6 @@ import { StationContinueButton } from '../games/styled';
 import ImageZoomOverlay, { ZoomBadge, ZoomGlassIcon } from '../ImageZoomOverlay';
 import { useLang, useTranslations } from '../../context/LanguageContext';
 import { texts } from './RiddleStation.i18n';
-
-// ─── Types ───
 
 interface RiddleSettings {
   clue?: string;
@@ -23,20 +21,15 @@ interface RiddleSettings {
   unlimitedAttempts?: boolean;
 }
 
-// ─── Helpers ───
-
 function isHebrewText(text: string): boolean {
   return /[\u0590-\u05FF]/.test(text);
 }
 
 function getScoreForAttempt(maxScore: number, attempt: number): number {
-  // attempt is 0-indexed: 0 = first try (full), 1 = second (half), 2 = third (quarter)
   if (attempt === 0) return maxScore;
   if (attempt === 1) return Math.floor(maxScore / 2);
   return Math.floor(Math.floor(maxScore / 2) / 2);
 }
-
-// ─── Animations ───
 
 const shakeAnim = keyframes`
   0%   { transform: translateX(0); }
@@ -57,21 +50,15 @@ const fadeIn = keyframes`
   to   { opacity: 1; }
 `;
 
-// ─── Styled ───
-
 const Container = styled('div')({
   flex: 1,
   minHeight: 0,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  // No scroll: everything fits one screen. The image (MediaSlot) flex-shrinks
-  // to whatever vertical space is left after title/clue/boxes/buttons.
   padding: '16px 20px 20px',
   gap: 12,
   overflow: 'hidden',
-  // Desktop: cap to a centered column so clue + image + letter boxes don't
-  // stretch edge to edge of a wide monitor (QA Jun 2026 page 15 #17).
   '@media (min-width: 768px)': {
     width: 'min(840px, 90vw)',
     marginInline: 'auto',
@@ -108,10 +95,8 @@ const ClueText = styled('p')({
   },
 });
 
-// Flex slot that absorbs all remaining vertical space; the image scales down
-// inside it (object-fit: contain) so the station never needs to scroll.
 const MediaSlot = styled('div')({
-  position: 'relative', // anchors the zoom badge to the media area's corner
+  position: 'relative',
   flex: '1 1 0',
   minHeight: 0,
   width: '100%',
@@ -121,10 +106,6 @@ const MediaSlot = styled('div')({
 });
 
 const MediaWrapper = styled('div')({
-  // Inline-block so the shadowed card shrinks to its image's intrinsic size.
-  // Previously this was width:100%/maxWidth:380 — when the image's aspect
-  // ratio didn't match the card, the shadow rectangle stuck out behind a
-  // small image (QA Jun 2026 page 15 "shadow doesn't match image ratio").
   display: 'inline-block',
   maxWidth: '100%',
   borderRadius: 14,
@@ -133,17 +114,12 @@ const MediaWrapper = styled('div')({
   flexShrink: 0,
   lineHeight: 0,
   '@media (min-width: 768px)': {
-    // Desktop: allow the image to grow into a real focal point.
     maxWidth: 'min(560px, 60vw)',
   },
 });
 
 const RiddleMediaImage = styled('img')({
   display: 'block',
-  // Bounded by the flex MediaSlot (which has a definite height), so the image
-  // shrinks to fit the leftover space — no scroll. Decoration lives on the img
-  // itself: with only max-* set the element hugs the scaled image, so the
-  // shadow never sticks out past it (QA Jun 2026 page 15 shadow-ratio note).
   maxWidth: '100%',
   maxHeight: '100%',
   objectFit: 'contain',
@@ -218,9 +194,6 @@ const AttemptsRow = styled('div')({
   flexShrink: 0,
 });
 
-// Inline hint button (in normal flow, above the fixed Check button). Replaces
-// the floating clue pill that used to overlap the riddle image. Matches the
-// EnteringText station's hint button styling.
 const InlineHintButton = styled('button')({
   display: 'inline-flex',
   alignItems: 'center',
@@ -252,8 +225,6 @@ const AttemptDot = styled('div')<{ used: string }>(({ used }) => ({
 }));
 
 const SubmitButton = styled(StationContinueButton)({
-  // In normal flow (last item in the flex column) so the layout fits one
-  // screen with no scroll and nothing overlaps it.
   flexShrink: 0,
   width: 'auto',
   padding: '14px 48px',
@@ -372,13 +343,10 @@ const ResultMessage = styled('div')({
   marginBottom: 12,
 });
 
-// ─── Component ───
-
 interface RiddleStationProps {
   station: StationItemData;
   onComplete: (result: GameResult) => void;
   textColor?: string;
-  /** Hint wiring (penalty + modal handled by PlayingPhase). */
   stationHintText?: string | null;
   stationHintImageUrl?: string | null;
   stationHintUsed?: boolean;
@@ -404,19 +372,15 @@ export default function RiddleStation({
   const maxScore = typeof settings.maxScore === 'number' ? settings.maxScore : 100;
   const unlimitedAttempts = settings.unlimitedAttempts === true;
   const failureMessage = settings.failureMessage || t.failure;
-  // Content-derived, not UI-derived: it lays out the answer boxes, not the chrome.
   const isRTL = isHebrewText(answer);
   const continueLabel = settings.continueButtonText?.trim() || t.continue;
   const checkLabel = t.check;
   const customSuccessImage = settings.successImageUrl?.trim();
 
-  // Build word groups (split answer by spaces)
   const words = answer ? answer.split(' ') : [];
-  // Flat letter array (no spaces)
   const letters = answer ? answer.replace(/ /g, '').split('') : [];
   const totalChars = letters.length;
 
-  // Word group → flat char indices mapping
   const wordGroups: number[][] = [];
   let charCount = 0;
   for (const word of words) {
@@ -428,14 +392,13 @@ export default function RiddleStation({
   }
 
   const [inputs, setInputs] = useState<string[]>(Array(totalChars).fill(''));
-  const [attempt, setAttempt] = useState(0); // 0-indexed attempt number
+  const [attempt, setAttempt] = useState(0);
   const [shaking, setShaking] = useState(false);
   const [phase, setPhase] = useState<'playing' | 'success' | 'failure'>('playing');
   const [earnedScore, setEarnedScore] = useState(0);
   const [startTime] = useState(() => Date.now());
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Focus first box on mount
   useEffect(() => {
     const t = setTimeout(() => inputRefs.current[0]?.focus(), 120);
     return () => clearTimeout(t);
@@ -651,24 +614,17 @@ export default function RiddleStation({
               <rect x="42" y="42" width="716" height="176" rx="88" ry="88" fill="#2A4384" />
 
               <g transform="translate(-15, 10)">
-                {/* Left handle */}
                 <path d="M142,75 C90,70 100,125 155,115" fill="none" stroke="#E29826" strokeWidth="14" strokeLinecap="round" />
                 <path d="M142,75 C90,70 100,125 155,115" fill="none" stroke="#F9C03C" strokeWidth="8" strokeLinecap="round" />
-                {/* Right handle */}
                 <path d="M238,75 C290,70 280,125 225,115" fill="none" stroke="#E29826" strokeWidth="14" strokeLinecap="round" />
                 <path d="M238,75 C290,70 280,125 225,115" fill="none" stroke="#F9C03C" strokeWidth="8" strokeLinecap="round" />
-                {/* Base */}
                 <path d="M145,170 L235,170 L235,185 L145,185 Z" fill="#684631" />
                 <path d="M155,155 L225,155 L225,170 L155,170 Z" fill="#7A533A" />
                 <path d="M172,160 L208,160 L208,166 L172,166 Z" fill="#F9C03C" />
-                {/* Stem */}
                 <path d="M175,115 L205,115 L198,155 L182,155 Z" fill="#E29826" />
-                {/* Cup body */}
                 <path d="M137,68 Q128,118 155,118 L225,118 Q252,118 243,68 Z" fill="url(#riddle-cupGrad)" />
-                {/* Rim */}
                 <ellipse cx="190" cy="65" rx="55" ry="14" fill="#D7AA3C" />
                 <ellipse cx="190" cy="63" rx="48" ry="10" fill="#FCE082" />
-                {/* Left sparkles */}
                 <polygon points="90,105 115,80 110,75" fill="#F9C03C" />
                 <polygon points="94,101 108,87 104,83 90,97" fill="#E29826" />
                 <circle cx="115" cy="77" r="5" fill="#E63946" />
@@ -677,7 +633,6 @@ export default function RiddleStation({
                 <circle cx="128" cy="55" r="3.5" fill="#F9C03C" />
                 <circle cx="85" cy="65" r="2.5" fill="#E63946" />
                 <circle cx="100" cy="45" r="2" fill="#2A82E4" />
-                {/* Right sparkles */}
                 <path d="M260,80 A 15,15 0 0,1 290,80 Z" fill="#F9C03C" />
                 <ellipse cx="275" cy="80" rx="15" ry="3" fill="#D7AA3C" />
                 <path d="M265,80 Q260,95 270,110" fill="none" stroke="#E63946" strokeWidth="3" strokeLinecap="round" />
@@ -686,7 +641,6 @@ export default function RiddleStation({
                 <circle cx="288" cy="65" r="3" fill="#F9C03C" />
                 <circle cx="270" cy="58" r="3" fill="#E63946" />
                 <circle cx="295" cy="85" r="2" fill="#2A82E4" />
-                {/* Sparkle stars */}
                 <path d="M245,170 Q255,170 255,160 Q255,170 265,170 Q255,170 255,180 Q255,170 245,170 Z" fill="#FCE082" />
                 <path d="M230,185 Q235,185 235,180 Q235,185 240,185 Q235,185 235,190 Q235,185 230,185 Z" fill="#FCE082" />
               </g>

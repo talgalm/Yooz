@@ -19,11 +19,8 @@ const Columns = styled('div')({
   gap: 36,
   alignItems: 'start',
   '@media (max-width: 900px)': { gridTemplateColumns: '1fr 1fr', gap: 28 },
-  /** One column on a phone, so the whole block centres rather than hugging one edge. */
   [BP.mobile]: { gridTemplateColumns: '1fr', gap: 26, justifyItems: 'center', textAlign: 'center' },
 });
-
-// ─── Brand column ───
 
 const BrandCol = styled('div')({
   display: 'flex',
@@ -33,13 +30,6 @@ const BrandCol = styled('div')({
   [BP.mobile]: { alignItems: 'center' },
 });
 
-/**
- * The asset already carries the "Engage, Share, Grow" lockup - do not re-render it.
- *
- * Measured in the business frame, the footer mark's ink is 81px tall at 1512
- * frame width. The asset is 80% ink and 20% transparent padding, so it renders
- * at 81 / 0.8 = 101 - the footer mark is meaningfully larger than the nav's.
- */
 const BrandMark = styled('img')({
   height: 101,
   width: 'auto',
@@ -63,8 +53,6 @@ const Badge = styled('span')({
   whiteSpace: 'nowrap',
 });
 
-// ─── Link columns ───
-
 const ColTitle = styled('h4')({
   fontSize: 14.5,
   fontWeight: 800,
@@ -84,14 +72,7 @@ const linkStyle = {
 
 const ColLink = styled(Link)(linkStyle);
 
-/**
- * A separate styled anchor rather than `ColLink.withComponent('a')`: that keeps
- * `LinkProps` on the result, so the in-page `#contact` and `#faq` anchors would
- * still be required to pass a `to` prop they have no use for.
- */
 const ColAnchor = styled('a')(linkStyle);
-
-// ─── Demo column ───
 
 const DemoBlurb = styled('p')({
   fontSize: 13,
@@ -114,8 +95,6 @@ const DemoCta = styled('a')({
   '&:hover': { background: C.purpleDeep },
 });
 
-// ─── Bottom row ───
-
 const Rule = styled('div')({ height: 1, background: C.ruleSoft, marginBlock: '34px 16px' });
 
 const BottomRow = styled('div')({
@@ -125,7 +104,6 @@ const BottomRow = styled('div')({
   gap: 14,
   flexWrap: 'wrap',
   fontSize: 12,
-  /** Wraps on a phone, where `space-between` would strand each half at an edge. */
   [BP.mobile]: { justifyContent: 'center', textAlign: 'center', fontSize: 12.5, gap: 10 },
   color: C.inkSoft,
 });

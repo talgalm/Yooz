@@ -66,7 +66,6 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
     });
     const [puzzleShuffleAnswers, setPuzzleShuffleAnswers] = useState(true);
 
-    // Auto-sync question count when grid dimensions change
     const gridInitRef = useRef(false);
     useEffect(() => {
       if (!gridInitRef.current) {
@@ -81,7 +80,6 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
       });
     }, [gridCols, gridRows]);
 
-    // Load initial settings
     useEffect(() => {
       if (!initialSettings) return;
       const s = initialSettings;
@@ -101,7 +99,6 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
           })),
           timeLimitSeconds: typeof q.timeLimitSeconds === 'number' ? q.timeLimitSeconds : 10,
         }));
-        // Pad with empty questions if fewer than grid target
         const target = cols * rows;
         if (loaded.length < target) {
           const toAdd = target - loaded.length;
@@ -190,7 +187,6 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
       },
     }));
 
-    // ─── Puzzle question management ───
     const addPuzzleQuestion = () => {
       setPuzzleQuestions((prev) => [...prev, makeEmptyQuestion()]);
     };
@@ -237,7 +233,6 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
 
     return (
       <>
-        {/* Puzzle Image */}
         <div>
           <SectionLabel>{t.puzzleImage}</SectionLabel>
           <InlineRow>
@@ -258,7 +253,6 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
           )}
         </div>
 
-        {/* Grid size + retry gap */}
         <GridConfigRow>
           <GridConfigField>
             <SubLabel>{t.gridCols}</SubLabel>
@@ -292,7 +286,6 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
           </GridConfigFieldWide>
         </GridConfigRow>
 
-        {/* Questions */}
         <div>
           <SectionSubHeaderRow>
             <SectionLabelNoMargin>{t.puzzleQuestions}</SectionLabelNoMargin>
@@ -344,7 +337,6 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
                 />
               </ScoringRow>
 
-              {/* Answers */}
               <SubLabel>
                 {t.puzzleAnswers}
               </SubLabel>
@@ -387,7 +379,6 @@ export default forwardRef<GameConfigHandle, PuzzleGameConfigProps>(
           ))}
         </div>
 
-        {/* Scoring */}
         <div>
           <SectionLabel>{t.scoring}</SectionLabel>
           <VerticalStackGap10>

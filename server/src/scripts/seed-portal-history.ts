@@ -28,7 +28,6 @@ async function seed() {
   console.log('Portal:', portal.name, '| code:', portal.code);
   console.log('Users:', portal.users.map(u => `${u.username} (${u.status})`).join(', '));
 
-  // Get linked activities
   const activities = await Activity.find({ _id: { $in: portal.activities } }).lean();
   console.log('Activities:', activities.map(a => `${a.name} (${a.code})`).join(', '));
 
@@ -37,7 +36,6 @@ async function seed() {
     process.exit(1);
   }
 
-  // Get game names from module items for score data
   const { Game, Station } = await import('../models');
 
   const approvedUsers = portal.users.filter(u => u.status === 'approved');
@@ -47,16 +45,14 @@ async function seed() {
 
   for (const user of approvedUsers) {
     for (const activity of activities) {
-      // Each user plays each activity 1-3 times (different dates)
       const playCount = randomBetween(1, 3);
 
-      // Collect game names from module
       const gameIds = (activity.module?.items || []).filter(i => i.type === 'game').map(i => i.ref.toString());
       const games = gameIds.length > 0 ? await Game.find({ _id: { $in: gameIds } }).lean() : [];
 
       for (let p = 0; p < playCount; p++) {
         const joinedAt = randomDate(21);
-        const completed = Math.random() > 0.1; // 90% completion
+        const completed = Math.random() > 0.1;
         const totalItems = activity.module?.items?.length || 4;
         const itemsCompleted = completed ? totalItems : randomBetween(1, totalItems - 1);
         const sessionDurationMs = randomBetween(120000, 900000);
@@ -68,7 +64,6 @@ async function seed() {
         }));
         const totalScore = scores.reduce((s, g) => s + g.score, 0);
 
-        // Build item results
         const itemResults = [];
         const moduleItems = activity.module?.items || [];
         for (let j = 0; j < Math.min(itemsCompleted, moduleItems.length); j++) {

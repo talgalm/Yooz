@@ -11,7 +11,6 @@ export interface FaqItem {
 interface FaqProps {
   title: string;
   items: FaqItem[];
-  /** Ground behind the section - Business runs this on cream. */
   bg?: string;
 }
 
@@ -21,17 +20,12 @@ const Root = styled('section')<{ bg?: string }>(({ bg }) => ({
   [BP.mobile]: { paddingBlock: 46 },
 }));
 
-/** Right-aligned in the comps, not centred like the other section headings. */
 const Title = styled(H2)({
   textAlign: 'start',
   marginBottom: 26,
 });
 
 const Row = styled('div')({
-  /**
-   * The separator is inset rather than full-bleed, and sits between the toggle
-   * and the question - so it is drawn on the row rather than as a border.
-   */
   '& + &::before': {
     content: '""',
     display: 'block',
@@ -54,7 +48,6 @@ const Head = styled('button')({
   cursor: 'pointer',
   fontFamily: 'inherit',
   textAlign: 'start',
-  // Measured: question ink 17-19px (so ~23px type) on rows 80px apart.
   padding: '26px 4px',
   fontSize: 22,
   fontWeight: 800,
@@ -63,7 +56,6 @@ const Head = styled('button')({
   [BP.mobile]: { fontSize: 16, padding: '18px 2px', gap: 12 },
 });
 
-/** Amber disc with a plus that turns into a cross when open. */
 const Toggle = styled('span')<{ open: boolean }>(({ open }) => ({
   flexShrink: 0,
   width: 27,
@@ -82,10 +74,6 @@ const Toggle = styled('span')<{ open: boolean }>(({ open }) => ({
   [REDUCED_MOTION]: { transition: 'none' },
 }));
 
-/**
- * Animated with grid-template-rows rather than max-height, so the panel opens to
- * exactly its content height at any copy length.
- */
 const Panel = styled('div')<{ open: boolean }>(({ open }) => ({
   display: 'grid',
   gridTemplateRows: open ? '1fr' : '0fr',
@@ -106,7 +94,6 @@ const Answer = styled('p')({
 });
 
 export default function Faq({ title, items, bg }: FaqProps) {
-  // Single-open accordion, matching the comps.
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (

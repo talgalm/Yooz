@@ -41,7 +41,6 @@ const AuthContext = createContext<AuthContextType | null>(null);
 function decodeToken(token: string): Participant | null {
   try {
     const payload = decodeJwtPayload<{ participantName?: string; activityCode?: string; connectionType?: string; email?: string; phoneNumber?: string; group?: string; age?: number }>(token);
-    // A token without an activity code can't address anything — treat it as no session.
     if (!payload.activityCode) return null;
     return {
       name: payload.participantName || '',
@@ -57,9 +56,7 @@ function decodeToken(token: string): Participant | null {
   }
 }
 
-// Cookie mirror of the participant token: survives environments where an
-// in-app webview drops localStorage between opens. localStorage stays primary.
-const TOKEN_COOKIE_MAX_AGE = 7 * 24 * 3600; // matches server JWT expiry
+const TOKEN_COOKIE_MAX_AGE = 7 * 24 * 3600;
 
 function readTokenCookie(): string | null {
   const match = document.cookie.match(/(?:^|; )yooz_token=([^;]*)/);
@@ -81,13 +78,11 @@ function readStoredToken(): string | null {
     writeTokenCookie(null);
     return null;
   }
-  // Re-seed localStorage — api.ts reads the token from there directly.
   if (!local) localStorage.setItem('yooz_token', stored);
   return stored;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Synchronous init from localStorage so ProtectedRoute works on first render (no redirect on refresh)
   const [token, setToken] = useState<string | null>(() => {
     const saved = readStoredToken();
     if (saved) {
@@ -110,8 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const persistSession = (newToken: string, activityCode?: string) => {
     const decoded = decodeToken(newToken);
     if (!decoded) return;
-    // A login always starts a fresh collage scope. The previous session's
-    // photos/videos are unreachable under the new id, so drop the blobs too.
     newParticipantSessionId();
     deleteCollageDatabases();
     localStorage.setItem('yooz_token', newToken);
@@ -126,8 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    // Identifier for "is this the same user as before" — case-insensitive email,
-    // falling back to phone or name. Used to decide whether to wipe local progress.
     const newUserId =
       data.email?.trim().toLowerCase()
       || data.phoneNumber?.trim()
@@ -135,7 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       || '';
     const prevUserId = localStorage.getItem('yooz_last_user_id') || '';
     if (prevUserId && newUserId && prevUserId !== newUserId) {
-      // Different user on this device — clear any leftover progress so they start from the top.
       for (let i = sessionStorage.length - 1; i >= 0; i -= 1) {
         const key = sessionStorage.key(i);
         if (
@@ -150,10 +140,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       for (let i = localStorage.length - 1; i >= 0; i -= 1) {
         const key = localStorage.key(i);
-        // yooz_session_* is mirrored to localStorage (see storySession.ts) so
-        // the previous user's progress survives a sessionStorage wipe on
-        // mobile. Has to be cleared here too or a different user opening the
-        // same link continues from the old session.
         if (
           key?.startsWith('yooz_start_') ||
           key?.startsWith('yooz_session_')

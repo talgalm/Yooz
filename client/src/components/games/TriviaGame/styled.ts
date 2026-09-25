@@ -1,33 +1,25 @@
 import { styled, keyframes } from '@mui/material/styles';
 import { DESKTOP_BREAKPOINT, DESKTOP_STATION_WIDTH } from '../styled';
 
-// ─── Colors ───
-
 const WHITE = '#fff';
 
-// Box/Card styling
 const BOX_BG = '#e3ebf3';
 const BOX_BORDER = '#4a6572';
 const BOX_SHADOW = '#3a5562';
 
-// Text
 const TEXT_DARK = '#2c3e50';
 
-// Buttons
 const BTN_GREEN = '#2ecc71';
 const BTN_GREEN_DARK = '#27ae60';
 const BTN_WRONG_RED = '#e74c3c';
 const BTN_WRONG_RED_DARK = '#c0392b';
 
-// Finish screen & primary actions (purple — no red CTAs)
 const FINISH_PURPLE = '#6c5ce7';
 const FINISH_PURPLE_DARK = '#5b4cd4';
 const BTN_PURPLE = FINISH_PURPLE;
 const BTN_PURPLE_DARK = FINISH_PURPLE_DARK;
 const BTN_PURPLE_LIGHT = '#ede7ff';
 const FINISH_STUMP_TEXT_COLOR = '#fff';
-
-// ─── Animations ───
 
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -44,10 +36,6 @@ const floatIn = keyframes`
   from { opacity: 0; transform: translateY(30px) scale(0.9); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 `;
-
-// ═══════════════════════════════════════════
-// ─── Opening / Intro Screen ───
-// ═══════════════════════════════════════════
 
 export const IntroContainer = styled('div')({
   flex: 1,
@@ -73,8 +61,6 @@ export const IntroDecorations = styled('div')({
   zIndex: 0,
 });
 
-// ─── Intro full-screen background ───
-// Kept as fixed so it covers the entire viewport (like TrueFalseGame) and stays behind UI chrome.
 const TRIVIA_WELCOME_BG_URL = '/images/trivia-welcome-bg.png';
 const TRIVIA_PLAY_BG_URL = '/images/true-false-play-bg.png';
 
@@ -117,7 +103,6 @@ export const IntroContent = styled('div')({
   minHeight: 0,
 });
 
-/** Intro title: white fill + green outline. */
 export const IntroTitle = styled('h1')({
   margin: '0 0 16px',
   padding: 0,
@@ -137,14 +122,11 @@ export const IntroTitle = styled('h1')({
   animation: `${floatIn} 0.5s ease-out`,
 });
 
-/** Fills space so instructions sit below the title (like TrueFalse). */
 export const IntroWelcomeMidSpacer = styled('div')({
   flex: '1 1 0',
   minHeight: 0,
   width: '100%',
 });
-
-// ─── Intro Description (matches TrueFalse white card + overlapping button) ───
 
 const INTRO_DESC_PURPLE = '#4a148c';
 const INTRO_DESC_PANEL_BG = '#f8f8ff';
@@ -221,11 +203,6 @@ export const IntroYoozLogo = styled('div')({
   filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
 });
 
-// ═══════════════════════════════════════════
-// ─── Playing / Question Screen ───
-// ═══════════════════════════════════════════
-
-/** Fills parent flex area (e.g. under mission header); do not use 100dvh — that clips the footer. */
 export const TriviaContainer = styled('div')({
   position: 'relative',
   width: '100%',
@@ -246,22 +223,7 @@ export const TriviaContainer = styled('div')({
   },
 });
 
-/**
- * Question body — the single scroll surface of the play view.
- *
- * Previously `overflow: hidden`, which forced question + media + answers to be
- * squeezed into whatever height was left: long questions got their first line
- * clipped, tall media was cropped to a sliver, and answer labels were cut
- * mid-word (QA Aug 2026). Content now keeps its natural size and this column
- * scrolls; the top bar and the Check/Next footer stay pinned outside it.
- *
- * `& > *` pins every child at its intrinsic height — in a scrolling flex
- * column children would otherwise still shrink to fit.
- */
 export const TriviaMainScroll = styled('div')<{ fadeBottom?: boolean }>(({ fadeBottom }) => {
-  // Masks the scroll viewport (not the content), so the fade stays pinned to
-  // the bottom edge while content passes under it. Colour-agnostic, which
-  // matters over the play background artwork.
   const fade = 'linear-gradient(to bottom, #000 calc(100% - 34px), transparent 100%)';
   return {
     flex: 1,
@@ -279,7 +241,6 @@ export const TriviaMainScroll = styled('div')<{ fadeBottom?: boolean }>(({ fadeB
     gap: 4,
     paddingBottom: 10,
     boxSizing: 'border-box',
-    // Bar itself is hidden — `ScrollMoreHint` + this fade carry the affordance.
     scrollbarWidth: 'none' as const,
     msOverflowStyle: 'none',
     '&::-webkit-scrollbar': { display: 'none' },
@@ -288,7 +249,6 @@ export const TriviaMainScroll = styled('div')<{ fadeBottom?: boolean }>(({ fadeB
   };
 });
 
-/** Positioning context for the scroll hint, which must not scroll with content. */
 export const TriviaScrollArea = styled('div')({
   position: 'relative',
   flex: 1,
@@ -303,15 +263,8 @@ const scrollNudge = keyframes`
   50% { transform: translateY(4px); opacity: 1; }
 `;
 
-/**
- * "More below" chevron. Centred with `inset-inline: 0; margin-inline: auto`
- * rather than a translate, so it doesn't fight the nudge animation's transform.
- * Non-interactive — it sits over the answer grid and must not eat taps.
- */
 export const ScrollMoreHint = styled('div')({
   position: 'absolute',
-  // Sits inside the 34px fade band, with room for the nudge animation so it
-  // never crosses into the Check/Next footer.
   bottom: 6,
   insetInline: 0,
   marginInline: 'auto',
@@ -321,8 +274,6 @@ export const ScrollMoreHint = styled('div')({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  // Near-solid with a light ring: the band behind it is faded white answer
-  // cards over purple artwork, so a translucent chip just reads as a smudge.
   background: '#2d1e4b',
   border: '2px solid rgba(255,255,255,0.9)',
   color: '#fff',
@@ -334,7 +285,6 @@ export const ScrollMoreHint = styled('div')({
   '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
 });
 
-/** Fixed footer for Check / Next / Continue — gap from bottom edge + safe area. */
 export const TriviaBottomBar = styled('div')({
   width: '100%',
   maxWidth: '100%',
@@ -361,8 +311,6 @@ export const TriviaHill = styled('div')<{ variant: 1 | 2 }>(({ variant }) => ({
     ? { backgroundColor: '#8ecf7a', bottom: '15%', left: '-50%', opacity: 0.5 }
     : { backgroundColor: '#6dba5e', bottom: '-12%', right: '-30%', opacity: 0.4 }),
 }));
-
-// ─── Top Bar ───
 
 export const TopBar = styled('div')({
   display: 'flex',
@@ -399,9 +347,6 @@ export const TopBarTimer = styled('span')<{ critical?: boolean }>(({ critical })
   transition: 'color 0.3s ease',
 }));
 
-// ─── Question Box ───
-
-/** Grows with the question text — never clipped; `TriviaMainScroll` scrolls instead. */
 export const QuestionBox = styled('div')({
   background: BOX_BG,
   border: `3px solid ${BOX_BORDER}`,
@@ -460,7 +405,6 @@ export const HintSpacer = styled('div')({
   flexShrink: 0,
 });
 
-/** Same column widths as `AnswerGrid` (1fr 1fr, same gap). */
 export const HelperLifelineRow = styled('div')({
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
@@ -490,7 +434,6 @@ export const HelperLifelineCaption = styled('p')({
 });
 
 export const HelperLifelineButton = styled('button')<{ disabled?: boolean; kind?: 'half' | 'threeQuarters' }>(({ disabled, kind }) => {
-  // Silver style for 1/2
   if (kind === 'half') {
     return {
       width: '100%',
@@ -514,7 +457,6 @@ export const HelperLifelineButton = styled('button')<{ disabled?: boolean; kind?
       '&:active': !disabled ? { transform: 'translateY(3px)', boxShadow: '0 0 0 #777' } : {},
     };
   }
-  // Bronze style for 3/4
   if (kind === 'threeQuarters') {
     return {
       width: '100%',
@@ -538,7 +480,6 @@ export const HelperLifelineButton = styled('button')<{ disabled?: boolean; kind?
       '&:active': !disabled ? { transform: 'translateY(3px)', boxShadow: '0 0 0 #6a3208' } : {},
     };
   }
-  // Fallback (original purple)
   return {
     width: '100%',
     minWidth: 0,
@@ -559,9 +500,6 @@ export const HelperLifelineButton = styled('button')<{ disabled?: boolean; kind?
   };
 });
 
-// ─── Answer Grid (3 cols for >6, 2×2 for 4–6, single column for <4) ───
-
-/** Columns the grid renders for a given answer count — shared with `AnswerButton` sizing. */
 export function answerGridColumns(answerCount?: number): 1 | 2 | 3 {
   if (!answerCount || answerCount < 4) return 1;
   return answerCount > 6 ? 3 : 2;
@@ -618,8 +556,6 @@ export const AnswerButton = styled('button')<{
     shadow = `0 3px 0 ${BTN_PURPLE_DARK}`;
   }
 
-  // Tighter type at 3 columns so long Hebrew labels wrap instead of being
-  // clipped; the cell still grows vertically to fit whatever it wraps to.
   const columns = answerGridColumns(answerCount);
   const fontSize =
     columns === 3 ? 'clamp(11px, 3.1vw, 14px)' : 'clamp(13px, 3.7vw, 16px)';
@@ -661,8 +597,6 @@ export const AnswerButton = styled('button')<{
   };
 });
 
-// ─── Action Buttons ───
-
 export const ActionButton = styled('button')<{ disabled?: boolean }>(({ disabled }) => ({
   background: disabled ? '#bdc3c7' : BTN_PURPLE,
   color: WHITE,
@@ -686,8 +620,6 @@ export const ActionButton = styled('button')<{ disabled?: boolean }>(({ disabled
     boxShadow: `0 0 0 ${BTN_PURPLE_DARK}`,
   } : {},
 }));
-
-// ─── Feedback Overlay (matches TrueFalse — fixed center white card) ───
 
 export const FeedbackOverlayRoot = styled('div')({
   position: 'fixed',
@@ -740,7 +672,6 @@ export const PointsBadgePartial = styled(PointsBadge)({
   border: '2px solid #f39c12',
 });
 
-/** Explanations below the full answer grid (full width). */
 export const TriviaExplanationList = styled('div')({
   width: '100%',
   display: 'flex',
@@ -768,12 +699,6 @@ export const TriviaExplanation = styled('div')({
   animation: `${slideUp} 0.3s ease-out`,
 });
 
-// ─── Media ───
-
-/**
- * Tappable so the question image can be opened full screen — trivia images are
- * often screenshots (phishing mails, forms) that are unreadable at column width.
- */
 export const NatureMediaContainer = styled('button')({
   appearance: 'none',
   WebkitAppearance: 'none',
@@ -786,8 +711,6 @@ export const NatureMediaContainer = styled('button')({
   display: 'block',
   position: 'relative',
   zIndex: 1,
-  // Hugs the scaled image so the border and the zoom badge sit on the picture
-  // itself instead of around empty letterbox bands.
   width: 'fit-content',
   maxWidth: '100%',
   alignSelf: 'center',
@@ -809,8 +732,6 @@ export const NatureMediaImage = styled('img')({
   width: 'auto',
   height: 'auto',
   maxWidth: '100%',
-  // Capped so a tall image can't push the answers off the scroll surface —
-  // tap to open it full screen instead.
   maxHeight: 'min(38vh, 300px)',
   objectFit: 'contain',
   borderRadius: 10,
@@ -819,7 +740,6 @@ export const NatureMediaImage = styled('img')({
   [DESKTOP_BREAKPOINT]: { maxHeight: 'min(32vh, 300px)' },
 });
 
-/** Magnifier affordance so the tap target reads as "enlarge". */
 export const MediaZoomBadge = styled('span')({
   position: 'absolute',
   bottom: 8,
@@ -838,30 +758,20 @@ export const MediaZoomBadge = styled('span')({
   boxShadow: '0 2px 8px rgba(0,0,0,0.28)',
 });
 
-// ─── Full-screen media viewer (mirrors RiddleStation's image lightbox) ───
-
 export const MediaFullscreenOverlay = styled('div')<{ panning?: boolean }>(({ panning }) => ({
   position: 'fixed',
   inset: 0,
   background: 'rgba(0,0,0,0.92)',
   display: 'flex',
-  // `margin: auto` on the image (not `align/justify-content: center`) — a
-  // centred flex child that overflows its scroll container gets its top/start
-  // edge clipped and becomes unreachable.
   overflow: panning ? 'auto' : 'hidden',
   overscrollBehavior: 'contain',
   touchAction: panning ? 'pan-x pan-y' : 'manipulation',
-  // Above the sticky session header (z 30) and the trivia feedback toast (z 200).
   zIndex: 99999,
   cursor: 'zoom-out',
   padding: panning ? 0 : 16,
   boxSizing: 'border-box',
 }));
 
-/**
- * Tap toggles fit → 2× (the app sets `user-scalable=no`, so the browser's own
- * pinch-zoom can't rescue a wide screenshot on a phone).
- */
 export const MediaFullscreenImg = styled('img')<{ panning?: boolean }>(({ panning }) => (
   panning
     ? {
@@ -904,10 +814,6 @@ export const MediaFullscreenClose = styled('button')({
   '&:hover': { background: 'rgba(255,255,255,0.25)' },
   '&:active': { transform: 'scale(0.94)' },
 });
-
-// ═══════════════════════════════════════════
-// ─── Finish / Game Complete Screen ───
-// ═══════════════════════════════════════════
 
 export const FinishContainer = styled('div')({
   flex: 1,

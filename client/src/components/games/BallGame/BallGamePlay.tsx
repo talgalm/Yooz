@@ -28,7 +28,6 @@ export default function BallGamePlay({
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const answeredRef = useRef(false);
 
-  // Reset when question changes
   useEffect(() => {
     setSelectedIdx(null);
     answeredRef.current = false;

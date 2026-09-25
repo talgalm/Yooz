@@ -21,18 +21,9 @@ export interface CalendarEvent {
   entityType: string;
   entityId: string;
   href: string;
-  /** Assignee colour for tasks — the same person reads the same colour on every board. */
   color?: string;
 }
 
-/**
- * A read-only month view over records that ALREADY carry a date.
- *
- * Deliberately not an events collection. Nothing here is entered twice: a
- * meeting is an interaction, a deadline is a task, a launch is a project field.
- * A separate calendar entity would immediately drift from the records it copies.
- * Google Calendar sync stays a later phase; this is the view, not the sync.
- */
 router.get('/', async (req: Request, res: Response) => {
   const { from, to } = req.query as Record<string, string | undefined>;
   const start = from ? new Date(from) : new Date();
@@ -65,7 +56,6 @@ router.get('/', async (req: Request, res: Response) => {
       }],
     }).select('name startDate targetDate goLiveDate').lean(),
     Interaction.find({ date: range }).select('type date summary clientId').populate('clientId', 'name').lean(),
-    // Client follow-ups are a pm/owner concern.
     isMember ? [] : Client.find({ archived: false, nextActionDate: range })
       .select('name nextActionText nextActionDate').lean(),
   ]);

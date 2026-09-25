@@ -55,7 +55,6 @@ export default function ManageTasksPage() {
     }
   }, [canSeeTeam]);
 
-  // Alerts link straight to a task (?task=<id>) — open it on arrival.
   useEffect(() => {
     const id = params.get('task');
     if (!id || tasks.length === 0) return;

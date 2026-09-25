@@ -16,14 +16,10 @@ import {
   BORDER,
 } from '../../components/styled';
 
-// ─── Admin Logo (reused on every admin/manager page) ───
-
 export const AdminLogo = styled(Logo)({
   fontSize: 28,
   margin: 0,
 });
-
-// ─── Section Layout ───
 
 export const SectionHeaderRow = styled('div')({
   display: 'flex',
@@ -66,8 +62,6 @@ export const SectionTitle = styled('h3')({
   margin: '0 0 12px',
 });
 
-// ─── Form Labels ───
-
 export const SectionLabel = styled(BodyText)({
   marginBottom: 8,
   fontWeight: 600,
@@ -103,8 +97,6 @@ export const TinyLabel = styled(BodyText)({
   color: '#aaa',
 });
 
-// ─── Selection Button Sub-descriptions ───
-
 export const SelectionSubtext = styled('div')({
   fontSize: 12,
   fontWeight: 400,
@@ -118,8 +110,6 @@ export const SelectionSubtextSmall = styled('div')({
   marginTop: 2,
   opacity: 0.6,
 });
-
-// ─── Item Panel (used for rounds, questions, statements, popups, etc.) ───
 
 export const ItemPanel = styled('div')({
   border: '1px solid #eeecf5',
@@ -145,8 +135,6 @@ export const ItemPanelTitle = styled(BodyText)({
   color: '#333',
   fontSize: 14,
 });
-
-// ─── Inline Row layouts ───
 
 export const InlineRow = styled('div')({
   display: 'flex',
@@ -194,8 +182,6 @@ export const MoveButtonGroup = styled('div')({
   gap: 2,
 });
 
-// ─── Vertical Column layouts ───
-
 export const VerticalStack = styled('div')({
   display: 'flex',
   flexDirection: 'column',
@@ -220,8 +206,6 @@ export const VerticalStackGap4 = styled('div')({
   gap: 4,
 });
 
-// ─── Scoring Row ───
-
 export const ScoringRow = styled('div')({
   display: 'flex',
   gap: 12,
@@ -239,8 +223,6 @@ export const ScoringInput = styled(Input)({
   padding: '8px 12px',
   fontSize: 14,
 });
-
-// ─── Button Variants ───
 
 export const SmallDangerButton = styled(DangerButton)({
   padding: '10px 24px',
@@ -301,8 +283,6 @@ export const EditActionButton = styled(PrimaryButton)({
   fontSize: 14,
 });
 
-// ─── Selection Button Variants ───
-
 export const TagSelectionButton = styled(SelectionButton)({
   flex: 'none',
   padding: '8px 16px',
@@ -313,8 +293,6 @@ export const SmallSelectionButton = styled(SelectionButton)({
   padding: '6px 12px',
   fontSize: 12,
 });
-
-// ─── Answer Card (correct/incorrect border) ───
 
 export const AnswerPanel = styled('div')<{ correct?: boolean }>(({ correct }) => ({
   border: `1.5px solid ${correct ? '#28a745' : '#e74c3c'}`,
@@ -358,8 +336,6 @@ export const TruthToggleButton = styled(SelectionButton)<{ isTrue?: boolean }>((
   color: isTrue ? '#155724' : '#721c24',
 }));
 
-// ─── Compact Inputs ───
-
 export const CompactInput = styled(Input)({
   padding: '8px 10px',
   fontSize: 13,
@@ -373,8 +349,6 @@ export const TinyInput = styled(Input)({
 export const FlexInput = styled(Input)({
   flex: 1,
 });
-
-// ─── Card Variants ───
 
 export const AdminCardNoPadding = styled(AdminCard)({
   padding: 0,
@@ -441,8 +415,6 @@ export const FormSectionCardWide = styled(FormSectionCard)({
   marginTop: 24,
 });
 
-// ─── Table Cell Styles ───
-
 export const CellBold = styled('span')({
   fontWeight: 600,
 });
@@ -464,8 +436,6 @@ export const CellPrimary = styled('span')({
 export const CellAlignEnd = styled('td')({
   textAlign: 'end',
 });
-
-// ─── Mobile Card Helpers ───
 
 export const MobileCardHeader = styled('div')({
   display: 'flex',
@@ -501,8 +471,6 @@ export const MobileCardItemDefault = styled(MobileCardItem)({
   cursor: 'default',
 });
 
-// ─── Detail Row (ViewActivity) ───
-
 export const DetailRow = styled('div')({
   display: 'flex',
   justifyContent: 'space-between',
@@ -523,8 +491,6 @@ export const DetailValue = styled('div')({
   textAlign: 'end',
 });
 
-// ─── Play Link Section ───
-
 export const PlayLinkSection = styled('div')({
   marginTop: 24,
   padding: 16,
@@ -538,8 +504,6 @@ export const PlayLinkUrl = styled('code')({
   wordBreak: 'break-all',
   minWidth: 0,
 });
-
-// ─── Misc ───
 
 export const ActionRow = styled('div')({
   marginTop: 32,
@@ -601,8 +565,6 @@ export const IndexNumberSmall = styled('span')({
   minWidth: 20,
 });
 
-// ─── Loading Spinner ───
-
 export const LoadingContainer = styled('div')({
   display: 'flex',
   justifyContent: 'center',
@@ -628,8 +590,6 @@ export const SpinKeyframe = () => (
   <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 );
 
-// ─── Station Order Item ───
-
 export const StationOrderItem = styled('div')({
   display: 'flex',
   alignItems: 'center',
@@ -651,8 +611,6 @@ export const StationOrderGames = styled('span')({
   fontSize: 11,
   color: '#aaa',
 });
-
-// ─── Popup Message Card ───
 
 export const PopupCard = styled('div')<{ enabled?: boolean }>(({ enabled = true }) => ({
   padding: '12px 16px',
@@ -718,8 +676,6 @@ export const PopupNumberInput = styled(Input)({
   width: 70,
 });
 
-// ─── Grid Config Row (Puzzle) ───
-
 export const GridConfigRow = styled('div')({
   display: 'flex',
   gap: 16,
@@ -735,8 +691,6 @@ export const GridConfigFieldWide = styled('div')({
   flex: 1,
   minWidth: 140,
 });
-
-// ─── Card Row (for cards within rounds) ───
 
 export const CardItemRow = styled('div')({
   display: 'flex',
@@ -764,8 +718,6 @@ export const ExplanationInput = styled(Input)({
   fontSize: 12,
 });
 
-// ─── Badge Variants ───
-
 export const BadgeSpaced = styled('span')({
   display: 'inline-block',
   padding: '4px 11px',
@@ -788,8 +740,6 @@ export const ScoreBadge = styled('span')({
   color: PRIMARY,
 });
 
-// ─── Participant Info ───
-
 export const ParticipantName = styled('div')({
   fontWeight: 600,
 });
@@ -810,15 +760,11 @@ export const JoinedDate = styled('td')({
   fontSize: 13,
 });
 
-// ─── Overflow container ───
-
 export const OverflowWrapper = styled('div')({
   overflowX: 'auto',
   WebkitOverflowScrolling: 'touch',
   scrollbarWidth: 'thin',
 });
-
-// ─── Section Info Block ───
 
 export const SectionInfoBlock = styled('div')({
   marginBottom: 24,
@@ -828,8 +774,6 @@ export const SmallMutedText = styled(BodyText)({
   color: '#888',
   fontSize: 13,
 });
-
-// ─── Image ───
 
 export const PuzzlePreview = styled('div')({
   marginTop: 8,
@@ -843,8 +787,6 @@ export const PuzzlePreviewImage = styled('img')({
   objectFit: 'contain',
 });
 
-// ─── Centered text (login page, etc.) ───
-
 export const CenteredTitle = styled('h2')({
   margin: '0 0 8px',
   textAlign: 'center',
@@ -855,8 +797,6 @@ export const CenteredSubtitle = styled(BodyText)({
   marginBottom: 24,
   color: '#888',
 });
-
-// ─── Opening Overlay (PlayPage) ───
 
 export const OpeningOverlay = styled('div')<{ fading?: boolean }>(({ fading }) => ({
   position: 'fixed',
@@ -944,8 +884,6 @@ export const LoginFadeIn = styled('div')<{ visible?: boolean }>(({ visible }) =>
   transition: 'opacity 0.8s ease-out 0.1s, transform 0.8s ease-out 0.1s',
 }));
 
-// ─── Default Splash (PlayPage — no opening media) ───
-
 export const DefaultSplashOverlay = styled('div')<{ fading?: boolean }>(({ fading }) => ({
   position: 'fixed',
   inset: 0,
@@ -969,8 +907,6 @@ export const SplashLogo = styled('img')({
   userSelect: 'none',
   pointerEvents: 'none',
 });
-
-// ─── Purple Login Page ───
 
 export const PurpleLoginPage = styled('div')<{ visible?: boolean }>(({ visible }) => ({
   position: 'fixed',
@@ -1033,14 +969,10 @@ export const HelpLink = styled('a')({
   },
 });
 
-// ─── Group Text (HomePage) ───
-
 export const GroupText = styled(BodyText)({
   marginBottom: 8,
   fontWeight: 600,
 });
-
-// ─── Code display ───
 
 export const CodeDisplay = styled('code')({
   fontSize: 16,
@@ -1056,8 +988,6 @@ export const MobileCardCode = styled('code')({
   color: '#666',
 });
 
-// ─── MobileCardItem name row ───
-
 export const MobileCardNameRow = styled('div')({
   fontWeight: 700,
   fontSize: 15,
@@ -1070,26 +1000,18 @@ export const MobileCardRow = styled('div')({
   alignItems: 'center',
 });
 
-// ─── Hidden file input ───
-
 export const HiddenInput = styled('input')({
   display: 'none',
 });
-
-// ─── Full-width Input ───
 
 export const FullWidthInput = styled(Input)({
   width: '100%',
 });
 
-// ─── Buttons row for form ───
-
 export const FormButtonsRow = styled('div')({
   display: 'flex',
   gap: 8,
 });
-
-// ─── Input with bottom margin ───
 
 export const InputMb8 = styled(Input)({
   marginBottom: 8,
@@ -1098,8 +1020,6 @@ export const InputMb8 = styled(Input)({
 export const InputMb10 = styled(Input)({
   marginBottom: 10,
 });
-
-// ─── Small add button with top margin ───
 
 export const AddButton = styled(OutlineButton)({
   padding: '4px 12px',
@@ -1113,8 +1033,6 @@ export const AddButtonMt8 = styled(OutlineButton)({
   marginTop: 8,
 });
 
-// ─── Selection group with wrap ───
-
 export const SelectionGroupWrap = styled(SelectionGroup)({
   flexWrap: 'wrap',
 });
@@ -1123,26 +1041,18 @@ export const SelectionGroupNoFlex = styled(SelectionGroup)({
   flex: 'none',
 });
 
-// ─── Detail Value Styles ───
-
 export const BoldSpan = styled('span')({
   fontWeight: 600,
 });
-
-// ─── Status Toggle Button (ViewActivity) ───
 
 export const StatusToggleButton = styled(OutlineButton)({
   padding: '4px 12px',
   fontSize: 12,
 });
 
-// ─── Modal Body Text ───
-
 export const ModalBodyText = styled(BodyText)({
   marginBottom: 24,
 });
-
-// ─── Search Results (ModuleItemsSection) ───
 
 export const SearchResultsList = styled('div')({
   border: '1px solid #e8e8ec',
@@ -1191,8 +1101,6 @@ export const RemoveItemButton = styled('button')({
   borderRadius: 4,
   '&:hover': { background: '#ffebee' },
 });
-
-// ─── Role Badge (Users tab) ───
 
 export const RoleBadge = styled('span')<{ role: 'viewer' | 'admin' | 'super_admin' | 'customer' }>(({ role }) => ({
   display: 'inline-block',

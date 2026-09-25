@@ -9,16 +9,10 @@ import { getSettings } from '../services/manageSettings';
 
 const router = Router();
 router.use(authenticateManage);
-// pm gets a reduced view of the same screen; a member has no access.
-// Owner only: the team list is not something an employee needs to browse.
 router.use(requireManageRole('owner'));
 
 const VALID_ROLES: ManageRole[] = ['owner', 'pm', 'member'];
 
-/**
- * One colour per person, reused on every board. Handed out in order so two
- * people are never born the same colour; the owner can still override it.
- */
 const PALETTE = ['#6c5ce7', '#0984e3', '#00b894', '#e17055', '#fdcb6e', '#e84393', '#00cec9', '#636e72'];
 
 function badId(res: Response, id: string): boolean {
@@ -27,10 +21,6 @@ function badId(res: Response, id: string): boolean {
   return true;
 }
 
-/**
- * A pm sees name, role, capacity and hours — no shekels, ever.
- * Same rule as everywhere else: the shape is decided here, not in the UI.
- */
 function serializeEmployee(u: Record<string, unknown>, role: ManageRole, monthly: { hours: number; cost: number }) {
   const base = {
     _id: u._id,
@@ -56,7 +46,6 @@ function serializeEmployee(u: Record<string, unknown>, role: ManageRole, monthly
   };
 }
 
-/** Hours and cost logged this calendar month, per user, in one query. */
 async function monthlyTotals(): Promise<Record<string, { hours: number; cost: number }>> {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -69,7 +58,6 @@ async function monthlyTotals(): Promise<Record<string, { hours: number; cost: nu
 }
 
 router.get('/', async (req: Request, res: Response) => {
-  // Inactive people stay listed — their hours are still in the history.
   const users = await ManageUser.find(req.query.all === 'true' ? {} : { active: true })
     .sort({ active: -1, name: 1 }).lean();
   const totals = await monthlyTotals();
@@ -135,7 +123,6 @@ router.patch('/:id', requireManageRole('owner'), async (req: Request, res: Respo
     update.workDays = (body.workDays as unknown[]).filter((d) => typeof d === 'number' && d >= 0 && d <= 6);
   }
 
-  // Email changes the login identity, so it is checked for collision separately.
   if (typeof body.email === 'string' && body.email.trim()) {
     const email = body.email.trim().toLowerCase();
     const clash = await ManageUser.findOne({ email, _id: { $ne: String(req.params.id) } });
@@ -168,13 +155,6 @@ router.post('/:id/reset-password', requireManageRole('owner'), async (req: Reque
   res.json({ ok: true });
 });
 
-/**
- * Deactivate, never delete.
- *
- * A departed employee's time entries are the history of what projects cost.
- * Deleting the person would orphan every one of them and silently change last
- * year's profitability, so the only "removal" is a flag.
- */
 router.delete('/:id', requireManageRole('owner'), async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
   if (String(req.params.id) === req.manageUser!.userId) {

@@ -6,7 +6,6 @@ import { TimeEntry, TimeCategory } from './manageTypes';
 interface TimerContextType {
   timer: TimeEntry | null;
   elapsedMinutes: number;
-  /** Bumped whenever hours change, so screens can refetch without prop-drilling. */
   version: number;
   start: (input: { category: TimeCategory; projectId?: string; note?: string }) => Promise<void>;
   stop: () => Promise<void>;
@@ -22,7 +21,6 @@ export function ManageTimerProvider({ children }: { children: ReactNode }) {
   const [now, setNow] = useState(Date.now());
   const [version, setVersion] = useState(0);
 
-  // The owner does not report hours (spec ch.10 decision 2) — never poll for them.
   const tracksTime = !!user?.tracksTime;
 
   const refresh = useCallback(async () => {
@@ -37,7 +35,6 @@ export function ManageTimerProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  // One ticker for the whole app, and only while something is actually running.
   useEffect(() => {
     if (!timer) return;
     const id = setInterval(() => setNow(Date.now()), 1000);

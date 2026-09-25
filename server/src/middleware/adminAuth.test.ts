@@ -28,7 +28,6 @@ function run(middleware: Middleware, method: string, authorization?: string) {
 
 const bearer = (role: string) => `Bearer ${jwt.sign({ email: `${role}@example.com`, role }, JWT_SECRET)}`;
 
-// Run: npx tsx --test server/src/middleware/adminAuth.test.ts
 test('a viewer can read', () => {
   for (const method of ['GET', 'HEAD']) {
     assert.strictEqual(run(authenticateAdmin, method, bearer('viewer')).passed, true, method);

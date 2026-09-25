@@ -19,7 +19,6 @@ export interface ICollageJob {
   title?: string;
   titleImageUrl?: string;
   requiredImages: number;
-  /** Cloudinary URLs in panel order (index 0..requiredImages-1). */
   imageUrls: string[];
   phase: CollageJobPhase;
   percent: number;
@@ -27,7 +26,6 @@ export interface ICollageJob {
   error?: string;
   resultUrl?: string;
   isVideo: boolean;
-  /** When set, server SMS's resultUrl to this number once phase === 'done'. */
   smsPhone?: string;
   lang?: string;
   smsSentAt?: Date;

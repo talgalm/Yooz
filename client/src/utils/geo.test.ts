@@ -29,11 +29,9 @@ test('offsetMeters round-trips through distance and bearing', () => {
 test('angleDelta takes the short way around', () => {
   assert.equal(angleDelta(350, 10), 20);
   assert.equal(angleDelta(10, 350), -20);
-  assert.equal(Math.abs(angleDelta(0, 180)), 180); // exact opposite: either sign is fine
+  assert.equal(Math.abs(angleDelta(0, 180)), 180);
   assert.equal(angleDelta(90, 90), 0);
 });
-
-// ─── Arrival detection ──────────────────────────────────────────────────────
 
 const station = offsetMeters(tlv, 0, 0);
 const at = (north: number, east: number, accuracy: number): Fix => ({
@@ -42,26 +40,23 @@ const at = (north: number, east: number, accuracy: number): Fix => ({
 });
 
 test('a sloppy fix at the station still counts as arrived', () => {
-  // The real failure case: standing at the sign, GPS says 12m out ±15m.
   assert.ok(hasArrived(at(12, 0, 15), station));
-  // Same distance, but the phone is confident — it really is 12m away.
   assert.ok(!hasArrived(at(12, 0, 2), station));
 });
 
 test('a junk fix never opens a station, and never closes one', () => {
-  const junk = at(5, 0, 400); // cell-tower fix: 5m away but ±400m
+  const junk = at(5, 0, 400);
   assert.ok(!hasArrived(junk, station));
-  assert.ok(hasArrived(junk, station, DEFAULT_PROXIMITY_METERS, true)); // holds prior state
+  assert.ok(hasArrived(junk, station, DEFAULT_PROXIMITY_METERS, true));
 });
 
 test('forgiveness is capped, so one wide fix is not everywhere at once', () => {
-  // 200m away with ±200m accuracy: only MAX_FORGIVEN (25m) is forgiven.
   assert.equal(Math.round(effectiveDistance(at(200, 0, 200), station)), 175);
 });
 
 test('hysteresis keeps an opened station open while the fix jitters', () => {
-  const edge = at(20, 0, 0); // outside a 10m radius, inside 10 * 2.5
+  const edge = at(20, 0, 0);
   assert.ok(!hasArrived(edge, station, 10, false));
   assert.ok(hasArrived(edge, station, 10, true));
-  assert.ok(!hasArrived(at(40, 0, 0), station, 10, true)); // genuinely walked off
+  assert.ok(!hasArrived(at(40, 0, 0), station, 10, true));
 });

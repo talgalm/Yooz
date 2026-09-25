@@ -36,8 +36,6 @@ import {
 import AnimatedLeaderboard, { LeaderboardRow } from './AnimatedLeaderboard';
 import ControlFlowTab from './ControlFlowTab';
 
-// ─── Types ───
-
 interface GameScore {
   gameName: string;
   score: number;
@@ -90,8 +88,6 @@ interface SmsNotificationsResponse {
   enabled: boolean;
   notifications: SmsNotificationRow[];
 }
-
-// ─── Styled Components ───
 
 const HeroCard = styled('div')({
   background: 'linear-gradient(135deg, #6c5ce7 0%, #8B2FC9 100%)',
@@ -298,8 +294,6 @@ const SectionRow = styled('div')({
 
 const LIVE_POLL_MS = 5000;
 
-// ─── Component ───
-
 export default function ManagerDashboardPage() {
   const [data, setData] = useState<ReportsResponse | null>(null);
   const [smsData, setSmsData] = useState<SmsNotificationsResponse | null>(null);
@@ -314,7 +308,6 @@ export default function ManagerDashboardPage() {
       const res = await managerApiFetch<ReportsResponse>('/api/manager/reports');
       setData(res);
     } catch {
-      // token might be expired
     } finally {
       setLoading(false);
     }
@@ -325,7 +318,6 @@ export default function ManagerDashboardPage() {
       const res = await managerApiFetch<SmsNotificationsResponse>('/api/manager/sms-notifications');
       setSmsData(res);
     } catch {
-      // ignore — keep previous snapshot
     }
   }, []);
 
@@ -334,7 +326,6 @@ export default function ManagerDashboardPage() {
     fetchSmsNotifications();
   }, [fetchReports, fetchSmsNotifications]);
 
-  // Live polling — refresh while the tab is visible
   useEffect(() => {
     let timer: number | undefined;
     let cancelled = false;
@@ -352,7 +343,6 @@ export default function ManagerDashboardPage() {
             if (sms) setSmsData(sms);
           }
         } catch {
-          // ignore — keep previous snapshot
         }
       }
       if (!cancelled) {
@@ -363,7 +353,6 @@ export default function ManagerDashboardPage() {
     timer = window.setTimeout(tick, LIVE_POLL_MS);
     const onVis = () => {
       if (document.visibilityState === 'visible') {
-        // immediate refresh on tab regain
         if (timer) window.clearTimeout(timer);
         tick();
       }
@@ -388,7 +377,6 @@ export default function ManagerDashboardPage() {
     fetchSmsNotifications();
   };
 
-  // ─── Derived stats ───
   const stats = useMemo(() => {
     if (!data) {
       return { total: 0, withScore: 0, avgScore: 0, topScore: 0 };
@@ -434,7 +422,6 @@ export default function ManagerDashboardPage() {
       </AdminHeader>
 
       <AdminContent>
-        {/* Hero card */}
         <HeroCard>
           <HeroTopRow>
             <HeroTitle>{data?.activityName || manager?.activityName}</HeroTitle>
@@ -452,7 +439,6 @@ export default function ManagerDashboardPage() {
           <HeroMeta>{manager?.email}</HeroMeta>
         </HeroCard>
 
-        {/* KPI stats */}
         <StatsGrid>
           <StatCard>
             <StatLabel>{t.statTotal}</StatLabel>
@@ -480,7 +466,6 @@ export default function ManagerDashboardPage() {
           </StatCard>
         </StatsGrid>
 
-        {/* Tab bar */}
         <TabBar role="tablist">
           <TabBtn
             type="button"
@@ -546,7 +531,6 @@ export default function ManagerDashboardPage() {
           </TabBtn>
         </TabBar>
 
-        {/* Tab content */}
         {activeTab === 'overview' && data && (
           <OverviewTab data={data} t={t} />
         )}
@@ -569,8 +553,6 @@ export default function ManagerDashboardPage() {
     </AdminPage>
   );
 }
-
-// ─── Tab: Overview ───
 
 function OverviewTab({ data, t }: { data: ReportsResponse; t: Record<string, string> }) {
   const top5: LeaderboardRow[] = useMemo(
@@ -638,8 +620,6 @@ function OverviewTab({ data, t }: { data: ReportsResponse; t: Record<string, str
   );
 }
 
-// ─── Tab: Leaderboard ───
-
 function LeaderboardTab({ data, t }: { data: ReportsResponse; t: Record<string, string> }) {
   const rows: LeaderboardRow[] = useMemo(
     () =>
@@ -670,8 +650,6 @@ function LeaderboardTab({ data, t }: { data: ReportsResponse; t: Record<string, 
     </>
   );
 }
-
-// ─── Tab: Participants ───
 
 function ParticipantsTab({ data, t }: { data: ReportsResponse; t: Record<string, string> }) {
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(data.participants);
@@ -734,8 +712,6 @@ function ParticipantsTab({ data, t }: { data: ReportsResponse; t: Record<string,
     </>
   );
 }
-
-// ─── Tab: Coupons (SMS notifications) ───
 
 const StatusPill = styled('span')<{ tone: 'sent' | 'pending' | 'failed' | 'skipped' }>(({ tone }) => {
   const palette = {
@@ -840,8 +816,6 @@ function CouponsTab({
     </>
   );
 }
-
-// ─── Tab: Groups ───
 
 function GroupsTab({ groupStandings, t }: { groupStandings: GroupStanding[]; t: Record<string, string> }) {
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(groupStandings);

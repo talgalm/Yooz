@@ -33,15 +33,11 @@ export interface IMission {
   name: string;
   description?: string;
   customer?: string;
-  // Part 1: explanation screens
   explanationScreens: IMissionScreen[];
-  // Part 2: puzzle
   puzzleConfig?: IPuzzleConfig;
-  // Part 3: trash sort
   trashSortConfig?: ITrashSortConfig;
   createdAt: Date;
   createdByEmail?: string;
-  /** Admin Missions sub-tab folder this mission is filed under (null = ungrouped). */
   folderId?: Types.ObjectId | null;
 }
 

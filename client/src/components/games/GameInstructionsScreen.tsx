@@ -7,11 +7,6 @@ interface GameInstructionsScreenProps {
   onContinue: () => void;
 }
 
-/**
- * Shared instructions screen shown before a game starts.
- * Displays game name + instructions text + continue button.
- * Uses unified station design: purple window, white headline, white continue button with purple text.
- */
 export default function GameInstructionsScreen({
   gameName,
   instructions,

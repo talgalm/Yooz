@@ -7,13 +7,6 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'freelancer', 'graphics', 'ai_api', 'hosting', 'content', 'travel', 'other',
 ];
 
-/**
- * A project cost that is not someone's time.
- *
- * The ENTIRE entity is owner-only — there is no serializer with public fields,
- * because every field on it (what we paid, to whom) is commercially sensitive.
- * The route is gated with requireManageRole('owner'), not filtered in the output.
- */
 export interface IExpense {
   _id: Types.ObjectId;
   projectId: Types.ObjectId;
@@ -37,7 +30,6 @@ const expenseSchema = new Schema<IExpense>(
     vendor: { type: String, trim: true },
     amount: { type: Number, required: true },
     description: { type: String, trim: true },
-    // Whether this gets passed on to the client.
     billable: { type: Boolean, default: false },
     documentUrl: { type: String, trim: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'ManageUser', required: true },

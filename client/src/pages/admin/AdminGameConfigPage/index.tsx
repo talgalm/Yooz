@@ -77,7 +77,6 @@ export default function AdminGameConfigPage() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
 
-  // Shared
   const [instructions, setInstructions] = useState('');
   const [startButtonText, setStartButtonText] = useState('');
   const [endTitle, setEndTitle] = useState('');
@@ -90,17 +89,14 @@ export default function AdminGameConfigPage() {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(!!id);
 
-  // Initial settings to pass to sub-components
   const [initialSettings, setInitialSettings] = useState<Record<string, unknown> | undefined>(undefined);
 
-  // Refs for sub-components
   const orderRef = useRef<GameConfigHandle>(null);
   const triviaRef = useRef<GameConfigHandle>(null);
   const puzzleRef = useRef<GameConfigHandle>(null);
   const trueFalseRef = useRef<GameConfigHandle>(null);
   const ballRef = useRef<GameConfigHandle>(null);
   const trashSortRef = useRef<GameConfigHandle>(null);
-  // Fetch existing game data
   useEffect(() => {
     if (!id) return;
     adminApiFetch<{ game: GameData }>(`/api/admin/games/${id}`)
@@ -129,9 +125,8 @@ export default function AdminGameConfigPage() {
       .catch(() => navigate('/admin/dashboard?tab=stations'));
   }, [id, navigate]);
 
-  // Prefill from library item (export from Content Library)
   useEffect(() => {
-    if (id) return; // only in create mode
+    if (id) return;
     const lib = (location.state as { libraryItem?: { name: string; type: string; description?: string; customer?: string; tags?: string[]; settings?: Record<string, unknown> } })?.libraryItem;
     if (!lib) return;
 
@@ -155,7 +150,6 @@ export default function AdminGameConfigPage() {
       setHintImageUrl((h.imageUrl as string) || '');
     }
     setInitialSettings(s);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getActiveRef = () => {
@@ -170,7 +164,6 @@ export default function AdminGameConfigPage() {
     }
   };
 
-  // ─── Submit ───
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
@@ -444,7 +437,6 @@ export default function AdminGameConfigPage() {
               </FormSectionCard>
             </DesktopFormGrid>
 
-            {/* Game-type specific config */}
             <FormSectionCardWide>
               {type === 'order' && (
                 <OrderGameConfig ref={orderRef} t={t} initialSettings={initialSettings} />

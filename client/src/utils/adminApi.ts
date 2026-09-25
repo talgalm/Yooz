@@ -15,9 +15,6 @@ export async function adminApiFetch<T>(url: string, options: RequestInit = {}): 
       window.dispatchEvent(new Event('yooz_admin_unauthorized'));
     }
     const error = await res.json().catch(() => ({ error: 'Request failed' }));
-    // Keep the parsed body on the error — some endpoints answer a 4xx with
-    // detail the caller needs (409 `in_use` carries the referencing docs).
-    // The message is unchanged, so existing callers are unaffected.
     const err = new Error(error.error || 'Request failed') as Error & { status: number; body: unknown };
     err.status = res.status;
     err.body = error;
@@ -27,7 +24,6 @@ export async function adminApiFetch<T>(url: string, options: RequestInit = {}): 
   return res.json();
 }
 
-// Upload a file via multipart/form-data (no Content-Type header — browser sets it with boundary)
 export async function adminUploadFile(file: File, folder?: string): Promise<{
   url: string;
   publicId: string;

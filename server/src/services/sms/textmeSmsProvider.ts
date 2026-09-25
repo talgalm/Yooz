@@ -8,10 +8,6 @@ interface TextmeResponse {
   shipment_id?: string | number;
 }
 
-/**
- * Normalize Israeli phone numbers to the local 05xxxxxxxx form that
- * textme accepts. Accepts +972..., 972..., 05..., 5... and digits-with-dashes.
- */
 function normalizeIsraeliPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '');
   if (digits.startsWith('972')) return `0${digits.slice(3)}`;
@@ -59,7 +55,6 @@ export class TextmeSmsProvider implements SmsProvider {
       try {
         parsed = text ? (JSON.parse(text) as TextmeResponse) : null;
       } catch {
-        // textme can answer with XML/plain text on auth errors
       }
 
       if (!res.ok) {
@@ -69,7 +64,6 @@ export class TextmeSmsProvider implements SmsProvider {
         };
       }
 
-      // textme convention: status === 0 means accepted for delivery.
       if (parsed && parsed.status !== undefined && parsed.status !== 0) {
         return {
           success: false,

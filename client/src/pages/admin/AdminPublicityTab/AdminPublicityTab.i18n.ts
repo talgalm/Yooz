@@ -38,7 +38,6 @@ export const texts = {
     sectionContact: 'Contact',
     email: 'Email',
     phone: 'Phone',
-    // leads
     leadName: 'Name',
     leadCompany: 'Company',
     leadPosition: 'Position',

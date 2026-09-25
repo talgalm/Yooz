@@ -22,16 +22,10 @@ interface GameCompleteScreenProps {
   scoreLabel: string;
   continueLabel: string;
   onFinish: () => void;
-  /** Optional extra info lines (e.g. accuracy, time) rendered between score and button */
   extraInfo?: React.ReactNode;
-  /** Optional content rendered above the title (e.g. completed puzzle image) */
   topContent?: React.ReactNode;
 }
 
-/**
- * Shared game-complete screen showing final score + continue button.
- * Used by all game types.
- */
 export default function GameCompleteScreen({
   title,
   score,

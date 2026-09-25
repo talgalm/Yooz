@@ -1,10 +1,3 @@
-/**
- * The six fixed reports — spec ch.06 §14.
- *
- * Each takes a date range. Money-bearing figures are only ever assembled when
- * the caller is the owner; the route decides, these functions just take a flag
- * so there is one code path rather than two that can drift.
- */
 import { Types } from 'mongoose';
 import { TimeEntry, TIME_CATEGORIES } from '../models/manage/TimeEntry';
 import { Task } from '../models/manage/Task';
@@ -21,7 +14,6 @@ export interface Range { from: Date; to: Date }
 
 const hours = (minutes: number) => round1(minutes / 60);
 
-/** 1. Where the business's time actually went. */
 export async function hoursByCategory({ from, to }: Range) {
   const rows = await TimeEntry.aggregate<{ _id: string; minutes: number }>([
     { $match: { endedAt: { $ne: null }, date: { $gte: from, $lte: to } } },
@@ -35,13 +27,11 @@ export async function hoursByCategory({ from, to }: Range) {
     return {
       category,
       hours: hours(minutes),
-      // Share of the period, so "how much of us is client work" is answerable.
       share: totalMinutes > 0 ? round2(minutes / totalMinutes) : 0,
     };
   }).filter((r) => r.hours > 0);
 }
 
-/** 2. Hours per employee, split by project. */
 export async function hoursByUser({ from, to }: Range, includeMoney: boolean) {
   const rows = await TimeEntry.aggregate<{
     _id: { userId: Types.ObjectId; projectId: Types.ObjectId | null };
@@ -82,7 +72,6 @@ export async function hoursByUser({ from, to }: Range, includeMoney: boolean) {
     .sort((a, b) => b.hours - a.hours);
 }
 
-/** 3. Which projects ate the most time. */
 export async function hoursByProject({ from, to }: Range, includeMoney: boolean) {
   const rows = await TimeEntry.aggregate<{ _id: Types.ObjectId | null; minutes: number; cost: number }>([
     { $match: { endedAt: { $ne: null }, date: { $gte: from, $lte: to } } },
@@ -110,14 +99,6 @@ export async function hoursByProject({ from, to }: Range, includeMoney: boolean)
     .sort((a, b) => b.hours - a.hours);
 }
 
-/**
- * 4. Estimate vs actual per stage, over finished projects.
- *
- * The report that improves pricing over time — worth a look once a quarter.
- * Actual hours reach a stage through the task they were logged against, so a
- * time entry with no task cannot be attributed and is deliberately left out
- * rather than smeared across stages.
- */
 export async function estimateVsActual() {
   const projects = await Project.find({ status: { $in: ['done', 'maintenance'] } })
     .select('name stages').lean();
@@ -130,7 +111,6 @@ export async function estimateVsActual() {
   const entries = await TimeEntry.find({ projectId: { $in: projectIds }, endedAt: { $ne: null } })
     .select('projectId taskId minutes').lean();
 
-  // projectId -> stageKey -> actual minutes
   const actual = new Map<string, Map<string, number>>();
   for (const e of entries) {
     const stageKey = e.taskId ? stageOfTask[String(e.taskId)] : undefined;
@@ -145,7 +125,6 @@ export async function estimateVsActual() {
     const perProject = actual.get(String(p._id));
     for (const stage of p.stages ?? []) {
       const actualHours = round1((perProject?.get(stage.key) ?? 0) / 60);
-      // A stage nobody logged against tells us nothing about estimate quality.
       if (actualHours === 0 && stage.plannedHours === 0) continue;
       const row = agg.get(stage.key) ?? { key: stage.key, name: stage.name, planned: 0, actual: 0, samples: 0 };
       row.planned = round1(row.planned + stage.plannedHours);
@@ -159,13 +138,11 @@ export async function estimateVsActual() {
     projectCount: projects.length,
     stages: [...agg.values()].map((r) => ({
       ...r,
-      // Positive means it took longer than estimated.
       deviation: r.planned > 0 ? round2((r.actual - r.planned) / r.planned) : 0,
     })),
   };
 }
 
-/** 5. Revenue, cost and profit per client. Owner only. */
 export async function profitabilityByClient() {
   const projects = await Project.find({ archived: false, type: 'client' }).lean();
   const ids = projects.map((p) => String(p._id));
@@ -201,7 +178,6 @@ export async function profitabilityByClient() {
     .sort((a, b) => b.profit - a.profit);
 }
 
-/** 6. Who we have and have not been talking to. */
 export async function clientActivity({ from, to }: Range) {
   const clients = await Client.find({ archived: false }).select('name status lastContactDate').lean();
   const counts = await Interaction.aggregate<{ _id: Types.ObjectId; n: number }>([
@@ -222,6 +198,5 @@ export async function clientActivity({ from, to }: Range) {
         : null,
       interactions: byClient[String(c._id)] ?? 0,
     }))
-    // Quietest first — the point of the report is who is being forgotten.
     .sort((a, b) => (b.daysSinceContact ?? Infinity) - (a.daysSinceContact ?? Infinity));
 }

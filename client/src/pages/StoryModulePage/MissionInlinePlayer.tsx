@@ -60,13 +60,13 @@ function loadMissionPhase(code?: string): MissionPhase {
   try {
     const saved = sessionStorage.getItem(missionPhaseKey(code)) as MissionPhase | null;
     if (saved === 'puzzle' || saved === 'done') return saved;
-  } catch { /* ignore */ }
+  } catch { }
   return 'screens';
 }
 
 function saveMissionPhase(code: string | undefined, phase: MissionPhase) {
   if (!code) return;
-  try { sessionStorage.setItem(missionPhaseKey(code), phase); } catch { /* ignore */ }
+  try { sessionStorage.setItem(missionPhaseKey(code), phase); } catch { }
 }
 
 interface MissionInlinePlayerProps {
@@ -85,7 +85,6 @@ export default function MissionInlinePlayer({ mission, onComplete, code, onLogou
   const [startTime] = useState(Date.now());
   const trashSortScoreRef = useRef(0);
 
-  // Set theme-color to transparent during mission so browser chrome uses device default
   useEffect(() => {
     const metas = document.querySelectorAll('meta[name="theme-color"]') as NodeListOf<HTMLMetaElement>;
     const prevThemes = Array.from(metas).map((m) => m.content);
@@ -102,8 +101,7 @@ export default function MissionInlinePlayer({ mission, onComplete, code, onLogou
       if (screen.image) srcs.push(screen.image);
     });
     return srcs;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // stable — mission data never changes after mount
+  }, []);
 
   const frameReady = useFrameReady(allImagesToPreload);
 
@@ -123,14 +121,12 @@ export default function MissionInlinePlayer({ mission, onComplete, code, onLogou
     setPhase('done');
   }, [code]);
 
-  // Called when the game ends — saves score for later, but stays on video/badge screens
   const handleTrashSortComplete = useCallback((score: number) => {
     trashSortScoreRef.current = score;
   }, []);
 
-  // Called when the user taps the continue button on the badge screen
   const handleMissionContinue = useCallback(() => {
-    if (code) try { sessionStorage.removeItem(missionPhaseKey(code)); } catch { /* ignore */ }
+    if (code) try { sessionStorage.removeItem(missionPhaseKey(code)); } catch { }
     onComplete({
       score: trashSortScoreRef.current,
       maxPossibleScore: 100,

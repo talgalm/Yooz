@@ -53,11 +53,6 @@ const SaveBar = styled('div')({
 });
 const Saved = styled('span')({ fontSize: 13, color: PRIMARY, fontWeight: 600 });
 
-/**
- * Owner-only. Every value here is read by live code — the stage split, the
- * health lights, the alert thresholds, the daily hour cap. Nothing on this
- * screen is decorative.
- */
 export default function ManageSettingsPage() {
   const t = useTranslations(texts);
   const [data, setData] = useState<SettingsData | null>(null);
@@ -117,7 +112,6 @@ export default function ManageSettingsPage() {
       <PageHeader><SectionTitle>{t.title}</SectionTitle></PageHeader>
       {error && <ErrorNote>{error}</ErrorNote>}
 
-      {/* ── Stage template ── */}
       <Block>
         <BlockTitle>{t.stageTemplate}</BlockTitle>
         <BlockHint>{t.stageTemplateHint}</BlockHint>
@@ -167,7 +161,6 @@ export default function ManageSettingsPage() {
         </Panel>
       </Block>
 
-      {/* ── Time categories ── */}
       <Block>
         <BlockTitle>{t.timeCategories}</BlockTitle>
         <BlockHint>{t.timeCategoriesHint}</BlockHint>
@@ -204,7 +197,6 @@ export default function ManageSettingsPage() {
         </Panel>
       </Block>
 
-      {/* ── Alert thresholds ── */}
       <Block>
         <BlockTitle>{t.thresholds}</BlockTitle>
         <BlockHint>{t.thresholdsHint}</BlockHint>
@@ -236,7 +228,6 @@ export default function ManageSettingsPage() {
         </Panel>
       </Block>
 
-      {/* ── Defaults ── */}
       <Block>
         <BlockTitle>{t.defaults}</BlockTitle>
         <BlockHint>{t.defaultsHint}</BlockHint>

@@ -1,7 +1,6 @@
 import { translate, type Lang } from '../context/LanguageContext';
 import { texts } from './ganeiYehoshuaShareText.i18n';
 
-/** The share lines themselves, for callers that lay them out rather than join them. */
 export const shareLines = (lang: Lang) => translate(texts, lang);
 
 export function buildBadgeShareTextBody(lang: Lang): string {

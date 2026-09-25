@@ -2,12 +2,12 @@ import { Schema, model, Types } from 'mongoose';
 
 export interface ILibraryItem {
   _id: Types.ObjectId;
-  kind: 'game' | 'station';       // what it would become if copied
+  kind: 'game' | 'station';
   name: string;
-  type: string;                     // game type (trivia, order...) or station type (text, video, image...)
+  type: string;
   description?: string;
-  customer?: string;                // original customer name
-  lang?: string;                // he / en
+  customer?: string;
+  lang?: string;
   tags: string[];
   settings: Record<string, unknown>;
   createdAt: Date;

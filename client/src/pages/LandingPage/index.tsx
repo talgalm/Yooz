@@ -3,12 +3,8 @@ import { texts } from './LandingPage.i18n';
 import NatureBackground from '../../components/NatureBackground';
 import { styled, keyframes } from '@mui/material/styles';
 
-// ─── Colors ───
-
 const C_GREEN = '#689f38';
 const C_YELLOW = '#ffca28';
-
-// ─── Animations ───
 
 const fadeInUp = keyframes`
   0% { opacity: 0; transform: translateY(24px); }
@@ -19,8 +15,6 @@ const float = keyframes`
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
 `;
-
-// ─── Styled Components ───
 
 const Page = styled('div')({
   display: 'flex',
@@ -210,8 +204,6 @@ const FooterLink = styled('button')({
   },
 });
 
-// ─── SVG Icons ───
-
 function GamesIcon() {
   return (
     <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff">
@@ -235,8 +227,6 @@ function LeaderboardIcon() {
     </svg>
   );
 }
-
-// ─── Component ───
 
 export default function LandingPage() {
   const t = useTranslations(texts);

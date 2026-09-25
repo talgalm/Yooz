@@ -4,11 +4,9 @@ import { cloudinaryAttachmentUrl } from '../utils/groupRewardConfig';
 
 const router = Router();
 
-// Public: download reward file (image/PDF) for group winner SMS link
 router.get('/:token', async (req: Request<{ token: string }>, res: Response) => {
   const token = req.params.token.trim();
 
-  // ponytail: test-SMS links carry the cloudinary URL inline (test_<base64url>), so the test works before the activity is saved and has no downloadToken yet.
   if (token.startsWith('test_')) {
     try {
       const decoded = Buffer.from(token.slice(5), 'base64url').toString('utf8');

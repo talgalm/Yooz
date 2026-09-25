@@ -5,10 +5,9 @@ import { LibraryItem, Game, Station } from '../models';
 
 const router = Router();
 
-// List library items (with optional filters)
 router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
-  const kind = req.query.kind as string;     // 'game' | 'station'
-  const type = req.query.type as string;     // e.g. 'trivia', 'video'
+  const kind = req.query.kind as string;
+  const type = req.query.type as string;
   const tagParam = req.query.tag;
   const tags: string[] = Array.isArray(tagParam) ? tagParam as string[] : tagParam ? [tagParam as string] : [];
   const customer = req.query.customer as string;
@@ -16,7 +15,6 @@ router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
   const limit = Math.min(Number(req.query.limit) || 100, 500);
   const skip = Math.max(Number(req.query.skip) || 0, 0);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const filter: any = {};
   if (kind) filter.kind = kind;
   if (type) filter.type = type;
@@ -47,7 +45,6 @@ router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
   res.json({ items, total });
 });
 
-// Get all unique tags
 router.get('/tags', authenticateAdmin, async (req: Request, res: Response) => {
   const scope = customerMongoFilter(req);
   const match = Object.keys(scope).length > 0 ? scope : {};
@@ -63,7 +60,6 @@ router.get('/tags', authenticateAdmin, async (req: Request, res: Response) => {
   });
 });
 
-// Get single library item
 router.get('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const item = await LibraryItem.findById(req.params.id);
   if (!item) { res.status(404).json({ error: 'Library item not found' }); return; }
@@ -71,7 +67,6 @@ router.get('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: 
   res.json({ item });
 });
 
-// Copy library item → real Game or Station (apply to activity)
 router.post('/:id/copy', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const item = await LibraryItem.findById(req.params.id);
   if (!item) { res.status(404).json({ error: 'Library item not found' }); return; }
@@ -103,7 +98,6 @@ router.post('/:id/copy', authenticateAdmin, async (req: Request<{ id: string }>,
   }
 });
 
-// Delete library item
 router.delete('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const existing = await LibraryItem.findById(req.params.id);
   if (!existing) { res.status(404).json({ error: 'Library item not found' }); return; }

@@ -44,7 +44,6 @@ export default function GroupComparison({ activityId, period, data }: Props) {
 
   return (
     <>
-      {/* Bar chart comparing avg scores */}
       <ChartCard>
         <ChartTitle>{t.groupsTab} — {t.avgScore}</ChartTitle>
         <ResponsiveContainer width="100%" height={260}>
@@ -59,7 +58,6 @@ export default function GroupComparison({ activityId, period, data }: Props) {
         </ResponsiveContainer>
       </ChartCard>
 
-      {/* Detail table */}
       <DesktopOnly>
         <ChartCard style={{ padding: 0, overflow: 'hidden' }}>
           <StatsTable>

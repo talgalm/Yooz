@@ -66,8 +66,6 @@ import {
   FinishPuzzleImg,
 } from './styled';
 
-// ─── Types ───
-
 interface PuzzleAnswer {
   text: string;
   isCorrect: boolean;
@@ -98,11 +96,8 @@ interface PuzzleSettings {
   shuffleAnswers?: boolean;
 }
 
-// ─── Session Storage Progress ───
-
 const PROGRESS_KEY_PREFIX = 'puzzle_progress_';
 
-/** Derive a user-scoped storage key so different participants on the same device don't share progress. */
 function getProgressKey(gameId: string): string {
   try {
     const token = localStorage.getItem('yooz_token');
@@ -142,8 +137,6 @@ function clearPuzzleProgress(gameId: string) {
   try { sessionStorage.removeItem(getProgressKey(gameId)); } catch {}
 }
 
-// ─── Component ───
-
 export default function PuzzleGame({ game, onComplete }: GameProps) {
   const settings = game.settings as unknown as PuzzleSettings;
   const t = useTranslations(texts);
@@ -182,46 +175,36 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     }));
   }, [allQuestions]);
 
-  // Check for saved progress on mount
   const savedProgress = useRef(loadPuzzleProgress(game._id));
   const isResuming = savedProgress.current !== null;
 
-  // Guard: skip the first save-effect cycle after restoring progress,
-  // because the state changes from restore would trigger a spurious save
-  // that incorrectly advances queuePos by +1 again.
   const justRestoredRef = useRef(false);
 
   const [gameStarted, setGameStarted] = useState(false);
   const [noContent, setNoContent] = useState(false);
   const gameStartTime = useRef(Date.now());
 
-  // Puzzle state
   const [revealedPieces, setRevealedPieces] = useState<Set<number>>(new Set());
 
-  // Simple queue: current round + collected wrong answers for next round
   const queueRef = useRef<number[]>([]);
   const queuePosRef = useRef(0);
   const wrongThisRoundRef = useRef<number[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number | null>(null);
 
-  // Interaction state
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [checked, setChecked] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
-  // Stats
   const [correctCount, setCorrectCount] = useState(0);
   const [totalAttempts, setTotalAttempts] = useState(0);
   const [gameComplete, setGameComplete] = useState(false);
   const [totalScore, setTotalScore] = useState(0);
 
-  // Drag-and-drop phase state
   const [dragPhase, setDragPhase] = useState(false);
   const [dragPieceIndex, setDragPieceIndex] = useState<number | null>(null);
   const [wrongCellIndex, setWrongCellIndex] = useState<number | null>(null);
   const [dragFeedback, setDragFeedback] = useState<'correct' | 'wrong' | null>(null);
 
-  // Drag position tracking
   const [isDragging, setIsDragging] = useState(false);
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
   const dragStartOffset = useRef({ x: 0, y: 0 });
@@ -230,11 +213,9 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
   const [dragGridWidth, setDragGridWidth] = useState<number | undefined>(undefined);
   const cellRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
-  // Timer — overall game timer for speed bonus
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  /** Per-question countdown */
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const questionCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [questionTurnId, setQuestionTurnId] = useState(0);
@@ -261,7 +242,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
 
   const playPhaseInlineBackdrop = !setThemedSceneOverlay;
 
-  // Track revealed pieces in a ref to avoid stale closures
   const revealedPiecesRef = useRef<Set<number>>(new Set());
   const elapsedSecondsRef = useRef(0);
   const pendingTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -295,14 +275,12 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     elapsedSecondsRef.current = elapsedSeconds;
   }, [elapsedSeconds]);
 
-  // Initialize question queue
   useEffect(() => {
     if (processedQuestions.length === 0) {
       setNoContent(true);
       setGameComplete(true);
       return;
     }
-    // If resuming, the queue will be restored in startGame
     if (savedProgress.current) return;
     const indices = Array.from({ length: processedQuestions.length }, (_, i) => i);
     const shuffled = shuffleArray(indices);
@@ -312,7 +290,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     setCurrentQuestionIndex(shuffled[0]);
   }, []);
 
-  // Cleanup all pending timeouts on unmount
   useEffect(() => {
     return () => {
       pendingTimeouts.current.forEach(clearTimeout);
@@ -320,7 +297,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     };
   }, []);
 
-  // Start timer when game begins
   useEffect(() => {
     if (!gameStarted || gameComplete) return;
     timerRef.current = setInterval(() => {
@@ -337,17 +313,13 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     }
   }, [gameComplete, noContent, playGameOver]);
 
-  // Save progress after each piece placement
   useEffect(() => {
     if (!gameStarted || gameComplete || revealedPieces.size === 0) return;
-    // Skip the spurious save that fires right after restoring progress
     if (justRestoredRef.current) {
       justRestoredRef.current = false;
       return;
     }
-    // Save next queue position so on resume we skip the already-answered question
     const nextQueuePos = queuePosRef.current + 1;
-    // If we've exhausted the current round, save the wrong answers as the new queue
     const isRoundDone = nextQueuePos >= queueRef.current.length;
     const savedQueue = isRoundDone && wrongThisRoundRef.current.length > 0
       ? shuffleArray([...wrongThisRoundRef.current])
@@ -372,7 +344,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     });
   }, [revealedPieces, correctCount, totalAttempts, gameStarted, gameComplete]);
 
-  // Clear progress when game is complete
   useEffect(() => {
     if (gameComplete) clearPuzzleProgress(game._id);
   }, [gameComplete]);
@@ -381,7 +352,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     setGameStarted(true);
     startBgMusic();
 
-    // Restore saved progress if resuming
     const saved = savedProgress.current;
     if (saved) {
       const restoredPieces = new Set(saved.revealedPieces);
@@ -397,7 +367,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
       gameStartTime.current = saved.gameStartTime;
       if (saved.hintUsed) gameHint.forceHintUsed();
 
-      // Set current question from queue position
       if (saved.queuePos < saved.queue.length) {
         setCurrentQuestionIndex(saved.queue[saved.queuePos]);
       }
@@ -432,7 +401,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     }
   }, []);
 
-  /** After correct answer, pick a random unrevealed piece and enter drag phase. */
   const enterDragPhase = useCallback(() => {
     const currentRevealed = revealedPiecesRef.current;
     const unrevealed: number[] = [];
@@ -447,7 +415,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     setWrongCellIndex(null);
   }, [totalPieces]);
 
-  /** Handle successful piece placement. */
   const handleCorrectPlacement = useCallback((pieceIdx: number) => {
     playCorrect();
     setDragFeedback('correct');
@@ -455,7 +422,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     newRevealed.add(pieceIdx);
     setRevealedPieces(newRevealed);
 
-    // Check completion
     if (newRevealed.size >= totalPieces) {
       const timeLimit = scoring.timeLimitSeconds || GAME_CONSTANTS.PUZZLE_DEFAULT_TIME_LIMIT;
       const currentElapsed = elapsedSecondsRef.current;
@@ -475,7 +441,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     }
   }, [totalPieces, scoring, advanceToNextQuestion, playCorrect]);
 
-  /** Handle wrong piece placement. */
   const handleWrongPlacement = useCallback((cellIdx: number) => {
     playWrong();
     setDragFeedback('wrong');
@@ -485,8 +450,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
       setWrongCellIndex(null);
     }, 800));
   }, [playWrong]);
-
-  // ─── Drag & Drop Handlers ───
 
   const getCellFromPoint = useCallback((clientX: number, clientY: number): number | null => {
     for (const [idx, el] of cellRefs.current.entries()) {
@@ -524,7 +487,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     }
     setIsDragging(false);
     const cellIdx = getCellFromPoint(clientX, clientY);
-    if (cellIdx === null) return; // dropped outside grid
+    if (cellIdx === null) return;
     if (cellIdx === dragPieceIndex) {
       handleCorrectPlacement(dragPieceIndex);
     } else {
@@ -532,7 +495,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     }
   }, [isDragging, dragPieceIndex, getCellFromPoint, handleCorrectPlacement, handleWrongPlacement]);
 
-  // Mouse events
   const onMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     handleDragStart(e.clientX, e.clientY);
@@ -546,7 +508,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     handleDragEnd(e.clientX, e.clientY);
   }, [handleDragEnd]);
 
-  // Touch events
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
     handleDragStart(touch.clientX, touch.clientY);
@@ -563,7 +524,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     handleDragEnd(touch.clientX, touch.clientY);
   }, [handleDragEnd]);
 
-  // Attach mouse listeners to window while dragging
   useEffect(() => {
     if (!isDragging) return;
     window.addEventListener('mousemove', onMouseMove);
@@ -597,7 +557,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
 
     if (correct) {
       setCorrectCount((prev) => prev + 1);
-      // After a short delay, enter drag phase instead of auto-reveal
       pendingTimeouts.current.push(setTimeout(() => {
         enterDragPhase();
       }, 2000));
@@ -609,7 +568,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     }
   }, [checked, currentQuestionIndex, selectedAnswer, processedQuestions, enterDragPhase, advanceToNextQuestion, playCorrect, playWrong]);
 
-  // Reset per-question timer when the active question changes
   useEffect(() => {
     if (!gameStarted || gameComplete || currentQuestionIndex === null) return;
     const q = processedQuestionsRef.current[currentQuestionIndex];
@@ -622,7 +580,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     setTimeLeft(limit);
   }, [currentQuestionIndex, questionTurnId, gameStarted, gameComplete]);
 
-  // Countdown tick
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0 || checked) return;
     questionCountdownRef.current = setInterval(() => {
@@ -639,7 +596,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     };
   }, [timeLeft === null, timeLeft === 0, checked]);
 
-  // Time's up — submit as incorrect
   useEffect(() => {
     if (timeLeft === 0 && !checked) {
       handleCheck();
@@ -656,7 +612,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     });
   };
 
-  /** ~1s center toast */
   const [toastVisible, setToastVisible] = useState(false);
   useEffect(() => {
     if (!checked) {
@@ -668,7 +623,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     return () => clearTimeout(id);
   }, [checked, currentQuestionIndex]);
 
-  // ─── Opening / Intro screen ───
   if (!gameStarted) {
     return (
       <IntroContainer $externalBackdrop={Boolean(setThemedSceneOverlay)}>
@@ -708,7 +662,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     );
   }
 
-  // ─── Game complete / Finish ───
   if (gameComplete) {
     if (noContent) return null;
     return (
@@ -736,7 +689,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     );
   }
 
-  // ─── Drag Phase (after correct answer) ───
   if (dragPhase && dragPieceIndex !== null) {
     const cols = settings.gridCols;
     const rows = settings.gridRows;
@@ -760,7 +712,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
           <DragPhaseContainer>
             <DragInstruction>{t.dragInstruction}</DragInstruction>
 
-            {/* The puzzle grid showing revealed pieces and empty slots */}
             <DragGridWrapper
               ref={gridRef}
               style={{ aspectRatio: `${cols}/${rows}` }}
@@ -781,9 +732,7 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
               </PuzzleGridOverlay>
             </DragGridWrapper>
 
-            {/* The draggable piece — wrapper always present to hold layout */}
             <div style={{ position: 'relative' }}>
-              {/* Spacer always occupies the piece's space */}
               <DraggablePiece
                 cols={cols}
                 rows={rows}
@@ -799,7 +748,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
                 onTouchMove={dragFeedback !== 'correct' ? onTouchMove : undefined}
                 onTouchEnd={dragFeedback !== 'correct' ? onTouchEnd : undefined}
               />
-              {/* Fixed-position clone that follows the pointer */}
               {isDragging && (
                 <DraggablePiece
                   cols={cols}
@@ -847,14 +795,12 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
     );
   }
 
-  // ─── Playing (Question Phase) ───
   const question = currentQuestionIndex !== null ? processedQuestions[currentQuestionIndex] : null;
   if (!question) return null;
 
   return (
     <PlayPhaseRoot $inlineBackdrop={playPhaseInlineBackdrop}>
     <PuzzleContainer>
-      {/* Top bar */}
       <PuzzleGameTopBar>
         <TopBarLeftCluster>
           <PuzzleGameTopBarItem>{t.piecesRevealed}: {revealedPieces.size}/{totalPieces}</PuzzleGameTopBarItem>
@@ -874,20 +820,17 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
       </PuzzleGameTopBar>
 
       <PuzzleMainScroll>
-        {/* Question box */}
         <QuestionBox key={currentQuestionIndex}>
           <QuestionBadge>{t.questionLabel}</QuestionBadge>
           <QuestionContent>{question.text}</QuestionContent>
         </QuestionBox>
 
-        {/* Question media */}
         {question.media && (
           <NatureMediaContainer>
             <NatureMediaImage src={question.media} alt="" />
           </NatureMediaContainer>
         )}
 
-        {/* Hint button / spacer */}
         {settings.hint?.enabled && (settings.hint.text || settings.hint.imageUrl) && (
           checked ? (
             <HintSpacer aria-hidden="true" />
@@ -901,7 +844,6 @@ export default function PuzzleGame({ game, onComplete }: GameProps) {
           )
         )}
 
-        {/* Answer grid (2x2) */}
         <AnswerGrid>
           {question.answers.map((answer, index) => (
             <AnswerButton

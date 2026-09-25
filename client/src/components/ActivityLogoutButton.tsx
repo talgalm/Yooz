@@ -3,7 +3,6 @@ import { DarkHeaderActionIconButton, PuzzleDarkHeaderActionIconButton } from './
 interface ActivityLogoutButtonProps {
   onClick: () => void;
   ariaLabel: string;
-  /** Black borders instead of white (puzzle game session header). */
   variant?: 'default' | 'puzzle';
   iconColor?: string;
 }

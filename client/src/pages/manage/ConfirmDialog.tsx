@@ -12,13 +12,6 @@ interface Props {
   onCancel: () => void;
 }
 
-/**
- * In-app replacement for window.confirm.
- *
- * Native confirm() is suppressed in sandboxed and embedded browser contexts —
- * it silently returns false, so the destructive action just never fires and the
- * user sees nothing at all. Every destructive action in /manage goes through here.
- */
 export default function ConfirmDialog({
   title, message, confirmLabel, danger = true, busy = false, onConfirm, onCancel,
 }: Props) {

@@ -1,4 +1,3 @@
-// Run: npx tsx --test src/components/games/BallGame/customizedTimer.test.ts
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

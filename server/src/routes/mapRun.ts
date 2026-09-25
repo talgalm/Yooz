@@ -7,11 +7,7 @@ import { visibleOrderedIndices, nextIncompleteIndex } from '../utils/moduleItems
 
 const router = Router();
 
-/** A group's marker goes stale this long after its carrier's last fix, at which
- *  point any other member may take over broadcasting. Without it, one member
- *  closing their phone freezes the group's marker for the rest of the game. */
 const CARRIER_STALE_MS = 120_000;
-/** Positions older than this are not shown to other groups at all. */
 const POSITION_FRESH_MS = 300_000;
 
 interface GroupKey {
@@ -20,11 +16,6 @@ interface GroupKey {
   groupName: string;
 }
 
-/**
- * Resolves the caller's activity + group and guarantees the shared run document
- * exists. Everything in this router is group-scoped: a map activity with no
- * groups has nothing to share, so those callers are rejected here.
- */
 async function loadRun(req: Request, res: Response): Promise<
   { activity: NonNullable<Awaited<ReturnType<typeof Activity.findOne>>>; run: IMapGroupState; key: GroupKey; total: number } | null
 > {
@@ -45,8 +36,6 @@ async function loadRun(req: Request, res: Response): Promise<
   }
 
   const key: GroupKey = { activityId: activity._id as Types.ObjectId, activityDay: israelDayString(), groupName };
-  // Upsert so the first member to act creates the run; the unique index on
-  // {activityId, activityDay, groupName} makes a concurrent first move safe.
   const run = await MapGroupState.findOneAndUpdate(
     key,
     { $setOnInsert: { activityCode: activity.code, startedAt: new Date() } },
@@ -69,13 +58,6 @@ function serializeRun(run: IMapGroupState, total: number) {
   };
 }
 
-/**
- * Report the caller's GPS fix as the group's position.
- *
- * Only one member per group broadcasts — a team is one marker on everyone
- * else's map, not a cloud of dots. The carrier is whoever posts first, with a
- * staleness takeover so a dropped phone doesn't freeze the group in place.
- */
 router.post('/:code/map/position', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
   const lat = Number((req.body ?? {}).lat);
   const lng = Number((req.body ?? {}).lng);
@@ -94,8 +76,6 @@ router.post('/:code/map/position', authenticateToken, async (req: Request<{ code
   const mayBroadcast = !carrier || carrier === reportId || stale;
 
   if (mayBroadcast) {
-    // Filtered on the carrier we read, so two members taking over a stale slot
-    // at once resolve to one winner instead of flip-flopping every poll.
     await MapGroupState.updateOne(
       { ...key, ...(carrier ? { positionCarrierReportId: run.positionCarrierReportId } : { positionCarrierReportId: { $exists: false } }) },
       { $set: { position: { lat, lng }, positionAt: new Date(), positionCarrierReportId: reportId } },
@@ -105,10 +85,6 @@ router.post('/:code/map/position', authenticateToken, async (req: Request<{ code
   res.json({ broadcasting: mayBroadcast, ...serializeRun(run, total) });
 });
 
-/**
- * The group's shared progress, plus every *other* group's marker and score.
- * Polled by each member while walking — teammates are deliberately absent.
- */
 router.get('/:code/map/state', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
   const loaded = await loadRun(req, res);
   if (!loaded) return;
@@ -138,13 +114,6 @@ router.get('/:code/map/state', authenticateToken, async (req: Request<{ code: st
   });
 });
 
-/**
- * Record that the group finished the station at `itemIndex`.
- *
- * Whoever arrives first completes it for the whole team, so this must be
- * idempotent: the filter on `completedIndices` means a second member's call
- * matches nothing, scores nothing, and simply reads back the current state.
- */
 router.post('/:code/map/complete', authenticateToken, async (req: Request<{ code: string }>, res: Response) => {
   const itemIndex = Number((req.body ?? {}).itemIndex);
   const score = Number((req.body ?? {}).score) || 0;

@@ -18,7 +18,6 @@ export function useMissionSounds() {
   const completeRef = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState(false);
 
-  // Initialise audio elements once
   useEffect(() => {
     const bg = new Audio(SOUNDS.bg);
     bg.loop = true;
@@ -58,10 +57,9 @@ export function useMissionSounds() {
     };
   }, []);
 
-  // Start background music (call after first user interaction)
   const startBg = useCallback(() => {
     if (bgRef.current && bgRef.current.paused && !muted) {
-      bgRef.current.play().catch(() => {/* autoplay blocked */});
+      bgRef.current.play().catch(() => { });
     }
   }, [muted]);
 
@@ -88,7 +86,6 @@ export function useMissionSounds() {
   }, []);
 
   const playComplete = useCallback(() => {
-    // Mute bg music and play complete sound
     if (bgRef.current) bgRef.current.pause();
     if (muted || !completeRef.current) return;
     completeRef.current.currentTime = 0;
@@ -96,7 +93,6 @@ export function useMissionSounds() {
   }, [muted]);
 
   const startTrashBg = useCallback(() => {
-    // Stop puzzle bg, start trash bg
     if (bgRef.current) bgRef.current.pause();
     if (trashBgRef.current && trashBgRef.current.paused && !muted) {
       trashBgRef.current.currentTime = 0;
@@ -111,12 +107,10 @@ export function useMissionSounds() {
   const toggleMute = useCallback(() => {
     setMuted((prev) => {
       const next = !prev;
-      // Handle puzzle bg
       if (bgRef.current) {
         if (next) bgRef.current.pause();
         else if (!bgRef.current.ended) bgRef.current.play().catch(() => {});
       }
-      // Handle trash bg
       if (trashBgRef.current) {
         if (next) trashBgRef.current.pause();
         else if (!trashBgRef.current.ended && trashBgRef.current.currentTime > 0) {

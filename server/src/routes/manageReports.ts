@@ -8,8 +8,6 @@ import {
 
 const router = Router();
 router.use(authenticateManage);
-// pm sees the reports without money; a member has no business here at all.
-// Owner only: reports carry money and everyone else's hours.
 router.use(requireManageRole('owner'));
 
 export const REPORT_KEYS = [
@@ -18,16 +16,8 @@ export const REPORT_KEYS = [
 ] as const;
 export type ReportKey = (typeof REPORT_KEYS)[number];
 
-/** Reports that expose money, and are therefore owner-only. */
 const OWNER_ONLY_REPORTS: ReportKey[] = ['profitability_by_client'];
 
-/**
- * Ranges are parsed as LOCAL dates, not UTC.
- *
- * `new Date('2026-09-01')` is UTC midnight, which in Israel is 03:00 local — so
- * a time entry stored at local midnight sits BEFORE it and silently drops out
- * of the report. Every range would quietly lose its first day.
- */
 function localMidnight(value: string): Date | null {
   const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) {
@@ -76,7 +66,6 @@ router.get('/:key', async (req: Request, res: Response) => {
   res.json({ key, from: range.from, to: range.to, ...(await buildReport(key, req)) });
 });
 
-/** Hebrew column headers, per report. */
 const COLUMNS: Record<ReportKey, { key: string; header: string; money?: boolean }[]> = {
   hours_by_category: [
     { key: 'category', header: 'קטגוריה' },
@@ -118,13 +107,6 @@ const COLUMNS: Record<ReportKey, { key: string; header: string; money?: boolean 
   ],
 };
 
-/**
- * Excel export.
- *
- * Goes through the SAME builder as the on-screen report, and drops money
- * columns for a pm. Export is the classic leak: a screen filters correctly and
- * then the download hands over everything.
- */
 router.get('/:key/export', async (req: Request, res: Response) => {
   const key = String(req.params.key) as ReportKey;
   if (!REPORT_KEYS.includes(key)) {

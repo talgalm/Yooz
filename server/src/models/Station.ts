@@ -14,7 +14,6 @@ export interface IStation {
   translations?: Record<string, Record<string, string>>;
   createdAt: Date;
   createdByEmail?: string;
-  /** Admin Stations-tab folder this station is filed under (null = ungrouped). */
   folderId?: Types.ObjectId | null;
 }
 

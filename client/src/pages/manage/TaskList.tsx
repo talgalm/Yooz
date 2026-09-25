@@ -10,7 +10,6 @@ import { Panel, TableScroll, EmptyState, Pill, MOBILE } from './manageUi';
 const DesktopCell = styled('td')({ [MOBILE]: { display: 'none' } });
 const DesktopHead = styled('th')({ [MOBILE]: { display: 'none' } });
 
-/** Priority reads as a colour bar, not another word to parse in a dense table. */
 const PriorityBar = styled('span')<{ tone: string }>(({ tone }) => ({
   display: 'inline-block',
   width: 4,
@@ -21,7 +20,6 @@ const PriorityBar = styled('span')<{ tone: string }>(({ tone }) => ({
   verticalAlign: 'middle',
 }));
 
-/** Whose task it is, at a glance — the same colour follows the person everywhere. */
 const OwnerDot = styled('span')<{ tone: string }>(({ tone }) => ({
   display: 'inline-block',
   width: 9, height: 9, borderRadius: '50%',

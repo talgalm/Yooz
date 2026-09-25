@@ -1,4 +1,3 @@
-// ─── API response types for analytics ───
 
 export interface OverviewData {
   totalParticipants: number;
@@ -33,7 +32,7 @@ export interface StatusBreakdown {
 export interface ScoreSummary {
   highest: number;
   lowest: number;
-  passRate: number | null; // null when no pass grade is set
+  passRate: number | null;
   scoredParticipants: number;
 }
 
@@ -43,11 +42,9 @@ export interface DurationSummary {
   completedWithDuration: number;
 }
 
-/** A rolling window, or `day:YYYY-MM-DD` for one Israel calendar day. */
 export type ActivityPeriod = 'day' | 'week' | 'month' | 'year' | `day:${string}`;
 
 export interface ActivityDay {
-  /** Israel calendar day, `YYYY-MM-DD`. */
   day: string;
   participants: number;
 }
@@ -105,7 +102,6 @@ export interface ItemStats {
   hintUsagePct: number;
   completionPct: number;
   avgMaxScore: number;
-  /** Per-station score on the 0-100 scale (avgScore as % of avgMaxScore). */
   scoreRate: number;
 }
 
@@ -132,11 +128,9 @@ export interface AnomalyAlert {
   severity: 'warning' | 'error';
   itemIndex?: number;
   itemName?: string;
-  // Structured fields used to build a localized message on the client.
   dropoutPct?: number;
   avgSeconds?: number;
   multiplier?: number;
-  // Legacy/fallback pre-built message (older API responses).
   message?: string;
 }
 
@@ -167,9 +161,7 @@ export interface ReportCardParticipant {
   name: string;
   email: string;
   phone: string;
-  /** activityId → normalized 0-100 grade, or null when they didn't play it. */
   grades: Record<string, number | null>;
-  /** null = appears in the roster but has no score in any selected activity. */
   finalGrade: number | null;
   activitiesPlayed: number;
 }

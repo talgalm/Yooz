@@ -1,9 +1,6 @@
 import { styled } from '@mui/material/styles';
 import { FOLDER_COLORS } from './folderColors';
 
-// A fixed grid of pastel swatches (no free color input, so "pastel-only" is guaranteed).
-// `singleRow` lays all swatches out in one non-wrapping row (used by the folder dialog).
-
 const Grid = styled('div')<{ nowrap?: boolean }>(({ nowrap }) => ({
   display: 'flex',
   flexWrap: nowrap ? 'nowrap' : 'wrap',
@@ -26,7 +23,6 @@ const Swatch = styled('button')<{ swatch: string; selected: boolean; small?: boo
   '&:hover': {
     transform: 'translateY(-1px)',
   },
-  // Checkmark on the selected swatch
   '&::after': selected
     ? {
         content: '"✓"',

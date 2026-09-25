@@ -4,7 +4,6 @@ export interface RoadmapThemeKit {
   containerBg: string;
   headerGradient: string;
   headerBorder: string;
-  /** Exit / help / trophy / points icons on the session header (default chrome). */
   headerIconColor: string;
   sceneBgTop: string;
   sceneBgMid: string;
@@ -36,8 +35,6 @@ export interface RoadmapThemeKit {
   decorationCategories: string[];
 }
 
-// ─── Nature (default) ───
-
 export const NATURE_THEME: RoadmapThemeKit = {
   containerBg: '#8fb247',
   headerGradient: 'linear-gradient(135deg, rgba(45,80,22,0.92) 0%, rgba(56,100,30,0.88) 100%)',
@@ -67,16 +64,12 @@ export const NATURE_THEME: RoadmapThemeKit = {
   decorationCategories: ['Trees', 'Bushes', 'Grass', 'Rocks', 'Water', 'Clouds', 'Shadows'],
 };
 
-// ─── Ganei Yehoshua (nature + balloons, no clouds/houses) ───
-
 export const GANEI_YEHOSHUA_THEME: RoadmapThemeKit = {
   ...NATURE_THEME,
   showClouds: false,
   showHouses: false,
   showBalloon: true,
 };
-
-// ─── Ocean ───
 
 export const OCEAN_THEME: RoadmapThemeKit = {
   containerBg: '#428bad',
@@ -107,8 +100,6 @@ export const OCEAN_THEME: RoadmapThemeKit = {
   decorationCategories: ['Coral', 'Seaweed', 'OceanRocks', 'Bubbles'],
 };
 
-// ─── Desert ───
-
 export const DESERT_THEME: RoadmapThemeKit = {
   containerBg: '#c9983a',
   headerGradient: 'linear-gradient(135deg, rgba(120,70,20,0.94) 0%, rgba(150,90,30,0.90) 100%)',
@@ -137,8 +128,6 @@ export const DESERT_THEME: RoadmapThemeKit = {
   showSideWaves: true,
   decorationCategories: ['Cactus', 'DesertRocks', 'SandDunes', 'DesertPlants'],
 };
-
-// ─── Office ───
 
 export const OFFICE_THEME: RoadmapThemeKit = {
   containerBg: '#8a7c6a',
@@ -183,15 +172,12 @@ export function getThemeKit(theme?: string): RoadmapThemeKit {
   }
 }
 
-/** Custom theme override, else built-in kit default. Puzzle chrome keeps its own contrast colors. */
 export function getHeaderIconColor(
   theme?: string,
   customTheme?: { headerIconColor?: string },
 ): string {
   return customTheme?.headerIconColor || getThemeKit(theme).headerIconColor;
 }
-
-// ─── Ocean decorations ───
 
 export const OCEAN_DECORATIONS: RoadmapDecoration[] = [
 
@@ -267,8 +253,6 @@ export const OCEAN_DECORATIONS: RoadmapDecoration[] = [
     svg: `<img src="/images/anchor.svg" alt="" style="width:100%;height:100%;display:block;opacity:0.85" />`,
   },
 ];
-
-// ─── Desert decorations ───
 
 export const DESERT_DECORATIONS: RoadmapDecoration[] = [
   {

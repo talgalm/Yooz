@@ -38,8 +38,6 @@ function periodQuery(period?: ActivityPeriod) {
   return period ? `?period=${period}` : '';
 }
 
-// ── Generic fetcher with loading / error ──
-
 function useApiFetch<TResponse, TData = TResponse>(
   url: string | null,
   select?: (response: TResponse) => TData,
@@ -68,8 +66,6 @@ function useApiFetch<TResponse, TData = TResponse>(
 
   return { data, loading, error, refetch: fetch_ };
 }
-
-// ── Specific hooks ──
 
 export function useOverview() {
   return useApiFetch<OverviewData>('/api/admin/analytics/overview');
@@ -115,11 +111,6 @@ export function useQuestionStats(activityId: string | null, itemIndex: number | 
   );
 }
 
-/**
- * Israel days that have reports, newest first — admin only (share links do not
- * expose it). Drives the reports day picker, which is the way a `dailyReset`
- * activity's kept history is read back one day at a time.
- */
 export function useActivityDays(activityId: string | null) {
   const { base, shared } = useAnalyticsSource();
   return useApiFetch<{ days: ActivityDay[] }, ActivityDay[]>(
@@ -154,10 +145,7 @@ export function useAuditLog(page = 1, limit = 20) {
   );
 }
 
-// ── Pass grade (normalized 0-100 threshold) ──
-
 export function usePassThreshold(activityId: string | null) {
-  // null = no pass grade configured.
   return useApiFetch<{ passThreshold: number | null }, number | null>(
     activityId ? `/api/admin/analytics/activities/${activityId}/pass-threshold` : null,
     (response) => response.passThreshold,
@@ -171,8 +159,6 @@ export async function savePassThreshold(activityId: string, value: number | null
   );
   return res.passThreshold;
 }
-
-// ── Public statistics share link (admin management) ──
 
 export function useShareLink(activityId: string | null) {
   return useApiFetch<{ token: string | null }, string | null>(
@@ -193,12 +179,7 @@ export async function revokeShareLink(activityId: string): Promise<void> {
   await adminApiFetch(`/api/admin/analytics/activities/${activityId}/share`, { method: 'DELETE' });
 }
 
-// ── Participants roster + exclusions (admin only) ──
-
 export function useParticipantsRoster(activityId: string | null) {
-  // NOTE: selector MUST be a stable module-level reference — an inline arrow makes
-  // useApiFetch's useCallback([url, select]) change every render and, because this
-  // returns a fresh array each fetch, loops forever.
   return useApiFetch<{ participants: RosterParticipant[] }, RosterParticipant[]>(
     activityId ? `/api/admin/analytics/activities/${activityId}/participants` : null,
     selectParticipants,
@@ -212,8 +193,6 @@ export async function saveExclusions(activityId: string, excludedReportIds: stri
   );
   return res.excludedReportIds;
 }
-
-// ── Automated scheduled report (admin only, no shared-view equivalent) ──
 
 export interface ScheduledReportSettings {
   enabled: boolean;
@@ -250,12 +229,8 @@ export async function sendScheduledReportNow(activityId: string): Promise<{ rese
   );
 }
 
-// ── Export helper (triggers download) ──
-
 export type AnalyticsExportType = 'executive' | 'participants' | 'scores' | 'progress';
 
-// Resolve the server filename (RFC 5987 filename* first, then plain) and trigger
-// a browser download from a fetch Response.
 async function triggerBlobDownload(res: Response, fallbackName: string) {
   if (!res.ok) throw new Error('Export failed');
   const blob = await res.blob();
@@ -286,8 +261,6 @@ export async function downloadExport(baseUrl: string, type: AnalyticsExportType,
   await triggerBlobDownload(res, `${type}-export.xlsx`);
 }
 
-// ── Combined multi-activity report (admin only) ──
-
 function combinedQuery(activityIds: string[], period?: ActivityPeriod, extra?: Record<string, string>) {
   const params = new URLSearchParams({ ids: activityIds.join(','), ...extra });
   if (period) params.set('period', period);
@@ -295,7 +268,6 @@ function combinedQuery(activityIds: string[], period?: ActivityPeriod, extra?: R
 }
 
 export function useCombinedReportCard(activityIds: string[], period?: ActivityPeriod) {
-  // Response is already the data shape — no select function (and so no loop risk).
   return useApiFetch<CombinedReportData>(
     activityIds.length > 0
       ? `/api/admin/analytics/combined/report-card?${combinedQuery(activityIds, period)}`
@@ -311,7 +283,6 @@ export async function downloadCombinedReportCardExport(activityIds: string[], pe
   await triggerBlobDownload(res, 'combined-report-card.xlsx');
 }
 
-// Full combined report (executive/participants/scores/progress) across activities.
 export async function downloadCombinedExport(activityIds: string[], type: AnalyticsExportType, period?: ActivityPeriod) {
   const res = await fetch(
     `/api/admin/analytics/combined/export?${combinedQuery(activityIds, period, { type })}`,

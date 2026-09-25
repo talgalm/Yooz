@@ -122,7 +122,6 @@ export default function OrderSurveyGame({
     initCards();
   }, [showInstructions, settings.instructions, initCards]);
 
-  // Restore submitted state from saved progress
   useEffect(() => {
     if (!activityCode || itemIndex === undefined) return;
     let cancelled = false;
@@ -144,13 +143,11 @@ export default function OrderSurveyGame({
           setSubmitted(true);
         }
       } catch {
-        /* ignore */
       }
     })();
     return () => { cancelled = true; };
   }, [activityCode, itemIndex]);
 
-  // Poll for manager reveal after submit
   useEffect(() => {
     if (!submitted || !activityCode) return;
     let cancelled = false;
@@ -166,7 +163,6 @@ export default function OrderSurveyGame({
           setResultsRevealed(true);
         }
       } catch {
-        /* ignore */
       }
     };
     poll();

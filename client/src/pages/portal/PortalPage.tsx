@@ -7,8 +7,6 @@ import { isGoogleAuthAvailable, openGooglePopup, fetchGoogleEmail } from '../../
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
-// ─── Animations ───
-
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
@@ -32,8 +30,6 @@ const fadeInBg = keyframes`
   from { opacity: 0; }
   to { opacity: 1; }
 `;
-
-// ─── Auth screens (purple) ───
 
 const PurplePage = styled('div')({
   position: 'fixed',
@@ -213,8 +209,6 @@ const SpinnerEl = styled('div')({
   margin: '80px auto',
 });
 
-// ─── Portal Shell (header + sidebar + content) ───
-
 const ShellWrap = styled('div')({
   minHeight: '100vh',
   background: '#f7f5fa',
@@ -315,8 +309,6 @@ const LogoutButton = styled('button')({
   '&:hover': { background: 'rgba(255,255,255,0.2)', borderColor: 'rgba(255,255,255,0.5)' },
 });
 
-// ─── Sidebar ───
-
 const SidebarBackdrop = styled('div')({
   position: 'fixed',
   inset: 0,
@@ -395,8 +387,6 @@ const SidebarIcon = styled('span')({
   textAlign: 'center',
 });
 
-// ─── Content area ───
-
 const ContentArea = styled('main')({
   flex: 1,
   padding: '24px 20px 48px',
@@ -412,8 +402,6 @@ const PageTitle = styled('h2')({
   color: '#333',
   margin: '0 0 20px',
 });
-
-// ─── Activities grid ───
 
 const ActivitiesGrid = styled('div')({
   display: 'grid',
@@ -481,8 +469,6 @@ const EmptyState = styled('div')({
   borderRadius: 14,
   border: '2px dashed #e0dce8',
 });
-
-// ─── History ───
 
 const StatsHero = styled('div')({
   background: 'linear-gradient(135deg, #6c5ce7 0%, #8B2FC9 60%, #a855f7 100%)',
@@ -637,8 +623,6 @@ const CompletionBadge = styled('span')<{ cStatus: string }>(({ cStatus }) => ({
   border: `1px solid ${cStatus === 'completed' ? '#c8e6c9' : cStatus === 'in_progress' ? '#ffecb3' : '#eee'}`,
 }));
 
-// ─── Profile ───
-
 const ProfileHero = styled('div')({
   background: 'linear-gradient(135deg, #6c5ce7 0%, #8B2FC9 100%)',
   borderRadius: 20,
@@ -770,8 +754,6 @@ const ProfileMsg = styled('div')<{ isError?: boolean }>(({ isError }) => ({
   color: isError ? '#c62828' : '#2e7d32',
 }));
 
-// ─── Types ───
-
 interface PortalActivity {
   _id: string;
   name: string;
@@ -817,14 +799,12 @@ export default function PortalPage() {
   const navigate = useNavigate();
   const t = useTranslations(texts);
 
-  // Read invite token from URL query param (?invite=xxx)
   const inviteToken = new URLSearchParams(window.location.search).get('invite') || '';
 
   const [portal, setPortal] = useState<PortalInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // Auth
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [username, setUsername] = useState('');
@@ -833,16 +813,13 @@ export default function PortalPage() {
   const [submitting, setSubmitting] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState('');
 
-  // Portal shell
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('activities');
 
-  // History
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historySort, setHistorySort] = useState<'date' | 'score'>('date');
 
-  // Force password change
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [forceNewPw, setForceNewPw] = useState('');
   const [forceConfirmPw, setForceConfirmPw] = useState('');
@@ -850,14 +827,12 @@ export default function PortalPage() {
   const [forceSaving, setForceSaving] = useState(false);
   const [tempPassword, setTempPassword] = useState('');
 
-  // Profile
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [profileMsg, setProfileMsg] = useState('');
   const [profileError, setProfileError] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
 
-  // Check existing token
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
     const user = localStorage.getItem(USER_KEY);
@@ -867,7 +842,6 @@ export default function PortalPage() {
     }
   }, []);
 
-  // Fetch portal info
   useEffect(() => {
     if (!code) return;
     fetch(`${API_BASE}/api/admin/portals/public/${code}`)
@@ -876,7 +850,6 @@ export default function PortalPage() {
       .catch(() => { setNotFound(true); setLoading(false); });
   }, [code]);
 
-  // Fetch history when tab switches
   const fetchHistory = useCallback(async () => {
     if (!code || !loggedInUser) return;
     setHistoryLoading(true);
@@ -894,7 +867,6 @@ export default function PortalPage() {
     if (activeTab === 'history' && isLoggedIn) fetchHistory();
   }, [activeTab, isLoggedIn, fetchHistory]);
 
-  // Auth handlers
   const handleLogin = async () => {
     setAuthError('');
     setSubmitting(true);
@@ -937,7 +909,6 @@ export default function PortalPage() {
       const data = await res.json();
       if (res.status === 409) { setAuthError(t.usernameTaken); setSubmitting(false); return; }
       if (!res.ok) { setAuthError(data.error || t.loginError); setSubmitting(false); return; }
-      // Auto-approved via invite link — log in directly
       if (data.status === 'approved' && data.token) {
         localStorage.setItem(TOKEN_KEY, data.token);
         localStorage.setItem(USER_KEY, data.user.username);
@@ -1065,15 +1036,12 @@ export default function PortalPage() {
     setSidebarOpen(false);
   };
 
-  // ─── Loading ───
   if (loading) return <PurplePage><SpinnerEl /></PurplePage>;
 
-  // ─── Not found ───
   if (notFound || !portal) {
     return <PurplePage><LogoImg src="/images/logo-white.png" alt="Yooz" /><ErrorBox>{t.portalNotFound}</ErrorBox></PurplePage>;
   }
 
-  // ─── Auth screens ───
   if (!isLoggedIn) {
     if (authMode === 'pending') {
       return (
@@ -1131,7 +1099,6 @@ export default function PortalPage() {
     );
   }
 
-  // ─── Force password change ───
   if (mustChangePassword) {
     return (
       <PurplePage>
@@ -1166,10 +1133,8 @@ export default function PortalPage() {
     );
   }
 
-  // ─── Logged-in shell ───
   return (
     <ShellWrap>
-      {/* Header */}
       <Header>
         <HeaderRight>
           <HamburgerBtn onClick={() => setSidebarOpen(true)} aria-label={t.menu}>
@@ -1187,7 +1152,6 @@ export default function PortalPage() {
         </HeaderLeft>
       </Header>
 
-      {/* Sidebar */}
       {sidebarOpen && (
         <SidebarBackdrop onClick={() => setSidebarOpen(false)}>
           <SidebarPanel onClick={(e) => e.stopPropagation()}>
@@ -1213,9 +1177,7 @@ export default function PortalPage() {
         </SidebarBackdrop>
       )}
 
-      {/* Content */}
       <ContentArea>
-        {/* Activities Tab */}
         {activeTab === 'activities' && (
           <>
             <PageTitle>{t.activitiesTitle}</PageTitle>
@@ -1242,7 +1204,6 @@ export default function PortalPage() {
           </>
         )}
 
-        {/* Competitions Tab */}
         {activeTab === 'competitions' && (
           <>
             <PageTitle>{t.competitionsTitle}</PageTitle>
@@ -1250,7 +1211,6 @@ export default function PortalPage() {
           </>
         )}
 
-        {/* History Tab */}
         {activeTab === 'history' && (
           <>
             {historyLoading ? (
@@ -1262,7 +1222,6 @@ export default function PortalPage() {
               <EmptyState>{t.noHistory}</EmptyState>
             ) : (
               <>
-                {/* Stats Hero */}
                 {(() => {
                   const completedCount = history.filter(h => h.completionStatus === 'completed').length;
                   const withScores = history.filter(h => h.totalScore != null && h.totalScore > 0);
@@ -1349,7 +1308,6 @@ export default function PortalPage() {
           </>
         )}
 
-        {/* Profile Tab */}
         {activeTab === 'profile' && (
           <>
             <ProfileHero>

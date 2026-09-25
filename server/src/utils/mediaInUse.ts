@@ -6,24 +6,11 @@ export interface MediaUsage {
   name: string;
 }
 
-/**
- * Does this document reference the asset anywhere?
- *
- * Stringify-and-scan rather than per-field queries on purpose: media URLs live
- * in free-form bags (`game.settings` is `Record<string, unknown>`, popups and
- * module items nest arbitrarily), so a field list would silently rot the first
- * time someone adds a media field and start reporting "not in use" for assets
- * that are. The publicId is in every Cloudinary URL of the asset whatever
- * transformation or version is applied, so it is the right needle.
- */
 export function docMentions(doc: unknown, publicId: string): boolean {
   if (!publicId) return false;
   return JSON.stringify(doc ?? null).includes(publicId);
 }
 
-// ponytail: full scan of the content collections (hundreds of docs, not
-// reports) on every delete. Runs once per click, never on list — swap for a
-// media-reference index if an admin ever bulk-deletes thousands.
 const SOURCES: { collection: string; model: { find: Function }; name: (d: Record<string, any>) => string }[] = [
   { collection: 'activities', model: Activity, name: (d) => d.name || d.code },
   { collection: 'games', model: Game, name: (d) => d.name },
@@ -37,7 +24,6 @@ const SOURCES: { collection: string; model: { find: Function }; name: (d: Record
   { collection: 'tutorials', model: Tutorial, name: (d) => d.title },
 ];
 
-/** Everything that still points at this asset. Empty = safe to destroy. */
 export async function findMediaUsage(publicId: string): Promise<MediaUsage[]> {
   const found = await Promise.all(
     SOURCES.map(async ({ collection, model, name }) => {

@@ -9,12 +9,6 @@ import SectorPicker from './SectorPicker';
 import { C } from '../shared/tokens';
 import { CONTACT_ANCHOR } from '../shared/routes';
 
-/**
- * The marketing home page. Deliberately a teaser: after the hero, the sector
- * chooser sends visitors into the three sector pages rather than telling each
- * sector's whole story here - a home page that already gave the full rundown
- * left visitors no reason to click through.
- */
 export default function HomePage() {
   const t = useTranslations(texts);
 
@@ -35,7 +29,6 @@ export default function HomePage() {
 
       <CustomerLogos title={t.customersTitle} items={t.customers} bg={C.bandPink} marquee />
 
-      {/* Questions first, the form last - `closing` gives its shadow room above the footer. */}
       <Faq title={t.faqTitle} items={t.faq} />
       <Testimonials items={t.testimonials} wash />
       <ContactForm tone="purple" closing />

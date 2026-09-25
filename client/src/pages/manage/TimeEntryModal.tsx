@@ -21,7 +21,6 @@ interface Props {
   onSaved: () => void;
 }
 
-/** Log or edit one time entry. Duration accepts hours, minutes, h:mm or a suffix. */
 export default function TimeEntryModal({ entry, defaultDate, onClose, onSaved }: Props) {
   const t = useTranslations(texts);
 
@@ -56,7 +55,6 @@ export default function TimeEntryModal({ entry, defaultDate, onClose, onSaved }:
       });
       onSaved();
     } catch (err) {
-      // The server answers with a stable code; turn it into a sentence.
       const code = err instanceof Error ? err.message : '';
       setError(t.errors[code as keyof typeof t.errors] ?? code ?? 'Failed');
       setSaving(false);

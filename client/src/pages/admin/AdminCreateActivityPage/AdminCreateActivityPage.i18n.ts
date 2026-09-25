@@ -1,9 +1,3 @@
-// Keep keys/defaults in sync with server/src/routes/admin.ts VALID_HELP_CATEGORIES
-// and the participant help-chat FAQ menu defaults (client/src/components/HelpChat/HelpChat.i18n.ts).
-// defaultHe is shown as a reference placeholder in the admin editor; the actual
-// runtime default also substitutes the activity's organizer contact, if set.
-// "Something else" (the open free-text chat) is NOT in this list — it's an
-// opt-in escape hatch with its own dedicated toggle, not a default-on category.
 export const HELP_CATEGORIES: { key: string; labelEn: string; labelHe: string; defaultHe: string }[] = [
   {
     key: 'login', labelEn: "I can't log in", labelHe: 'לא מצליח/ה להתחבר',

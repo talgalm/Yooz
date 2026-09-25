@@ -67,8 +67,6 @@ import {
   FinishContinueButton,
 } from './styled';
 
-// ─── Types ───
-
 interface TriviaAnswer {
   text: string;
   isCorrect: boolean;
@@ -85,7 +83,6 @@ interface TriviaQuestion {
 interface TriviaScoring {
   correctAnswerPoints: number;
   wrongAnswerPenalty: number;
-  /** Per-question countdown; resets when advancing (not a whole-game timer). */
   timeLimitSeconds?: number;
 }
 
@@ -100,11 +97,8 @@ interface TriviaSettings {
   multiChoiceMax?: number;
 }
 
-// ─── Session progress helpers ───
-
 const PROGRESS_KEY_PREFIX = 'yooz_game_progress_';
 
-/** Derive a user-scoped storage key so different participants on the same device don't share progress. */
 function getProgressKey(gameId: string): string {
   try {
     const token = localStorage.getItem('yooz_token');
@@ -142,8 +136,6 @@ function clearTriviaProgress(gameId: string) {
   try { sessionStorage.removeItem(getProgressKey(gameId)); } catch {}
 }
 
-// ─── Completed-result persistence (refresh recovery) ───
-
 interface CompletedTriviaResult {
   score: number;
   maxPossibleScore: number;
@@ -179,7 +171,6 @@ function clearCompletedResult(gameId: string) {
   try { sessionStorage.removeItem(getCompletedKey(gameId)); } catch {}
 }
 
-/** Whether more wrong answers can be eliminated to reach `targetVisible` options among currently visible answers. */
 function canApplyLifeline(
   answers: TriviaAnswer[],
   alreadyEliminated: Set<number>,
@@ -210,10 +201,7 @@ function pickWrongIndicesToEliminate(
   return shuffled.slice(0, needRemove);
 }
 
-// ─── Component ───
-
 export default function TriviaGame({ game, onComplete }: GameProps) {
-  // If game was completed before a refresh, auto-complete immediately
   const [completedOnMount] = useState<CompletedTriviaResult | null>(() => {
     const r = loadCompletedResult(game._id);
     if (r) clearCompletedResult(game._id);
@@ -224,7 +212,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     if (completedOnMount) {
       onComplete(completedOnMount);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const settings = game.settings as unknown as TriviaSettings;
   const t = useTranslations(texts);
@@ -248,7 +236,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
 
   const questions = allQuestions;
 
-  // Check for saved progress on mount
   const savedProgress = useRef(loadTriviaProgress(game._id));
   const isResuming = savedProgress.current !== null && savedProgress.current.nextIndex < questions.length;
 
@@ -268,23 +255,16 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   const [gameComplete, setGameComplete] = useState(false);
   const [noContent, setNoContent] = useState(false);
   const [questionAnswers, setQuestionAnswers] = useState<QuestionAnswerRecord[]>([]);
-  /** One use per game each: 1/2 and 3/4 are independent. */
   const [helperHalfUsed, setHelperHalfUsed] = useState(false);
   const [helperThreeQuartersUsed, setHelperThreeQuartersUsed] = useState(false);
-  /** Indices into current question's answers hidden after lifeline (cleared each question). */
   const [eliminatedIndices, setEliminatedIndices] = useState<Set<number>>(() => new Set());
 
-  /** Question image opened full screen (question images are often unreadable at column width). */
   const [mediaFullscreen, setMediaFullscreen] = useState(false);
-  /** Inside the full-screen viewer: 2× and pannable instead of fit-to-screen. */
   const [mediaPanning, setMediaPanning] = useState(false);
-  /** Drives the bottom fade + chevron; the scrollbar itself is hidden. */
   const [canScrollDown, setCanScrollDown] = useState(false);
-  /** The scrolling question column — reset to the top on every new question. */
   const mainScrollRef = useRef<HTMLDivElement | null>(null);
   const explanationsRef = useRef<HTMLDivElement | null>(null);
 
-  // Timer
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -302,8 +282,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     sounds.toggleMute
   );
 
-  // Paint intro artwork only for the opening phase.
-  // Playing and finish should share the non-intro background.
   useEffect(() => {
     if (!setThemedSceneOverlay) return;
     if (showInstructions) {
@@ -327,7 +305,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     }
   }, [scoring]);
 
-  // Only init the first question after instructions are dismissed (so timer doesn't start early)
   const didInitRef = useRef(false);
   useEffect(() => {
     if (questions.length === 0) {
@@ -341,7 +318,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     initQuestion(0);
   }, [showInstructions]);
 
-  // Timer countdown
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0 || checked) return;
     timerRef.current = setInterval(() => {
@@ -358,27 +334,21 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     };
   }, [timeLeft === null, timeLeft === 0, checked]);
 
-  // Time's up
   useEffect(() => {
     if (timeLeft === 0 && !checked) {
       handleCheck();
     }
   }, [timeLeft]);
 
-  // New question starts at the top of the scroll column, with any zoom closed
   useEffect(() => {
     setMediaFullscreen(false);
     mainScrollRef.current?.scrollTo({ top: 0 });
   }, [currentQuestion, showInstructions]);
 
-  // Reopening the viewer always starts fit-to-screen
   useEffect(() => {
     if (!mediaFullscreen) setMediaPanning(false);
   }, [mediaFullscreen]);
 
-  // Show the "more below" hint only while there is actually more below.
-  // Children are observed too: explanations appear and lifelines remove
-  // answers, both of which change the content height without a scroll event.
   useEffect(() => {
     const el = mainScrollRef.current;
     if (!el) return;
@@ -396,17 +366,14 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     };
   }, [showInstructions, currentQuestion, checked, eliminatedIndices]);
 
-  // Explanations render below the answers; auto-advance fires after 5s, so bring
-  // them into view rather than leaving them below the fold.
   useEffect(() => {
     if (!checked) return;
     const id = window.setTimeout(() => {
       explanationsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 1100); // after the feedback toast clears
+    }, 1100);
     return () => clearTimeout(id);
   }, [checked, currentQuestion]);
 
-  // Close the full-screen image on Escape
   useEffect(() => {
     if (!mediaFullscreen) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -444,14 +411,12 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     if (checked) return;
     if (eliminatedIndices.has(index)) return;
     if (!isMultiChoice) {
-      // Single-choice: selecting a new answer replaces the previous one
       setSelectedAnswers((prev) => {
         if (prev.has(index)) return new Set<number>();
         return new Set<number>([index]);
       });
       return;
     }
-    // Multi-choice: unlimited toggle
     setSelectedAnswers((prev) => {
       const next = new Set(prev);
       if (next.has(index)) {
@@ -491,7 +456,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     setChecked(true);
     if (timerRef.current) clearInterval(timerRef.current);
 
-    // Track question answer for analytics
     const correctAnswerIndices = question.answers.map((a, i) => a.isCorrect ? i : -1).filter(i => i >= 0);
     setQuestionAnswers((prev) => [...prev, {
       questionIndex: currentQuestion,
@@ -503,7 +467,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
       timeSpentMs: Date.now() - questionStartTime.current,
     }]);
 
-    // Play answer SFX
     if (selectedCorrectCount === totalCorrectInQuestion && selectedWrongCount === 0) {
       sounds.playCorrect();
     } else {
@@ -524,7 +487,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   const handleNextRef = useRef(handleNext);
   handleNextRef.current = handleNext;
 
-  /** ~1s center toast — does not move the answer grid. */
   const [toastVisible, setToastVisible] = useState(false);
   useEffect(() => {
     if (!checked) {
@@ -536,25 +498,22 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     return () => clearTimeout(id);
   }, [checked, currentQuestion]);
 
-  /** Auto-advance after 5s (manual Next still clears this via checked → false). */
   useEffect(() => {
     if (!checked) return;
     const id = window.setTimeout(() => handleNextRef.current(), 5000);
     return () => clearTimeout(id);
   }, [checked, currentQuestion]);
 
-  // Play game over sound when game completes
   useEffect(() => {
     if (gameComplete && !noContent) {
       sounds.playGameOver();
     }
   }, [gameComplete, noContent]);
 
-  // Save progress to sessionStorage after each answered question
   useEffect(() => {
     if (questionAnswers.length === 0 || gameComplete) return;
     saveTriviaProgress(game._id, {
-      nextIndex: questionAnswers.length, // next unanswered question
+      nextIndex: questionAnswers.length,
       totalScore,
       questionAnswers,
       hintUsed: gameHint.hintUsed,
@@ -564,7 +523,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     });
   }, [questionAnswers, totalScore, gameComplete]);
 
-  // Clear progress and save completed result when game is complete
   useEffect(() => {
     if (!gameComplete) return;
     clearTriviaProgress(game._id);
@@ -577,7 +535,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
       hintUsed: gameHint.hintUsed,
       questionAnswers,
     });
-  }, [gameComplete]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [gameComplete]);
 
   const handleFinish = () => {
     clearCompletedResult(game._id);
@@ -591,7 +549,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     });
   };
 
-  // ─── Opening / Instructions screen ───
   if (showInstructions) {
     return (
       <>
@@ -618,7 +575,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
               <IntroStartButton onClick={() => {
                 setShowInstructions(false);
                 sounds.startBgMusic();
-                // Restore saved progress if resuming
                 const saved = savedProgress.current;
                 if (saved && saved.nextIndex < questions.length) {
                   setCurrentQuestion(saved.nextIndex);
@@ -641,7 +597,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     );
   }
 
-  // ─── Game complete / Finish ───
   if (gameComplete) {
     if (noContent) return null;
     return (
@@ -674,11 +629,9 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     );
   }
 
-  // ─── Playing ───
   const question = processedQuestions[currentQuestion];
   if (!question) return null;
 
-  // Determine feedback type
   let feedbackType: 'correct' | 'partial' | 'incorrect' | null = null;
   if (checked) {
     const totalCorrect = question.answers.filter((a) => a.isCorrect).length;
@@ -697,7 +650,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     <TriviaContainer>
       {!setThemedSceneOverlay && <TriviaPlayFullScreenSceneBackdrop aria-hidden />}
 
-      {/* Top bar: score | timer | question count | mute */}
       <TopBar>
         <TopBarItem>{totalScore} {t.points}</TopBarItem>
         {timeLeft !== null && (
@@ -715,7 +667,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
 
       <TriviaScrollArea>
       <TriviaMainScroll ref={mainScrollRef} fadeBottom={canScrollDown}>
-      {/* Question box */}
       <QuestionBox key={currentQuestion}>
         <QuestionContent>{question.text}</QuestionContent>
         {question.hint && (
@@ -724,7 +675,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
    
       </QuestionBox>
 
-      {/* Question media — tap to open full screen */}
       {question.media && (
         <NatureMediaContainer
           type="button"
@@ -738,7 +688,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
       )}
       {!question.media && <NatureMediaSpacer aria-hidden />}
 
-      {/* Hint area keeps its space after checking so answers do not jump upward */}
       {settings.hint?.enabled && (settings.hint.text || settings.hint.imageUrl) && (
         checked ? (
           <HintSpacer aria-hidden="true" />
@@ -752,7 +701,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
         )
       )}
 
-      {/* Answer grid (2×2 for 4 answers, single column for 3) */}
       <AnswerGrid answerCount={question.answers.length}>
         {question.answers.map((answer, index) => {
           if (!checked && eliminatedIndices.has(index)) return null;

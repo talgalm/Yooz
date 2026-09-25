@@ -19,7 +19,6 @@ export const texts = {
     today: 'היום',
     empty: 'אין לקוחות עדיין.',
     loading: 'טוען...',
-    // modal
     createTitle: 'לקוח חדש',
     editTitle: 'עריכת לקוח',
     fieldName: 'שם החברה',

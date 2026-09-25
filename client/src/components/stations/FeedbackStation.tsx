@@ -5,8 +5,6 @@ import type { StationItemData } from '../../pages/StoryModulePage/types';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './FeedbackStation.i18n';
 
-// ─── Types ───
-
 interface FeedbackQuestion {
   text: string;
 }
@@ -24,9 +22,6 @@ export interface FeedbackResult {
   notes: string;
 }
 
-// ─── 6-Level Rating Model ───
-
-// Labels live in FeedbackStation.i18n, indexed by `value - 1`.
 const RATING_LEVELS = [
   { value: 1, emoji: '😞' },
   { value: 2, emoji: '😕' },
@@ -35,8 +30,6 @@ const RATING_LEVELS = [
   { value: 5, emoji: '😊' },
   { value: 6, emoji: '🤩' },
 ];
-
-// ─── Styled ───
 
 const FeedbackContainer = styled('div')({
   flex: 1,
@@ -93,7 +86,6 @@ const QuestionText = styled('div')({
   lineHeight: 1.5,
 });
 
-// Slider track
 const SliderContainer = styled('div')({
   position: 'relative',
   padding: '20px 14px 0',
@@ -144,7 +136,6 @@ const ThumbOuter = styled('div')<{ pct: number }>(({ pct }) => ({
   },
 }));
 
-// Tick marks
 const TicksRow = styled('div')({
   display: 'flex',
   justifyContent: 'space-between',
@@ -165,7 +156,6 @@ const Tick = styled('button')<{ active: boolean }>(({ active }) => ({
   textAlign: 'center',
 }));
 
-// Answer label
 const AnswerLabel = styled('div')({
   display: 'flex',
   justifyContent: 'center',
@@ -226,8 +216,6 @@ const SubmitButton = styled('button')<{ disabled?: boolean }>(({ disabled }) => 
   }),
 }));
 
-// ─── Slider Question Component ───
-
 function SliderQuestion({
   question,
   index,
@@ -247,7 +235,6 @@ function SliderQuestion({
   const percentToValue = useCallback((clientX: number) => {
     if (!trackRef.current) return 1;
     const rect = trackRef.current.getBoundingClientRect();
-    // RTL: right edge = value 1, left edge = value 6
     const pct = 1 - (clientX - rect.left) / rect.width;
     const clamped = Math.max(0, Math.min(1, pct));
     return Math.round(clamped * 5) + 1;
@@ -324,8 +311,6 @@ function SliderQuestion({
     </QuestionCard>
   );
 }
-
-// ─── Main Component ───
 
 interface FeedbackStationProps {
   station: StationItemData;

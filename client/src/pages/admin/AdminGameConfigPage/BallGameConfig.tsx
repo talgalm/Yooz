@@ -39,7 +39,6 @@ export default forwardRef<GameConfigHandle, BallGameConfigProps>(
     const [questions, setQuestions] = useState<BallGameQuestion[]>([emptyQuestion()]);
     const [scoring, setScoring] = useState<BallGameScoring>({ timeLimitSeconds: 30 });
 
-    // Load initial settings
     useEffect(() => {
       if (!initialSettings) return;
       const s = initialSettings;
@@ -144,7 +143,6 @@ export default forwardRef<GameConfigHandle, BallGameConfigProps>(
         prev.map((q, i) => {
           if (i !== qi) return q;
           if (field === 'isCorrect' && value === true) {
-            // Radio-style: only one correct per question
             return {
               ...q,
               answers: q.answers.map((a, j) => ({ ...a, isCorrect: j === ai })),
@@ -160,7 +158,6 @@ export default forwardRef<GameConfigHandle, BallGameConfigProps>(
 
     return (
       <>
-        {/* Questions */}
         <div>
           <SectionSubHeaderRow>
             <SectionLabelNoMargin>{t.questions}</SectionLabelNoMargin>
@@ -188,7 +185,6 @@ export default forwardRef<GameConfigHandle, BallGameConfigProps>(
                 onChange={(e) => updateQuestionText(qi, e.target.value)}
               />
 
-              {/* 4 fixed answers */}
               {question.answers.map((answer, ai) => (
                 <CardItemRow key={ai} style={{ marginBottom: 6 }}>
                   <AnswerInput
@@ -210,7 +206,6 @@ export default forwardRef<GameConfigHandle, BallGameConfigProps>(
           ))}
         </div>
 
-        {/* Scoring */}
         <div>
           <SectionLabel>{t.scoring}</SectionLabel>
           <VerticalStackGap10>

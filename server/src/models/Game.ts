@@ -3,7 +3,7 @@ import { Schema, model, Types } from 'mongoose';
 export interface IGame {
   _id: Types.ObjectId;
   name: string;
-  type: string; // template type: 'trivia', 'gold', etc. (determined later)
+  type: string;
   description?: string;
   customer?: string;
   theme?: string;
@@ -12,7 +12,6 @@ export interface IGame {
   translations?: Record<string, Record<string, string>>;
   createdAt: Date;
   createdByEmail?: string;
-  /** Admin Games sub-tab folder this game is filed under (null = ungrouped). */
   folderId?: Types.ObjectId | null;
 }
 

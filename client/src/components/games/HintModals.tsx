@@ -21,7 +21,6 @@ function HintLightbulbIcon() {
   );
 }
 
-/** Top-left screen dismiss — replaces Cancel; tap outside overlay also closes. */
 const HintModalDismissX = styled('button')({
   position: 'absolute',
   top: 'max(10px, env(safe-area-inset-top, 10px))',

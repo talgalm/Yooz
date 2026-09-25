@@ -47,8 +47,6 @@ type SendState = 'idle' | 'sending' | 'sent' | 'error';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// scheduleHour only stores a whole hour (no minutes) — the time input is kept
-// snapped to :00 at all times so it never displays a value it won't actually save.
 function hourToTimeString(hour: number): string {
   return `${String(hour).padStart(2, '0')}:00`;
 }
@@ -77,7 +75,6 @@ export default function AutomatedReportSection({ activityId }: Props) {
   const [sendState, setSendState] = useState<SendState>('idle');
   const [sendError, setSendError] = useState<string | null>(null);
 
-  // Fill the form from the server once the initial load resolves.
   useEffect(() => {
     if (!loaded) return;
     setEnabled(loaded.enabled);

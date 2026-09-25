@@ -15,7 +15,6 @@ import {
 } from '../styled';
 import { Input } from '../../../components/styled';
 
-/** Game `type` values omitted from the activity module picker (still editable in library). */
 const EXCLUDE_TYPES_FROM_ACTIVITY_PICKER = new Set(['trashSort', 'environmentGame']);
 
 interface MissionOption {
@@ -25,8 +24,6 @@ interface MissionOption {
   customer?: string;
   explanationScreens?: { header?: string }[];
 }
-
-// ─── Local styled components ───
 
 const TabsRow = styled('div')({
   display: 'flex',
@@ -87,9 +84,6 @@ const SubFilterChip = styled('button')<{ active?: boolean }>(({ active }) => ({
   '&:hover': { borderColor: '#6c5ce7', color: active ? '#fff' : '#6c5ce7' },
 }));
 
-/** The catalogue is long (hundreds of items), so it stays a scroll panel — but
- *  a framed one, so a half-visible row reads as "scroll for more" instead of a
- *  clipped page. */
 const Grid = styled('div')({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
@@ -158,8 +152,6 @@ const EmptyState = styled('div')({
   fontSize: 14,
 });
 
-/** The ordered list is the activity itself, so it gets its own framed card
- *  above the catalogue rather than a footnote under it. */
 const SelectedPanel = styled('div')({
   border: '1px solid #ececf4',
   borderRadius: 12,
@@ -202,8 +194,6 @@ const SelectedEmpty = styled('div')({
   borderRadius: 10,
 });
 
-/** Small purple-outline action button — used for the row's "Settings" trigger
- *  and reused inside the settings modal for "Preview". */
 const RowButton = styled('button')({
   background: 'none',
   border: '1px solid #6c5ce7',
@@ -225,7 +215,6 @@ const LoadingState = styled('div')({
   fontSize: 14,
 });
 
-// Drag-and-drop styled components
 const DragList = styled('div')({
   display: 'flex',
   flexDirection: 'column',
@@ -251,7 +240,6 @@ const DragItem = styled('div')<{ isDragging?: boolean }>(({ isDragging }) => ({
   },
 }));
 
-/** Drag handle — a plain dot-grid drawn in CSS, no glyph/icon. */
 const DragHandle = styled('span')({
   width: 14,
   height: 18,
@@ -272,7 +260,6 @@ const DragItemName = styled('span')({
   whiteSpace: 'nowrap',
 });
 
-/** Plain text remove button — no glyph. */
 const RemoveBtn = styled('button')({
   background: 'none',
   border: '1px solid #e3bdb8',
@@ -287,8 +274,6 @@ const RemoveBtn = styled('button')({
   '&:hover': { background: '#fdeeea' },
 });
 
-/** Status pill for a selected item's row — color communicates state, never an
- *  icon. Rendered only when it says something other than the default. */
 const StatusBadge = styled('span')<{ tone?: 'neutral' | 'purple' | 'green' | 'red' }>(({ tone = 'neutral' }) => {
   const palette = {
     neutral: { bg: '#f5f5f7', fg: '#666' },
@@ -310,7 +295,6 @@ const StatusBadge = styled('span')<{ tone?: 'neutral' | 'purple' | 'green' | 're
 
 function getCollageImageLimit(settings: Record<string, unknown> | undefined): number {
   if (!settings) return 1;
-  // Mode-aware: multiSelect mode uses multiSelectCount; otherwise mission count.
   if (settings.multiSelect) {
     const raw = settings.multiSelectCount;
     const parsed = typeof raw === 'number'
@@ -333,14 +317,12 @@ function effectivePartSizes(item: ModuleItem, limit: number): number[] {
   if (split.partSizes && split.partSizes.length > 0) {
     const sum = split.partSizes.reduce((a, b) => a + b, 0);
     if (sum === limit) return split.partSizes;
-    // Stale partSizes (limit changed or older buggy data) — redistribute.
     return distributeEvenly(limit, split.partSizes.length);
   }
   const n = split.totalParts && split.totalParts > 0 ? split.totalParts : 1;
   return distributeEvenly(limit, n);
 }
 
-/** Text label for a selected item's collage-split badge, e.g. "חלק 2/3 · 4 תמונות". */
 function splitBadgeText(item: ModuleItem, t: Record<string, string>): string | null {
   const split = item.collageSplit;
   if (!split) return null;
@@ -362,8 +344,6 @@ function hebrewFirstCompare(a: string, b: string): number {
   if (!aHeb && bHeb) return 1;
   return a.localeCompare(b, aHeb ? 'he' : 'en');
 }
-
-// ─── Component ───
 
 type TabType = 'games' | 'stations' | 'missions';
 
@@ -415,16 +395,13 @@ export default function ModuleItemsSection({
   const [previewItem, setPreviewItem] = useState<ModuleItem | null>(null);
   const [settingsItemIndex, setSettingsItemIndex] = useState<number | null>(null);
 
-  // Multi-select sub-filters per tab. Empty set = show all.
   const [selectedGameTypes, setSelectedGameTypes] = useState<Set<string>>(new Set());
   const [selectedStationTypes, setSelectedStationTypes] = useState<Set<string>>(new Set());
 
-  // Drag state
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [dragItemRefValue, setDragItemRefValue] = useState<number | null>(null);
 
-  // Fetch all games, stations, and missions on mount
   useEffect(() => {
     setLoadingItems(true);
     Promise.all([
@@ -441,7 +418,7 @@ export default function ModuleItemsSection({
         setAllStations([...sData.stations].sort((a, b) => hebrewFirstCompare(a.name, b.name)));
         setAllMissions([...mData.missions].sort((a, b) => hebrewFirstCompare(a.name, b.name)));
       })
-      .catch(() => { /* ignore */ })
+      .catch(() => { })
       .finally(() => setLoadingItems(false));
   }, []);
 
@@ -468,8 +445,6 @@ export default function ModuleItemsSection({
     .filter((s) => matchesFilter(s.name, s.description, s.customer, s.theme));
   const filteredMissions = allMissions.filter((m) => matchesFilter(m.name, m.description, m.customer));
 
-  // Unique types present in the loaded data — keeps the chip row in sync with
-  // whichever game/station types actually exist for this user.
   const gameTypeCounts = (() => {
     const m = new Map<string, number>();
     for (const g of allGames) m.set(g.type, (m.get(g.type) ?? 0) + 1);
@@ -521,7 +496,6 @@ export default function ModuleItemsSection({
     });
   };
 
-  // Drag-and-drop handlers
   const handleDragStart = useCallback((index: number) => {
     setDragItemRefValue(index);
     setDragIndex(index);
@@ -539,7 +513,6 @@ export default function ModuleItemsSection({
       setDragOverIndex(null);
       return;
     }
-    // Move item step by step from `from` to `index`
     const direction = index > from ? 1 : -1;
     let current = from;
     while (current !== index) {
@@ -559,8 +532,6 @@ export default function ModuleItemsSection({
 
   return (
     <>
-      {/* The activity's own content comes first — the catalogue below is the
-          tool for filling it, not the other way round. */}
       <SelectedPanel>
         <SelectedHeader>
           <SelectedTitle>{t.selectedItemsTitle}</SelectedTitle>
@@ -813,7 +784,6 @@ export default function ModuleItemsSection({
         />
       )}
 
-      {/* Preview Modal */}
       {previewItem && (
         <ItemPreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />
       )}

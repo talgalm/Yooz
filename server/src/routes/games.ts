@@ -6,13 +6,11 @@ import { Game, GameFolder } from '../models';
 
 const router = Router();
 
-// List all games
 router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
   const games = await Game.find(customerMongoFilter(req)).sort({ createdAt: -1 });
   res.json({ games });
 });
 
-// Create game
 router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateGameRequest>, res: Response) => {
   const { name, type, description, customer, theme, tags, settings } = req.body;
 
@@ -35,7 +33,6 @@ router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateGameReques
   res.status(201).json({ game });
 });
 
-// Get single game
 router.get('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const game = await Game.findById(req.params.id);
   if (!game) { res.status(404).json({ error: 'Game not found' }); return; }
@@ -43,7 +40,6 @@ router.get('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: 
   res.json({ game });
 });
 
-// Update game
 router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, CreateGameRequest>, res: Response) => {
   const { name, type, description, customer, theme, settings } = req.body;
 
@@ -67,7 +63,6 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
   res.json({ game });
 });
 
-// Move a game into a folder, or out to the ungrouped root (folderId: null).
 router.patch('/:id/folder', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const { folderId } = req.body as { folderId?: unknown };
   if (folderId !== null && typeof folderId !== 'string') {
@@ -96,7 +91,6 @@ router.patch('/:id/folder', authenticateAdmin, async (req: Request<{ id: string 
   res.json({ game });
 });
 
-// Delete game
 router.delete('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const existing = await Game.findById(req.params.id);
   if (!existing) { res.status(404).json({ error: 'Game not found' }); return; }

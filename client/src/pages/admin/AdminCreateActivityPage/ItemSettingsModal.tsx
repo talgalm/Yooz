@@ -148,14 +148,8 @@ const PickedCoords = styled('div')({
   direction: 'ltr',
 });
 
-/** Central Israel — every Yooz activity so far is there; pan from here rather than from space. */
 const DEFAULT_PICKER_CENTER = { lat: 32.0853, lng: 34.7818 };
 
-/**
- * Where one map station is. Address lookup fills the coordinates, but the
- * coordinates stay editable: a courtyard or a specific gate often has no
- * address a geocoder knows, and dropping a pin by hand is the fallback.
- */
 function LocationSection({
   item,
   onChange,
@@ -213,8 +207,6 @@ function LocationSection({
       })
       .catch(() => { if (!cancelled) setStatus('mapFailed'); });
     return () => { cancelled = true; };
-    // Mount-only: re-running would rebuild the map under the admin's cursor.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const search = async () => {
@@ -284,9 +276,6 @@ interface ItemSettingsModalProps {
   t: Record<string, string>;
 }
 
-/** One consolidated settings surface for a selected module item — replaces the
- *  old scatter of per-item popups/buttons (group visibility, location, spider
- *  SVG, final/re-entry flags, collage split) with a single sectioned modal. */
 export default function ItemSettingsModal({
   item,
   index,

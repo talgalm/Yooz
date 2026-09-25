@@ -1,17 +1,8 @@
-/**
- * Hebrew-aware text comparison helpers.
- *
- * Extracted from avatarChat.ts so avatarQuiz's no-AI fallback judges answers
- * with exactly the same normalisation the chat station already uses — a
- * participant's phrasing shouldn't be graded differently depending on which
- * station they're in.
- */
 
-/** Lowercase, strip niqqud and punctuation, collapse whitespace. */
 export function normalizeText(s: string): string {
   return s
     .toLowerCase()
-    .replace(/[֑-ֽֿ-ׇ]/g, '') // strip Hebrew niqqud
+    .replace(/[֑-ֽֿ-ׇ]/g, '')
     .replace(/[׳״".,!?\-–—:;()'\[\]{}]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -19,7 +10,6 @@ export function normalizeText(s: string): string {
 
 const HEB_PREFIXES = ['ה', 'ו', 'ש', 'ב', 'כ', 'ל', 'מ'];
 
-/** Strip up to two layered Hebrew prefixes (e.g. "וה", "שה"). */
 export function stripHebPrefixes(word: string): string {
   let w = word;
   for (let i = 0; i < 2; i++) {
@@ -45,11 +35,6 @@ export function jaccardSimilarity(a: string, b: string): number {
   return inter / (setA.size + setB.size - inter);
 }
 
-/**
- * How well is `answer` "covered" by `response`? (fraction of answer's tokens
- * that also appear in the response). High coverage means the response said
- * the answer plus some extra wording.
- */
 export function coverage(answer: string, response: string): number {
   const ans = tokens(answer);
   if (ans.length === 0) return 0;
@@ -59,18 +44,6 @@ export function coverage(answer: string, response: string): number {
   return hit / ans.length;
 }
 
-/**
- * True when `phrase` appears in `haystack` after normalisation, matching on
- * token boundaries so "לא לוחץ" doesn't match inside an unrelated word.
- */
-/**
- * Like `containsPhrase`, but tolerates filler words between the phrase's
- * tokens — "לא לוחץ" should match "לא הייתי לוחץ".
- *
- * Order is still required and the gap is capped, which is what keeps negation
- * intact: "אני לוחץ אבל לא פותח" must NOT match "לא לוחץ", and it doesn't,
- * because there the words appear in the wrong order.
- */
 export function containsPhraseNear(haystack: string, phrase: string, maxGap = 3): boolean {
   const needle = tokens(phrase);
   if (needle.length === 0) return false;

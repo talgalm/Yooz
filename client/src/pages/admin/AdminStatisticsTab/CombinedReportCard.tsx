@@ -57,11 +57,8 @@ export default function CombinedReportCard({ activityIds, onBack }: Props) {
   const { data, loading, error } = useCombinedReportCard(activityIds, period);
   const participants = data?.participants ?? [];
   const activities = data?.activities ?? [];
-  // The average exists only if at least one participant has a score.
   const avgFinal = data?.avgFinalGrade ?? null;
 
-  // True rank comes from the unfiltered, server-sorted list — so the badge stays
-  // correct while the search box narrows the visible rows.
   const rankByKey = useMemo(() => {
     const map = new Map<string, number>();
     participants.forEach((p, index) => map.set(p.key, index + 1));
@@ -75,7 +72,6 @@ export default function CombinedReportCard({ activityIds, onBack }: Props) {
     { key: 'year', label: t.periodYear },
   ];
 
-  // The report card (grades) + the four full report types, combined across activities.
   const exportOptions: { key: string; type?: AnalyticsExportType; icon: string; label: string; description: string }[] = [
     { key: 'report-card', icon: 'RC', label: t.exportReportCard, description: t.exportReportCardDescription },
     { key: 'executive', type: 'executive', icon: 'XL', label: t.exportExecutive, description: t.exportExecutiveDescription },

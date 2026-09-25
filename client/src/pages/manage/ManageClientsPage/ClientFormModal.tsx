@@ -25,7 +25,6 @@ const Section = styled('div')({ marginTop: 18, paddingTop: 16, borderTop: `1px s
 const SectionTitle = styled('div')({ fontSize: 13, fontWeight: 700, color: TEXT_LIGHT });
 const Hint = styled('div')({ fontSize: 12.5, color: TEXT_LIGHT, marginTop: 4 });
 
-/** A blank contact row. Two of them ship with the form — most clients arrive with two names. */
 const emptyContact = { name: '', role: '', email: '', phone: '', officePhone: '' };
 type ContactDraft = typeof emptyContact;
 
@@ -35,7 +34,6 @@ interface Props {
   onSaved: (client: Client) => void;
 }
 
-/** Create and edit share one form — the fields are identical. */
 export default function ClientFormModal({ client, onClose, onSaved }: Props) {
   const t = useTranslations(texts);
   const { isOwner } = useManageAuth();
@@ -69,7 +67,6 @@ export default function ClientFormModal({ client, onClose, onSaved }: Props) {
     try {
       const body = JSON.stringify({
         name, domain, status, leadSource, website, driveUrl, brief, notes,
-        // The server ignores this for anyone but the owner; do not even send it.
         ...(isOwner ? {
           contract: {
             ...contract,
@@ -77,7 +74,6 @@ export default function ClientFormModal({ client, onClose, onSaved }: Props) {
             monthlyFee: Number(contract.monthlyFee) || 0,
           },
         } : {}),
-        // Existing clients manage their contacts on the client page, not here.
         ...(client ? {} : { contacts: contacts.filter((c) => c.name.trim()) }),
       });
       const res = await manageApiFetch<{ client: Client }>(

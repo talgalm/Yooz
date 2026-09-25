@@ -6,15 +6,11 @@ import { styled, keyframes } from '@mui/material/styles';
 import { HeaderBar, HeaderActions, AccentText } from '../../components/styled';
 import type { LeaderboardEntry, GroupLeaderboardEntry } from './types';
 
-// ─── Colors ───
-
 const C_BG_TOP = '#5c1a9e';
 const C_BG_BOT = '#1e0050';
 const C_GOLD_HEX = '#f5b731';
 const C_GOLD_HEX_DARK = '#c88a10';
 const C_WHITE_HEX = '#ffffff';
-
-// ─── Animations ───
 
 const fadeUp = keyframes`
   from { opacity: 0; transform: translateY(16px); }
@@ -26,8 +22,6 @@ const sparkle = keyframes`
   50%       { opacity: 0.8; transform: scale(1.4); }
 `;
 
-// ─── Styled Components ───
-
 const PageRoot = styled('div')({
   position: 'relative',
   minHeight: '100dvh',
@@ -38,7 +32,6 @@ const PageRoot = styled('div')({
   background: `linear-gradient(180deg, ${C_BG_TOP} 0%, ${C_BG_BOT} 100%)`,
 });
 
-/** Sparkle dots scattered in the background */
 function SparklesBg() {
   const dots = [
     { x: '12%', y: '8%',  s: 3, d: 0 },
@@ -153,7 +146,6 @@ const PlayerCard = styled('div')<{ highlighted?: boolean; animDelay?: number }>(
   }),
 );
 
-/** Hexagon clip-path badge */
 const HexBadge = styled('div')<{ gold?: boolean }>(({ gold }) => ({
   flexShrink: 0,
   width: 38,
@@ -236,9 +228,6 @@ const EmptyText = styled('p')({
   textAlign: 'center',
 });
 
-// ─── Helpers ───
-
-/** Truncates to at most one decimal (e.g. 315.65999999 → 315.6). */
 function formatLeaderboardScore(score: number): string {
   const n = typeof score === 'number' && !Number.isNaN(score) ? score : Number(score);
   if (!Number.isFinite(n)) return '0';
@@ -248,20 +237,16 @@ function formatLeaderboardScore(score: number): string {
   return Number.isInteger(t) ? String(t) : t.toFixed(1);
 }
 
-/** Points cell: a 0-100 grade (server-normalized) or the raw score. */
 function formatScore(score: number, asGrade: boolean): string {
   return asGrade ? `${Math.round(score)}` : formatLeaderboardScore(score);
 }
 
-/** Format milliseconds as m:ss (e.g. 75300 → "1:15") */
 function formatDuration(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
-
-// ─── Component ───
 
 interface LeaderboardViewProps {
   languages?: string[];
@@ -274,8 +259,6 @@ interface LeaderboardViewProps {
   bgStyle: React.CSSProperties;
   leaderboardMode?: 'points' | 'time' | 'both';
   leaderboardAsGrade?: boolean;
-  /** Map activities race against the other teams in plain sight, so they see
-   *  every group's standing — the opposite of the default own-group-only rule. */
   showAllGroups?: boolean;
   onBack: () => void;
   onLogout: () => void;
@@ -300,7 +283,6 @@ export default function LeaderboardView({
   const isGroupActivity = groupLeaderboard.length > 0;
 
   const rows = isGroupActivity
-    // Group activity: my own teammates only, ranked within the group.
     ? leaderboard.filter((e) => e.group === currentGroup).map((e, i) => ({ ...e, rank: i + 1 }))
     : (() => {
         const myIdx = currentParticipantName
@@ -308,8 +290,8 @@ export default function LeaderboardView({
           : -1;
         const top = leaderboard.slice(0, 3);
         const tail = myIdx > 2
-          ? leaderboard.slice(myIdx, myIdx + 4) // me + 3 below
-          : leaderboard.slice(3, 6);            // me in top 3 → just the next 3
+          ? leaderboard.slice(myIdx, myIdx + 4)
+          : leaderboard.slice(3, 6);
         const seen = new Set<number>();
         return [...top, ...tail].filter((e) => {
           if (seen.has(e.rank)) return false;
@@ -322,7 +304,6 @@ export default function LeaderboardView({
     <PageRoot>
       <SparklesBg />
 
-      {/* Header */}
       <HeaderBar
         style={{
           position: 'relative',
@@ -349,8 +330,6 @@ export default function LeaderboardView({
               <SectionTitle>{t.leaderboardGroupsTitle}</SectionTitle>
               <PlayerList style={{ marginBottom: 20 }}>
                 {(() => {
-                  // Map activities show the whole field; everything else shows
-                  // only my group's score, with its real rank among all groups.
                   if (showAllGroups) return groupLeaderboard;
                   const mine = currentGroup ? groupLeaderboard.find((g) => g.name === currentGroup) : undefined;
                   return mine ? [mine] : [];
@@ -385,13 +364,10 @@ export default function LeaderboardView({
                     highlighted={isMe}
                     animDelay={i}
                   >
-                    {/* Rank badge — right side in RTL */}
                     <HexBadge gold={isTop3}>{entry.rank}</HexBadge>
 
-                    {/* Name — center */}
                     <PlayerName me={isMe}>{entry.name}</PlayerName>
 
-                    {/* Score / time — left side in RTL */}
                     <ScoreValue>
                       {leaderboardMode === 'both' ? (
                         <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.15, gap: 2 }}>

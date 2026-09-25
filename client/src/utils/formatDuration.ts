@@ -1,9 +1,6 @@
 import { translate, type Lang } from '../context/LanguageContext';
 import { texts } from './formatDuration.i18n';
 
-/**
- * Format a millisecond duration for display, localized to the active language.
- */
 export function formatDuration(ms: number | null | undefined, lang: Lang): string {
   if (!ms || ms <= 0) return '—';
   const t = translate(texts, lang);

@@ -3,17 +3,10 @@ import { createPortal } from 'react-dom';
 import { styled } from '@mui/material/styles';
 import { clampPan, clampScale, distance, MIN_SCALE } from '../utils/zoomPan';
 
-// ponytail: the badge anchors to the media area's corner, not the picture's.
-// They coincide whenever the image fills its slot (the usual case); for a narrow
-// portrait in a wide slot it sits just outside the edge. Measuring the rendered
-// image would fix that — do it only if someone actually complains.
-/** Magnifier affordance: "+" over the inline image (tap to enlarge), "−" inside
- *  the fullscreen overlay (tap to shrink back). Shared by the image and riddle
- *  stations so both read the same. */
 export const ZoomBadge = styled('button')({
   position: 'absolute',
   top: 8,
-  right: 8, // physically top-right — the participant app runs RTL, so logical props would flip it
+  right: 8,
   width: 34,
   height: 34,
   padding: 0,
@@ -49,8 +42,6 @@ const Backdrop = styled('div')({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  // Above the sticky session header (z 30) and any popup/success overlay.
-  // Portaled to <body> so the backdrop covers the top icon row too.
   zIndex: 99999,
   padding: 16,
   overflow: 'hidden',
@@ -79,13 +70,9 @@ const ZoomImg = styled('img')({
   touchAction: 'none',
 } as Record<string, unknown>);
 
-/** Fullscreen image viewer with pinch-to-zoom + drag-to-pan (and wheel /
- *  double-click on desktop). Closes on backdrop tap, the magnifier badge, or Escape. */
 export default function ImageZoomOverlay({ src, onClose }: { src: string; onClose: () => void }) {
   const [transform, setTransform] = useState({ scale: 1, x: 0, y: 0 });
   const frameRef = useRef<HTMLDivElement>(null);
-  // ponytail: zooms around the frame centre, not the pinch midpoint — panning
-  // covers the difference. Track the midpoint here if that ever feels off.
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pinchStart = useRef<{ dist: number; scale: number } | null>(null);
   const panStart = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
@@ -106,9 +93,7 @@ export default function ImageZoomOverlay({ src, onClose }: { src: string; onClos
   }, []);
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    // Capture on the frame so a finger that slides off the image keeps feeding
-    // this handler. Wrapped: capture throws if the pointer is already gone.
-    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* pointer already released */ }
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { }
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     const pts = [...pointers.current.values()];
     if (pts.length === 2) {

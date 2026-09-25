@@ -1,13 +1,3 @@
-/**
- * Aggregates an activity's full report context for the AI assistant.
- *
- * Builds a compact JSON snapshot of: activity metadata, overall stats,
- * per-item stats, group breakdown, funnel, anomalies, score distribution,
- * and a participant list (admin context — PII allowed per product decision).
- *
- * Used by the report assistant when no existing export covers the request,
- * so Gemini can answer with real data.
- */
 
 import { Types } from 'mongoose';
 import { Activity, Report } from '../models';
@@ -126,7 +116,6 @@ export async function buildReportContext(opts: ReportContextOptions): Promise<Re
     ? Math.round(progressValues.reduce((a, b) => a + b, 0) / progressValues.length)
     : 0;
 
-  // Funnel
   const startedPlaying = reports.filter((r) => (r.totalItemsCompleted ?? 0) >= 1).length;
   const halfway = reports.filter((r) => {
     const total = r.totalItemsInModule || totalItemsInModule || 1;
@@ -140,7 +129,6 @@ export async function buildReportContext(opts: ReportContextOptions): Promise<Re
     { step: 'completed', count: completedCount, pct: joined ? Math.round((completedCount / joined) * 100) : 0 },
   ];
 
-  // Score histogram (buckets of 10)
   const buckets = Array.from({ length: 11 }, (_, i) => ({ min: i * 10, max: i * 10 + 10, count: 0 }));
   scores.forEach((s) => {
     const idx = Math.min(Math.floor(s / 10), 10);
@@ -148,7 +136,6 @@ export async function buildReportContext(opts: ReportContextOptions): Promise<Re
   });
   const scoreDistribution = buckets.map((b) => ({ range: `${b.min}-${b.max}`, count: b.count }));
 
-  // Item-level aggregation
   const itemMap = new Map<number, {
     itemIndex: number;
     itemName: string;
@@ -201,7 +188,6 @@ export async function buildReportContext(opts: ReportContextOptions): Promise<Re
       completionPct: it.count ? Math.round((it.completed / it.count) * 100) : 0,
     }));
 
-  // Group aggregation
   const groupMap = new Map<string, { memberCount: number; scoreSum: number; durationSum: number; durationCount: number; completed: number }>();
   for (const r of reports) {
     if (!r.group) continue;
@@ -225,7 +211,6 @@ export async function buildReportContext(opts: ReportContextOptions): Promise<Re
     }))
     .sort((a, b) => b.avgScore - a.avgScore);
 
-  // Anomalies (mirror analytics route logic)
   const overallAvgDuration = items.length ? items.reduce((s, i) => s + i.avgDurationMs, 0) / items.length : 0;
   const anomalies: { type: string; severity: string; message: string }[] = [];
   for (const it of items) {

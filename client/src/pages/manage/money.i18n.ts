@@ -1,10 +1,8 @@
-/** Shared by the finance screen and the project money / change-request tabs. */
 export const texts = {
   he: {
     finance: 'כספים',
     loading: 'טוען...',
 
-    // the caveat that must never be hidden
     excludesManagement: 'לא כולל שעות ניהול',
 
     revenue: 'הכנסה',
@@ -33,7 +31,6 @@ export const texts = {
     monthlyHint: 'האם התחזוקה של הלקוח הזה רווחית החודש',
     cumulativeHint: 'האם הפרויקט השתלם מתחילת ההתקשרות',
 
-    // payments in
     payments: 'תשלומים מלקוחות',
     addPayment: 'הוספת תשלום',
     noPayments: 'לא הוגדרו תשלומים.',
@@ -47,7 +44,6 @@ export const texts = {
     plannedDate: 'תאריך מתוכנן',
     confirmDeletePayment: 'למחוק את התשלום?',
 
-    // employee cost
     employeeCost: 'עלות עובדים',
     hourlyCost: 'עלות לשעה',
     employerFactor: 'עלות מעסיק',
@@ -55,7 +51,6 @@ export const texts = {
     noTimeTracking: 'לא מדווח שעות',
     ratesNote: 'זו עלות לצורך תמחור, לא שכר. שינוי התעריף לא משנה דיווחי שעות קיימים — כל רשומה שומרת את התעריף שבו נרשמה.',
 
-    // expenses
     expenses: 'הוצאות',
     addExpense: 'הוספת הוצאה',
     editExpense: 'עריכת הוצאה',
@@ -69,7 +64,6 @@ export const texts = {
     project: 'פרויקט',
     pickProject: 'בחירת פרויקט',
 
-    // change requests
     changeRequests: 'בקשות שינוי',
     addChangeRequest: 'בקשת שינוי חדשה',
     noChangeRequests: 'אין בקשות שינוי.',

@@ -1,12 +1,9 @@
-// Login field types (what participants fill in)
 export type LoginField = 'email' | 'phoneNumber' | 'name';
 
-// Connection type (how participants connect)
 export type ConnectionType = 'single' | 'group';
 
 export type GroupEntryMode = 'preset' | 'selfService';
 
-// Group config
 export interface GroupConfig {
   name: string;
 }
@@ -27,7 +24,6 @@ export interface GroupRewardConfig {
   attachmentType?: 'image' | 'pdf';
 }
 
-// Admin types
 export type AdminRole = 'viewer' | 'admin' | 'super_admin' | 'customer';
 
 export interface AdminJwtPayload {
@@ -38,7 +34,6 @@ export interface AdminJwtPayload {
   exp?: number;
 }
 
-// Manager types
 export interface ManagerJwtPayload {
   email: string;
   activityCode: string;
@@ -48,7 +43,6 @@ export interface ManagerJwtPayload {
   exp?: number;
 }
 
-// Yooz-Manage types (/manage realm)
 export interface ManageJwtPayload {
   userId: string;
   name: string;
@@ -81,7 +75,6 @@ export interface AdminLoginResponse {
   admin: { email: string; role: AdminRole; name?: string };
 }
 
-// Popup message config (sent from client)
 export interface PopupTriggerConfig {
   point: 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
   itemIndex?: number;
@@ -103,52 +96,47 @@ export interface PopupMessageConfig {
   enabled: boolean;
 }
 
-// Module item config (sent from client)
 export interface CollageSplitRequest {
   splitGroupId: string;
   partIndex: number;
   partSizes?: number[];
-  totalParts?: number; // legacy fallback
+  totalParts?: number;
 }
 
 export interface ModuleItemRequest {
   type: 'game' | 'station' | 'mission';
-  ref: string; // ObjectId string
-  groups?: string[]; // when set, only these groups see this item
+  ref: string;
+  groups?: string[];
   spiderSvg?: string;
   isFinal?: boolean;
-  revisitable?: boolean; // completed item stays re-openable from the roadmap
+  revisitable?: boolean;
   collageSplit?: CollageSplitRequest;
 }
 
-// Module config (sent from client)
 export interface ModuleConfigRequest {
   type: 'story' | 'mission' | 'spiders';
   backgroundImage?: string;
-  items: ModuleItemRequest[]; // ordered mix of games and stations
+  items: ModuleItemRequest[];
   popups?: PopupMessageConfig[];
-  missionRef?: string; // ObjectId string for mission reference
+  missionRef?: string;
 }
 
-// ─── Order Game Settings ───
-
 export interface OrderGameRound {
-  title?: string;        // question/prompt for this round (optional)
-  cards: string[];       // items in CORRECT order (shuffled at runtime for participant)
+  title?: string;
+  cards: string[];
 }
 
 export interface OrderGameScoringConfig {
-  firstAttemptPoints: number;   // points for correct on first try (default 100)
-  retryPoints: number;          // points for correct on retry (default 50)
-  speedBonus: boolean;          // bonus for fast completion
-  timeLimitSeconds?: number;    // optional time limit per round
+  firstAttemptPoints: number;
+  retryPoints: number;
+  speedBonus: boolean;
+  timeLimitSeconds?: number;
 }
 
 export interface OrderGameSettings {
-  /** 'quiz' = correct order + scoring (default). 'survey' = class ranking poll, no scoring. */
   mode?: 'quiz' | 'survey';
-  instructions?: string;         // opening instructions text
-  rounds: OrderGameRound[];      // list of rounds
+  instructions?: string;
+  rounds: OrderGameRound[];
   scoring: OrderGameScoringConfig;
 }
 
@@ -168,8 +156,6 @@ export interface OrderSurveySession {
   updatedAt: Date;
 }
 
-// ─── Trivia Game Settings ───
-
 export interface TriviaAnswer {
   text: string;
   isCorrect: boolean;
@@ -186,7 +172,6 @@ export interface TriviaQuestion {
 export interface TriviaScoringConfig {
   correctAnswerPoints: number;
   wrongAnswerPenalty: number;
-  /** Seconds allowed for each question (timer resets every question; not a whole-game cap). 0 or omit = no limit. */
   timeLimitSeconds?: number;
 }
 
@@ -195,11 +180,8 @@ export interface TriviaGameSettings {
   questions: TriviaQuestion[];
   scoring: TriviaScoringConfig;
   shuffleAnswers?: boolean;
-  /** When true, players get one-time 1/2 or 3/4 wrong-answer elimination per game. */
   includeHelpers?: boolean;
 }
-
-// ─── Ball Game Settings ───
 
 export interface BallGameAnswer {
   text: string;
@@ -208,7 +190,7 @@ export interface BallGameAnswer {
 
 export interface BallGameQuestion {
   text: string;
-  answers: BallGameAnswer[]; // exactly 4, one correct
+  answers: BallGameAnswer[];
 }
 
 export interface BallGameSettings {
@@ -217,7 +199,6 @@ export interface BallGameSettings {
   scoring: { timeLimitSeconds: number };
 }
 
-// Game API types
 export interface CreateGameRequest {
   name: string;
   type?: string;
@@ -228,7 +209,6 @@ export interface CreateGameRequest {
   settings?: Record<string, unknown>;
 }
 
-// Portal API types
 export interface PortalUserRequest {
   username: string;
   password: string;
@@ -238,10 +218,9 @@ export interface CreatePortalRequest {
   name: string;
   description?: string;
   users?: PortalUserRequest[];
-  activities?: string[]; // Activity ObjectId strings
+  activities?: string[];
 }
 
-// Station API types
 export interface CreateStationRequest {
   name: string;
   type?: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText';
@@ -252,13 +231,11 @@ export interface CreateStationRequest {
   settings?: Record<string, unknown>;
 }
 
-// Opening config (optional splash screen before login)
 export interface OpeningConfig {
   type: 'video' | 'image';
   url: string;
 }
 
-// Custom instructions for the guidelines popup
 export interface CustomInstructionsConfig {
   title?: string;
   missionTitle?: string;
@@ -268,7 +245,6 @@ export interface CustomInstructionsConfig {
   buttonText?: string;
 }
 
-// Activity API types
 export interface CreateActivityRequest {
   name: string;
   loginFields: LoginField[];
@@ -326,27 +302,15 @@ export interface ActivityConfigResponse {
   isContinuous?: boolean;
   organizerContactName?: string;
   organizerContactPhone?: string;
-  /** Help-chat FAQ menu categories hidden for this activity. Absent/empty = show all. */
   helpCategoriesDisabled?: string[];
-  /** Per-category custom FAQ answer text, keyed the same as helpCategoriesDisabled. */
   helpCategoryResponses?: Record<string, string>;
-  /** The "something else" open free-text chat — opt-in, absent/false = hidden. */
   helpOtherCategoryEnabled?: boolean;
 }
 
-// Participant types
 export interface JwtPayload {
   participantName: string;
   activityCode: string;
-  /** The report this session owns. Absent on tokens issued before it existed. */
   reportId?: string;
-  /**
-   * Set only for `dailyReset` activities. Their sessions must not outlive the
-   * Israel day: the session's report is now kept rather than deleted, so a
-   * token reused the next morning would resume — and `/scores` would upsert
-   * over — yesterday's finished report. Stamped here so `authenticateToken`
-   * can enforce it without loading the activity on every request.
-   */
   dailyReset?: boolean;
   connectionType: ConnectionType;
   email?: string;

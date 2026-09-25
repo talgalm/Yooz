@@ -19,8 +19,6 @@ export interface CustomTheme {
   createdByEmail?: string;
 }
 
-// ─── Styled ───
-
 const Backdrop = styled('div')({
   position: 'fixed',
   inset: 0,
@@ -175,8 +173,6 @@ const CancelBtn = styled('button')({
   '&:hover': { background: '#ececf4' },
 });
 
-// ─── Component ───
-
 interface Props {
   existing?: CustomTheme | null;
   onSaved: (theme: CustomTheme) => void;
@@ -199,7 +195,6 @@ export default function ThemeFormModal({ existing, onSaved, onClose }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  // Sync hex input ↔ color picker
   const [hexInput, setHexInput] = useState(existing?.mainColor ?? '#6c5ce7');
   useEffect(() => { setHexInput(mainColor); }, [mainColor]);
   const [textHexInput, setTextHexInput] = useState(existing?.textColor ?? '#111111');

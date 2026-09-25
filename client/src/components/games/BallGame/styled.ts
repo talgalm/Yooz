@@ -1,18 +1,9 @@
 import { styled, keyframes } from '@mui/material/styles';
 
-// ─── 3D Box Room Background ───
-
 const ROOM_BACK_WALL = '#7ec7e1';
 const ROOM_SIDE_WALL = '#3fa9cf';
 const ROOM_FLOOR = '#3fa9cf';
 
-/**
- * 3D room / box background.
- * The back wall is lighter, the side walls & floor are slightly darker to
- * create the illusion of depth. Four SVG polygons draw the perspective
- * trapezoids (left wall, right wall, ceiling, floor) meeting at the inner
- * rectangle that represents the back wall.
- */
 export const BallGameRoomBackground = styled('div')({
   position: 'absolute',
   inset: 0,
@@ -22,11 +13,8 @@ export const BallGameRoomBackground = styled('div')({
   zIndex: 0,
 });
 
-// Room color constants exported for the SVG corners component in index.tsx
 export const ROOM_SIDE_WALL_COLOR = ROOM_SIDE_WALL;
 export const ROOM_FLOOR_COLOR = ROOM_FLOOR;
-
-// ─── Animations ───
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(10px); }
@@ -42,8 +30,6 @@ const fadeOut = keyframes`
   from { opacity: 1; }
   to { opacity: 0; }
 `;
-
-// ─── Layout ───
 
 export const BallGameContainer = styled('div')({
   position: 'fixed',
@@ -108,8 +94,6 @@ export const StartButton = styled('button')({
   },
 });
 
-// ─── Top Bar ───
-
 export const TopBar = styled('div')({
   position: 'absolute',
   top: 0,
@@ -148,8 +132,6 @@ export const MuteButton = styled('button')({
   padding: 4,
   '& img': { width: 24, height: 24 },
 });
-
-// ─── Question Phase ───
 
 export const QuestionOverlay = styled('div')({
   position: 'absolute',
@@ -259,8 +241,6 @@ export const FeedbackIcon = styled('div')<{ type: 'correct' | 'wrong' }>(({ type
   }),
 }));
 
-// ─── Throwing Phase ───
-
 export const ThrowingOverlay = styled('div')({
   position: 'absolute',
   bottom: 0,
@@ -312,8 +292,6 @@ export const BasketBonusPopup = styled('div')({
   boxShadow: '0 4px 20px rgba(243, 156, 18, 0.5)',
   pointerEvents: 'none',
 });
-
-// ─── Complete Phase ───
 
 export const CompleteOverlay = styled('div')({
   position: 'absolute',

@@ -24,11 +24,11 @@ export type BallGamePhase = 'instructions' | 'question' | 'throwing' | 'complete
 export type LevelTheme = 'purple' | 'orange' | 'green';
 
 export interface WallConfig {
-  x: number; // fraction of canvas width (0-1)
-  y: number; // fraction of canvas height (0-1)
-  width: number; // fraction of canvas width
-  height: number; // fraction of canvas height
-  angle?: number; // radians
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  angle?: number;
 }
 
 export interface LevelConfig {
@@ -39,6 +39,6 @@ export interface LevelConfig {
   boxImage: string;
   bucketAnimImage: string;
   walls: WallConfig[];
-  basketPosition: { x: number; y: number }; // fractions
-  ballSpawn: { x: number; y: number }; // fractions
+  basketPosition: { x: number; y: number };
+  ballSpawn: { x: number; y: number };
 }

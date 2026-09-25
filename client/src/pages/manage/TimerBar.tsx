@@ -56,11 +56,6 @@ const GhostAction = styled(Action)({
   color: PRIMARY, background: '#fff', border: `1px solid ${BORDER}`,
 });
 
-/**
- * Sits above every /manage screen so a running timer is never out of sight —
- * the whole point is that people notice it before it runs all night.
- * Hidden entirely for anyone who does not report hours.
- */
 export default function TimerBar() {
   const t = useTranslations(texts);
   const { user } = useManageAuth();

@@ -1,13 +1,3 @@
-/**
- * Every money calculation — spec ch.04 §4. Owner-only territory.
- *
- * Same golden rule as manageMetrics: nothing here is stored, there is one
- * function per figure, and callers pass in what they already fetched so a list
- * screen does not fire a query per row.
- *
- * A number in this file being quietly wrong is the worst failure mode in the
- * system — it looks plausible for months. Hence the self-check beside it.
- */
 import { Types } from 'mongoose';
 import { TimeEntry } from '../models/manage/TimeEntry';
 import { Expense } from '../models/manage/Expense';
@@ -15,12 +5,6 @@ import { ChangeRequest } from '../models/manage/ChangeRequest';
 import { IProject } from '../models/manage/Project';
 import { round2 } from './manageMetrics';
 
-/**
- * Margin is a RATIO, not a shekel amount, so it must not be rounded to 2dp:
- * 13900/28000 = 0.49642... and round2 turns that into 0.5, which the UI then
- * prints as "50%" where the correct answer is 49.6%. Percentages are displayed
- * to one decimal (spec ch.04), which needs four decimals of ratio to survive.
- */
 function roundRatio(n: number): number {
   return Math.round(n * 10000) / 10000;
 }
@@ -35,28 +19,16 @@ export interface ProjectMoney {
   grossProfit: number;
   margin: number;
   effectiveRatePerHour: number;
-  /**
-   * Always true in phase one: the owner does not report hours (ch.10 decision 2),
-   * so management time is not in labour cost. The UI must print this — a number
-   * without its caveat becomes a number people trust more than it deserves.
-   */
   excludesManagementHours: boolean;
 }
 
-/** Whole months elapsed from `start` up to `asOf`, floored at 0. */
 export function monthsElapsed(start: Date, asOf: Date): number {
   const months = (asOf.getFullYear() - start.getFullYear()) * 12
     + (asOf.getMonth() - start.getMonth())
-    // Not a full month until the day-of-month comes round again.
     + (asOf.getDate() >= start.getDate() ? 1 : 0);
   return Math.max(0, months);
 }
 
-/**
- * Recurring revenue billed so far on one project.
- * Stops accruing at the contract end date — a finished retainer must not keep
- * inflating revenue forever.
- */
 export function recurringToDate(
   recurring: IProject['recurring'] | undefined,
   asOf: Date = new Date(),
@@ -70,7 +42,6 @@ export function recurringToDate(
   return round2(recurring.monthlyAmount * monthsElapsed(start, until));
 }
 
-/** Sums time-entry cost per project in one query. */
 export async function laborCostByProject(
   projectIds: (Types.ObjectId | string)[],
 ): Promise<Record<string, number>> {
@@ -98,7 +69,6 @@ export async function expenseTotalByProject(
   return Object.fromEntries(rows.map((r) => [String(r._id), round2(r.total)]));
 }
 
-/** Approved and delivered change requests add to the agreed price. */
 export async function changeRequestRevenueByProject(
   projectIds: (Types.ObjectId | string)[],
 ): Promise<Record<string, number>> {
@@ -115,7 +85,6 @@ export async function changeRequestRevenueByProject(
   return Object.fromEntries(rows.map((r) => [String(r._id), round2(r.total)]));
 }
 
-/** Pure. Everything it needs is passed in. */
 export function projectMoney(
   project: Pick<IProject, 'agreedPrice' | 'recurring'>,
   input: { laborCost: number; expenseTotal: number; changeRequestRevenue: number; actualHours: number },
@@ -138,14 +107,12 @@ export function projectMoney(
     recurringToDate: recurring,
     revenue,
     grossProfit,
-    // Guard both divides: no revenue is 0%, not NaN or Infinity.
     margin: revenue > 0 ? roundRatio(grossProfit / revenue) : 0,
     effectiveRatePerHour: input.actualHours > 0 ? round2(revenue / input.actualHours) : 0,
     excludesManagementHours: true,
   };
 }
 
-/** One month's slice of a project — the default view for a retainer client. */
 export async function projectMonthMoney(
   project: Pick<IProject, '_id' | 'agreedPrice' | 'recurring'>,
   month: string,
@@ -164,8 +131,6 @@ export async function projectMonthMoney(
     { $group: { _id: null, total: { $sum: '$amount' } } },
   ]);
 
-  // Only the recurring fee lands in a month; a one-off price belongs to the
-  // whole engagement and would double-count if spread across every month.
   const r = project.recurring;
   const active = !!r?.enabled && !!r.startDate
     && new Date(r.startDate) <= end
@@ -177,7 +142,6 @@ export async function projectMonthMoney(
   return { month, revenue, cost, profit, margin: revenue > 0 ? roundRatio(profit / revenue) : 0 };
 }
 
-/** Monthly recurring revenue across the business. */
 export function mrrOf(
   projects: Pick<IProject, 'status' | 'recurring'>[],
   asOf: Date = new Date(),
@@ -186,7 +150,6 @@ export function mrrOf(
     const r = p.recurring;
     if (!r?.enabled || !r.monthlyAmount) return sum;
     if (!['active', 'maintenance'].includes(p.status)) return sum;
-    // An ended contract is not recurring revenue any more.
     if (r.endDate && new Date(r.endDate) <= asOf) return sum;
     return sum + r.monthlyAmount;
   }, 0));

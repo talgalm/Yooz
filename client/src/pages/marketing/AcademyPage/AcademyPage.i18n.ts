@@ -1,9 +1,3 @@
-/**
- * Copy read off the exported Figma frame `temp-imgs/אתר yooz/עזרי למידה.png`.
- *
- * Card rows are listed in DOM order, which in RTL renders right-to-left - so the
- * first entry is the rightmost column in the comp.
- */
 export const texts = {
   he: {
     heroTitleTop: 'הפכו כל קורס',
@@ -12,15 +6,8 @@ export const texts = {
       'למידה חווייתית | מעורבות ושביעות רצון | אפקטיביות פדגוגית | תובנות מבוססות נתונים | מיצוב אקדמי חדשני',
     heroMediaAlt: 'סטודנטים בכיתה אקדמית',
 
-    // \u00A0 is a no-break space: it keeps 'ב' on the same line as Yooz.
     valueTitle: 'מה הערך המוסף למוסד האקדמי שלכם מפיתוח קורס ושימוש ב\u00A0Yooz',
     valueIntro: 'פתרון מקיף שמחבר בין פדגוגיה איכותית, שביעות רצון סטודנטים ומרצים ותוצאות מדידות.',
-    /**
-     * Order matters: the 2x2 grid fills top-right, top-left, bottom-right,
-     * bottom-left under RTL, so swapping indices 2 and 3 mirrors the block.
-     * No colours here: each card's colour (icon, tile, tag and proof line) is
-     * set by position in the page (`VALUE_ICONS`).
-     */
     valueCards: [
       {
         tag: 'מניעת נטישה פרואקטיבית',
@@ -55,11 +42,6 @@ export const texts = {
     experienceTitle: 'החוויה הפדגוגית',
     experienceIntro:
       'חוויה פדגוגית שלמה שנבנתה בשיתוף משחקולוגים, מעצבים ומומחי הוראה אקדמית.',
-    /**
-     * Tiles are 48 square, flat colour, with a white line glyph - emoji render in
-     * their own colours and ignore `fg`. Each tile has its own colour; the title
-     * row stays uniform, so every AI pill uses the same lavender.
-     */
     experienceCards: [
       { icon: '/images/marketing/icons/acad-map.svg', tileBg: '#5A1B87', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Quest Engine', body: 'דוחות מהירים בסיוע AI, המאפשרים לשנות בטווח קצר את רמת הקושי של המשימות ואת הידע הנדרש.' },
       { icon: '/images/marketing/icons/acad-star-circle.svg', tileBg: '#059669', fg: '#FFFFFF', badge: 'AI', badgeBg: '#F4EBFD', title: 'Medical Simulator', body: 'סימולטור אינטראקטיבי לקבלת החלטות רפואיות בזמן אמת, במטרה להכין את הסטודנטים לעולם האמיתי.' },
@@ -68,11 +50,6 @@ export const texts = {
     ],
 
     testimonialTitle: 'המלצות לקוחות',
-    /**
-     * One named testimonial instead of the shared anonymous pair. The quote is
-     * the client's own words, kept verbatim. The Hebrew signature is translated
-     * from her English one - check the name's spelling with her before launch.
-     */
     testimonial: {
       paragraphs: [
         'ערן תודה על שליחת הדו"ח המסכם וגליונות ציוני הסטודנטים/ות המראים את הצלחתן של הסימולציות הקליניות לקידום המיומנויות של החשיבה הקלינית בקרב סטודנטים וסטודנטיות בבית הספר לסיעוד.',
@@ -132,7 +109,6 @@ export const texts = {
     ],
 
     testimonialTitle: 'Client testimonials',
-    /** The quote is translated from the Hebrew original; the signature is hers as she signs in English. */
     testimonial: {
       paragraphs: [
         'Eran, thank you for sending the summary report and the student grade sheets, which show how successful the clinical simulations were in advancing clinical-reasoning skills among students at the School of Nursing.',

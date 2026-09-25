@@ -3,7 +3,6 @@ import styled from '@emotion/styled';
 import { useTranslations } from '../context/LanguageContext';
 import { texts } from './SmsConsent.i18n';
 
-// ponytail: scrollbar forced visible (overflow-y:scroll) and thinned so users see they can scroll. Webkit + Firefox both covered, can't be done inline.
 const DialogBody = styled.div({
   padding: '20px 22px',
   display: 'flex',
@@ -32,7 +31,6 @@ export default function SmsConsent({ checked, onChange }: Props) {
 
   const openDialog = () => {
     dialogRef.current?.showModal();
-    // ponytail: claim focus on the title with preventScroll so the browser doesn't auto-scroll the close button into view; rAF reset as belt-and-braces.
     titleRef.current?.focus({ preventScroll: true });
     requestAnimationFrame(() => {
       if (bodyRef.current) bodyRef.current.scrollTop = 0;
@@ -53,7 +51,6 @@ export default function SmsConsent({ checked, onChange }: Props) {
           cursor: 'pointer',
         }}
       >
-        {/* ponytail: appearance:none + overlay ✓ — native accentColor renders an invisible white-on-white check on some iOS/Android builds. */}
         <span
           style={{
             position: 'relative',

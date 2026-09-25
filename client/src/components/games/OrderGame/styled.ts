@@ -1,40 +1,29 @@
 import { styled, keyframes } from '@mui/material/styles';
 import { DESKTOP_STATION_WIDTH } from '../styled';
 
-// ─── Colors ───
-
 const WHITE = '#fff';
 
-// Background gradient (matching TriviaGame)
 const BG_TOP = '#d4f0fd';
 const BG_BOTTOM = '#a8e6b1';
 
-// Box/Card styling
 const BOX_BG = '#e3ebf3';
 const BOX_BORDER = '#4a6572';
 
-// Text
 const TEXT_DARK = '#2c3e50';
 
-// Buttons
 const BTN_RED = '#e74c3c';
 const BTN_RED_DARK = '#c0392b';
 const BTN_GREEN = '#2ecc71';
 const BTN_GREEN_DARK = '#27ae60';
 
-// Primary action (purple — matches Trivia)
 const BTN_PURPLE = '#6c5ce7';
 const BTN_PURPLE_DARK = '#5b4cd4';
 
-// Finish screen (purple design, matches nature landscape theme)
 const FINISH_PURPLE = '#6c5ce7';
 const FINISH_PURPLE_DARK = '#5b4cd4';
 
-// Leaf banner (purple)
 const LEAF_BANNER_BG = FINISH_PURPLE;
 const LEAF_BANNER_DARK = FINISH_PURPLE_DARK;
-
-// ─── Animations ───
 
 const slideUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -52,14 +41,9 @@ const floatIn = keyframes`
   to { opacity: 1; transform: translateY(0) scale(1); }
 `;
 
-// ═══════════════════════════════════════════
-// ─── Background Image ───
-// ═══════════════════════════════════════════
-
 export const ORDER_BG_COLOR = '#5e7f4a';
 export const ORDER_WOOD_BLOCKS_URL = '/images/order-wood-blocks.png';
 
-/** Full viewport backdrop — solid green (welcome, playing, summary) */
 export const OrderFullScreenSceneBackdrop = styled('div')({
   position: 'fixed',
   inset: 0,
@@ -68,10 +52,8 @@ export const OrderFullScreenSceneBackdrop = styled('div')({
   backgroundColor: ORDER_BG_COLOR,
 });
 
-/** @deprecated alias — same as OrderFullScreenSceneBackdrop */
 export const OrderIntroFullScreenSceneBackdrop = OrderFullScreenSceneBackdrop;
 
-/** Full viewport backdrop — green grass for golf challenge */
 export const GolfFullScreenSceneBackdrop = styled('div')({
   position: 'fixed',
   inset: 0,
@@ -84,11 +66,6 @@ export const GolfFullScreenSceneBackdrop = styled('div')({
   backgroundRepeat: 'no-repeat',
 });
 
-/**
- * Root wrapper for all phases.
- * When no ThemedSceneOverlay exists (admin preview), paints the background
- * inline via ::before pseudo-element.
- */
 export const OrderPhaseRoot = styled('div', {
   shouldForwardProp: (prop) => prop !== '$inlineBackdrop',
 })<{ $inlineBackdrop?: boolean }>(({ $inlineBackdrop }) => ({
@@ -114,10 +91,6 @@ export const OrderPhaseRoot = styled('div', {
       }
     : {}),
 }));
-
-// ═══════════════════════════════════════════
-// ─── Playing Screen ───
-// ═══════════════════════════════════════════
 
 export const OrderContainer = styled('div')({
   position: 'relative',
@@ -154,8 +127,6 @@ export const OrderHill = styled('div')<{ variant: 1 | 2 }>(({ variant }) => ({
     ? { backgroundColor: '#8ecf7a', bottom: '15%', left: '-50%', opacity: 0.5 }
     : { backgroundColor: '#6dba5e', bottom: '-12%', right: '-30%', opacity: 0.4 }),
 }));
-
-// ─── Top Bar (glass effect) ───
 
 const ORDER_GAME_BAR_BORDER = '#000000';
 
@@ -194,8 +165,6 @@ export const OrderTopBarTimer = styled('span')<{ critical?: boolean }>(({ critic
   transition: 'color 0.3s ease',
 }));
 
-// ─── Round Title (purple outlined text — matches intro style, smaller) ───
-
 export const OrderRoundBanner = styled('div')<{ compact?: boolean }>({
   textAlign: 'center',
   width: '100%',
@@ -217,8 +186,6 @@ export const OrderRoundBannerText = styled('p')({
   paintOrder: 'stroke fill',
   margin: 0,
 });
-
-// ─── Order Cards ───
 
 export const NatureCardsList = styled('div')<{ cardCount: number }>(({ cardCount }) => ({
   flex: 1,
@@ -298,8 +265,6 @@ export const OrderActionBar = styled('div')({
   paddingBottom: 'max(16px, env(safe-area-inset-bottom, 16px))',
 });
 
-// ─── Check Button (purple — matches Trivia ActionButton) ───
-
 export const NatureCheckButton = styled('button')<{ disabled?: boolean }>(({ disabled }) => ({
   background: disabled ? '#bdc3c7' : BTN_PURPLE,
   color: WHITE,
@@ -322,8 +287,6 @@ export const NatureCheckButton = styled('button')<{ disabled?: boolean }>(({ dis
     boxShadow: `0 0 0 ${BTN_PURPLE_DARK}`,
   } : {},
 }));
-
-// ─── Feedback (fixed center toast — matches Puzzle) ───
 
 export const OrderFeedbackFloater = styled('div')({
   position: 'fixed',
@@ -380,8 +343,6 @@ export const OrderPointsBadge = styled('div')({
   border: `2px solid ${BTN_GREEN}`,
 });
 
-// ─── Hint Button wrapper ───
-
 export const NatureHintWrapper = styled('div')({
   textAlign: 'center',
   marginBottom: 2,
@@ -395,10 +356,6 @@ export const NatureHintWrapper = styled('div')({
     transformOrigin: 'top center',
   },
 });
-
-// ═══════════════════════════════════════════
-// ─── Opening / Intro Screen (matches Trivia) ───
-// ═══════════════════════════════════════════
 
 export const IntroContainer = styled('div')({
   flex: 1,
@@ -490,8 +447,6 @@ export const FinishScoreOverlay = styled('div')({
   pointerEvents: 'none',
 });
 
-// ─── Intro Description (matches TrueFalse white card + overlapping button) ───
-
 const INTRO_DESC_PURPLE = '#4a148c';
 const INTRO_DESC_PANEL_BG = '#f8f8ff';
 
@@ -556,8 +511,6 @@ export const IntroStartButton = styled('button')({
   },
 });
 
-// ─── Legacy Instructions Card (used only for Golf Intro popup) ───
-
 export const InstructionsCard = styled('div')({
   background: 'rgba(255,255,255,0.85)',
   backdropFilter: 'blur(6px)',
@@ -584,8 +537,6 @@ export const InstructionsText = styled('p')({
   whiteSpace: 'pre-wrap',
 });
 
-// ─── Golf Intro Popup ───
-
 export const GOLF_INTRO_BG_URL = '/images/golf-intro-bg.jpeg';
 
 export const GolfIntroOverlay = styled('div')({
@@ -603,10 +554,6 @@ export const GolfIntroOverlay = styled('div')({
   backgroundRepeat: 'no-repeat',
   backgroundColor: '#e8a050',
 });
-
-// ═══════════════════════════════════════════
-// ─── Finish / Game Complete Screen ───
-// ═══════════════════════════════════════════
 
 export const FinishContainer = styled('div')({
   flex: 1,
@@ -808,8 +755,6 @@ export const FinishYoozLogo = styled('div')({
   color: FINISH_PURPLE,
   letterSpacing: 2,
 });
-
-// ─── Golf-specific nature theme ───
 
 export const GOLF_COLORS = {
   BG_TOP,

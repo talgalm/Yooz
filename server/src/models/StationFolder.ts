@@ -1,12 +1,10 @@
 import { Schema, model, Types } from 'mongoose';
 import { FOLDER_COLOR_HEXES, DEFAULT_FOLDER_COLOR } from './ActivityFolder';
 
-/** Folders for organizing Stations in the admin Stations tab. Parallel to ActivityFolder
- *  (same shape, separate collection). Colors share the FOLDER_COLOR_HEXES palette. */
 export interface IStationFolder {
   _id: Types.ObjectId;
   name: string;
-  color: string; // hex, one of FOLDER_COLOR_HEXES
+  color: string;
   createdByEmail?: string;
   order: number;
   createdAt: Date;

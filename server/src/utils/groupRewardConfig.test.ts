@@ -1,4 +1,3 @@
-// ponytail: self-check, run with `npx tsx server/src/utils/groupRewardConfig.test.ts`
 import assert from 'node:assert';
 import { cloudinaryAttachmentUrl } from './groupRewardConfig';
 

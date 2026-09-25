@@ -6,7 +6,7 @@ export type PortalUserStatus = 'pending' | 'approved' | 'denied';
 export interface IPortalUser {
   _id?: Types.ObjectId;
   username: string;
-  password: string; // bcrypt hash
+  password: string;
   status: PortalUserStatus;
   mustChangePassword?: boolean;
   createdAt: Date;
@@ -15,13 +15,13 @@ export interface IPortalUser {
 export interface IPortal {
   _id: Types.ObjectId;
   name: string;
-  code: string; // unique URL slug for portal access
+  code: string;
   description?: string;
   users: IPortalUser[];
   activities: Types.ObjectId[];
   createdAt: Date;
   createdByEmail?: string;
-  inviteToken?: string; // secret token for auto-approve self-registration link
+  inviteToken?: string;
 }
 
 function generatePortalCode(): string {
@@ -42,7 +42,6 @@ const portalUserSchema = new Schema<IPortalUser>({
   createdAt: { type: Date, default: Date.now },
 });
 
-// Hash password before saving
 portalUserSchema.pre('validate', async function () {
   if (this.isModified('password') && this.password && !this.password.startsWith('$2')) {
     this.password = await bcrypt.hash(this.password, 10);

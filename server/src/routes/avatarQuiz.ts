@@ -1,17 +1,3 @@
-/**
- * avatarQuiz — the character asks, the participant answers in free text, and
- * this endpoint judges the answer.
- *
- * The AI never invents content: every question, ideal answer and teaching
- * point comes from the admin's config. Gemini only *judges* and *phrases*.
- * That's why the station still works end to end with no API key — the
- * keyword fallback (§judgeLocally) produces the same verdict shape, just in
- * less natural wording.
- *
- * The request carries `stationId` + `questionIndex` rather than the settings
- * themselves: `idealAnswer` must never reach the browser, or participants
- * could read the answer key out of DevTools before answering.
- */
 import { Router, Request, Response } from 'express';
 import { Types } from 'mongoose';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
@@ -30,8 +16,6 @@ const isRateLimited = createRateLimiter({
   perAnonymous: 20,
   perAddress: 200,
 });
-
-// ─── Types ───
 
 export type Verdict = 'correct' | 'partial' | 'incorrect' | 'unrelated';
 
@@ -79,12 +63,6 @@ interface Judgement {
 
 const MAX_FIELD_CHARS = 400;
 
-/**
- * Stock reactions for the no-AI path. Picked by answer length so a participant
- * doesn't read the same sentence after every question. Deliberately NOT taken
- * from `outroText` — that is the station's closing line, and using it here made
- * the character say "יפה. עכשיו בוא/י נראה..." after every single wrong answer.
- */
 const STOCK_REACTIONS = {
   correct: [
     'בדיוק. זה בדיוק מה שצריך לעשות.',
@@ -108,16 +86,12 @@ function stockReaction(kind: keyof typeof STOCK_REACTIONS, answer: string): stri
   return pool[answer.length % pool.length];
 }
 
-/** Said when a follow-up can't be answered (no GEMINI_API_KEY, or the call failed). */
 const FOLLOW_UP_UNAVAILABLE = 'אין לי אפשרות להרחיב על זה כרגע.';
 
-/** "I don't know" style answers — judged `unrelated` without burning a retry. */
 const DONT_KNOW_PATTERNS = [
   'לא יודע', 'לא יודעת', 'אין לי מושג', 'לא בטוח', 'לא בטוחה',
   'לא רעיון', 'אני לא יודע', 'no idea', 'dont know', "don't know", 'idk',
 ];
-
-// ─── System prompt ───
 
 function buildSystemPrompt(settings: AvatarQuizSettings, question: AvatarQuizQuestion, lang: string): string {
   const lines: string[] = [];
@@ -208,8 +182,6 @@ function buildSystemPrompt(settings: AvatarQuizSettings, question: AvatarQuizQue
   return lines.join('\n');
 }
 
-// ─── Gemini ───
-
 async function judgeWithGemini(
   settings: AvatarQuizSettings,
   question: AvatarQuizQuestion,
@@ -228,7 +200,7 @@ async function judgeWithGemini(
     contents: [...priorTurns, { role: 'user', parts: [{ text: answer }] }],
     systemInstruction: { parts: [{ text: buildSystemPrompt(settings, question, lang) }] },
     generationConfig: {
-      temperature: 0.3, // judging should be consistent, not creative
+      temperature: 0.3,
       maxOutputTokens: 300,
       responseMimeType: 'application/json',
       responseSchema: {
@@ -282,8 +254,6 @@ async function judgeWithGemini(
         verdict
       ),
       reaction: reaction.slice(0, MAX_FIELD_CHARS),
-      // Never leave the participant without the lesson, even if the model
-      // skipped it — that's the whole point of the station.
       teaching: (teaching || question.teachingPoint).slice(0, MAX_FIELD_CHARS),
     };
   } finally {
@@ -297,12 +267,9 @@ function clampRatio(value: unknown, verdict: Verdict): number {
   return Math.min(1, Math.max(0, value));
 }
 
-// ─── No-AI fallback (required, not nice-to-have) ───
-
 function judgeLocally(question: AvatarQuizQuestion, answer: string): Judgement {
   const teaching = question.teachingPoint;
 
-  // "I don't know" → unrelated, no retry offered, lesson still taught.
   if (DONT_KNOW_PATTERNS.some((p) => containsPhrase(answer, p))) {
     return {
       verdict: 'unrelated',
@@ -312,11 +279,6 @@ function judgeLocally(question: AvatarQuizQuestion, answer: string): Judgement {
     };
   }
 
-  // Two directions, because they answer different questions:
-  //   recall    — how much of the ideal answer they reproduced
-  //   onTopic   — how much of what they wrote also appears in the ideal answer
-  // A short, correct answer scores near zero on recall against a long ideal
-  // answer, which is why the old recall-only rule graded good answers wrong.
   const recall = coverage(question.idealAnswer, answer);
   const onTopic = coverage(answer, question.idealAnswer);
   const answerLength = tokens(answer).length;
@@ -325,9 +287,6 @@ function judgeLocally(question: AvatarQuizQuestion, answer: string): Judgement {
   const keywordHit = keywords.some((k) => containsPhraseNear(answer, k));
 
   if (keywordHit || recall >= 0.5 || (answerLength >= 3 && onTopic >= 0.75)) {
-    // Correct is a band, not a fixed 100. A bare keyword ("לא לוחץ") starts at
-    // 70; the score climbs toward 100 as more of the ideal answer is actually
-    // covered, so a terse right answer no longer scores the same as a full one.
     return {
       verdict: 'correct',
       scoreRatio: Math.min(1, Math.max(0.7, 0.7 + recall * 0.6)),
@@ -339,8 +298,6 @@ function judgeLocally(question: AvatarQuizQuestion, answer: string): Judgement {
   if (recall >= 0.25 || (answerLength >= 3 && onTopic >= 0.5)) {
     return {
       verdict: 'partial',
-      // Coverage is already a continuous measure — surface it instead of a flat
-      // half mark, so the offline path also grades with some granularity.
       scoreRatio: Math.min(0.8, Math.max(0.3, Math.max(recall, onTopic * 0.8))),
       reaction: stockReaction('partial', answer),
       teaching,
@@ -367,15 +324,6 @@ function judgeLocally(question: AvatarQuizQuestion, answer: string): Judgement {
   };
 }
 
-// ─── Follow-up conversation ───
-
-/**
- * Free-form follow-up about the question just answered.
- *
- * The station is loaded server-side, so this prompt sits next to the whole
- * answer key — the fencing rules below are what stop "what are the answers to
- * the rest?" from ending the quiz on the first message.
- */
 function buildFollowUpPrompt(settings: AvatarQuizSettings, question: AvatarQuizQuestion): string {
   const lines: string[] = [];
   const name = settings.characterName?.trim();
@@ -452,8 +400,6 @@ async function answerFollowUp(
   }
 }
 
-// ─── Route ───
-
 router.post('/', async (req: Request, res: Response) => {
   if (isRateLimited(req)) {
     res.status(429).json({ error: 'Too many requests. Please try again later.' });
@@ -504,10 +450,6 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   if (isFollowUp) {
-    // Replaying `teachingPoint` here reads as if she is re-answering the last
-    // question rather than responding to what was asked — better to say plainly
-    // that she can't expand right now. Follow-ups are the one feature that is
-    // genuinely inert without a key.
     const fallback = async () =>
       res.json({
         reply: await translateText(FOLLOW_UP_UNAVAILABLE, readLang(req)),

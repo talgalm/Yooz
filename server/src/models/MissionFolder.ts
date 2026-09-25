@@ -1,8 +1,6 @@
 import { Schema, model, Types } from 'mongoose';
 import { FOLDER_COLOR_HEXES, DEFAULT_FOLDER_COLOR } from './ActivityFolder';
 
-/** Folders for organizing Missions in the admin Missions sub-tab. Parallel to ActivityFolder /
- *  StationFolder (same shape, separate collection). Shares the FOLDER_COLOR_HEXES palette. */
 export interface IMissionFolder {
   _id: Types.ObjectId;
   name: string;

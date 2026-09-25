@@ -6,7 +6,6 @@ import LangDrawer from '../../components/LangDrawer';
 import { texts } from './PublicityPage.i18n';
 import type { SiteContent, LocalizedText } from '../../types/publicity';
 
-// ─── Brand palette (matches the system + the deck's geometric drawings) ───
 const PURPLE = '#390363';
 const PURPLE_LIGHT = '#6c2fb0';
 const TEAL = '#2ec4b6';
@@ -15,7 +14,6 @@ const BLUE = '#2f9bd6';
 
 const fadeUp = keyframes`from { opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);}`;
 
-// ─── Decorative low-poly "drawings" (like the deck's geometric frame) ───
 function GeoDecor({ flip = false }: { flip?: boolean }) {
   return (
     <DecorSvg viewBox="0 0 400 400" style={flip ? { transform: 'scaleX(-1)' } : undefined} aria-hidden>
@@ -30,7 +28,6 @@ function GeoDecor({ flip = false }: { flip?: boolean }) {
   );
 }
 
-// ─── Infinity loop behind the 3 boosters (like the deck's engine graphic) ───
 function InfinityGraphic() {
   return (
     <InfinitySvg viewBox="0 0 600 240" aria-hidden>
@@ -53,7 +50,6 @@ function InfinityGraphic() {
   );
 }
 
-// ─── Layout ───
 const Page = styled('div')({ background: '#fff', color: PURPLE, minHeight: '100dvh' });
 
 const Nav = styled('nav')({
@@ -124,7 +120,6 @@ const SectionIntro = styled('p')({
   margin: '0 auto 40px',
 });
 
-// Hero
 const Hero = styled('div')({
   position: 'relative',
   overflow: 'hidden',
@@ -192,7 +187,6 @@ const DecorSvg = styled('svg')({
   '@media (max-width: 700px)': { width: 180, height: 180, opacity: 0.55 },
 });
 
-// Audiences
 const Grid = styled('div')({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
@@ -217,7 +211,6 @@ const CardDesc = styled('p')({ fontSize: 15, lineHeight: 1.6, color: '#5a4a72', 
 const ProjectList = styled('ul')({ margin: '14px 0 0', paddingInlineStart: 18, color: '#5a4a72', fontSize: 14, lineHeight: 1.7 });
 const ProjectLink = styled('a')({ color: PURPLE_LIGHT, fontWeight: 700, textDecoration: 'none' });
 
-// Engine
 const EngineWrap = styled('div')({ position: 'relative' });
 const InfinitySvg = styled('svg')({
   position: 'absolute',
@@ -257,11 +250,9 @@ const BoosterTitle = styled('h3')({ fontSize: 20, fontWeight: 900, margin: '0 0 
 const BoosterSub = styled('div')({ fontSize: 15, fontWeight: 700, color: PURPLE_LIGHT, marginBottom: 10 });
 const BoosterDesc = styled('p')({ fontSize: 14, lineHeight: 1.6, color: '#5a4a72', margin: 0 });
 
-// Customers
 const LogoRow = styled('div')({ display: 'flex', flexWrap: 'wrap', gap: 28, justifyContent: 'center', alignItems: 'center' });
 const LogoImg = styled('img')({ height: 56, objectFit: 'contain', filter: 'grayscale(0.2)' });
 
-// Contact
 const ContactSection = styled('section')({ background: PURPLE, color: '#fff', padding: '72px 24px' });
 const ContactInner = styled('div')({ maxWidth: 900, margin: '0 auto' });
 const ContactTitle = styled('h2')({ fontSize: 40, fontWeight: 900, textAlign: 'center', margin: '0 0 8px' });
@@ -352,7 +343,6 @@ export default function PublicityPage() {
         <NavLogo src={content.brandLogoUrl || '/images/logo-purple.png'} alt="Yooz" />
       </Nav>
 
-      {/* Hero */}
       <Hero>
         <GeoDecor />
         <HeroInner>
@@ -368,7 +358,6 @@ export default function PublicityPage() {
         </HeroInner>
       </Hero>
 
-      {/* Audiences */}
       {audiences.length > 0 && (
         <Section id="audiences">
           <SectionTitle>{t.navAudiences}</SectionTitle>
@@ -400,7 +389,6 @@ export default function PublicityPage() {
         </Section>
       )}
 
-      {/* Engine */}
       <Section id="engine">
         <SectionTitle>{L(engine.title)}</SectionTitle>
         <SectionIntro>{L(engine.intro)}</SectionIntro>
@@ -421,7 +409,6 @@ export default function PublicityPage() {
         </EngineWrap>
       </Section>
 
-      {/* Customers */}
       {customers.logos.length > 0 && (
         <Section id="customers">
           <SectionTitle>{L(customers.title) || t.navCustomers}</SectionTitle>
@@ -438,7 +425,6 @@ export default function PublicityPage() {
         </Section>
       )}
 
-      {/* Contact */}
       <ContactSection id="contact">
         <ContactInner>
           <ContactTitle>{L(contact.title) || t.navContact}</ContactTitle>

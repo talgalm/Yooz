@@ -1,11 +1,3 @@
-/**
- * Overwrite the singleton publicity-site content with DEFAULT_SITE_CONTENT
- * (the texts/examples from the deck). Run this once after editing the defaults.
- *
- * WARNING: replaces the existing doc — any edits made in the admin tab are lost.
- *
- * Usage: npx tsx src/scripts/seedSiteContent.ts
- */
 import mongoose from 'mongoose';
 import { MONGODB_URI } from '../config';
 import { SiteContent, DEFAULT_SITE_CONTENT } from '../models';

@@ -65,8 +65,6 @@ import type { GameResult } from '../../components/games/types';
 import type { ModuleItemData, GameItemData, StationItemData, MissionItemData, GameData, CustomThemeData } from './types';
 import { getHeaderIconColor } from './roadmapThemes';
 
-// ─── Local styled components ───
-
 const pageFadeIn = keyframes`
   from {
     opacity: 0;
@@ -161,7 +159,6 @@ const StationTopLayout = styled('div')({
   },
 });
 
-/** Video/image stations — compact header + media on desktop so content fits one screen. */
 const MediaStationLayout = styled(StationTopLayout)({
   [DESKTOP_BREAKPOINT]: {
     padding: '22px 24px 160px',
@@ -211,10 +208,6 @@ const FixedContinueButton = styled(StationContinueButton)({
   },
 });
 
-/** Floating clue button (lightbulb) for info/media stations — sits in the
- *  bottom-left corner, clear of the centered Continue button. */
-/** Clue button (lightbulb + label) for info/media stations. Sits centered in
- *  the lower-middle of the station, above the centered Continue button. */
 const StationClueButton = styled('button')({
   position: 'fixed',
   bottom: 96,
@@ -317,8 +310,6 @@ const ModalCloseButton = styled(PrimaryButton)({
   fontSize: 14,
 });
 
-// ─── Media gate — shows spinner until all URLs are loaded ───
-
 const MediaLoadRetry = styled('div')({
   display: 'flex',
   flexDirection: 'column',
@@ -360,8 +351,6 @@ function MediaGateWrapper({
   return <GameLoadingSpinner />;
 }
 
-// ─── Component ───
-
 interface PlayingPhaseProps {
   currentItem: ModuleItemData;
   currentItemIndex: number;
@@ -390,9 +379,7 @@ interface PlayingPhaseProps {
   onConfirmStationHint: () => void;
   onCloseHintWarning: () => void;
   onCloseHintText: () => void;
-  /** Called when the EnteringText "show solution" hint is confirmed — applies the 4-min time penalty. */
   onEnteringTextSolutionHintUsed: () => void;
-  /** Running total minus hint penalties — same basis as roadmap / finish. */
   currentPoints: number;
   popupModal: React.ReactNode;
   t: Record<string, string>;
@@ -639,7 +626,6 @@ export default function PlayingPhase({
         );
       }
 
-      // Unknown station type fallback
       return (
         <StationTopLayout>
           <StationWindow style={{ marginTop: 16 }}>
@@ -652,7 +638,6 @@ export default function PlayingPhase({
       );
     }
 
-    // Game item
     const gameItem = currentItem as GameItemData;
     const gameData: GameData = {
       _id: gameItem._id,
@@ -730,7 +715,6 @@ export default function PlayingPhase({
       );
     }
 
-    // Unknown game type fallback
     return (
       <CenteredContent>
         <BodyText>Unknown game type: {gameData.type}</BodyText>
@@ -777,8 +761,6 @@ export default function PlayingPhase({
     />
   );
 
-  // Floating clue button for info/media stations (text, video, image, narrative,
-  // badge). Riddle/enteringText render their own clue UI, so they're excluded.
   const stationClueButton =
     (stationHintText || stationHintImageUrl) && !isEnteringTextStation && !isRiddleStation ? (
       <StationClueButton type="button" onClick={onStationHintClick}>
@@ -831,12 +813,10 @@ export default function PlayingPhase({
     </>
   );
 
-  // Missions and collage stations render their own full-screen layout
   if (currentItem.type === 'mission') {
     return renderContent();
   }
 
-  // Ball game renders its own full-screen fixed layout with a custom 3D room background
   if (currentItem.type === 'game' && (currentItem as GameItemData).gameType === 'ballGame') {
     return (
       <>
@@ -877,8 +857,6 @@ export default function PlayingPhase({
     </ThemedBackground>
   );
 }
-
-// ─── Image Station with media preloading ───
 
 function ImageStationDisplay({ station, onContinue, t, textColor }: {
   station: StationItemData;
@@ -938,8 +916,6 @@ function ImageStationDisplay({ station, onContinue, t, textColor }: {
   );
 }
 
-// ─── Video Station with replay + conditional continue ───
-
 const ReplayOverlay = styled('button')({
   position: 'absolute',
   top: 0,
@@ -966,7 +942,6 @@ const ReplayIcon = styled('div')({
   boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
 });
 
-/** Escape hatch for the watch-to-the-end gate. Sits centred just below the video. */
 const SkipVideoButton = styled('button')({
   alignSelf: 'center',
   marginTop: 16,
@@ -993,8 +968,6 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
   const [videoEnded, setVideoEnded] = useState(false);
   const source = resolveVideoSource(station.settings?.mediaUrl as string);
 
-  // Embedded players (YouTube/Vimeo iframes) don't expose an 'ended' event, so we
-  // can't gate on them — only direct <video> playback blocks Continue until the end.
   const canContinue = source.kind === 'iframe' || videoEnded;
 
   const handleEnded = useCallback(() => {

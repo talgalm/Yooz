@@ -16,20 +16,14 @@ interface Sector {
   photo: string;
 }
 
-/** DOM order renders right-to-left under RTL, so business is the rightmost tile. */
 const SECTORS: Sector[] = [
   { key: 'business', path: '/business', photo: '/images/marketing/sector-business.jpg' },
   { key: 'tourism', path: '/tourism', photo: '/images/marketing/sector-tourism.jpg' },
   { key: 'academy', path: '/academy', photo: '/images/marketing/sector-academy.jpg' },
 ];
 
-/** Only devices that can hover get the widen-on-hover; a tablet keeps three even tiles. */
 const HOVER = '@media (hover: hover) and (min-width: 701px)';
 
-/**
- * Hovering one tile dims the other two, so the row reads as a choice. The rule
- * lives on the row because a tile cannot see its siblings' hover state.
- */
 const Row = styled('div')({
   display: 'flex',
   gap: 16,
@@ -38,7 +32,6 @@ const Row = styled('div')({
   [HOVER]: {
     '&:hover > a:not(:hover) img': { filter: 'saturate(0.5) brightness(0.72)' },
   },
-  /** Stacked on a phone: three side-by-side tiles leave no room for the tagline. */
   [BP.mobile]: { flexDirection: 'column', height: 'auto', gap: 12 },
 });
 
@@ -75,7 +68,6 @@ const Photo = styled('img')({
   [REDUCED_MOTION]: { transition: 'none' },
 });
 
-/** Vertical, so it carries no reading direction and needs no RTL mirror. */
 const Shade = styled('span')({
   position: 'absolute',
   inset: 0,
@@ -83,7 +75,6 @@ const Shade = styled('span')({
     'linear-gradient(to top, rgba(56,8,80,0.88) 0%, rgba(56,8,80,0.42) 42%, rgba(56,8,80,0) 72%)',
 });
 
-/** Text at the inline start, arrow at the inline end - so under RTL the arrow sits bottom left. */
 const Foot = styled('span')({
   position: 'absolute',
   insetInline: 24,
@@ -127,11 +118,6 @@ const ArrowDisc = styled('span')({
   [REDUCED_MOTION]: { transition: 'none' },
 });
 
-/**
- * The sector chooser: a question, then three photo tiles, each a link into its
- * sector page. The home page stays a teaser on purpose - the sector detail
- * lives on those pages, and the tiles are what sends visitors there.
- */
 export default function SectorPicker() {
   const t = useTranslations(texts);
   const nav = useTranslations(navTexts);
@@ -139,7 +125,6 @@ export default function SectorPicker() {
   return (
     <Band style={{ background: SECTORS_GRADIENT, paddingBlock: '88px 96px' }}>
       <Container>
-        {/* No intro line under it any more, so the heading carries the gap to the tiles itself. */}
         <H2 style={{ marginBottom: 'clamp(28px, 3.4vw, 44px)' }}>{t.title}</H2>
 
         <Reveal>

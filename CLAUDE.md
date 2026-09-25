@@ -98,9 +98,9 @@ Each has its own React context (`AdminAuthContext`, `AuthContext`, `ManagerAuthC
   Verified by adding a third language (Arabic, RTL) and running the gate: nothing else changed.
 - **Game configs live in `game.settings`** as `Record<string, unknown>` server-side, typed per game type client-side. When adding a new game type, add the settings interface in `server/src/types/index.ts`, the type to `validTypes` in `AdminGameConfigPage/index.tsx`, and the matching config form beside it. (`StationType` is a real union, but it lives in `server/src/models/Station.ts`.)
 - **No comments in code.** Say it with a name — a well-named function, variable or type. The
-  why of a change goes in the commit message, how the system works goes in MEMORY.md. ~4,800
-  comments across 405 files predate the rule and are held per file by the baseline; a file may
-  lose comments but never gain one, and a new file starts at zero.
+  why of a change goes in the commit message, how the system works goes in MEMORY.md. The
+  codebase is at zero, so a single comment fails the gate. Only `@ts-` directives and
+  `/// <reference>` are allowed; there is no ESLint, so `eslint-disable` lines do nothing.
 - **SVG never sits inline in a component.** Static art goes in a `.svg` asset under `client/public` (85 already there); anything parameterised by props, colour or state goes in a sibling `*.icons.tsx`, the same co-location shape as `*.i18n.ts`. 131 inline tags predate the rule and are held at their current count by the baseline — leave them or drain them, but do not add to them.
 - **Drag-and-drop is hand-rolled** (HTML5 drag API + tap-to-swap fallback for touch). No dnd library — match this pattern if adding a new draggable game.
 - **API surface convention**: admin endpoints under `/api/admin/*` require admin JWT; manager endpoints under `/api/manager/*` require manager JWT; participant endpoints under `/api/activities/:code/*` are mostly public, except `/scores` which needs participant JWT.

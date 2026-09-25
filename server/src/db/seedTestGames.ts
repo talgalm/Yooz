@@ -1,11 +1,3 @@
-/**
- * Seed script: creates test Order game, test Trivia game, a text station, and an activity with mixed items.
- *
- * Usage: npx tsx server/src/db/seedTestGames.ts
- *
- * Requires: server must NOT be running (or use a different approach).
- * This script connects directly to MongoDB and creates the data.
- */
 
 import { connectDB } from './connection';
 import { Game, Station, Activity } from '../models';
@@ -14,7 +6,6 @@ async function seed() {
   await connectDB();
   console.log('Connected to MongoDB');
 
-  // 1. Create Order Game
   const orderGame = await Game.create({
     name: 'Test Order Game',
     type: 'order',
@@ -41,7 +32,6 @@ async function seed() {
   });
   console.log(`Created Order game: ${orderGame._id}`);
 
-  // 2. Create Trivia Game
   const triviaGame = await Game.create({
     name: 'Test Trivia Game',
     type: 'trivia',
@@ -90,7 +80,6 @@ async function seed() {
   });
   console.log(`Created Trivia game: ${triviaGame._id}`);
 
-  // 3. Create a text station
   const station = await Station.create({
     name: 'Welcome Info',
     type: 'text',
@@ -99,7 +88,6 @@ async function seed() {
   });
   console.log(`Created Station: ${station._id}`);
 
-  // 4. Create Activity with mixed items (station + games)
   const activity = await Activity.create({
     name: 'Test Activity',
     loginFields: ['name'],

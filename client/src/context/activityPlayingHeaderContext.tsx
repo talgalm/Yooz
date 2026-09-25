@@ -22,7 +22,6 @@ const ActivityPlayingHeaderSetSlotContext = createContext<
   Dispatch<SetStateAction<ActivityGameHeaderSlot | null>> | null
 >(null);
 
-/** Wrap playing-phase layout so games can register music / phase for the sticky header. */
 export function ActivityPlayingHeaderProvider({ children }: { children: ReactNode }) {
   const [slot, setSlot] = useState<ActivityGameHeaderSlot | null>(null);
   return (
@@ -38,15 +37,10 @@ export function useActivityPlayingHeaderSlot(): ActivityGameHeaderSlot | null {
   return useContext(ActivityPlayingHeaderSlotContext);
 }
 
-/** True when rendered inside `ActivityPlayingHeaderProvider` (activity play flow — not admin preview). */
 export function useActivityPlayingHeaderHostActive(): boolean {
   return useContext(ActivityPlayingHeaderSetSlotContext) != null;
 }
 
-/**
- * Publishes mute + phase to the activity header. Unregisters on unmount.
- * When `hostActive` is false, does nothing (e.g. game preview modal).
- */
 export function useRegisterActivityGameHeader(
   hostActive: boolean,
   phase: ActivityGameHeaderPhase,
@@ -72,10 +66,6 @@ export function useRegisterActivityGameHeader(
   }, [hostActive, phase, isMuted, setSlot]);
 }
 
-/**
- * When the current step is a game but no child registers a slot (e.g. unknown game type),
- * installs a noop music slot so the header still shows the music control instead of leaderboard.
- */
 export function useActivityGameHeaderFallbackWhenNeeded(enabled: boolean, itemKey: string) {
   const setSlot = useContext(ActivityPlayingHeaderSetSlotContext);
   const fallbackRef = useRef<ActivityGameHeaderSlot | null>(null);

@@ -35,13 +35,6 @@ const Cell = styled('label')({
 const Effective = styled('span')({ fontSize: 13, minWidth: 120 });
 const Note = styled('div')({ padding: '10px 16px', fontSize: 12.5, color: TEXT_LIGHT, background: '#faf9fd' });
 
-/**
- * What each person costs per hour — the input every profit figure rests on.
- *
- * Saves on blur rather than behind a Save button: it is a grid of numbers people
- * tweak, and a form ceremony per cell is friction for no safety gain.
- * Editing a rate never restates history; existing entries keep their snapshot.
- */
 export default function RatesPanel() {
   const t = useTranslations(texts);
   const [rates, setRates] = useState<Rate[]>([]);

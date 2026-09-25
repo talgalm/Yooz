@@ -55,8 +55,6 @@ const Ghost = styled('button')({
   cursor: 'pointer',
 });
 
-/** Beyond this, offer the manual override: GPS under tree canopy or between
- *  tall buildings can simply refuse, and a walk must never deadlock on it. */
 const MANUAL_OVERRIDE_M = 40;
 
 interface Props {
@@ -71,11 +69,6 @@ interface Props {
   t: Record<string, string>;
 }
 
-/**
- * The map a participant walks. Shows their own position, the station they are
- * heading to, and every *other* team's marker — teammates are deliberately
- * absent, since the group moves together and shares one marker of its own.
- */
 export default function MapView({
   items,
   currentItemIndex,
@@ -102,8 +95,6 @@ export default function MapView({
   const target = items[currentItemIndex]?.location;
   const distance = fix && target ? distanceMeters(fix, target) : null;
 
-  // Load the map once. Re-creating it on every target change would throw away
-  // the pan and zoom the participant just did with their thumb.
   useEffect(() => {
     if (!isMapsAvailable()) {
       setMapsError(true);
@@ -134,8 +125,6 @@ export default function MapView({
     };
   }, []);
 
-  // Station pins: the one being walked to, plus the ones already done. Stations
-  // the team has not reached stay hidden, so the map does not hand out the route.
   useEffect(() => {
     const maps = window.google?.maps;
     if (!maps || !mapRef.current) return;
@@ -159,14 +148,12 @@ export default function MapView({
             strokeColor: '#fff',
             strokeWeight: 3,
           },
-          // The target bounces once it is in reach — the "you are here" cue.
           animation: isTarget && arrived ? maps.Animation.BOUNCE : null,
         }),
       ];
     });
   }, [items, currentItemIndex, completedIndices, arrived]);
 
-  // Own position.
   useEffect(() => {
     const maps = window.google?.maps;
     if (!maps || !mapRef.current || !fix) return;
@@ -189,8 +176,6 @@ export default function MapView({
     meMarker.current.setPosition(fix);
   }, [fix, t.mapYou]);
 
-  // Other teams. A team whose position went stale drops off the map rather than
-  // lingering at a place it left ten minutes ago.
   useEffect(() => {
     const maps = window.google?.maps;
     if (!maps || !mapRef.current) return;
@@ -229,9 +214,6 @@ export default function MapView({
     }
   }, [others]);
 
-  // Walking route. Recomputed only when the target changes or the participant
-  // has drifted ~100m from where the last one was drawn — Directions is billed
-  // per call, and redrawing on every GPS tick would bill on every GPS tick.
   useEffect(() => {
     const maps = window.google?.maps;
     if (!maps || !started || !fix || !target || !renderer.current) return;
@@ -242,11 +224,9 @@ export default function MapView({
       .route({ origin: fix, destination: target, travelMode: maps.TravelMode.WALKING })
       .then((result) => renderer.current?.setDirections(result))
       .catch(() => {
-        /* No walking route (inside a park or a mall): the pins still show the way. */
       });
   }, [started, fix, target, currentItemIndex]);
 
-  // Arrival. Hysteresis needs the previous answer, hence the functional update.
   useEffect(() => {
     if (!fix || !target) return;
     setArrived((was) => hasArrived(fix, target, proximityMeters, was));

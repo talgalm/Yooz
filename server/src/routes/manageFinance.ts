@@ -18,13 +18,6 @@ import {
 const router = Router();
 router.use(authenticateManage);
 
-/**
- * EVERYTHING in this file is owner-only, enforced at the router.
- *
- * This is a route-level gate, not output filtering: a pm hitting /expenses gets
- * 403 rather than an empty list, so there is no shape of request that returns a
- * cost figure to anyone else.
- */
 router.use(requireManageRole('owner'));
 
 function badId(res: Response, id: string): boolean {
@@ -32,8 +25,6 @@ function badId(res: Response, id: string): boolean {
   res.status(400).json({ error: 'invalid_id' });
   return true;
 }
-
-// ─── Expenses ───
 
 router.get('/expenses', async (req: Request, res: Response) => {
   const { projectId, category } = req.query as Record<string, string | undefined>;
@@ -112,8 +103,6 @@ router.delete('/expenses/:id', async (req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
-// ─── Project profitability ───
-
 router.get('/project/:id', async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
   const project = await Project.findById(String(req.params.id)).lean();
@@ -136,15 +125,11 @@ router.get('/project/:id', async (req: Request, res: Response) => {
     actualHours: hours[id] ?? 0,
   });
 
-  // Both views, side by side — "is this month profitable" and "was the whole
-  // engagement worth it" are different questions and both get asked.
   const month = (req.query.month as string) || new Date().toISOString().slice(0, 7);
   const monthly = await projectMonthMoney(project as never, month);
 
   res.json({ cumulative: money, monthly, actualHours: hours[id] ?? 0 });
 });
-
-// ─── Change requests ───
 
 router.get('/change-requests', async (req: Request, res: Response) => {
   const { projectId, status } = req.query as Record<string, string | undefined>;
@@ -177,13 +162,6 @@ router.post('/change-requests', async (req: Request, res: Response) => {
   res.status(201).json({ changeRequest: cr });
 });
 
-/**
- * Approving a change request grows the project's hour budget.
- *
- * This is what stops an approved scope increase from reading as an overrun.
- * `appliedToBudget` makes it idempotent — approving twice must not add the
- * hours twice, and status can legitimately move approved -> done -> approved.
- */
 router.patch('/change-requests/:id', async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
   const cr = await ChangeRequest.findById(String(req.params.id));
@@ -205,7 +183,6 @@ router.patch('/change-requests/:id', async (req: Request, res: Response) => {
       await Project.findByIdAndUpdate(cr.projectId, { $inc: { plannedHours: cr.estimatedHours } });
       cr.appliedToBudget = true;
     }
-    // Rejecting something already applied gives the hours back.
     if (next === 'rejected' && cr.appliedToBudget && cr.estimatedHours > 0) {
       await Project.findByIdAndUpdate(cr.projectId, { $inc: { plannedHours: -cr.estimatedHours } });
       cr.appliedToBudget = false;
@@ -225,7 +202,6 @@ router.delete('/change-requests/:id', async (req: Request, res: Response) => {
     res.status(404).json({ error: 'not_found' });
     return;
   }
-  // Take the budget back with it, or the project keeps hours nobody agreed to.
   if (cr.appliedToBudget && cr.estimatedHours > 0) {
     await Project.findByIdAndUpdate(cr.projectId, { $inc: { plannedHours: -cr.estimatedHours } });
   }
@@ -233,15 +209,6 @@ router.delete('/change-requests/:id', async (req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
-// ─── Payments received (payment milestones on a project) ───
-
-/**
- * What the client actually owes and has paid, per project.
- *
- * This is billing at PLANNING level only — an amount, a date, and two manual
- * checkboxes. The accounting software stays the source of truth for invoices;
- * duplicating it here would create two answers to "how much did they pay".
- */
 router.get('/payments', async (_req: Request, res: Response) => {
   const projects = await Project.find({ archived: false, 'paymentMilestones.0': { $exists: true } })
     .select('name clientId paymentMilestones').lean();
@@ -259,7 +226,6 @@ router.get('/payments', async (_req: Request, res: Response) => {
   const total = round2(rows.reduce((a, r) => a + r.amount, 0));
   const invoiced = round2(rows.filter((r) => r.invoiced).reduce((a, r) => a + r.amount, 0));
   const paid = round2(rows.filter((r) => r.paid).reduce((a, r) => a + r.amount, 0));
-  // Three different numbers, deliberately kept apart (needs doc §10).
   res.json({ payments: rows, total, invoiced, paid, outstanding: round2(invoiced - paid) });
 });
 
@@ -311,7 +277,6 @@ router.patch('/project/:id/payments/:milestoneId', async (req: Request, res: Res
     const d = new Date(body.plannedDate);
     m.plannedDate = Number.isNaN(d.getTime()) ? undefined : d;
   }
-  // Ticking the box stamps the date, so "when did they pay" is answerable later.
   if (typeof body.invoiced === 'boolean') {
     m.invoiced = body.invoiced;
     m.invoicedAt = body.invoiced ? (m.invoicedAt ?? new Date()) : undefined;
@@ -319,7 +284,6 @@ router.patch('/project/:id/payments/:milestoneId', async (req: Request, res: Res
   if (typeof body.paid === 'boolean') {
     m.paid = body.paid;
     m.paidAt = body.paid ? (m.paidAt ?? new Date()) : undefined;
-    // Money cannot arrive for something never billed.
     if (body.paid && !m.invoiced) { m.invoiced = true; m.invoicedAt = m.invoicedAt ?? new Date(); }
   }
   await project.save();
@@ -339,16 +303,6 @@ router.delete('/project/:id/payments/:milestoneId', async (req: Request, res: Re
   res.json({ paymentMilestones: project.paymentMilestones });
 });
 
-// ─── Employee cost rates ───
-
-/**
- * What each person costs per hour. This is the input the entire profitability
- * calculation rests on, and until now it only existed as seed data.
- *
- * It is a PRICING rate, not payroll: the system does not compute salaries or
- * produce payslips (spec ch.00). Changing it never restates history, because
- * every time entry keeps the rate it was written with.
- */
 router.get('/rates', async (_req: Request, res: Response) => {
   const users = await ManageUser.find({ active: true }).sort({ name: 1 })
     .select('name role hourlyCost employerCostFactor tracksTime').lean();
@@ -397,8 +351,6 @@ router.patch('/rates/:userId', async (req: Request, res: Response) => {
   });
 });
 
-// ─── The finance screen ───
-
 router.get('/summary', async (req: Request, res: Response) => {
   const month = (req.query.month as string) || new Date().toISOString().slice(0, 7);
   const projects = await Project.find({ archived: false }).lean();
@@ -433,8 +385,6 @@ router.get('/summary', async (req: Request, res: Response) => {
   });
 
   const clientRows = rows.filter((r) => r.type === 'client');
-  // Internal work and demos have no revenue by design — their cost IS the
-  // investment figure, and mixing them into margin would drag it meaningless.
   const internalRows = rows.filter((r) => r.type !== 'client');
 
   const totals = {
@@ -458,8 +408,6 @@ router.get('/summary', async (req: Request, res: Response) => {
 
   const mrr = mrrOf(projects as never);
 
-  // Contracts ending inside 90 days — the renewal conversation you want to have
-  // before the client has it for you.
   const soon = new Date();
   soon.setDate(soon.getDate() + (await getSettings()).thresholds.contractEndingDays);
   const endingSoon = projects

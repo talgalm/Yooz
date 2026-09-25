@@ -9,7 +9,6 @@ import { texts } from './ManageLayout.i18n';
 import TimerBar from '../TimerBar';
 import { PRIMARY, PRIMARY_LIGHT, BORDER, TEXT, TEXT_LIGHT } from '../../../components/styled';
 
-/** Below this the sidebar becomes an off-canvas drawer behind a hamburger. */
 const MOBILE = '@media (max-width: 900px)';
 const SIDEBAR_WIDTH = 220;
 
@@ -20,11 +19,6 @@ const Shell = styled('div')({
   fontFamily: 'Rubik, sans-serif',
 });
 
-/**
- * Open/closed is a static `[data-open]` rule, not a prop-conditional style:
- * a conditional transform inside a media query gives emotion two classes to
- * serialize, and the open one silently failed to inject under HMR.
- */
 const Sidebar = styled('aside')({
   width: SIDEBAR_WIDTH,
   flexShrink: 0,
@@ -40,17 +34,11 @@ const Sidebar = styled('aside')({
     insetInlineStart: 0,
     top: 0,
     zIndex: 30,
-    // A negative logical margin slides it off the inline-start edge, which is the
-    // right side in RTL and the left in LTR. No direction-specific rule to outrank.
-    // Closed simply isn't rendered. Sliding it with a logical offset was not
-    // worth it: margin-inline-start did not resolve reliably here, and a drawer
-    // that opens instantly is not a worse drawer.
     display: 'none',
     boxShadow: '0 0 40px rgba(0,0,0,0.18)',
   },
 });
 
-/** Inline style beats the media-query rule above, so open always wins. */
 const DRAWER_OPEN_STYLE = { display: 'flex' } as const;
 
 const Backdrop = styled('div')({
@@ -95,11 +83,6 @@ const NavItem = styled(NavLink)({
   [MOBILE]: { padding: '13px 18px' },
 });
 
-/**
- * Leaves /manage for the Yooz admin dashboard — a different auth realm, so it
- * never matches a route here and never picks up `.active`. Muted and fenced off
- * below a rule so it doesn't read as one more /manage section.
- */
 const BackItem = styled(NavItem)({
   display: 'flex',
   alignItems: 'center',
@@ -149,7 +132,6 @@ const Content = styled('div')({
   flexDirection: 'column',
 });
 
-/** Mobile-only bar: hamburger + current section, so the drawer is reachable. */
 const TopBar = styled('header')({
   display: 'none',
   [MOBILE]: {
@@ -201,15 +183,12 @@ export default function ManageLayout() {
   const { pathname } = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Navigating inside the drawer must close it, or the new screen stays covered.
   useEffect(() => setDrawerOpen(false), [pathname]);
 
   const visible = MANAGE_NAV.filter((i) => !i.ownerOnly || isOwner);
   const firstOwnerOnly = visible.find((i) => i.ownerOnly);
   const current = visible.find((i) => pathname === `/manage/${i.path}`);
 
-  // Hiding the link is not a gate — a typed URL mounted the page anyway, which
-  // then just failed on 403s. The server is still the real gate.
   if (MANAGE_NAV.some((i) => i.ownerOnly && !isOwner && pathname === `/manage/${i.path}`)) {
     return <Navigate to="/manage/my-work" replace />;
   }

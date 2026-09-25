@@ -41,7 +41,6 @@ export default function GroupCreatedSuccess({ activityCode, groupName, inviteUrl
         const data = await res.json() as GroupStatus;
         if (!cancelled) setStatus(data);
       } catch {
-        /* ignore poll errors */
       }
     };
 

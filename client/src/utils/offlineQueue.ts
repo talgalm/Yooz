@@ -1,8 +1,6 @@
 import { HttpError, isRetryableFetchError, retryDelayMs } from './fetchErrors';
 
 const STORAGE_KEY = 'yooz_offline_queue';
-// ponytail: 200 covers a full activity's worth of progress PATCHes + score POSTs.
-// Items are tiny JSON, 30 was dropping legit early-station progress silently.
 const MAX_QUEUE = 200;
 
 type QueuedWrite = {
@@ -10,8 +8,6 @@ type QueuedWrite = {
   method: string;
   body: string;
   queuedAt: number;
-  // Captured at enqueue time: exiting the activity clears yooz_token, and a
-  // queued write flushed after that would 401 forever and lose the scores.
   token?: string;
 };
 
@@ -49,7 +45,6 @@ function writeQueue(queue: QueuedWrite[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(queue.slice(-MAX_QUEUE)));
   } catch {
-    /* storage full */
   }
 }
 
@@ -82,10 +77,6 @@ async function sendQueuedRequest(item: QueuedWrite): Promise<void> {
   throw lastError;
 }
 
-/**
- * Queue a failed write. Progress PATCHes are appended in order so every
- * completed station is replayed. Scores POSTs dedupe by URL (latest wins).
- */
 export function enqueueOfflineRequest(url: string, options: RequestInit = {}): void {
   const method = (options.method || 'GET').toUpperCase();
   if (!isWriteMethod(method)) return;
@@ -132,10 +123,6 @@ export async function flushOfflineQueue(): Promise<void> {
       try {
         await sendQueuedRequest(item);
       } catch (err) {
-        // Only keep what can still succeed. A 4xx (bad payload, rejected token)
-        // fails identically forever — keeping it means retrying it every 20s for
-        // the life of the browser profile, and it keeps the finish screen's
-        // "save failed" banner up on every later run of the same activity.
         if (isRetryableFetchError(err)) remaining.push(item);
       }
     }

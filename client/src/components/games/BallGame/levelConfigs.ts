@@ -1,32 +1,20 @@
 import type { LevelConfig, LevelTheme, WallConfig } from './types';
 
-// Wall configs translated from the reference Phaser implementation
-// Positions are expressed as fractions of canvas width/height (0-1)
-
 const purpleWalls: WallConfig[] = [
-  // Bottom-right floor
   { x: 0.69, y: 0.95, width: 0.35, height: 0.02 },
-  // Left lower vertical
   { x: 0.04, y: 0.85, width: 0.02, height: 0.22 },
-  // Center partition
   { x: 0.36, y: 0.80, width: 0.02, height: 0.28 },
-  // Center lower vertical
   { x: 0.29, y: 0.85, width: 0.02, height: 0.22 },
 ];
 
 const orangeWalls: WallConfig[] = [
-  // Angled floor
   { x: 0.50, y: 0.82, width: 0.35, height: 0.02, angle: 0.175 },
-  // Right side vertical
   { x: 0.92, y: 0.85, width: 0.02, height: 0.22 },
-  // Right center vertical
   { x: 0.64, y: 0.85, width: 0.02, height: 0.22 },
 ];
 
 const greenWalls: WallConfig[] = [
-  // V-shape left arm
   { x: 0.35, y: 0.83, width: 0.02, height: 0.25, angle: -0.087 },
-  // V-shape right arm
   { x: 0.65, y: 0.80, width: 0.02, height: 0.25, angle: 0.087 },
 ];
 

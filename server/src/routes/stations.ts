@@ -6,13 +6,11 @@ import { Station, StationFolder } from '../models';
 
 const router = Router();
 
-// List all stations
 router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
   const stations = await Station.find(customerMongoFilter(req)).sort({ createdAt: -1 });
   res.json({ stations });
 });
 
-// Create station
 router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateStationRequest>, res: Response) => {
   const { name, type, description, customer, theme, settings } = req.body;
 
@@ -38,7 +36,6 @@ router.post('/', authenticateAdmin, async (req: Request<{}, {}, CreateStationReq
   res.status(201).json({ station });
 });
 
-// Get single station
 router.get('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const station = await Station.findById(req.params.id);
   if (!station) { res.status(404).json({ error: 'Station not found' }); return; }
@@ -46,7 +43,6 @@ router.get('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: 
   res.json({ station });
 });
 
-// Update station
 router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, CreateStationRequest>, res: Response) => {
   const { name, type, description, customer, theme, settings } = req.body;
 
@@ -80,7 +76,6 @@ router.put('/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, Cr
   res.json({ station });
 });
 
-// Move a station into a folder, or out to the ungrouped root (folderId: null).
 router.patch('/:id/folder', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const { folderId } = req.body as { folderId?: unknown };
   if (folderId !== null && typeof folderId !== 'string') {
@@ -109,7 +104,6 @@ router.patch('/:id/folder', authenticateAdmin, async (req: Request<{ id: string 
   res.json({ station });
 });
 
-// Duplicate station
 router.post('/:id/duplicate', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const existing = await Station.findById(req.params.id);
   if (!existing) { res.status(404).json({ error: 'Station not found' }); return; }
@@ -130,7 +124,6 @@ router.post('/:id/duplicate', authenticateAdmin, async (req: Request<{ id: strin
   res.status(201).json({ station });
 });
 
-// Delete station
 router.delete('/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const existing = await Station.findById(req.params.id);
   if (!existing) { res.status(404).json({ error: 'Station not found' }); return; }

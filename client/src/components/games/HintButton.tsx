@@ -23,9 +23,6 @@ interface HintButtonProps {
   onClick: () => void;
 }
 
-/**
- * Shared hint button that toggles between "Use Hint" and "Show Hint" labels.
- */
 export default function HintButton({ hintUsed, useHintLabel, showHintLabel, onClick }: HintButtonProps) {
   return (
     <HintButtonWrapper>

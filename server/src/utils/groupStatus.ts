@@ -19,8 +19,6 @@ export function resolveGroupMinMembers(activity: IActivity): number {
 export async function getGroupStatus(activity: IActivity, groupName: string): Promise<GroupStatus | null> {
   if (!groupName || activity.connectionType !== 'group') return null;
 
-  // Groups are day-scoped: a group name can repeat on different days, so member
-  // and completion counts only consider participants who joined today (Israel time).
   const reports = await Report.find(
     { activityId: activity._id, group: groupName, joinedAt: { $gte: startOfTodayIsrael() } },
     { completionStatus: 1 },

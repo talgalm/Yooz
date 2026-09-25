@@ -52,7 +52,6 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
     const [includeHelpers, setIncludeHelpers] = useState(true);
     const [multiChoice, setMultiChoice] = useState(false);
 
-    // Load initial settings
     useEffect(() => {
       if (!initialSettings) return;
       const s = initialSettings;
@@ -76,7 +75,7 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
         const rawTime = sc.timeLimitSeconds;
         const timeLimitSeconds = hasTimeKey
           ? Math.max(0, Number(rawTime) || 0)
-          : 0; // legacy games without the field had no per-question limit
+          : 0;
         setTriviaScoring({
           correctAnswerPoints: (sc.correctAnswerPoints as number) ?? 10,
           wrongAnswerPenalty: (sc.wrongAnswerPenalty as number) ?? 0,
@@ -178,7 +177,6 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
       },
     }));
 
-    // ─── Question management ───
     const addQuestion = () => {
       setQuestions((prev) => [
         ...prev,
@@ -228,7 +226,6 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
             ...q,
             answers: q.answers.map((a, j) => {
               if (j === ai) return { ...a, isCorrect };
-              // In single-choice mode, uncheck all others when marking one correct
               if (isCorrect && !multiChoice) return { ...a, isCorrect: false };
               return a;
             }),
@@ -239,7 +236,6 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
 
     return (
       <>
-        {/* Questions */}
         <div>
           <SectionSubHeaderRow>
             <SectionLabelNoMargin>{t.questions}</SectionLabelNoMargin>
@@ -286,7 +282,6 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
                 />
               </MediaUploadRow>
 
-              {/* Answers */}
               <SubLabel>
                 {t.answers}
               </SubLabel>
@@ -342,7 +337,6 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
           ))}
         </div>
 
-        {/* Scoring */}
         <div>
           <SectionLabel>{t.scoring}</SectionLabel>
           <VerticalStackGap10>

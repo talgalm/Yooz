@@ -1,16 +1,6 @@
-/**
- * Shared styled primitives for the marketing site.
- *
- * Every page is assembled from these, so a change here lands on all four pages
- * at once. Page-specific one-offs stay in the page file.
- *
- * Geometry and colour come from the exported Figma frames - see `tokens.ts`.
- */
 
 import { styled, keyframes } from '@mui/material/styles';
 import { C, CTA_GRADIENT, TEXT_GRADIENT, SHADOW, RADIUS, CONTAINER, BP, REDUCED_MOTION } from './tokens';
-
-// ─── Motion ───
 
 export const fadeUp = keyframes`
   from { opacity: 0; transform: translateY(24px); }
@@ -22,11 +12,6 @@ export const floatY = keyframes`
   50%      { transform: translateY(-12px); }
 `;
 
-/**
- * Ground for the scroll reveal. Starts faded and lifts in when `data-visible` is
- * set by the observer in `Reveal.tsx`. Reduced motion skips straight to the final
- * state rather than animating a shorter version of it.
- */
 export const RevealRoot = styled('div')<{ delay?: number }>(({ delay = 0 }) => ({
   opacity: 0,
   transform: 'translateY(24px)',
@@ -36,29 +21,15 @@ export const RevealRoot = styled('div')<{ delay?: number }>(({ delay = 0 }) => (
   [REDUCED_MOTION]: { opacity: 1, transform: 'none', transition: 'none' },
 }));
 
-// ─── Layout ───
-
 export const Page = styled('div')({
   background: C.paper,
   color: C.ink,
   minHeight: '100dvh',
   overflowX: 'clip',
-  /**
-   * `App.css` sets `body { text-align: right }` app-wide, and the `dir` attribute
-   * `MarketingLayout` puts here carries `direction` but not `text-align`. Scoped
-   * to the marketing tree rather than overridden globally: most `.i18n.ts` files
-   * are outside it, and a global rule would flip every translated app screen too.
-   */
   textAlign: 'start',
-  /** Same reasoning for fields, which `App.css` also pins to RTL. */
   '& input, & textarea, & select': { direction: 'inherit', textAlign: 'start' },
 });
 
-/**
- * `max` overrides the shared column for one page. The Academy frame measures its
- * content at 1216 (cards 147..1365) where `CONTAINER` gives 1308, so that page
- * passes `max={1264}` - 1216 plus the 24 gutters. Left unset everywhere else.
- */
 export const Container = styled('div', { shouldForwardProp: (p) => p !== 'max' })<{ max?: number }>(({ max }) => ({
   width: '100%',
   maxWidth: max ?? CONTAINER,
@@ -68,10 +39,6 @@ export const Container = styled('div', { shouldForwardProp: (p) => p !== 'max' }
   [BP.mobile]: { paddingInline: 18 },
 }));
 
-/**
- * A full-bleed band of colour. `Container` inside it holds the content column.
- * Relative so decorative shapes can be pinned to its edges.
- */
 export const Band = styled('section')<{ bg?: string }>(({ bg }) => ({
   position: 'relative',
   background: bg ?? 'transparent',
@@ -79,15 +46,7 @@ export const Band = styled('section')<{ bg?: string }>(({ bg }) => ({
   [BP.mobile]: { paddingBlock: 52 },
 }));
 
-// ─── Type ───
-
 export const H1 = styled('h1')({
-  /**
-   * The floor, not just the `BP.mobile` override below, carries narrow screens:
-   * the breakpoint stops at 700px, so everything from there to ~1180px fell back
-   * to this value. At the old 30px that whole band read far too small. The vw
-   * term and ceiling are unchanged, so desktop is untouched.
-   */
   fontSize: 'clamp(44px, 3.4vw, 54px)',
   fontWeight: 900,
   lineHeight: 1.4,
@@ -95,11 +54,6 @@ export const H1 = styled('h1')({
   color: C.heading,
   margin: '0 0 28px',
   [BP.mobile]: { fontSize: 48, lineHeight: 1.18, marginBottom: 22 },
-  /**
-   * English runs far longer than the Hebrew these sizes were measured against -
-   * the same headline sets in three lines there and six here. The mobile step is
-   * nested inside this rule because `[dir="ltr"] &` outranks `BP.mobile`.
-   */
   '[dir="ltr"] &': {
     fontSize: 'clamp(33px, 3vw, 50px)',
     [BP.mobile]: { fontSize: 33, lineHeight: 1.16 },
@@ -123,7 +77,6 @@ export const H3 = styled('h3')({
   margin: '0 0 8px',
 });
 
-/** The magenta sweep used on the second line of every hero headline. */
 export const GradientText = styled('span')({
   background: TEXT_GRADIENT,
   WebkitBackgroundClip: 'text',
@@ -132,7 +85,6 @@ export const GradientText = styled('span')({
   WebkitTextFillColor: 'transparent',
 });
 
-/** Flat magenta alternative, for the smaller "דברו איתנו!" style lines. */
 export const MagentaText = styled('span')({ color: C.magenta });
 
 export const Lead = styled('p')({
@@ -158,13 +110,9 @@ export const Body = styled('p')({
   lineHeight: 1.75,
   color: C.inkSoft,
   margin: 0,
-  /** Phones get the larger step - 14 sat a size below common practice for body copy. */
   [BP.mobile]: { fontSize: 15.5, lineHeight: 1.7 },
 });
 
-// ─── Buttons ───
-
-/** Primary hero CTA: the purple-to-magenta sweep, soft rectangle not a pill. */
 export const CtaButton = styled('a')({
   display: 'inline-flex',
   alignItems: 'center',
@@ -190,7 +138,6 @@ export const CtaButton = styled('a')({
   [BP.mobile]: { padding: '14px 28px', fontSize: 15, minWidth: 0 },
 });
 
-/** Flat violet button: nav, footer, and the contact form's submit. */
 export const SolidButton = styled('a')({
   display: 'inline-flex',
   alignItems: 'center',
@@ -211,7 +158,6 @@ export const SolidButton = styled('a')({
   [REDUCED_MOTION]: { transition: 'none', '&:hover': { transform: 'none' } },
 });
 
-/** Outlined secondary action - "המודל העסקי" beside the hero CTA. */
 export const GhostButton = styled('a')({
   display: 'inline-flex',
   alignItems: 'center',
@@ -221,7 +167,6 @@ export const GhostButton = styled('a')({
   color: C.heading,
   textDecoration: 'none',
   borderRadius: RADIUS.button,
-  // Matches the primary button's box so the pair sits level.
   padding: '16.5px 38px',
   boxSizing: 'border-box',
   fontSize: 16.5,
@@ -235,7 +180,6 @@ export const GhostButton = styled('a')({
   [BP.mobile]: { padding: '12.5px 26px', fontSize: 15 },
 });
 
-/** Small outlined pill - the category tags under the Tourism cards. */
 export const TagPill = styled('span')({
   display: 'inline-block',
   borderRadius: RADIUS.pill,
@@ -247,8 +191,6 @@ export const TagPill = styled('span')({
   padding: '6px 15px',
   whiteSpace: 'nowrap',
 });
-
-// ─── Cards ───
 
 export const Card = styled('div')({
   background: C.white,
@@ -267,25 +209,14 @@ export const CardGrid = styled('div', { shouldForwardProp: (p) => p !== 'min' &&
   gap?: number;
 }>(({ min = 210, gap = 20 }) => ({
   display: 'grid',
-  /**
-   * `min(px, 100%)` rather than a bare px: `minmax` will not shrink below its
-   * minimum, so a track wider than the container overflows the page instead of
-   * collapsing to one column. Academy asks for 560 here, well past a phone.
-   */
   gridTemplateColumns: `repeat(auto-fit, minmax(min(${min}px, 100%), 1fr))`,
   gap,
   alignItems: 'stretch',
   [BP.mobile]: { gap: 14 },
 }));
 
-/**
- * Divider-separated column row - the "?למי Yooz יתאים" and Tourism card rows are
- * columns split by hairlines, not floating cards. The rule sits on the inline
- * start edge so it never trails after the last column.
- */
 export const DividedRow = styled('div')<{ min?: number }>(({ min = 220 }) => ({
   display: 'grid',
-  /** Same `min(px, 100%)` guard as `CardGrid` - see the note there. */
   gridTemplateColumns: `repeat(auto-fit, minmax(min(${min}px, 100%), 1fr))`,
   gap: 0,
   marginTop: 34,
@@ -294,23 +225,10 @@ export const DividedRow = styled('div')<{ min?: number }>(({ min = 220 }) => ({
   [BP.mobile]: {
     '& > * + *': { borderInlineStart: 'none', borderTop: `1px solid ${C.ruleSoft}` },
     '& > *': { padding: '18px 8px' },
-    /**
-     * An odd-numbered last item is left alone in one column; spanning it across
-     * the track centres it instead. No-op when the count is even, or when the
-     * grid has collapsed to a single column.
-     */
     '& > *:last-child:nth-child(odd)': { gridColumn: '1 / -1' },
   },
 }));
 
-/**
- * Circular pastel disc behind a card icon or mascot.
- *
- * `imgSize` pins the child image to an exact px size. Without it the image fills
- * 82% of the disc, which is right for the Tourism mascots but blows a 30px line
- * icon up to ~47px - and because that is a class rule it silently overrides any
- * `width`/`height` attribute the caller puts on the `img`.
- */
 export const IconDisc = styled('div')<{ bg?: string; size?: number; imgSize?: number }>(({ bg, size = 58, imgSize }) => ({
   width: size,
   height: size,
@@ -330,8 +248,6 @@ export const IconDisc = styled('div')<{ bg?: string; size?: number; imgSize?: nu
   },
 }));
 
-/** Rounded-square icon tile - the Academy cards use these instead of discs. */
-/** Tiles measure 48 square with a ~14 radius in the Academy frame; 44/12 is the older default. */
 export const IconTile = styled('div', {
   shouldForwardProp: (p) => p !== 'bg' && p !== 'fg' && p !== 'size' && p !== 'radius',
 })<{ bg?: string; fg?: string; size?: number; radius?: number }>(({ bg, fg, size = 44, radius = 12 }) => ({
@@ -347,7 +263,6 @@ export const IconTile = styled('div', {
   flexShrink: 0,
 }));
 
-/** Numbered disc in the homepage sector lists. */
 export const NumberDisc = styled('span')<{ bg?: string }>(({ bg }) => ({
   width: 22,
   height: 22,

@@ -187,7 +187,6 @@ export default function AvatarStation({
     try {
       window.sessionStorage.setItem(sessionStorageKey, JSON.stringify(messages));
     } catch {
-      /* best effort */
     }
   }, [messages, sessionStorageKey]);
 
@@ -200,7 +199,6 @@ export default function AvatarStation({
         window.speechSynthesis.cancel();
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -219,20 +217,16 @@ export default function AvatarStation({
     const replyId = nextIdRef.current++;
     setMessages((prev) => [...prev, { id: replyId, role: 'character', text: replyText }]);
 
-    // Stop any prior playback before starting the new one
     clearSuspenseTimer();
     speechHandleRef.current?.stop();
     speechHandleRef.current = null;
 
-    // Show the bubble immediately so the user sees the reply text right away
     speakingMessageIdRef.current = replyId;
     setSpeakingMessageId(replyId);
     setSpeakingText(replyText);
 
     const videoUrl = pickVideoForAnswer(replyText, settings.videos || []);
 
-    // Pre-fetch BOTH the TTS audio and the video file in parallel so playback
-    // can start with no network gap between video and voice.
     let speech: PreparedSpeech;
     try {
       const [s] = await Promise.all([
@@ -244,13 +238,11 @@ export default function AvatarStation({
       return;
     }
 
-    // If the user navigated away or started another reply while we were loading, bail.
     if (!isMountedRef.current || speakingMessageIdRef.current !== replyId) {
       speech.stop();
       return;
     }
 
-    // Start video and audio in the same tick so they begin together.
     if (videoUrl) setActiveVideoUrl(videoUrl);
     speechHandleRef.current = speech;
     speech.play(() => {

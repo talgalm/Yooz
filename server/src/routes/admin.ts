@@ -27,8 +27,6 @@ import { sendScheduledReportNow } from '../services/scheduledReports';
 
 const router = Router();
 
-// ─── Audit log helper ───
-
 export function logAdminAction(
   req: Request,
   action: string,
@@ -46,15 +44,12 @@ export function logAdminAction(
     targetName,
     details,
     ip: req.ip || req.socket?.remoteAddress,
-  }).catch(() => { /* fire & forget */ });
+  }).catch(() => { });
 }
 
 const VALID_LOGIN_FIELDS: LoginField[] = ['email', 'phoneNumber', 'name'];
 
-// Keep in sync with the participant help-chat FAQ menu (client/src/components/HelpChat).
 const VALID_HELP_CATEGORIES = ['login', 'game_start', 'score', 'loading', 'kicked_out', 'button_stuck', 'task_stuck', 'video_missing'];
-
-// --- Shared validation helpers ---
 
 function validateActivityPayload(body: CreateActivityRequest, options?: { isCreate?: boolean }): string | null {
   const { name, loginFields, connectionType, managerEmail, managerPassword } = body;
@@ -93,13 +88,11 @@ async function buildActivityData(
     loginFields,
     connectionType,
   };
-  // Only store emailGoogle if email is in loginFields and it's true
   if (emailGoogle && loginFields.includes('email')) {
     data.emailGoogle = true;
   } else {
     data.emailGoogle = undefined;
   }
-  // Handle groups
   if (connectionType === 'group') {
     const mode = groupEntryMode || 'preset';
     data.groupEntryMode = mode;
@@ -122,16 +115,13 @@ async function buildActivityData(
     data.groupMaxMembers = undefined;
     data.groupReward = undefined;
   }
-  // Handle opening (optional splash screen); null explicitly clears on update
   if (opening === null) {
     data.opening = null;
   } else if (opening && opening.url && opening.url.trim() && ['video', 'image'].includes(opening.type)) {
     data.opening = { type: opening.type, url: opening.url.trim() };
   }
-  // Handle module config
   if (moduleConfig) {
     if (moduleConfig.type === 'mission') {
-      // Legacy mission module: just store the type and mission reference
       data.module = {
         type: 'mission',
         missionRef: moduleConfig.missionRef || undefined,
@@ -139,8 +129,6 @@ async function buildActivityData(
         popups: [],
       };
     } else {
-      // Story module: supports games, stations, and missions as items
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mod = moduleConfig as any;
       data.module = {
         type: moduleConfig.type || 'story',
@@ -185,34 +173,25 @@ async function buildActivityData(
       };
     }
   }
-  // Handle scheduling
   data.scheduledStart = scheduledStart ? new Date(scheduledStart) : undefined;
   data.scheduledEnd = scheduledEnd ? new Date(scheduledEnd) : undefined;
 
-  // Handle guidelines
   data.guidelines = guidelines?.trim() || null;
 
   data.languages = sanitiseLanguages(languages);
 
-  // Free-text context for the "something else" open free-text chat only,
-  // appended to the Gemini prompt for this activity.
   data.extraSupportInfo = extraSupportInfo?.trim().slice(0, 2000) || null;
 
-  // Named contact the participant support bot points to instead of the
-  // generic "activity organizer"/"facilitator" wording. Both must be set
-  // together — a name with no phone (or vice versa) is treated as unset.
   const contactName = organizerContactName?.trim();
   const contactPhone = organizerContactPhone?.trim();
   data.organizerContactName = contactName && contactPhone ? contactName.slice(0, 100) : null;
   data.organizerContactPhone = contactName && contactPhone ? contactPhone.slice(0, 30) : null;
 
-  // Help-chat FAQ categories hidden for this activity (unset/empty = show all).
   const disabledCategories = Array.isArray(helpCategoriesDisabled)
     ? helpCategoriesDisabled.filter((c): c is string => typeof c === 'string' && VALID_HELP_CATEGORIES.includes(c))
     : [];
   data.helpCategoriesDisabled = disabledCategories.length > 0 ? disabledCategories : null;
 
-  // Per-category custom FAQ text overriding the default answer (empty = use default).
   const cleanedResponses: Record<string, string> = {};
   if (helpCategoryResponses && typeof helpCategoryResponses === 'object') {
     for (const [key, value] of Object.entries(helpCategoryResponses)) {
@@ -223,10 +202,8 @@ async function buildActivityData(
   }
   data.helpCategoryResponses = Object.keys(cleanedResponses).length > 0 ? cleanedResponses : null;
 
-  // "Something else" open free-text chat — opt-in, off unless explicitly enabled.
   data.helpOtherCategoryEnabled = helpOtherCategoryEnabled === true;
 
-  // Handle custom instructions
   if (customInstructions && typeof customInstructions === 'object') {
     const ci: Record<string, unknown> = {};
     if (customInstructions.title?.trim()) ci.title = customInstructions.title.trim();
@@ -244,7 +221,6 @@ async function buildActivityData(
     data.customInstructions = undefined;
   }
 
-  // Handle leaderboard mode
   data.leaderboardMode = leaderboardMode === 'time'
     ? 'time'
     : leaderboardMode === 'both'
@@ -255,18 +231,14 @@ async function buildActivityData(
   data.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly !== false;
   data.dailyReset = dailyReset === true;
   data.userControl = userControl === true;
-  // Time limit is only meaningful in modes that show the timer (time/both).
   data.activityDurationMinutes = ((data.leaderboardMode === 'time' || data.leaderboardMode === 'both') && activityDurationMinutes && activityDurationMinutes > 0)
     ? activityDurationMinutes
     : undefined;
 
-  // Cosmetic roadmap count-up timer (independent of leaderboard mode).
-  // null (not undefined) so disabling it actually clears the stored value on edit.
   data.roadmapTimerMinutes = (roadmapTimerMinutes && roadmapTimerMinutes > 0)
     ? Math.round(roadmapTimerMinutes)
     : null;
 
-  // Handle continuous activity
   data.isContinuous = isContinuous === true;
   data.portalId = isContinuous && portalId ? portalId : undefined;
 
@@ -276,14 +248,10 @@ async function buildActivityData(
   data.smsForCollageMessage = data.smsForCollage && smsForCollageMessage?.trim() ? smsForCollageMessage.trim() : undefined;
   data.smsForCollageShare = data.smsForCollage && smsForCollageShare === true;
 
-  // Pass grade (normalized 0-100, or null for no pass grade). Only written when
-  // present in the payload so a regular activity save from the editor (which
-  // doesn't send it) preserves the existing value rather than resetting it.
   if (passThreshold !== undefined) {
     data.passThreshold = passThreshold === null ? null : clampPassThreshold(passThreshold);
   }
 
-  // Handle manager credentials
   if (managerEmail && managerEmail.trim()) {
     data.managerEmail = managerEmail.trim();
     if (managerPassword) {
@@ -298,7 +266,6 @@ async function buildActivityData(
   return data;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function stripManagerPassword(activity: any) {
   if (!activity) return activity;
   const obj = typeof activity.toObject === 'function' ? activity.toObject() : { ...activity };
@@ -307,8 +274,6 @@ function stripManagerPassword(activity: any) {
   return obj;
 }
 
-// Helper: populate module items (games, stations, and missions) for activities
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function populateActivityItems(activities: any[]): Promise<any[]> {
   const gameIds = new Set<string>();
   const stationIds = new Set<string>();
@@ -329,17 +294,13 @@ async function populateActivityItems(activities: any[]): Promise<any[]> {
     missionIds.size > 0 ? Mission.find({ _id: { $in: [...missionIds] } }).lean() : [],
   ]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gameMap = new Map(games.map((g: any) => [g._id.toString(), g]));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stationMap = new Map(stations.map((s: any) => [s._id.toString(), s]));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const missionMap = new Map(missions.map((m: any) => [m._id.toString(), m]));
 
   return activities.map((a) => {
     const obj = typeof a.toObject === 'function' ? a.toObject() : { ...a };
     if (obj.module?.items) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       obj.module.items = obj.module.items.map((item: any) => {
         let data;
         if (item.type === 'game') data = gameMap.get(item.ref.toString());
@@ -361,7 +322,6 @@ async function populateActivityItems(activities: any[]): Promise<any[]> {
   });
 }
 
-// Admin login (email + password)
 router.post('/login', async (req: Request<{}, {}, AdminLoginRequest>, res: Response<AdminLoginResponse | { error: string }>) => {
   const { email, password } = req.body;
 
@@ -392,7 +352,6 @@ router.post('/login', async (req: Request<{}, {}, AdminLoginRequest>, res: Respo
   res.json({ token, admin: { email: user.email, role: user.role, name: user.name } });
 });
 
-// Admin login (Google OAuth)
 router.post('/login/google', async (req: Request, res: Response) => {
   const { googleToken } = req.body;
   if (!googleToken) {
@@ -435,14 +394,12 @@ router.post('/login/google', async (req: Request, res: Response) => {
   res.json({ token, admin: { email: user.email, role: user.role, name: user.name } });
 });
 
-// List all activities (with populated items)
 router.get('/activities', authenticateAdmin, async (req: Request, res: Response) => {
   const activities = await Activity.find(customerMongoFilter(req)).sort({ createdAt: -1 }).lean();
   const populated = await populateActivityItems(activities);
   res.json({ activities: populated.map((a) => stripManagerPassword(a)) });
 });
 
-// Create activity
 router.post('/activities', authenticateAdmin, async (req: Request<{}, {}, CreateActivityRequest>, res: Response) => {
   const error = validateActivityPayload(req.body, { isCreate: true });
   if (error) { res.status(400).json({ error }); return; }
@@ -462,7 +419,6 @@ router.post('/activities', authenticateAdmin, async (req: Request<{}, {}, Create
   res.status(201).json({ activity: stripManagerPassword(activity), managerProvision });
 });
 
-// Update activity (code is NOT editable)
 router.put('/activities/:id', authenticateAdmin, async (req: Request<{ id: string }, {}, CreateActivityRequest>, res: Response) => {
   const error = validateActivityPayload(req.body);
   if (error) { res.status(400).json({ error }); return; }
@@ -495,7 +451,6 @@ router.put('/activities/:id', authenticateAdmin, async (req: Request<{ id: strin
   res.json({ activity: activity ? stripManagerPassword(activity) : activity, managerProvision });
 });
 
-// Get single activity (with populated items)
 router.get('/activities/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const activity = await Activity.findById(req.params.id).lean();
   if (!activity) {
@@ -510,7 +465,6 @@ router.get('/activities/:id', authenticateAdmin, async (req: Request<{ id: strin
   res.json({ activity: stripManagerPassword(populated) });
 });
 
-// Toggle activity status (preview <-> live)
 router.patch('/activities/:id/status', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const { status } = req.body;
   if (!status || !['preview', 'live'].includes(status)) {
@@ -532,7 +486,6 @@ router.patch('/activities/:id/status', authenticateAdmin, async (req: Request<{ 
     return;
   }
 
-  // When going live, wipe all dynamic data (reports/participants/scores/session state)
   if (status === 'live') await wipeActivityData(activity);
 
   activity.status = status;
@@ -541,9 +494,6 @@ router.patch('/activities/:id/status', authenticateAdmin, async (req: Request<{ 
   res.json({ activity: stripManagerPassword(activity) });
 });
 
-// Move an activity into a folder, or out to the ungrouped root (folderId: null).
-// Filing is organizational (not a content edit), so this is intentionally allowed even
-// when the activity is customerEditLocked — unlike the status/PUT endpoints.
 router.patch('/activities/:id/folder', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const { folderId } = req.body as { folderId?: unknown };
   if (folderId !== null && typeof folderId !== 'string') {
@@ -574,8 +524,6 @@ router.patch('/activities/:id/folder', authenticateAdmin, async (req: Request<{ 
   });
   res.json({ activity: stripManagerPassword(activity) });
 });
-
-// ─── Automated scheduled report settings (Yooz-admin-only, no manager/customer self-service) ───
 
 const VALID_SCHEDULED_REPORT_TYPES: AnalyticsExportType[] = ['executive', 'participants', 'scores', 'progress'];
 const SCHEDULED_REPORT_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -676,19 +624,16 @@ router.put('/activities/:activityId/scheduled-report', authenticateAdmin, requir
   res.json({ scheduledReport: activity.scheduledReport });
 });
 
-// Duplicate activity — creates a clone with " (עותק)" suffix and a fresh code
 router.post('/activities/:id/duplicate', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const existing = await Activity.findById(req.params.id);
   if (!existing) { res.status(404).json({ error: 'Activity not found' }); return; }
   if (!customerOwnsDoc(req, existing)) { res.status(404).json({ error: 'Activity not found' }); return; }
 
   const source = existing.toObject() as unknown as Record<string, unknown>;
-  // Strip identifiers / generated fields so the new doc gets fresh values
   delete source._id;
   delete source.code;
   delete source.createdAt;
   delete source.__v;
-  // Reset usage counters and start in preview
   delete source.shareClicks;
   delete source.shareCompleted;
   delete source.missionPuzzleCompletions;
@@ -706,7 +651,6 @@ router.post('/activities/:id/duplicate', authenticateAdmin, async (req: Request<
   res.status(201).json({ activity: stripManagerPassword(activity) });
 });
 
-// Delete activity
 router.delete('/activities/:id', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
   const existing = await Activity.findById(req.params.id);
   if (!existing) {
@@ -722,14 +666,12 @@ router.delete('/activities/:id', authenticateAdmin, async (req: Request<{ id: st
     return;
   }
   await Activity.findByIdAndDelete(req.params.id);
-  // Cascade-delete all reports and groups linked to this activity
   await Report.deleteMany({ activityId: existing._id });
   await ActivityGroup.deleteMany({ activityId: existing._id });
   logAdminAction(req, 'delete_activity', 'activity', req.params.id, existing.name);
   res.json({ success: true });
 });
 
-// Lock/unlock customer edits on an activity (admin/super_admin only)
 router.patch(
   '/activities/:id/customer-lock',
   authenticateAdmin,
@@ -761,7 +703,6 @@ router.patch(
   }
 );
 
-// Search games and stations by name (for activity creation)
 router.get('/search', authenticateAdmin, async (req: Request, res: Response) => {
   const q = ((req.query.q as string) || '').trim();
   const filter = (req.query.filter as string) || 'both';
@@ -774,10 +715,8 @@ router.get('/search', authenticateAdmin, async (req: Request, res: Response) => 
 
   const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
   const tag = (req.query.tag as string) || '';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const results: { games: any[]; stations: any[] } = { games: [], stations: [] };
 
-  // Build query: search name, description, tags, and question content
   const buildQuery = (extraFields: Record<string, unknown>[] = []) => {
     const orConditions = [
       { name: regex },
@@ -786,7 +725,6 @@ router.get('/search', authenticateAdmin, async (req: Request, res: Response) => 
       { customer: regex },
       ...extraFields,
     ];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: any = { $or: orConditions };
     if (tag) query.tags = tag;
     return query;
@@ -810,7 +748,6 @@ router.get('/search', authenticateAdmin, async (req: Request, res: Response) => 
   res.json(results);
 });
 
-// Return random games and stations for quick activity creation
 router.get('/random-items', authenticateAdmin, async (req: Request, res: Response) => {
   const gameCount = Math.min(Number(req.query.games) || 4, 20);
   const stationCount = Math.min(Number(req.query.stations) || 2, 20);
@@ -823,7 +760,6 @@ router.get('/random-items', authenticateAdmin, async (req: Request, res: Respons
     Station.aggregate([...matchStage, { $sample: { size: stationCount } }, { $project: { _id: 1, name: 1, type: 1 } }]),
   ]);
 
-  // Interleave: station, games, station, games...
   const items: { itemType: 'game' | 'station'; _id: string; name: string; subType: string }[] = [];
   let gi = 0;
   let si = 0;
@@ -843,14 +779,11 @@ router.get('/random-items', authenticateAdmin, async (req: Request, res: Respons
   res.json({ items });
 });
 
-// Send a test SMS using the currently-configured provider — used by the
-// admin "test SMS" button on the activity creation page.
 router.post('/sms/test', authenticateAdmin, requireRole('admin', 'super_admin'), async (req: Request<{}, {}, { phoneNumber?: string; message?: string; attachmentUrl?: string; couponCode?: string }>, res: Response) => {
   const phone = (req.body.phoneNumber || '').trim();
   const template = (req.body.message || '').trim() || DEFAULT_SMS_TEMPLATE;
   if (!phone) return res.status(400).json({ error: 'phoneNumber is required' });
 
-  // ponytail: test SMS routes through the same /api/reward-download/:token proxy as the real winner link, using a self-contained test_<base64url(url)> token (no DB write needed pre-save).
   const attachmentUrl = (req.body.attachmentUrl || '').trim();
   const siteBase = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '') || `${req.protocol}://${req.get('host')}`;
   const link = attachmentUrl
@@ -872,10 +805,6 @@ router.post('/sms/test', authenticateAdmin, requireRole('admin', 'super_admin'),
   res.json({ ok: true, provider: provider.name, providerMessageId: result.providerMessageId });
 });
 
-// Manual "Send now" — builds and emails the activity's configured scheduled
-// report immediately, using its saved settings. Ignores the schedule (hour/day)
-// and skipIfUnchanged entirely; this is a deliberate on-demand send, for testing
-// or for a one-off resend, through the exact same path the hourly cron uses.
 router.post('/activities/:activityId/scheduled-report/send-now', authenticateAdmin, requireRole('admin', 'super_admin'), async (req: Request<{ activityId: string }>, res: Response) => {
   const activity = await Activity.findById(req.params.activityId);
   if (!activity) {

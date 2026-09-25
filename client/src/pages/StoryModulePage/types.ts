@@ -11,13 +11,12 @@ export interface GameItemData {
   type: 'game';
   _id: string;
   name: string;
-  gameType: string; // 'order', 'trivia', 'puzzle', 'trueFalse'
+  gameType: string;
   description?: string;
   settings: Record<string, unknown>;
   spiderSvg?: string;
   isFinal?: boolean;
   revisitable?: boolean;
-  /** Map modules: where this station is on the ground. */
   location?: LatLng & { address?: string };
 }
 
@@ -25,10 +24,8 @@ export interface CollageSplitData {
   splitGroupId: string;
   partIndex: number;
   partSizes: number[];
-  totalParts?: number; // legacy fallback
-  /** Index of the part dedicated to video creation only (no photo capture). */
+  totalParts?: number;
   videoPartIndex?: number | null;
-  /** Optional permutation of station.settings.missions before slicing. */
   photoOrder?: number[];
 }
 
@@ -42,7 +39,6 @@ export interface StationItemData {
   spiderSvg?: string;
   isFinal?: boolean;
   revisitable?: boolean;
-  /** Map modules: where this station is on the ground. */
   location?: LatLng & { address?: string };
   collageSplit?: CollageSplitData;
 }
@@ -85,7 +81,6 @@ export interface MissionItemData {
   spiderSvg?: string;
   isFinal?: boolean;
   revisitable?: boolean;
-  /** Map modules: where this station is on the ground. */
   location?: LatLng & { address?: string };
 }
 
@@ -124,7 +119,6 @@ export interface ModuleData {
   popups?: PopupData[];
   showStationNumbers?: boolean;
   showItemTitleNumbers?: boolean;
-  /** Map modules: how close a participant must be for a station to open. */
   proximityMeters?: number;
 }
 
@@ -167,9 +161,7 @@ export interface GroupLeaderboardEntry {
   rank: number;
   name: string;
   score: number;
-  /** Absent for map activities — their run document tracks no headcount. */
   members?: number;
-  /** Map activities only: stations the team has finished. */
   completed?: number;
 }
 
@@ -191,9 +183,6 @@ export interface ConfettiPiece {
   rotation: number;
 }
 
-// ─── Map modules ────────────────────────────────────────────────────────────
-
-/** Another team's marker, as seen from this participant's phone. */
 export interface MapGroupMarker {
   groupName: string;
   score: number;
@@ -203,7 +192,6 @@ export interface MapGroupMarker {
   positionAt?: string;
 }
 
-/** The caller's own group run — shared by every member of the team. */
 export interface MapRunState {
   groupName: string;
   completedIndices: number[];

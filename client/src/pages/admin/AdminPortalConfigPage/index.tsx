@@ -24,8 +24,6 @@ import {
   AdminCardForm,
 } from '../styled';
 
-// ─── Local styled ───
-
 const PageBg = styled('div')({
   minHeight: '100vh',
   background: 'linear-gradient(160deg, #f5edf4 0%, #eee8f8 40%, #f5f5f7 100%)',
@@ -177,8 +175,6 @@ const ErrorMsg = styled('div')({
   marginTop: 8,
 });
 
-// ─── Pending user row ───
-
 const PendingUserRow = styled('div')({
   display: 'flex',
   alignItems: 'center',
@@ -259,8 +255,6 @@ const EmptyPending = styled('div')({
   fontSize: 13,
 });
 
-// ─── Types ───
-
 interface PortalUser {
   username: string;
   password: string;
@@ -317,14 +311,12 @@ export default function AdminPortalConfigPage() {
   const [importingExcel, setImportingExcel] = useState(false);
   const excelInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch available activities
   useEffect(() => {
     adminApiFetch<{ activities: AvailableActivity[] }>('/api/admin/activities')
       .then((res) => setAvailableActivities(res.activities))
       .catch(() => {});
   }, []);
 
-  // Fetch portal data if editing
   useEffect(() => {
     if (!isEdit) return;
     adminApiFetch<{ portal: any }>(`/api/admin/portals/${id}`)
@@ -334,7 +326,6 @@ export default function AdminPortalConfigPage() {
         setDescription(p.description || '');
         setPortalCode(p.code);
         setAllPortalUsers(p.users || []);
-        // Only show approved users in the editable list
         setUsers(
           (p.users || [])
             .filter((u: any) => u.status === 'approved')
@@ -442,11 +433,9 @@ export default function AdminPortalConfigPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
       });
-      // Update local state
       setAllPortalUsers(prev =>
         prev.map(u => u._id === userId ? { ...u, status } : u)
       );
-      // If approved, add to editable users list
       if (status === 'approved') {
         const user = allPortalUsers.find(u => u._id === userId);
         if (user && !users.some(u => u.username === user.username)) {
@@ -502,7 +491,6 @@ export default function AdminPortalConfigPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Filter out already-attached activities from dropdown
   const unattachedActivities = availableActivities.filter(
     (a) => !attachedActivities.some((att) => att._id === a._id)
   );
@@ -521,7 +509,6 @@ export default function AdminPortalConfigPage() {
 
         <AdminCardForm>
           <VerticalStackGap12>
-            {/* Portal Link (edit mode) */}
             {portalCode && (
               <PortalLinkRow>
                 <FieldLabel style={{ whiteSpace: 'nowrap' }}>{t.portalLink}:</FieldLabel>
@@ -532,7 +519,6 @@ export default function AdminPortalConfigPage() {
               </PortalLinkRow>
             )}
 
-            {/* Invite Link (edit mode, auto-approve) */}
             {isEdit && inviteLink && (
               <InviteLinkRow>
                 <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 2, minWidth: 0 }}>
@@ -555,7 +541,6 @@ export default function AdminPortalConfigPage() {
               </InviteLinkRow>
             )}
 
-            {/* Basic Info */}
             <FormSectionCard>
               <SectionLabel>{t.portalName}</SectionLabel>
               <Input
@@ -571,7 +556,6 @@ export default function AdminPortalConfigPage() {
               />
             </FormSectionCard>
 
-            {/* Pending Registrations (edit mode only) */}
             {isEdit && (pendingUsers.length > 0 || deniedUsers.length > 0) && (
               <FormSectionCard>
                 <SectionLabel>{t.pendingUsersSection}</SectionLabel>
@@ -618,7 +602,6 @@ export default function AdminPortalConfigPage() {
               </FormSectionCard>
             )}
 
-            {/* Users Section */}
             <FormSectionCard>
               <SectionLabel>{t.usersSection}</SectionLabel>
               <SectionDescription>{t.usersDescription}</SectionDescription>
@@ -648,14 +631,12 @@ export default function AdminPortalConfigPage() {
                         title={showPasswords[index] ? t.hidePassword : t.showPassword}
                       >
                         {showPasswords[index] ? (
-                          // Eye with slash (hide)
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
                             <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
                             <line x1="1" y1="1" x2="23" y2="23" />
                           </svg>
                         ) : (
-                          // Eye (show)
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                             <circle cx="12" cy="12" r="3" />
@@ -691,7 +672,6 @@ export default function AdminPortalConfigPage() {
               </div>
             </FormSectionCard>
 
-            {/* Activities Section */}
             <FormSectionCard>
               <SectionLabel>{t.activitiesSection}</SectionLabel>
               <SectionDescription>{t.activitiesDescription}</SectionDescription>
@@ -731,7 +711,6 @@ export default function AdminPortalConfigPage() {
               </VerticalStackGap12>
             </FormSectionCard>
 
-            {/* Save */}
             <EditOnly notice>
               <PrimaryButton onClick={handleSave} disabled={saving || !name.trim()}>
                 {saving ? t.saving : t.save}

@@ -48,8 +48,6 @@ import {
   MobileCardDate,
 } from '../styled';
 
-// ─── Local styled ───
-
 const SOURCE_TAGS = new Set(['imported', 'IMPORTED', 'from-library']);
 
 const fadeIn = keyframes`
@@ -200,8 +198,6 @@ const RowActionIconButton = styled('button')({
   },
 });
 
-// position:fixed (coords set inline from the anchor button's rect) so the menu escapes the
-// card's overflow:hidden and is never clipped for bottom rows.
 const RowActionMenu = styled('div')({
   position: 'fixed',
   zIndex: 1000,
@@ -339,7 +335,6 @@ function PencilIcon() {
   );
 }
 
-// Shared with the dashboard sidebar, which renders the same type list as sub-nav.
 export function stationTypeLabel(t: Record<string, string>, type?: string) {
   switch (type) {
     case 'text': return t.typeText;
@@ -363,7 +358,6 @@ interface AdminStationsTabProps {
   onRefresh: () => void;
   defaultType?: string;
   hideCreateButton?: boolean;
-  /** Driven by the dashboard sidebar sub-nav. */
   typeFilter?: string;
 }
 
@@ -371,12 +365,10 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
   const navigate = useNavigate();
   const t = useTranslations(texts);
 
-  // filters
   const [search, setSearch] = useState('');
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [tagDrawerOpen, setTagDrawerOpen] = useState(false);
 
-  // folder view + row menus
   const [openFolderId, setOpenFolderId] = useState<string | null>(null);
   const [actionsStationId, setActionsStationId] = useState<string | null>(null);
   const [actionsFolderId, setActionsFolderId] = useState<string | null>(null);
@@ -389,7 +381,6 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [folderModal, setFolderModal] = useState<{ mode: 'create' | 'edit'; folder?: Folder } | null>(null);
 
-  // drag-and-drop
   const [draggingStationId, setDraggingStationId] = useState<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [touchGhost, setTouchGhost] = useState<{ name: string; x: number; y: number } | null>(null);
@@ -463,7 +454,6 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
       });
       onRefresh();
     } catch {
-      /* ignore — station stays where it was */
     }
   }, [canEdit, onRefresh]);
 
@@ -498,11 +488,10 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
     }
   };
 
-  // ── drag: mouse (HTML5) ──
   const onMouseDragStart = (e: React.DragEvent, id: string) => {
     mouseDragIdRef.current = id;
     setDraggingStationId(id);
-    try { e.dataTransfer.setData('text/plain', id); } catch { /* Firefox requires setData */ }
+    try { e.dataTransfer.setData('text/plain', id); } catch { }
     e.dataTransfer.effectAllowed = 'move';
   };
   const onMouseDragEnd = () => {
@@ -528,7 +517,6 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
     if (id) moveStationToFolder(id, folderId);
   };
 
-  // ── drag: touch (press-and-hold to lift, then drag) ──
   const hitTestKey = useCallback((x: number, y: number): string | null => {
     for (const [key, el] of dropTargetRefs.current.entries()) {
       const r = el.getBoundingClientRect();
@@ -677,10 +665,7 @@ export default function AdminStationsTab({ stations, folders, onRefresh, default
 
   const { page, setPage, totalPages, pageItems, totalItems, showing } = usePagination(visibleStations);
 
-  // usePagination only resets when the list length changes; switching between two
-  // equally-sized types would otherwise strand you on page 2.
   useEffect(() => { setPage(1); },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [typeFilter]);
 
   useEffect(() => {

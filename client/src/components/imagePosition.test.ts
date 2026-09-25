@@ -1,4 +1,3 @@
-// Run: npx tsx --test src/components/imagePosition.test.ts
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { formatImagePosition, objectPositionStyle, parseImagePosition, visibleRegion } from './imagePosition.js';

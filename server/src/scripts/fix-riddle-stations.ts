@@ -1,16 +1,3 @@
-/**
- * Scan Firestore for every station using componentId MQjFnoMsSMMJZ9YFlTzD
- * (the "קופסאות" / boxes escape challenge), and make sure the library has a
- * corresponding entry of type='riddle' with the correct settings.
- *
- * If a library item with the same (customer, name, kind='station') already
- * exists, its type/settings are UPDATED to riddle. Otherwise, a new library
- * item is created.
- *
- * Usage:
- *   npx tsx src/scripts/fix-riddle-stations.ts            # dry-run
- *   npx tsx src/scripts/fix-riddle-stations.ts --apply    # write changes
- */
 import fs from 'fs';
 import path from 'path';
 import mongoose from 'mongoose';
@@ -101,7 +88,6 @@ async function main() {
       }
       found++;
 
-      // Find an existing library item — prefer exact, fall back to normalized name
       const existing = await LibraryItem.findOne({
         kind: 'station',
         customer: customerName,

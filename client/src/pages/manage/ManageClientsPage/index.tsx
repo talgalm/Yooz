@@ -15,7 +15,6 @@ import {
 } from '../manageUi';
 import { styled } from '@mui/material/styles';
 
-/** Columns that add context but are not worth a sideways scroll on a phone. */
 const DesktopCell = styled('td')({ [MOBILE]: { display: 'none' } });
 const DesktopHead = styled('th')({ [MOBILE]: { display: 'none' } });
 
@@ -31,12 +30,11 @@ const SortButton = styled('button')({
 
 type SortKey = 'name' | 'status' | 'contacts' | 'lastContact';
 
-/** CLIENT_STATUSES is already ordered active → prospect → … → irrelevant. */
 const sortValue = (c: Client, key: SortKey): string | number => {
   if (key === 'name') return c.name;
   if (key === 'status') return CLIENT_STATUSES.indexOf(c.status);
   if (key === 'contacts') return c.contacts.length;
-  return c.lastContactDate ? Date.parse(c.lastContactDate) : 0; // never contacted sorts first
+  return c.lastContactDate ? Date.parse(c.lastContactDate) : 0;
 };
 
 const phoneOf = (p: Contact) => p.phone || p.officePhone;
@@ -55,7 +53,6 @@ export default function ManageClientsPage() {
   const [domain, setDomain] = useState('');
   const [archived, setArchived] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  // Active first, then prospects and so on — the same order as CLIENT_STATUSES.
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'status', dir: 1 });
 
   const load = useCallback(async () => {
@@ -78,7 +75,6 @@ export default function ManageClientsPage() {
   const sorted = useMemo(() => [...clients].sort((a, b) => {
     const [x, y] = [sortValue(a, sort.key), sortValue(b, sort.key)];
     const cmp = typeof x === 'string' ? x.localeCompare(String(y), 'he') : Number(x) - Number(y);
-    // Ties fall back to the oldest contact first — the "who have we forgotten" order.
     return cmp * sort.dir || Number(sortValue(a, 'lastContact')) - Number(sortValue(b, 'lastContact'));
   }), [clients, sort]);
 
@@ -95,13 +91,11 @@ export default function ManageClientsPage() {
     );
   };
 
-  // Debounced so typing in the search box does not fire a request per keystroke.
   useEffect(() => {
     const id = setTimeout(load, 250);
     return () => clearTimeout(id);
   }, [load]);
 
-  /** The person you would actually call: primary contact, name and number. */
   const contactLabel = (c: Client) => {
     const [first] = [...c.contacts].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
     if (!first) return '—';

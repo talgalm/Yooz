@@ -71,15 +71,11 @@ import { startScheduledReportsScheduler } from './services/scheduledReports';
 
 const app = express();
 
-// Behind nginx. Without this every req.ip is the proxy's own address, so the
-// per-IP rate limiters (avatar-chat, avatar-quiz, tts, help) share ONE bucket
-// across all participants — a single class hits the cap in seconds.
 app.set('trust proxy', 1);
 
-// CORS — restrict to known origins in production
 const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
-  : undefined; // undefined = allow all (development)
+  : undefined;
 
 app.use(
   cors({
@@ -89,10 +85,9 @@ app.use(
 );
 app.use(express.json());
 
-// Health check — used by deploy and external uptime monitors. Verifies DB is reachable.
 app.get('/api/health', async (_req, res) => {
   const mongoose = (await import('mongoose')).default;
-  const dbState = mongoose.connection.readyState; // 1 = connected
+  const dbState = mongoose.connection.readyState;
   if (dbState !== 1) {
     res.status(503).json({ status: 'down', db: dbState });
     return;
@@ -100,14 +95,11 @@ app.get('/api/health', async (_req, res) => {
   res.json({ status: 'ok', db: 'connected' });
 });
 
-// Live load snapshot — eyeball during incidents, scrape from monitor.sh / Grafana.
-// Public on purpose (same level as /api/health). Not sensitive — just gauges.
 app.get('/api/load-status', async (_req, res) => {
   const { getLoadSnapshot } = await import('./middleware/loadShedding');
   res.json(getLoadSnapshot());
 });
 
-// API routes
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/activities', activitiesRouter);
@@ -115,7 +107,6 @@ app.use('/api/reward-download', rewardDownloadRouter);
 app.use('/api/admin/games', gamesRouter);
 app.use('/api/admin/stations', stationsRouter);
 app.use('/api/manager', managerRouter);
-// Yooz-Manage — internal business management. Own realm, own JWT claim.
 app.use('/api/manage', manageRouter);
 app.use('/api/manage/clients', manageClientsRouter);
 app.use('/api/manage/projects', manageProjectsRouter);
@@ -134,7 +125,6 @@ app.use('/api/help', helpRouter);
 app.use('/api/avatar-chat', avatarChatRouter);
 app.use('/api/avatar-quiz', avatarQuizRouter);
 app.use('/api/admin/analytics', analyticsRouter);
-// Public, token-scoped, read-only statistics share links (no admin auth).
 app.use('/api/shared/stats', sharedStatsRouter);
 app.use('/api/admin/help-assistant', adminHelpAssistantRouter);
 app.use('/api/admin/dev-tasks', devTasksRouter);
@@ -152,10 +142,8 @@ app.use('/api/admin/game-folders', gameFoldersRouter);
 app.use('/api/admin/mission-folders', missionFoldersRouter);
 app.use('/api/check-answer', checkAnswerRouter);
 app.use('/api/tts', ttsRouter);
-// Public marketing site content + admin editor (route-level admin guards inside)
 app.use('/api/site-content', siteContentRouter);
 
-// Open Graph HTML for Facebook / social crawlers (SPA has no OG tags)
 app.get('/play/:code', async (req, res, next) => {
   if (!isSocialCrawler(req)) {
     next();
@@ -186,17 +174,14 @@ app.get('/play/:code', async (req, res, next) => {
   }
 });
 
-// Serve static client build in production
 app.use(express.static(CLIENT_BUILD_PATH));
 
-// SPA fallback: serve index.html for all non-API routes
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
     res.sendFile(path.join(CLIENT_BUILD_PATH, 'index.html'));
   }
 });
 
-// Global error handler for async route errors (prevents server crash)
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled route error:', err.message);
   if (!res.headersSent) {
@@ -204,7 +189,6 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   }
 });
 
-// Catch unhandled rejections to prevent server crash
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled rejection:', reason);
 });
@@ -243,31 +227,18 @@ async function start() {
     });
   }, COLLAGE_SMS_POLL_MS);
 
-  // Recover collage jobs that were mid-encode when the process died (PM2
-  // restart, OOM, deploy). Only resurrect jobs *recently* in-flight — older
-  // ones mean the client gave up long ago, and re-encoding them at boot just
-  // floods the new process (a 100-VU load test left 40+ stale jobs that
-  // crashed the box on the next restart).
-  //  - 2..15 min stale → reschedule (genuinely mid-encode when we crashed)
-  //  - >15 min stale  → mark as error so they're not retried
-  //
-  // PM2 cluster mode runs 2+ workers; only the primary should sweep, otherwise
-  // every job gets scheduled N times.
   const isPrimaryWorker = !process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === '0';
   if (isPrimaryWorker) {
     try {
       const now = Date.now();
       const resumeFloor = new Date(now - 15 * 60 * 1000);
-      // ponytail: 30s ceiling — real Lambda heartbeats every few seconds during
-      // encode/upload, so a 30s gap means the worker died. Was 2min, which
-      // left jobs stuck whose ffmpeg crashed just after a photo-uploaded write.
       const resumeCeil  = new Date(now - 30 * 1000);
       const stuck = await CollageJob.find({
         phase: { $in: ['queued', 'preparing', 'encoding', 'uploading'] },
       }).select('jobId phase updatedAt').lean();
       let resumed = 0, aborted = 0;
       for (const j of stuck) {
-        if (j.updatedAt > resumeCeil) continue; // currently progressing — skip
+        if (j.updatedAt > resumeCeil) continue;
         if (j.updatedAt < resumeFloor) {
           await CollageJob.updateOne(
             { jobId: j.jobId },

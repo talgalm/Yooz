@@ -1,8 +1,6 @@
 import { styled } from '@mui/material/styles';
 import { PRIMARY, PRIMARY_LIGHT, BORDER, TEXT, TEXT_LIGHT } from '../../components/styled';
 
-/** Layout + form primitives shared by the /manage screens. */
-
 export const MOBILE = '@media (max-width: 900px)';
 
 export const PageHeader = styled('div')({
@@ -14,7 +12,6 @@ export const PageHeader = styled('div')({
   marginBottom: 18,
 });
 
-/** For entity names (a client, a project) — always shown. */
 export const PageTitle = styled('h1')({
   margin: 0,
   fontSize: 26,
@@ -22,7 +19,6 @@ export const PageTitle = styled('h1')({
   [MOBILE]: { fontSize: 20 },
 });
 
-/** For a menu section's own name. Hidden on mobile, where the top bar already says it. */
 export const SectionTitle = styled(PageTitle)({
   [MOBILE]: { display: 'none' },
 });
@@ -34,7 +30,6 @@ export const Panel = styled('div')({
   overflow: 'hidden',
 });
 
-/** Wide tables scroll inside their own box; the page never scrolls sideways. */
 export const TableScroll = styled('div')({
   width: '100%',
   overflowX: 'auto',
@@ -59,12 +54,6 @@ export const SmallInput = styled('input')({
   '&:focus': { borderColor: PRIMARY },
 });
 
-/**
- * Chrome pins the native <select> arrow to the border edge and ignores
- * padding-inline-end for it — the padding only widens the gap between arrow and
- * text. Dropping appearance and drawing the chevron ourselves is the only way to
- * inset it. Data URI so it costs no request; colour tracks PRIMARY.
- */
 const chevron = (color: string) =>
   `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='${color.replace('#', '%23')}' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`;
 
@@ -86,8 +75,6 @@ export const SmallSelect = styled('select')({
   backgroundImage: chevron(TEXT_LIGHT),
   backgroundRepeat: 'no-repeat',
   backgroundSize: 15,
-  // background-position takes no logical keywords, so RTL needs its own rule.
-  // dir only ever lives on <html> here, so a descendant selector is enough.
   backgroundPosition: 'right 12px center',
   '[dir="rtl"] &': { backgroundPosition: 'left 12px center' },
   transition: 'border-color 0.15s, box-shadow 0.15s, background-color 0.15s',
@@ -238,8 +225,6 @@ export const ReadField = styled('div')({
   color: TEXT_LIGHT,
   '& > b': { fontSize: 15, fontWeight: 500, color: TEXT },
 });
-
-// ─── Modal ───
 
 export const ModalBackdrop = styled('div')({
   position: 'fixed',

@@ -101,15 +101,10 @@ const DropZone = styled('button')({
 });
 
 interface FileUploadButtonProps {
-  /** Accepted file types, e.g. "image/*", "video/*", "image/*,video/*" */
   accept: string;
-  /** Called with the uploaded file URL on success */
   onUploaded: (url: string, file?: File) => void;
-  /** Button label */
   label?: string;
-  /** Uploading label */
   uploadingLabel?: string;
-  /** Cloudinary folder to upload into (media library only; defaults to the root). */
   folder?: string;
 }
 
@@ -121,8 +116,6 @@ export default function FileUploadButton({ accept, onUploaded, label = 'Upload',
   const t = useTranslations(texts);
   const { admin } = useAdminAuth();
 
-  // The media library is admin-only (so is the API behind it). Anyone else
-  // keeps the plain file dialog they have always had.
   const canBrowseLibrary = admin?.role === 'admin' || admin?.role === 'super_admin';
 
   const handleClick = () => {
@@ -148,7 +141,6 @@ export default function FileUploadButton({ accept, onUploaded, label = 'Upload',
       alert(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setUploading(false);
-      // Reset input so same file can be re-selected
       if (inputRef.current) inputRef.current.value = '';
     }
   };

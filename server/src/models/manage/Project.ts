@@ -10,8 +10,6 @@ export const PROJECT_TYPES: ProjectType[] = ['client', 'internal', 'demo'];
 export const PROJECT_STATUSES: ProjectStatus[] = [
   'planned', 'active', 'on_hold', 'waiting_client', 'done', 'cancelled', 'maintenance',
 ];
-/** The one shared internal project every employee can log to — "פנימי" in the
- *  project pickers. Seeded on boot, matched by name so the seed stays idempotent. */
 export const INTERNAL_PROJECT_NAME = 'פנימי';
 
 export const STAGE_STATUSES: StageStatus[] = ['not_started', 'in_progress', 'done', 'skipped'];
@@ -62,7 +60,6 @@ export interface IProject {
 
   plannedHours: number;
 
-  // owner-only from here down — stripped by serializeProject for pm/member.
   agreedPrice: number;
   currency: string;
   contract: {
@@ -101,8 +98,6 @@ const stageSchema = new Schema<IStage>({
   status: { type: String, enum: STAGE_STATUSES, default: 'not_started' },
   plannedStartDate: { type: Date },
   plannedEndDate: { type: Date },
-  // Set by the server on the first status transition — never entered by hand,
-  // otherwise planned-vs-actual on the timeline is just two planned bars.
   startedAt: { type: Date },
   completedAt: { type: Date },
 }, { _id: false });
@@ -123,7 +118,6 @@ const projectSchema = new Schema<IProject>(
     name: { type: String, required: true, trim: true },
     type: { type: String, enum: PROJECT_TYPES, default: 'client' },
     clientId: { type: Schema.Types.ObjectId, ref: 'ManageClient' },
-    // Which person at the client this project runs through.
     primaryContactId: { type: Schema.Types.ObjectId },
     description: { type: String },
 
@@ -139,7 +133,6 @@ const projectSchema = new Schema<IProject>(
     goLiveDate: { type: Date },
     closedAt: { type: Date },
 
-    // Actual hours are NEVER stored here — they are summed from TimeEntry.
     plannedHours: { type: Number, default: 0 },
 
     agreedPrice: { type: Number, default: 0 },
@@ -162,7 +155,6 @@ const projectSchema = new Schema<IProject>(
     },
     paymentMilestones: { type: [paymentMilestoneSchema], default: [] },
 
-    // The one computed value that IS stored, so the list can sort and filter on it.
     health: { type: String, enum: ['green', 'orange', 'red'], default: 'green' },
     healthReason: { type: String },
     driveUrl: { type: String, trim: true },

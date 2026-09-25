@@ -1,13 +1,3 @@
-/**
- * Admin Help Assistant (DumbDumbBot) — how-to chatbot for the admin dashboard.
- *
- * POST /api/admin/help-assistant/chat
- * Admin JWT required. Uses Gemini with embedded admin knowledge.
- *
- * When the caller passes context.activityId (they're viewing that activity's
- * statistics), the activity's full data snapshot is appended to the prompt so
- * the bot doubles as the report assistant. PII is included by product decision.
- */
 
 import { Router, Request, Response } from 'express';
 import { Types } from 'mongoose';
@@ -664,7 +654,6 @@ router.post('/chat', async (req: Request, res: Response) => {
   const route =
     context && typeof context.route === 'string' ? context.route.slice(0, 200) : undefined;
 
-  // Report mode: caller is on an activity's stats — attach its data snapshot.
   let activityData: string | undefined;
   const activityId = context?.activityId;
   if (activityId && Types.ObjectId.isValid(activityId)) {

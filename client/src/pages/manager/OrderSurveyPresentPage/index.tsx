@@ -197,7 +197,6 @@ export default function OrderSurveyPresentPage() {
       try {
         await loadLive();
       } catch {
-        /* ignore poll errors */
       }
       timer = window.setTimeout(tick, POLL_MS);
     };

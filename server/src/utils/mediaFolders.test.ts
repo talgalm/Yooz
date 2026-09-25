@@ -2,8 +2,6 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { resolveFolder, isDeletableAsset } from './mediaFolders';
 
-// Run: npx tsx --test server/src/utils/mediaFolders.test.ts
-
 test('empty input means the root folder', () => {
   assert.strictEqual(resolveFolder(undefined), 'yooz');
   assert.strictEqual(resolveFolder(''), 'yooz');

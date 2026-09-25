@@ -119,8 +119,6 @@ export default function LangDrawer({ variant = 'default', only }: LangDrawerProp
 
   if (available.length < 2) return null;
 
-  // The language is read from storage at boot, so this has to persist and
-  // reload rather than just set context state.
   const choose = (code: string) => {
     if (code === lang) {
       close();

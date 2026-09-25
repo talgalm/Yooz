@@ -18,7 +18,6 @@ import type { RosterParticipant } from './types';
 
 interface Props {
   activityId: string | null;
-  /** Called after exclusions are persisted so the dashboard panels can refetch. */
   onExclusionsChanged?: () => void;
 }
 
@@ -42,14 +41,10 @@ export default function ParticipantsRoster({ activityId, onExclusionsChanged }: 
   const [search, setSearch] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  // Seed the local exclusion set from the server roster (and re-seed on refetch).
   useEffect(() => {
     if (roster) setExcluded(new Set(roster.filter((p) => p.excluded).map((p) => p._id)));
   }, [roster]);
 
-  // Save immediately and optimistically: only the local checkbox state changes —
-  // the roster itself never reloads. Reverts if the save fails. The dashboard
-  // panels are refreshed lazily by the parent when next viewed, not on each click.
   const commit = (next: Set<string>, previous: Set<string>) => {
     if (!activityId) return;
     setExcluded(next);

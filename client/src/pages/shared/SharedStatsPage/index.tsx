@@ -3,12 +3,6 @@ import { useParams } from 'react-router-dom';
 import ActivityAnalytics from '../../admin/AdminStatisticsTab/ActivityAnalytics';
 import { AnalyticsSourceProvider, makeSharedSource } from '../../admin/AdminStatisticsTab/analyticsSource';
 
-/**
- * Public, read-only statistics view reached via a share token (/stats/:token).
- * It reuses the admin ActivityAnalytics component but points every data hook at
- * the token-scoped public endpoints (no admin auth) and hides admin-only
- * controls (pass grade editing, share link, participant roster).
- */
 export default function SharedStatsPage() {
   const { token = '' } = useParams<{ token: string }>();
   const source = useMemo(() => makeSharedSource(token), [token]);

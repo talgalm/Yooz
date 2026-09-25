@@ -4,7 +4,6 @@ export const texts = {
     loading: 'Loading...',
     refresh: 'Refresh',
 
-    // Tabs
     tabOverview: 'Overview',
     tabLeaderboard: 'Leaderboard',
     tabParticipants: 'Participants',
@@ -14,7 +13,6 @@ export const texts = {
     openPresenter: 'Open survey screen',
     live: 'Live',
 
-    // Coupons tab
     coupon: 'Coupon',
     smsStatus: 'Status',
     sentAt: 'Sent',
@@ -24,7 +22,6 @@ export const texts = {
     status_skipped: 'Skipped',
     noCoupons: 'No coupons sent yet.',
 
-    // Control Flow
     controlFlowTitle: 'Activity flow control',
     controlFlowHint: 'Lock the roadmap from a chosen item onward. Players will see a lock icon and cannot open locked items until you unlock.',
     statusOpen: 'Open',
@@ -39,7 +36,6 @@ export const texts = {
     type_station: 'Station',
     type_mission: 'Mission',
 
-    // Stats
     statTotal: 'Participants',
     statTotalHint: 'Total joined',
     statWithScore: 'Played',
@@ -48,11 +44,9 @@ export const texts = {
     statTopScore: 'Top Score',
     statTopScoreHint: 'Highest so far',
 
-    // Sections
     topPlayers: 'Top players',
     recentJoins: 'Recently joined',
 
-    // Tables
     rank: 'Rank',
     name: 'Name',
     email: 'Email',
@@ -66,12 +60,10 @@ export const texts = {
     groupTotal: 'Total Score',
     members: 'Members',
 
-    // Empty states
     noParticipants: 'No participants yet.',
     noScores: 'No scores yet.',
     noGroups: 'No group standings yet.',
 
-    // Legacy (kept in case referenced elsewhere)
     participants: 'Participants',
     groupStandings: 'Group Standings',
     leaderboard: 'Leaderboard',
@@ -81,7 +73,6 @@ export const texts = {
     loading: 'טוען...',
     refresh: 'רענון',
 
-    // Tabs
     tabOverview: 'סקירה',
     tabLeaderboard: 'טבלת ניקוד',
     tabParticipants: 'משתתפים',
@@ -91,7 +82,6 @@ export const texts = {
     openPresenter: 'פתח מסך סקר',
     live: 'בשידור חי',
 
-    // Coupons tab
     coupon: 'קופון',
     smsStatus: 'סטטוס',
     sentAt: 'נשלח',
@@ -101,7 +91,6 @@ export const texts = {
     status_skipped: 'דולג',
     noCoupons: 'עדיין לא נשלחו קופונים.',
 
-    // Control Flow
     controlFlowTitle: 'בקרת זרימת פעילות',
     controlFlowHint: 'נעלו את המסלול מנקודה מסוימת והלאה. השחקנים יראו אייקון מנעול ולא יוכלו לפתוח את התחנות הנעולות עד שתפתחו אותן.',
     statusOpen: 'פתוח',
@@ -116,7 +105,6 @@ export const texts = {
     type_station: 'תחנה',
     type_mission: 'משימה',
 
-    // Stats
     statTotal: 'משתתפים',
     statTotalHint: 'סך נרשמים',
     statWithScore: 'שיחקו',
@@ -125,11 +113,9 @@ export const texts = {
     statTopScore: 'ניקוד הגבוה',
     statTopScoreHint: 'עד כה',
 
-    // Sections
     topPlayers: 'מובילים',
     recentJoins: 'הצטרפו לאחרונה',
 
-    // Tables
     rank: 'מקום',
     name: 'שם',
     email: 'אימייל',
@@ -143,12 +129,10 @@ export const texts = {
     groupTotal: 'ניקוד כולל',
     members: 'חברים',
 
-    // Empty states
     noParticipants: 'אין משתתפים עדיין.',
     noScores: 'אין ניקוד עדיין.',
     noGroups: 'אין דירוג קבוצות עדיין.',
 
-    // Legacy
     participants: 'משתתפים',
     groupStandings: 'דירוג קבוצות',
     leaderboard: 'טבלת ניקוד',

@@ -16,7 +16,6 @@ export interface MediaItem {
   height?: number;
   duration?: number;
   fileName?: string;
-  /** Cloudinary `asset_folder` — where it lives, independent of the URL. */
   folder?: string;
   createdAt?: string;
 }
@@ -37,13 +36,11 @@ type TypeFilter = '' | 'image' | 'video';
 
 const ROOT_FOLDER = 'yooz';
 
-/** `yooz/a/b` → `yooz/a`; the root is its own parent. */
 function parentOf(path: string): string {
   const cut = path.lastIndexOf('/');
   return cut > 0 ? path.slice(0, cut) : ROOT_FOLDER;
 }
 
-/** Depth-first flatten, for the "move to" list. */
 function flatten(nodes: FolderNode[], depth = 0): { path: string; label: string }[] {
   return nodes.flatMap((node) => [
     { path: node.path, label: `${'— '.repeat(depth)}${node.name}` },
@@ -51,7 +48,6 @@ function flatten(nodes: FolderNode[], depth = 0): { path: string; label: string 
   ]);
 }
 
-/** The folders directly inside `path`. */
 function childrenOf(nodes: FolderNode[], path: string): FolderNode[] {
   if (path === ROOT_FOLDER) return nodes;
   for (const node of nodes) {
@@ -62,7 +58,6 @@ function childrenOf(nodes: FolderNode[], path: string): FolderNode[] {
   return [];
 }
 
-/** A grid cell is 300px wide at most, so ask Cloudinary for that, not the original. */
 function thumbUrl(item: MediaItem): string {
   if (item.resourceType === 'video') {
     const posterUrl = item.url.replace(/\.[a-z0-9]+$/i, '.jpg');
@@ -76,7 +71,6 @@ function formatBytes(bytes?: number): string {
   return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
 }
 
-/** `accept="image/*"` on the calling upload button → show only images. */
 function initialFilter(accept?: string): TypeFilter {
   if (!accept) return '';
   const wantsImage = accept.includes('image');
@@ -85,8 +79,6 @@ function initialFilter(accept?: string): TypeFilter {
   if (wantsVideo && !wantsImage) return 'video';
   return '';
 }
-
-// ─── Styled ───
 
 const Wrap = styled('div')({ display: 'flex', flexDirection: 'column', gap: 14, minHeight: 0 });
 
@@ -259,18 +251,11 @@ const UsageList = styled('ul')({
   overflowY: 'auto',
 });
 
-// ─── Component ───
-
 interface MediaBrowserProps {
-  /** Mirrors the `accept` of the upload button that opened it — pre-filters the grid. */
   accept?: string;
-  /** Picker mode: called with the chosen asset. */
   onPick?: (item: MediaItem) => void;
-  /** Management mode: show the folder, move and delete actions. */
   allowManage?: boolean;
-  /** Bump to force a reload (after an upload). */
   refreshKey?: number;
-  /** Lets the parent upload into whichever folder is open. */
   onFolderChange?: (folder: string) => void;
 }
 
@@ -293,7 +278,6 @@ export default function MediaBrowser({ accept, onPick, allowManage, refreshKey =
   const [dragOver, setDragOver] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Debounce the search box so typing does not fire a request per keystroke.
   useEffect(() => {
     const id = setTimeout(() => setQuery(search.trim()), 400);
     return () => clearTimeout(id);
@@ -359,14 +343,11 @@ export default function MediaBrowser({ accept, onPick, allowManage, refreshKey =
     }
   };
 
-  // ── drag a file onto a folder (mouse / HTML5 Drag API, as the dashboard's
-  // activity and station folders do it). Touch does not fire drag events, so
-  // the Move button stays as the fallback there.
   const dragIdRef = useRef<string | null>(null);
   const onCellDragStart = (e: React.DragEvent, item: MediaItem) => {
     dragIdRef.current = item.publicId;
     setDragging(item.publicId);
-    try { e.dataTransfer.setData('text/plain', item.publicId); } catch { /* Firefox requires setData to start a drag */ }
+    try { e.dataTransfer.setData('text/plain', item.publicId); } catch { }
     e.dataTransfer.effectAllowed = 'move';
   };
   const onCellDragEnd = () => {
@@ -398,7 +379,6 @@ export default function MediaBrowser({ accept, onPick, allowManage, refreshKey =
         method: 'PATCH',
         body: JSON.stringify({ publicId: item.publicId, folder: target }),
       });
-      // It left this folder — drop it locally rather than refetching.
       setItems((prev) => prev.filter((i) => i.publicId !== item.publicId));
       setTotal((n) => Math.max(0, n - 1));
     } catch (err) {
@@ -422,7 +402,6 @@ export default function MediaBrowser({ accept, onPick, allowManage, refreshKey =
       setTotal((n) => Math.max(0, n - 1));
       setPendingDelete(null);
     } catch (err) {
-      // 409 carries the list of things still pointing at this asset.
       const usage = (err as { body?: { error?: string; usage?: { collection: string; name: string }[] } }).body;
       if (usage?.error === 'in_use' && usage.usage) {
         setPendingDelete({ item, usage: usage.usage });

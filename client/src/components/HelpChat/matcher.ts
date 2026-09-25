@@ -1,19 +1,8 @@
-/**
- * Smart keyword matcher for help chat automatic responses.
- *
- * Architecture: This is a pluggable module. To upgrade to LLM-based responses,
- * replace this file's `matchTopic` function with an API call to your LLM endpoint.
- * The interface stays the same: (input: string) => MatchResult | null
- *
- * It takes no language: the keywords are matched against whatever the person
- * actually typed, in every language they are authored in, and the answer is
- * looked up by `responseKey` in the caller's own translations.
- */
 
 export interface MatchResult {
   topicId: string;
-  confidence: number; // 0-1
-  responseKey: string; // key into i18n responses
+  confidence: number;
+  responseKey: string;
 }
 
 interface TopicDef {
@@ -24,8 +13,6 @@ interface TopicDef {
     he: string[];
   };
 }
-
-// ─── Help Topics ───
 
 const topics: TopicDef[] = [
   {
@@ -124,7 +111,6 @@ const topics: TopicDef[] = [
       he: ['קבוצה', 'צוות', 'איזה קבוצה', 'קבוצה לא נכונה', 'לשנות קבוצה', 'הקבוצה שלי', 'כיתה', 'סניף', 'מחלקה'],
     },
   },
-  // ─── Field troubleshooting sheet (תקלות נפוצות בפעילות) ───
   {
     id: 'kickedOut',
     responseKey: 'responseKickedOut',
@@ -167,10 +153,6 @@ const topics: TopicDef[] = [
   },
 ];
 
-/**
- * Match user input against predefined topics using keyword scoring.
- * Returns the best match if confidence is above threshold.
- */
 export function matchTopic(input: string): MatchResult | null {
   const normalized = input.toLowerCase().trim();
   if (!normalized) return null;
@@ -186,14 +168,12 @@ export function matchTopic(input: string): MatchResult | null {
     for (const keyword of keywords) {
       const kw = keyword.toLowerCase();
       if (normalized.includes(kw)) {
-        // Longer keyword matches are worth more
         score += kw.length;
         matchCount++;
       }
     }
 
     if (matchCount > 0) {
-      // Normalize: score relative to input length and match count
       const confidence = Math.min(1, (score / Math.max(normalized.length, 1)) * 0.6 + matchCount * 0.15);
 
       if (confidence > bestScore) {
@@ -207,7 +187,6 @@ export function matchTopic(input: string): MatchResult | null {
     }
   }
 
-  // Minimum confidence threshold
   if (bestMatch && bestMatch.confidence >= 0.2) {
     return bestMatch;
   }

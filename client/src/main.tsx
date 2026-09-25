@@ -20,7 +20,7 @@ import '@fontsource/rubik/900.css';
 import '@fontsource/rubik-one/400.css';
 import '@fontsource/secular-one/400.css';
 
-initFacebookSdk().catch(() => { /* missing/blocked SDK falls back to sharer.php */ });
+initFacebookSdk().catch(() => { });
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

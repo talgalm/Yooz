@@ -3,7 +3,6 @@ import { styled } from '@mui/material/styles';
 import { adminApiFetch } from '../../../utils/adminApi';
 import type { ModuleItem } from './types';
 
-// Game components
 import OrderGame from '../../../components/games/OrderGame';
 import TriviaGame from '../../../components/games/TriviaGame';
 import PuzzleGame from '../../../components/games/PuzzleGame';
@@ -11,7 +10,6 @@ import TrueFalseGame from '../../../components/games/TrueFalseGame';
 import BallGame from '../../../components/games/BallGame';
 import TrashSortGame from '../../../components/games/TrashSortGame';
 
-// Station components
 import NarrativeStation from '../../../components/stations/NarrativeStation';
 import BadgeStation from '../../../components/stations/BadgeStation';
 import CollageStation from '../../../components/stations/CollageStation';
@@ -120,8 +118,6 @@ interface ItemPreviewModalProps {
 }
 
 export default function ItemPreviewModal({ item, onClose }: ItemPreviewModalProps) {
-  // Always fetch fresh — cached settings on `item` may be stale if the user
-  // edited the underlying game/station after opening the activity editor.
   const [settings, setSettings] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -143,8 +139,7 @@ export default function ItemPreviewModal({ item, onClose }: ItemPreviewModalProp
     if (e.target === e.currentTarget) onClose();
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const noOp = (() => { /* preview — no-op */ }) as (...args: any[]) => void;
+  const noOp = (() => { }) as (...args: any[]) => void;
 
   const buildStationData = (stationType: string) => ({
     _id: item.ref,
@@ -172,7 +167,6 @@ export default function ItemPreviewModal({ item, onClose }: ItemPreviewModalProp
       }
     }
 
-    // Station rendering
     switch (item.subType) {
       case 'narrative':
         return <NarrativeStation station={buildStationData('narrative')} onContinue={noOp} />;

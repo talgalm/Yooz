@@ -1,15 +1,6 @@
 import { styled, keyframes } from '@mui/material/styles';
 import { REDUCED_MOTION } from './tokens';
 
-/**
- * The organic shapes used by the "why choose" diagram.
- *
- * Each blob is an asymmetric `border-radius` (four horizontal radii / four
- * vertical radii) that slowly morphs between shapes, which is what makes them
- * read as alive rather than as geometry. Three preset silhouettes keep sibling
- * blobs from ever matching each other.
- */
-
 const morphA = keyframes`
   0%, 100% { border-radius: 58% 42% 39% 61% / 47% 55% 45% 53%; }
   33%      { border-radius: 43% 57% 62% 38% / 58% 41% 59% 42%; }
@@ -34,16 +25,10 @@ export type BlobShape = keyof typeof SHAPES;
 
 interface BlobProps {
   shape?: BlobShape;
-  /** Seconds for one full morph cycle. Vary it so siblings drift out of phase. */
   duration?: number;
-  /** Negative delay starts each blob mid-cycle. */
   delay?: number;
 }
 
-/**
- * Size and position are the caller's business - set them with `style` or by
- * wrapping in `styled(Blob)`. This component owns only the silhouette.
- */
 const Blob = styled('div', {
   shouldForwardProp: (p) => p !== 'shape' && p !== 'duration' && p !== 'delay',
 })<BlobProps>(({ shape = 'a', duration = 18, delay = 0 }) => ({

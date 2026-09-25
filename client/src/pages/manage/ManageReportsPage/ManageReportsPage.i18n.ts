@@ -27,7 +27,6 @@ export const texts = {
       client_activity: 'מתי דובר לאחרונה עם כל לקוח, וכמה תיעודים היו בתקופה.',
     },
 
-    // columns
     category: 'קטגוריה',
     hours: 'שעות',
     share: 'חלק מהתקופה',

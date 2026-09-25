@@ -6,25 +6,11 @@ import { texts } from './ContactForm.i18n';
 import { C, SHADOW, RADIUS, BP } from './tokens';
 import { Container } from './styled';
 
-/**
- * The comps tint this card differently per page: cream on Home, peach on
- * Academy, and a solid violet card - with the fields inside their own white
- * panel - on Business and Tourism.
- */
 export type ContactTone = 'cream' | 'peach' | 'purple';
 
 interface ContactFormProps {
   tone?: ContactTone;
-  /**
-   * The form is the page's last section, directly above the footer. The card's
-   * `SHADOW.float` reaches ~66px below it, so the default 40px lets the footer
-   * band cut the shadow off in a hard line; this leaves room for it to fade.
-   */
   closing?: boolean;
-  /**
-   * A tinted band follows the form directly (Business's FAQ). Keeps the top padding
-   * and gives the shadow the same room to fade as `closing`.
-   */
   roomBelow?: boolean;
 }
 
@@ -46,7 +32,6 @@ const Wrap = styled('div', {
   shouldForwardProp: (p) => p !== 'closing' && p !== 'roomBelow',
 })<{ closing?: boolean; roomBelow?: boolean }>(({ closing, roomBelow }) => ({
   position: 'relative',
-  /** Closing: no top padding - the section above already supplies the gap. */
   paddingBlock: `${closing ? 0 : 40}px ${closing || roomBelow ? 112 : 40}px`,
   [BP.mobile]: { paddingBlock: `${closing ? 0 : 26}px ${closing || roomBelow ? 64 : 26}px` },
 }));
@@ -87,7 +72,6 @@ const Blurb = styled('p')<{ color: string }>(({ color }) => ({
   margin: '0 0 26px',
 }));
 
-/** On the violet card the fields live inside their own white panel. */
 const Panel = styled('div')<{ on: boolean }>(({ on }) => ({
   background: on ? C.white : 'transparent',
   borderRadius: on ? 18 : 0,
@@ -97,7 +81,6 @@ const Panel = styled('div')<{ on: boolean }>(({ on }) => ({
 
 const Fields = styled('form')({ display: 'grid', gap: 16 });
 
-/** Same stack, but a plain element - nesting a <form> inside a <form> is invalid. */
 const FieldStack = styled('div')({ display: 'grid', gap: 16 });
 
 const Field = styled('input')({
@@ -106,7 +89,6 @@ const Field = styled('input')({
   border: `1.8px solid ${C.purple}`,
   borderRadius: RADIUS.field,
   padding: '15px 20px',
-  /** 16 is the floor: iOS Safari zooms the page when a focused field is smaller. */
   fontSize: 16,
   fontFamily: 'inherit',
   color: C.ink,
@@ -117,7 +99,6 @@ const Field = styled('input')({
   '&:focus': { borderColor: C.magenta, boxShadow: '0 0 0 4px rgba(233,71,154,0.14)' },
 });
 
-/** Same treatment as `Field`, sized for a few lines and not resizable sideways. */
 const TextArea = styled('textarea')({
   width: '100%',
   minHeight: 96,
@@ -126,7 +107,6 @@ const TextArea = styled('textarea')({
   border: `1.8px solid ${C.purple}`,
   borderRadius: RADIUS.field,
   padding: '15px 20px',
-  /** Same 16px floor as `Field`, for the same iOS zoom reason. */
   fontSize: 16,
   fontFamily: 'inherit',
   lineHeight: 1.6,
@@ -179,8 +159,6 @@ export default function ContactForm({ tone = 'cream', closing, roomBelow }: Cont
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    // Mirrors `validateLead` on the server, so the user sees the problem before
-    // a round trip rather than after a 400.
     if (!form.name.trim() || !form.email.trim() || !form.phone.trim()) {
       setStatus('required');
       return;

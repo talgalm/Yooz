@@ -60,35 +60,27 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         </filter>
       </defs>
 
-      {/* Sky gradient */}
       <rect x="0" y="0" width={W} height={SKY_TOP + 40} fill="url(#desertSky)" />
 
-      {/* Main sand ground */}
       <rect x="0" y={SKY_TOP - 30} width={W} height={H - SKY_TOP + 30} fill="#C89838" />
 
-      {/* Sun */}
       <circle cx={W * 0.78} cy={50} r={28} fill="#F8E070" opacity="0.8" />
       <circle cx={W * 0.78} cy={50} r={20} fill="#FFF0A0" opacity="0.5" />
 
-      {/* Clouds (sparse desert clouds) */}
       <g opacity="0.4">
         <ellipse cx={W * 0.25} cy={45} rx={24} ry={8} fill="#fff" />
         <ellipse cx={W * 0.2} cy={45} rx={16} ry={7} fill="#fff" />
         <ellipse cx={W * 0.31} cy={45} rx={14} ry={6} fill="#fff" />
       </g>
 
-      {/* Far dunes (back) */}
       <ellipse cx={W * 0.3} cy={160} rx={W * 0.6} ry={70} fill="#D4A84B" />
       <ellipse cx={W * 0.75} cy={155} rx={W * 0.5} ry={65} fill="#CCA040" />
 
-      {/* Mid dunes */}
       <ellipse cx={W * 0.15} cy={185} rx={W * 0.5} ry={60} fill="#C09030" />
       <ellipse cx={W * 0.85} cy={180} rx={W * 0.45} ry={55} fill="#B88828" />
 
-      {/* Front ground */}
       <ellipse cx={W * 0.5} cy={SKY_TOP + 25} rx={W * 0.8} ry={38} fill="#B88020" />
 
-      {/* Sand texture lines */}
       <path
         d={`M0 ${SKY_TOP + 80} Q${W * 0.15} ${SKY_TOP + 72}, ${W * 0.35} ${SKY_TOP + 82} Q${W * 0.55} ${SKY_TOP + 90}, ${W * 0.75} ${SKY_TOP + 76} Q${W * 0.9} ${SKY_TOP + 70}, ${W} ${SKY_TOP + 78}`}
         fill="none"
@@ -102,7 +94,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         strokeWidth="1"
       />
 
-      {/* Tall cactus left */}
       <g transform={`translate(${W * 0.08}, 76)`} filter="url(#desertShadow)">
         <ellipse cx="18" cy="106" rx="12" ry="3" fill="rgba(100,70,20,0.15)" />
         <rect x="14" y="30" width="8" height="78" rx="4" fill="#4A8B3A" />
@@ -111,7 +102,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         <path d="M22,48 L28,48 Q32,48 32,43 L32,34 Q32,29 28,29 Q28,34 28,40 Q28,46 24,48 Z" fill="#4A8B3A" />
       </g>
 
-      {/* Round cactus right */}
       <g transform={`translate(${W * 0.85}, 108)`} filter="url(#desertShadow)">
         <ellipse cx="18" cy="38" rx="12" ry="2.5" fill="rgba(100,70,20,0.1)" />
         <ellipse cx="18" cy="24" rx="15" ry="18" fill="#4A8B3A" />
@@ -124,7 +114,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         <circle cx="18" cy="8" r="3" fill="#F0E040" opacity="0.6" />
       </g>
 
-      {/* Small cactus middle */}
       <g transform={`translate(${W * 0.68}, 130)`} filter="url(#desertShadow)">
         <rect x="8" y="14" width="6" height="42" rx="3" fill="#4A8B3A" />
         <rect x="9.2" y="16" width="1.5" height="38" rx="0.7" fill="#5AA84A" opacity="0.3" />
@@ -132,7 +121,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         <path d="M14,25 L18,25 Q20,25 20,22 L20,18 Q20,15 18,15 Q18,18 18,21 Q18,24 16,25 Z" fill="#4A8B3A" />
       </g>
 
-      {/* Desert rocks */}
       <g transform={`translate(${W * 0.35}, ${SKY_TOP + 30})`}>
         <path d="M4,22 Q1,18 3,12 Q7,4 16,2 Q24,0 30,4 Q35,10 33,16 Q28,22 18,24 Q8,24 4,22 Z" fill="#A08058" />
         <path d="M16,2 Q24,0 30,4 Q24,5 16,5 Q10,7 6,12 Z" fill="#B89068" opacity="0.45" />
@@ -142,7 +130,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         <path d="M12,1 Q18,0 22,4 Q18,4 12,4 Q8,6 5,10 Z" fill="#A8885A" opacity="0.4" />
       </g>
 
-      {/* Dry bush */}
       <g transform={`translate(${W * 0.22}, ${SKY_TOP + 10})`}>
         <path d="M14,24 Q12,18 10,14 Q8,10 6,6" stroke="#8B7830" strokeWidth="1.2" fill="none" strokeLinecap="round" />
         <path d="M14,24 Q16,18 18,14 Q20,10 22,6" stroke="#8B7830" strokeWidth="1.2" fill="none" strokeLinecap="round" />
@@ -151,7 +138,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         <circle cx="22" cy="5" r="1.8" fill="#9B8840" opacity="0.35" />
       </g>
 
-      {/* Sand dune waves in bottom zone */}
       <path
         d={`M0 ${B} Q${W * 0.15} ${B - 20}, ${W * 0.3} ${B + 8} Q${W * 0.5} ${B + 30}, ${W * 0.7} ${B - 5} Q${W * 0.85} ${B - 22}, ${W} ${B} L${W} ${H} L0 ${H} Z`}
         fill="#B88828"
@@ -169,7 +155,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         fill="#886010"
       />
 
-      {/* Desert grass tufts */}
       <g transform={`translate(${W * 0.4}, ${B - 10})`}>
         <path d="M6,18 Q4,12 3,6 Q6,10 7,14 Q7,8 9,2 Q9,10 8,16 Q10,10 14,6 Q12,12 10,18 Z" fill="#7A8838" />
       </g>
@@ -177,7 +162,6 @@ function SceneSvg({ W, H }: { W: number; H: number }) {
         <path d="M6,16 Q4,10 3,5 Q6,8 7,12 Q7,6 9,1 Q9,8 8,14 Q10,8 13,4 Q11,10 9,16 Z" fill="#7A8838" opacity="0.8" />
       </g>
 
-      {/* Sand ripple marks */}
       <path
         d={`M${W * 0.1} ${B + 70} Q${W * 0.2} ${B + 64}, ${W * 0.35} ${B + 68} Q${W * 0.45} ${B + 72}, ${W * 0.55} ${B + 66}`}
         stroke="rgba(160,120,40,0.25)"

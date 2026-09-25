@@ -1,12 +1,3 @@
-/**
- * The alert engine — spec ch.04 §10.
- *
- * An alert is NOT a stored record. It is a query that runs when the dashboard
- * loads and returns a list. Storing them would mean thousands of rows nobody
- * cleans up, and a "read" state to maintain that answers no business question.
- *
- * The rules table is the dashboard. Adding a rule here makes it appear.
- */
 import { Types } from 'mongoose';
 import { Task, isOpen } from '../models/manage/Task';
 import { Project } from '../models/manage/Project';
@@ -28,7 +19,6 @@ export interface Alert {
   audience: ManageRole[];
 }
 
-/** Fallbacks only — the live values come from Settings. */
 export const STALE_CLIENT_DAYS = 30;
 export const NEEDS_OWNER_CRITICAL_DAYS = 2;
 
@@ -40,12 +30,6 @@ function daysBetween(from: Date, to: Date): number {
   return Math.floor((to.getTime() - from.getTime()) / 86_400_000);
 }
 
-/**
- * Builds every alert the requester is allowed to see.
- *
- * `viewer` scopes the result: a member is shown only their own work, so the
- * dashboard is useful to them rather than a wall of other people's problems.
- */
 export async function buildAlerts(
   viewer: { userId: string; role: ManageRole },
   now: Date = new Date(),
@@ -56,7 +40,6 @@ export async function buildAlerts(
   const isMember = viewer.role === 'member';
   const mine = new Types.ObjectId(viewer.userId);
 
-  // ── Tasks ──
   const taskScope: Record<string, unknown> = { archived: false, status: { $ne: 'done' } };
   if (isMember) taskScope.assigneeUserId = mine;
 
@@ -95,7 +78,6 @@ export async function buildAlerts(
     }
   }
 
-  // ── Projects ──
   const projectScope: Record<string, unknown> = {
     archived: false,
     status: { $nin: ['done', 'cancelled'] },
@@ -150,7 +132,6 @@ export async function buildAlerts(
     }
   }
 
-  // ── Clients we have gone quiet on. Not a member concern. ──
   if (!isMember) {
     const cutoff = new Date(today);
     cutoff.setDate(cutoff.getDate() - thresholds.staleClientDays);
@@ -180,6 +161,5 @@ export async function buildAlerts(
   const rank: Record<Severity, number> = { critical: 0, warning: 1, info: 2 };
   return alerts
     .filter((a) => a.audience.includes(viewer.role))
-    // Most severe first, then longest-waiting — the two things that decide order.
     .sort((a, b) => rank[a.severity] - rank[b.severity] || (b.ageDays ?? 0) - (a.ageDays ?? 0));
 }

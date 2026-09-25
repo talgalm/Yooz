@@ -1,10 +1,3 @@
-/**
- * TTS + media preloading shared by AvatarStation and AvatarQuizStation.
- *
- * Extracted verbatim from AvatarStation so both stations stay in sync — the
- * buffering and fallback behaviour here was tuned against real mobile
- * browsers (iOS silent mode, missing canplaythrough) and shouldn't diverge.
- */
 
 import { currentLang, currentLocale, langHeader } from '../../../utils/currentLang';
 
@@ -52,7 +45,6 @@ export function speakBrowser(
         try {
           window.speechSynthesis.cancel();
         } catch {
-          /* noop */
         }
       },
     };
@@ -65,11 +57,6 @@ export function speakBrowser(
 export interface PreparedSpeech {
   play: (onEnd: () => void) => void;
   stop: () => void;
-  /**
-   * Clip length in ms when it is known (the TTS audio path). Undefined for the
-   * browser-speech fallback, which never reports a duration. Callers use it to
-   * time the UI against the real audio instead of guessing from word count.
-   */
   durationMs?: number;
 }
 
@@ -104,8 +91,6 @@ export async function fetchWithNetworkRetry(
   throw lastError;
 }
 
-/** Pre-fetch and buffer TTS audio so playback can start with no network gap.
- *  Falls back to browser SpeechSynthesis when the TTS API is unavailable. */
 export async function prepareSpeech(
   text: string,
   voiceType: 'man' | 'woman' = 'man'
@@ -131,7 +116,6 @@ export async function prepareSpeech(
       audio.addEventListener('canplaythrough', ok);
       audio.addEventListener('error', err);
       audio.load();
-      // safety: some mobile browsers never fire canplaythrough
       window.setTimeout(() => { cleanup(); resolve(); }, 1500);
     });
 
@@ -144,7 +128,7 @@ export async function prepareSpeech(
       play: (onEnd) => {
         if (stopped) { onEnd(); return; }
         const finish = () => {
-          try { URL.revokeObjectURL(audioUrl); } catch { /* noop */ }
+          try { URL.revokeObjectURL(audioUrl); } catch { }
           if (!stopped) onEnd();
         };
         audio.onended = finish;
@@ -153,8 +137,8 @@ export async function prepareSpeech(
       },
       stop: () => {
         stopped = true;
-        try { audio.pause(); } catch { /* noop */ }
-        try { URL.revokeObjectURL(audioUrl); } catch { /* noop */ }
+        try { audio.pause(); } catch { }
+        try { URL.revokeObjectURL(audioUrl); } catch { }
       },
     };
   } catch (err) {
@@ -177,8 +161,6 @@ export async function prepareSpeech(
   }
 }
 
-/** Warm the browser cache for the video URL so `<video>` plays immediately
- *  when it mounts, instead of waiting on a fresh network fetch. */
 export function preloadVideoUrl(url: string): Promise<void> {
   return new Promise((resolve) => {
     try {
@@ -203,20 +185,6 @@ export function preloadVideoUrl(url: string): Promise<void> {
   });
 }
 
-/**
- * Rewrite Hebrew gendered slash-forms into neutral ones before speaking.
- *
- * Inclusive Hebrew writes "את/ה", "תענה/י", "מכיר/ה" — fine on screen, but a
- * TTS engine reads the slash out loud. Simply dropping the suffix isn't
- * neutral either: "את/ה" would become "את", which is feminine singular.
- *
- * Hebrew has no true neuter, so the plural form is the usual stand-in — it
- * reads naturally and commits to no gender. Anything not in the table falls
- * back to the base word, which at least never pronounces the slash.
- *
- * Latin slashes are untouched, so URLs survive. Display text keeps its
- * slashes; only the spoken copy is rewritten.
- */
 const NEUTRAL_SPEECH_FORMS: Record<string, string> = {
   'את/ה': 'אתם',
   'בוא/י': 'בואו',
@@ -246,11 +214,9 @@ export function speechText(text: string): string {
   for (const [gendered, neutral] of Object.entries(NEUTRAL_SPEECH_FORMS)) {
     out = out.split(gendered).join(neutral);
   }
-  // Anything the table missed: drop the slash suffix so it is never spoken.
   return out.replace(/\/[א-ת]{1,2}(?![א-ת])/g, '');
 }
 
-/** Unlock speechSynthesis on iOS — must run inside a user gesture. */
 export function primeSpeech() {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
   try {
@@ -258,6 +224,5 @@ export function primeSpeech() {
     u.volume = 0;
     window.speechSynthesis.speak(u);
   } catch {
-    /* noop */
   }
 }

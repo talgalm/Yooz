@@ -112,8 +112,6 @@ const ContentArea = styled('div')({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  // Scrollable, not clipped: on a short viewport the content can outgrow the
-  // frame, and hiding the overflow used to swallow the start button.
   flex: 1,
   minHeight: 0,
   overflowY: 'auto',
@@ -297,9 +295,6 @@ export default function GuidelinesPopup({ itemCount, guidelines, customInstructi
     : [t.guidelineRule1, t.guidelineRule2];
   const buttonText = ci?.buttonText || t.startAdventure;
 
-  // Portalled to <body>: this overlay blurs its backdrop, and rendering it
-  // inside the animated stage made the filter sample that composited layer
-  // instead of the page, painting a ghosted second copy behind the popup.
   return createPortal(
     <Overlay exiting={exiting} onClick={handleDismiss}>
       <PopupFrame exiting={exiting} onClick={(e) => e.stopPropagation()}>

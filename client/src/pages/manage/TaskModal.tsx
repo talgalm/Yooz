@@ -168,7 +168,6 @@ export default function TaskModal({ task, defaultProjectId, defaultDueDate, onCl
                   {projects.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
                 </SmallSelect>
               </Field>
-              {/* A todo can hang off a client instead of a project. */}
               {!projectId && (
                 <Field>
                   {t.client}
@@ -193,7 +192,6 @@ export default function TaskModal({ task, defaultProjectId, defaultDueDate, onCl
               <SmallTextarea value={description} onChange={(e) => setDescription(e.target.value)} />
             </Field>
 
-            {/* Only management publishes a task; a member's task is their own. */}
             {canSeeTeam && (
               <VisibilityBox>
                 <CheckLine>

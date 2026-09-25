@@ -1,9 +1,3 @@
-/**
- * The page is one story told in the founder's own voice, so the copy is his
- * wording rather than site marketing language - keep edits light. It is split
- * into beats rather than one block: the line he built the company around gets
- * marked, and the sentence the company is born in stands on its own.
- */
 export const texts = {
   he: {
     storyTitle: 'אודות',

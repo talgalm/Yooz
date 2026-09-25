@@ -57,11 +57,6 @@ const Waiting = styled('span')<{ hot?: boolean }>(({ hot }) => ({
 }));
 
 
-/**
- * "Not what is happening — what I need to act on."
- * Counts first, then the exceptions. Anything that does not lead to an action
- * belongs in a report, not here.
- */
 export default function ManageDashboardPage() {
   const t = useTranslations(texts);
   const { user } = useManageAuth();

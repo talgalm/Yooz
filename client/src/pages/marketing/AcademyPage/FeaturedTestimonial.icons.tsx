@@ -1,6 +1,5 @@
 import { C } from '../shared/tokens';
 
-/** Filled marks, not a typed glyph: a font's quotation mark changes shape and weight by fallback. */
 export function QuoteMark() {
   return (
     <svg width="44" height="44" viewBox="0 0 24 24" aria-hidden focusable="false">

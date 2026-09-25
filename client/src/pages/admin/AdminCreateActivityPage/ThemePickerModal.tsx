@@ -2,9 +2,8 @@ import { styled } from '@mui/material/styles';
 import { getThemeKit } from '../../StoryModulePage/roadmapThemes';
 import type { CustomTheme } from './ThemeFormModal';
 
-/** One selectable theme, flattened to the three colours a preview needs. */
 export interface ThemeOption {
-  id: string; // '' is the built-in default
+  id: string;
   name: string;
   scene: string;
   road: string;
@@ -13,8 +12,6 @@ export interface ThemeOption {
   custom?: CustomTheme;
 }
 
-/** Built-in themes, painted from the very kits the participant roadmap renders,
- *  so a preview here can never drift from what players actually see. */
 export function builtInThemeOptions(t: Record<string, string>): ThemeOption[] {
   const paint = (id: string) => {
     const kit = getThemeKit(id);
@@ -41,10 +38,6 @@ export function customThemeOption(ct: CustomTheme): ThemeOption {
   };
 }
 
-/** Miniature of the roadmap: scene colour, the path across it, one lit node —
- *  which is exactly how the theme renders for players. A custom theme's roadmap
- *  image layers over the scene colour, so a missing or broken image degrades to
- *  the colours rather than to an empty tile. */
 const swatch = (height: number, radius: number) => ({
   scene,
   road,
@@ -89,7 +82,6 @@ export const ThemeSwatch = styled('span')<{ scene: string; road: string; node: s
   swatch(64, 10),
 );
 
-/** Row-sized swatch for the collapsed control on the form. */
 export const ThemeSwatchTiny = styled('span')<{ scene: string; road: string; node: string; image?: string }>(
   swatch(34, 8),
 );
@@ -223,8 +215,6 @@ interface ThemePickerModalProps {
   t: Record<string, string>;
 }
 
-/** Every theme in one place, each shown as a miniature of the roadmap it
- *  produces — keeps the form itself down to a single collapsed row. */
 export default function ThemePickerModal({
   value,
   options,

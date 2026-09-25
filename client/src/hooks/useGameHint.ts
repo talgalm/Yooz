@@ -18,14 +18,9 @@ interface UseGameHintReturn {
   dismissHintWarning: () => void;
   dismissHintText: () => void;
   applyHintPenalty: (score: number) => number;
-  /** Force hint as already used (for restoring saved game progress) */
   forceHintUsed: () => void;
 }
 
-/**
- * Shared hook for game-level hint logic.
- * Manages hint state (warning modal, text modal, used flag) and penalty calculation.
- */
 export function useGameHint(_hint?: HintConfig): UseGameHintReturn {
   const [hintUsed, setHintUsed] = useState(false);
   const [showHintWarning, setShowHintWarning] = useState(false);

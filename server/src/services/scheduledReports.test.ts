@@ -7,8 +7,6 @@ function report(overrides: Partial<ExportReport>): ExportReport {
   return { participantName: 'Dana', completionStatus: 'completed', data: { totalScore: 80 }, ...overrides };
 }
 
-/** skipIfUnchanged compares this snapshot across sends — it must be stable when
- *  nothing changed, and it must change when a participant's score/status does. */
 test('computeReportsSnapshot is stable for unchanged data and changes when data changes', () => {
   const reports = [report({ participantName: 'Dana' }), report({ participantName: 'Noa', data: { totalScore: 60 } })];
   const again = [report({ participantName: 'Dana' }), report({ participantName: 'Noa', data: { totalScore: 60 } })];
@@ -21,16 +19,12 @@ test('computeReportsSnapshot is stable for unchanged data and changes when data 
   assert.notEqual(computeReportsSnapshot(reports), computeReportsSnapshot(newParticipant));
 });
 
-/** Fetch order must not matter — Mongo doesn't guarantee it across queries. */
 test('computeReportsSnapshot does not depend on report order', () => {
   const a = [report({ participantName: 'Dana' }), report({ participantName: 'Noa' })];
   const b = [report({ participantName: 'Noa' }), report({ participantName: 'Dana' })];
   assert.equal(computeReportsSnapshot(a), computeReportsSnapshot(b));
 });
 
-/** The idempotency guard runScheduledReports applies before skipIfUnchanged: a
- *  second trigger within the same Israel hour must read as "already sent",
- *  regardless of skipIfUnchanged's own value. */
 test('sameIsraelHour: two instants minutes apart in the same hour are the same hour', () => {
   assert.equal(
     sameIsraelHour(new Date('2026-09-23T06:05:00Z'), new Date('2026-09-23T06:55:00Z')),
@@ -38,8 +32,6 @@ test('sameIsraelHour: two instants minutes apart in the same hour are the same h
   );
 });
 
-/** The next day's occurrence at the identical hour-of-day must NOT look "already
- *  sent" — otherwise a daily 9am report would only ever fire once, ever. */
 test('sameIsraelHour: same hour-of-day on a different Israel day is not the same hour', () => {
   assert.equal(
     sameIsraelHour(new Date('2026-09-22T06:05:00Z'), new Date('2026-09-23T06:05:00Z')),

@@ -13,12 +13,6 @@ router.get('/', async (_req: Request, res: Response) => {
   res.json({ settings: await getSettings() });
 });
 
-/**
- * Every write is validated, because these values feed calculations rather than
- * being displayed. A stage template that does not sum to 100 silently
- * mis-splits every future project's budget; a zero max-hours-per-day blocks all
- * time reporting. Neither failure would point back to this screen.
- */
 router.patch('/', async (req: Request, res: Response) => {
   const body = (req.body ?? {}) as Record<string, unknown>;
   const update: Record<string, unknown> = {};
@@ -51,8 +45,6 @@ router.patch('/', async (req: Request, res: Response) => {
 
   if (Array.isArray(body.timeCategories)) {
     const raw = body.timeCategories as { key?: unknown; label?: unknown; requiresProject?: unknown }[];
-    // The category KEYS are a code-level union; only labels and the
-    // project requirement are editable, or existing entries become unreadable.
     const categories = TIME_CATEGORIES.map((key) => {
       const found = raw.find((c) => c?.key === key);
       return {
@@ -78,7 +70,6 @@ router.patch('/', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'thresholds_must_be_positive' });
       return;
     }
-    // Orange must come before red, or a project jumps straight past the warning.
     if (next.nearBudget > next.overBudget) {
       res.status(400).json({ error: 'near_budget_above_over_budget' });
       return;
@@ -98,7 +89,6 @@ router.patch('/', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'defaults_must_be_positive' });
       return;
     }
-    // A day cannot hold more than 24 hours, and a zero cap blocks all reporting.
     if (next.maxHoursPerDay < 1 || next.maxHoursPerDay > 24) {
       res.status(400).json({ error: 'max_hours_out_of_range' });
       return;
@@ -120,14 +110,11 @@ router.patch('/', async (req: Request, res: Response) => {
     { $set: update },
     { new: true, upsert: true, setDefaultsOnInsert: true },
   ).lean();
-  // Without this the cache would serve the old values for up to a minute, and
-  // the screen would look like it had not saved.
   invalidateSettingsCache();
 
   res.json({ settings });
 });
 
-/** Restores the built-in stage template, for when an edit goes wrong. */
 router.post('/stage-template/reset', async (_req: Request, res: Response) => {
   const settings = await Settings.findOneAndUpdate(
     { singleton: 'settings' },

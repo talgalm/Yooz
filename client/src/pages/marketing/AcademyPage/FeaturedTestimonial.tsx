@@ -7,7 +7,6 @@ import { QuoteMark } from './FeaturedTestimonial.icons';
 export interface FeaturedQuote {
   paragraphs: string[];
   name: string;
-  /** Signature lines under the name, as the client signs them. */
   roles: string[];
   logoUrl?: string;
   logoAlt?: string;
@@ -25,10 +24,6 @@ const Root = styled('section')({
 
 const Title = styled(H2)({ marginBottom: 36, [BP.mobile]: { marginBottom: 24 } });
 
-/**
- * One wide card: the quote, then a signature panel. Two columns from 901px;
- * below that the signature stacks under the quote.
- */
 const Card = styled('figure')({
   margin: '0 auto',
   maxWidth: 1060,
@@ -41,11 +36,6 @@ const Card = styled('figure')({
   '@media (min-width: 901px)': { gridTemplateColumns: '1.75fr 1fr' },
 });
 
-/**
- * The rule between the columns sits on the quote's inline end - the left edge
- * under RTL, the right under LTR - so it always lands between the two. On a
- * phone it becomes the line above the signature.
- */
 const QuoteSide = styled('div')({
   padding: '40px 44px 36px',
   borderBottom: `1px solid ${C.cardRule}`,
@@ -71,17 +61,12 @@ const Paragraph = styled('p')({
   [BP.mobile]: { fontSize: 15.5, lineHeight: 1.7 },
 });
 
-/**
- * The signature follows the page direction: aligned to the inline start, which
- * is the right under Hebrew. Centred on a phone, where it stacks under the quote.
- */
 const Signature = styled('figcaption')({
   background: C.cardTint,
   padding: '40px 36px',
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'center',
-  /** `flex-start`, not the default `stretch`, or the logo is stretched to the panel width. */
   alignItems: 'flex-start',
   textAlign: 'start',
   [BP.mobile]: { padding: '26px 22px 28px', textAlign: 'center', alignItems: 'center' },
@@ -108,15 +93,9 @@ const Role = styled('li')({
   fontSize: 13.5,
   lineHeight: 1.5,
   color: C.inkSoft,
-  /** The institution closes the list and carries the weight. */
   '&:last-child': { fontWeight: 700, color: C.heading, marginTop: 4 },
 });
 
-/**
- * A single named testimonial for the Academy page. The shared `Testimonials`
- * lays out a tilted pair of short anonymous quotes; a long quote with a full
- * signature needs a card of its own.
- */
 export default function FeaturedTestimonial({ title, quote }: FeaturedTestimonialProps) {
   return (
     <Root>

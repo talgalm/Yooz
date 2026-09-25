@@ -31,12 +31,6 @@ export default function ThemedBackground({ theme, customTheme, children }: Theme
   }
 }
 
-/**
- * Custom-theme wrapper. Provides ThemedSceneOverlayContext so games render
- * their full-screen backdrop at this outer level — outside the animated
- * stage whose `transform` would otherwise confine a `position: fixed`
- * backdrop and leave the sticky header unpainted.
- */
 function CustomThemeBackground({ stationsImage, children }: { stationsImage: string; children: React.ReactNode }) {
   const [sceneOverlay, setSceneOverlay] = useState<React.ReactNode | null>(null);
   return (
@@ -71,7 +65,6 @@ export function getThemeShellColor(theme?: string): string {
   }
 }
 
-/** Top-of-sky color — used as browser theme-color on text/video/image stations so the address bar blends in. */
 export function getThemeSkyColor(theme?: string): string {
   switch (theme) {
     case 'ocean':  return '#5ABED6';
@@ -81,7 +74,6 @@ export function getThemeSkyColor(theme?: string): string {
   }
 }
 
-/** Bottom ground color — used as body background on text/video/image stations so the bottom nav bar blends in. */
 export function getThemeGroundColor(theme?: string): string {
   switch (theme) {
     case 'ocean':  return '#0e3a58';

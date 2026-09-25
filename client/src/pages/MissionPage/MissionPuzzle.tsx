@@ -13,28 +13,23 @@ import {
 } from './MissionFrame';
 import MissionTopMenu from './MissionTopMenu';
 
-// ─── Config ───
 const GRID = 4;
 const TOTAL = GRID * GRID;
 const MISSION_TEAL = '#39CABC';
 const MISSION_FONT = "'Rubik', sans-serif";
 const PUZZLE_IMAGE = '/images/puzzle-env.png';
 
-// ─── Jigsaw Geometry ───
-// SVG viewBox: 0 0 120 120
-// Base square: (10,10) → (110,110) = 100×100, with 10-unit padding for tab overflow
-const PD = 10;          // padding / base start
-const PE = 110;         // base end
-const PR = 10;          // tab semicircle radius
-const PM = 60;          // midpoint
-const BK = 0.5523;     // cubic-bezier constant for circle approximation
-const RK = PR * BK;    // pre-computed
+const PD = 10;
+const PE = 110;
+const PR = 10;
+const PM = 60;
+const BK = 0.5523;
+const RK = PR * BK;
 
 type Side = 'flat' | 'tab' | 'blank';
 
 const flip = (s: 'tab' | 'blank'): Side => (s === 'tab' ? 'blank' : 'tab');
 
-/** Determine the 4 sides of a jigsaw piece (flat on edges, tab/blank internally) */
 function getSides(piece: number) {
   const r = Math.floor((piece - 1) / GRID);
   const c = (piece - 1) % GRID;
@@ -48,12 +43,10 @@ function getSides(piece: number) {
   };
 }
 
-/** Build SVG path for a jigsaw piece shape */
 function buildPath(piece: number): string {
   const s = getSides(piece);
   let d = `M ${PD},${PD}`;
 
-  // Top edge (L → R along y=PD)
   if (s.top === 'flat') {
     d += ` L ${PE},${PD}`;
   } else {
@@ -62,7 +55,6 @@ function buildPath(piece: number): string {
     d += ` L ${PM - PR},${PD} C ${PM - PR},${cy} ${PM - RK},${ty} ${PM},${ty} C ${PM + RK},${ty} ${PM + PR},${cy} ${PM + PR},${PD} L ${PE},${PD}`;
   }
 
-  // Right edge (T → B along x=PE)
   if (s.right === 'flat') {
     d += ` L ${PE},${PE}`;
   } else {
@@ -71,7 +63,6 @@ function buildPath(piece: number): string {
     d += ` L ${PE},${PM - PR} C ${cx},${PM - PR} ${tx},${PM - RK} ${tx},${PM} C ${tx},${PM + RK} ${cx},${PM + PR} ${PE},${PM + PR} L ${PE},${PE}`;
   }
 
-  // Bottom edge (R → L along y=PE)
   if (s.bottom === 'flat') {
     d += ` L ${PD},${PE}`;
   } else {
@@ -80,7 +71,6 @@ function buildPath(piece: number): string {
     d += ` L ${PM + PR},${PE} C ${PM + PR},${cy} ${PM + RK},${ty} ${PM},${ty} C ${PM - RK},${ty} ${PM - PR},${cy} ${PM - PR},${PE} L ${PD},${PE}`;
   }
 
-  // Left edge (B → T along x=PD)
   if (s.left === 'flat') {
     d += ` L ${PD},${PD}`;
   } else {
@@ -95,8 +85,6 @@ function buildPath(piece: number): string {
 function pieceToGrid(piece: number) {
   return { row: Math.floor((piece - 1) / GRID), col: (piece - 1) % GRID };
 }
-
-// ─── SVG Piece ───
 
 function PieceSvg({ piece, clipId }: { piece: number; clipId: string }) {
   const { row, col } = pieceToGrid(piece);
@@ -123,7 +111,6 @@ function PieceSvg({ piece, clipId }: { piece: number; clipId: string }) {
   );
 }
 
-// ─── Animations ───
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -139,8 +126,6 @@ const glow = keyframes`
   0%, 100% { box-shadow: 0 0 8px ${MISSION_TEAL}60; }
   50%      { box-shadow: 0 0 20px ${MISSION_TEAL}A0; }
 `;
-
-// ─── Styled ───
 
 const PuzzleContent = styled('div')({
   flex: 1,
@@ -180,7 +165,6 @@ const GridArea = styled('div')({
   overflow: 'hidden',
   border: `2px solid ${MISSION_TEAL}`,
   boxShadow: `0 0 12px ${MISSION_TEAL}60`,
-  // Blurred puzzle image as background hint (via pseudo to avoid blurring children)
   '&::before': {
     content: '""',
     position: 'absolute',
@@ -240,8 +224,6 @@ const GhostContainer = styled('div')({
   opacity: 0.85,
 });
 
-// ─── Helpers ───
-
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -250,8 +232,6 @@ function shuffle<T>(arr: T[]): T[] {
   }
   return a;
 }
-
-// ─── Props ───
 
 interface MissionPuzzleProps {
   onComplete: () => void;
@@ -269,8 +249,6 @@ interface MissionPuzzleProps {
   onHelp?: () => void;
 }
 
-// ─── Session helpers ───
-
 function userFingerprint(): string {
   try { return (localStorage.getItem('yooz_token') ?? '').slice(-10); } catch { return ''; }
 }
@@ -282,15 +260,13 @@ function loadPuzzleSession(code?: string): { queue: number[]; placed: number[] }
   try {
     const raw = sessionStorage.getItem(puzzleKey(code));
     if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  } catch { }
   return null;
 }
 
 function savePuzzleSession(code: string, queue: number[], placed: number[]) {
   sessionStorage.setItem(puzzleKey(code), JSON.stringify({ queue, placed }));
 }
-
-// ─── Component ───
 
 export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect, playWrong, playClick, playComplete, muted, toggleMute, code, completeHeader, completeButton, onLogout, onHelp }: MissionPuzzleProps) {
   const t = useTranslations(texts);
@@ -317,10 +293,9 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
   const currentPiece = queue[0];
   const placedCount = placed.size;
 
-  // Cell size = 25% of the grid. Piece wrapper = 30% (120% of cell for tab overflow).
-  const cellPct = 100 / GRID; // 25
-  const piecePct = cellPct * 1.2; // 30
-  const offsetPct = (piecePct - cellPct) / 2; // 2.5
+  const cellPct = 100 / GRID;
+  const piecePct = cellPct * 1.2;
+  const offsetPct = (piecePct - cellPct) / 2;
 
   const getCellSize = useCallback(() => {
     if (!gridRef.current) return 0;
@@ -336,7 +311,6 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
     return row * GRID + col + 1;
   }, []);
 
-  // ─── Touch ───
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
     const t = e.touches[0];
@@ -368,7 +342,6 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
     }
   }, [dragging, currentPiece, coordToCell, playCorrect, playWrong]);
 
-  // ─── Mouse ───
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setDragging(true);
@@ -404,7 +377,6 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
     };
   }, [dragging, currentPiece, coordToCell, playCorrect, playWrong]);
 
-  // Persist puzzle state
   useEffect(() => {
     if (code) savePuzzleSession(code, queue, Array.from(placed));
   }, [code, queue, placed]);
@@ -427,7 +399,6 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
 
   const gs = ghostSize.current || getCellSize() * 1.2;
 
-  // ─── Complete state: show full image, header, footer button ───
   if (complete) {
     return (
       <MissionWrapper bg={backgroundImage} step={0}>
@@ -453,7 +424,6 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
     );
   }
 
-  // ─── Puzzle in progress ───
   return (
     <MissionWrapper bg={backgroundImage} step={3}>
       <FrameContainer>
@@ -467,9 +437,7 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
         </PuzzleInstruction>
 
         <PuzzleContent>
-          {/* 4×4 Grid */}
           <GridArea ref={gridRef}>
-            {/* Cell borders (guide) */}
             {gridCells.map(({ i, row, col }) => (
               <GridCell
                 key={`cell-${i}`}
@@ -483,7 +451,6 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
               />
             ))}
 
-            {/* Placed jigsaw pieces (oversized to show tabs) */}
             {Array.from(placed).map((p) => {
               const { row, col } = pieceToGrid(p);
               return (
@@ -503,7 +470,6 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
             })}
           </GridArea>
 
-          {/* Drag zone */}
           {currentPiece && (
             <DragZone>
               <DragPieceContainer
@@ -520,7 +486,6 @@ export default function MissionPuzzle({ onComplete, backgroundImage, playCorrect
         </PuzzleContent>
       </FrameContainer>
 
-      {/* Ghost piece while dragging */}
       {dragging && ghostPos && currentPiece && (
         <GhostContainer
           style={{

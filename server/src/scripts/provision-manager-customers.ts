@@ -1,9 +1,3 @@
-/**
- * Backfill customer User accounts for activities that already have managerEmail set.
- *
- * Usage (from server/):
- *   npx tsx src/scripts/provision-manager-customers.ts [--dry-run]
- */
 
 import mongoose from 'mongoose';
 import { MONGODB_URI } from '../config';

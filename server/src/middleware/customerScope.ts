@@ -10,14 +10,10 @@ export function customerOwnerEmail(req: Request): string | null {
   return req.admin.email.toLowerCase().trim();
 }
 
-/** Mongo filter for list queries — customers see activities they created or manage */
 export function customerMongoFilter(req: Request): Record<string, unknown> {
   if (!isCustomerRole(req)) return {};
   const email = customerOwnerEmail(req);
   if (!email) return { _id: { $exists: false } };
-  // managerEmail is saved as typed (no lowercase in the schema), so match it
-  // case-insensitively — otherwise a customer loses every activity they only
-  // manage, stats included. customerOwnsDoc already compares case-insensitively.
   const managerEmail = new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
   return { $or: [{ createdByEmail: email }, { managerEmail }] };
 }
@@ -33,7 +29,6 @@ export function customerOwnsDoc(
   return doc.createdByEmail === email || doc.managerEmail?.toLowerCase() === email;
 }
 
-/** True when customer is assigned as manager but did not create the activity */
 export function customerIsAssignedManager(
   req: Request,
   doc: { createdByEmail?: string; managerEmail?: string } | null | undefined,
@@ -48,9 +43,6 @@ export function createdByEmailForNewResource(req: Request): string {
   return customerOwnerEmail(req) || 'unknown';
 }
 
-/** Ensures story/mission module only references games/stations/missions the customer owns.
- *  On update, refs already present in the existing module are grandfathered — only NEW
- *  refs are validated, so a deleted/unowned existing station doesn't block unrelated edits. */
 export async function assertModuleOwnedByCustomer(
   req: Request,
   moduleConfig: unknown,

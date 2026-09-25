@@ -41,10 +41,9 @@ export default function ProjectFormModal({ project, onClose, onSaved }: Props) {
   useEffect(() => {
     manageApiFetch<{ clients: Client[] }>('/api/manage/clients')
       .then((r) => setClients(r.clients))
-      .catch(() => { /* the picker stays empty; the form still works for internal projects */ });
+      .catch(() => { });
   }, []);
 
-  // Contacts belong to the chosen client, so the picker refills whenever it changes.
   useEffect(() => {
     if (!clientId) { setContacts([]); return; }
     const known = clients.find((c) => c._id === clientId);
@@ -65,7 +64,6 @@ export default function ProjectFormModal({ project, onClose, onSaved }: Props) {
         primaryContactId: type === 'client' ? primaryContactId : '',
         plannedHours: Number(plannedHours) || 0,
       };
-      // Only the owner may write money-adjacent fields; the server enforces it too.
       if (isOwner) payload.recurring = { ...(project?.recurring ?? {}), enabled: recurring };
 
       const res = await manageApiFetch<{ project: Project }>(

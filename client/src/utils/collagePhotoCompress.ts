@@ -1,7 +1,6 @@
 const MAX_EDGE = 1080;
 const JPEG_QUALITY = 0.85;
 
-/** Resize photos to max 1080px JPEG before upload — matches server sharp preset. */
 export async function compressPhotoForCollage(blob: Blob): Promise<Blob> {
   if (blob.type.startsWith('video/')) return blob;
   if (!blob.type.startsWith('image/')) return blob;
