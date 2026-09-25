@@ -103,11 +103,6 @@ async function askGemini(lang: string, sources: string[]): Promise<string[] | nu
   }
 }
 
-/**
- * What has already been translated, without translating anything new. Reading a
- * screen should never spend a model call on its own; the admin translation
- * screen opens with this and asks for the rest only when told to.
- */
 export async function cachedTranslations(
   sources: string[],
   lang: string
@@ -121,10 +116,6 @@ export async function cachedTranslations(
   return map;
 }
 
-/**
- * The same, filling in whatever is missing. Anything the model could not
- * translate is simply absent from the map, leaving the Hebrew in place.
- */
 export async function translationsFor(sources: string[], lang: string): Promise<Map<string, string>> {
   const map = await cachedTranslations(sources, lang);
   if (sources.length === 0 || lang === DEFAULT_LANG) return map;
@@ -144,23 +135,14 @@ export async function translationsFor(sources: string[], lang: string): Promise<
       translated: translated[j],
     }));
     for (const row of rows) map.set(row.source, row.translated);
-    // Two participants can open the same station at once; the loser is a no-op.
     await ContentTranslation.insertMany(rows, { ordered: false }).catch(() => undefined);
   }
 
   return map;
 }
 
-/**
- * One line, through the same cache - so a fixed phrase costs a model call once.
- * For the sentences the server writes itself (an avatar's stock reactions, the
- * collage share page): translating them means a new language needs no new
- * table. Returns the original on any failure.
- */
 export async function translateText(text: string, lang: string): Promise<string> {
   if (!text || !lang || lang === DEFAULT_LANG) return text;
-  // An answer a model already wrote in the target language passes straight
-  // through instead of being round-tripped.
   if (!HEBREW.test(text)) return text;
   try {
     const map = await translationsFor([text], lang);

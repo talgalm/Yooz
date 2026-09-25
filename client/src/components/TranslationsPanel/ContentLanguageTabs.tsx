@@ -9,36 +9,17 @@ import TranslationsPanel, { type LangSummary } from './index';
 interface ContentLanguageTabsProps {
   kind: 'stations' | 'games';
   id?: string;
-  /** The item's own card. Omitted by the module builder's modal, which has no form. */
   children?: ReactNode;
   plain?: boolean;
 }
 
-/**
- * How far the active tab reaches down into the card: exactly the card's border,
- * which its white bottom bar then hides. Any deeper and the tab's side borders
- * carry on past the card's top edge as two stubs inside it.
- */
 const MERGE = 1;
 
 const CARD_BORDER = '#ecebf4';
 const CARD_SHADOW = '0 1px 2px rgba(16,12,40,0.04), 0 10px 30px rgba(16,12,40,0.05)';
 
-/**
- * Room above the strip for a tab's shadow, which the strip would otherwise clip
- * flush. Top only: the same padding sideways made the strip wider than the
- * card, and a scroller's content moves through its padding, so scrolled tabs
- * appeared outside the card's edges.
- */
 const SHADOW_ROOM = 24;
 
-/**
- * Where the card meets the tabs it gives up two things: the rounded corner the
- * first tab sits on, which otherwise curves away and shows a wedge of page
- * beneath it, and the part of its shadow that points upwards - inactive tabs
- * are transparent, so that shadow washed up through them and greyed their lower
- * half. The radius is logical, so the squared corner follows the page direction.
- */
 const cardMeetingTabs = {
   borderStartStartRadius: 0,
   clipPath: 'inset(0 -60px -60px -60px)',
@@ -52,15 +33,10 @@ const Strip = styled('div')({
   display: 'flex',
   gap: 4,
   alignItems: 'flex-end',
-  // Moved only by clicking a tab: `scrollIntoView` still works on a hidden
-  // overflow, so there is no scrollbar, no wheel, and no way to leave the strip
-  // half-way between two tabs.
   overflowX: 'hidden',
   overflowY: 'hidden',
   position: 'relative',
   zIndex: 2,
-  // Pulled over the card here rather than on the tabs, because anything
-  // overflowing a tab downwards is clipped, a bridging shadow included.
   marginBottom: -MERGE,
   paddingBottom: 0,
   paddingTop: SHADOW_ROOM,
@@ -68,11 +44,6 @@ const Strip = styled('div')({
   scrollBehavior: 'smooth',
 });
 
-/**
- * The active tab is the card's edge carried upwards: same border, same shadow,
- * same white. An inactive one keeps a transparent border of the same width, so
- * it takes the same room and the card's border still runs underneath it.
- */
 const Tab = styled('button')<{ active?: boolean }>(({ active }) => ({
   display: 'flex',
   alignItems: 'center',
@@ -85,12 +56,6 @@ const Tab = styled('button')<{ active?: boolean }>(({ active }) => ({
   borderBottomColor: active ? CARD_BORDER : 'transparent',
   background: active ? '#fff' : 'transparent',
   backgroundClip: 'padding-box',
-  /**
-   * The join with the card, as a bar rather than a white bottom border: a
-   * border is mitered against the side ones, and on a HiDPI screen that miter
-   * bled a device pixel of white past the card's edge. The bar spans the
-   * padding box, leaving both corners the border's own colour.
-   */
   ...(active && {
     '&::after': {
       content: '""',
@@ -102,8 +67,6 @@ const Tab = styled('button')<{ active?: boolean }>(({ active }) => ({
     },
   }),
   boxShadow: active ? CARD_SHADOW : 'none',
-  // Cut at the tab's bottom edge so the shadow wraps the top and sides without
-  // smudging across the card it sits on.
   clipPath: active ? `inset(-${SHADOW_ROOM * 2}px -${SHADOW_ROOM * 2}px 0)` : 'none',
   color: active ? '#6C5CE7' : '#6b6280',
   fontSize: 13.5,
@@ -130,11 +93,6 @@ const Dot = styled('span')({
   background: '#e0a84a',
 });
 
-/**
- * Fades whichever edge the strip continues past, so a strip that runs on reads
- * as having more rather than as cut off. `mask-image` takes no logical values,
- * so the two ends are mapped to left and right by hand.
- */
 function fadeStyle(
   more: { start: boolean; end: boolean },
   dir: 'ltr' | 'rtl'
@@ -168,7 +126,6 @@ export default function ContentLanguageTabs({
   const [summary, setSummary] = useState<LangSummary[] | null>(null);
   const [tab, setTab] = useState('he');
   const stripRef = useRef<HTMLDivElement>(null);
-  /** Whether more tabs lie past each edge, which is what `fadeStyle` shows. */
   const [more, setMore] = useState({ start: false, end: false });
 
   const measure = useCallback(() => {
@@ -188,23 +145,12 @@ export default function ContentLanguageTabs({
     return () => observer.disconnect();
   }, [measure, summary]);
 
-  /**
-   * The active tab can sit off-screen when the tabs first arrive. Not keyed on
-   * `tab` as well: re-running this on a click cancelled the smooth scroll that
-   * `reveal` had just started, and the strip never moved.
-   */
   useEffect(() => {
     stripRef.current
       ?.querySelector('[aria-selected="true"]')
       ?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
   }, [summary]);
 
-  /**
-   * Clicking a tab pulls the strip that way, revealing the next one beyond it.
-   * Scrolling the *neighbour* into view rather than centring the tab clicked
-   * moves the least possible while still always showing something new, so the
-   * strip does not jump under a click in the middle.
-   */
   const reveal = useCallback((el: HTMLElement | null) => {
     const strip = stripRef.current;
     if (!strip || !el) return;

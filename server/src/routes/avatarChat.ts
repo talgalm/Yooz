@@ -61,8 +61,6 @@ function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
   } else {
     lines.push('את/ה עד בחקירה בלשית אינטראקטיבית. המשתמש הוא הבלש החוקר אותך.');
   }
-  // Naming Hebrew here contradicts the reply-language line at the end of the
-  // prompt, and the model followed this one.
   lines.push(
     lang === DEFAULT_LANG
       ? 'ענה/י תמיד בעברית, בגוף ראשון, בטון קצר וטבעי (1–2 משפטים).'
@@ -145,7 +143,6 @@ function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
   lines.push('');
   lines.push('כללי פלט: תשובה קצרה (עד 2 משפטים), ללא אימוג׳ים, ללא מרקדאון, ללא הסברים מטה-טקסט.');
 
-  // Last word on the language.
   const language = replyLanguageInstruction(lang);
   if (language) lines.push('', language);
 

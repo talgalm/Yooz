@@ -1,9 +1,3 @@
-/**
- * Reviewing what the machine wrote: every translatable string in a station or
- * game next to its machine translation, with corrections stored on the document
- * itself. A correction is keyed by the exact Hebrew it replaces, so editing the
- * Hebrew retires the correction written for that wording.
- */
 import { Router, Request, Response } from 'express';
 import { authenticateAdmin } from '../middleware/adminAuth';
 import { Activity, Game, Station } from '../models';
@@ -25,11 +19,6 @@ function translatableParts(doc: { name?: string; description?: string; settings?
   return { name: doc.name, description: doc.description, settings: doc.settings };
 }
 
-/**
- * The same counts rolled up across an activity's content, for its language
- * picker. Registered before the `:kind` routes, which would otherwise swallow
- * `/activity/...` and answer 404.
- */
 router.get(
   '/activity/:id/languages',
   authenticateAdmin,
@@ -85,12 +74,6 @@ async function languagesInUse(kind: Kind, id: string): Promise<Set<string>> {
   return inUse;
 }
 
-/**
- * What exists per language, for the tabs: how many sentences a person has
- * corrected, and whether an activity using this item still offers the language.
- * Translations are never deleted when it stops, so `inUse: false` means "kept,
- * but nobody is reading it".
- */
 router.get(
   '/:kind/:id/languages',
   authenticateAdmin,
@@ -127,9 +110,6 @@ router.get(
   }
 );
 
-// Nothing is translated by opening this: reading the screen used to translate
-// the whole item, most pointlessly for a language no activity offers. Pass
-// `?translate=1` to fill in what is missing - what the button on the screen does.
 router.get('/:kind/:id', authenticateAdmin, async (req: Request<{ kind: string; id: string }>, res: Response) => {
   const { kind, id } = req.params;
   if (!isKind(kind)) {

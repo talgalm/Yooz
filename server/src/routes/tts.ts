@@ -6,7 +6,6 @@ import { createRateLimiter } from '../utils/participantRateLimit';
 
 const router = Router();
 
-/** See `participantRateLimit` for why these are not counted per address. */
 const isRateLimited = createRateLimiter({
   perParticipant: 60,
   perAnonymous: 30,
@@ -42,8 +41,6 @@ router.post('/', async (req: Request, res: Response) => {
   }
 
   const safeText = text.trim().slice(0, 1000);
-  // From the language registry: a voice from the wrong language makes Azure
-  // answer with an empty clip, which plays as silence.
   const { locale, voices } = languageOf(lang);
   const voice = voiceType === 'woman' ? voices.woman : voices.man;
 

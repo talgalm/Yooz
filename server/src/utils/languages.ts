@@ -1,21 +1,8 @@
-/**
- * Every language the server knows, one row each. Everything that used to hold
- * its own partial list reads this one: accepted codes (`requestLang`), what the
- * model translates into (`contentTranslation`), what a character answers in
- * (`promptLanguage`) and which voice reads it (`routes/tts`). Those lists used
- * to disagree, and a language with no voice made the speech endpoint return an
- * empty clip - silence, with nothing to see.
- *
- * The matching client row is in `client/src/utils/languages.ts`;
- * `languages.test.ts` fails if the two drift apart.
- */
 export interface Language {
   code: string;
   name: string;
   locale: string;
-  /** Which way it reads; the server renders HTML of its own (the collage share page). */
   dir: 'rtl' | 'ltr';
-  /** Azure neural voices; the region's list is at /cognitiveservices/voices/list. */
   voices: { man: string; woman: string };
 }
 

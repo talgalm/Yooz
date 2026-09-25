@@ -91,8 +91,6 @@ const Box = styled('input')<{ edited?: boolean }>(({ edited }) => ({
   fontFamily: 'inherit',
   outline: 'none',
   boxSizing: 'border-box',
-  // Reads in its own language's direction, not the panel's: English inside a
-  // Hebrew screen otherwise shows its full stops at the wrong end.
   textAlign: 'start',
   '&:focus': { borderColor: ACCENT },
 }));
@@ -143,16 +141,6 @@ const ResetButton = styled('button')({
   cursor: 'pointer',
 });
 
-/**
- * This item's content in one language, editable in place. Each box opens on
- * what will actually be shown - a person's wording if there is one, otherwise
- * the machine's.
- *
- * Only boxes whose text differs from the machine's are stored, so a box left
- * alone keeps improving with the model instead of being frozen as a correction,
- * and clearing one hands that sentence back. Rows are keyed by the Hebrew they
- * replace, so editing the Hebrew retires the correction written for it.
- */
 export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: TranslationsPanelProps) {
   const t = useTranslations(texts);
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -168,7 +156,6 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
     setRows(null);
     setFailed(null);
     setSavedAt(0);
-    // No `translate=1`: opening a tab translates nothing.
     adminApiFetch<{ rows: Row[]; missing: number }>(
       `/api/admin/translations/${kind}/${id}?lang=${lang}`
     )
@@ -186,7 +173,6 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
     };
   }, [kind, id, lang]);
 
-  /** The only thing here that spends a model call. */
   const translateMissing = async () => {
     setTranslating(true);
     setFailed(null);
@@ -196,7 +182,6 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
       );
       setRows(data.rows);
       setMissing(data.missing);
-      // Only fill the blanks; anything typed is the person's own work.
       setEdits((prev) =>
         Object.fromEntries(
           data.rows.map((r) => [r.source, prev[r.source]?.trim() || r.reviewed || r.machine || ''])
@@ -210,8 +195,6 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
   };
 
   const dir = LANGS.find((l) => l.code === lang)?.dir ?? 'ltr';
-  // An empty box shows a hint in the admin's language, so it reads that way
-  // until there is something in the box to read the other way.
   const uiDir = useLang().dir;
 
   const isEdited = (row: Row) => {
@@ -252,7 +235,6 @@ export default function TranslationsPanel({ kind, id, lang, inUse, onSaved }: Tr
     <Wrap>
       <Hint>{t.hint}</Hint>
 
-      {/* Said plainly, and asked for rather than spent on a screen nobody reads. */}
       {rows !== null && missing > 0 && (
         <UnusedNote>
           <UnusedTitle>

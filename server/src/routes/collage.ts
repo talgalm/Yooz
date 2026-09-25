@@ -819,7 +819,6 @@ router.post('/jobs/:jobId/start', loadShed, async (req: Request<{ jobId: string 
 // Public: when smsForCollageShare is enabled, the SMS {link} points here instead
 // of the raw video URL — video player + native share sheet + back-to-activity link.
 
-/** The page the SMS link opens; it has no session, so the language is passed in. */
 async function renderVideoSharePage(
   videoUrl: string,
   pageUrl: string,
@@ -1186,8 +1185,6 @@ export async function sendCollageReadySms(jobId: string): Promise<void> {
 
   const activity = await Activity.findOne({ code: claimed.activityCode }).select('smsForCollageMessage smsForCollageShare').lean();
   const rawTemplate = activity?.smsForCollageMessage?.trim() || 'הסרטון שלך מוכן! צפה והורד כאן: {link}';
-  // The admin's text is Hebrew like the rest of their content; the link carries
-  // the language on to the share page.
   const lang = claimed.lang || DEFAULT_LANG;
   const template = await translateText(rawTemplate, lang);
   const base = (process.env.APP_URL || process.env.SITE_URL)?.replace(/\/$/, '') || 'http://localhost:3000';

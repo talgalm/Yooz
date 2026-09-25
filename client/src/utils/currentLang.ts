@@ -1,14 +1,3 @@
-/**
- * Which language preference applies here, and where it is stored.
- *
- * The activity, the staff panels and the marketing site are three products on
- * one origin, and they shared one stored preference - so reading the marketing
- * site in English put the next activity into English, and an admin's panel
- * language reached participants. They are separate choices, stored separately.
- *
- * The scope comes from the path rather than React state, because it is needed
- * outside React too and a path needs nothing kept in sync.
- */
 
 import { DEFAULT_LANG, languageOf } from './languages';
 
@@ -33,7 +22,6 @@ export function langStorageKey(scope: LangScope): string {
   return KEYS[scope];
 }
 
-/** Every key this module owns. */
 export function allLangStorageKeys(): string[] {
   return Object.values(KEYS);
 }
@@ -42,7 +30,6 @@ function path(): string {
   return typeof window === 'undefined' ? '/' : window.location.pathname;
 }
 
-/** The language stored for one scope; the default when storage is blocked. */
 export function langInScope(scope: LangScope): string {
   try {
     return localStorage.getItem(langStorageKey(scope)) || DEFAULT_LANG;
@@ -70,7 +57,6 @@ export function langHeader(): Record<string, string> {
   return { 'X-Yooz-Lang': currentLang() };
 }
 
-/** The BCP-47 tag, for `SpeechSynthesisUtterance.lang`. */
 export function currentLocale(lang: string = currentLang()): string {
   return languageOf(lang).locale;
 }

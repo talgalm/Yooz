@@ -136,7 +136,6 @@ export async function createParticipantSession(
     email?: string;
     phoneNumber?: string;
     group?: string;
-    /** What they are reading, so an SMS sent hours later matches. */
     lang?: string;
   },
 ): Promise<LoginResponse> {
