@@ -1,10 +1,10 @@
-import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { adminApiFetch } from '../../utils/adminApi';
 // The card the tabs sit on, so the panel lands on exactly the same surface as
 // the form it replaces. Admin-only styling, used by an admin-only component.
 import { AdminCardWide } from '../../pages/admin/styled';
-import { LANGS, useTranslations } from '../../context/LanguageContext';
+import { LANGS, useLang, useTranslations } from '../../context/LanguageContext';
 import { texts } from './TranslationsPanel.i18n';
 import TranslationsPanel, { type LangSummary } from './index';
 
@@ -162,6 +162,28 @@ const Dot = styled('span')({
   background: '#e0a84a',
 });
 
+/**
+ * Fades whichever edge the strip continues past, so ten languages read as a
+ * strip you can scroll rather than one that has been cut off. Nothing fades
+ * while everything fits.
+ *
+ * `mask-image` is in the box's own coordinates, so the two ends have to be
+ * mapped to left and right by hand - logical values are not accepted here.
+ */
+function fadeStyle(
+  more: { start: boolean; end: boolean },
+  dir: 'ltr' | 'rtl'
+): { maskImage?: string; WebkitMaskImage?: string } {
+  const left = dir === 'rtl' ? more.end : more.start;
+  const right = dir === 'rtl' ? more.start : more.end;
+  if (!left && !right) return {};
+  const edge = `${SHADOW_ROOM + 12}px`;
+  const mask = `linear-gradient(to right, ${
+    left ? 'transparent 0, #000 ' + edge : '#000 0'
+  }, ${right ? `#000 calc(100% - ${edge}), transparent 100%` : '#000 100%'})`;
+  return { maskImage: mask, WebkitMaskImage: mask };
+}
+
 function labelFor(code: string): string {
   return LANGS.find((l) => l.code === code)?.label ?? code;
 }
@@ -185,8 +207,43 @@ export default function ContentLanguageTabs({
   plain,
 }: ContentLanguageTabsProps) {
   const t = useTranslations(texts);
+  const { dir } = useLang();
   const [summary, setSummary] = useState<LangSummary[] | null>(null);
   const [tab, setTab] = useState('he');
+  const stripRef = useRef<HTMLDivElement>(null);
+  /**
+   * Whether the strip has more tabs past each edge. With a handful of languages
+   * it never scrolls; with ten it does, and a strip that simply ends mid-tab
+   * reads as broken rather than as scrollable - so the edge it continues past
+   * is faded.
+   */
+  const [more, setMore] = useState({ start: false, end: false });
+
+  const measure = useCallback(() => {
+    const el = stripRef.current;
+    if (!el) return;
+    // `scrollLeft` runs negative in a right-to-left strip, so distance from the
+    // start is its magnitude either way.
+    const from = Math.abs(el.scrollLeft);
+    const max = el.scrollWidth - el.clientWidth;
+    setMore({ start: from > 1, end: from < max - 1 });
+  }, []);
+
+  useEffect(() => {
+    const el = stripRef.current;
+    if (!el) return;
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [measure, summary]);
+
+  // With many languages the active one can sit off-screen on load.
+  useEffect(() => {
+    stripRef.current
+      ?.querySelector('[aria-selected="true"]')
+      ?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  }, [tab, summary]);
 
   const loadSummary = useCallback(async () => {
     if (!id) return;
@@ -224,7 +281,7 @@ export default function ContentLanguageTabs({
 
   return (
     <>
-      <Strip role="tablist">
+      <Strip ref={stripRef} role="tablist" onScroll={measure} style={fadeStyle(more, dir)}>
         {children && (
           <Tab
             type="button"

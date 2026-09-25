@@ -13,5 +13,5 @@ test('another language is stated plainly, and overrides the prompt', () => {
 });
 
 test('a language we do not have changes nothing', () => {
-  for (const raw of ['fr', '', 'klingon']) assert.equal(replyLanguageInstruction(raw), '');
+  for (const raw of ['zz', '', 'klingon']) assert.equal(replyLanguageInstruction(raw), '');
 });
