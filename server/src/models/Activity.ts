@@ -1,4 +1,5 @@
 import { Schema, model, Types } from 'mongoose';
+import type { AnalyticsExportType } from '../utils/analyticsExcelExport';
 
 export interface IPopupTrigger {
   point: 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
@@ -221,6 +222,25 @@ export interface IActivity {
     attachmentType?: 'image' | 'pdf';
     downloadToken?: string;
   };
+  /** Automated recurring report emailed to a fixed recipient list. Yooz-admin-only
+   *  (no manager/customer self-service). */
+  scheduledReport?: IScheduledReport;
+}
+
+export interface IScheduledReport {
+  enabled: boolean;
+  reportType: AnalyticsExportType;
+  recipients: string[];
+  frequency: 'daily' | 'weekly';
+  /** Day of week (0-6, 0 = Sunday), relevant only when frequency is 'weekly'. */
+  dayOfWeek?: number;
+  /** Hour of day (0-23, Israel time) the report is sent. */
+  scheduleHour: number;
+  skipIfUnchanged: boolean;
+  /** Set only after a send actually happens. */
+  lastSentAt?: Date;
+  /** Snapshot of the data sent last time, for skipIfUnchanged comparison — set once the cron is built. */
+  lastSentSnapshot?: string;
 }
 
 function generateCode(): string {
@@ -367,6 +387,20 @@ const activitySchema = new Schema<IActivity>({
       attachmentUrl: { type: String },
       attachmentType: { type: String, enum: ['image', 'pdf'] },
       downloadToken: { type: String, index: true, sparse: true },
+    }, { _id: false }),
+    default: undefined,
+  },
+  scheduledReport: {
+    type: new Schema({
+      enabled: { type: Boolean, default: false },
+      reportType: { type: String, enum: ['executive', 'participants', 'scores', 'progress'], default: 'executive' },
+      recipients: { type: [String], default: [] },
+      frequency: { type: String, enum: ['daily', 'weekly'], default: 'daily' },
+      dayOfWeek: { type: Number, min: 0, max: 6 },
+      scheduleHour: { type: Number, min: 0, max: 23, default: 8 },
+      skipIfUnchanged: { type: Boolean, default: false },
+      lastSentAt: { type: Date },
+      lastSentSnapshot: { type: String },
     }, { _id: false }),
     default: undefined,
   },
