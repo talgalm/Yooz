@@ -396,10 +396,7 @@ export default function PlayPage() {
   }, [activity]);
 
   const prefetchModuleIfNeeded = useCallback((activityCode: string, group = '') => {
-    if (!activity?.moduleType) return;
-    if (activity.moduleType === 'story' || activity.moduleType === 'spiders' || activity.moduleType === 'mission') {
-      startEarlyModulePrefetch(activityCode, group);
-    }
+    if (activity?.moduleType) startEarlyModulePrefetch(activityCode, group);
   }, [activity?.moduleType]);
 
   useEffect(() => {
@@ -434,7 +431,7 @@ export default function PlayPage() {
 
         if (activity.moduleType === 'mission') {
           navigate(participantMissionPath(activity.code), { replace: true });
-        } else if (activity.moduleType === 'story' || activity.moduleType === 'spiders') {
+        } else if (activity.moduleType) {
           navigate(participantStoryPath(activity.code), { replace: true });
         }
       } catch {
@@ -634,7 +631,7 @@ export default function PlayPage() {
     }
     if (activity?.moduleType === 'mission') {
       navigate(participantMissionPath(activity.code), { replace: true });
-    } else if (activity?.moduleType === 'story' || activity?.moduleType === 'spiders') {
+    } else if (activity?.moduleType) {
       navigate(participantStoryPath(activity.code), { replace: true });
     } else {
       navigate('/home', { replace: true });
