@@ -72,12 +72,6 @@ interface Props {
 
 // ─── Styled components ────────────────────────────────────────────────────────
 
-/**
- * The encoder writes its progress wording in Hebrew, and it is written while
- * the job runs rather than when it is read, so there is nobody to translate it
- * for. Shown as it is in Hebrew; in any other language the station falls back
- * to its own label, which says the same thing without the detail.
- */
 function serverWording(message: string | undefined): boolean {
   return Boolean(message) && currentLang() === 'he';
 }
