@@ -6,6 +6,8 @@
  * browsers (iOS silent mode, missing canplaythrough) and shouldn't diverge.
  */
 
+import { currentLang, currentLocale, langHeader } from '../../../utils/currentLang';
+
 export interface SpeechHandle {
   stop: () => void;
 }
@@ -13,7 +15,8 @@ export interface SpeechHandle {
 export function speakBrowser(
   text: string,
   voiceType: 'man' | 'woman',
-  onEnd?: () => void
+  onEnd?: () => void,
+  lang: string = currentLang()
 ): SpeechHandle {
   const noop: SpeechHandle = { stop: () => {} };
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
@@ -23,19 +26,21 @@ export function speakBrowser(
   try {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'he-IL';
+    u.lang = currentLocale(lang);
     u.rate = voiceType === 'man' ? 0.92 : 1;
     u.pitch = voiceType === 'woman' ? 1.3 : 0.4;
     const voices = window.speechSynthesis.getVoices();
-    const hebVoices = voices.filter((v) => v.lang === 'he-IL' || v.lang.startsWith('he'));
-    if (hebVoices.length > 0) {
+    const matching = voices.filter((v) => v.lang === u.lang || v.lang.startsWith(lang));
+    if (matching.length > 0) {
       const genderKey = voiceType === 'woman' ? 'female' : 'male';
-      const gendered = hebVoices.find(
+      const gendered = matching.find(
         (v) =>
           v.name.toLowerCase().includes(genderKey) ||
           (v as unknown as { gender?: string }).gender === genderKey
       );
-      u.voice = gendered || hebVoices[0];
+      u.voice = gendered || matching[0];
+    } else if (voices.length > 0) {
+      console.warn(`[speech] no ${u.lang} voice in this browser - the fallback will be silent`);
     }
     if (onEnd) {
       u.onend = onEnd;
@@ -68,15 +73,28 @@ export interface PreparedSpeech {
   durationMs?: number;
 }
 
+function authHeader(): Record<string, string> {
+  try {
+    const token = localStorage.getItem('yooz_token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
 export async function fetchWithNetworkRetry(
   url: string,
   options: RequestInit,
   retries = 4
 ): Promise<Response> {
   let lastError: unknown;
+  const withLang = {
+    ...options,
+    headers: { ...langHeader(), ...authHeader(), ...(options.headers || {}) },
+  };
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      return await fetch(url, options);
+      return await fetch(url, withLang);
     } catch (err) {
       lastError = err;
       if (!(err instanceof TypeError) || attempt >= retries - 1) throw err;
@@ -139,7 +157,8 @@ export async function prepareSpeech(
         try { URL.revokeObjectURL(audioUrl); } catch { /* noop */ }
       },
     };
-  } catch {
+  } catch (err) {
+    console.warn('[speech] TTS unavailable, falling back to the browser voice:', err);
     let browserHandle: SpeechHandle | null = null;
     let stopped = false;
     return {

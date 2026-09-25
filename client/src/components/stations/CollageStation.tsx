@@ -17,6 +17,7 @@ import {
   buildVideoShareTextBody,
 } from '../../utils/ganeiYehoshuaShareText';
 import { useLang, useTranslations } from '../../context/LanguageContext';
+import { currentLang } from '../../utils/currentLang';
 import { texts } from './CollageStation.i18n';
 import {
   saveCollagePart,
@@ -70,6 +71,10 @@ interface Props {
 }
 
 // ─── Styled components ────────────────────────────────────────────────────────
+
+function serverWording(message: string | undefined): boolean {
+  return Boolean(message) && currentLang() === 'he';
+}
 
 const fadeIn = keyframes`from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}`;
 
@@ -501,7 +506,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
         const data = await fetchCollageProgress(jobId);
         errors = 0;
         setPollOffline(false);
-        if (data.message) setProgressLabel(data.message);
+        if (serverWording(data.message)) setProgressLabel(data.message as string);
         setEtaSeconds(typeof data.etaSeconds === 'number' ? data.etaSeconds : null);
       } catch {
         errors += 1;
@@ -948,11 +953,11 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
         if (serverJob && ['queued', 'preparing', 'encoding', 'uploading'].includes(serverJob.phase)) {
           setPhase('generating');
           setProgress(Math.min(99, Math.round(55 + serverJob.percent * 0.45)));
-          setProgressLabel(serverJob.message || t.creatingCollage);
+          setProgressLabel(serverWording(serverJob.message) ? serverJob.message as string : t.creatingCollage);
           try {
             const result = await waitForServerCollageJob(serverJob.jobId, (snap) => {
               setProgress((cur) => Math.max(cur, Math.min(99, Math.round(55 + snap.percent * 0.45))));
-              if (snap.message) setProgressLabel(snap.message);
+              if (serverWording(snap.message)) setProgressLabel(snap.message as string);
               setEtaSeconds(typeof snap.etaSeconds === 'number' ? snap.etaSeconds : null);
             });
             setProgress(100);
