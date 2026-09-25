@@ -179,9 +179,6 @@ export function matchTopic(input: string): MatchResult | null {
   let bestScore = 0;
 
   for (const topic of topics) {
-    // Every authored list, whatever the interface language: someone reading
-    // the app in one language often types their question in another, and a
-    // keyword only ever matches text that actually contains it.
     const keywords = Object.values(topic.keywords).flat();
     let score = 0;
     let matchCount = 0;

@@ -57,11 +57,6 @@ export function langHeader(): Record<string, string> {
   return { 'X-Yooz-Lang': currentLang() };
 }
 
-/**
- * The BCP-47 tag for a language, for anything that speaks text out loud rather
- * than sending it to the server - `SpeechSynthesisUtterance.lang`. Taken from
- * the one registry, so a new language brings its own.
- */
 export function currentLocale(lang: string = currentLang()): string {
   return languageOf(lang).locale;
 }

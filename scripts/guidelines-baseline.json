@@ -32,7 +32,6 @@
   "i18n": {
     "client/src/components/HelpChat/matcher.ts": 17,
     "client/src/components/stations/avatar/speech.ts": 22,
-    "client/src/utils/languages.ts": 1,
     "client/src/pages/admin/AdminCreateActivityPage/ModuleItemsSection.tsx": 1,
     "client/src/pages/admin/AdminGameConfigPage/BallGameConfig.tsx": 7,
     "client/src/pages/admin/AdminGameConfigPage/index.tsx": 12,
@@ -43,7 +42,8 @@
     "client/src/pages/admin/AdminGameConfigPage/TrueFalseGameConfig.tsx": 6,
     "client/src/pages/admin/AdminMissionConfigPage/index.tsx": 14,
     "client/src/pages/admin/AdminStationConfigPage/index.tsx": 62,
-    "client/src/pages/manage/duration.ts": 3
+    "client/src/pages/manage/duration.ts": 3,
+    "client/src/utils/languages.ts": 1
   },
   "svg": {
     "client/src/components/ActivityLogoutButton.tsx": 1,
@@ -127,9 +127,8 @@
     "client/src/components/groupEntry/GroupCreatedSuccess.tsx": 1,
     "client/src/components/groupEntry/GroupFullPopup.tsx": 1,
     "client/src/components/HelpChat/HelpChat.i18n.ts": 6,
-    "client/src/components/HelpChat/HelpChatContext.tsx": 14,
     "client/src/components/HelpChat/matcher.test.ts": 1,
-    "client/src/components/HelpChat/matcher.ts": 12,
+    "client/src/components/HelpChat/matcher.ts": 9,
     "client/src/components/HelpChat/styled.ts": 16,
     "client/src/components/imagePosition.test.ts": 1,
     "client/src/components/ImageZoomOverlay.tsx": 14,
@@ -162,7 +161,7 @@
     "client/src/context/activityPlayingHeaderContext.tsx": 4,
     "client/src/context/AdminAuthContext.tsx": 2,
     "client/src/context/AuthContext.tsx": 15,
-    "client/src/context/LanguageContext.tsx": 11,
+    "client/src/context/LanguageContext.tsx": 10,
     "client/src/context/ManageAuthContext.tsx": 1,
     "client/src/context/ManagerAuthContext.tsx": 2,
     "client/src/context/themedSceneOverlayContext.tsx": 1,

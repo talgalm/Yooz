@@ -12,11 +12,6 @@ const isRateLimited = createRateLimiter({
   perAddress: 400,
 });
 
-// The voice comes from the one language registry. A voice from the wrong
-// language does not sound accented - it mispronounces the words outright,
-// because it is sounding out the letters with another language's phonetics,
-// and Azure answers with an empty clip, which plays as silence.
-
 function escapeSsml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
