@@ -1,3 +1,5 @@
+import { currentLang } from './currentLang';
+
 const cache = new Map<string, unknown>();
 /**
  * Bumped when the shape or the meaning of a cached module changes. Anything
@@ -13,13 +15,7 @@ const MODULE_STORAGE_PREFIX = 'yooz_module_v2_';
  * served to a participant who has since switched to English.
  */
 function cacheKey(code: string, group: string): string {
-  let lang = 'he';
-  try {
-    lang = localStorage.getItem('yooz_lang') || 'he';
-  } catch {
-    /* storage blocked - Hebrew is the default anyway */
-  }
-  return `${code.trim()}:${group || ''}:${lang}`;
+  return `${code.trim()}:${group || ''}:${currentLang()}`;
 }
 
 function persistKey(code: string, group: string): string {

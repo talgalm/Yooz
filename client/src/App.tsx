@@ -53,6 +53,7 @@ import { HelpChatProvider, HelpChatFab } from './components/HelpChat';
 import AdminHelpChat from './components/AdminHelpChat';
 import { MobileContainer } from './components/MobileContainer';
 import ParticipantActivityScope from './components/ParticipantActivityScope';
+import LangScopeSync from './components/LangScopeSync';
 import './App.css';
 import { participantPlayPath, resolveParticipantActivityCode } from './utils/participantActivity';
 
@@ -133,6 +134,7 @@ export default function App() {
           <ManagerAuthProvider>
             <ManageAuthProvider>
             <BrowserRouter>
+              <LangScopeSync />
               <Routes>
                 {/* Admin routes — full width desktop */}
                 <Route path="/admin/login" element={<AdminPublicRoute><AdminLoginPage /></AdminPublicRoute>} />
