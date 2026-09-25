@@ -307,7 +307,6 @@ export default function ItemSettingsModal({
   const isCollage = item.itemType === 'station' && item.subType === 'collage';
   const currentGroups = item.groups || [];
   const [reviewing, setReviewing] = useState(false);
-  // Missions keep their text in their own config screen, not here.
   const translatable = item.itemType === 'station' || item.itemType === 'game';
 
   if (reviewing && translatable) {

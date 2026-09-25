@@ -12,7 +12,6 @@ interface Row {
 }
 
 interface TranslationsModalProps {
-  /** Which collection the item lives in. */
   kind: 'stations' | 'games';
   id: string;
   title: string;
@@ -119,14 +118,6 @@ const LangTab = styled('button')<{ active?: boolean }>(({ active }) => ({
 
 const Note = styled('div')({ fontSize: 13, color: '#6b6280' });
 
-/**
- * What the machine made of this station's text, and a box to correct it in.
- *
- * Each row is one sentence, keyed by the Hebrew it replaces rather than by
- * field, because settings are free-form per type - correcting a sentence fixes
- * it wherever it appears in this item. Leave a box empty and the machine
- * translation stands.
- */
 export default function TranslationsModal({ kind, id, title, onClose }: TranslationsModalProps) {
   const t = useTranslations(texts);
   const options = LANGS.filter((l) => l.code !== 'he');
