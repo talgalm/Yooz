@@ -4,16 +4,9 @@ import {
   flushOfflineQueue,
 } from './offlineQueue';
 import { HttpError, isRetryableFetchError, retryDelayMs } from './fetchErrors';
+import { currentLang } from './currentLang';
 
 export { isRetryableFetchError } from './fetchErrors';
-
-function currentLang(): string {
-  try {
-    return localStorage.getItem('yooz_lang') || 'he';
-  } catch {
-    return 'he';
-  }
-}
 
 export async function apiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('yooz_token');

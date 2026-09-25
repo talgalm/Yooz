@@ -3,6 +3,7 @@ import { NavLink, Link } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useTranslations, useLang, LANGS } from '../../../context/LanguageContext';
 import { texts } from './Nav.i18n';
+import { storeLang } from '../../../utils/currentLang';
 import { HomeIcon, InfoIcon, GlobeIcon } from './Nav.icons';
 import { MARKETING_ROUTES, CONTACT_ANCHOR, type MarketingRoute } from './routes';
 import { C, RADIUS, CONTAINER, BP } from './tokens';
@@ -205,7 +206,7 @@ export default function Nav() {
   const cycleLang = () => {
     const i = LANGS.findIndex((l) => l.code === lang);
     const next = LANGS[(i + 1) % LANGS.length];
-    localStorage.setItem('yooz_lang', next.code);
+    storeLang(next.code);
     window.location.reload();
   };
 

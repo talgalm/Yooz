@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { styled, keyframes } from '@mui/material/styles';
 import { LANGS, useLang } from '../../context/LanguageContext';
+import { storeLang } from '../../utils/currentLang';
 import { IconButton, DarkHeaderActionIconButton } from '../styled';
 import { GlobeIcon, CheckIcon } from './LangDrawer.icons';
 
@@ -125,7 +126,7 @@ export default function LangDrawer({ variant = 'default', only }: LangDrawerProp
       close();
       return;
     }
-    localStorage.setItem('yooz_lang', code);
+    storeLang(code);
     window.location.reload();
   };
 

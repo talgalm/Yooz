@@ -1,13 +1,10 @@
+import { currentLang } from './currentLang';
+
 const cache = new Map<string, unknown>();
 const MODULE_STORAGE_PREFIX = 'yooz_module_v2_';
 
 function cacheKey(code: string, group: string): string {
-  let lang = 'he';
-  try {
-    lang = localStorage.getItem('yooz_lang') || 'he';
-  } catch {
-  }
-  return `${code.trim()}:${group || ''}:${lang}`;
+  return `${code.trim()}:${group || ''}:${currentLang()}`;
 }
 
 function persistKey(code: string, group: string): string {

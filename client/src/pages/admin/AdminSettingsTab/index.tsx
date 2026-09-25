@@ -3,6 +3,7 @@ import { useAdminAuth } from '../../../context/AdminAuthContext';
 import { LANGS, useLang, useTranslations } from '../../../context/LanguageContext';
 import type { Lang } from '../../../context/LanguageContext';
 import { texts } from './AdminSettingsTab.i18n';
+import { storeLang } from '../../../utils/currentLang';
 import { AdminCard, SelectionButton, DangerButton } from '../../../components/styled';
 import { SectionTitle, SmallMutedText, DetailRow, DetailLabel, RoleBadge } from '../styled';
 
@@ -84,7 +85,7 @@ export default function AdminSettingsTab({ onLogout }: { onLogout: () => void })
   // switch has to persist and reload rather than just set context state.
   const pickLang = (next: Lang) => {
     if (next === lang) return;
-    localStorage.setItem('yooz_lang', next);
+    storeLang(next);
     window.location.reload();
   };
 

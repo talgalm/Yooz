@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import {
+  langInScope,
+  langScope,
+  storeLangInScope,
+  type LangScope,
+} from '../utils/currentLang';
 
 /**
  * The one place a language is declared. Adding a language means adding a row
@@ -36,14 +42,12 @@ type PartialTexts<T> =
  */
 export type Texts<T> = { he: T } & { [K in Exclude<Lang, typeof DEFAULT_LANG>]?: PartialTexts<T> };
 
-const STORAGE_KEY = 'yooz_lang';
-
 function langDir(lang: Lang): 'ltr' | 'rtl' {
   return LANGS.find((l) => l.code === lang)?.dir ?? 'ltr';
 }
 
-function readStoredLang(): Lang {
-  const stored = localStorage.getItem(STORAGE_KEY);
+function readStoredLang(scope: LangScope): Lang {
+  const stored = langInScope(scope);
   // Guards a stale value left behind by a language that no longer exists.
   return LANGS.some((l) => l.code === stored) ? (stored as Lang) : DEFAULT_LANG;
 }
@@ -53,12 +57,16 @@ interface LanguageContextType {
   dir: 'ltr' | 'rtl';
   setLang: (lang: Lang) => void;
   restrictToLanguages: (langs: string[] | null) => void;
+  useScopeOf: (pathname: string) => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [chosen, setChosen] = useState<Lang>(readStoredLang);
+  const [scope, setScope] = useState<LangScope>(() =>
+    langScope(typeof window === 'undefined' ? '/' : window.location.pathname)
+  );
+  const [chosen, setChosen] = useState<Lang>(() => readStoredLang(scope));
   const [activityLangs, setActivityLangs] = useState<string[] | null>(null);
 
   const restricted = activityLangs !== null && chosen !== DEFAULT_LANG && !activityLangs.includes(chosen);
@@ -70,13 +78,26 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     document.documentElement.dir = dir;
   }, [lang, dir]);
 
+  const setLang = useCallback(
+    (next: Lang) => {
+      storeLangInScope(scope, next);
+      setChosen(next);
+    },
+    [scope]
+  );
+
+  const useScopeOf = useCallback((pathname: string) => {
+    const next = langScope(pathname);
+    setScope((prev) => (prev === next ? prev : next));
+  }, []);
+
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, chosen);
-  }, [chosen]);
+    setChosen(readStoredLang(scope));
+  }, [scope]);
 
   return (
     <LanguageContext.Provider
-      value={{ lang, dir, setLang: setChosen, restrictToLanguages: setActivityLangs }}
+      value={{ lang, dir, setLang, restrictToLanguages: setActivityLangs, useScopeOf }}
     >
       {children}
     </LanguageContext.Provider>
