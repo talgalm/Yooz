@@ -442,7 +442,12 @@ No admin auth — the `statsShareToken` is the credential.
   so the card's own top border still runs under the inactive ones. `overflow-y` is pinned to
   `hidden`: a box with `overflow-x: auto` has a `visible` y-axis promoted to `auto`, so one pixel
   of downward overflow grew a scrollbar on the tab strip - which is also why the overlap is done
-  by moving the strip rather than the tabs, and why a bridging `box-shadow` would not work. Built for the registry reaching ~7 languages - verified that eight tabs neither
+  by moving the strip rather than the tabs, and why a bridging `box-shadow` would not work.
+  Past about eight languages the strip scrolls sideways, and the edge it continues past is faded
+  with a `mask-image` driven by its scroll position (a `ResizeObserver` plus the `scroll` event;
+  `scrollLeft` runs negative in RTL, so distance from the start is its magnitude). Without it a
+  strip that simply ends mid-tab reads as broken rather than as scrollable. Measured at 900px
+  with ten languages: 347px of overflow, no vertical scrollbar, every tab reachable. Built for the registry reaching ~7 languages - verified that eight tabs neither
   clip nor scroll vertically once the strip scrolls sideways - and a language's rows load only
   when its tab is first opened, since asking is what produces the translation. The card is
   hidden with `display: contents → none` rather than unmounted, so unsaved edits survive a look
