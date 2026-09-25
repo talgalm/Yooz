@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { styled } from '@mui/material/styles';
-import { loadGoogleMaps, isMapsAvailable } from '../../utils/googleMaps';
+import { loadGoogleMaps, isMapsAvailable, onMapsAuthFailure } from '../../utils/googleMaps';
 import {
   distanceMeters,
   hasArrived,
   DEFAULT_PROXIMITY_METERS,
   type Fix,
 } from '../../utils/geo';
+import { teamMarkerColor, teamMarkerLabel } from './teamMarker';
 import type { MapGroupMarker, ModuleItemData } from './types';
 
-const Wrap = styled('div')({ position: 'relative', width: '100%', height: '100%', minHeight: 420 });
+const Wrap = styled('div')({ position: 'relative', width: '100%', height: '100dvh' });
 const Canvas = styled('div')({ position: 'absolute', inset: 0 });
 
 const Panel = styled('div')({
@@ -56,6 +57,7 @@ const Ghost = styled('button')({
 });
 
 const MANUAL_OVERRIDE_M = 40;
+const OVERRIDE_AFTER_MS = 30_000;
 
 interface Props {
   items: ModuleItemData[];
@@ -89,11 +91,19 @@ export default function MapView({
   const routedFrom = useRef<string>('');
 
   const [mapsError, setMapsError] = useState(false);
-  const [started, setStarted] = useState(false);
-  const [arrived, setArrived] = useState(false);
+  const [pressedStart, setPressedStart] = useState(false);
+  const [arrivedAt, setArrivedAt] = useState<number | null>(null);
+  const [overrideDueAt, setOverrideDueAt] = useState<number | null>(null);
 
   const target = items[currentItemIndex]?.location;
   const distance = fix && target ? distanceMeters(fix, target) : null;
+  const started = pressedStart || completedIndices.length > 0;
+  const arrived = arrivedAt === currentItemIndex;
+  const offerOverride = started && !arrived && (
+    !!geoError || overrideDueAt === currentItemIndex || (distance !== null && distance > MANUAL_OVERRIDE_M)
+  );
+
+  useEffect(() => onMapsAuthFailure(() => setMapsError(true)), []);
 
   useEffect(() => {
     if (!isMapsAvailable()) {
@@ -194,11 +204,11 @@ export default function MapView({
           map: mapRef.current as google.maps.Map,
           position: g.position,
           title: `${g.groupName} · ${g.score}`,
-          label: { text: g.groupName.slice(0, 2), color: '#fff', fontSize: '10px', fontWeight: '700' },
+          label: { text: teamMarkerLabel(g.groupName), color: '#fff', fontSize: '10px', fontWeight: '700' },
           icon: {
             path: maps.SymbolPath.CIRCLE,
             scale: 9,
-            fillColor: '#e17055',
+            fillColor: teamMarkerColor(g.groupName),
             fillOpacity: 0.9,
             strokeColor: '#fff',
             strokeWeight: 2,
@@ -220,22 +230,33 @@ export default function MapView({
     const key = `${currentItemIndex}:${fix.lat.toFixed(3)},${fix.lng.toFixed(3)}`;
     if (routedFrom.current === key) return;
     routedFrom.current = key;
-    new maps.DirectionsService()
-      .route({ origin: fix, destination: target, travelMode: maps.TravelMode.WALKING })
-      .then((result) => renderer.current?.setDirections(result))
+    Promise.resolve()
+      .then(() => new maps.DirectionsService().route({ origin: fix, destination: target, travelMode: maps.TravelMode.WALKING }))
+      .then((result) => {
+        if (result) renderer.current?.setDirections(result);
+      })
       .catch(() => {
       });
   }, [started, fix, target, currentItemIndex]);
 
   useEffect(() => {
     if (!fix || !target) return;
-    setArrived((was) => hasArrived(fix, target, proximityMeters, was));
-  }, [fix, target, proximityMeters]);
+    setArrivedAt((was) => (hasArrived(fix, target, proximityMeters, was === currentItemIndex) ? currentItemIndex : null));
+  }, [fix, target, proximityMeters, currentItemIndex]);
 
+  useEffect(() => {
+    if (!started) return;
+    const timer = setTimeout(() => setOverrideDueAt(currentItemIndex), OVERRIDE_AFTER_MS);
+    return () => clearTimeout(timer);
+  }, [started, currentItemIndex]);
+
+  const name = items[currentItemIndex]?.name ?? '';
   if (mapsError) {
     return (
       <Wrap>
         <Panel>
+          <Target>{`${currentItemIndex + 1}. ${name}`}</Target>
+          {target?.address && <Readout>{target.address}</Readout>}
           <Warn>{t.mapUnavailable}</Warn>
           <Action type="button" onClick={onArrive}>
             {t.mapOpenAnyway}
@@ -245,7 +266,6 @@ export default function MapView({
     );
   }
 
-  const name = items[currentItemIndex]?.name ?? '';
   return (
     <Wrap>
       <Canvas ref={canvasRef} />
@@ -261,8 +281,12 @@ export default function MapView({
         )}
         {!target && <Warn>{t.mapNoStationLocation}</Warn>}
 
-        {!started ? (
-          <Action type="button" onClick={() => setStarted(true)} disabled={!fix || !target}>
+        {!target ? (
+          <Action type="button" onClick={onArrive}>
+            {t.mapOpenAnyway}
+          </Action>
+        ) : !started ? (
+          <Action type="button" onClick={() => setPressedStart(true)}>
             {t.mapStart}
           </Action>
         ) : arrived ? (
@@ -273,7 +297,7 @@ export default function MapView({
           <Readout>{t.mapKeepWalking}</Readout>
         )}
 
-        {started && !arrived && distance !== null && distance > MANUAL_OVERRIDE_M && (
+        {target && offerOverride && (
           <Ghost type="button" onClick={onArrive}>
             {t.mapImHere}
           </Ghost>

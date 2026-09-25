@@ -3,9 +3,22 @@ import type { LatLng } from './geo';
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
 const SCRIPT_ID = 'yz-google-maps';
 const CALLBACK = '__yzMapsReady';
+const AUTH_FAILURE_EVENT = 'yz-maps-auth-failure';
+
+let authFailed = false;
+(window as unknown as Record<string, () => void>).gm_authFailure = () => {
+  authFailed = true;
+  window.dispatchEvent(new Event(AUTH_FAILURE_EVENT));
+};
 
 export function isMapsAvailable(): boolean {
   return !!API_KEY;
+}
+
+export function onMapsAuthFailure(handler: () => void): () => void {
+  if (authFailed) handler();
+  window.addEventListener(AUTH_FAILURE_EVENT, handler);
+  return () => window.removeEventListener(AUTH_FAILURE_EVENT, handler);
 }
 
 let loading: Promise<typeof google.maps> | null = null;

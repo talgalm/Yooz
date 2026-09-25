@@ -312,6 +312,8 @@ lets async handlers throw. `/api/health` (DB check) and `/api/load-status` are p
   by the participant's group (`item.groups`) **and** reorders them by `module.groupOrders`
   (map modules) — both via `utils/moduleItems.ts::visibleOrderedIndices`. Filtering and
   reordering shift indices: the client's 0..n-1 is the index space progress is recorded in.
+  Popups follow: `popupsForServedItems` moves each `beforeItem`/`afterItem` index to its
+  station's served position and drops popups for stations this player can't see.
 - `GET /:code/lock-stream` — SSE of `lockedFromIndex` (manager live lock).
 - `GET /:code/leaderboard` — points/time/group standings; respects `leaderboardCurrentDayOnly`
   (forced on by `dailyReset`), `leaderboardAsGrade`; group standings = summed member scores
@@ -921,6 +923,8 @@ present view (`OrderSurveyPresentPage` / `manager/present`).
 A **team** walks to real places. Same shape as `spiders` (a module type, not a new model): the
 roadmap is swapped for a map, the advance logic changes, everything else — games, stations,
 popups, hints, `PlayingPhase` — is untouched and works inside a map activity for free.
+A **solo** (single-login) map works too: the phone still tracks GPS and walks the stations in
+order, but progress is the ordinary story session — none of the team calls below are made.
 
 **Config.** Per item: `location {lat,lng,address?}` — on the *module item*, never on the Station,
 because a Station is a reusable template that can appear in several activities at different
@@ -941,28 +945,44 @@ so a reopened activity keeps its pins (it used to drop all three on every save).
 whole team**; teammates pick the new target up on their next poll. `completedIndices` is the only
 progress state — the current target is *derived* (`nextIncompleteIndex`), never stored, so two
 simultaneous completions can't race a counter. `POST /map/complete` filters on
-`completedIndices: {$ne: itemIndex}`, so a second caller scores nothing. Per-participant `Report`s
-are untouched: analytics, exports and the individual leaderboard keep working as before.
+`completedIndices: {$ne: itemIndex}`, so a second caller scores nothing (a repeat is a 200 no-op);
+it refuses any station but the team's current one (409 `not_current_station`) and a non-finite
+score (400). The points themselves are client-reported, as in `/scores`. Per-participant
+`Report`s are untouched: analytics, exports and the individual leaderboard keep working as before.
+Progress is keyed by day on purpose — tomorrow's run starts clean, as self-service teams do.
+Going live (`services/activityReset.ts::wipeActivityData`) deletes the activity's
+`MapGroupState`s along with its reports, so test walks don't carry into the real day.
 
 **One marker per team.** A group broadcasts one position — the first member to post claims the
 carrier slot, with a 2-minute staleness takeover so a dropped phone doesn't freeze the marker.
 Teammates never see each other; every *other* group is visible, always, along with the full group
 leaderboard (map activities override the own-group-only rule of §11, via `showAllGroups`).
+A rival marker is labelled with the team's number (else the first letters of its name's last
+word) in a per-team colour — `StoryModulePage/teamMarker.ts` — so "קבוצה 2" and "קבוצה 3" read
+apart. A team with no record yet has no position to draw anyway, so nothing is missing.
 
 **Arrival is the part that needs care.** Phone GPS reads 5-15m off, so a raw
 `distance <= radius` leaves people standing at the sign with nothing happening.
 `utils/geo.ts::hasArrived` subtracts the fix's own `coords.accuracy` (capped at 25m so one wide
 fix isn't "at" every station), ignores fixes worse than 50m, and applies 2.5× exit hysteresis so
-a jittering fix doesn't flip a station open and shut. The UI shows live distance **and** accuracy
-— a participant who can see the number walks the last few metres themselves — plus an
-"I'm here" override beyond 40m, because GPS under canopy can simply refuse and a walk must never
-deadlock. Covered by `geo.test.ts`.
+a jittering fix doesn't flip a station open and shut. Arrival belongs to one station: when the
+target changes the hysteresis starts over, so the next station 30m on doesn't open early. The UI
+shows live distance **and** accuracy — a participant who can see the number walks the last few
+metres themselves. A walk must never deadlock, so: Start works without a fix; a station with no
+location just opens; and the "I'm here" override appears when location is blocked, beyond 40m
+(GPS under canopy can simply refuse), and anywhere 30s after a station becomes the target
+(a steady reading 25m off beside a building). Once the team has progress the walk counts as
+started — nobody presses Start twice. Covered by `geo.test.ts`.
 
 **Client.** `MapView.tsx` (sibling of `RoadmapView`/`SpidersView`), `hooks/useMapRun.ts` (GPS
 watch + 10s poll + position push), `utils/googleMaps.ts` (script-tag loader, no npm wrapper —
 the JS API already ships map, geocoder and walking directions). Needs `VITE_GOOGLE_MAPS_KEY` (§2);
-without it the map degrades to a panel that still lets the station be opened. Routes are redrawn
-only when the target changes or the walker drifts ~100m — Directions is billed per call.
+without it — or when Google rejects it for the page's domain (`window.gm_authFailure`,
+`onMapsAuthFailure`) — the map degrades to a panel with the station, its address and an open
+button. A failed or empty walking route is ignored; the pins still show the way. The map is
+`100dvh` tall. Routes are redrawn only when the target changes or the walker drifts ~100m —
+Directions is billed per call. `advanceToNextItem` shows the station's `afterItem` popups before
+returning to the map (then `endOfActivity` when the walk is done).
 ---
 
 ## 17. YOOZ Manage - internal business system (`/manage`)

@@ -1,10 +1,11 @@
 import type { HydratedDocument } from 'mongoose';
-import { Activity, ActivityGroup, Report, type IActivity } from '../models';
+import { Activity, ActivityGroup, MapGroupState, Report, type IActivity } from '../models';
 import { israelDayString } from '../utils/israelTime';
 
 export async function wipeActivityData(activity: HydratedDocument<IActivity>): Promise<void> {
   await Report.deleteMany({ activityId: activity._id });
   await ActivityGroup.deleteMany({ activityId: activity._id });
+  await MapGroupState.deleteMany({ activityId: activity._id });
   activity.orderSurveySession = undefined;
   activity.shareClicks = undefined;
   activity.shareCompleted = undefined;

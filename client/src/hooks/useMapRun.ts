@@ -15,7 +15,7 @@ interface MapRun {
   refresh: () => void;
 }
 
-export function useMapRun(code: string, enabled: boolean): MapRun {
+export function useMapRun(code: string, enabled: boolean, team: boolean): MapRun {
   const [fix, setFix] = useState<Fix | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [run, setRun] = useState<MapRunState | null>(null);
@@ -47,17 +47,17 @@ export function useMapRun(code: string, enabled: boolean): MapRun {
   }, [enabled]);
 
   const refresh = useCallback(() => {
-    if (!enabled) return;
+    if (!team) return;
     apiFetch<{ me: MapRunState; groups: MapGroupMarker[] }>(`/api/activities/${code}/map/state`)
       .then((d) => {
         setRun(d.me);
         setOthers(d.groups || []);
       })
       .catch(() => { });
-  }, [code, enabled]);
+  }, [code, team]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!team) return;
     refresh();
     const timer = setInterval(() => {
       refresh();
@@ -71,7 +71,7 @@ export function useMapRun(code: string, enabled: boolean): MapRun {
       }).catch(() => { });
     }, POLL_MS);
     return () => clearInterval(timer);
-  }, [code, enabled, refresh]);
+  }, [code, team, refresh]);
 
   const complete = useCallback(
     async (itemIndex: number, score: number) => {
@@ -83,10 +83,11 @@ export function useMapRun(code: string, enabled: boolean): MapRun {
         setRun(next);
         return next;
       } catch {
+        refresh();
         return null;
       }
     },
-    [code],
+    [code, refresh],
   );
 
   return { fix, geoError, run, others, complete, refresh };
