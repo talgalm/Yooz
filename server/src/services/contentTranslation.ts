@@ -102,18 +102,6 @@ async function askGemini(lang: string, sources: string[]): Promise<string[] | nu
   }
 }
 
-/**
- * Translations for these strings, from cache where possible. Anything the model
- * could not translate is simply absent from the map, which leaves the Hebrew in
- * place downstream.
- */
-/**
- * What has already been translated, without translating anything new.
- *
- * Reading a screen should never spend money at the model on its own. The admin
- * translation screen opens with this, and only asks for the rest when someone
- * says to.
- */
 export async function cachedTranslations(
   sources: string[],
   lang: string

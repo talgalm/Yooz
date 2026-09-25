@@ -261,7 +261,6 @@ export default function AdminGameConfigPage() {
         <SmallOutlineButton onClick={() => navigate('/admin/dashboard?tab=stations')}>{t.back}</SmallOutlineButton>
       </AdminHeader>
       <AdminContent>
-        {/* The tabs sit above the card, the way a browser's tabs sit on its window. */}
         <ContentLanguageTabs kind="games" id={id}>
         <AdminCardWide>
           <PageTopRow>

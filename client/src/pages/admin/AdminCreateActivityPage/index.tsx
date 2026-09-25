@@ -512,11 +512,6 @@ export default function AdminCreateActivityPage() {
 
   const [guidelines, setGuidelines] = useState('');
   const [languages, setLanguages] = useState<string[]>([]);
-  /**
-   * Hand-edited sentences already stored for this activity's content, per
-   * language - including languages no longer offered. Turning a language off
-   * keeps the work, so the picker says so instead of letting it look lost.
-   */
   const [storedTranslations, setStoredTranslations] = useState<Record<string, number>>({});
   const [extraSupportInfo, setExtraSupportInfo] = useState('');
   const [organizerContactName, setOrganizerContactName] = useState('');
@@ -687,7 +682,6 @@ export default function AdminCreateActivityPage() {
         setUserControl(a.userControl === true);
         if (a.guidelines) setGuidelines(a.guidelines);
         if (a.languages) setLanguages(a.languages);
-        // What has already been translated by hand, whatever is offered now.
         adminApiFetch<{ languages: { code: string; reviewed: number }[] }>(
           `/api/admin/translations/activity/${id}/languages`,
         )
@@ -2127,7 +2121,6 @@ export default function AdminCreateActivityPage() {
                       </label>
                     );
                   })}
-                  {/* Turning a language off never discards the work done in it. */}
                   {Object.values(storedTranslations).some((n) => n > 0) && (
                     <SectionDescription style={{ margin: '2px 0 0' }}>{t.languagesKeptHint}</SectionDescription>
                   )}

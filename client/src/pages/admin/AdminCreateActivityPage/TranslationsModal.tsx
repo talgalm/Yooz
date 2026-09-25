@@ -56,13 +56,6 @@ const Close = styled('button')({
 
 const Body = styled('div')({ padding: '16px 22px 20px', overflowY: 'auto' });
 
-/**
- * The same translation editor as the one on the station's own page, reached
- * from the module builder without leaving it.
- *
- * The editor itself lives in `components/TranslationsPanel`, so the two places
- * cannot drift apart; this only supplies the frame.
- */
 export default function TranslationsModal({ kind, id, title, onClose }: TranslationsModalProps) {
   const t = useTranslations(texts);
 

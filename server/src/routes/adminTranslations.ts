@@ -19,14 +19,6 @@ function translatableParts(doc: { name?: string; description?: string; settings?
   return { name: doc.name, description: doc.description, settings: doc.settings };
 }
 
-/**
- * What an activity holds in each language, across all of its content.
- *
- * Registered before the `:kind` routes below, which would otherwise swallow
- * `/activity/...` and answer 404. Used by the activity's language picker to
- * show that work already exists for a language - including one that is no
- * longer offered, so turning it back on is visibly free.
- */
 router.get(
   '/activity/:id/languages',
   authenticateAdmin,
@@ -68,7 +60,6 @@ router.get(
   }
 );
 
-/** The languages offered by the activities that actually include this item. */
 async function languagesInUse(kind: Kind, id: string): Promise<Set<string>> {
   const type = kind === 'games' ? 'game' : 'station';
   const activities = await Activity.find({
@@ -83,15 +74,6 @@ async function languagesInUse(kind: Kind, id: string): Promise<Set<string>> {
   return inUse;
 }
 
-/**
- * What exists, per language, before any of it is opened.
- *
- * Drives the language tabs: how many sentences a person has corrected, and
- * whether the language is still offered by an activity that uses this item. A
- * translation is never deleted when an activity stops offering its language -
- * the work was paid for and the language may come back - so `inUse: false` is
- * the honest way to say "kept, but nobody is reading it".
- */
 router.get(
   '/:kind/:id/languages',
   authenticateAdmin,
@@ -111,9 +93,6 @@ router.get(
     const stored = (doc.translations ?? {}) as Record<string, Record<string, string>>;
     const inUse = await languagesInUse(kind, id);
 
-    // Every language the app knows, plus any a translation is stored under -
-    // including one dropped from the registry, which would otherwise become
-    // invisible work.
     const codes = new Set<string>([
       ...SUPPORTED_LANGS.filter((code) => code !== 'he'),
       ...Object.keys(stored),
@@ -131,14 +110,6 @@ router.get(
   }
 );
 
-// Every translatable string, with what the machine made of it and what a person
-// corrected it to.
-//
-// Nothing is translated by opening this. Reading the screen used to translate
-// the whole item, which spends real money at the model - and most of all for a
-// language no activity offers, where nobody would ever read the result. Pass
-// `?translate=1` to fill in what is missing; that is what the button on the
-// screen does.
 router.get('/:kind/:id', authenticateAdmin, async (req: Request<{ kind: string; id: string }>, res: Response) => {
   const { kind, id } = req.params;
   if (!isKind(kind)) {
@@ -168,7 +139,6 @@ router.get('/:kind/:id', authenticateAdmin, async (req: Request<{ kind: string; 
   res.json({
     lang,
     name: doc.name,
-    /** How many sentences have no translation yet, so the screen can offer one. */
     missing: sources.filter((source) => !machine.has(source) && !reviewed[source]).length,
     rows: sources.map((source) => ({
       source,
