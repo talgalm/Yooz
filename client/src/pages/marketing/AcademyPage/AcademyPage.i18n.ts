@@ -126,7 +126,7 @@ export const texts = {
       logoAlt: 'The Academic College of Tel Aviv Yaffo',
     },
 
-    customersTitle: 'Happy customers',
+    customersTitle: 'Who we work with',
     customers: [
       { name: 'Peres College', caption: 'Bachelor and master course delivery', logoUrl: '/images/marketing/logo-peres.png' },
       { name: 'Academic TLV', caption: 'Five years of gamified courses for hundreds of students a year', logoUrl: '/images/marketing/logo-academic-tlv.png' },

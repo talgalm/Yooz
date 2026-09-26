@@ -77,7 +77,7 @@ export const texts = {
       { iconUrl: '/images/marketing/icons/biz-retail.svg', label: 'Retail and stores', title: 'Scan at the till and the shelf', body: 'Scanning a QR in the queue or on the shelf gives a surprise discount redeemed straight at the checkout.' },
     ],
 
-    customersTitle: 'Happy customers',
+    customersTitle: 'Who we work with',
     customers: [
       { name: 'Clalit Health', caption: 'Team-building for hundreds of employees across 40 branches', logoUrl: '/images/marketing/logo-clalit.svg' },
       { name: 'Tel Qaqun', caption: 'The Mamluk treasure mystery', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
