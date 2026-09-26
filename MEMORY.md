@@ -317,7 +317,7 @@ lets async handlers throw. `/api/health` (DB check) and `/api/load-status` are p
 - `GET /:code/lock-stream` — SSE of `lockedFromIndex` (manager live lock).
 - `GET /:code/leaderboard` — points/time/group standings; respects `leaderboardCurrentDayOnly`
   (forced on by `dailyReset`), `leaderboardAsGrade`; group standings = summed member scores
-  (Borda not used here). Row cap is 50, or 500 for group activities — the participant view
+  (Borda not used here) — except map modules, which rank teams by today's `MapGroupState.score`. Row cap is 50, or 500 for group activities — the participant view
   lists every teammate of the viewer's own group, so the cap must clear all groups combined.
 - `PATCH /:code/progress` *(participant JWT)* — incremental per-item progress save.
 - `POST /:code/scores` *(participant JWT)* — final score submit → completes the Report.
@@ -951,7 +951,8 @@ score (400). The points themselves are client-reported, as in `/scores`. Per-par
 `Report`s are untouched: analytics, exports and the individual leaderboard keep working as before.
 Progress is keyed by day on purpose — tomorrow's run starts clean, as self-service teams do.
 Going live (`services/activityReset.ts::wipeActivityData`) deletes the activity's
-`MapGroupState`s along with its reports, so test walks don't carry into the real day.
+`MapGroupState`s along with its reports, so test walks don't carry into the real day; deleting
+the activity (`DELETE /api/admin/activities/:id`) removes them too.
 
 **One marker per team.** A group broadcasts one position — the first member to post claims the
 carrier slot, with a 2-minute staleness takeover so a dropped phone doesn't freeze the marker.
@@ -979,8 +980,11 @@ watch + 10s poll + position push), `utils/googleMaps.ts` (script-tag loader, no 
 the JS API already ships map, geocoder and walking directions). Needs `VITE_GOOGLE_MAPS_KEY` (§2);
 without it — or when Google rejects it for the page's domain (`window.gm_authFailure`,
 `onMapsAuthFailure`) — the map degrades to a panel with the station, its address and an open
-button. A failed or empty walking route is ignored; the pins still show the way. The map is
-`100dvh` tall. Routes are redrawn only when the target changes or the walker drifts ~100m —
+button. A failed or empty walking route is ignored; the pins still show the way. Above the map sits
+the same `ActivitySessionHeader` as the roadmap views — exit, help, leaderboard, points or timer —
+on the theme's colour (`getThemeKit`/`getHeaderIconColor`), and the map fills the rest of the
+`100dvh` screen. A team's header shows its shared `MapGroupState.score` — the number the
+leaderboard ranks teams by — and a solo player's their own points. Routes are redrawn only when the target changes or the walker drifts ~100m —
 Directions is billed per call. `advanceToNextItem` shows the station's `afterItem` popups before
 returning to the map (then `endOfActivity` when the walk is done).
 ---

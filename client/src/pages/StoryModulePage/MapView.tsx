@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { styled } from '@mui/material/styles';
+import { DarkHeaderActionIconButton } from '../../components/styled';
 import { loadGoogleMaps, isMapsAvailable, onMapsAuthFailure } from '../../utils/googleMaps';
 import {
   distanceMeters,
@@ -7,10 +8,14 @@ import {
   DEFAULT_PROXIMITY_METERS,
   type Fix,
 } from '../../utils/geo';
+import ActivitySessionHeader, { SessionHeaderTrophyIcon } from './ActivitySessionHeader';
+import { getHeaderIconColor, getThemeKit } from './roadmapThemes';
 import { teamMarkerColor, teamMarkerLabel } from './teamMarker';
-import type { MapGroupMarker, ModuleItemData } from './types';
+import type { CustomThemeData, MapGroupMarker, ModuleItemData } from './types';
 
-const Wrap = styled('div')({ position: 'relative', width: '100%', height: '100dvh' });
+const Wrap = styled('div')({ display: 'flex', flexDirection: 'column', width: '100%', height: '100dvh' });
+const HeaderBar = styled('div')({ flexShrink: 0, backgroundSize: 'cover', backgroundPosition: 'center top' });
+const MapArea = styled('div')({ position: 'relative', flex: 1, minHeight: 0 });
 const Canvas = styled('div')({ position: 'absolute', inset: 0 });
 
 const Panel = styled('div')({
@@ -69,6 +74,16 @@ interface Props {
   proximityMeters?: number;
   onArrive: () => void;
   t: Record<string, string>;
+  currentPoints: number;
+  onLogout: () => void;
+  onViewLeaderboard: () => void;
+  hideLeaderboardInHeader?: boolean;
+  leaderboardMode?: 'points' | 'time' | 'both';
+  elapsedSeconds?: number;
+  activityDurationMinutes?: number;
+  roadmapTimerMinutes?: number;
+  theme?: string;
+  customTheme?: CustomThemeData;
 }
 
 export default function MapView({
@@ -81,6 +96,16 @@ export default function MapView({
   proximityMeters = DEFAULT_PROXIMITY_METERS,
   onArrive,
   t,
+  currentPoints,
+  onLogout,
+  onViewLeaderboard,
+  hideLeaderboardInHeader,
+  leaderboardMode,
+  elapsedSeconds,
+  activityDurationMinutes,
+  roadmapTimerMinutes,
+  theme,
+  customTheme,
 }: Props) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -251,58 +276,90 @@ export default function MapView({
   }, [started, currentItemIndex]);
 
   const name = items[currentItemIndex]?.name ?? '';
+  const headerIconColor = getHeaderIconColor(theme, customTheme);
+  const header = (
+    <HeaderBar
+      style={customTheme?.roadmapImage
+        ? { backgroundImage: `url(${customTheme.roadmapImage})` }
+        : { background: getThemeKit(theme).containerBg }}
+    >
+      <ActivitySessionHeader
+        currentPoints={currentPoints}
+        onLogout={onLogout}
+        t={t}
+        headerIconColor={headerIconColor}
+        leaderboardMode={leaderboardMode}
+        elapsedSeconds={elapsedSeconds}
+        activityDurationMinutes={activityDurationMinutes}
+        roadmapTimerMinutes={roadmapTimerMinutes}
+        omitThirdSlot={hideLeaderboardInHeader}
+        thirdSlot={!hideLeaderboardInHeader ? (
+          <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label={t.leaderboardTitle} title={t.leaderboardTitle} iconColor={headerIconColor}>
+            <SessionHeaderTrophyIcon />
+          </DarkHeaderActionIconButton>
+        ) : null}
+      />
+    </HeaderBar>
+  );
+
   if (mapsError) {
     return (
       <Wrap>
-        <Panel>
-          <Target>{`${currentItemIndex + 1}. ${name}`}</Target>
-          {target?.address && <Readout>{target.address}</Readout>}
-          <Warn>{t.mapUnavailable}</Warn>
-          <Action type="button" onClick={onArrive}>
-            {t.mapOpenAnyway}
-          </Action>
-        </Panel>
+        {header}
+        <MapArea>
+          <Panel>
+            <Target>{`${currentItemIndex + 1}. ${name}`}</Target>
+            {target?.address && <Readout>{target.address}</Readout>}
+            <Warn>{t.mapUnavailable}</Warn>
+            <Action type="button" onClick={onArrive}>
+              {t.mapOpenAnyway}
+            </Action>
+          </Panel>
+        </MapArea>
       </Wrap>
     );
   }
 
   return (
     <Wrap>
-      <Canvas ref={canvasRef} />
-      <Panel>
-        <Target>{`${currentItemIndex + 1}. ${name}`}</Target>
+      {header}
+      <MapArea>
+        <Canvas ref={canvasRef} />
+        <Panel>
+          <Target>{`${currentItemIndex + 1}. ${name}`}</Target>
 
-        {geoError && <Warn>{geoError === 'denied' ? t.mapGeoDenied : t.mapGeoUnavailable}</Warn>}
-        {!geoError && !fix && <Readout>{t.mapLocating}</Readout>}
-        {fix && distance !== null && (
-          <Readout>
-            {`${Math.round(distance)} ${t.mapMeters} · ${t.mapAccuracy} ±${Math.round(fix.accuracy)}`}
-          </Readout>
-        )}
-        {!target && <Warn>{t.mapNoStationLocation}</Warn>}
+          {geoError && <Warn>{geoError === 'denied' ? t.mapGeoDenied : t.mapGeoUnavailable}</Warn>}
+          {!geoError && !fix && <Readout>{t.mapLocating}</Readout>}
+          {fix && distance !== null && (
+            <Readout>
+              {`${Math.round(distance)} ${t.mapMeters} · ${t.mapAccuracy} ±${Math.round(fix.accuracy)}`}
+            </Readout>
+          )}
+          {!target && <Warn>{t.mapNoStationLocation}</Warn>}
 
-        {!target ? (
-          <Action type="button" onClick={onArrive}>
-            {t.mapOpenAnyway}
-          </Action>
-        ) : !started ? (
-          <Action type="button" onClick={() => setPressedStart(true)}>
-            {t.mapStart}
-          </Action>
-        ) : arrived ? (
-          <Action type="button" onClick={onArrive}>
-            {t.mapOpenStation}
-          </Action>
-        ) : (
-          <Readout>{t.mapKeepWalking}</Readout>
-        )}
+          {!target ? (
+            <Action type="button" onClick={onArrive}>
+              {t.mapOpenAnyway}
+            </Action>
+          ) : !started ? (
+            <Action type="button" onClick={() => setPressedStart(true)}>
+              {t.mapStart}
+            </Action>
+          ) : arrived ? (
+            <Action type="button" onClick={onArrive}>
+              {t.mapOpenStation}
+            </Action>
+          ) : (
+            <Readout>{t.mapKeepWalking}</Readout>
+          )}
 
-        {target && offerOverride && (
-          <Ghost type="button" onClick={onArrive}>
-            {t.mapImHere}
-          </Ghost>
-        )}
-      </Panel>
+          {target && offerOverride && (
+            <Ghost type="button" onClick={onArrive}>
+              {t.mapImHere}
+            </Ghost>
+          )}
+        </Panel>
+      </MapArea>
     </Wrap>
   );
 }

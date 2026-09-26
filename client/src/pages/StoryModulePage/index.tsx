@@ -1454,6 +1454,16 @@ export default function StoryModulePage() {
             proximityMeters={data.module.proximityMeters}
             onArrive={() => handleNodeTap(currentItemIndex)}
             t={t}
+            currentPoints={isGroupMap ? (mapRun.run?.score ?? roadmapTotalPoints) : roadmapTotalPoints}
+            onLogout={doExit}
+            onViewLeaderboard={handleViewLeaderboard}
+            hideLeaderboardInHeader={data.hideLeaderboardInHeader}
+            leaderboardMode={data.leaderboardMode}
+            elapsedSeconds={elapsedSeconds}
+            activityDurationMinutes={data.activityDurationMinutes}
+            roadmapTimerMinutes={data.roadmapTimerMinutes}
+            theme={data.module.theme}
+            customTheme={data.module.customTheme}
           />
           {showGuidelines && progressChecked && !currentPopup && (
             <GuidelinesPopup
