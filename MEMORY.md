@@ -951,7 +951,8 @@ score (400). The points themselves are client-reported, as in `/scores`. Per-par
 `Report`s are untouched: analytics, exports and the individual leaderboard keep working as before.
 Progress is keyed by day on purpose — tomorrow's run starts clean, as self-service teams do.
 Going live (`services/activityReset.ts::wipeActivityData`) deletes the activity's
-`MapGroupState`s along with its reports, so test walks don't carry into the real day.
+`MapGroupState`s along with its reports, so test walks don't carry into the real day; deleting
+the activity (`DELETE /api/admin/activities/:id`) removes them too.
 
 **One marker per team.** A group broadcasts one position — the first member to post claims the
 carrier slot, with a 2-minute staleness takeover so a dropped phone doesn't freeze the marker.
