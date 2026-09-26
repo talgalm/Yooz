@@ -64,7 +64,7 @@ export const texts = {
     heroCta: 'Book a demo',
     heroMediaAlt: 'Participants in a Yooz activity',
 
-    customersTitle: 'Happy customers',
+    customersTitle: 'Who we work with',
     customers: [
       { name: 'Tel Qaqun', caption: 'The Mamluk treasure mystery', logoUrl: '/images/marketing/logo-tel-qaqun.png' },
       { name: 'Kinneret College', caption: 'Bachelor and master course delivery', logoUrl: '/images/marketing/logo-kinneret.png' },

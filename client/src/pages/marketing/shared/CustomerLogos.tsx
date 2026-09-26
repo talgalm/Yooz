@@ -70,7 +70,6 @@ const Track = styled('div', { shouldForwardProp: (p) => p !== 'seconds' })<{ sec
     display: 'flex',
     width: 'max-content',
     animation: `${scrollX} ${seconds}s linear infinite`,
-    '&:hover': { animationPlayState: 'paused' },
     '&:focus-within': { animationPlayState: 'paused' },
     [REDUCED_MOTION]: { animation: 'none' },
   }),

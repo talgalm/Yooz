@@ -184,7 +184,7 @@ export const texts = {
       },
     ],
 
-    customersTitle: 'Happy customers',
+    customersTitle: 'Who we work with',
     customers: [
       { name: 'Sde Eliyahu', caption: 'An activity at the visitor centre', logoUrl: '/images/marketing/logo-sde-eliyahu.png' },
       { name: 'Ganei Yehoshua', caption: 'A family activity, open all year round', logoUrl: '/images/marketing/logo-ganei-yehoshua.png' },
