@@ -56,6 +56,7 @@ export interface ManageJwtPayload {
 export interface ManageLoginRequest {
   email: string;
   password: string;
+  newPassword?: string;
 }
 
 export interface ManagerLoginRequest {

@@ -11,6 +11,7 @@ export interface IManageUser {
   phone?: string;
   color: string;
   active: boolean;
+  mustChangePassword: boolean;
 
   weeklyCapacityHours: number;
   workDays: number[];
@@ -34,6 +35,7 @@ const manageUserSchema = new Schema<IManageUser>(
     phone: { type: String, trim: true },
     color: { type: String, default: '#6c5ce7' },
     active: { type: Boolean, default: true },
+    mustChangePassword: { type: Boolean, default: false },
 
     weeklyCapacityHours: { type: Number, default: 40 },
     workDays: { type: [Number], default: [0, 1, 2, 3, 4] },

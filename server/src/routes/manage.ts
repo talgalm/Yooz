@@ -74,6 +74,16 @@ router.post('/auth/login', async (req: Request<{}, {}, ManageLoginRequest>, res:
     return;
   }
 
+  if (user.mustChangePassword) {
+    const { newPassword } = req.body;
+    if (!newPassword) { res.status(403).json({ error: 'must_change_password' }); return; }
+    if (newPassword.length < 8) { res.status(400).json({ error: 'password_too_short' }); return; }
+    if (newPassword === password) { res.status(400).json({ error: 'password_unchanged' }); return; }
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    user.mustChangePassword = false;
+    await user.save();
+  }
+
   const payload: ManageJwtPayload = {
     userId: user._id.toString(),
     name: user.name,

@@ -7,6 +7,14 @@ export const texts = {
     submit: 'כניסה',
     submitting: 'מתחבר...',
     failed: 'ההתחברות נכשלה',
+    newPassword: 'סיסמה חדשה (לפחות 8 תווים)',
+    confirmPassword: 'אימות סיסמה חדשה',
+    passwordMismatch: 'הסיסמאות אינן תואמות',
+    errors: {
+      must_change_password: 'כניסה ראשונה — יש לבחור סיסמה חדשה',
+      password_too_short: 'הסיסמה החדשה חייבת להכיל לפחות 8 תווים',
+      password_unchanged: 'הסיסמה החדשה חייבת להיות שונה מהנוכחית',
+    },
   },
   en: {
     title: 'Yooz Manage',
@@ -16,5 +24,13 @@ export const texts = {
     submit: 'Sign in',
     submitting: 'Signing in...',
     failed: 'Login failed',
+    newPassword: 'New password (at least 8 characters)',
+    confirmPassword: 'Confirm new password',
+    passwordMismatch: 'Passwords do not match',
+    errors: {
+      must_change_password: 'First sign-in — please choose a new password',
+      password_too_short: 'The new password must be at least 8 characters',
+      password_unchanged: 'The new password must differ from the current one',
+    },
   },
 };

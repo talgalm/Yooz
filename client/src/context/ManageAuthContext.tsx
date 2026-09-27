@@ -18,7 +18,7 @@ interface ManageAuthContextType {
   user: ManageUser | null;
   isManageAuthenticated: boolean;
   isOwner: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, newPassword?: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -64,10 +64,10 @@ export function ManageAuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, newPassword?: string) => {
     const data = await manageApiFetch<{ token: string; user: ManageUser }>('/api/manage/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, newPassword }),
     });
     localStorage.setItem(TOKEN_KEY, data.token);
     localStorage.setItem(USER_KEY, JSON.stringify(data.user));

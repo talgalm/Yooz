@@ -17,6 +17,9 @@ const Brand = styled('h1')({
 export default function ManageLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [mustChange, setMustChange] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useManageAuth();
@@ -26,12 +29,18 @@ export default function ManageLoginPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    if (mustChange && newPassword !== confirmPassword) {
+      setError(t.passwordMismatch);
+      return;
+    }
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email, password, mustChange ? newPassword : undefined);
       navigate('/manage/my-work');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.failed);
+      const msg = err instanceof Error ? err.message : '';
+      if (msg === 'must_change_password') setMustChange(true);
+      setError(t.errors[msg as keyof typeof t.errors] ?? (msg || t.failed));
     } finally {
       setLoading(false);
     }
@@ -59,6 +68,28 @@ export default function ManageLoginPage() {
             autoComplete="current-password"
             required
           />
+          {mustChange && (
+            <>
+              <Input
+                type="password"
+                placeholder={t.newPassword}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+                minLength={8}
+                required
+              />
+              <Input
+                type="password"
+                placeholder={t.confirmPassword}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                autoComplete="new-password"
+                minLength={8}
+                required
+              />
+            </>
+          )}
           {error && <ErrorText>{error}</ErrorText>}
           <PrimaryButton type="submit" disabled={loading}>
             {loading ? t.submitting : t.submit}
