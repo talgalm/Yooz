@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react';
-import { styled } from '@mui/material/styles';
+import { styled, keyframes } from '@mui/material/styles';
 import { loadGoogleMaps, isMapsAvailable, onMapsAuthFailure } from '../../utils/googleMaps';
 import {
   angleDelta,
@@ -18,7 +18,7 @@ import { maneuverDirection, nextTurn, offRouteMeters, remainingWalk, type WalkRo
 import { useTranslations } from '../../context/LanguageContext';
 import { useCompassHeading } from '../../hooks/useCompassHeading';
 import { texts } from './MapView.i18n';
-import { CompassNeedle, DirectionArrow, LocateArrow } from './MapView.icons';
+import { CheckMark, CompassNeedle, DirectionArrow, LocateArrow } from './MapView.icons';
 import type { MapGroupMarker, ModuleItemData } from './types';
 
 const Wrap = styled('div')({ position: 'relative', width: '100%', height: '100dvh', overflow: 'hidden' });
@@ -65,13 +65,48 @@ const Sheet = styled('div')({
   zIndex: 3,
 });
 
+
 const SheetRow = styled('div')({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 });
 const SheetText = styled('div')({ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 });
 const BigTime = styled('div')({ fontSize: 30, fontWeight: 800, color: '#202124', lineHeight: 1.1 });
 const EtaLine = styled('div')({ fontSize: 16, color: '#5f6368' });
 const Readout = styled('div')({ fontSize: 14, color: '#5f6368' });
 const Warn = styled('div')({ fontSize: 14, color: EXIT_RED, fontWeight: 600 });
-const Arrived = styled('div')({ fontSize: 26, fontWeight: 800, color: '#188038' });
+const fadeUp = keyframes`
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+`;
+
+const ArrivalCard = styled('div')({ display: 'flex', flexDirection: 'column', gap: 16 });
+
+const ArrivalCenter = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 12,
+  textAlign: 'center',
+});
+
+const Rise = styled('div', { shouldForwardProp: (prop) => !String(prop).startsWith('$') })<{ $delay: number }>(({ $delay }) => ({
+  animation: `${fadeUp} 0.45s ease-out both`,
+  animationDelay: `${$delay}s`,
+  maxWidth: '100%',
+}));
+
+const ArrivedChip = styled('div')({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 5,
+  padding: '5px 12px',
+  borderRadius: 999,
+  background: '#e6f4ea',
+  color: '#188038',
+  fontSize: 15,
+  fontWeight: 800,
+});
+
+const StationMeta = styled('div')({ fontSize: 16, fontWeight: 600, color: '#5f6368' });
 
 const Pill = styled('button', { shouldForwardProp: (prop) => !String(prop).startsWith('$') })<{ $color: string }>(({ $color }) => ({
   flexShrink: 0,
@@ -100,6 +135,7 @@ const StationName = styled('div')({
 });
 
 const WidePill = styled(Pill)({ width: '100%' });
+const BigStart = styled(WidePill)({ padding: '18px 26px', fontSize: 20, fontWeight: 800, marginTop: 6 });
 
 const Ghost = styled('button')({
   border: '1px solid #dadce0',
@@ -244,6 +280,7 @@ interface Props {
   geoError: string | null;
   proximityMeters?: number;
   design?: MapDesign;
+  openAnywhere?: boolean;
   onArrive: () => void;
 }
 
@@ -256,6 +293,7 @@ export default function MapView({
   geoError,
   proximityMeters = DEFAULT_PROXIMITY_METERS,
   design,
+  openAnywhere = false,
   onArrive,
 }: Props) {
   const t = useTranslations(texts);
@@ -369,13 +407,14 @@ export default function MapView({
       if (!isNext && !completedIndices.includes(i)) return [];
       const pin = attachUprightPin(maps, map, {
         position: item.location,
-        style: stationPinStyle(look, isNext),
+        style: stationPinStyle(look, isNext, arrived),
         text: String(i + 1),
         imageUrl: item.mapIcon,
         title: item.name,
         rotation: spinRef.current,
+        aboveMarkers: isNext && arrived,
       });
-      if (isNext && arrived) pin.setBouncing(true);
+      if (isNext && arrived) pin.setBreathing(true);
       return [pin];
     });
     stationPins.current = pins;
@@ -691,12 +730,20 @@ export default function MapView({
       return <WidePill type="button" $color={GOOGLE_BLUE} onClick={onArrive}>{t.openStation}</WidePill>;
     }
     if (arrived) {
+      const item = items[currentItemIndex];
       return (
-        <>
-          {toStation}
-          <Arrived>{t.arrivedTitle}</Arrived>
-          <WidePill type="button" $color={GOOGLE_BLUE} onClick={onArrive}>{t.openStation}</WidePill>
-        </>
+        <ArrivalCard>
+          <ArrivalCenter>
+            <Rise $delay={0.2}><ArrivedChip><CheckMark />{t.arrivedTitle}</ArrivedChip></Rise>
+            <Rise $delay={0.32}><StationName style={{ textAlign: 'center' }}>{name}</StationName></Rise>
+            <Rise $delay={0.44}>
+              <StationMeta>{`${t.stationOf(currentItemIndex + 1, items.length)} · ${t.kinds[item?.type ?? 'station']}`}</StationMeta>
+            </Rise>
+          </ArrivalCenter>
+          <Rise $delay={0.56}>
+            <BigStart type="button" $color={GOOGLE_BLUE} onClick={onArrive}>{t.startStation}</BigStart>
+          </Rise>
+        </ArrivalCard>
       );
     }
     if (navigating || mapsError) {
@@ -714,7 +761,9 @@ export default function MapView({
             </SheetText>
             {navigating && <Pill type="button" $color={EXIT_RED} onClick={stopWalking}>{t.exit}</Pill>}
           </SheetRow>
-          {offerOverride && <Ghost type="button" onClick={onArrive}>{t.imHere}</Ghost>}
+          {openAnywhere
+            ? <Ghost type="button" onClick={onArrive}>{t.openNow}</Ghost>
+            : offerOverride && <Ghost type="button" onClick={onArrive}>{t.imHere}</Ghost>}
         </>
       );
     }
@@ -735,6 +784,7 @@ export default function MapView({
           <Pill type="button" $color={GOOGLE_BLUE} disabled={!fix} onClick={startWalking}>{t.start}</Pill>
         </SheetRow>
         {routeFailedFor === currentItemIndex && <Readout>{t.noRoute}</Readout>}
+        {openAnywhere && <Ghost type="button" onClick={onArrive}>{t.openNow}</Ghost>}
       </>
     );
   })();

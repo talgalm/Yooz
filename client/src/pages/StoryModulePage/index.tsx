@@ -1453,6 +1453,7 @@ export default function StoryModulePage() {
             geoError={mapRun.geoError}
             proximityMeters={data.module.proximityMeters}
             design={data.module.mapDesign}
+            openAnywhere={data.module.openAnywhere === true}
             onArrive={() => handleNodeTap(currentItemIndex)}
           />
           {showGuidelines && progressChecked && !currentPopup && (

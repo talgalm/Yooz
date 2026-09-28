@@ -124,6 +124,7 @@ export interface ModuleConfigRequest {
   proximityMeters?: number;
   groupOrders?: Record<string, number[]>;
   mapDesign?: { style?: string; hidden?: string[] };
+  openAnywhere?: boolean;
 }
 
 export interface OrderGameRound {

@@ -486,6 +486,7 @@ export default function AdminCreateActivityPage() {
   const [groupOrders, setGroupOrders] = useState<Record<string, number[]>>({});
   const [proximityMeters, setProximityMeters] = useState(DEFAULT_PROXIMITY_METERS);
   const [mapDesign, setMapDesign] = useState<MapDesign>(DEFAULT_MAP_DESIGN);
+  const [openAnywhere, setOpenAnywhere] = useState(false);
 
   const [openingType, setOpeningType] = useState<OpeningType>('none');
   const [openingUrl, setOpeningUrl] = useState('');
@@ -651,6 +652,7 @@ export default function AdminCreateActivityPage() {
           }
           if (a.module.groupOrders) setGroupOrders(a.module.groupOrders);
           if (a.module.proximityMeters) setProximityMeters(a.module.proximityMeters);
+          setOpenAnywhere(a.module.openAnywhere === true);
           if (a.module.mapDesign) {
             setMapDesign({
               style: a.module.mapDesign.style ?? DEFAULT_MAP_DESIGN.style,
@@ -1161,7 +1163,7 @@ export default function AdminCreateActivityPage() {
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
           ...(showItemTitleNumbers && { showItemTitleNumbers: true }),
-          ...(moduleType === 'map' && { proximityMeters, groupOrders: liveGroupOrders(), mapDesign }),
+          ...(moduleType === 'map' && { proximityMeters, groupOrders: liveGroupOrders(), mapDesign, openAnywhere }),
         };
         if (popups.length > 0) {
           modulePayload.popups = popups
@@ -1877,6 +1879,20 @@ export default function AdminCreateActivityPage() {
                       t={t}
                     />
                   </div>
+                  {moduleType === 'map' && (
+                    <div style={{ marginTop: 12 }}>
+                      <SectionLabelSmall>{t.mapOpenRule}</SectionLabelSmall>
+                      <SelectionGroup>
+                        <SelectionButton type="button" selected={!openAnywhere} onClick={() => setOpenAnywhere(false)}>
+                          {t.mapOpenNear}
+                        </SelectionButton>
+                        <SelectionButton type="button" selected={openAnywhere} onClick={() => setOpenAnywhere(true)}>
+                          {t.mapOpenAnywhere}
+                        </SelectionButton>
+                      </SelectionGroup>
+                      {openAnywhere && <SectionDescription style={{ marginTop: 4 }}>{t.mapOpenAnywhereHint}</SectionDescription>}
+                    </div>
+                  )}
                   {moduleType === 'map' && (
                     <div style={{ marginTop: 12 }}>
                       <SectionLabelSmall>{t.mapProximity}</SectionLabelSmall>
