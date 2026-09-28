@@ -1009,7 +1009,7 @@ is pure and tested (`utils/walkNavigation.ts`). The screen is styled after Googl
 turn banner with a big arrow (one SVG, `DirectionArrow`, in four directions only - every Google manoeuvre
 maps to up, left, right or down for a U-turn via `maneuverDirection`; the glyph set with a
 roundabout symbol read as noise) and a "ואז" tab under it for a turn within 150m of the next one
-(`NextTurn.thenManeuver`), a round
+(`NextTurn.thenManeuver`; the banner squares its corner above the tab so the two join with no gap), a round
 compass button whose needle tracks north and snaps the map north-up on tap, a round blue "חזרה אליי" button
 under it (shown only when not following), both kept 16px above the bottom sheet by measuring the
 sheet with a `ResizeObserver` (it grows when "הגעתי לתחנה" appears), and a bottom sheet with big minutes, "distance · arrival clock", a red "יציאה"
@@ -1026,7 +1026,8 @@ compass to the user (`compassSteering`), like Google Maps. Dragging stops follow
 position; "חזרה אליי" re-centres and gives rotation back to the compass. Google's own rotation needs a
 vector map with a `mapId`, which would switch off the JSON map styles - hence CSS. Station and team pins stay upright: on the participant map
 they are not Google markers but HTML pins (`attachUprightPin` in `utils/mapPins.ts`, an
-`OverlayView` in `overlayLayer`, same sizes and colours via `stationPinStyle`) counter-rotated by
+`OverlayView` in `markerLayer` - in `overlayLayer` the route drew over them - same sizes and
+colours via `stationPinStyle`) counter-rotated by
 the same angle and ease as the canvas; on arrival the next station's pin grows 1.2x
 (`stationPinStyle(..., arrived)`), moves to `floatPane` above your arrow (you are standing on it,
 so the arrow and its white disc would hide it) and slowly grows and shrinks (`setBreathing`, a

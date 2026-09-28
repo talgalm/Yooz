@@ -262,7 +262,7 @@ export function attachUprightPin(
   const overlay = new maps.OverlayView();
   overlay.onAdd = () => {
     const panes = overlay.getPanes();
-    (options.aboveMarkers ? panes?.floatPane : panes?.overlayLayer)?.appendChild(anchor);
+    (options.aboveMarkers ? panes?.floatPane : panes?.markerLayer)?.appendChild(anchor);
   };
   overlay.draw = () => {
     const point = overlay.getProjection()?.fromLatLngToDivPixel(new maps.LatLng(position));

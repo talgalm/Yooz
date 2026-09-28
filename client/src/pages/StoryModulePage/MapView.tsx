@@ -160,19 +160,20 @@ const BannerStack = styled('div')({
   alignItems: 'flex-start',
 });
 
-const Banner = styled('div')({
+const Banner = styled('div', { shouldForwardProp: (prop) => !String(prop).startsWith('$') })<{ $withTab: boolean }>(({ $withTab }) => ({
   alignSelf: 'stretch',
   display: 'flex',
   alignItems: 'center',
   gap: 16,
   padding: '18px 20px',
   borderRadius: 22,
+  borderEndStartRadius: $withTab ? 0 : 22,
   background: NAV_GREEN,
   color: '#fff',
   boxShadow: '0 6px 20px rgba(0,0,0,0.28)',
   position: 'relative',
   zIndex: 1,
-});
+}));
 
 const TurnArrow = styled('div')({ flexShrink: 0, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' });
 const TurnText = styled('div')({ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 });
@@ -818,7 +819,7 @@ export default function MapView({
 
       {turn && (
         <BannerStack>
-          <Banner>
+          <Banner $withTab={!!turn.thenManeuver}>
             <TurnArrow><DirectionArrow direction={turn.arriving ? 'up' : maneuverDirection(turn.maneuver)} size={42} /></TurnArrow>
             <TurnText>
               <TurnDistance>{t.inDistance(turn.inM)}</TurnDistance>
