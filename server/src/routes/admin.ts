@@ -16,7 +16,7 @@ import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { sanitiseLanguages } from '../utils/requestLang';
 import { sanitizeLocation, sanitizeProximityMeters, sanitizeGroupOrders } from '../utils/moduleItems';
-import { sanitizeMapDesign } from '../utils/mapDesign';
+import { sanitizeMapDesign, sanitizeMapIcon } from '../utils/mapDesign';
 import { pretranslateActivity } from '../services/activityPretranslate';
 import { IActivity, IScheduledReport } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
@@ -145,8 +145,10 @@ async function buildActivityData(
               revisitable?: boolean;
               collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number; videoPartIndex?: number | null; photoOrder?: number[] };
               location?: unknown;
+              mapIcon?: unknown;
             }) => {
               const location = isMap ? sanitizeLocation(item.location) : undefined;
+              const mapIcon = isMap ? sanitizeMapIcon(item.mapIcon) : undefined;
               return {
                 type: item.type,
                 ref: item.ref,
@@ -156,6 +158,7 @@ async function buildActivityData(
                 ...(item.revisitable && { revisitable: true }),
                 ...(item.collageSplit && { collageSplit: item.collageSplit }),
                 ...(location && { location }),
+                ...(mapIcon && { mapIcon }),
               };
             })
         : [];
@@ -331,6 +334,7 @@ async function populateActivityItems(activities: any[]): Promise<any[]> {
           revisitable: item.revisitable,
           collageSplit: item.collageSplit,
           location: item.location,
+          mapIcon: item.mapIcon,
         };
       });
     }

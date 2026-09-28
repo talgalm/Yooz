@@ -112,6 +112,7 @@ export interface ModuleItemRequest {
   revisitable?: boolean;
   collageSplit?: CollageSplitRequest;
   location?: { lat: number; lng: number; address?: string };
+  mapIcon?: string;
 }
 
 export interface ModuleConfigRequest {

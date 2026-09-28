@@ -1021,7 +1021,15 @@ in `overlayLayer` under the markers, animated with the Web Animations API and he
 `prefers-reduced-motion`); finished stations are smaller
 numbered circles (`doneStationMarker`); future stations are not drawn. A teardrop location pin
 with a static halo was tried for "next" and rejected as unclear. Pin numbers switch to dark text
-on light pins (`textColorOn`). Stacking order is `PIN_LAYERS`: you > next > done. The route line colour also changes per look. A dashed route also gets `routeOutline`, a wider
+on light pins (`textColorOn`). A station can show an uploaded image instead of its number:
+`module.items[].mapIcon`, an image URL (map modules only, on the item, not the Station, for the
+same reason as `location`), uploaded in the item's settings dialog (`MapIconSection`,
+`FileUploadButton`, SVG/PNG/WebP/JPEG). The circle keeps its colour and the image is a second
+marker centred on it (`stationMarkers` returns `[circle, image]`; both bounce on arrival).
+`sanitizeMapIcon` keeps only http(s) links - no `data:` or `javascript:`. Like every item field,
+`mapIcon` is copied by hand in `admin.ts` (save and edit-load) and in all three item branches of
+`GET /:code/module`. The preview keys its pins on icons but its route on coordinates only, so
+changing an icon never refetches the billed route. Stacking order is `PIN_LAYERS`: you > next > done. The route line colour also changes per look. A dashed route also gets `routeOutline`, a wider
 dash in a contrasting colour drawn under the coloured one - on textured, same-toned maps a
 colour alone disappears into the roads.
 The admin preview draws the walking route through the stations in module order (one
