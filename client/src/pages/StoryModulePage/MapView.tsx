@@ -8,6 +8,9 @@ import {
   type Fix,
 } from '../../utils/geo';
 import { teamMarkerColor, teamMarkerLabel } from './teamMarker';
+import { lookFor, mapOptionsFor, routeLineOptions, type MapDesign } from '../../utils/mapDesign';
+import { PIN_LAYERS, attachPulse, doneStationMarker, meMarkerIcon, nextStationMarker } from '../../utils/mapPins';
+import { attachMapLookLayer } from '../../utils/mapLookLayer';
 import type { MapGroupMarker, ModuleItemData } from './types';
 
 const Wrap = styled('div')({ position: 'relative', width: '100%', height: '100dvh' });
@@ -67,6 +70,7 @@ interface Props {
   fix: Fix | null;
   geoError: string | null;
   proximityMeters?: number;
+  design?: MapDesign;
   onArrive: () => void;
   t: Record<string, string>;
 }
@@ -79,6 +83,7 @@ export default function MapView({
   fix,
   geoError,
   proximityMeters = DEFAULT_PROXIMITY_METERS,
+  design,
   onArrive,
   t,
 }: Props) {
@@ -89,8 +94,12 @@ export default function MapView({
   const groupMarkers = useRef<Map<string, google.maps.Marker>>(new Map());
   const renderer = useRef<google.maps.DirectionsRenderer | null>(null);
   const routedFrom = useRef<string>('');
+  const look = lookFor(design);
+  const designRef = useRef(design);
+  designRef.current = design;
 
   const [mapsError, setMapsError] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [pressedStart, setPressedStart] = useState(false);
   const [arrivedAt, setArrivedAt] = useState<number | null>(null);
   const [overrideDueAt, setOverrideDueAt] = useState<number | null>(null);
@@ -118,14 +127,17 @@ export default function MapView({
           zoom: 16,
           center: { lat: 32.0853, lng: 34.7818 },
           disableDefaultUI: true,
+          keyboardShortcuts: false,
           gestureHandling: 'greedy',
           clickableIcons: false,
+          ...mapOptionsFor(designRef.current),
         });
         renderer.current = new maps.DirectionsRenderer({
           map: mapRef.current,
           suppressMarkers: true,
-          polylineOptions: { strokeColor: '#6c5ce7', strokeWeight: 5, strokeOpacity: 0.85 },
+          polylineOptions: routeLineOptions(lookFor(designRef.current)),
         });
+        setMapReady(true);
       })
       .catch(() => {
         if (!cancelled) setMapsError(true);
@@ -137,54 +149,54 @@ export default function MapView({
 
   useEffect(() => {
     const maps = window.google?.maps;
+    if (!maps || !mapRef.current || !mapReady) return;
+    return attachMapLookLayer(maps, mapRef.current, look.overlay);
+  }, [mapReady, look.overlay]);
+
+  useEffect(() => {
+    mapRef.current?.setOptions(mapOptionsFor(design));
+    renderer.current?.setOptions({ polylineOptions: routeLineOptions(lookFor(design)) });
+  }, [design]);
+
+  useEffect(() => {
+    const maps = window.google?.maps;
     if (!maps || !mapRef.current) return;
     stationMarkers.current.forEach((m) => m.setMap(null));
+    const map = mapRef.current;
     stationMarkers.current = items.flatMap((item, i) => {
       if (!item.location) return [];
-      const done = completedIndices.includes(i);
-      const isTarget = i === currentItemIndex;
-      if (!done && !isTarget) return [];
-      return [
-        new maps.Marker({
-          map: mapRef.current as google.maps.Map,
-          position: item.location,
-          title: item.name,
-          label: { text: String(i + 1), color: '#fff', fontWeight: '700' },
-          icon: {
-            path: maps.SymbolPath.CIRCLE,
-            scale: isTarget ? 16 : 12,
-            fillColor: done ? '#00b894' : '#6c5ce7',
-            fillOpacity: 1,
-            strokeColor: '#fff',
-            strokeWeight: 3,
-          },
-          animation: isTarget && arrived ? maps.Animation.BOUNCE : null,
-        }),
-      ];
+      const at = { map, position: item.location, title: item.name };
+      if (i === currentItemIndex) {
+        return [new maps.Marker({ ...at, ...nextStationMarker(maps, look, i + 1), animation: arrived ? maps.Animation.BOUNCE : null })];
+      }
+      if (!completedIndices.includes(i)) return [];
+      return [new maps.Marker({ ...at, ...doneStationMarker(maps, look, i + 1) })];
     });
-  }, [items, currentItemIndex, completedIndices, arrived]);
+  }, [items, currentItemIndex, completedIndices, arrived, look]);
+
+  useEffect(() => {
+    const maps = window.google?.maps;
+    const where = items[currentItemIndex]?.location;
+    if (!maps || !mapRef.current || !mapReady || !where) return;
+    return attachPulse(maps, mapRef.current, where, look.pins.next);
+  }, [items, currentItemIndex, mapReady, look]);
 
   useEffect(() => {
     const maps = window.google?.maps;
     if (!maps || !mapRef.current || !fix) return;
+    const meIcon = meMarkerIcon(maps, look);
     if (!meMarker.current) {
       meMarker.current = new maps.Marker({
         map: mapRef.current,
         title: t.mapYou,
-        icon: {
-          path: maps.SymbolPath.CIRCLE,
-          scale: 8,
-          fillColor: '#0984e3',
-          fillOpacity: 1,
-          strokeColor: '#fff',
-          strokeWeight: 3,
-        },
-        zIndex: 999,
+        icon: meIcon,
+        zIndex: PIN_LAYERS.me,
       });
       mapRef.current.panTo(fix);
     }
+    meMarker.current.setIcon(meIcon);
     meMarker.current.setPosition(fix);
-  }, [fix, t.mapYou]);
+  }, [fix, t.mapYou, look]);
 
   useEffect(() => {
     const maps = window.google?.maps;

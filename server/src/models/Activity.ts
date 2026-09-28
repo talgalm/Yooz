@@ -1,5 +1,6 @@
 import { Schema, model, Types } from 'mongoose';
 import type { AnalyticsExportType } from '../utils/analyticsExcelExport';
+import { MAP_STYLE_IDS, MAP_FEATURE_KEYS, type IMapDesign } from '../utils/mapDesign';
 
 export interface IPopupTrigger {
   point: 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
@@ -60,6 +61,7 @@ export interface IModuleConfig {
   showItemTitleNumbers?: boolean;
   groupOrders?: Record<string, number[]>;
   proximityMeters?: number;
+  mapDesign?: IMapDesign;
 }
 
 export type ActivityStatus = 'preview' | 'live';
@@ -219,6 +221,11 @@ const moduleItemSchema = new Schema<IModuleItem>({
   location: { type: itemLocationSchema },
 }, { _id: false });
 
+const mapDesignSchema = new Schema<IMapDesign>({
+  style: { type: String, enum: MAP_STYLE_IDS, default: 'standard' },
+  hidden: { type: [{ type: String, enum: MAP_FEATURE_KEYS }], default: [] },
+}, { _id: false });
+
 const moduleConfigSchema = new Schema<IModuleConfig>({
   type: { type: String, required: true, enum: ['story', 'mission', 'spiders', 'map'], default: 'story' },
   theme: { type: String },
@@ -230,6 +237,7 @@ const moduleConfigSchema = new Schema<IModuleConfig>({
   missionRef: { type: Schema.Types.ObjectId, ref: 'Mission' },
   groupOrders: { type: Schema.Types.Mixed, default: undefined },
   proximityMeters: { type: Number, default: undefined },
+  mapDesign: { type: mapDesignSchema, default: undefined },
 }, { _id: false });
 
 const openingSchema = new Schema<IOpening>({

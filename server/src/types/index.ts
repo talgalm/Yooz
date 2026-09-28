@@ -122,6 +122,7 @@ export interface ModuleConfigRequest {
   missionRef?: string;
   proximityMeters?: number;
   groupOrders?: Record<string, number[]>;
+  mapDesign?: { style?: string; hidden?: string[] };
 }
 
 export interface OrderGameRound {
