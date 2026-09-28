@@ -148,6 +148,7 @@ Login config: `loginFields: ('email'|'phoneNumber'|'name')[]`, `emailGoogle?`,
 - `groupOrders?` (map: group name → permutation of item indices), `proximityMeters?` (map: §16),
   `mapDesign?` (map: `{style, hidden[]}`, the map's look and which Google places it shows, §16).
   `openAnywhere?` (map: stations open from anywhere instead of only on arrival, §16).
+  `showStationNames?` (map: a name label under each station pin, §16).
 - `popups?: IPopupMessage[]` — see §11.
 
 **Leaderboard/scoring flags**: `leaderboardMode: 'points'|'time'|'both'`,
@@ -1002,8 +1003,8 @@ distance and time left and "עצירת ניווט"), then **arrival**: the sheet
 dead space) and its content fades in from below one piece after another (`Rise` with staggered delays): a green "הגעתם!" chip,
 the name, "תחנה 1 מתוך 5 · משחק", centred, and a big "התחילו את התחנה" at the bottom. The
 description and address were tried there and dropped as noise. With
-`module.openAnywhere` (admin: "פתיחת תחנה" - "רק בקרבת התחנה" / "מכל מקום", beside the
-opening distance) the sheet also offers "פתחו את התחנה עכשיו" in overview and navigation, and the
+`module.openAnywhere` (admin, first step under "עיצוב מפה" together with the opening distance and
+"הצג את שם התחנה מתחת לכל תחנה במפה": "פתיחת תחנה" - "רק בקרבת התחנה" / "מכל מקום") the sheet also offers "פתחו את התחנה עכשיו" in overview and navigation, and the
 "I'm here" override is not needed; arriving still shows the station card. The step maths
 is pure and tested (`utils/walkNavigation.ts`). The screen is styled after Google Maps navigation: a dark-green
 turn banner with a big arrow (one SVG, `DirectionArrow`, in four directions only - every Google manoeuvre
@@ -1028,7 +1029,8 @@ vector map with a `mapId`, which would switch off the JSON map styles - hence CS
 they are not Google markers but HTML pins (`attachUprightPin` in `utils/mapPins.ts`, an
 `OverlayView` in `markerLayer` - in `overlayLayer` the route drew over them - same sizes and
 colours via `stationPinStyle`) counter-rotated by
-the same angle and ease as the canvas; on arrival the next station's pin grows 1.2x
+the same angle and ease as the canvas, with an optional name label under the circle
+(`module.showStationNames`; participant map only - the admin preview keeps plain markers); on arrival the next station's pin grows 1.2x
 (`stationPinStyle(..., arrived)`), moves to `floatPane` above your arrow (you are standing on it,
 so the arrow and its white disc would hide it) and slowly grows and shrinks (`setBreathing`, a
 Web Animation; a bounce was tried and rejected). The admin preview does

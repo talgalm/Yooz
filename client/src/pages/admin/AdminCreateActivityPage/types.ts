@@ -114,6 +114,7 @@ export interface Activity {
     proximityMeters?: number;
     mapDesign?: Partial<MapDesign>;
     openAnywhere?: boolean;
+    showStationNames?: boolean;
     items: { type: 'game' | 'station'; ref: string; groups?: string[]; collageSplit?: CollageSplit; location?: ItemLocation; mapIcon?: string; data?: { _id: string; name: string; type?: string; settings?: Record<string, unknown>; description?: string; customer?: string; theme?: string } }[];
     popups?: {
       _id?: string;

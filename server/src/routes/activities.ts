@@ -305,6 +305,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     ...(activity.module.proximityMeters && { proximityMeters: activity.module.proximityMeters }),
     ...(activity.module.type === 'map' && activity.module.mapDesign && { mapDesign: activity.module.mapDesign }),
     ...(activity.module.type === 'map' && activity.module.openAnywhere && { openAnywhere: true }),
+    ...(activity.module.type === 'map' && activity.module.showStationNames && { showStationNames: true }),
     items: populatedItems,
     popups: popupsForServedItems(filteredPopups, servedIndices).map((p) => ({
       _id: p._id,

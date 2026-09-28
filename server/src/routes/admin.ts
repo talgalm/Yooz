@@ -175,6 +175,7 @@ async function buildActivityData(
         ...(groupOrders && { groupOrders }),
         ...(mapDesign && { mapDesign }),
         ...(isMap && mod.openAnywhere === true && { openAnywhere: true }),
+        ...(isMap && mod.showStationNames === true && { showStationNames: true }),
         items,
         popups: Array.isArray(mod.popups) ? mod.popups.map((p: Record<string, unknown>) => {
           const ct = p.contentType === 'image' ? 'image' : 'text';

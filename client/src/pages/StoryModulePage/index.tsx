@@ -1454,6 +1454,7 @@ export default function StoryModulePage() {
             proximityMeters={data.module.proximityMeters}
             design={data.module.mapDesign}
             openAnywhere={data.module.openAnywhere === true}
+            showStationNames={data.module.showStationNames === true}
             onArrive={() => handleNodeTap(currentItemIndex)}
           />
           {showGuidelines && progressChecked && !currentPopup && (

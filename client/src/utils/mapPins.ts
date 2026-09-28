@@ -211,7 +211,7 @@ const BREATH_MS = 1400;
 export function attachUprightPin(
   maps: typeof google.maps,
   map: google.maps.Map,
-  options: { position: google.maps.LatLngLiteral; style: UprightPinStyle; text?: string; imageUrl?: string; title?: string; rotation: number; aboveMarkers?: boolean },
+  options: { position: google.maps.LatLngLiteral; style: UprightPinStyle; text?: string; imageUrl?: string; title?: string; rotation: number; aboveMarkers?: boolean; label?: string },
 ): UprightPin {
   const { style } = options;
   let position = options.position;
@@ -256,6 +256,31 @@ export function attachUprightPin(
     face.textContent = options.text ?? '';
   }
   spinner.appendChild(face);
+  if (options.label) {
+    const label = document.createElement('div');
+    label.textContent = options.label;
+    Object.assign(label.style, {
+      position: 'absolute',
+      top: `${style.diameterPx + 4}px`,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      maxWidth: '140px',
+      padding: '3px 8px',
+      borderRadius: '8px',
+      background: 'rgba(255,255,255,0.95)',
+      color: '#202124',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+      fontFamily: 'Rubik, Roboto, Arial, sans-serif',
+      fontSize: '12px',
+      fontWeight: '700',
+      lineHeight: '1.3',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      pointerEvents: 'none',
+    });
+    spinner.appendChild(label);
+  }
   anchor.appendChild(spinner);
 
   let breath: Animation | null = null;

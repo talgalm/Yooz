@@ -282,6 +282,7 @@ interface Props {
   proximityMeters?: number;
   design?: MapDesign;
   openAnywhere?: boolean;
+  showStationNames?: boolean;
   onArrive: () => void;
 }
 
@@ -295,6 +296,7 @@ export default function MapView({
   proximityMeters = DEFAULT_PROXIMITY_METERS,
   design,
   openAnywhere = false,
+  showStationNames = false,
   onArrive,
 }: Props) {
   const t = useTranslations(texts);
@@ -414,13 +416,14 @@ export default function MapView({
         title: item.name,
         rotation: spinRef.current,
         aboveMarkers: isNext && arrived,
+        label: showStationNames ? item.name : undefined,
       });
       if (isNext && arrived) pin.setBreathing(true);
       return [pin];
     });
     stationPins.current = pins;
     return () => pins.forEach((pin) => pin.remove());
-  }, [items, currentItemIndex, completedIndices, arrived, look, mapReady]);
+  }, [items, currentItemIndex, completedIndices, arrived, look, mapReady, showStationNames]);
 
   useEffect(() => {
     const maps = window.google?.maps;
