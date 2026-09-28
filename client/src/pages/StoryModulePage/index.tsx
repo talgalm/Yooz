@@ -762,7 +762,15 @@ export default function StoryModulePage() {
             showPopupsOrRun('endOfActivity', undefined, () => setPhase('finish'));
             return;
           }
-          if (opensRightAfter(data.module.items, nextIndex)) chainTo.current = nextIndex;
+          const locked = typeof lockedFromIndex === 'number' && nextIndex >= lockedFromIndex;
+          if (opensRightAfter(data.module.items, nextIndex) && !locked) {
+            showPopupsOrRun('beforeItem', nextIndex, () => {
+              itemStartTime.current = Date.now();
+              setCurrentItemIndex(nextIndex);
+              setPhase('playing');
+            });
+            return;
+          }
           setCurrentItemIndex(nextIndex);
           setPhase('roadmap');
         });
@@ -848,8 +856,6 @@ export default function StoryModulePage() {
     showPopupsOrRun('beforeItem', index, goPlay);
   };
 
-  const chainTo = useRef<number | null>(null);
-
   const handleNodeTap = (index: number) => {
     if (entryTransitionStage !== 'idle') return;
     if (typeof lockedFromIndex === 'number' && index >= lockedFromIndex) return;
@@ -886,13 +892,6 @@ export default function StoryModulePage() {
 
     showPopupsOrRun('beforeItem', index, goPlay);
   };
-
-  useEffect(() => {
-    if (phase !== 'roadmap' || chainTo.current !== currentItemIndex) return;
-    chainTo.current = null;
-    handleNodeTap(currentItemIndex);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, currentItemIndex]);
 
   const handleFootstepsComplete = useCallback(() => {
     setShowFootsteps(false);
@@ -1726,6 +1725,7 @@ export default function StoryModulePage() {
     <>
       <ActivityPlayingHeaderProvider>
       <PlayingPhase
+        key={currentItemIndex}
         currentItem={currentItem}
         currentItemIndex={currentItemIndex}
         stationHintText={currentItemHint?.text || null}

@@ -575,7 +575,7 @@ export default function ModuleItemsSection({
                     const from = selectedItems.slice(0, index).map((before) => !!before.location).lastIndexOf(true);
                     return from >= 0
                       ? <StatusBadge tone="blue">{t.locationInheritedLabel.replace('{n}', String(from + 1))}</StatusBadge>
-                      : <StatusBadge tone="neutral">{t.locationMissingLabel}</StatusBadge>;
+                      : <StatusBadge tone="red">{t.locationMissingLabel}</StatusBadge>;
                   })()}
                   {isSpiders && item.isFinal && <StatusBadge tone="neutral">{t.spidersFinal}</StatusBadge>}
                   {item.revisitable && <StatusBadge tone="neutral">{t.revisitable}</StatusBadge>}

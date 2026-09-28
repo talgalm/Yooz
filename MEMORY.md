@@ -973,13 +973,14 @@ target changes the hysteresis starts over, so the next station 30m on doesn't op
 shows live distance **and** accuracy — a participant who can see the number walks the last few
 metres themselves. Stations chain (`utils/mapChain.ts`, tested): a station with no location, or one within
 `SAME_PLACE_M` (15m) of the last place set before it, opens straight after the previous station
-(`opensRightAfter` - `advanceToNextItem` sets `chainTo`, and an effect runs the normal
-`handleNodeTap` path, popups and manager lock included) and has no pin of its own; only the first
-station of a place is walked to. A station with no location uses that place (`placeOf`). At least one
-station must have a location (the admin blocks moving on and saving only when none has); a
-station without one inherits the last location **before** it, never after, and the item list
-tags it in blue "מיקום של תחנה N". Stations before the first located one have nothing to
-inherit and open straight away. A station with a location opens **only** on arrival: the "I'm here" override appears solely when
+(`opensRightAfter` - `advanceToNextItem` runs the station's `beforeItem` popups and then swaps
+straight to the next station without passing the map, unless the manager lock covers it;
+`PlayingPhase` is keyed by item index so the new station mounts fresh) and has no pin of its own; only the first
+station of a place is walked to. A station with no location uses that place (`placeOf`). A station without a
+location inherits the last location **before** it, never after, and the item list tags it in
+blue "מיקום של תחנה N". So the first station must have one: the admin blocks moving on and
+saving while it has none (`mapUnplacedStart`), and tags every station with nothing to inherit
+in red "אין מיקום". A station with a location opens **only** on arrival: the "I'm here" override appears solely when
 the participant is within `proximityMeters + 50` and GPS has not confirmed arrival for 30s (a
 steady reading off beside a building). It used to also appear beyond 40m and whenever location
 was blocked, which let anyone open a station from anywhere - removed 2026-09-28. Blocked
