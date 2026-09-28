@@ -998,7 +998,15 @@ requested by the "יוצאים לדרך" tap itself since iOS only asks from a u
 compass it falls back to GPS `heading`, then the bearing between fixes 4m apart; a top
 bar shows the next turn from the Directions steps, "בעוד 80 מ׳" + instruction; the sheet shows
 distance and time left and "עצירת ניווט"), then **arrival** ("הגעתם!" + open). The step maths
-is pure and tested (`utils/walkNavigation.ts`). While navigating, the map turns heading-up: the canvas
+is pure and tested (`utils/walkNavigation.ts`). The screen is styled after Google Maps navigation: a dark-green
+turn banner with a big arrow (one SVG, `DirectionArrow`, in four directions only - every Google manoeuvre
+maps to up, left, right or down for a U-turn via `maneuverDirection`; the glyph set with a
+roundabout symbol read as noise) and a "ואז" tab under it for a turn within 150m of the next one
+(`NextTurn.thenManeuver`), a round
+compass button whose needle tracks north and snaps the map north-up on tap, a round blue "חזרה אליי" button
+under it (shown only when not following), both kept 16px above the bottom sheet by measuring the
+sheet with a `ResizeObserver` (it grows when "הגעתי לתחנה" appears), and a bottom sheet with big minutes, "distance · arrival clock", a red "יציאה"
+and a blue "יוצאים לדרך". SVGs for the needle and locate arrow live in `MapView.icons.tsx`. While navigating, the map turns heading-up: the canvas
 is drawn as a `150vmax` square (so no corner shows) and rotated by CSS against the compass
 heading (unwrapped through `angleDelta`, 0.3s ease), so your arrow always points up. The map
 stays rotated while you move it: during navigation a transparent `Gestures` layer takes the
@@ -1038,16 +1046,19 @@ enums and `sanitizeMapDesign`) and `client/src/utils/mapDesign.ts` (the Google s
 `mapDesign.test.ts` fails if they drift. The untouched default (`standard`, nothing hidden) is
 never stored, so an activity without the field looks exactly as map activities always did.
 The looks are Google's classic JSON `styles` (recolouring roads, water, parks, labels) plus, for
-`vintage`/`wildWest`/`treasure`, a parchment texture (`public/images/map/paper-grain.svg`) and a
-dashed route line. The texture lives **inside** the Google map, in the `mapPane` above the tiles
+`vintage`/`wildWest`/`treasure`, a parchment texture (`public/images/map/paper-grain.svg`). The texture lives **inside** the Google map, in the `mapPane` above the tiles
 and below the pins and route (`utils/mapLookLayer.ts::attachMapLookLayer`, an `OverlayView` that
 re-covers the viewport on every `bounds_changed`), so it tints the streets but never the
 stations. The blend mode is set on the pane itself, not the texture div: panes are stacking
 contexts, so a blended child would only blend with the empty pane. A CSS layer over the whole
 map element would tint the pins too, which is why `MapLookOverlay` is used only for the small
 style swatches, which are not maps. `wildWest` is a grey map under a brown multiply wash (sepia, like an old photo), and
-`blueprint` gets a white drafting grid instead of paper (`grid` overlay, normal blending). Each look has its own bold pin colours (`MapLook.pins: {next, done, me}`), picked to stand out on
-that look's background. Markers are built in `utils/mapPins.ts`, shared by the participant map
+`blueprint` gets a white drafting grid instead of paper (`grid` overlay, normal blending). Each look has its own bold pin colours (`MapLook.pins: {next, done}`), picked to stand out on
+that look's background. The "you" marker takes the look's route colour, like Google's blue dot on
+a blue route, and is created with `optimized: false`: an optimised legacy marker is drawn on a
+canvas below the texture pane and came out tinted. While navigating, the arrow sits on a 75% white disc
+(`meHaloIcon`, a second marker) and is anchored at its centre (`ARROW_CENTER_Y`), not its tip,
+so it turns in place. Markers are built in `utils/mapPins.ts`, shared by the participant map
 and the admin preview: the next station is a bigger numbered circle (`nextStationMarker`, bounces on
 arrival) with soft waves rippling out from it (`attachPulse`: two staggered rings, one every ~1.8s (three
 every 0.8s was too busy),
@@ -1064,9 +1075,10 @@ marker centred on it (`stationMarkers` returns `[circle, image]`; both bounce on
 `sanitizeMapIcon` keeps only http(s) links - no `data:` or `javascript:`. Like every item field,
 `mapIcon` is copied by hand in `admin.ts` (save and edit-load) and in all three item branches of
 `GET /:code/module`. The preview keys its pins on icons but its route on coordinates only, so
-changing an icon never refetches the billed route. Stacking order is `PIN_LAYERS`: you > next > done. The route line colour also changes per look. A dashed route also gets `routeOutline`, a wider
-dash in a contrasting colour drawn under the coloured one - on textured, same-toned maps a
-colour alone disappears into the roads.
+changing an icon never refetches the billed route. Stacking order is `PIN_LAYERS`: you > next > done. The route line colour also changes per look. Looks with a `routeOutline` (vintage, Wild West, treasure,
+blueprint) draw the route dashed, each dash on a wider dash in the outline colour; the rest draw
+it solid. The outline is there because on textured, same-toned maps a colour alone disappears
+into the roads. Each look keeps its own route colour (tried all-blue, rejected); the line is 8px thick. A dotted Google-style route was tried and rejected by the owner.
 The admin preview draws the walking route through the stations in module order (one
 `DirectionsService` call with the middle stations as waypoints, falling back to straight lines if
 Google finds no route or there are more than 25 waypoints). Directions is billed per call, so the

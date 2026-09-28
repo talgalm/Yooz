@@ -20,26 +20,19 @@ export interface NextTurn {
   maneuver?: string;
   inM: number;
   arriving: boolean;
+  thenManeuver?: string;
 }
 
-const MANEUVER_ARROWS: Record<string, string> = {
-  'turn-left': '←',
-  'turn-right': '→',
-  'turn-slight-left': '↖',
-  'turn-slight-right': '↗',
-  'turn-sharp-left': '↙',
-  'turn-sharp-right': '↘',
-  'keep-left': '↖',
-  'keep-right': '↗',
-  'uturn-left': '↶',
-  'uturn-right': '↷',
-  'roundabout-left': '↺',
-  'roundabout-right': '↻',
-  straight: '↑',
-};
+const THEN_WITHIN_M = 150;
 
-export function maneuverArrow(maneuver: string | undefined): string {
-  return (maneuver && MANEUVER_ARROWS[maneuver]) || '↑';
+export type TurnDirection = 'up' | 'down' | 'left' | 'right';
+
+export function maneuverDirection(maneuver: string | undefined): TurnDirection {
+  if (!maneuver) return 'up';
+  if (maneuver.startsWith('uturn')) return 'down';
+  if (maneuver.endsWith('-left')) return 'left';
+  if (maneuver.endsWith('-right')) return 'right';
+  return 'up';
 }
 
 function distanceToPath(me: LatLng, path: LatLng[]): number {
@@ -73,7 +66,9 @@ export function nextTurn(route: WalkRoute, me: LatLng): NextTurn | null {
   const inM = distanceMeters(me, route.steps[at].end);
   const following = route.steps[at + 1];
   if (!following) return { instruction: '', inM, arriving: true };
-  return { instruction: following.instruction, maneuver: following.maneuver, inM, arriving: false };
+  const after = route.steps[at + 2];
+  const thenManeuver = after && following.distanceM <= THEN_WITHIN_M ? after.maneuver ?? 'straight' : undefined;
+  return { instruction: following.instruction, maneuver: following.maneuver, inM, arriving: false, thenManeuver };
 }
 
 export function remainingWalk(route: WalkRoute, me: LatLng): { distanceM: number; durationS: number } {

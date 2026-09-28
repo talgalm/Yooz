@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { offsetMeters } from './geo';
-import { currentStepIndex, maneuverArrow, nextTurn, offRouteMeters, remainingWalk, type WalkRoute } from './walkNavigation';
+import { currentStepIndex, maneuverDirection, nextTurn, offRouteMeters, remainingWalk, type WalkRoute } from './walkNavigation';
 
 const start = { lat: 32.08, lng: 34.78 };
 const corner = offsetMeters(start, 200, 0);
@@ -51,10 +51,29 @@ test('walking off the route is measured from its nearest point', () => {
   assert.ok(Math.abs(offRouteMeters(route, offsetMeters(start, 100, 60)) - 60) < 2);
 });
 
-test('an unknown manoeuvre shows a straight arrow rather than nothing', () => {
-  assert.equal(maneuverArrow('turn-left'), '←');
-  assert.equal(maneuverArrow(undefined), '↑');
-  assert.equal(maneuverArrow('ferry'), '↑');
+test('every manoeuvre becomes one of four arrows', () => {
+  assert.equal(maneuverDirection('turn-left'), 'left');
+  assert.equal(maneuverDirection('turn-sharp-right'), 'right');
+  assert.equal(maneuverDirection('keep-left'), 'left');
+  assert.equal(maneuverDirection('roundabout-right'), 'right');
+  assert.equal(maneuverDirection('uturn-left'), 'down');
+  assert.equal(maneuverDirection('straight'), 'up');
+  assert.equal(maneuverDirection('ferry'), 'up');
+  assert.equal(maneuverDirection(undefined), 'up');
+});
+
+test('a turn soon after the next one is announced as "then"', () => {
+  const second = offsetMeters(station, 0, 0);
+  const third = offsetMeters(second, 80, 0);
+  const withThen: WalkRoute = {
+    ...route,
+    steps: [
+      ...route.steps,
+      { instruction: 'Turn left', maneuver: 'turn-left', distanceM: 80, durationS: 60, end: third, path: line(second, 80, 0) },
+    ],
+  };
+  assert.equal(nextTurn(withThen, offsetMeters(start, 150, 0))?.thenManeuver, 'turn-left');
+  assert.equal(nextTurn(route, offsetMeters(start, 150, 0))?.thenManeuver, undefined);
 });
 
 test('an empty route gives no turn and nothing left', () => {

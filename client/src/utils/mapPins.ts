@@ -72,25 +72,39 @@ export function doneStationMarkers(maps: typeof google.maps, look: MapLook, mark
   return stationMarkers(maps, look.pins.done, mark, DONE_SIZE);
 }
 
+const ARROW_CENTER_Y = 2.6;
+
 export function meMarkerIcon(maps: typeof google.maps, look: MapLook, heading?: number | null): google.maps.Symbol {
+  const color = look.routeColor;
   if (heading !== null && heading !== undefined && Number.isFinite(heading)) {
     return {
       path: maps.SymbolPath.FORWARD_CLOSED_ARROW,
-      scale: 6,
+      scale: 10,
+      anchor: new maps.Point(0, ARROW_CENTER_Y),
       rotation: heading,
-      fillColor: look.pins.me,
+      fillColor: color,
       fillOpacity: 1,
       strokeColor: '#ffffff',
-      strokeWeight: 2,
+      strokeWeight: 3,
     };
   }
   return {
     path: maps.SymbolPath.CIRCLE,
-    scale: 8,
-    fillColor: look.pins.me,
+    scale: 11,
+    fillColor: color,
     fillOpacity: 1,
     strokeColor: '#ffffff',
-    strokeWeight: 3,
+    strokeWeight: 4,
+  };
+}
+
+export function meHaloIcon(maps: typeof google.maps): google.maps.Symbol {
+  return {
+    path: maps.SymbolPath.CIRCLE,
+    scale: 30,
+    fillColor: '#ffffff',
+    fillOpacity: 0.75,
+    strokeWeight: 0,
   };
 }
 

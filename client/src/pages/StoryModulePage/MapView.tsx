@@ -12,12 +12,13 @@ import {
 } from '../../utils/geo';
 import { teamMarkerColor, teamMarkerLabel } from './teamMarker';
 import { lookFor, mapOptionsFor, routeLineOptions, type MapDesign } from '../../utils/mapDesign';
-import { PIN_LAYERS, attachPulse, attachUprightPin, meMarkerIcon, stationPinStyle, textColorOn, type UprightPin } from '../../utils/mapPins';
+import { PIN_LAYERS, attachPulse, attachUprightPin, meHaloIcon, meMarkerIcon, stationPinStyle, type UprightPin } from '../../utils/mapPins';
 import { attachMapLookLayer } from '../../utils/mapLookLayer';
-import { maneuverArrow, nextTurn, offRouteMeters, remainingWalk, type WalkRoute } from '../../utils/walkNavigation';
+import { maneuverDirection, nextTurn, offRouteMeters, remainingWalk, type WalkRoute } from '../../utils/walkNavigation';
 import { useTranslations } from '../../context/LanguageContext';
 import { useCompassHeading } from '../../hooks/useCompassHeading';
 import { texts } from './MapView.i18n';
+import { CompassNeedle, DirectionArrow, LocateArrow } from './MapView.icons';
 import type { MapGroupMarker, ModuleItemData } from './types';
 
 const Wrap = styled('div')({ position: 'relative', width: '100%', height: '100dvh', overflow: 'hidden' });
@@ -44,112 +45,159 @@ function normalizeDegrees(value: number): number {
   return ((value % 360) + 360) % 360;
 }
 
+const GOOGLE_BLUE = '#1a73e8';
+const NAV_GREEN = '#0b5f55';
+const NAV_GREEN_DARK = '#084a42';
+const EXIT_RED = '#d93025';
+
 const Sheet = styled('div')({
   position: 'absolute',
-  left: 10,
-  right: 10,
-  bottom: 10,
+  left: 0,
+  right: 0,
+  bottom: 0,
   background: '#fff',
-  borderRadius: 20,
-  padding: '16px 16px 14px',
-  boxShadow: '0 6px 28px rgba(0,0,0,0.22)',
+  borderRadius: '24px 24px 0 0',
+  padding: '18px 20px calc(18px + env(safe-area-inset-bottom))',
+  boxShadow: '0 -4px 24px rgba(0,0,0,0.18)',
   display: 'flex',
   flexDirection: 'column',
   gap: 10,
   zIndex: 3,
 });
 
-const StationName = styled('div')({ fontWeight: 800, fontSize: 17, color: '#1a1a2e' });
-const Summary = styled('div')({ fontSize: 15, fontWeight: 700, color: '#333' });
-const Readout = styled('div')({ fontSize: 13, color: '#666' });
-const Warn = styled('div')({ fontSize: 13, color: '#d63031', fontWeight: 600 });
-const Arrived = styled('div')({ fontSize: 20, fontWeight: 800, color: '#00a884' });
+const SheetRow = styled('div')({ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 });
+const SheetText = styled('div')({ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 });
+const BigTime = styled('div')({ fontSize: 30, fontWeight: 800, color: '#202124', lineHeight: 1.1 });
+const EtaLine = styled('div')({ fontSize: 16, color: '#5f6368' });
+const Readout = styled('div')({ fontSize: 14, color: '#5f6368' });
+const Warn = styled('div')({ fontSize: 14, color: EXIT_RED, fontWeight: 600 });
+const Arrived = styled('div')({ fontSize: 26, fontWeight: 800, color: '#188038' });
 
-const Action = styled('button')({
-  border: 'none',
-  borderRadius: 12,
-  padding: '14px 16px',
-  fontSize: 16,
-  fontWeight: 800,
-  fontFamily: 'inherit',
-  color: '#fff',
-  background: '#6c5ce7',
-  cursor: 'pointer',
-  '&:disabled': { background: '#b9b4e0', cursor: 'default' },
-});
-
-const Ghost = styled('button')({
-  border: '1px solid #d0d0d0',
-  background: 'none',
-  borderRadius: 12,
-  padding: '10px 14px',
-  fontSize: 14,
-  fontWeight: 600,
-  fontFamily: 'inherit',
-  color: '#555',
-  cursor: 'pointer',
-});
-
-const Banner = styled('div')({
-  position: 'absolute',
-  top: 10,
-  left: 10,
-  right: 10,
-  zIndex: 3,
-  display: 'flex',
-  alignItems: 'center',
-  gap: 12,
-  padding: '12px 14px',
-  borderRadius: 18,
-  background: '#1e2a38',
-  color: '#fff',
-  boxShadow: '0 6px 24px rgba(0,0,0,0.3)',
-});
-
-const TurnArrow = styled('div', { shouldForwardProp: (prop) => !String(prop).startsWith('$') })<{ $color: string }>(({ $color }) => ({
-  width: 48,
-  height: 48,
-  borderRadius: 14,
+const Pill = styled('button', { shouldForwardProp: (prop) => !String(prop).startsWith('$') })<{ $color: string }>(({ $color }) => ({
   flexShrink: 0,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: 30,
-  fontWeight: 800,
+  border: 'none',
+  borderRadius: 999,
+  padding: '14px 26px',
+  fontSize: 17,
+  fontWeight: 700,
+  fontFamily: 'inherit',
+  color: '#fff',
   background: $color,
-  color: textColorOn($color),
-  direction: 'ltr',
+  cursor: 'pointer',
+  boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+  '&:disabled': { opacity: 0.45, cursor: 'default', boxShadow: 'none' },
 }));
 
-const TurnText = styled('div')({ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 });
-const TurnDistance = styled('div')({ fontSize: 22, fontWeight: 800, lineHeight: 1.1 });
-const TurnInstruction = styled('div')({
-  fontSize: 14,
-  opacity: 0.9,
+const StationName = styled('div')({
+  fontSize: 32,
+  fontWeight: 800,
+  color: GOOGLE_BLUE,
+  lineHeight: 1.15,
   overflow: 'hidden',
   display: '-webkit-box',
   WebkitLineClamp: 2,
   WebkitBoxOrient: 'vertical',
 });
 
-const Recenter = styled('button')({
-  position: 'absolute',
-  insetInlineEnd: 14,
-  bottom: 200,
-  zIndex: 3,
-  border: 'none',
+const WidePill = styled(Pill)({ width: '100%' });
+
+const Ghost = styled('button')({
+  border: '1px solid #dadce0',
+  background: '#fff',
   borderRadius: 999,
   padding: '10px 16px',
   fontSize: 14,
-  fontWeight: 700,
+  fontWeight: 600,
   fontFamily: 'inherit',
-  background: '#fff',
-  color: '#6c5ce7',
-  boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+  color: GOOGLE_BLUE,
   cursor: 'pointer',
 });
 
+const BannerStack = styled('div')({
+  position: 'absolute',
+  top: 'calc(10px + env(safe-area-inset-top))',
+  left: 10,
+  right: 10,
+  zIndex: 3,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+});
+
+const Banner = styled('div')({
+  alignSelf: 'stretch',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 16,
+  padding: '18px 20px',
+  borderRadius: 22,
+  background: NAV_GREEN,
+  color: '#fff',
+  boxShadow: '0 6px 20px rgba(0,0,0,0.28)',
+  position: 'relative',
+  zIndex: 1,
+});
+
+const TurnArrow = styled('div')({ flexShrink: 0, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' });
+const TurnText = styled('div')({ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 });
+const TurnDistance = styled('div')({ fontSize: 16, fontWeight: 600, opacity: 0.85 });
+const TurnInstruction = styled('div')({
+  fontSize: 24,
+  fontWeight: 700,
+  lineHeight: 1.2,
+  overflow: 'hidden',
+  display: '-webkit-box',
+  WebkitLineClamp: 2,
+  WebkitBoxOrient: 'vertical',
+});
+
+const ThenTab = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  marginTop: -14,
+  padding: '22px 18px 10px',
+  borderRadius: '0 0 18px 18px',
+  background: NAV_GREEN_DARK,
+  color: '#fff',
+  fontSize: 18,
+  fontWeight: 700,
+  boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+});
+
+const ThenArrow = styled('span')({ display: 'inline-flex', alignItems: 'center' });
+
+const MapButtons = styled('div')({
+  position: 'absolute',
+  insetInlineEnd: 14,
+  transition: 'bottom 0.2s ease-out',
+  zIndex: 3,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 12,
+});
+
+const RoundButton = styled('button')({
+  width: 56,
+  height: 56,
+  borderRadius: '50%',
+  border: 'none',
+  background: '#fff',
+  boxShadow: '0 2px 10px rgba(0,0,0,0.25)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  cursor: 'pointer',
+  padding: 0,
+});
+
+const RecenterButton = styled(RoundButton)({
+  background: GOOGLE_BLUE,
+  boxShadow: '0 3px 12px rgba(26,115,232,0.45)',
+});
+
 const OVERRIDE_NEAR_EXTRA_M = 50;
+const BUTTONS_ABOVE_SHEET_PX = 16;
 const OVERRIDE_AFTER_MS = 30_000;
 const OFF_ROUTE_M = 35;
 const REROUTE_MIN_GAP_MS = 15_000;
@@ -212,8 +260,11 @@ export default function MapView({
 }: Props) {
   const t = useTranslations(texts);
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  const [sheetHeight, setSheetHeight] = useState(0);
   const mapRef = useRef<google.maps.Map | null>(null);
   const meMarker = useRef<google.maps.Marker | null>(null);
+  const meHalo = useRef<google.maps.Marker | null>(null);
   const stationPins = useRef<UprightPin[]>([]);
   const groupPins = useRef<Map<string, UprightPin>>(new Map());
   const spinRef = useRef(0);
@@ -251,6 +302,14 @@ export default function MapView({
     && distance !== null && distance <= proximityMeters + OVERRIDE_NEAR_EXTRA_M;
 
   useEffect(() => onMapsAuthFailure(() => setMapsError(true)), []);
+
+  useEffect(() => {
+    const sheet = sheetRef.current;
+    if (!sheet || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => setSheetHeight(sheet.offsetHeight));
+    observer.observe(sheet);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!isMapsAvailable()) {
@@ -350,10 +409,22 @@ export default function MapView({
         title: t.you,
         icon: meIcon,
         zIndex: PIN_LAYERS.me,
+        optimized: false,
       });
     }
     meMarker.current.setIcon(meIcon);
     meMarker.current.setPosition(fix);
+    if (!meHalo.current) {
+      meHalo.current = new maps.Marker({
+        map: mapRef.current,
+        icon: meHaloIcon(maps),
+        zIndex: PIN_LAYERS.me - 1,
+        optimized: false,
+        clickable: false,
+      });
+    }
+    meHalo.current.setPosition(fix);
+    meHalo.current.setVisible(facing !== null);
   }, [fix, t.you, look, facing, mapReady]);
 
   useEffect(() => {
@@ -596,6 +667,11 @@ export default function MapView({
   const turn = navigating && currentRoute && fix && !arrived ? nextTurn(currentRoute.walk, fix) : null;
   const left = navigating && currentRoute && fix ? remainingWalk(currentRoute.walk, fix) : null;
 
+  const northUp = () => {
+    setCompassSteering(false);
+    setMapSpin((prev) => prev - (normalizeDegrees(prev) > 180 ? normalizeDegrees(prev) - 360 : normalizeDegrees(prev)));
+  };
+
   const status = (
     <>
       {geoError && <Warn>{geoError === 'denied' ? t.geoDenied : t.geoUnavailable}</Warn>}
@@ -604,38 +680,61 @@ export default function MapView({
     </>
   );
 
+  const toStation = (
+    <StationName>
+      {name}
+    </StationName>
+  );
+
   const sheetBody = (() => {
     if (!target) {
-      return <Action type="button" onClick={onArrive}>{t.openStation}</Action>;
+      return <WidePill type="button" $color={GOOGLE_BLUE} onClick={onArrive}>{t.openStation}</WidePill>;
     }
     if (arrived) {
       return (
         <>
+          {toStation}
           <Arrived>{t.arrivedTitle}</Arrived>
-          <Action type="button" onClick={onArrive}>{t.openStation}</Action>
+          <WidePill type="button" $color={GOOGLE_BLUE} onClick={onArrive}>{t.openStation}</WidePill>
         </>
       );
     }
     if (navigating || mapsError) {
       return (
         <>
-          {left
-            ? <Summary>{t.walkSummary(left.distanceM, left.durationS)}</Summary>
-            : distance !== null && <Summary>{t.fromHere(distance)}</Summary>}
+          {toStation}
+          <SheetRow>
+            <SheetText>
+              {left ? (
+                <>
+                  <BigTime>{t.minutes(left.durationS)}</BigTime>
+                  <EtaLine>{t.distanceAndArrival(left.distanceM, left.durationS)}</EtaLine>
+                </>
+              ) : distance !== null && <BigTime>{t.fromHere(distance)}</BigTime>}
+            </SheetText>
+            {navigating && <Pill type="button" $color={EXIT_RED} onClick={stopWalking}>{t.exit}</Pill>}
+          </SheetRow>
           {offerOverride && <Ghost type="button" onClick={onArrive}>{t.imHere}</Ghost>}
-          {navigating && <Ghost type="button" onClick={stopWalking}>{t.stop}</Ghost>}
         </>
       );
     }
     return (
       <>
-        {currentRoute
-          ? <Summary>{t.walkSummary(currentRoute.walk.distanceM, currentRoute.walk.durationS)}</Summary>
-          : fix && routeFailedFor !== currentItemIndex
-            ? <Readout>{t.routing}</Readout>
-            : distance !== null && <Summary>{t.fromHere(distance)}</Summary>}
+        {toStation}
+        <SheetRow>
+          <SheetText>
+            {currentRoute ? (
+              <>
+                <BigTime>{t.minutes(currentRoute.walk.durationS)}</BigTime>
+                <EtaLine>{t.distanceAndArrival(currentRoute.walk.distanceM, currentRoute.walk.durationS)}</EtaLine>
+              </>
+            ) : fix && routeFailedFor !== currentItemIndex
+              ? <Readout>{t.routing}</Readout>
+              : distance !== null && <BigTime>{t.fromHere(distance)}</BigTime>}
+          </SheetText>
+          <Pill type="button" $color={GOOGLE_BLUE} disabled={!fix} onClick={startWalking}>{t.start}</Pill>
+        </SheetRow>
         {routeFailedFor === currentItemIndex && <Readout>{t.noRoute}</Readout>}
-        <Action type="button" disabled={!fix} onClick={startWalking}>{t.start}</Action>
       </>
     );
   })();
@@ -657,16 +756,6 @@ export default function MapView({
         />
       )}
 
-      {turn && (
-        <Banner>
-          <TurnArrow $color={look.pins.next}>{turn.arriving ? '◎' : maneuverArrow(turn.maneuver)}</TurnArrow>
-          <TurnText>
-            <TurnDistance>{t.inDistance(turn.inM)}</TurnDistance>
-            <TurnInstruction>{turn.arriving ? t.arriveHere : turn.instruction}</TurnInstruction>
-          </TurnText>
-        </Banner>
-      )}
-
       {navigating && !mapsError && (
         <Gestures
           onPointerDown={onGestureDown}
@@ -677,12 +766,38 @@ export default function MapView({
         />
       )}
 
-      {navigating && (!following || !compassSteering) && !arrived && (
-        <Recenter type="button" onClick={recenter}>{t.recenter}</Recenter>
+      {turn && (
+        <BannerStack>
+          <Banner>
+            <TurnArrow><DirectionArrow direction={turn.arriving ? 'up' : maneuverDirection(turn.maneuver)} size={42} /></TurnArrow>
+            <TurnText>
+              <TurnDistance>{t.inDistance(turn.inM)}</TurnDistance>
+              <TurnInstruction>{turn.arriving ? t.arriveHere : turn.instruction}</TurnInstruction>
+            </TurnText>
+          </Banner>
+          {turn.thenManeuver && (
+            <ThenTab>
+              {t.then}
+              <ThenArrow><DirectionArrow direction={maneuverDirection(turn.thenManeuver)} size={22} /></ThenArrow>
+            </ThenTab>
+          )}
+        </BannerStack>
       )}
 
-      <Sheet>
-        <StationName>{`${currentItemIndex + 1}. ${name}`}</StationName>
+      {navigating && !mapsError && !arrived && (
+        <MapButtons style={{ bottom: sheetHeight + BUTTONS_ABOVE_SHEET_PX }}>
+          <RoundButton type="button" aria-label={t.northUp} title={t.northUp} onClick={northUp}>
+            <CompassNeedle rotation={-mapSpin} />
+          </RoundButton>
+          {(!following || !compassSteering) && (
+            <RecenterButton type="button" aria-label={t.recenter} title={t.recenter} onClick={recenter}>
+              <LocateArrow color="#ffffff" />
+            </RecenterButton>
+          )}
+        </MapButtons>
+      )}
+
+      <Sheet ref={sheetRef}>
         {mapsError && <Warn>{t.mapUnavailable}</Warn>}
         {mapsError && target?.address && <Readout>{target.address}</Readout>}
         {status}

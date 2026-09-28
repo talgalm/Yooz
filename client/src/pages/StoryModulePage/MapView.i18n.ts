@@ -2,6 +2,7 @@ const heDistance = (m: number) => (m < 1000 ? `${Math.max(1, Math.round(m / 10) 
 const heMinutes = (s: number) => `${Math.max(1, Math.round(s / 60))} דק׳`;
 const enDistance = (m: number) => (m < 1000 ? `${Math.max(1, Math.round(m / 10) * 10)} m` : `${(m / 1000).toFixed(1)} km`);
 const enMinutes = (s: number) => `${Math.max(1, Math.round(s / 60))} min`;
+const arrivalClock = (s: number, locale: string) => new Date(Date.now() + s * 1000).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
 export const texts = {
   he: {
@@ -19,7 +20,11 @@ export const texts = {
     geoUnavailable: 'לא מצליחים לאתר את המיקום כרגע. נסו לצאת למקום פתוח.',
     mapUnavailable: 'לא הצלחנו לטעון את המפה.',
     noStationLocation: 'לא הוגדר מיקום לתחנה הזו.',
-    walkSummary: (meters: number, seconds: number) => `${heMinutes(seconds)} הליכה · ${heDistance(meters)}`,
+    minutes: heMinutes,
+    distanceAndArrival: (meters: number, seconds: number) => `${heDistance(meters)} · ${arrivalClock(seconds, 'he-IL')}`,
+    exit: 'יציאה',
+    then: 'ואז',
+    northUp: 'צפון למעלה',
     inDistance: (meters: number) => `בעוד ${heDistance(meters)}`,
     arriveHere: 'היעד לפניכם',
     fromHere: (meters: number) => `${heDistance(meters)} מכאן`,
@@ -40,7 +45,11 @@ export const texts = {
     geoUnavailable: 'Cannot get your location right now. Try moving into the open.',
     mapUnavailable: 'The map could not be loaded.',
     noStationLocation: 'This station has no location set.',
-    walkSummary: (meters: number, seconds: number) => `${enMinutes(seconds)} walk · ${enDistance(meters)}`,
+    minutes: enMinutes,
+    distanceAndArrival: (meters: number, seconds: number) => `${enDistance(meters)} · ${arrivalClock(seconds, 'en-US')}`,
+    exit: 'Exit',
+    then: 'Then',
+    northUp: 'North up',
     inDistance: (meters: number) => `In ${enDistance(meters)}`,
     arriveHere: 'Your destination is ahead',
     fromHere: (meters: number) => `${enDistance(meters)} away`,
