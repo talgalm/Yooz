@@ -21,3 +21,9 @@ export function opensRightAfter(items: Placed[], index: number): boolean {
   const before = placeOf(items, index - 1);
   return !!before && distanceMeters(before, own) <= SAME_PLACE_M;
 }
+
+export function placeGroupEnd(items: Placed[], start: number): number {
+  let end = start;
+  while (end + 1 < items.length && opensRightAfter(items, end + 1)) end += 1;
+  return end;
+}

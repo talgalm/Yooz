@@ -976,7 +976,9 @@ metres themselves. Stations chain (`utils/mapChain.ts`, tested): a station with 
 (`opensRightAfter` - `advanceToNextItem` runs the station's `beforeItem` popups and then swaps
 straight to the next station without passing the map, unless the manager lock covers it;
 `PlayingPhase` is keyed by item index so the new station mounts fresh) and has no pin of its own; only the first
-station of a place is walked to. A station with no location uses that place (`placeOf`). A station without a
+station of a place is walked to. Once every station of a place is done (`placeGroupEnd`), its pin reads
+the range ("1-3", a pill as tall as the next-station circle) with a "3 תחנות" label under it; the next
+station always shows only its own number. A station with no location uses that place (`placeOf`). A station without a
 location inherits the last location **before** it, never after, and the item list tags it in
 blue "מיקום של תחנה N". So the first station must have one: the admin blocks moving on and
 saving while it has none (`mapUnplacedStart`), and tags every station with nothing to inherit
