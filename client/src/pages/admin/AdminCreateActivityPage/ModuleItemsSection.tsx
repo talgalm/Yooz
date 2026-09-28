@@ -274,12 +274,13 @@ const RemoveBtn = styled('button')({
   '&:hover': { background: '#fdeeea' },
 });
 
-const StatusBadge = styled('span')<{ tone?: 'neutral' | 'purple' | 'green' | 'red' }>(({ tone = 'neutral' }) => {
+const StatusBadge = styled('span')<{ tone?: 'neutral' | 'purple' | 'green' | 'red' | 'blue' }>(({ tone = 'neutral' }) => {
   const palette = {
     neutral: { bg: '#f5f5f7', fg: '#666' },
     purple: { bg: '#f0eefa', fg: '#6c5ce7' },
     green: { bg: '#eafaf1', fg: '#1e8449' },
     red: { bg: '#fdeeea', fg: '#c0392b' },
+    blue: { bg: '#e8f0fe', fg: '#1a73e8' },
   }[tone];
   return {
     background: palette.bg,
@@ -569,11 +570,13 @@ export default function ModuleItemsSection({
                   {restrictedGroups && (
                     <StatusBadge tone="purple">{t.groupsBadgeLabel}: {item.groups!.length}/{groupNames.length}</StatusBadge>
                   )}
-                  {isMap && (
-                    <StatusBadge tone={item.location ? 'green' : 'red'}>
-                      {item.location ? t.locationSetLabel : t.locationMissingLabel}
-                    </StatusBadge>
-                  )}
+                  {isMap && (() => {
+                    if (item.location) return <StatusBadge tone="green">{t.locationSetLabel}</StatusBadge>;
+                    const from = selectedItems.slice(0, index).map((before) => !!before.location).lastIndexOf(true);
+                    return from >= 0
+                      ? <StatusBadge tone="blue">{t.locationInheritedLabel.replace('{n}', String(from + 1))}</StatusBadge>
+                      : <StatusBadge tone="neutral">{t.locationMissingLabel}</StatusBadge>;
+                  })()}
                   {isSpiders && item.isFinal && <StatusBadge tone="neutral">{t.spidersFinal}</StatusBadge>}
                   {item.revisitable && <StatusBadge tone="neutral">{t.revisitable}</StatusBadge>}
                   {splitText && <StatusBadge tone="purple">{splitText}</StatusBadge>}

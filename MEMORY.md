@@ -971,8 +971,15 @@ fix isn't "at" every station), ignores fixes worse than 50m, and applies 2.5× e
 a jittering fix doesn't flip a station open and shut. Arrival belongs to one station: when the
 target changes the hysteresis starts over, so the next station 30m on doesn't open early. The UI
 shows live distance **and** accuracy — a participant who can see the number walks the last few
-metres themselves. Start works without a fix and a station with no location just opens, but a
-station with a location opens **only** on arrival: the "I'm here" override appears solely when
+metres themselves. Stations chain (`utils/mapChain.ts`, tested): a station with no location, or one within
+`SAME_PLACE_M` (15m) of the last place set before it, opens straight after the previous station
+(`opensRightAfter` - `advanceToNextItem` sets `chainTo`, and an effect runs the normal
+`handleNodeTap` path, popups and manager lock included) and has no pin of its own; only the first
+station of a place is walked to. A station with no location uses that place (`placeOf`). At least one
+station must have a location (the admin blocks moving on and saving only when none has); a
+station without one inherits the last location **before** it, never after, and the item list
+tags it in blue "מיקום של תחנה N". Stations before the first located one have nothing to
+inherit and open straight away. A station with a location opens **only** on arrival: the "I'm here" override appears solely when
 the participant is within `proximityMeters + 50` and GPS has not confirmed arrival for 30s (a
 steady reading off beside a building). It used to also appear beyond 40m and whenever location
 was blocked, which let anyone open a station from anywhere - removed 2026-09-28. Blocked

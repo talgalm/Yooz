@@ -4,6 +4,7 @@ import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HelpChatHeaderButton, useHelpChat, setHelpChatActivityContext } from '../../components/HelpChat';
 import { useAuth } from '../../context/AuthContext';
 import { ActivityPlayingHeaderProvider } from '../../context/activityPlayingHeaderContext';
+import { opensRightAfter } from '../../utils/mapChain';
 import { useTranslations, useLang } from '../../context/LanguageContext';
 import { apiFetch, apiFetchPersistSilent, apiFetchWithRetry } from '../../utils/api';
 import { isRequestQueued, subscribeOfflineQueue } from '../../utils/offlineQueue';
@@ -761,6 +762,7 @@ export default function StoryModulePage() {
             showPopupsOrRun('endOfActivity', undefined, () => setPhase('finish'));
             return;
           }
+          if (opensRightAfter(data.module.items, nextIndex)) chainTo.current = nextIndex;
           setCurrentItemIndex(nextIndex);
           setPhase('roadmap');
         });
@@ -846,6 +848,8 @@ export default function StoryModulePage() {
     showPopupsOrRun('beforeItem', index, goPlay);
   };
 
+  const chainTo = useRef<number | null>(null);
+
   const handleNodeTap = (index: number) => {
     if (entryTransitionStage !== 'idle') return;
     if (typeof lockedFromIndex === 'number' && index >= lockedFromIndex) return;
@@ -882,6 +886,13 @@ export default function StoryModulePage() {
 
     showPopupsOrRun('beforeItem', index, goPlay);
   };
+
+  useEffect(() => {
+    if (phase !== 'roadmap' || chainTo.current !== currentItemIndex) return;
+    chainTo.current = null;
+    handleNodeTap(currentItemIndex);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, currentItemIndex]);
 
   const handleFootstepsComplete = useCallback(() => {
     setShowFootsteps(false);

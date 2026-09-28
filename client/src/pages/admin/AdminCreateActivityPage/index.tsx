@@ -995,6 +995,7 @@ export default function AdminCreateActivityPage() {
   const isWizard = isWizardModule(moduleType);
 
   const mapMissingLocationsCount = moduleType === 'map' ? selectedItems.filter((i) => !i.location).length : 0;
+  const mapNoLocationAtAll = moduleType === 'map' && selectedItems.length > 0 && !selectedItems.some((i) => i.location);
   const mapStops = useMemo(
     () => selectedItems.flatMap((item, i) => (
       item.location ? [{ location: item.location, mark: { number: i + 1, icon: item.mapIcon } }] : []
@@ -1006,7 +1007,7 @@ export default function AdminCreateActivityPage() {
 
   const canReachStep2 = name.trim().length > 0;
   const canReachStep3 = isWizard && canReachStep2 && hasAnyField;
-  const canReachStep4 = canReachStep3 && selectedItems.length > 0 && mapMissingLocationsCount === 0;
+  const canReachStep4 = canReachStep3 && selectedItems.length > 0 && !mapNoLocationAtAll;
   const canReachStep5 = isWizard ? canReachStep4 : (canReachStep2 && hasAnyField);
   const canReach: Record<StepId, boolean> = {
     1: true, 2: canReachStep2, 3: canReachStep3, 4: canReachStep4, 5: canReachStep5, 6: canReachStep5,
@@ -1098,7 +1099,7 @@ export default function AdminCreateActivityPage() {
       setStep(5);
       return;
     }
-    if (moduleType === 'map' && selectedItems.some((i) => !i.location)) {
+    if (mapNoLocationAtAll) {
       setError(t.mapMissingLocations);
       setStep(3);
       return;
@@ -1287,11 +1288,8 @@ export default function AdminCreateActivityPage() {
   if (isWizard && selectedItems.length === 0) {
     reviewIssues.push({ text: t.step2ItemsRequired, step: 3 });
   }
-  if (moduleType === 'map' && mapMissingLocationsCount > 0) {
-    reviewIssues.push({
-      text: t.mapLocationsMissingCount.replace('{count}', String(mapMissingLocationsCount)).replace('{total}', String(selectedItems.length)),
-      step: 3,
-    });
+  if (mapNoLocationAtAll) {
+    reviewIssues.push({ text: t.mapMissingLocations, step: 3 });
   }
   if (smsAvailable && groupRewardEnabled && !groupRewardCoupon.trim()) {
     reviewIssues.push({ text: t.groupRewardCouponRequired, step: 5 });
@@ -1896,10 +1894,15 @@ export default function AdminCreateActivityPage() {
                   {selectedItems.length === 0 && (
                     <IssueBanner><span>{t.step2ItemsRequired}</span></IssueBanner>
                   )}
-                  {moduleType === 'map' && mapMissingLocationsCount > 0 && (
+                  {mapNoLocationAtAll && (
                     <IssueBanner>
-                      <span>{t.mapLocationsMissingCount.replace('{count}', String(mapMissingLocationsCount)).replace('{total}', String(selectedItems.length))}</span>
+                      <span>{t.mapMissingLocations}</span>
                     </IssueBanner>
+                  )}
+                  {moduleType === 'map' && mapMissingLocationsCount > 0 && !mapNoLocationAtAll && (
+                    <SectionDescription style={{ margin: 0 }}>
+                      {t.mapLocationsMissingCount.replace('{count}', String(mapMissingLocationsCount)).replace('{total}', String(selectedItems.length))}
+                    </SectionDescription>
                   )}
                   <div style={{ marginTop: (selectedItems.length === 0 || mapMissingLocationsCount > 0) ? 14 : 0 }}>
                     <ModuleItemsSection
