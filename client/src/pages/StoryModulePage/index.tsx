@@ -1454,7 +1454,6 @@ export default function StoryModulePage() {
             proximityMeters={data.module.proximityMeters}
             design={data.module.mapDesign}
             onArrive={() => handleNodeTap(currentItemIndex)}
-            t={t}
           />
           {showGuidelines && progressChecked && !currentPopup && (
             <GuidelinesPopup

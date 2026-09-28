@@ -1,4 +1,5 @@
 import type { LatLng } from './geo';
+import { currentLang } from './currentLang';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
 const SCRIPT_ID = 'yz-google-maps';
@@ -35,7 +36,7 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
     script.async = true;
     script.src =
       `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(API_KEY)}` +
-      `&loading=async&callback=${CALLBACK}`;
+      `&language=${encodeURIComponent(currentLang())}&loading=async&callback=${CALLBACK}`;
     (window as unknown as Record<string, () => void>)[CALLBACK] = () => {
       const maps = window.google?.maps;
       if (!maps?.importLibrary) {

@@ -72,7 +72,18 @@ export function doneStationMarkers(maps: typeof google.maps, look: MapLook, mark
   return stationMarkers(maps, look.pins.done, mark, DONE_SIZE);
 }
 
-export function meMarkerIcon(maps: typeof google.maps, look: MapLook): google.maps.Symbol {
+export function meMarkerIcon(maps: typeof google.maps, look: MapLook, heading?: number | null): google.maps.Symbol {
+  if (heading !== null && heading !== undefined && Number.isFinite(heading)) {
+    return {
+      path: maps.SymbolPath.FORWARD_CLOSED_ARROW,
+      scale: 6,
+      rotation: heading,
+      fillColor: look.pins.me,
+      fillOpacity: 1,
+      strokeColor: '#ffffff',
+      strokeWeight: 2,
+    };
+  }
   return {
     path: maps.SymbolPath.CIRCLE,
     scale: 8,
@@ -96,7 +107,7 @@ export function attachPulse(
 ): () => void {
   const holder = document.createElement('div');
   holder.setAttribute('aria-hidden', 'true');
-  Object.assign(holder.style, { position: 'absolute', width: '0', height: '0', pointerEvents: 'none' });
+  Object.assign(holder.style, { position: 'absolute', width: '0', height: '0', pointerEvents: 'none', zIndex: '0' });
   const wave = `radial-gradient(circle, ${withAlpha(color, 0)} 42%, ${withAlpha(color, 0.75)} 56%, ${withAlpha(color, 0.3)} 63%, ${withAlpha(color, 0)} 70%)`;
   const rings = Array.from({ length: PULSE_WAVES }, () => {
     const ring = document.createElement('div');
@@ -149,4 +160,122 @@ export function attachPulse(
   };
   overlay.setMap(map);
   return () => overlay.setMap(null);
+}
+
+export interface UprightPinStyle {
+  color: string;
+  diameterPx: number;
+  fontPx: number;
+  imagePx: number;
+  zIndex: number;
+}
+
+export function stationPinStyle(look: MapLook, next: boolean): UprightPinStyle {
+  const size = next ? NEXT_SIZE : DONE_SIZE;
+  return {
+    color: next ? look.pins.next : look.pins.done,
+    diameterPx: size.scale * 2,
+    fontPx: parseInt(size.font, 10),
+    imagePx: size.imagePx,
+    zIndex: size.zIndex,
+  };
+}
+
+export interface UprightPin {
+  setRotation: (degrees: number) => void;
+  setPosition: (position: google.maps.LatLngLiteral) => void;
+  setBouncing: (bouncing: boolean) => void;
+  remove: () => void;
+}
+
+const UPRIGHT_EASE = 'transform 0.3s ease-out';
+const BOUNCE_MS = 700;
+
+export function attachUprightPin(
+  maps: typeof google.maps,
+  map: google.maps.Map,
+  options: { position: google.maps.LatLngLiteral; style: UprightPinStyle; text?: string; imageUrl?: string; title?: string; rotation: number },
+): UprightPin {
+  const { style } = options;
+  let position = options.position;
+  const anchor = document.createElement('div');
+  Object.assign(anchor.style, { position: 'absolute', width: '0', height: '0', zIndex: String(style.zIndex) });
+  const spinner = document.createElement('div');
+  Object.assign(spinner.style, {
+    position: 'absolute',
+    left: `${-style.diameterPx / 2}px`,
+    top: `${-style.diameterPx / 2}px`,
+    width: `${style.diameterPx}px`,
+    height: `${style.diameterPx}px`,
+    transition: UPRIGHT_EASE,
+    transform: `rotate(${options.rotation}deg)`,
+  });
+  const face = document.createElement('div');
+  if (options.title) face.title = options.title;
+  Object.assign(face.style, {
+    width: '100%',
+    height: '100%',
+    boxSizing: 'border-box',
+    borderRadius: '50%',
+    border: '3px solid #ffffff',
+    background: style.color,
+    color: textColorOn(style.color),
+    boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontFamily: 'Roboto, Arial, sans-serif',
+    fontWeight: '800',
+    fontSize: `${style.fontPx}px`,
+    lineHeight: '1',
+  });
+  if (options.imageUrl) {
+    const image = document.createElement('img');
+    image.src = options.imageUrl;
+    image.alt = '';
+    Object.assign(image.style, { width: `${style.imagePx}px`, height: `${style.imagePx}px`, objectFit: 'contain' });
+    face.appendChild(image);
+  } else {
+    face.textContent = options.text ?? '';
+  }
+  spinner.appendChild(face);
+  anchor.appendChild(spinner);
+
+  let bounce: Animation | null = null;
+  const overlay = new maps.OverlayView();
+  overlay.onAdd = () => overlay.getPanes()?.overlayLayer.appendChild(anchor);
+  overlay.draw = () => {
+    const point = overlay.getProjection()?.fromLatLngToDivPixel(new maps.LatLng(position));
+    if (!point) return;
+    anchor.style.left = `${point.x}px`;
+    anchor.style.top = `${point.y}px`;
+  };
+  overlay.onRemove = () => {
+    bounce?.cancel();
+    anchor.remove();
+  };
+  overlay.setMap(map);
+
+  return {
+    setRotation: (degrees) => {
+      spinner.style.transform = `rotate(${degrees}deg)`;
+    },
+    setPosition: (next) => {
+      position = next;
+      overlay.draw();
+    },
+    setBouncing: (bouncing) => {
+      if (!bouncing) {
+        bounce?.cancel();
+        bounce = null;
+        return;
+      }
+      if (bounce) return;
+      bounce = face.animate(
+        [{ transform: 'translateY(0)' }, { transform: 'translateY(-12px)' }, { transform: 'translateY(0)' }],
+        { duration: BOUNCE_MS, iterations: Infinity, easing: 'ease-in-out' },
+      );
+    },
+    remove: () => overlay.setMap(null),
+  };
 }
