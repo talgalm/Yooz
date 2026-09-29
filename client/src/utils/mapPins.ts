@@ -15,15 +15,29 @@ export function textColorOn(hex: string): string {
   return 0.299 * r + 0.587 * g + 0.114 * b > 165 ? '#1a1a1a' : '#ffffff';
 }
 
-function stationCircle(
+export interface StationMark {
+  number: number;
+  icon?: string;
+}
+
+interface StationSize {
+  scale: number;
+  font: string;
+  imagePx: number;
+  zIndex: number;
+}
+
+const NEXT_SIZE: StationSize = { scale: 15, font: '15px', imagePx: 20, zIndex: PIN_LAYERS.next };
+const DONE_SIZE: StationSize = { scale: 11, font: '12px', imagePx: 14, zIndex: PIN_LAYERS.done };
+
+function stationMarkers(
   maps: typeof google.maps,
   color: string,
-  number: number,
-  size: { scale: number; font: string; zIndex: number },
-): google.maps.MarkerOptions {
-  return {
+  mark: StationMark,
+  size: StationSize,
+): google.maps.MarkerOptions[] {
+  const circle: google.maps.MarkerOptions = {
     zIndex: size.zIndex,
-    label: { text: String(number), color: textColorOn(color), fontWeight: '800', fontSize: size.font },
     icon: {
       path: maps.SymbolPath.CIRCLE,
       scale: size.scale,
@@ -33,14 +47,29 @@ function stationCircle(
       strokeWeight: 3,
     },
   };
+  if (!mark.icon) {
+    return [{
+      ...circle,
+      label: { text: String(mark.number), color: textColorOn(color), fontWeight: '800', fontSize: size.font },
+    }];
+  }
+  return [circle, {
+    zIndex: size.zIndex + 1,
+    clickable: false,
+    icon: {
+      url: mark.icon,
+      scaledSize: new maps.Size(size.imagePx, size.imagePx),
+      anchor: new maps.Point(size.imagePx / 2, size.imagePx / 2),
+    },
+  }];
 }
 
-export function nextStationMarker(maps: typeof google.maps, look: MapLook, number: number): google.maps.MarkerOptions {
-  return stationCircle(maps, look.pins.next, number, { scale: 15, font: '15px', zIndex: PIN_LAYERS.next });
+export function nextStationMarkers(maps: typeof google.maps, look: MapLook, mark: StationMark): google.maps.MarkerOptions[] {
+  return stationMarkers(maps, look.pins.next, mark, NEXT_SIZE);
 }
 
-export function doneStationMarker(maps: typeof google.maps, look: MapLook, number: number): google.maps.MarkerOptions {
-  return stationCircle(maps, look.pins.done, number, { scale: 11, font: '12px', zIndex: PIN_LAYERS.done });
+export function doneStationMarkers(maps: typeof google.maps, look: MapLook, mark: StationMark): google.maps.MarkerOptions[] {
+  return stationMarkers(maps, look.pins.done, mark, DONE_SIZE);
 }
 
 export function meMarkerIcon(maps: typeof google.maps, look: MapLook): google.maps.Symbol {

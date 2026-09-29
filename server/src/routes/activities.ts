@@ -216,6 +216,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.isFinal && { isFinal: true }),
         ...(item.revisitable && { revisitable: true }),
         ...(item.location && { location: item.location }),
+        ...(item.mapIcon && { mapIcon: item.mapIcon }),
       };
     }
     const data = item.type === 'game'
@@ -234,6 +235,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.isFinal && { isFinal: true }),
         ...(item.revisitable && { revisitable: true }),
         ...(item.location && { location: item.location }),
+        ...(item.mapIcon && { mapIcon: item.mapIcon }),
       }, data, lang);
     } else {
       return withReviewedTranslations({
@@ -248,6 +250,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.revisitable && { revisitable: true }),
         ...(item.collageSplit && { collageSplit: item.collageSplit }),
         ...(item.location && { location: item.location }),
+        ...(item.mapIcon && { mapIcon: item.mapIcon }),
       }, data, lang);
     }
   });
