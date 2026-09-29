@@ -16,6 +16,7 @@ import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { sanitiseLanguages } from '../utils/requestLang';
 import { sanitizeLocation, sanitizeProximityMeters, sanitizeGroupOrders } from '../utils/moduleItems';
+import { sanitizeMapDesign } from '../utils/mapDesign';
 import { pretranslateActivity } from '../services/activityPretranslate';
 import { IActivity, IScheduledReport } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
@@ -160,6 +161,7 @@ async function buildActivityData(
         : [];
       const proximityMeters = isMap ? sanitizeProximityMeters(mod.proximityMeters) : undefined;
       const groupOrders = isMap ? sanitizeGroupOrders(mod.groupOrders, items.length) : undefined;
+      const mapDesign = isMap ? sanitizeMapDesign(mod.mapDesign) : undefined;
       data.module = {
         type: moduleConfig.type || 'story',
         theme: mod.theme || undefined,
@@ -168,6 +170,7 @@ async function buildActivityData(
         ...(mod.showItemTitleNumbers === true && { showItemTitleNumbers: true }),
         ...(proximityMeters !== undefined && { proximityMeters }),
         ...(groupOrders && { groupOrders }),
+        ...(mapDesign && { mapDesign }),
         items,
         popups: Array.isArray(mod.popups) ? mod.popups.map((p: Record<string, unknown>) => {
           const ct = p.contentType === 'image' ? 'image' : 'text';

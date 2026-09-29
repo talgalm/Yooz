@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, FormEvent, Fragment } from 'react';
+import { useState, useEffect, useRef, useMemo, FormEvent, Fragment } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { LANGS, useTranslations, useLang } from '../../../context/LanguageContext';
@@ -32,6 +32,8 @@ import {
   VerticalStack,
 } from '../styled';
 import { isWizardModule } from './types';
+import MapDesignSection from './MapDesignSection';
+import { DEFAULT_MAP_DESIGN, type MapDesign } from '../../../utils/mapDesign';
 import { DEFAULT_PROXIMITY_METERS } from '../../../utils/geo';
 import type {
   LoginField,
@@ -483,6 +485,7 @@ export default function AdminCreateActivityPage() {
   const [selectedItems, setSelectedItems] = useState<ModuleItem[]>([]);
   const [groupOrders, setGroupOrders] = useState<Record<string, number[]>>({});
   const [proximityMeters, setProximityMeters] = useState(DEFAULT_PROXIMITY_METERS);
+  const [mapDesign, setMapDesign] = useState<MapDesign>(DEFAULT_MAP_DESIGN);
 
   const [openingType, setOpeningType] = useState<OpeningType>('none');
   const [openingUrl, setOpeningUrl] = useState('');
@@ -647,6 +650,12 @@ export default function AdminCreateActivityPage() {
           }
           if (a.module.groupOrders) setGroupOrders(a.module.groupOrders);
           if (a.module.proximityMeters) setProximityMeters(a.module.proximityMeters);
+          if (a.module.mapDesign) {
+            setMapDesign({
+              style: a.module.mapDesign.style ?? DEFAULT_MAP_DESIGN.style,
+              hidden: a.module.mapDesign.hidden ?? [],
+            });
+          }
         }
         if (a.managerEmail) setManagerEmail(a.managerEmail);
         setUserControl(a.userControl === true);
@@ -971,6 +980,10 @@ export default function AdminCreateActivityPage() {
   const isWizard = isWizardModule(moduleType);
 
   const mapMissingLocationsCount = moduleType === 'map' ? selectedItems.filter((i) => !i.location).length : 0;
+  const mapPoints = useMemo(
+    () => selectedItems.flatMap((i) => (i.location ? [i.location] : [])),
+    [selectedItems],
+  );
 
   const stepSequence: StepId[] = isWizard ? [1, 2, 3, 4, 5, 6] : [1, 2, 6];
 
@@ -1140,7 +1153,7 @@ export default function AdminCreateActivityPage() {
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
           ...(showItemTitleNumbers && { showItemTitleNumbers: true }),
-          ...(moduleType === 'map' && { proximityMeters, groupOrders: liveGroupOrders() }),
+          ...(moduleType === 'map' && { proximityMeters, groupOrders: liveGroupOrders(), mapDesign }),
         };
         if (popups.length > 0) {
           modulePayload.popups = popups
@@ -1374,6 +1387,10 @@ export default function AdminCreateActivityPage() {
                         <ThemeRowAction>{t.themeChange}</ThemeRowAction>
                       </ThemeRow>
                     </div>
+                  )}
+
+                  {moduleType === 'map' && (
+                    <MapDesignSection design={mapDesign} onChange={setMapDesign} points={mapPoints} />
                   )}
                 </SectionCard>
 

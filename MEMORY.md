@@ -145,7 +145,8 @@ Login config: `loginFields: ('email'|'phoneNumber'|'name')[]`, `emailGoogle?`,
   revisitable? (completed item stays re-openable from the roadmap — see §11),
   location? ({lat,lng,address?} — where the station physically is, map modules only, §16)}`.
 - `missionRef?` (when `type='mission'`), `showStationNumbers?`, `showItemTitleNumbers?`.
-- `groupOrders?` (map: group name → permutation of item indices), `proximityMeters?` (map: §16).
+- `groupOrders?` (map: group name → permutation of item indices), `proximityMeters?` (map: §16),
+  `mapDesign?` (map: `{style, hidden[]}`, the map's look and which Google places it shows, §16).
 - `popups?: IPopupMessage[]` — see §11.
 
 **Leaderboard/scoring flags**: `leaderboardMode: 'points'|'time'|'both'`,
@@ -987,6 +988,58 @@ on the theme's colour (`getThemeKit`/`getHeaderIconColor`), and the map fills th
 leaderboard ranks teams by — and a solo player's their own points. Routes are redrawn only when the target changes or the walker drifts ~100m —
 Directions is billed per call. `advanceToNextItem` shows the station's `afterItem` popups before
 returning to the map (then `endOfActivity` when the walk is done).
+
+**Look.** `module.mapDesign = {style, hidden[]}`, set in the activity wizard's step 1 under the
+theme row ("עיצוב מפה", `AdminCreateActivityPage/MapDesignSection.tsx`, with a live preview map).
+`style` is one of ten looks, in picker order (`standard`, `light`, `dark`, `night`, `satellite`,
+then `vintage`, `wildWest`, `treasure`, `playful`, `blueprint` - two rows of five; the array order
+is the display order); `hidden` lists Google place categories to hide (`business`,
+`park`, `attraction`, `worship`, `school`, `medical`, `government`, `sports`, `bus`,
+`railAndAir` (train stations and airports, one checkbox), `streetNames`, `placeNames` - twelve,
+shown as three rows of four). When every place in a group is hidden (all eight `poi`
+keys, or bus + railAndAir) the group's leftover labels go too (`PLACE_GROUPS`), since
+Google has places no category names and "hide all" must leave nothing behind. The preview and
+the participant map drop the zoom buttons and keyboard-shortcuts link. The participant map keeps
+the Google logo, terms and data credit, which Google's terms require; the admin preview hides
+them with CSS (`PreviewCanvas`) by the team's choice, accepting that risk for an internal
+screen only. Do not copy that CSS to the participant map. Both lists live twice - `server/src/utils/mapDesign.ts` (the Mongoose
+enums and `sanitizeMapDesign`) and `client/src/utils/mapDesign.ts` (the Google style rules) - and
+`mapDesign.test.ts` fails if they drift. The untouched default (`standard`, nothing hidden) is
+never stored, so an activity without the field looks exactly as map activities always did.
+The looks are Google's classic JSON `styles` (recolouring roads, water, parks, labels) plus, for
+`vintage`/`wildWest`/`treasure`, a parchment texture (`public/images/map/paper-grain.svg`) and a
+dashed route line. The texture lives **inside** the Google map, in the `mapPane` above the tiles
+and below the pins and route (`utils/mapLookLayer.ts::attachMapLookLayer`, an `OverlayView` that
+re-covers the viewport on every `bounds_changed`), so it tints the streets but never the
+stations. The blend mode is set on the pane itself, not the texture div: panes are stacking
+contexts, so a blended child would only blend with the empty pane. A CSS layer over the whole
+map element would tint the pins too, which is why `MapLookOverlay` is used only for the small
+style swatches, which are not maps. `wildWest` is a grey map under a brown multiply wash (sepia, like an old photo), and
+`blueprint` gets a white drafting grid instead of paper (`grid` overlay, normal blending). Each look has its own bold pin colours (`MapLook.pins: {next, done, me}`), picked to stand out on
+that look's background. Markers are built in `utils/mapPins.ts`, shared by the participant map
+and the admin preview: the next station is a bigger numbered circle (`nextStationMarker`, bounces on
+arrival) with soft waves rippling out from it (`attachPulse`: two staggered rings, one every ~1.8s (three
+every 0.8s was too busy),
+each a radial-gradient band with faded edges rather than a hard border, in an `OverlayView` div
+in `overlayLayer` under the markers, animated with the Web Animations API and held still under
+`prefers-reduced-motion`); finished stations are smaller
+numbered circles (`doneStationMarker`); future stations are not drawn. A teardrop location pin
+with a static halo was tried for "next" and rejected as unclear. Pin numbers switch to dark text
+on light pins (`textColorOn`). Stacking order is `PIN_LAYERS`: you > next > done. The route line colour also changes per look. A dashed route also gets `routeOutline`, a wider
+dash in a contrasting colour drawn under the coloured one - on textured, same-toned maps a
+colour alone disappears into the roads.
+The admin preview draws the walking route through the stations in module order (one
+`DirectionsService` call with the middle stations as waypoints, falling back to straight lines if
+Google finds no route or there are more than 25 waypoints). Directions is billed per call, so the
+route is refetched only when the stations' coordinates change (`pointsKey`), never on a style
+click - a style change just repaints the same route. Two limits come from Google:
+restaurants, cafes, shops and hotels are one category (`poi.business`) so they hide together, and
+JSON styles are ignored once a map has a `mapId` (cloud styling) - adding one to the map would
+silently switch every look off. A hidden park keeps its green area; only its label and icon go.
+Google ignores a misspelt feature or element type without an error, so the client test checks
+every rule against Google's documented names. Without `VITE_GOOGLE_MAPS_KEY` (local dev) the
+admin preview shows a notice instead of a map; keyless Google Maps renders unstyled tiles, so the
+looks can only be seen with a real key.
 ---
 
 ## 17. YOOZ Manage - internal business system (`/manage`)
