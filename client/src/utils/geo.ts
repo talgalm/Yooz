@@ -44,6 +44,7 @@ const LEAVE_HYSTERESIS = 2.5;
 
 export interface Fix extends LatLng {
   accuracy: number;
+  heading?: number | null;
 }
 
 export function effectiveDistance(from: Fix, target: LatLng): number {
