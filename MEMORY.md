@@ -972,8 +972,18 @@ fix isn't "at" every station), ignores fixes worse than 50m, and applies 2.5× e
 a jittering fix doesn't flip a station open and shut. Arrival belongs to one station: when the
 target changes the hysteresis starts over, so the next station 30m on doesn't open early. The UI
 shows live distance **and** accuracy — a participant who can see the number walks the last few
-metres themselves. Start works without a fix and a station with no location just opens, but a
-station with a location opens **only** on arrival: the "I'm here" override appears solely when
+metres themselves. Stations chain (`utils/mapChain.ts`, tested): a station with no location, or one within
+`SAME_PLACE_M` (15m) of the last place set before it, opens straight after the previous station
+(`opensRightAfter` - `advanceToNextItem` runs the station's `beforeItem` popups and then swaps
+straight to the next station without passing the map, unless the manager lock covers it;
+`PlayingPhase` is keyed by item index so the new station mounts fresh) and has no pin of its own; only the first
+station of a place is walked to. Once every station of a place is done (`placeGroupEnd`), its pin reads
+the range ("1-3", a pill as tall as the next-station circle) with a "3 תחנות" label under it; the next
+station always shows only its own number. A station with no location uses that place (`placeOf`). A station without a
+location inherits the last location **before** it, never after, and the item list tags it in
+blue "מיקום של תחנה N". So the first station must have one: the admin blocks moving on and
+saving while it has none (`mapUnplacedStart`), and tags every station with nothing to inherit
+in red "אין מיקום". A station with a location opens **only** on arrival: the "I'm here" override appears solely when
 the participant is within `proximityMeters + 50` and GPS has not confirmed arrival for 30s (a
 steady reading off beside a building). It used to also appear beyond 40m and whenever location
 was blocked, which let anyone open a station from anywhere - removed 2026-09-28. Blocked

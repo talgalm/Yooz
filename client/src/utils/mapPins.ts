@@ -186,15 +186,15 @@ export interface UprightPinStyle {
 
 const ARRIVED_GROWTH = 1.2;
 
-export function stationPinStyle(look: MapLook, next: boolean, arrived = false): UprightPinStyle {
-  const size = next ? NEXT_SIZE : DONE_SIZE;
+export function stationPinStyle(look: MapLook, next: boolean, arrived = false, group = false): UprightPinStyle {
+  const size = next || group ? NEXT_SIZE : DONE_SIZE;
   const grow = next && arrived ? ARRIVED_GROWTH : 1;
   return {
     color: next ? look.pins.next : look.pins.done,
     diameterPx: Math.round(size.scale * 2 * grow),
     fontPx: Math.round(parseInt(size.font, 10) * grow),
     imagePx: Math.round(size.imagePx * grow),
-    zIndex: size.zIndex,
+    zIndex: next ? size.zIndex : DONE_SIZE.zIndex,
   };
 }
 
@@ -217,12 +217,14 @@ export function attachUprightPin(
   let position = options.position;
   const anchor = document.createElement('div');
   Object.assign(anchor.style, { position: 'absolute', width: '0', height: '0', zIndex: String(style.zIndex) });
+  const textWidthPx = options.text && !options.imageUrl ? Math.round(options.text.length * style.fontPx * 0.62 + 12) : 0;
+  const widthPx = Math.max(style.diameterPx, textWidthPx);
   const spinner = document.createElement('div');
   Object.assign(spinner.style, {
     position: 'absolute',
-    left: `${-style.diameterPx / 2}px`,
+    left: `${-widthPx / 2}px`,
     top: `${-style.diameterPx / 2}px`,
-    width: `${style.diameterPx}px`,
+    width: `${widthPx}px`,
     height: `${style.diameterPx}px`,
     transition: UPRIGHT_EASE,
     transform: `rotate(${options.rotation}deg)`,
@@ -233,7 +235,7 @@ export function attachUprightPin(
     width: '100%',
     height: '100%',
     boxSizing: 'border-box',
-    borderRadius: '50%',
+    borderRadius: `${style.diameterPx / 2}px`,
     border: '3px solid #ffffff',
     background: style.color,
     color: textColorOn(style.color),
