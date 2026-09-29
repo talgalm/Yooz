@@ -125,6 +125,8 @@ export interface ModuleConfigRequest {
   proximityMeters?: number;
   groupOrders?: Record<string, number[]>;
   mapDesign?: { style?: string; hidden?: string[] };
+  openAnywhere?: boolean;
+  showStationNames?: boolean;
 }
 
 export interface OrderGameRound {

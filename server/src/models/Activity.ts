@@ -62,6 +62,8 @@ export interface IModuleConfig {
   showItemTitleNumbers?: boolean;
   groupOrders?: Record<string, number[]>;
   proximityMeters?: number;
+  openAnywhere?: boolean;
+  showStationNames?: boolean;
   mapDesign?: IMapDesign;
 }
 
@@ -239,6 +241,8 @@ const moduleConfigSchema = new Schema<IModuleConfig>({
   missionRef: { type: Schema.Types.ObjectId, ref: 'Mission' },
   groupOrders: { type: Schema.Types.Mixed, default: undefined },
   proximityMeters: { type: Number, default: undefined },
+  openAnywhere: { type: Boolean, default: undefined },
+  showStationNames: { type: Boolean, default: undefined },
   mapDesign: { type: mapDesignSchema, default: undefined },
 }, { _id: false });
 

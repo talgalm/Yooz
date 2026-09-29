@@ -147,6 +147,8 @@ Login config: `loginFields: ('email'|'phoneNumber'|'name')[]`, `emailGoogle?`,
 - `missionRef?` (when `type='mission'`), `showStationNumbers?`, `showItemTitleNumbers?`.
 - `groupOrders?` (map: group name → permutation of item indices), `proximityMeters?` (map: §16),
   `mapDesign?` (map: `{style, hidden[]}`, the map's look and which Google places it shows, §16).
+  `openAnywhere?` (map: stations open from anywhere instead of only on arrival, §16).
+  `showStationNames?` (map: a name label under each station pin, §16).
 - `popups?: IPopupMessage[]` — see §11.
 
 **Leaderboard/scoring flags**: `leaderboardMode: 'points'|'time'|'both'`,
@@ -1001,12 +1003,18 @@ ones are ignored again), whose iOS permission is
 requested by the "יוצאים לדרך" tap itself since iOS only asks from a user gesture; without a
 compass it falls back to GPS `heading`, then the bearing between fixes 4m apart; a top
 bar shows the next turn from the Directions steps, "בעוד 80 מ׳" + instruction; the sheet shows
-distance and time left and "עצירת ניווט"), then **arrival** ("הגעתם!" + open). The step maths
+distance and time left and "עצירת ניווט"), then **arrival**: the sheet keeps its size (growing it to half the screen was tried and left
+dead space) and its content fades in from below one piece after another (`Rise` with staggered delays): a green "הגעתם!" chip,
+the name, "תחנה 1 מתוך 5 · משחק", centred, and a big "התחילו את התחנה" at the bottom. The
+description and address were tried there and dropped as noise. With
+`module.openAnywhere` (admin, first step under "עיצוב מפה" together with the opening distance and
+"הצג את שם התחנה מתחת לכל תחנה במפה": "פתיחת תחנה" - "רק בקרבת התחנה" / "מכל מקום") the sheet also offers "פתחו את התחנה עכשיו" in overview and navigation, and the
+"I'm here" override is not needed; arriving still shows the station card. The step maths
 is pure and tested (`utils/walkNavigation.ts`). The screen is styled after Google Maps navigation: a dark-green
 turn banner with a big arrow (one SVG, `DirectionArrow`, in four directions only - every Google manoeuvre
 maps to up, left, right or down for a U-turn via `maneuverDirection`; the glyph set with a
 roundabout symbol read as noise) and a "ואז" tab under it for a turn within 150m of the next one
-(`NextTurn.thenManeuver`), a round
+(`NextTurn.thenManeuver`; the banner squares its corner above the tab so the two join with no gap), a round
 compass button whose needle tracks north and snaps the map north-up on tap, a round blue "חזרה אליי" button
 under it (shown only when not following), both kept 16px above the bottom sheet by measuring the
 sheet with a `ResizeObserver` (it grows when "הגעתי לתחנה" appears), and a bottom sheet with big minutes, "distance · arrival clock", a red "יציאה"
@@ -1023,8 +1031,13 @@ compass to the user (`compassSteering`), like Google Maps. Dragging stops follow
 position; "חזרה אליי" re-centres and gives rotation back to the compass. Google's own rotation needs a
 vector map with a `mapId`, which would switch off the JSON map styles - hence CSS. Station and team pins stay upright: on the participant map
 they are not Google markers but HTML pins (`attachUprightPin` in `utils/mapPins.ts`, an
-`OverlayView` in `overlayLayer`, same sizes and colours via `stationPinStyle`) counter-rotated by
-the same angle and ease as the canvas; arrival bounce is a Web Animation. The admin preview does
+`OverlayView` in `markerLayer` - in `overlayLayer` the route drew over them - same sizes and
+colours via `stationPinStyle`) counter-rotated by
+the same angle and ease as the canvas, with an optional name label under the circle
+(`module.showStationNames`; participant map only - the admin preview keeps plain markers); on arrival the next station's pin grows 1.2x
+(`stationPinStyle(..., arrived)`), moves to `floatPane` above your arrow (you are standing on it,
+so the arrow and its white disc would hide it) and slowly grows and shrinks (`setBreathing`, a
+Web Animation; a bounce was tried and rejected). The admin preview does
 not rotate and keeps Google markers. Trade-offs: street labels rotate with the map, and the oversized canvas pushes the Google logo and credit
 off screen during navigation (team decision, 2026-09-28). Directions is billed per call,
 so a route is fetched once per station and again only when navigating >35m off it (at most every
@@ -1063,8 +1076,8 @@ a blue route, and is created with `optimized: false`: an optimised legacy marker
 canvas below the texture pane and came out tinted. While navigating, the arrow sits on a 75% white disc
 (`meHaloIcon`, a second marker) and is anchored at its centre (`ARROW_CENTER_Y`), not its tip,
 so it turns in place. Markers are built in `utils/mapPins.ts`, shared by the participant map
-and the admin preview: the next station is a bigger numbered circle (`nextStationMarker`, bounces on
-arrival) with soft waves rippling out from it (`attachPulse`: two staggered rings, one every ~1.8s (three
+and the admin preview: the next station is a bigger numbered circle (`nextStationMarker`; on the participant map
+it grows and shrinks on arrival) with soft waves rippling out from it (`attachPulse`: two staggered rings, one every ~1.8s (three
 every 0.8s was too busy),
 each a radial-gradient band with faded edges rather than a hard border, in an `OverlayView` div
 in `overlayLayer` under the markers, animated with the Web Animations API and held still under
@@ -1075,7 +1088,7 @@ on light pins (`textColorOn`). A station can show an uploaded image instead of i
 `module.items[].mapIcon`, an image URL (map modules only, on the item, not the Station, for the
 same reason as `location`), uploaded in the item's settings dialog (`MapIconSection`,
 `FileUploadButton`, SVG/PNG/WebP/JPEG). The circle keeps its colour and the image is a second
-marker centred on it (`stationMarkers` returns `[circle, image]`; both bounce on arrival).
+marker centred on it (`stationMarkers` returns `[circle, image]`).
 `sanitizeMapIcon` keeps only http(s) links - no `data:` or `javascript:`. Like every item field,
 `mapIcon` is copied by hand in `admin.ts` (save and edit-load) and in all three item branches of
 `GET /:code/module`. The preview keys its pins on icons but its route on coordinates only, so
