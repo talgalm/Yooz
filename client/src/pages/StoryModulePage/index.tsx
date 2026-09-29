@@ -5,6 +5,8 @@ import { HelpChatHeaderButton, useHelpChat, setHelpChatActivityContext } from '.
 import { useAuth } from '../../context/AuthContext';
 import { ActivityPlayingHeaderProvider } from '../../context/activityPlayingHeaderContext';
 import { opensRightAfter } from '../../utils/mapChain';
+import ActivitySessionHeader, { SessionHeaderTrophyIcon } from './ActivitySessionHeader';
+import { DarkHeaderActionIconButton } from '../../components/styled';
 import { useTranslations, useLang } from '../../context/LanguageContext';
 import { apiFetch, apiFetchPersistSilent, apiFetchWithRetry } from '../../utils/api';
 import { isRequestQueued, subscribeOfflineQueue } from '../../utils/offlineQueue';
@@ -1465,6 +1467,25 @@ export default function StoryModulePage() {
             design={data.module.mapDesign}
             openAnywhere={data.module.openAnywhere === true}
             showStationNames={data.module.showStationNames === true}
+            header={(
+              <ActivitySessionHeader
+                onLogout={handleExit}
+                currentPoints={roadmapTotalPoints}
+                pointsRoll={pointsRoll}
+                onPointsRollComplete={handlePointsRollComplete}
+                leaderboardMode={data.leaderboardMode}
+                elapsedSeconds={elapsedSeconds}
+                activityDurationMinutes={data.activityDurationMinutes}
+                roadmapTimerMinutes={data.roadmapTimerMinutes}
+                t={t}
+                omitThirdSlot={data.hideLeaderboardInHeader}
+                thirdSlot={!data.hideLeaderboardInHeader ? (
+                  <DarkHeaderActionIconButton type="button" onClick={handleViewLeaderboard} aria-label="Leaderboard" title={t.leaderboardTitle || 'Leaderboard'}>
+                    <SessionHeaderTrophyIcon />
+                  </DarkHeaderActionIconButton>
+                ) : null}
+              />
+            )}
             onArrive={() => handleNodeTap(currentItemIndex)}
           />
           {showGuidelines && progressChecked && !currentPopup && (
