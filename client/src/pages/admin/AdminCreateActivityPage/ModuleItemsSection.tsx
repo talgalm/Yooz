@@ -362,6 +362,7 @@ interface ModuleItemsSectionProps {
   onConfigureCollageSplit?: (index: number) => void;
   onUpdateItemLocation?: (index: number, location: ItemLocation | undefined) => void;
   onUpdateItemMapIcon?: (index: number, mapIcon: string | undefined) => void;
+  onUpdateItemCipherChar?: (index: number, cipherChar: string | undefined) => void;
   moduleType?: string;
   connectionType: string;
   groupNames: string[];
@@ -382,6 +383,7 @@ export default function ModuleItemsSection({
   onConfigureCollageSplit,
   onUpdateItemLocation,
   onUpdateItemMapIcon,
+  onUpdateItemCipherChar,
   moduleType,
   connectionType,
   groupNames,
@@ -577,6 +579,9 @@ export default function ModuleItemsSection({
                       ? <StatusBadge tone="blue">{t.locationInheritedLabel.replace('{n}', String(from + 1))}</StatusBadge>
                       : <StatusBadge tone="red">{t.locationMissingLabel}</StatusBadge>;
                   })()}
+                  {onUpdateItemCipherChar && item.cipherChar && (
+                    <StatusBadge tone="purple">{t.cipherBadgeLabel.replace('{c}', item.cipherChar)}</StatusBadge>
+                  )}
                   {isSpiders && item.isFinal && <StatusBadge tone="neutral">{t.spidersFinal}</StatusBadge>}
                   {item.revisitable && <StatusBadge tone="neutral">{t.revisitable}</StatusBadge>}
                   {splitText && <StatusBadge tone="purple">{splitText}</StatusBadge>}
@@ -780,6 +785,7 @@ export default function ModuleItemsSection({
           onUpdateGroups={onUpdateItemGroups}
           onUpdateLocation={onUpdateItemLocation}
           onUpdateMapIcon={onUpdateItemMapIcon}
+          onUpdateCipherChar={onUpdateItemCipherChar}
           onUpdateSvg={onUpdateItemSvg}
           onToggleFinal={onToggleItemFinal}
           onToggleRevisitable={onToggleItemRevisitable}

@@ -1465,6 +1465,8 @@ export default function StoryModulePage() {
             design={data.module.mapDesign}
             openAnywhere={data.module.openAnywhere === true}
             showStationNames={data.module.showStationNames === true}
+            cipherEnabled={data.module.cipherEnabled === true}
+            cipherSeenKey={`yooz_cipher_seen_${code}`}
             onArrive={() => handleNodeTap(currentItemIndex)}
             sessionTexts={t}
             currentPoints={isGroupMap ? (mapRun.run?.score ?? roadmapTotalPoints) : roadmapTotalPoints}

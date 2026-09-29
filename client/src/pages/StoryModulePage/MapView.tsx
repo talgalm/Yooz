@@ -23,6 +23,8 @@ import { opensRightAfter, placeGroupEnd, placeOf } from '../../utils/mapChain';
 import { useCompassHeading } from '../../hooks/useCompassHeading';
 import { texts } from './MapView.i18n';
 import { CheckMark, CompassNeedle, DirectionArrow, LocateArrow } from './MapView.icons';
+import CipherStrip from './CipherStrip';
+import { cipherSlots } from '../../utils/cipher';
 import type { CustomThemeData, MapGroupMarker, ModuleItemData } from './types';
 
 const Wrap = styled('div')({ position: 'relative', width: '100%', height: '100dvh', overflow: 'hidden' });
@@ -318,6 +320,8 @@ interface Props {
   design?: MapDesign;
   openAnywhere?: boolean;
   showStationNames?: boolean;
+  cipherEnabled?: boolean;
+  cipherSeenKey: string;
   sessionTexts: Record<string, string>;
   currentPoints: number;
   pointsRoll?: { from: number; to: number } | null;
@@ -345,6 +349,8 @@ export default function MapView({
   design,
   openAnywhere = false,
   showStationNames = false,
+  cipherEnabled = false,
+  cipherSeenKey,
   sessionTexts,
   currentPoints,
   pointsRoll,
@@ -405,6 +411,7 @@ export default function MapView({
   const [mapSpin, setMapSpin] = useState(0);
   const offerOverride = (navigating || mapsError) && !arrived && overrideDueAt === currentItemIndex
     && distance !== null && distance <= proximityMeters + OVERRIDE_NEAR_EXTRA_M;
+  const cipher = cipherEnabled ? cipherSlots(items, completedIndices) : [];
 
   useEffect(() => onMapsAuthFailure(() => setMapsError(true)), []);
 
@@ -965,7 +972,10 @@ export default function MapView({
           />
         ))}
         <TopTint aria-hidden />
-        <TopContent>{header}</TopContent>
+        <TopContent>
+          {header}
+          {cipher.length > 0 && <CipherStrip slots={cipher} seenKey={cipherSeenKey} />}
+        </TopContent>
       </TopChrome>
 
       {turn && (

@@ -1,6 +1,6 @@
 import type { MapLook } from './mapDesign';
 
-export const PIN_LAYERS = { done: 10, next: 30, me: 999 } as const;
+export const PIN_LAYERS = { me: 5, done: 10, next: 30 } as const;
 
 const PULSE_SIZE_PX = 44;
 const PULSE_PERIOD_MS = 3600;

@@ -114,6 +114,7 @@ export interface ModuleItemRequest {
   collageSplit?: CollageSplitRequest;
   location?: { lat: number; lng: number; address?: string };
   mapIcon?: string;
+  cipherChar?: string;
 }
 
 export interface ModuleConfigRequest {
@@ -127,6 +128,7 @@ export interface ModuleConfigRequest {
   mapDesign?: { style?: string; hidden?: string[] };
   openAnywhere?: boolean;
   showStationNames?: boolean;
+  cipherEnabled?: boolean;
 }
 
 export interface OrderGameRound {
