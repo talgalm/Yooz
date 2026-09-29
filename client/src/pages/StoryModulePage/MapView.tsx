@@ -19,6 +19,7 @@ import { PIN_LAYERS, attachPulse, attachUprightPin, meHaloIcon, meMarkerIcon, st
 import { attachMapLookLayer } from '../../utils/mapLookLayer';
 import { maneuverDirection, nextTurn, offRouteMeters, remainingWalk, type WalkRoute } from '../../utils/walkNavigation';
 import { useTranslations } from '../../context/LanguageContext';
+import { opensRightAfter, placeGroupEnd, placeOf } from '../../utils/mapChain';
 import { useCompassHeading } from '../../hooks/useCompassHeading';
 import { texts } from './MapView.i18n';
 import { CheckMark, CompassNeedle, DirectionArrow, LocateArrow } from './MapView.icons';
@@ -357,7 +358,7 @@ export default function MapView({
   const [arrivedAt, setArrivedAt] = useState<number | null>(null);
   const [overrideDueAt, setOverrideDueAt] = useState<number | null>(null);
 
-  const target = items[currentItemIndex]?.location;
+  const target = items[currentItemIndex]?.location ?? placeOf(items, currentItemIndex);
   const distance = fix && target ? distanceMeters(fix, target) : null;
   const navigating = navigatingFor === currentItemIndex;
   const arrived = arrivedAt === currentItemIndex;
@@ -432,29 +433,33 @@ export default function MapView({
     const map = mapRef.current;
     if (!maps || !map || !mapReady) return;
     const pins = items.flatMap((item, i) => {
-      if (!item.location) return [];
       const isNext = i === currentItemIndex;
+      if (!isNext && opensRightAfter(items, i)) return [];
+      const where = item.location ?? (isNext ? placeOf(items, i) : undefined);
+      if (!where) return [];
+      const groupEnd = isNext ? i : placeGroupEnd(items, i);
+      const wholeGroupDone = groupEnd > i && items.slice(i, groupEnd + 1).every((_, k) => completedIndices.includes(i + k));
       if (!isNext && !completedIndices.includes(i)) return [];
       const pin = attachUprightPin(maps, map, {
-        position: item.location,
-        style: stationPinStyle(look, isNext, arrived),
-        text: String(i + 1),
+        position: where,
+        style: stationPinStyle(look, isNext, arrived, wholeGroupDone),
+        text: wholeGroupDone ? `${i + 1}-${groupEnd + 1}` : String(i + 1),
         imageUrl: item.mapIcon,
         title: item.name,
         rotation: spinRef.current,
         aboveMarkers: isNext && arrived,
-        label: showStationNames ? item.name : undefined,
+        label: wholeGroupDone ? t.stationsHere(groupEnd - i + 1) : showStationNames ? item.name : undefined,
       });
       if (isNext && arrived) pin.setBreathing(true);
       return [pin];
     });
     stationPins.current = pins;
     return () => pins.forEach((pin) => pin.remove());
-  }, [items, currentItemIndex, completedIndices, arrived, look, mapReady, showStationNames]);
+  }, [items, currentItemIndex, completedIndices, arrived, look, mapReady, showStationNames, t]);
 
   useEffect(() => {
     const maps = window.google?.maps;
-    const where = items[currentItemIndex]?.location;
+    const where = items[currentItemIndex]?.location ?? placeOf(items, currentItemIndex);
     if (!maps || !mapRef.current || !mapReady || !where) return;
     return attachPulse(maps, mapRef.current, where, look.pins.next);
   }, [items, currentItemIndex, mapReady, look]);

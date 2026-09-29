@@ -4,6 +4,7 @@ import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HelpChatHeaderButton, useHelpChat, setHelpChatActivityContext } from '../../components/HelpChat';
 import { useAuth } from '../../context/AuthContext';
 import { ActivityPlayingHeaderProvider } from '../../context/activityPlayingHeaderContext';
+import { opensRightAfter } from '../../utils/mapChain';
 import { useTranslations, useLang } from '../../context/LanguageContext';
 import { apiFetch, apiFetchPersistSilent, apiFetchWithRetry } from '../../utils/api';
 import { isRequestQueued, subscribeOfflineQueue } from '../../utils/offlineQueue';
@@ -759,6 +760,15 @@ export default function StoryModulePage() {
         showPopupsOrRun('afterItem', completedIdx, () => {
           if (finished) {
             showPopupsOrRun('endOfActivity', undefined, () => setPhase('finish'));
+            return;
+          }
+          const locked = typeof lockedFromIndex === 'number' && nextIndex >= lockedFromIndex;
+          if (opensRightAfter(data.module.items, nextIndex) && !locked) {
+            showPopupsOrRun('beforeItem', nextIndex, () => {
+              itemStartTime.current = Date.now();
+              setCurrentItemIndex(nextIndex);
+              setPhase('playing');
+            });
             return;
           }
           setCurrentItemIndex(nextIndex);
@@ -1726,6 +1736,7 @@ export default function StoryModulePage() {
     <>
       <ActivityPlayingHeaderProvider>
       <PlayingPhase
+        key={currentItemIndex}
         currentItem={currentItem}
         currentItemIndex={currentItemIndex}
         stationHintText={currentItemHint?.text || null}
