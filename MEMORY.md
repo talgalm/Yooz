@@ -1078,7 +1078,8 @@ the switch is on, so turning it off keeps the characters for later. On the map t
 always on screen, in the floating header under the session buttons (`CipherStrip.tsx`, on the
 same fading blur): dark characters on white rounded tiles (empty ones are translucent white), one per station with a character, in
 station order; a slot fills when its station is in `completedIndices` (a team shares its run, so a
-teammate's station fills it too). A modal behind a lock button was tried first and rejected - the
+teammate's station fills it too). A small white caption above the tiles reads "הצופן", and "פיצחתם את הצופן!" once every tile is full.
+A lock icon beside it and a frosted bar around the tiles (label on the side) were tried and dropped. A modal behind a lock button was tried first and rejected - the
 code has to be visible all the time. Stations revealed since the strip last showed (seen indices in
 `localStorage`, `yooz_cipher_seen_<code>`, `hooks/useCipherSeen.ts`) spin in like a slot-machine
 reel through characters of the same kind (`reelStrip`: digits, Hebrew, Latin or a mix;

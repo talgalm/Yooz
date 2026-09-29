@@ -26,13 +26,27 @@ const landPop = keyframes`
   100% { transform: scale(1); box-shadow: ${TILE_SHADOW}; }
 `;
 
+const Wrap = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 7,
+  padding: '0 16px 14px',
+  pointerEvents: 'none',
+});
+
+const Caption = styled('div')({
+  color: '#ffffff',
+  fontSize: 13,
+  fontWeight: 700,
+  textShadow: '0 1px 3px rgba(0,0,0,0.5)',
+});
+
 const Row = styled('div', noForward)<{ $gap: number }>(({ $gap }) => ({
   display: 'flex',
   justifyContent: 'center',
   flexWrap: 'wrap',
   gap: $gap,
-  padding: '2px 16px 14px',
-  pointerEvents: 'none',
 }));
 
 interface TileSize {
@@ -93,6 +107,7 @@ export default function CipherStrip({ slots, seenKey }: Props) {
   const size = tileSize(slots.length);
   const innerHeight = size.h - 3;
   const freshKey = fresh.join(',');
+  const cracked = fresh.length === 0 && slots.every((slot) => slot.revealed);
 
   useEffect(() => {
     if (!freshKey) return;
@@ -104,35 +119,38 @@ export default function CipherStrip({ slots, seenKey }: Props) {
   }, [freshKey, markSeen]);
 
   return (
-    <Row
-      $gap={size.gap}
-      role="img"
-      aria-label={t.label(slots.map((slot) => (slot.revealed ? slot.char : '_')).join(' '))}
-      style={{ direction: cipherDirection(slots) }}
-    >
-      {slots.map((slot) => {
-        const freshAt = fresh.indexOf(slot.itemIndex);
-        const spinDelay = SPIN_START_MS + freshAt * SPIN_STAGGER_MS;
-        const spinning = slot.revealed && freshAt >= 0;
-        return (
-          <Tile
-            key={slot.itemIndex}
-            $size={size}
-            $filled={slot.revealed}
-            $popAt={spinning ? spinDelay + SPIN_MS - POP_MS / 3 : null}
-          >
-            {spinning ? (
-              <Reel $delay={spinDelay} $end={-(REEL_LENGTH - 1) * innerHeight}>
-                {reelStrip(slot.char, slot.itemIndex + 1).map((c, k) => (
-                  <Glyph key={k} $h={innerHeight} $font={size.font}>{c}</Glyph>
-                ))}
-              </Reel>
-            ) : (
-              slot.revealed && <Glyph $h={innerHeight} $font={size.font}>{slot.char}</Glyph>
-            )}
-          </Tile>
-        );
-      })}
-    </Row>
+    <Wrap>
+      <Caption>{cracked ? t.cracked : t.caption}</Caption>
+      <Row
+        $gap={size.gap}
+        role="img"
+        aria-label={t.label(slots.map((slot) => (slot.revealed ? slot.char : '_')).join(' '))}
+        style={{ direction: cipherDirection(slots) }}
+      >
+        {slots.map((slot) => {
+          const freshAt = fresh.indexOf(slot.itemIndex);
+          const spinDelay = SPIN_START_MS + freshAt * SPIN_STAGGER_MS;
+          const spinning = slot.revealed && freshAt >= 0;
+          return (
+            <Tile
+              key={slot.itemIndex}
+              $size={size}
+              $filled={slot.revealed}
+              $popAt={spinning ? spinDelay + SPIN_MS - POP_MS / 3 : null}
+            >
+              {spinning ? (
+                <Reel $delay={spinDelay} $end={-(REEL_LENGTH - 1) * innerHeight}>
+                  {reelStrip(slot.char, slot.itemIndex + 1).map((c, k) => (
+                    <Glyph key={k} $h={innerHeight} $font={size.font}>{c}</Glyph>
+                  ))}
+                </Reel>
+              ) : (
+                slot.revealed && <Glyph $h={innerHeight} $font={size.font}>{slot.char}</Glyph>
+              )}
+            </Tile>
+          );
+        })}
+      </Row>
+    </Wrap>
   );
 }
