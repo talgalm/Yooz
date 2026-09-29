@@ -25,9 +25,7 @@ import { texts } from './MapView.i18n';
 import { CheckMark, CompassNeedle, DirectionArrow, LocateArrow } from './MapView.icons';
 import type { CustomThemeData, MapGroupMarker, ModuleItemData } from './types';
 
-const Wrap = styled('div')({ display: 'flex', flexDirection: 'column', width: '100%', height: '100dvh' });
-const HeaderBar = styled('div')({ flexShrink: 0, backgroundSize: 'cover', backgroundPosition: 'center top' });
-const MapArea = styled('div')({ position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' });
+const Wrap = styled('div')({ position: 'relative', width: '100%', height: '100dvh', overflow: 'hidden' });
 const Canvas = styled('div')({ position: 'absolute', inset: 0 });
 const ROTATING_CANVAS_SIZE = '150vmax';
 const ROTATION_EASE = 'transform 0.3s ease-out';
@@ -155,12 +153,40 @@ const Ghost = styled('button')({
   cursor: 'pointer',
 });
 
+const TopChrome = styled('div')({ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 4 });
+
+const FADE_EXTRA_PX = 70;
+const FADE_LAYERS = [
+  { blurPx: 2, mask: 'linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%)' },
+  { blurPx: 6, mask: 'linear-gradient(to bottom, #000 0%, #000 35%, transparent 75%)' },
+  { blurPx: 12, mask: 'linear-gradient(to bottom, #000 0%, #000 20%, transparent 55%)' },
+];
+
+const BLUR_BLEED_PX = 48;
+
+const TopFadeLayer = styled('div')({
+  position: 'absolute',
+  top: -BLUR_BLEED_PX,
+  left: -BLUR_BLEED_PX,
+  right: -BLUR_BLEED_PX,
+  bottom: -FADE_EXTRA_PX,
+  pointerEvents: 'none',
+});
+
+const TopTint = styled(TopFadeLayer)({
+  background: 'linear-gradient(to bottom, rgba(18, 22, 32, 0.28) 0%, rgba(18, 22, 32, 0.12) 50%, rgba(18, 22, 32, 0) 100%)',
+});
+
+const TopContent = styled('div')({
+  position: 'relative',
+  '& > *': { borderBottom: 'none !important', backdropFilter: 'none !important', WebkitBackdropFilter: 'none !important' },
+});
+
 const BannerStack = styled('div')({
   position: 'absolute',
-  top: 'calc(10px + env(safe-area-inset-top))',
   left: 10,
   right: 10,
-  zIndex: 3,
+  zIndex: 5,
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'flex-start',
@@ -241,13 +267,16 @@ const RecenterButton = styled(RoundButton)({
 
 const OVERRIDE_NEAR_EXTRA_M = 50;
 const BUTTONS_ABOVE_SHEET_PX = 16;
+const BANNER_BELOW_HEADER_PX = 16;
 const OVERRIDE_AFTER_MS = 30_000;
 const OFF_ROUTE_M = 35;
 const REROUTE_MIN_GAP_MS = 15_000;
 const OVERVIEW_REROUTE_MOVED_M = 150;
 const HEADING_MIN_STEP_M = 4;
 const NAVIGATION_ZOOM = 18;
-const OVERVIEW_PADDING = { top: 40, bottom: 220, left: 30, right: 30 };
+const PAN_BEFORE_ZOOM_MS = 450;
+const ZOOM_STEP_MS = 280;
+const OVERVIEW_MARGIN_PX = 30;
 
 function plainInstruction(html: string): string {
   const spaced = html.replace(/<div/gi, ' <div');
@@ -289,9 +318,10 @@ interface Props {
   design?: MapDesign;
   openAnywhere?: boolean;
   showStationNames?: boolean;
-  onArrive: () => void;
   sessionTexts: Record<string, string>;
   currentPoints: number;
+  pointsRoll?: { from: number; to: number } | null;
+  onPointsRollComplete?: () => void;
   onLogout: () => void;
   onViewLeaderboard: () => void;
   hideLeaderboardInHeader?: boolean;
@@ -301,6 +331,7 @@ interface Props {
   roadmapTimerMinutes?: number;
   theme?: string;
   customTheme?: CustomThemeData;
+  onArrive: () => void;
 }
 
 export default function MapView({
@@ -314,9 +345,10 @@ export default function MapView({
   design,
   openAnywhere = false,
   showStationNames = false,
-  onArrive,
   sessionTexts,
   currentPoints,
+  pointsRoll,
+  onPointsRollComplete,
   onLogout,
   onViewLeaderboard,
   hideLeaderboardInHeader,
@@ -326,11 +358,15 @@ export default function MapView({
   roadmapTimerMinutes,
   theme,
   customTheme,
+  onArrive,
 }: Props) {
   const t = useTranslations(texts);
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const [sheetHeight, setSheetHeight] = useState(0);
+  const topRef = useRef<HTMLDivElement | null>(null);
+  const [topHeight, setTopHeight] = useState(0);
   const mapRef = useRef<google.maps.Map | null>(null);
   const meMarker = useRef<google.maps.Marker | null>(null);
   const meHalo = useRef<google.maps.Marker | null>(null);
@@ -377,6 +413,14 @@ export default function MapView({
     if (!sheet || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(() => setSheetHeight(sheet.offsetHeight));
     observer.observe(sheet);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const top = topRef.current;
+    if (!top || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => setTopHeight(top.offsetHeight));
+    observer.observe(top);
     return () => observer.disconnect();
   }, []);
 
@@ -585,7 +629,7 @@ export default function MapView({
       const bounds = new maps.LatLngBounds(currentRoute.result.routes[0].bounds.getSouthWest(), currentRoute.result.routes[0].bounds.getNorthEast());
       if (fix) bounds.extend(fix);
       if (target) bounds.extend(target);
-      map.fitBounds(bounds, OVERVIEW_PADDING);
+      map.fitBounds(bounds, overviewPadding());
       framedIndex.current = currentItemIndex;
     } else if (target && !fix) {
       map.setCenter(target);
@@ -594,9 +638,10 @@ export default function MapView({
       const bounds = new maps.LatLngBounds();
       bounds.extend(target);
       bounds.extend(fix);
-      map.fitBounds(bounds, OVERVIEW_PADDING);
+      map.fitBounds(bounds, overviewPadding());
       framedIndex.current = currentItemIndex;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady, navigating, currentRoute, target, fix, currentItemIndex, routeFailedFor]);
 
   useEffect(() => {
@@ -613,11 +658,6 @@ export default function MapView({
     setMapSpin((prev) => prev - (normalizeDegrees(prev) > 180 ? normalizeDegrees(prev) - 360 : normalizeDegrees(prev)));
   }, [headingUp, facing, navigating]);
 
-  useEffect(() => {
-    if (!navigating || !fix) return;
-    mapRef.current?.setCenter(fix);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigating]);
 
   useEffect(() => {
     if (!fix || !target) return;
@@ -630,15 +670,48 @@ export default function MapView({
     return () => clearTimeout(timer);
   }, [navigating, mapsError, currentItemIndex]);
 
+  const overviewPadding = (): google.maps.Padding => {
+    const wrap = wrapRef.current?.getBoundingClientRect();
+    const canvas = canvasRef.current?.getBoundingClientRect();
+    const bleedX = wrap && canvas ? Math.max(0, (canvas.width - wrap.width) / 2) : 0;
+    const bleedY = wrap && canvas ? Math.max(0, (canvas.height - wrap.height) / 2) : 0;
+    return {
+      top: bleedY + topHeight + OVERVIEW_MARGIN_PX,
+      bottom: bleedY + sheetHeight + OVERVIEW_MARGIN_PX,
+      left: bleedX + OVERVIEW_MARGIN_PX,
+      right: bleedX + OVERVIEW_MARGIN_PX,
+    };
+  };
+
+  const flight = useRef<number | null>(null);
+
+  const flyTo = (center: LatLng | null, zoom: number) => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (flight.current !== null) window.clearTimeout(flight.current);
+    if (center) map.panTo(center);
+    const step = () => {
+      const now = map.getZoom() ?? zoom;
+      if (now === zoom) {
+        flight.current = null;
+        return;
+      }
+      map.setZoom(now + Math.sign(zoom - now));
+      flight.current = window.setTimeout(step, ZOOM_STEP_MS);
+    };
+    flight.current = window.setTimeout(step, center ? PAN_BEFORE_ZOOM_MS : 0);
+  };
+
+  useEffect(() => () => {
+    if (flight.current !== null) window.clearTimeout(flight.current);
+  }, []);
+
   const startWalking = () => {
     setCompassSteering(true);
     compass.request();
     setNavigatingFor(currentItemIndex);
     setFollowing(true);
-    const map = mapRef.current;
-    if (!map) return;
-    map.setZoom(NAVIGATION_ZOOM);
-    if (fix) map.panTo(fix);
+    flyTo(fix, NAVIGATION_ZOOM);
   };
 
   const stopWalking = () => {
@@ -734,8 +807,7 @@ export default function MapView({
   const recenter = () => {
     setFollowing(true);
     setCompassSteering(true);
-    mapRef.current?.setZoom(NAVIGATION_ZOOM);
-    if (fix) mapRef.current?.panTo(fix);
+    flyTo(fix, NAVIGATION_ZOOM);
   };
 
   const name = items[currentItemIndex]?.name ?? '';
@@ -827,38 +899,37 @@ export default function MapView({
 
   const headerIconColor = getHeaderIconColor(theme, customTheme);
   const header = (
-    <HeaderBar
-      style={customTheme?.roadmapImage
-        ? { backgroundImage: `url(${customTheme.roadmapImage})` }
-        : { background: getThemeKit(theme).containerBg }}
-    >
-      <ActivitySessionHeader
-        currentPoints={currentPoints}
-        onLogout={onLogout}
-        t={sessionTexts}
-        headerIconColor={headerIconColor}
-        leaderboardMode={leaderboardMode}
-        elapsedSeconds={elapsedSeconds}
-        activityDurationMinutes={activityDurationMinutes}
-        roadmapTimerMinutes={roadmapTimerMinutes}
-        omitThirdSlot={hideLeaderboardInHeader}
-        thirdSlot={!hideLeaderboardInHeader ? (
-          <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label={sessionTexts.leaderboardTitle} title={sessionTexts.leaderboardTitle} iconColor={headerIconColor}>
-            <SessionHeaderTrophyIcon />
-          </DarkHeaderActionIconButton>
-        ) : null}
-      />
-    </HeaderBar>
+    <ActivitySessionHeader
+      currentPoints={currentPoints}
+      pointsRoll={pointsRoll}
+      onPointsRollComplete={onPointsRollComplete}
+      onLogout={onLogout}
+      t={sessionTexts}
+      headerIconColor={headerIconColor}
+      leaderboardMode={leaderboardMode}
+      elapsedSeconds={elapsedSeconds}
+      activityDurationMinutes={activityDurationMinutes}
+      roadmapTimerMinutes={roadmapTimerMinutes}
+      omitThirdSlot={hideLeaderboardInHeader}
+      thirdSlot={!hideLeaderboardInHeader ? (
+        <DarkHeaderActionIconButton type="button" onClick={onViewLeaderboard} aria-label={sessionTexts.leaderboardTitle} title={sessionTexts.leaderboardTitle} iconColor={headerIconColor}>
+          <SessionHeaderTrophyIcon />
+        </DarkHeaderActionIconButton>
+      ) : null}
+    />
   );
 
   return (
-    <Wrap>
-      {header}
-      <MapArea>
+    <Wrap
+      ref={wrapRef}
+      style={mapsError ? (customTheme?.roadmapImage
+        ? { backgroundImage: `url(${customTheme.roadmapImage})`, backgroundSize: 'cover', backgroundPosition: 'center top' }
+        : { background: getThemeKit(theme).containerBg }) : undefined}
+    >
       {!mapsError && (
         <Canvas
           ref={canvasRef}
-          style={navigating ? {
+          style={{
             inset: 'auto',
             left: '50%',
             top: '50%',
@@ -866,7 +937,7 @@ export default function MapView({
             height: ROTATING_CANVAS_SIZE,
             transform: `translate(-50%, -50%) rotate(${-mapSpin}deg)`,
             transition: ROTATION_EASE,
-          } : undefined}
+          }}
         />
       )}
 
@@ -880,8 +951,25 @@ export default function MapView({
         />
       )}
 
+      <TopChrome ref={topRef}>
+        {FADE_LAYERS.map((layer) => (
+          <TopFadeLayer
+            key={layer.blurPx}
+            aria-hidden
+            style={{
+              backdropFilter: `blur(${layer.blurPx}px)`,
+              WebkitBackdropFilter: `blur(${layer.blurPx}px)`,
+              maskImage: layer.mask,
+              WebkitMaskImage: layer.mask,
+            }}
+          />
+        ))}
+        <TopTint aria-hidden />
+        <TopContent>{header}</TopContent>
+      </TopChrome>
+
       {turn && (
-        <BannerStack>
+        <BannerStack style={{ top: `calc(${topHeight + BANNER_BELOW_HEADER_PX}px + ${topHeight ? '0px' : 'env(safe-area-inset-top)'})` }}>
           <Banner $withTab={!!turn.thenManeuver}>
             <TurnArrow><DirectionArrow direction={turn.arriving ? 'up' : maneuverDirection(turn.maneuver)} size={42} /></TurnArrow>
             <TurnText>
@@ -917,7 +1005,6 @@ export default function MapView({
         {status}
         {sheetBody}
       </Sheet>
-      </MapArea>
     </Wrap>
   );
 }

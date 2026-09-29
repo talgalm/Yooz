@@ -997,13 +997,12 @@ watch + 10s poll + position push), `utils/googleMaps.ts` (script-tag loader, no 
 the JS API already ships map, geocoder and walking directions). Needs `VITE_GOOGLE_MAPS_KEY` (§2);
 without it — or when Google rejects it for the page's domain (`window.gm_authFailure`,
 `onMapsAuthFailure`) — the map degrades to a panel with the station, its address and an open
-button. A failed or empty walking route is ignored; the pins still show the way. Above the map sits
-the same `ActivitySessionHeader` as the roadmap views - exit, help, leaderboard, points or timer -
-on the theme's colour (`getThemeKit`/`getHeaderIconColor`), and the map fills the rest of the
-`100dvh` screen. A team's header shows its shared `MapGroupState.score` - the number the
-leaderboard ranks teams by - and a solo player's their own points. The walk is Google-Maps-like, per station: an **overview** (route from
+button. A failed or empty walking route is ignored; the pins still show the way. A team's header shows its
+shared `MapGroupState.score` - the number the leaderboard ranks teams by - and a solo player's
+their own points. The walk is Google-Maps-like, per station: an **overview** (route from
 you to the station, framed with your dot and the station, "8 min walk · 560 m", "יוצאים לדרך"),
-then **navigation** (zoom 18, the camera follows you until you drag - then "חזרה אליי" brings it
+then **navigation** (the camera flies in - a smooth `panTo`, then one zoom level at a time via
+`flyTo`, since a raster map only animates single-level zooms and a jump to 18 snapped - to zoom 18, the camera follows you until you drag - then "חזרה אליי" brings it
 back; your dot becomes an arrow pointing where the phone faces, like Google Maps - the compass
 (`hooks/useCompassHeading.ts`, `utils/compass.ts`: iOS `webkitCompassHeading`, Android
 `deviceorientationabsolute` as `360 - alpha`, plus the screen angle; a relative
@@ -1020,7 +1019,18 @@ description and address were tried there and dropped as noise. With
 `module.openAnywhere` (admin, first step under "עיצוב מפה" together with the opening distance and
 "הצג את שם התחנה מתחת לכל תחנה במפה": "פתיחת תחנה" - "רק בקרבת התחנה" / "מכל מקום") the sheet also offers "פתחו את התחנה עכשיו" in overview and navigation, and the
 "I'm here" override is not needed; arriving still shows the station card. The step maths
-is pure and tested (`utils/walkNavigation.ts`). The screen is styled after Google Maps navigation: a dark-green
+is pure and tested (`utils/walkNavigation.ts`). The map screen carries the regular session header (exit, help, points or timer, leaderboard -
+the same `ActivitySessionHeader` as the roadmap and spiders views, built inside `MapView` from its
+header props, icons in the theme's `getHeaderIconColor`), floating over the full-screen map on a
+progressive blur that fades out downward (`FADE_LAYERS`: three
+`backdrop-filter` layers of rising strength, each masked over a shorter band, plus a faint tint -
+a single masked blur left a visible line; the header's own `backdrop-filter`, which stops
+hard at its 56px edge, is switched off here too; the blur layers bleed 48px past the top and
+side edges, because `backdrop-filter` mirrors content at its own edges and the mirror showed as
+duplicated roads along the top of the screen); the turn banner sits 16px below it (measured with a `ResizeObserver`) and above the blur
+layers in z-order, or the fade washes over it. If Google Maps fails to load, the screen takes the
+theme's background (`getThemeKit`/`roadmapImage`) so the header stays readable.
+The screen is styled after Google Maps navigation: a dark-green
 turn banner with a big arrow (one SVG, `DirectionArrow`, in four directions only - every Google manoeuvre
 maps to up, left, right or down for a U-turn via `maneuverDirection`; the glyph set with a
 roundabout symbol read as noise) and a "ואז" tab under it for a turn within 150m of the next one
@@ -1029,7 +1039,9 @@ compass button whose needle tracks north and snaps the map north-up on tap, a ro
 under it (shown only when not following), both kept 16px above the bottom sheet by measuring the
 sheet with a `ResizeObserver` (it grows when "הגעתי לתחנה" appears), and a bottom sheet with big minutes, "distance · arrival clock", a red "יציאה"
 and a blue "יוצאים לדרך". SVGs for the needle and locate arrow live in `MapView.icons.tsx`. While navigating, the map turns heading-up: the canvas
-is drawn as a `150vmax` square (so no corner shows) and rotated by CSS against the compass
+is always drawn as a `150vmax` square (so no corner shows while it turns; it keeps that size in
+overview too, because resizing it on "יוצאים לדרך" made the view jump sideways and back, and
+`overviewPadding()` adds the hidden margins, the header and the sheet to `fitBounds`) and rotated by CSS against the compass
 heading (unwrapped through `angleDelta`, 0.3s ease), so your arrow always points up. The map
 stays rotated while you move it: during navigation a transparent `Gestures` layer takes the
 pointer events instead of Google (which does not know the canvas is rotated and would pan the

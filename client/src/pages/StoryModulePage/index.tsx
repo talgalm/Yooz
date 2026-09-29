@@ -1468,6 +1468,8 @@ export default function StoryModulePage() {
             onArrive={() => handleNodeTap(currentItemIndex)}
             sessionTexts={t}
             currentPoints={isGroupMap ? (mapRun.run?.score ?? roadmapTotalPoints) : roadmapTotalPoints}
+            pointsRoll={isGroupMap ? null : pointsRoll}
+            onPointsRollComplete={handlePointsRollComplete}
             onLogout={doExit}
             onViewLeaderboard={handleViewLeaderboard}
             hideLeaderboardInHeader={data.hideLeaderboardInHeader}
