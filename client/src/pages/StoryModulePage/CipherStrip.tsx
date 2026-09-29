@@ -83,6 +83,11 @@ const Glyph = styled('div', noForward)<{ $h: number; $font: number }>(({ $h, $fo
   color: INK,
 }));
 
+const HiddenGlyph = styled(Glyph)({
+  color: 'rgba(255,255,255,0.95)',
+  textShadow: '0 1px 3px rgba(0,0,0,0.35)',
+});
+
 const Reel = styled('div', noForward)<{ $delay: number; $end: number }>(({ $delay, $end }) => ({
   '--reel-end': `${$end}px`,
   animation: `${spin} ${SPIN_MS}ms cubic-bezier(0.1, 0.75, 0.2, 1) ${$delay}ms both`,
@@ -145,7 +150,9 @@ export default function CipherStrip({ slots, seenKey }: Props) {
                   ))}
                 </Reel>
               ) : (
-                slot.revealed && <Glyph $h={innerHeight} $font={size.font}>{slot.char}</Glyph>
+                slot.revealed
+                  ? <Glyph $h={innerHeight} $font={size.font}>{slot.char}</Glyph>
+                  : <HiddenGlyph $h={innerHeight} $font={size.font}>?</HiddenGlyph>
               )}
             </Tile>
           );

@@ -1076,7 +1076,7 @@ while the cipher is on, and the station row gets a purple "צופן: 7" tag). Th
 drops anything longer (`sanitizeCipherChar`), and serves `cipherChar` and `cipherEnabled` only when
 the switch is on, so turning it off keeps the characters for later. On the map the cipher is
 always on screen, in the floating header under the session buttons (`CipherStrip.tsx`, on the
-same fading blur): dark characters on white rounded tiles (empty ones are translucent white), one per station with a character, in
+same fading blur): dark characters on white rounded tiles (hidden ones are translucent white with a white "?"), one per station with a character, in
 station order; a slot fills when its station is in `completedIndices` (a team shares its run, so a
 teammate's station fills it too). A small white caption above the tiles reads "הצופן", and "פיצחתם את הצופן!" once every tile is full.
 A lock icon beside it and a frosted bar around the tiles (label on the side) were tried and dropped. A modal behind a lock button was tried first and rejected - the
