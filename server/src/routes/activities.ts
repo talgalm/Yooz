@@ -300,6 +300,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     ...(activity.module.showStationNumbers && { showStationNumbers: true }),
     ...(activity.module.showItemTitleNumbers && { showItemTitleNumbers: true }),
     ...(activity.module.proximityMeters && { proximityMeters: activity.module.proximityMeters }),
+    ...(activity.module.type === 'map' && activity.module.mapDesign && { mapDesign: activity.module.mapDesign }),
     items: populatedItems,
     popups: popupsForServedItems(filteredPopups, servedIndices).map((p) => ({
       _id: p._id,

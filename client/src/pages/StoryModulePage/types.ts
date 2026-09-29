@@ -1,4 +1,5 @@
 import type { LatLng } from '../../utils/geo';
+import type { MapDesign } from '../../utils/mapDesign';
 
 export interface GameData {
   _id: string;
@@ -120,6 +121,7 @@ export interface ModuleData {
   showStationNumbers?: boolean;
   showItemTitleNumbers?: boolean;
   proximityMeters?: number;
+  mapDesign?: MapDesign;
 }
 
 export interface CustomInstructionsData {

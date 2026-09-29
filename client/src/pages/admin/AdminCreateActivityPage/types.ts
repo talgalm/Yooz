@@ -1,3 +1,5 @@
+import type { MapDesign } from '../../../utils/mapDesign';
+
 export type LoginField = 'email' | 'phoneNumber' | 'name';
 export type ConnectionType = 'single' | 'group';
 export type GroupEntryMode = 'preset' | 'selfService';
@@ -109,6 +111,7 @@ export interface Activity {
     showItemTitleNumbers?: boolean;
     groupOrders?: Record<string, number[]>;
     proximityMeters?: number;
+    mapDesign?: Partial<MapDesign>;
     items: { type: 'game' | 'station'; ref: string; groups?: string[]; collageSplit?: CollageSplit; location?: ItemLocation; data?: { _id: string; name: string; type?: string; settings?: Record<string, unknown>; description?: string; customer?: string; theme?: string } }[];
     popups?: {
       _id?: string;
