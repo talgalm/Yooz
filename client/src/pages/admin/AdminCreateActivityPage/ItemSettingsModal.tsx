@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import TranslationsModal from './TranslationsModal';
+import MapIconSection from './MapIconSection';
 import { styled } from '@mui/material/styles';
 import { Input } from '../../../components/styled';
 import FileUploadButton from '../../../components/FileUploadButton';
@@ -267,6 +268,7 @@ interface ItemSettingsModalProps {
   isSpiders: boolean;
   onUpdateGroups: (index: number, groups: string[]) => void;
   onUpdateLocation?: (index: number, location: ItemLocation | undefined) => void;
+  onUpdateMapIcon?: (index: number, mapIcon: string | undefined) => void;
   onUpdateSvg?: (index: number, svgUrl: string) => void;
   onToggleFinal?: (index: number) => void;
   onToggleRevisitable?: (index: number) => void;
@@ -285,6 +287,7 @@ export default function ItemSettingsModal({
   isSpiders,
   onUpdateGroups,
   onUpdateLocation,
+  onUpdateMapIcon,
   onUpdateSvg,
   onToggleFinal,
   onToggleRevisitable,
@@ -360,6 +363,10 @@ export default function ItemSettingsModal({
 
         {isMap && onUpdateLocation && (
           <LocationSection item={item} onChange={(loc) => onUpdateLocation(index, loc)} t={t} />
+        )}
+
+        {isMap && onUpdateMapIcon && (
+          <MapIconSection icon={item.mapIcon} onChange={(icon) => onUpdateMapIcon(index, icon)} />
         )}
 
         {isSpiders && onUpdateSvg && (

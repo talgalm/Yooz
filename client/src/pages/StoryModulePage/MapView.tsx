@@ -12,7 +12,7 @@ import ActivitySessionHeader, { SessionHeaderTrophyIcon } from './ActivitySessio
 import { getHeaderIconColor, getThemeKit } from './roadmapThemes';
 import { teamMarkerColor, teamMarkerLabel } from './teamMarker';
 import { lookFor, mapOptionsFor, routeLineOptions, type MapDesign } from '../../utils/mapDesign';
-import { PIN_LAYERS, attachPulse, doneStationMarker, meMarkerIcon, nextStationMarker } from '../../utils/mapPins';
+import { PIN_LAYERS, attachPulse, doneStationMarkers, meMarkerIcon, nextStationMarkers } from '../../utils/mapPins';
 import { attachMapLookLayer } from '../../utils/mapLookLayer';
 import type { CustomThemeData, MapGroupMarker, ModuleItemData } from './types';
 
@@ -191,11 +191,13 @@ export default function MapView({
     stationMarkers.current = items.flatMap((item, i) => {
       if (!item.location) return [];
       const at = { map, position: item.location, title: item.name };
+      const mark = { number: i + 1, icon: item.mapIcon };
       if (i === currentItemIndex) {
-        return [new maps.Marker({ ...at, ...nextStationMarker(maps, look, i + 1), animation: arrived ? maps.Animation.BOUNCE : null })];
+        const animation = arrived ? maps.Animation.BOUNCE : null;
+        return nextStationMarkers(maps, look, mark).map((part) => new maps.Marker({ ...at, ...part, animation }));
       }
       if (!completedIndices.includes(i)) return [];
-      return [new maps.Marker({ ...at, ...doneStationMarker(maps, look, i + 1) })];
+      return doneStationMarkers(maps, look, mark).map((part) => new maps.Marker({ ...at, ...part }));
     });
   }, [items, currentItemIndex, completedIndices, arrived, look]);
 

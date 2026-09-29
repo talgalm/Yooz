@@ -360,6 +360,7 @@ interface ModuleItemsSectionProps {
   onToggleItemRevisitable?: (index: number) => void;
   onConfigureCollageSplit?: (index: number) => void;
   onUpdateItemLocation?: (index: number, location: ItemLocation | undefined) => void;
+  onUpdateItemMapIcon?: (index: number, mapIcon: string | undefined) => void;
   moduleType?: string;
   connectionType: string;
   groupNames: string[];
@@ -379,6 +380,7 @@ export default function ModuleItemsSection({
   onToggleItemRevisitable,
   onConfigureCollageSplit,
   onUpdateItemLocation,
+  onUpdateItemMapIcon,
   moduleType,
   connectionType,
   groupNames,
@@ -774,6 +776,7 @@ export default function ModuleItemsSection({
           isSpiders={isSpiders}
           onUpdateGroups={onUpdateItemGroups}
           onUpdateLocation={onUpdateItemLocation}
+          onUpdateMapIcon={onUpdateItemMapIcon}
           onUpdateSvg={onUpdateItemSvg}
           onToggleFinal={onToggleItemFinal}
           onToggleRevisitable={onToggleItemRevisitable}

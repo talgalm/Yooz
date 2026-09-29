@@ -17,9 +17,15 @@ import {
 } from '../../../utils/mapDesign';
 import MapLookOverlay from '../../../components/MapLookOverlay';
 import { attachMapLookLayer } from '../../../utils/mapLookLayer';
-import { attachPulse, doneStationMarker, nextStationMarker } from '../../../utils/mapPins';
+import { attachPulse, doneStationMarkers, nextStationMarkers } from '../../../utils/mapPins';
 import { texts } from './MapDesignSection.i18n';
 import type { ItemLocation } from './types';
+import type { StationMark } from '../../../utils/mapPins';
+
+export interface MapPreviewStop {
+  location: ItemLocation;
+  mark: StationMark;
+}
 
 const PREVIEW_FALLBACK_CENTER = { lat: 32.0853, lng: 34.7818 };
 const MAX_ROUTE_WAYPOINTS = 25;
@@ -166,9 +172,9 @@ const PreviewMessage = styled('div')({
   color: '#888',
 });
 
-function MapDesignPreview({ design, points, noKeyText, failedText }: {
+function MapDesignPreview({ design, stops, noKeyText, failedText }: {
   design: MapDesign;
-  points: ItemLocation[];
+  stops: MapPreviewStop[];
   noKeyText: string;
   failedText: string;
 }) {
@@ -177,9 +183,13 @@ function MapDesignPreview({ design, points, noKeyText, failedText }: {
   const pinsRef = useRef<google.maps.Marker[]>([]);
   const routeRef = useRef<google.maps.DirectionsRenderer | null>(null);
   const straightRef = useRef<google.maps.Polyline | null>(null);
+  const points = stops.map((stop) => stop.location);
   const pointsRef = useRef(points);
   pointsRef.current = points;
   const pointsKey = points.map((p) => `${p.lat},${p.lng}`).join('|');
+  const stopsRef = useRef(stops);
+  stopsRef.current = stops;
+  const marksKey = `${pointsKey}#${stops.map((s) => s.mark.icon ?? s.mark.number).join('|')}`;
   const designRef = useRef(design);
   designRef.current = design;
   const [status, setStatus] = useState<'loading' | 'ready' | 'noKey' | 'failed'>(
@@ -270,16 +280,14 @@ function MapDesignPreview({ design, points, noKeyText, failedText }: {
     const maps = window.google?.maps;
     const map = mapRef.current;
     if (!maps || !map || status !== 'ready') return;
-    const points = pointsRef.current;
+    const current = stopsRef.current;
     pinsRef.current.forEach((pin) => pin.setMap(null));
-    pinsRef.current = points.map((position, i) => new maps.Marker({
-      map,
-      position,
-      ...(i === 0 ? nextStationMarker(maps, look, 1) : doneStationMarker(maps, look, i + 1)),
-    }));
-    if (points.length === 0) return;
-    return attachPulse(maps, map, points[0], look.pins.next);
-  }, [pointsKey, status, look]);
+    pinsRef.current = current.flatMap(({ location, mark }, i) => (
+      i === 0 ? nextStationMarkers(maps, look, mark) : doneStationMarkers(maps, look, mark)
+    ).map((part) => new maps.Marker({ map, position: location, ...part })));
+    if (current.length === 0) return;
+    return attachPulse(maps, map, current[0].location, look.pins.next);
+  }, [marksKey, status, look]);
 
   useEffect(() => {
     const maps = window.google?.maps;
@@ -308,10 +316,10 @@ function MapDesignPreview({ design, points, noKeyText, failedText }: {
   );
 }
 
-export default function MapDesignSection({ design, onChange, points }: {
+export default function MapDesignSection({ design, onChange, stops }: {
   design: MapDesign;
   onChange: (design: MapDesign) => void;
-  points: ItemLocation[];
+  stops: MapPreviewStop[];
 }) {
   const t = useTranslations(texts);
   const hidden = new Set(design.hidden);
@@ -361,7 +369,7 @@ export default function MapDesignSection({ design, onChange, points }: {
       <Note>{t.featuresNote}</Note>
 
       <SectionLabelSmall style={{ marginTop: 6 }}>{t.previewLabel}</SectionLabelSmall>
-      <MapDesignPreview design={design} points={points} noKeyText={t.previewNoKey} failedText={t.previewFailed} />
+      <MapDesignPreview design={design} stops={stops} noKeyText={t.previewNoKey} failedText={t.previewFailed} />
     </Wrap>
   );
 }

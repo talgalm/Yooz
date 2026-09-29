@@ -26,6 +26,7 @@ export interface IModuleItem {
   type: 'game' | 'station' | 'mission';
   ref: Types.ObjectId;
   location?: IItemLocation;
+  mapIcon?: string;
   groups?: string[];
   spiderSvg?: string;
   isFinal?: boolean;
@@ -219,6 +220,7 @@ const moduleItemSchema = new Schema<IModuleItem>({
   revisitable: { type: Boolean },
   collageSplit: { type: collageSplitSchema },
   location: { type: itemLocationSchema },
+  mapIcon: { type: String },
 }, { _id: false });
 
 const mapDesignSchema = new Schema<IMapDesign>({

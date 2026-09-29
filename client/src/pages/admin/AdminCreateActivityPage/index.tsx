@@ -645,6 +645,7 @@ export default function AdminCreateActivityPage() {
                 revisitable: (item as { revisitable?: boolean }).revisitable || undefined,
                 collageSplit: (item as { collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number } }).collageSplit as ModuleItem['collageSplit'],
                 location: item.location,
+                mapIcon: item.mapIcon,
               }))
             );
           }
@@ -937,6 +938,10 @@ export default function AdminCreateActivityPage() {
     setSelectedItems((prev) => prev.map((item, i) => (i === index ? { ...item, location } : item)));
   };
 
+  const updateItemMapIcon = (index: number, mapIcon: string | undefined) => {
+    setSelectedItems((prev) => prev.map((item, i) => (i === index ? { ...item, mapIcon } : item)));
+  };
+
   const updateItemSvg = (index: number, svgUrl: string) => {
     setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, spiderSvg: svgUrl || undefined } : item));
   };
@@ -980,8 +985,10 @@ export default function AdminCreateActivityPage() {
   const isWizard = isWizardModule(moduleType);
 
   const mapMissingLocationsCount = moduleType === 'map' ? selectedItems.filter((i) => !i.location).length : 0;
-  const mapPoints = useMemo(
-    () => selectedItems.flatMap((i) => (i.location ? [i.location] : [])),
+  const mapStops = useMemo(
+    () => selectedItems.flatMap((item, i) => (
+      item.location ? [{ location: item.location, mark: { number: i + 1, icon: item.mapIcon } }] : []
+    )),
     [selectedItems],
   );
 
@@ -1150,6 +1157,7 @@ export default function AdminCreateActivityPage() {
             ...(i.revisitable && { revisitable: true }),
             ...(i.collageSplit && { collageSplit: i.collageSplit }),
             ...(moduleType === 'map' && i.location && { location: i.location }),
+            ...(moduleType === 'map' && i.mapIcon && { mapIcon: i.mapIcon }),
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
           ...(showItemTitleNumbers && { showItemTitleNumbers: true }),
@@ -1390,7 +1398,7 @@ export default function AdminCreateActivityPage() {
                   )}
 
                   {moduleType === 'map' && (
-                    <MapDesignSection design={mapDesign} onChange={setMapDesign} points={mapPoints} />
+                    <MapDesignSection design={mapDesign} onChange={setMapDesign} stops={mapStops} />
                   )}
                 </SectionCard>
 
@@ -1865,6 +1873,7 @@ export default function AdminCreateActivityPage() {
                       connectionType={connectionType}
                       groupNames={groupNames}
                       onUpdateItemLocation={updateItemLocation}
+                      onUpdateItemMapIcon={updateItemMapIcon}
                       t={t}
                     />
                   </div>

@@ -19,6 +19,7 @@ export interface GameItemData {
   isFinal?: boolean;
   revisitable?: boolean;
   location?: LatLng & { address?: string };
+  mapIcon?: string;
 }
 
 export interface CollageSplitData {
@@ -41,6 +42,7 @@ export interface StationItemData {
   isFinal?: boolean;
   revisitable?: boolean;
   location?: LatLng & { address?: string };
+  mapIcon?: string;
   collageSplit?: CollageSplitData;
 }
 
@@ -83,6 +85,7 @@ export interface MissionItemData {
   isFinal?: boolean;
   revisitable?: boolean;
   location?: LatLng & { address?: string };
+  mapIcon?: string;
 }
 
 export type ModuleItemData = GameItemData | StationItemData | MissionItemData;
