@@ -1454,7 +1454,7 @@ export default function StoryModulePage() {
             proximityMeters={data.module.proximityMeters}
             design={data.module.mapDesign}
             onArrive={() => handleNodeTap(currentItemIndex)}
-            t={t}
+            sessionTexts={t}
             currentPoints={isGroupMap ? (mapRun.run?.score ?? roadmapTotalPoints) : roadmapTotalPoints}
             onLogout={doExit}
             onViewLeaderboard={handleViewLeaderboard}
