@@ -125,6 +125,8 @@ export interface ModuleData {
   showItemTitleNumbers?: boolean;
   proximityMeters?: number;
   mapDesign?: MapDesign;
+  openAnywhere?: boolean;
+  showStationNames?: boolean;
 }
 
 export interface CustomInstructionsData {

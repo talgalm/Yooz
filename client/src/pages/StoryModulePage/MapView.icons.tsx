@@ -25,3 +25,11 @@ export function DirectionArrow({ direction, size }: { direction: keyof typeof DI
     </svg>
   );
 }
+
+export function CheckMark() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
+      <path d="M5 12.5 L10 17.5 L19 7" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

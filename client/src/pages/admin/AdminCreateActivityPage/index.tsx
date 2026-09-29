@@ -397,6 +397,12 @@ const SmsVarChip = styled('button')({
 });
 
 
+const MapSettingsBlock = styled('div')({
+  marginTop: 16,
+  paddingTop: 16,
+  borderTop: '1px solid #eee',
+});
+
 const ThemeRow = styled('button')({
   display: 'flex',
   alignItems: 'center',
@@ -486,6 +492,8 @@ export default function AdminCreateActivityPage() {
   const [groupOrders, setGroupOrders] = useState<Record<string, number[]>>({});
   const [proximityMeters, setProximityMeters] = useState(DEFAULT_PROXIMITY_METERS);
   const [mapDesign, setMapDesign] = useState<MapDesign>(DEFAULT_MAP_DESIGN);
+  const [openAnywhere, setOpenAnywhere] = useState(false);
+  const [showStationNames, setShowStationNames] = useState(false);
 
   const [openingType, setOpeningType] = useState<OpeningType>('none');
   const [openingUrl, setOpeningUrl] = useState('');
@@ -651,6 +659,8 @@ export default function AdminCreateActivityPage() {
           }
           if (a.module.groupOrders) setGroupOrders(a.module.groupOrders);
           if (a.module.proximityMeters) setProximityMeters(a.module.proximityMeters);
+          setOpenAnywhere(a.module.openAnywhere === true);
+          setShowStationNames(a.module.showStationNames === true);
           if (a.module.mapDesign) {
             setMapDesign({
               style: a.module.mapDesign.style ?? DEFAULT_MAP_DESIGN.style,
@@ -1161,7 +1171,7 @@ export default function AdminCreateActivityPage() {
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
           ...(showItemTitleNumbers && { showItemTitleNumbers: true }),
-          ...(moduleType === 'map' && { proximityMeters, groupOrders: liveGroupOrders(), mapDesign }),
+          ...(moduleType === 'map' && { proximityMeters, groupOrders: liveGroupOrders(), mapDesign, openAnywhere, showStationNames }),
         };
         if (popups.length > 0) {
           modulePayload.popups = popups
@@ -1399,6 +1409,41 @@ export default function AdminCreateActivityPage() {
 
                   {moduleType === 'map' && (
                     <MapDesignSection design={mapDesign} onChange={setMapDesign} stops={mapStops} />
+                  )}
+                  {moduleType === 'map' && (
+                    <MapSettingsBlock>
+                      <SectionLabelSmall>{t.mapOpenRule}</SectionLabelSmall>
+                      <SelectionGroup>
+                        <SelectionButton type="button" selected={!openAnywhere} onClick={() => setOpenAnywhere(false)}>
+                          {t.mapOpenNear}
+                        </SelectionButton>
+                        <SelectionButton type="button" selected={openAnywhere} onClick={() => setOpenAnywhere(true)}>
+                          {t.mapOpenAnywhere}
+                        </SelectionButton>
+                      </SelectionGroup>
+                      {openAnywhere && <SectionDescription style={{ marginTop: 4 }}>{t.mapOpenAnywhereHint}</SectionDescription>}
+
+                      <SectionLabelSmall style={{ marginTop: 12 }}>{t.mapProximity}</SectionLabelSmall>
+                      <Input
+                        type="number"
+                        min={5}
+                        max={200}
+                        value={proximityMeters}
+                        onChange={(e) => setProximityMeters(Math.max(5, Math.min(200, Number(e.target.value) || DEFAULT_PROXIMITY_METERS)))}
+                        style={{ maxWidth: 120 }}
+                      />
+                      <SectionDescription style={{ marginTop: 4 }}>{t.mapProximityHint}</SectionDescription>
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 12 }}>
+                        <input
+                          type="checkbox"
+                          checked={showStationNames}
+                          onChange={(e) => setShowStationNames(e.target.checked)}
+                          style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                        />
+                        {t.mapShowStationNames}
+                      </label>
+                    </MapSettingsBlock>
                   )}
                 </SectionCard>
 
@@ -1877,20 +1922,6 @@ export default function AdminCreateActivityPage() {
                       t={t}
                     />
                   </div>
-                  {moduleType === 'map' && (
-                    <div style={{ marginTop: 12 }}>
-                      <SectionLabelSmall>{t.mapProximity}</SectionLabelSmall>
-                      <Input
-                        type="number"
-                        min={5}
-                        max={200}
-                        value={proximityMeters}
-                        onChange={(e) => setProximityMeters(Math.max(5, Math.min(200, Number(e.target.value) || DEFAULT_PROXIMITY_METERS)))}
-                        style={{ maxWidth: 120 }}
-                      />
-                      <SectionDescription style={{ marginTop: 4 }}>{t.mapProximityHint}</SectionDescription>
-                    </div>
-                  )}
                   {moduleType === 'map' && connectionType === 'group' && (
                     <GroupOrderEditor
                       groupNames={groupNames}

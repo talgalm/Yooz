@@ -1453,6 +1453,8 @@ export default function StoryModulePage() {
             geoError={mapRun.geoError}
             proximityMeters={data.module.proximityMeters}
             design={data.module.mapDesign}
+            openAnywhere={data.module.openAnywhere === true}
+            showStationNames={data.module.showStationNames === true}
             onArrive={() => handleNodeTap(currentItemIndex)}
             sessionTexts={t}
             currentPoints={isGroupMap ? (mapRun.run?.score ?? roadmapTotalPoints) : roadmapTotalPoints}

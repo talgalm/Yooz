@@ -184,13 +184,16 @@ export interface UprightPinStyle {
   zIndex: number;
 }
 
-export function stationPinStyle(look: MapLook, next: boolean): UprightPinStyle {
+const ARRIVED_GROWTH = 1.2;
+
+export function stationPinStyle(look: MapLook, next: boolean, arrived = false): UprightPinStyle {
   const size = next ? NEXT_SIZE : DONE_SIZE;
+  const grow = next && arrived ? ARRIVED_GROWTH : 1;
   return {
     color: next ? look.pins.next : look.pins.done,
-    diameterPx: size.scale * 2,
-    fontPx: parseInt(size.font, 10),
-    imagePx: size.imagePx,
+    diameterPx: Math.round(size.scale * 2 * grow),
+    fontPx: Math.round(parseInt(size.font, 10) * grow),
+    imagePx: Math.round(size.imagePx * grow),
     zIndex: size.zIndex,
   };
 }
@@ -198,17 +201,17 @@ export function stationPinStyle(look: MapLook, next: boolean): UprightPinStyle {
 export interface UprightPin {
   setRotation: (degrees: number) => void;
   setPosition: (position: google.maps.LatLngLiteral) => void;
-  setBouncing: (bouncing: boolean) => void;
+  setBreathing: (breathing: boolean) => void;
   remove: () => void;
 }
 
 const UPRIGHT_EASE = 'transform 0.3s ease-out';
-const BOUNCE_MS = 700;
+const BREATH_MS = 1400;
 
 export function attachUprightPin(
   maps: typeof google.maps,
   map: google.maps.Map,
-  options: { position: google.maps.LatLngLiteral; style: UprightPinStyle; text?: string; imageUrl?: string; title?: string; rotation: number },
+  options: { position: google.maps.LatLngLiteral; style: UprightPinStyle; text?: string; imageUrl?: string; title?: string; rotation: number; aboveMarkers?: boolean; label?: string },
 ): UprightPin {
   const { style } = options;
   let position = options.position;
@@ -253,11 +256,39 @@ export function attachUprightPin(
     face.textContent = options.text ?? '';
   }
   spinner.appendChild(face);
+  if (options.label) {
+    const label = document.createElement('div');
+    label.textContent = options.label;
+    Object.assign(label.style, {
+      position: 'absolute',
+      top: `${style.diameterPx + 4}px`,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      maxWidth: '140px',
+      padding: '3px 8px',
+      borderRadius: '8px',
+      background: 'rgba(255,255,255,0.95)',
+      color: '#202124',
+      boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+      fontFamily: 'Rubik, Roboto, Arial, sans-serif',
+      fontSize: '12px',
+      fontWeight: '700',
+      lineHeight: '1.3',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      pointerEvents: 'none',
+    });
+    spinner.appendChild(label);
+  }
   anchor.appendChild(spinner);
 
-  let bounce: Animation | null = null;
+  let breath: Animation | null = null;
   const overlay = new maps.OverlayView();
-  overlay.onAdd = () => overlay.getPanes()?.overlayLayer.appendChild(anchor);
+  overlay.onAdd = () => {
+    const panes = overlay.getPanes();
+    (options.aboveMarkers ? panes?.floatPane : panes?.markerLayer)?.appendChild(anchor);
+  };
   overlay.draw = () => {
     const point = overlay.getProjection()?.fromLatLngToDivPixel(new maps.LatLng(position));
     if (!point) return;
@@ -265,7 +296,7 @@ export function attachUprightPin(
     anchor.style.top = `${point.y}px`;
   };
   overlay.onRemove = () => {
-    bounce?.cancel();
+    breath?.cancel();
     anchor.remove();
   };
   overlay.setMap(map);
@@ -278,16 +309,16 @@ export function attachUprightPin(
       position = next;
       overlay.draw();
     },
-    setBouncing: (bouncing) => {
-      if (!bouncing) {
-        bounce?.cancel();
-        bounce = null;
+    setBreathing: (breathing) => {
+      if (!breathing) {
+        breath?.cancel();
+        breath = null;
         return;
       }
-      if (bounce) return;
-      bounce = face.animate(
-        [{ transform: 'translateY(0)' }, { transform: 'translateY(-12px)' }, { transform: 'translateY(0)' }],
-        { duration: BOUNCE_MS, iterations: Infinity, easing: 'ease-in-out' },
+      if (breath) return;
+      breath = face.animate(
+        [{ transform: 'scale(1)' }, { transform: 'scale(1.25)' }, { transform: 'scale(1)' }],
+        { duration: BREATH_MS, iterations: Infinity, easing: 'ease-in-out' },
       );
     },
     remove: () => overlay.setMap(null),
