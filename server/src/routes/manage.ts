@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { JWT_SECRET } from '../config';
 import { authenticateManage, requireManageRole } from '../middleware/manageAuth';
+import { authenticateAdmin, requireRole } from '../middleware/adminAuth';
 import { ManageLoginRequest, ManageJwtPayload } from '../types';
 import { ManageUser, IManageUser } from '../models/manage/ManageUser';
 
@@ -55,6 +56,18 @@ export function serializeManageUser(u: IManageUser, role: 'owner' | 'pm' | 'memb
   };
 }
 
+function sessionFor(user: IManageUser) {
+  const payload: ManageJwtPayload = {
+    userId: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    realm: 'manage',
+  };
+  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_TTL });
+  return { token, user: serializeManageUser(user, user.role) };
+}
+
 router.post('/auth/login', async (req: Request<{}, {}, ManageLoginRequest>, res: Response) => {
   const ip = req.ip || req.socket?.remoteAddress || 'unknown';
   if (isRateLimited(ip)) {
@@ -84,16 +97,16 @@ router.post('/auth/login', async (req: Request<{}, {}, ManageLoginRequest>, res:
     await user.save();
   }
 
-  const payload: ManageJwtPayload = {
-    userId: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    realm: 'manage',
-  };
-  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_TTL });
+  res.json(sessionFor(user));
+});
 
-  res.json({ token, user: serializeManageUser(user, user.role) });
+router.post('/auth/from-admin', authenticateAdmin, requireRole('admin', 'super_admin'), async (req: Request, res: Response) => {
+  const user = await ManageUser.findOne({ email: req.admin!.email.toLowerCase().trim(), active: true });
+  if (!user) {
+    res.status(404).json({ error: 'no_linked_manage_user' });
+    return;
+  }
+  res.json(sessionFor(user));
 });
 
 router.get('/auth/me', authenticateManage, async (req: Request, res: Response) => {

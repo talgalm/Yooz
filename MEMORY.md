@@ -1085,8 +1085,10 @@ outside the repo); "spec ch.NN" comments in the code point into it.
   `dropManageProjectCodeIndex()` removes a legacy unique `code_1` index at boot.
 - **Client**: `pages/manage/*` under `ManageLayout` + `ManageTimerProvider`; menu in
   `pages/manage/nav.ts` (`ownerOnly` there is cosmetic, the server gate is real). Desktop only.
-  The admin dashboard sidebar links to it ("לקוחות", admin/super_admin only); the link is only
-  navigation, since `/manage` still needs its own login.
+  The admin dashboard sidebar links to it ("לקוחות", admin/super_admin only). The click first calls
+  `POST /api/manage/auth/from-admin` (admin JWT, admin/super_admin): if an active `ManageUser` has
+  the admin's email it returns a normal Manage session (skipping `mustChangePassword`), so staff
+  land in `/manage` signed in; with no match (404) `/manage` shows its own login as before.
 
 ---
 
