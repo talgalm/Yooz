@@ -143,12 +143,14 @@ Login config: `loginFields: ('email'|'phoneNumber'|'name')[]`, `emailGoogle?`,
   groups?: string[] (only these groups see it), spiderSvg?, isFinal? (spiders lock),
   collageSplit? (split a collage station into N parts across the activity),
   revisitable? (completed item stays re-openable from the roadmap — see §11),
-  location? ({lat,lng,address?} — where the station physically is, map modules only, §16)}`.
+  location? ({lat,lng,address?} — where the station physically is, map modules only, §16),
+  cipherChar? (map: the character this station reveals in the cipher, §16)}`.
 - `missionRef?` (when `type='mission'`), `showStationNumbers?`, `showItemTitleNumbers?`.
 - `groupOrders?` (map: group name → permutation of item indices), `proximityMeters?` (map: §16),
   `mapDesign?` (map: `{style, hidden[]}`, the map's look and which Google places it shows, §16).
   `openAnywhere?` (map: stations open from anywhere instead of only on arrival, §16).
   `showStationNames?` (map: a name label under each station pin, §16).
+  `cipherEnabled?` (map: the cipher button and the per-station characters, §16).
 - `popups?: IPopupMessage[]` — see §11.
 
 **Leaderboard/scoring flags**: `leaderboardMode: 'points'|'time'|'both'`,
@@ -1067,6 +1069,27 @@ so a route is fetched once per station and again only when navigating >35m off i
 (`&language=` on the Maps script). Map texts live in `MapView.i18n.ts`. `advanceToNextItem` shows the station's `afterItem` popups before
 returning to the map (then `endOfActivity` when the walk is done).
 
+**Cipher.** `module.cipherEnabled` (admin, step 1 under "עיצוב מפה": "צופן - כל תחנה יכולה לחשוף
+תו כשמסיימים אותה") turns on a per-station `cipherChar` - one or two characters (a digit, letter or
+emoji), edited in the station's settings right under its location ("תו בצופן"; the field only shows
+while the cipher is on, and the station row gets a purple "צופן: 7" tag). The server trims it and
+drops anything longer (`sanitizeCipherChar`), and serves `cipherChar` and `cipherEnabled` only when
+the switch is on, so turning it off keeps the characters for later. On the map the cipher is
+always on screen, in the floating header under the session buttons (`CipherStrip.tsx`, on the
+same fading blur): dark characters on white rounded tiles (hidden ones are translucent white with a white "?"), one per station with a character, in
+station order; a slot fills when its station is in `completedIndices` (a team shares its run, so a
+teammate's station fills it too). A small white caption above the tiles reads "הצופן", and "פיצחתם את הצופן!" once every tile is full.
+A lock icon beside it and a frosted bar around the tiles (label on the side) were tried and dropped. A modal behind a lock button was tried first and rejected - the
+code has to be visible all the time. Stations revealed since the strip last showed (seen indices in
+`localStorage`, `yooz_cipher_seen_<code>`, `hooks/useCipherSeen.ts`) spin in like a slot-machine
+reel through characters of the same kind (`reelStrip`: digits, Hebrew, Latin or a mix;
+deterministic, so no `Math.random` in render) and land with a pop, one after another,
+when you come back to the map; they are marked seen once they land. The turn banner sits below
+the strip, since it measures the whole top block. The row reads
+right to left only when a character is Hebrew or Arabic (`cipherDirection`), so a number code keeps
+its order. The characters reach the browser with the module, so the cipher is a game element, not a
+secret. The maths is in `utils/cipher.ts` and tested.
+
 **Look.** `module.mapDesign = {style, hidden[]}`, set in the activity wizard's step 1 under the
 theme row ("עיצוב מפה", `AdminCreateActivityPage/MapDesignSection.tsx`, with a live preview map).
 `style` is one of ten looks, in picker order (`standard`, `light`, `dark`, `night`, `satellite`,
@@ -1114,7 +1137,7 @@ marker centred on it (`stationMarkers` returns `[circle, image]`).
 `sanitizeMapIcon` keeps only http(s) links - no `data:` or `javascript:`. Like every item field,
 `mapIcon` is copied by hand in `admin.ts` (save and edit-load) and in all three item branches of
 `GET /:code/module`. The preview keys its pins on icons but its route on coordinates only, so
-changing an icon never refetches the billed route. Stacking order is `PIN_LAYERS`: you > next > done. The route line colour also changes per look. Looks with a `routeOutline` (vintage, Wild West, treasure,
+changing an icon never refetches the billed route. Stacking order is `PIN_LAYERS`: next > done > you - your arrow passes under station pins and their labels, so standing on a station never hides it. The route line colour also changes per look. Looks with a `routeOutline` (vintage, Wild West, treasure,
 blueprint) draw the route dashed, each dash on a wider dash in the outline colour; the rest draw
 it solid. The outline is there because on textured, same-toned maps a colour alone disappears
 into the roads. Each look keeps its own route colour (tried all-blue, rejected); the line is 8px thick. A dotted Google-style route was tried and rejected by the owner.

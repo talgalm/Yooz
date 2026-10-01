@@ -494,6 +494,7 @@ export default function AdminCreateActivityPage() {
   const [mapDesign, setMapDesign] = useState<MapDesign>(DEFAULT_MAP_DESIGN);
   const [openAnywhere, setOpenAnywhere] = useState(false);
   const [showStationNames, setShowStationNames] = useState(false);
+  const [cipherEnabled, setCipherEnabled] = useState(false);
 
   const [openingType, setOpeningType] = useState<OpeningType>('none');
   const [openingUrl, setOpeningUrl] = useState('');
@@ -654,6 +655,7 @@ export default function AdminCreateActivityPage() {
                 collageSplit: (item as { collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number } }).collageSplit as ModuleItem['collageSplit'],
                 location: item.location,
                 mapIcon: item.mapIcon,
+                cipherChar: item.cipherChar,
               }))
             );
           }
@@ -661,6 +663,7 @@ export default function AdminCreateActivityPage() {
           if (a.module.proximityMeters) setProximityMeters(a.module.proximityMeters);
           setOpenAnywhere(a.module.openAnywhere === true);
           setShowStationNames(a.module.showStationNames === true);
+          setCipherEnabled(a.module.cipherEnabled === true);
           if (a.module.mapDesign) {
             setMapDesign({
               style: a.module.mapDesign.style ?? DEFAULT_MAP_DESIGN.style,
@@ -952,6 +955,10 @@ export default function AdminCreateActivityPage() {
     setSelectedItems((prev) => prev.map((item, i) => (i === index ? { ...item, mapIcon } : item)));
   };
 
+  const updateItemCipherChar = (index: number, cipherChar: string | undefined) => {
+    setSelectedItems((prev) => prev.map((item, i) => (i === index ? { ...item, cipherChar } : item)));
+  };
+
   const updateItemSvg = (index: number, svgUrl: string) => {
     setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, spiderSvg: svgUrl || undefined } : item));
   };
@@ -1169,10 +1176,11 @@ export default function AdminCreateActivityPage() {
             ...(i.collageSplit && { collageSplit: i.collageSplit }),
             ...(moduleType === 'map' && i.location && { location: i.location }),
             ...(moduleType === 'map' && i.mapIcon && { mapIcon: i.mapIcon }),
+            ...(moduleType === 'map' && i.cipherChar && { cipherChar: i.cipherChar }),
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
           ...(showItemTitleNumbers && { showItemTitleNumbers: true }),
-          ...(moduleType === 'map' && { proximityMeters, groupOrders: liveGroupOrders(), mapDesign, openAnywhere, showStationNames }),
+          ...(moduleType === 'map' && { proximityMeters, groupOrders: liveGroupOrders(), mapDesign, openAnywhere, showStationNames, cipherEnabled }),
         };
         if (popups.length > 0) {
           modulePayload.popups = popups
@@ -1441,6 +1449,17 @@ export default function AdminCreateActivityPage() {
                         />
                         {t.mapShowStationNames}
                       </label>
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 12 }}>
+                        <input
+                          type="checkbox"
+                          checked={cipherEnabled}
+                          onChange={(e) => setCipherEnabled(e.target.checked)}
+                          style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                        />
+                        {t.mapCipher}
+                      </label>
+                      {cipherEnabled && <SectionDescription style={{ marginTop: 4 }}>{t.mapCipherHint}</SectionDescription>}
                     </MapSettingsBlock>
                   )}
                 </SectionCard>
@@ -1922,6 +1941,7 @@ export default function AdminCreateActivityPage() {
                       groupNames={groupNames}
                       onUpdateItemLocation={updateItemLocation}
                       onUpdateItemMapIcon={updateItemMapIcon}
+                      onUpdateItemCipherChar={moduleType === 'map' && cipherEnabled ? updateItemCipherChar : undefined}
                       t={t}
                     />
                   </div>

@@ -201,6 +201,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
   const requested = readLang(req);
   const lang = activity.languages?.includes(requested) ? requested : 'he';
 
+  const cipherOn = activity.module.type === 'map' && activity.module.cipherEnabled === true;
   const populated = moduleItems.map((item) => {
     if (item.type === 'mission') {
       const data = missionMap.get(item.ref.toString());
@@ -217,6 +218,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.revisitable && { revisitable: true }),
         ...(item.location && { location: item.location }),
         ...(item.mapIcon && { mapIcon: item.mapIcon }),
+        ...(cipherOn && item.cipherChar && { cipherChar: item.cipherChar }),
       };
     }
     const data = item.type === 'game'
@@ -236,6 +238,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.revisitable && { revisitable: true }),
         ...(item.location && { location: item.location }),
         ...(item.mapIcon && { mapIcon: item.mapIcon }),
+        ...(cipherOn && item.cipherChar && { cipherChar: item.cipherChar }),
       }, data, lang);
     } else {
       return withReviewedTranslations({
@@ -251,6 +254,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.collageSplit && { collageSplit: item.collageSplit }),
         ...(item.location && { location: item.location }),
         ...(item.mapIcon && { mapIcon: item.mapIcon }),
+        ...(cipherOn && item.cipherChar && { cipherChar: item.cipherChar }),
       }, data, lang);
     }
   });
@@ -306,6 +310,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     ...(activity.module.type === 'map' && activity.module.mapDesign && { mapDesign: activity.module.mapDesign }),
     ...(activity.module.type === 'map' && activity.module.openAnywhere && { openAnywhere: true }),
     ...(activity.module.type === 'map' && activity.module.showStationNames && { showStationNames: true }),
+    ...(cipherOn && { cipherEnabled: true }),
     items: populatedItems,
     popups: popupsForServedItems(filteredPopups, servedIndices).map((p) => ({
       _id: p._id,

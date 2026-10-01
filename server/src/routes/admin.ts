@@ -16,7 +16,7 @@ import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { sanitiseLanguages } from '../utils/requestLang';
 import { sanitizeLocation, sanitizeProximityMeters, sanitizeGroupOrders } from '../utils/moduleItems';
-import { sanitizeMapDesign, sanitizeMapIcon } from '../utils/mapDesign';
+import { sanitizeCipherChar, sanitizeMapDesign, sanitizeMapIcon } from '../utils/mapDesign';
 import { pretranslateActivity } from '../services/activityPretranslate';
 import { IActivity, IScheduledReport } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
@@ -146,9 +146,11 @@ async function buildActivityData(
               collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number; videoPartIndex?: number | null; photoOrder?: number[] };
               location?: unknown;
               mapIcon?: unknown;
+              cipherChar?: unknown;
             }) => {
               const location = isMap ? sanitizeLocation(item.location) : undefined;
               const mapIcon = isMap ? sanitizeMapIcon(item.mapIcon) : undefined;
+              const cipherChar = isMap ? sanitizeCipherChar(item.cipherChar) : undefined;
               return {
                 type: item.type,
                 ref: item.ref,
@@ -159,6 +161,7 @@ async function buildActivityData(
                 ...(item.collageSplit && { collageSplit: item.collageSplit }),
                 ...(location && { location }),
                 ...(mapIcon && { mapIcon }),
+                ...(cipherChar && { cipherChar }),
               };
             })
         : [];
@@ -176,6 +179,7 @@ async function buildActivityData(
         ...(mapDesign && { mapDesign }),
         ...(isMap && mod.openAnywhere === true && { openAnywhere: true }),
         ...(isMap && mod.showStationNames === true && { showStationNames: true }),
+        ...(isMap && mod.cipherEnabled === true && { cipherEnabled: true }),
         items,
         popups: Array.isArray(mod.popups) ? mod.popups.map((p: Record<string, unknown>) => {
           const ct = p.contentType === 'image' ? 'image' : 'text';
@@ -337,6 +341,7 @@ async function populateActivityItems(activities: any[]): Promise<any[]> {
           collageSplit: item.collageSplit,
           location: item.location,
           mapIcon: item.mapIcon,
+          cipherChar: item.cipherChar,
         };
       });
     }
