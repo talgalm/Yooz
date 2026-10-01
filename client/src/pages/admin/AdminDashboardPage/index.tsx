@@ -2,6 +2,7 @@ import { Fragment, useState, useEffect, useCallback, useMemo, useRef, type CSSPr
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useAdminAuth, useCanEditContent } from '../../../context/AdminAuthContext';
+import { useManageAuth } from '../../../context/ManageAuthContext';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './AdminDashboardPage.i18n';
 import { adminApiFetch } from '../../../utils/adminApi';
@@ -873,6 +874,7 @@ export default function AdminDashboardPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const { logout, admin } = useAdminAuth();
+  const { loginFromAdmin } = useManageAuth();
   const navigate = useNavigate();
   const t = useTranslations(texts);
   const stationT = useTranslations(stationTexts) as Record<string, string>;
@@ -1108,7 +1110,7 @@ export default function AdminDashboardPage() {
           {otherNav.length > 0 && <NavGroupLabel>{t.navOther}</NavGroupLabel>}
           {otherNav}
           {(role === 'admin' || role === 'super_admin') && (
-            <NavItem onClick={() => navigate('/manage')}>
+            <NavItem onClick={() => loginFromAdmin().catch(() => {}).finally(() => navigate('/manage'))}>
               <NavIcon name="clients" />
               {t.navClients}
             </NavItem>
