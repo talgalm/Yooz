@@ -22,6 +22,7 @@ interface Employee {
   color?: string;
   weeklyCapacityHours: number;
   monthHours: number;
+  monthTravel: number;
   email?: string;
   phone?: string;
   hourlyCost?: number;
@@ -110,6 +111,7 @@ export default function ManageEmployeesPage() {
                   <th>{t.role}</th>
                   <DesktopHead>{t.capacity}</DesktopHead>
                   <th>{t.monthHours}</th>
+                  <DesktopHead>{t.monthTravel}</DesktopHead>
                   {isOwner && <DesktopHead>{t.effectiveCost}</DesktopHead>}
                   {isOwner && <DesktopHead>{t.monthCost}</DesktopHead>}
                   {isOwner && <th>{t.actions}</th>}
@@ -130,6 +132,7 @@ export default function ManageEmployeesPage() {
                     <td>{t.roles[e.role]}</td>
                     <DesktopCell>{e.weeklyCapacityHours}</DesktopCell>
                     <td><b>{e.monthHours}</b></td>
+                    <DesktopCell>{formatMoney(e.monthTravel ?? 0)}</DesktopCell>
                     {isOwner && <DesktopCell>{formatMoney(e.effectiveHourlyCost ?? 0)}</DesktopCell>}
                     {isOwner && <DesktopCell>{formatMoney(e.monthCost ?? 0)}</DesktopCell>}
                     {isOwner && (

@@ -1058,10 +1058,16 @@ outside the repo); "spec ch.NN" comments in the code point into it.
   `ManageClient` (+ embedded contacts), `ManageInteraction`, `ManageProject` (stages, payment
   milestones, contract, recurring fee, stored `health`), `ManageTask` (checklist, comments,
   watchers, `visibleToAll`), `ManageTimeEntry` (timer or manual, `costRateSnapshot`,
-  `afterProjectClose`, `locked`, `autoStopped`), `ManageExpense`, `ManageChangeRequest`,
+  `afterProjectClose`, `locked`, `autoStopped`), `ManageTravelEntry` (`mng_travel_entries`:
+  per-day travel allowance in ₪, `userId`/`date`/`amount`/`note`), `ManageExpense`, `ManageChangeRequest`,
   `ManageSettings` (singleton: stage template, time categories, alert thresholds, defaults).
 - **Routers** (`routes/manage*.ts`, all under `/api/manage`): `clients`, `projects`, `time`,
   `tasks`, `dashboard`, `calendar`, `finance`, `reports`, `employees`, `settings`.
+  `time/projects` lists every non-archived project (`_id`, `name`) for the hour/timer pickers, so
+  members can log against projects they aren't assigned to (`/projects` stays visibility-scoped).
+  `time/travel` (GET/POST, PATCH/DELETE `/:id`) is the travel allowance: anyone logs their own;
+  only the owner reads others'. `time/month/:month` adds `days[].travel` + `totalTravel`, and
+  employees carry `monthTravel`.
   Owner-only whole routers: **finance, reports, employees, settings**. Clients/projects: edit
   is owner+pm, delete is owner. `time/lock` is owner. Report `profitability_by_client` is owner.
 - **Money never leaves the server for non-owners**: `serializeManageUser` and

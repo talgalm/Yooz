@@ -5,16 +5,17 @@ import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './time.i18n';
 import { useManageTimer } from './TimerContext';
 import TimeEntryModal from './TimeEntryModal';
+import TravelEntryModal from './TravelEntryModal';
 import ConfirmDialog from './ConfirmDialog';
-import { TimeEntry, refName, toDateInput } from './manageTypes';
+import {
+  TimeEntry, TravelEntry, MonthSheetData as MonthData, refName, toDateInput, formatMoney,
+} from './manageTypes';
 import { formatHours } from './duration';
 import { PRIMARY, PRIMARY_LIGHT, BORDER, TEXT_LIGHT } from '../../components/styled';
 import {
   Panel, EmptyState, Button, GhostButton, LinkButton, Pill, ErrorNote, Toolbar, MOBILE,
 } from './manageUi';
 
-interface MonthDay { date: string; minutes: number; entries: TimeEntry[] }
-interface MonthData { month: string; days: MonthDay[]; totalMinutes: number; daysWorked: number }
 
 const Bar = styled('div')({
   display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
@@ -107,6 +108,9 @@ export default function MonthSheet({ userId, editable = true }: Props) {
   const [adding, setAdding] = useState<string | null>(null);
   const [editing, setEditing] = useState<TimeEntry | null>(null);
   const [deleting, setDeleting] = useState<TimeEntry | null>(null);
+  const [addingTravel, setAddingTravel] = useState<string | null>(null);
+  const [editingTravel, setEditingTravel] = useState<TravelEntry | null>(null);
+  const [deletingTravel, setDeletingTravel] = useState<TravelEntry | null>(null);
 
   const load = useCallback(async () => {
     setError('');
@@ -128,17 +132,16 @@ export default function MonthSheet({ userId, editable = true }: Props) {
     setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
   };
 
-  const remove = async () => {
-    if (!deleting) return;
+  const removeAt = async (url: string) => {
     try {
-      await manageApiFetch(`/api/manage/time/${deleting._id}`, { method: 'DELETE' });
-      setDeleting(null);
+      await manageApiFetch(url, { method: 'DELETE' });
       notify();
     } catch (err) {
       const code = err instanceof Error ? err.message : '';
       setError(t.errors[code as keyof typeof t.errors] ?? code);
-      setDeleting(null);
     }
+    setDeleting(null);
+    setDeletingTravel(null);
   };
 
   const days = data?.days ?? [];
@@ -153,6 +156,7 @@ export default function MonthSheet({ userId, editable = true }: Props) {
         <MonthInput type="month" value={month} onChange={(e) => e.target.value && setMonth(e.target.value)} />
         <GhostButton onClick={() => shiftMonth(1)}>›</GhostButton>
         {editable && <Button onClick={() => setAdding(selected)}>{t.addEntry}</Button>}
+        {editable && <GhostButton onClick={() => setAddingTravel(selected)}>{t.addTravel}</GhostButton>}
       </Toolbar>
 
       {error && <ErrorNote>{error}</ErrorNote>}
@@ -161,6 +165,9 @@ export default function MonthSheet({ userId, editable = true }: Props) {
         <Bar>
           <Stat>{t.total}: <StatValue>{formatHours(data?.totalMinutes ?? 0)}</StatValue></Stat>
           <Stat>{t.daysWorked}: <StatValue>{data?.daysWorked ?? 0}</StatValue></Stat>
+          {(data?.totalTravel ?? 0) > 0 && (
+            <Stat>{t.totalTravel}: <StatValue>{formatMoney(data?.totalTravel ?? 0)}</StatValue></Stat>
+          )}
         </Bar>
 
         {loading ? (
@@ -182,6 +189,7 @@ export default function MonthSheet({ userId, editable = true }: Props) {
                 >
                   <DayNum>{new Date(day.date).getDate()}</DayNum>
                   <DayHours worked={day.minutes > 0}>{formatHours(day.minutes)}</DayHours>
+                  {day.travel.length > 0 && <Pill tone="muted">{t.travel}</Pill>}
                 </DayCell>
               );
             })}
@@ -201,10 +209,31 @@ export default function MonthSheet({ userId, editable = true }: Props) {
                 : selected}
               {selectedDay && selectedDay.minutes > 0 ? ` · ${formatHours(selectedDay.minutes)}` : ''}
             </span>
-            {editable && <LinkButton onClick={() => setAdding(selected)}>+ {t.addEntry}</LinkButton>}
+            {editable && (
+              <span style={{ display: 'flex', gap: 12 }}>
+                <LinkButton onClick={() => setAdding(selected)}>+ {t.addEntry}</LinkButton>
+                <LinkButton onClick={() => setAddingTravel(selected)}>+ {t.addTravel}</LinkButton>
+              </span>
+            )}
           </DayPanelHead>
 
-          {!selectedDay || selectedDay.entries.length === 0 ? (
+          {selectedDay?.travel.map((e) => (
+            <Row key={e._id}>
+              <Mins>{formatMoney(e.amount)}</Mins>
+              <What>
+                {t.travel}
+                {e.note ? <Note> — {e.note}</Note> : null}
+              </What>
+              {editable && (
+                <>
+                  <LinkButton onClick={() => setEditingTravel(e)}>{t.editEntry}</LinkButton>
+                  <LinkButton onClick={() => setDeletingTravel(e)}>{t.delete}</LinkButton>
+                </>
+              )}
+            </Row>
+          ))}
+
+          {!selectedDay || (selectedDay.entries.length === 0 && selectedDay.travel.length === 0) ? (
             <EmptyState>{t.noEntriesThisDay}</EmptyState>
           ) : (
             selectedDay.entries.map((e) => (
@@ -249,7 +278,23 @@ export default function MonthSheet({ userId, editable = true }: Props) {
           title={t.delete}
           message={t.confirmDelete}
           onCancel={() => setDeleting(null)}
-          onConfirm={remove}
+          onConfirm={() => removeAt(`/api/manage/time/${deleting._id}`)}
+        />
+      )}
+      {(addingTravel || editingTravel) && (
+        <TravelEntryModal
+          entry={editingTravel ?? undefined}
+          defaultDate={addingTravel ?? undefined}
+          onClose={() => { setAddingTravel(null); setEditingTravel(null); }}
+          onSaved={() => { setAddingTravel(null); setEditingTravel(null); notify(); }}
+        />
+      )}
+      {deletingTravel && (
+        <ConfirmDialog
+          title={t.delete}
+          message={t.confirmDeleteTravel}
+          onCancel={() => setDeletingTravel(null)}
+          onConfirm={() => removeAt(`/api/manage/time/travel/${deletingTravel._id}`)}
         />
       )}
     </>

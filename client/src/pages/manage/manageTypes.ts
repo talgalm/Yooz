@@ -187,10 +187,19 @@ export interface TimeEntry {
   costAmount?: number;
 }
 
+export interface TravelEntry {
+  _id: string;
+  userId: string | { _id: string; name: string; color?: string };
+  date: string;
+  amount: number;
+  note?: string;
+}
+
 export interface MonthDay {
   date: string;
   minutes: number;
   entries: TimeEntry[];
+  travel: TravelEntry[];
 }
 
 export interface MonthSheetData {
@@ -199,6 +208,7 @@ export interface MonthSheetData {
   days: MonthDay[];
   totalMinutes: number;
   daysWorked: number;
+  totalTravel: number;
 }
 
 export function refName(v: unknown): string | undefined {

@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 import { authenticateManage, requireManageRole } from '../middleware/manageAuth';
 import { ManageUser, ManageRole, effectiveHourlyCost } from '../models/manage/ManageUser';
 import { TimeEntry } from '../models/manage/TimeEntry';
+import { TravelEntry } from '../models/manage/TravelEntry';
 import { round1, round2 } from '../services/manageMetrics';
 import { getSettings } from '../services/manageSettings';
 
@@ -21,7 +22,7 @@ function badId(res: Response, id: string): boolean {
   return true;
 }
 
-function serializeEmployee(u: Record<string, unknown>, role: ManageRole, monthly: { hours: number; cost: number }) {
+function serializeEmployee(u: Record<string, unknown>, role: ManageRole, monthly: { hours: number; cost: number; travel: number }) {
   const base = {
     _id: u._id,
     name: u.name,
@@ -32,6 +33,7 @@ function serializeEmployee(u: Record<string, unknown>, role: ManageRole, monthly
     workDays: u.workDays,
     color: u.color,
     monthHours: monthly.hours,
+    monthTravel: monthly.travel,
   };
   if (role !== 'owner') return base;
   return {
@@ -46,7 +48,7 @@ function serializeEmployee(u: Record<string, unknown>, role: ManageRole, monthly
   };
 }
 
-async function monthlyTotals(): Promise<Record<string, { hours: number; cost: number }>> {
+async function monthlyTotals(): Promise<Record<string, { hours: number; cost: number; travel: number }>> {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
@@ -54,7 +56,17 @@ async function monthlyTotals(): Promise<Record<string, { hours: number; cost: nu
     { $match: { endedAt: { $ne: null }, date: { $gte: start, $lte: end } } },
     { $group: { _id: '$userId', minutes: { $sum: '$minutes' }, cost: { $sum: '$costAmount' } } },
   ]);
-  return Object.fromEntries(rows.map((r) => [String(r._id), { hours: round1(r.minutes / 60), cost: round2(r.cost) }]));
+  const travelRows = await TravelEntry.aggregate<{ _id: Types.ObjectId; amount: number }>([
+    { $match: { date: { $gte: start, $lte: end } } },
+    { $group: { _id: '$userId', amount: { $sum: '$amount' } } },
+  ]);
+  const travel = Object.fromEntries(travelRows.map((r) => [String(r._id), round2(r.amount)]));
+  const totals: Record<string, { hours: number; cost: number; travel: number }> = {};
+  for (const id of new Set([...rows.map((r) => String(r._id)), ...Object.keys(travel)])) {
+    const r = rows.find((x) => String(x._id) === id);
+    totals[id] = { hours: r ? round1(r.minutes / 60) : 0, cost: r ? round2(r.cost) : 0, travel: travel[id] ?? 0 };
+  }
+  return totals;
 }
 
 router.get('/', async (req: Request, res: Response) => {
@@ -65,7 +77,7 @@ router.get('/', async (req: Request, res: Response) => {
     employees: users.map((u) => serializeEmployee(
       u as never,
       req.manageUser!.role,
-      totals[String(u._id)] ?? { hours: 0, cost: 0 },
+      totals[String(u._id)] ?? { hours: 0, cost: 0, travel: 0 },
     )),
   });
 });
@@ -100,7 +112,7 @@ router.post('/', requireManageRole('owner'), async (req: Request, res: Response)
       : defaults.employerCostFactor,
   });
 
-  res.status(201).json({ employee: serializeEmployee(user.toObject() as never, 'owner', { hours: 0, cost: 0 }) });
+  res.status(201).json({ employee: serializeEmployee(user.toObject() as never, 'owner', { hours: 0, cost: 0, travel: 0 }) });
 });
 
 router.patch('/:id', requireManageRole('owner'), async (req: Request, res: Response) => {
@@ -136,7 +148,7 @@ router.patch('/:id', requireManageRole('owner'), async (req: Request, res: Respo
   if (!user) { res.status(404).json({ error: 'not_found' }); return; }
 
   const totals = await monthlyTotals();
-  res.json({ employee: serializeEmployee(user as never, 'owner', totals[String(user._id)] ?? { hours: 0, cost: 0 }) });
+  res.json({ employee: serializeEmployee(user as never, 'owner', totals[String(user._id)] ?? { hours: 0, cost: 0, travel: 0 }) });
 });
 
 router.post('/:id/reset-password', requireManageRole('owner'), async (req: Request, res: Response) => {
