@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { Types } from 'mongoose';
 import { Activity, User, Mission, ActivityGroup } from '../models';
 import { ADMIN_EMAIL, ADMIN_PASSWORD } from '../config';
 import { israelDayString } from '../utils/israelTime';
@@ -105,40 +106,35 @@ export async function seedSuperAdmin(): Promise<void> {
   console.log(`✅ Seeded super_admin user: ${ADMIN_EMAIL}`);
 }
 
-export async function seedManageUsers(): Promise<void> {
+export type EmployeeLinkPlan = { action: 'skip' | 'create' | 'link'; elevatedFrom?: string };
+
+export function employeeLinkPlan(existingRole: string | undefined, active: boolean): EmployeeLinkPlan {
+  if (!active) return { action: 'skip' };
+  if (!existingRole) return { action: 'create' };
+  return existingRole === 'super_admin' ? { action: 'link' } : { action: 'link', elevatedFrom: existingRole };
+}
+
+export async function migrateManageLoginsToUsers(): Promise<void> {
   const { ManageUser } = await import('../models/manage/ManageUser');
-  const {
-    MANAGE_OWNER_EMAIL, MANAGE_OWNER_PASSWORD, MANAGE_OWNER_NAME,
-    MANAGE_MEMBER_EMAIL, MANAGE_MEMBER_PASSWORD, MANAGE_MEMBER_NAME,
-  } = await import('../config');
+  const legacy = await ManageUser.collection
+    .find({ passwordHash: { $exists: true } })
+    .project<{ _id: Types.ObjectId; email: string; name: string; passwordHash: string; active: boolean }>({ email: 1, name: 1, passwordHash: 1, active: 1 })
+    .toArray();
 
-  const seedUser = async (
-    email: string,
-    password: string,
-    name: string,
-    role: 'owner' | 'pm' | 'member',
-    extra: Record<string, unknown> = {},
-  ) => {
-    const normalized = email.toLowerCase().trim();
-    if (await ManageUser.findOne({ email: normalized })) return;
-    await ManageUser.create({
-      email: normalized,
-      passwordHash: await bcrypt.hash(password, 10),
-      name,
-      role,
-      ...extra,
-    });
-    console.log(`✅ Seeded manage ${role}: ${normalized}`);
-  };
-
-  await seedUser(MANAGE_OWNER_EMAIL, MANAGE_OWNER_PASSWORD, MANAGE_OWNER_NAME, 'owner', {
-    tracksTime: false,
-    hourlyCost: 250,
-  });
-
-  await seedUser(MANAGE_MEMBER_EMAIL, MANAGE_MEMBER_PASSWORD, MANAGE_MEMBER_NAME, 'member', {
-    color: '#00b894',
-  });
+  for (const m of legacy) {
+    const existing = await User.findOne({ email: m.email });
+    const plan = employeeLinkPlan(existing?.role, m.active !== false);
+    if (plan.action === 'skip') {
+      console.log(`⏭️  Inactive Manage user not given a login: ${m.email}`);
+    } else if (plan.action === 'create') {
+      await User.create({ email: m.email, name: m.name, password: m.passwordHash, role: 'super_admin', manageUserId: m._id });
+      console.log(`✅ Employee login created from Manage: ${m.email}`);
+    } else {
+      await User.updateOne({ _id: existing!._id }, { $set: { role: 'super_admin', manageUserId: m._id, updatedAt: new Date() } });
+      console.log(`✅ Employee linked to existing user: ${m.email}${plan.elevatedFrom ? ` (role ${plan.elevatedFrom} → super_admin)` : ''}`);
+    }
+    await ManageUser.collection.updateOne({ _id: m._id }, { $unset: { passwordHash: '', mustChangePassword: '' } });
+  }
 }
 
 export async function dropManageProjectCodeIndex(): Promise<void> {

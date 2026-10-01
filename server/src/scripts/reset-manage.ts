@@ -1,7 +1,6 @@
 
 import mongoose from 'mongoose';
 import { MONGODB_URI } from '../config';
-import { seedManageUsers } from '../db/seed';
 
 const COLLECTIONS = [
   'mng_users',
@@ -29,7 +28,8 @@ async function main() {
     console.log(`🗑️  ${name}: dropped (${before} docs)`);
   }
 
-  await seedManageUsers();
+  const unlinked = await db.collection('users').updateMany({ manageUserId: { $exists: true } }, { $unset: { manageUserId: '' } });
+  console.log(`🔗 users: ${unlinked.modifiedCount} employee links removed`);
   await mongoose.disconnect();
 }
 

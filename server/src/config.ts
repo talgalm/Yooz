@@ -22,12 +22,6 @@ export const MONGODB_URI = process.env.MONGODB_URI || '';
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@yooz.com';
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
-export const MANAGE_OWNER_EMAIL = process.env.MANAGE_OWNER_EMAIL || 'admin@yooz.com';
-export const MANAGE_OWNER_PASSWORD = process.env.MANAGE_OWNER_PASSWORD || 'eran6954';
-export const MANAGE_OWNER_NAME = process.env.MANAGE_OWNER_NAME || 'Eran';
-export const MANAGE_MEMBER_EMAIL = process.env.MANAGE_MEMBER_EMAIL || 'tal@yooz.com';
-export const MANAGE_MEMBER_PASSWORD = process.env.MANAGE_MEMBER_PASSWORD || '123456';
-export const MANAGE_MEMBER_NAME = process.env.MANAGE_MEMBER_NAME || 'Tal';
 
 export const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || '';
 export const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY || '';

@@ -53,12 +53,6 @@ export interface ManageJwtPayload {
   exp?: number;
 }
 
-export interface ManageLoginRequest {
-  email: string;
-  password: string;
-  newPassword?: string;
-}
-
 export interface ManagerLoginRequest {
   activityCode: string;
   email?: string;
