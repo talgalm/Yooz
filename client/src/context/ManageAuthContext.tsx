@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { manageApiFetch } from '../utils/manageApi';
 import { adminApiFetch } from '../utils/adminApi';
 import { decodeJwtPayload } from '../utils/jwt';
 
@@ -19,9 +18,7 @@ interface ManageAuthContextType {
   user: ManageUser | null;
   isManageAuthenticated: boolean;
   isOwner: boolean;
-  login: (email: string, password: string, newPassword?: string) => Promise<void>;
   loginFromAdmin: () => Promise<void>;
-  logout: () => void;
 }
 
 const ManageAuthContext = createContext<ManageAuthContextType | null>(null);
@@ -73,13 +70,6 @@ export function ManageAuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
   };
 
-  const login = async (email: string, password: string, newPassword?: string) => {
-    startSession(await manageApiFetch<{ token: string; user: ManageUser }>('/api/manage/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, newPassword }),
-    }));
-  };
-
   const loginFromAdmin = async () => {
     startSession(await adminApiFetch<{ token: string; user: ManageUser }>('/api/manage/auth/from-admin', {
       method: 'POST',
@@ -98,9 +88,7 @@ export function ManageAuthProvider({ children }: { children: ReactNode }) {
         user,
         isManageAuthenticated: !!token,
         isOwner: user?.role === 'owner',
-        login,
         loginFromAdmin,
-        logout: clear,
       }}
     >
       {children}

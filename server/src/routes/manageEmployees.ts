@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import { Types } from 'mongoose';
 import { authenticateManage, requireManageRole } from '../middleware/manageAuth';
 import { ManageUser, ManageRole, effectiveHourlyCost } from '../models/manage/ManageUser';
@@ -12,9 +11,21 @@ const router = Router();
 router.use(authenticateManage);
 router.use(requireManageRole('owner'));
 
-const VALID_ROLES: ManageRole[] = ['owner', 'pm', 'member'];
+export const VALID_ROLES: ManageRole[] = ['owner', 'pm', 'member'];
 
 const PALETTE = ['#6c5ce7', '#0984e3', '#00b894', '#e17055', '#fdcb6e', '#e84393', '#00cec9', '#636e72'];
+
+export async function createEmployeeProfile(name: string, email: string, role: ManageRole) {
+  const defaults = (await getSettings()).defaults;
+  return ManageUser.create({
+    name,
+    email,
+    role,
+    color: PALETTE[(await ManageUser.countDocuments()) % PALETTE.length],
+    weeklyCapacityHours: defaults.weeklyCapacityHours,
+    employerCostFactor: defaults.employerCostFactor,
+  });
+}
 
 function badId(res: Response, id: string): boolean {
   if (Types.ObjectId.isValid(id)) return false;
@@ -82,39 +93,6 @@ router.get('/', async (req: Request, res: Response) => {
   });
 });
 
-router.post('/', requireManageRole('owner'), async (req: Request, res: Response) => {
-  const body = (req.body ?? {}) as Record<string, unknown>;
-  const name = typeof body.name === 'string' ? body.name.trim() : '';
-  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
-  const password = typeof body.password === 'string' ? body.password : '';
-
-  if (!name) { res.status(400).json({ error: 'name_required' }); return; }
-  if (!email || !email.includes('@')) { res.status(400).json({ error: 'valid_email_required' }); return; }
-  if (password.length < 8) { res.status(400).json({ error: 'password_too_short' }); return; }
-  if (!VALID_ROLES.includes(body.role as ManageRole)) { res.status(400).json({ error: 'invalid_role' }); return; }
-  if (await ManageUser.findOne({ email })) { res.status(409).json({ error: 'email_taken' }); return; }
-
-  const defaults = (await getSettings()).defaults;
-  const user = await ManageUser.create({
-    name,
-    email,
-    passwordHash: await bcrypt.hash(password, 10),
-    role: body.role as ManageRole,
-    phone: typeof body.phone === 'string' ? body.phone.trim() : undefined,
-    color: typeof body.color === 'string' && body.color
-      ? body.color
-      : PALETTE[(await ManageUser.countDocuments()) % PALETTE.length],
-    tracksTime: body.tracksTime !== false,
-    weeklyCapacityHours: Number(body.weeklyCapacityHours) || defaults.weeklyCapacityHours,
-    hourlyCost: Number(body.hourlyCost) || 0,
-    employerCostFactor: Number.isFinite(Number(body.employerCostFactor))
-      ? Number(body.employerCostFactor)
-      : defaults.employerCostFactor,
-  });
-
-  res.status(201).json({ employee: serializeEmployee(user.toObject() as never, 'owner', { hours: 0, cost: 0, travel: 0 }) });
-});
-
 router.patch('/:id', requireManageRole('owner'), async (req: Request, res: Response) => {
   if (badId(res, String(req.params.id))) return;
   const body = (req.body ?? {}) as Record<string, unknown>;
@@ -135,13 +113,6 @@ router.patch('/:id', requireManageRole('owner'), async (req: Request, res: Respo
     update.workDays = (body.workDays as unknown[]).filter((d) => typeof d === 'number' && d >= 0 && d <= 6);
   }
 
-  if (typeof body.email === 'string' && body.email.trim()) {
-    const email = body.email.trim().toLowerCase();
-    const clash = await ManageUser.findOne({ email, _id: { $ne: String(req.params.id) } });
-    if (clash) { res.status(409).json({ error: 'email_taken' }); return; }
-    update.email = email;
-  }
-
   if (Object.keys(update).length === 0) { res.status(400).json({ error: 'nothing_to_update' }); return; }
 
   const user = await ManageUser.findByIdAndUpdate(String(req.params.id), update, { new: true }).lean();
@@ -149,22 +120,6 @@ router.patch('/:id', requireManageRole('owner'), async (req: Request, res: Respo
 
   const totals = await monthlyTotals();
   res.json({ employee: serializeEmployee(user as never, 'owner', totals[String(user._id)] ?? { hours: 0, cost: 0, travel: 0 }) });
-});
-
-router.post('/:id/reset-password', requireManageRole('owner'), async (req: Request, res: Response) => {
-  if (badId(res, String(req.params.id))) return;
-  const password = (req.body ?? {}).password;
-  if (typeof password !== 'string' || password.length < 8) {
-    res.status(400).json({ error: 'password_too_short' });
-    return;
-  }
-  const user = await ManageUser.findByIdAndUpdate(
-    String(req.params.id),
-    { passwordHash: await bcrypt.hash(password, 10) },
-    { new: true },
-  );
-  if (!user) { res.status(404).json({ error: 'not_found' }); return; }
-  res.json({ ok: true });
 });
 
 router.delete('/:id', requireManageRole('owner'), async (req: Request, res: Response) => {

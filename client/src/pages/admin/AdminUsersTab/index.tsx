@@ -45,6 +45,8 @@ import {
 } from '../styled';
 
 type UserRole = 'viewer' | 'admin' | 'super_admin' | 'customer';
+type UserType = UserRole | 'employee';
+type ManageRole = 'member' | 'pm' | 'owner';
 
 interface User {
   _id: string;
@@ -52,7 +54,12 @@ interface User {
   role: UserRole;
   name?: string;
   googleId?: string;
+  manageUserId?: string;
   createdAt: string;
+}
+
+function userType(user: User): UserType {
+  return user.manageUserId ? 'employee' : user.role;
 }
 
 export default function AdminUsersTab() {
@@ -63,7 +70,9 @@ export default function AdminUsersTab() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<UserRole>('viewer');
+  const [role, setRole] = useState<UserType>('viewer');
+  const [manageRole, setManageRole] = useState<ManageRole>('member');
+  const [editingEmployee, setEditingEmployee] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -89,6 +98,8 @@ export default function AdminUsersTab() {
     setPassword('');
     setName('');
     setRole('viewer');
+    setManageRole('member');
+    setEditingEmployee(false);
     setEditingId(null);
     setShowForm(false);
     setError('');
@@ -98,7 +109,8 @@ export default function AdminUsersTab() {
     setEditingId(user._id);
     setEmail(user.email);
     setName(user.name || '');
-    setRole(user.role);
+    setRole(userType(user));
+    setEditingEmployee(!!user.manageUserId);
     setPassword('');
     setShowForm(true);
     setError('');
@@ -110,7 +122,7 @@ export default function AdminUsersTab() {
     setLoading(true);
     try {
       if (editingId) {
-        const body: Record<string, unknown> = { email, role, name };
+        const body: Record<string, unknown> = { email, role, name, manageRole };
         if (password) body.password = password;
         await adminApiFetch(`/api/admin/users/${editingId}`, {
           method: 'PUT',
@@ -119,7 +131,7 @@ export default function AdminUsersTab() {
       } else {
         await adminApiFetch('/api/admin/users', {
           method: 'POST',
-          body: JSON.stringify({ email, password, role, name }),
+          body: JSON.stringify({ email, password, role, name, manageRole }),
         });
       }
       resetForm();
@@ -145,8 +157,9 @@ export default function AdminUsersTab() {
     }
   };
 
-  const roleLabel = (r: UserRole) => {
+  const roleLabel = (r: UserType) => {
     switch (r) {
+      case 'employee': return t.roleEmployee;
       case 'viewer': return t.roleViewer;
       case 'admin': return t.roleAdmin;
       case 'super_admin': return t.roleSuperAdmin;
@@ -192,7 +205,7 @@ export default function AdminUsersTab() {
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-            <div>
+            {!editingEmployee && <div>
               <SectionLabel>{t.role}</SectionLabel>
               <SelectionGroup>
                 <SelectionButton type="button" selected={role === 'viewer'} onClick={() => setRole('viewer')}>
@@ -211,8 +224,24 @@ export default function AdminUsersTab() {
                   <div>{t.roleSuperAdmin}</div>
                   <SelectionSubtextSmall>{t.roleSuperAdminDesc}</SelectionSubtextSmall>
                 </SelectionButton>
+                <SelectionButton type="button" selected={role === 'employee'} onClick={() => setRole('employee')}>
+                  <div>{t.roleEmployee}</div>
+                  <SelectionSubtextSmall>{t.roleEmployeeDesc}</SelectionSubtextSmall>
+                </SelectionButton>
               </SelectionGroup>
-            </div>
+            </div>}
+            {role === 'employee' && !editingEmployee && (
+              <div>
+                <SectionLabel>{t.manageRole}</SectionLabel>
+                <SelectionGroup>
+                  {(['member', 'pm', 'owner'] as const).map((r) => (
+                    <SelectionButton key={r} type="button" selected={manageRole === r} onClick={() => setManageRole(r)}>
+                      <div>{t[`manageRole_${r}`]}</div>
+                    </SelectionButton>
+                  ))}
+                </SelectionGroup>
+              </div>
+            )}
             {error && <ErrorText>{error}</ErrorText>}
             <FormButtonsRow>
               <PrimaryButton type="submit" disabled={loading || !email.trim()}>
@@ -249,7 +278,7 @@ function PaginatedUsers({ users, confirmDeleteId, handleEdit, handleDelete, role
   confirmDeleteId: string | null;
   handleEdit: (user: User) => void;
   handleDelete: (id: string) => void;
-  roleLabel: (r: UserRole) => string;
+  roleLabel: (r: UserType) => string;
   isSelf: (id: string) => boolean;
   t: Record<string, string>;
 }) {
@@ -274,7 +303,7 @@ function PaginatedUsers({ users, confirmDeleteId, handleEdit, handleDelete, role
                 <tr key={user._id}>
                   <td><CellBold>{user.email}</CellBold></td>
                   <td><CellMuted>{user.name || '—'}</CellMuted></td>
-                  <td><RoleBadge role={user.role}>{roleLabel(user.role)}</RoleBadge></td>
+                  <td><RoleBadge role={userType(user)}>{roleLabel(userType(user))}</RoleBadge></td>
                   <td><CellMuted>{new Date(user.createdAt).toLocaleDateString()}</CellMuted></td>
                   <CellAlignEnd>
                     <InlineRowGap6
@@ -343,7 +372,7 @@ function PaginatedUsers({ users, confirmDeleteId, handleEdit, handleDelete, role
                 </InlineRowGap6>
               </MobileCardHeader>
               <InlineRowGap6>
-                <RoleBadge role={user.role}>{roleLabel(user.role)}</RoleBadge>
+                <RoleBadge role={userType(user)}>{roleLabel(userType(user))}</RoleBadge>
                 {user.name && <CellMuted>{user.name}</CellMuted>}
                 <MobileCardDate>{new Date(user.createdAt).toLocaleDateString()}</MobileCardDate>
               </InlineRowGap6>

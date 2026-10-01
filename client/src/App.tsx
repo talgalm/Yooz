@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ensureOfflineQueueListeners } from './utils/offlineQueue';
@@ -22,7 +23,6 @@ import ManagerLoginPage from './pages/manager/ManagerLoginPage';
 import ControlPage from './pages/ControlPage';
 import ManagerDashboardPage from './pages/manager/ManagerDashboardPage';
 import OrderSurveyPresentPage from './pages/manager/OrderSurveyPresentPage';
-import ManageLoginPage from './pages/manage/ManageLoginPage';
 import ManageLayout from './pages/manage/ManageLayout';
 import ManagePlaceholderPage from './pages/manage/ManagePlaceholderPage';
 import ManageClientsPage from './pages/manage/ManageClientsPage';
@@ -109,13 +109,19 @@ function ManagerProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function ManageProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isManageAuthenticated } = useManageAuth();
-  return isManageAuthenticated ? <>{children}</> : <Navigate to="/manage/login" replace />;
-}
+  const { isAdminAuthenticated, admin } = useAdminAuth();
+  const { user, loginFromAdmin } = useManageAuth();
+  const [notAnEmployee, setNotAnEmployee] = useState(false);
+  const signedIn = !!user && user.email === admin?.email;
 
-function ManagePublicRoute({ children }: { children: React.ReactNode }) {
-  const { isManageAuthenticated } = useManageAuth();
-  return isManageAuthenticated ? <Navigate to="/manage/my-work" replace /> : <>{children}</>;
+  useEffect(() => {
+    if (isAdminAuthenticated && !signedIn) loginFromAdmin().catch(() => setNotAnEmployee(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdminAuthenticated, signedIn]);
+
+  if (!isAdminAuthenticated) return <Navigate to="/admin/login" replace />;
+  if (notAnEmployee) return <Navigate to="/admin/dashboard" replace />;
+  return signedIn ? <>{children}</> : null;
 }
 
 function ManagerPublicRoute({ children }: { children: React.ReactNode }) {
@@ -154,7 +160,6 @@ export default function App() {
                 <Route path="/manager/dashboard" element={<ManagerProtectedRoute><ManagerDashboardPage /></ManagerProtectedRoute>} />
                 <Route path="/manager/present" element={<ManagerProtectedRoute><OrderSurveyPresentPage /></ManagerProtectedRoute>} />
 
-                <Route path="/manage/login" element={<ManagePublicRoute><ManageLoginPage /></ManagePublicRoute>} />
                 <Route
                   path="/manage"
                   element={(
