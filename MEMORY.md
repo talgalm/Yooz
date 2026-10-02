@@ -609,7 +609,9 @@ hand-rolled (HTML5 drag API + tap-to-swap touch fallback) — no dnd library.
   timeLimitSeconds}` - `timeLimitSeconds: 0` means no time limit (no timer, no timeout), like trivia. The play
   screen stacks a small timer badge at the top, the statement with its optional `instruction` under it in the
   same card, then the image filling the space left above the true/false buttons (it was a thumbnail under a
-  big timer circle). `components/games/TrueFalseGame/`.
+  big timer circle). Without an image the timer and a bigger statement card sit centred in that space with a
+  "נכון או לא נכון?" prompt under them (`StatementStage`), since the top-aligned card left the middle empty.
+  `components/games/TrueFalseGame/`.
 - **Trash Sort**: sort falling items into correct bins (also embedded in Missions).
   `components/games/TrashSortGame/`.
 

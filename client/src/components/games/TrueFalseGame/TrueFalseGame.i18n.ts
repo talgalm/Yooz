@@ -1,6 +1,7 @@
 export const texts = {
   en: {
     gameTitle: 'True or False',
+    trueOrFalse: 'True or false?',
     gameTitleLine1: 'True or',
     gameTitleLine2: 'False',
     true: 'True',
@@ -43,6 +44,7 @@ export const texts = {
   },
   he: {
     gameTitle: 'נכון או לא נכון',
+    trueOrFalse: 'נכון או לא נכון?',
     gameTitleLine1: 'נכון או',
     gameTitleLine2: 'לא נכון',
     true: 'נכון',

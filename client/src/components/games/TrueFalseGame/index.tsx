@@ -26,7 +26,8 @@ import {
   QuestionBannerText,
   StatementInstruction,
   TFTimerBadge,
-  NatureSpacer,
+  StatementStage,
+  TrueOrFalsePrompt,
   NatureButtonRow,
   WrongButton,
   CorrectButton,
@@ -542,30 +543,32 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
         </TFHeaderRight>
       </TFHeader>
 
-      {timed && (
-        <TFTimerBadge critical={timerCritical} role="timer" aria-label={`${t.timeLeft}: ${timeLeft}`}>
-          {timeLeft}
-        </TFTimerBadge>
-      )}
-
-      <QuestionBanner key={currentIndex}>
-        <QuestionBannerText>{statement.text}</QuestionBannerText>
-        {statement.instruction?.trim() && (
-          <StatementInstruction>{statement.instruction.trim()}</StatementInstruction>
+      <StatementStage $centered={!statement.media}>
+        {timed && (
+          <TFTimerBadge critical={timerCritical} role="timer" aria-label={`${t.timeLeft}: ${timeLeft}`}>
+            {timeLeft}
+          </TFTimerBadge>
         )}
-      </QuestionBanner>
 
-      {statement.media ? (
-        <NatureMediaContainer>
-          <NatureMediaImage
-            src={statement.media}
-            alt=""
-            onClick={() => setZoomedImageUrl(statement.media!)}
-          />
-        </NatureMediaContainer>
-      ) : (
-        <NatureSpacer aria-hidden />
-      )}
+        <QuestionBanner key={currentIndex} $roomy={!statement.media}>
+          <QuestionBannerText $roomy={!statement.media}>{statement.text}</QuestionBannerText>
+          {statement.instruction?.trim() && (
+            <StatementInstruction $roomy={!statement.media}>{statement.instruction.trim()}</StatementInstruction>
+          )}
+        </QuestionBanner>
+
+        {statement.media ? (
+          <NatureMediaContainer>
+            <NatureMediaImage
+              src={statement.media}
+              alt=""
+              onClick={() => setZoomedImageUrl(statement.media!)}
+            />
+          </NatureMediaContainer>
+        ) : (
+          <TrueOrFalsePrompt key={`prompt-${currentIndex}`}>{t.trueOrFalse}</TrueOrFalsePrompt>
+        )}
+      </StatementStage>
 
       {zoomedImageUrl && createPortal(
         <div
