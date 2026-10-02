@@ -76,6 +76,8 @@ export interface ModuleItem {
   revisitable?: boolean;
   collageSplit?: CollageSplit;
   location?: ItemLocation;
+  mapIcon?: string;
+  cipherChar?: string;
 }
 
 export interface CustomInstructions {
@@ -112,7 +114,10 @@ export interface Activity {
     groupOrders?: Record<string, number[]>;
     proximityMeters?: number;
     mapDesign?: Partial<MapDesign>;
-    items: { type: 'game' | 'station'; ref: string; groups?: string[]; collageSplit?: CollageSplit; location?: ItemLocation; data?: { _id: string; name: string; type?: string; settings?: Record<string, unknown>; description?: string; customer?: string; theme?: string } }[];
+    openAnywhere?: boolean;
+    showStationNames?: boolean;
+    cipherEnabled?: boolean;
+    items: { type: 'game' | 'station'; ref: string; groups?: string[]; collageSplit?: CollageSplit; location?: ItemLocation; mapIcon?: string; cipherChar?: string; data?: { _id: string; name: string; type?: string; settings?: Record<string, unknown>; description?: string; customer?: string; theme?: string } }[];
     popups?: {
       _id?: string;
       title: string;

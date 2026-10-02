@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { sanitizeMapDesign, MAP_STYLE_IDS, MAP_FEATURE_KEYS } from './mapDesign';
+import { sanitizeMapDesign, sanitizeMapIcon, MAP_STYLE_IDS, MAP_FEATURE_KEYS } from './mapDesign';
 
 test('a chosen style and hidden features are kept', () => {
   assert.deepEqual(
@@ -41,4 +41,21 @@ test('the client offers exactly the styles and features the server keeps', () =>
   };
   assert.deepEqual(listed('MAP_STYLE_IDS'), [...MAP_STYLE_IDS], 'map styles differ between client and server - add it to both');
   assert.deepEqual(listed('MAP_FEATURE_KEYS'), [...MAP_FEATURE_KEYS], 'map features differ between client and server - add it to both');
+});
+
+test('a station icon is an uploaded image link, kept as given', () => {
+  const svg = 'https://res.cloudinary.com/yooz/image/upload/v1/yooz/icons/flag.svg';
+  assert.equal(sanitizeMapIcon(svg), svg);
+  assert.equal(sanitizeMapIcon(` ${svg} `), svg);
+  assert.equal(sanitizeMapIcon('http://localhost:3000/icon.png'), 'http://localhost:3000/icon.png');
+});
+
+test('a station icon refuses anything that is not a web link', () => {
+  assert.equal(sanitizeMapIcon('javascript:alert(1)'), undefined);
+  assert.equal(sanitizeMapIcon('data:image/svg+xml;base64,PHN2Zz4='), undefined);
+  assert.equal(sanitizeMapIcon('flag.svg'), undefined);
+  assert.equal(sanitizeMapIcon('🏁'), undefined);
+  assert.equal(sanitizeMapIcon(''), undefined);
+  assert.equal(sanitizeMapIcon(`https://x.io/${'a'.repeat(1000)}`), undefined);
+  assert.equal(sanitizeMapIcon(7), undefined);
 });

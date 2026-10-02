@@ -52,3 +52,26 @@ export function sanitizeMapDesign(raw: unknown): IMapDesign | undefined {
   if (cleanStyle === 'standard' && cleanHidden.length === 0) return undefined;
   return { style: cleanStyle, hidden: cleanHidden };
 }
+
+const CIPHER_CHAR_MAX_CODE_POINTS = 2;
+
+export function sanitizeCipherChar(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const char = raw.trim();
+  if (!char || Array.from(char).length > CIPHER_CHAR_MAX_CODE_POINTS) return undefined;
+  return char;
+}
+
+const MAP_ICON_URL_MAX_LENGTH = 1000;
+
+export function sanitizeMapIcon(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const url = raw.trim();
+  if (!url || url.length > MAP_ICON_URL_MAX_LENGTH) return undefined;
+  try {
+    const { protocol } = new URL(url);
+    return protocol === 'https:' || protocol === 'http:' ? url : undefined;
+  } catch {
+    return undefined;
+  }
+}

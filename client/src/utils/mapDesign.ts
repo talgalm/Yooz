@@ -41,10 +41,9 @@ export type MapOverlayKind = 'paper' | 'dust' | 'grid';
 export interface MapLook {
   styles: google.maps.MapTypeStyle[];
   mapTypeId: 'roadmap' | 'hybrid';
-  pins: { next: string; done: string; me: string };
+  pins: { next: string; done: string };
   routeColor: string;
   routeOutline?: string;
-  dashedRoute: boolean;
   overlay?: MapOverlayKind;
   swatch: { land: string; road: string; water: string; park: string };
 }
@@ -229,89 +228,79 @@ export const MAP_LOOKS: Record<MapStyleId, MapLook> = {
   standard: {
     styles: [],
     mapTypeId: 'roadmap',
-    pins: { next: '#6c5ce7', done: '#00b894', me: '#0984e3' },
+    pins: { next: '#6c5ce7', done: '#00b894' },
     routeColor: '#6c5ce7',
-    dashedRoute: false,
     swatch: { land: '#f1f3f4', road: '#ffffff', water: '#aadaff', park: '#c8e6c9' },
   },
   light: {
     styles: LIGHT,
     mapTypeId: 'roadmap',
-    pins: { next: '#6c5ce7', done: '#00a884', me: '#0984e3' },
+    pins: { next: '#6c5ce7', done: '#00a884' },
     routeColor: '#6c5ce7',
-    dashedRoute: false,
     swatch: { land: '#f5f5f5', road: '#ffffff', water: '#cfd8dc', park: '#e2ece0' },
   },
   dark: {
     styles: DARK,
     mapTypeId: 'roadmap',
-    pins: { next: '#8b7bff', done: '#5c5a78', me: '#4dabf7' },
+    pins: { next: '#8b7bff', done: '#5c5a78' },
     routeColor: '#8b7bff',
-    dashedRoute: false,
     swatch: { land: '#212121', road: '#3c3c3c', water: '#0b0b0b', park: '#1b2a1b' },
   },
   vintage: {
     styles: VINTAGE,
     mapTypeId: 'roadmap',
-    pins: { next: '#c0392b', done: '#1b7f5b', me: '#1f4e79' },
+    pins: { next: '#c0392b', done: '#1b7f5b' },
     routeColor: '#9b1d12',
     routeOutline: '#fff6e0',
-    dashedRoute: true,
     overlay: 'paper',
     swatch: { land: '#ebe3cd', road: '#f8c967', water: '#b9d3c2', park: '#a5b076' },
   },
   wildWest: {
     styles: WILD_WEST,
     mapTypeId: 'roadmap',
-    pins: { next: '#e02424', done: '#0f766e', me: '#1d3557' },
+    pins: { next: '#e02424', done: '#0f766e' },
     routeColor: '#e02424',
     routeOutline: '#fff3d6',
-    dashedRoute: true,
     overlay: 'dust',
     swatch: { land: '#d8d8d8', road: '#5e5e5e', water: '#6c6c6c', park: '#a6a6a6' },
   },
   treasure: {
     styles: TREASURE,
     mapTypeId: 'roadmap',
-    pins: { next: '#d00000', done: '#0e7490', me: '#3a0ca3' },
+    pins: { next: '#d00000', done: '#0e7490' },
     routeColor: '#b3001b',
     routeOutline: '#fff6e0',
-    dashedRoute: true,
     overlay: 'paper',
     swatch: { land: '#f0dcaa', road: '#e3b36b', water: '#6fa7b8', park: '#b9bf7a' },
   },
   playful: {
     styles: PLAYFUL,
     mapTypeId: 'roadmap',
-    pins: { next: '#ff4d6d', done: '#06d6a0', me: '#4361ee' },
+    pins: { next: '#ff4d6d', done: '#06d6a0' },
     routeColor: '#ff7675',
-    dashedRoute: false,
     swatch: { land: '#f4f0ff', road: '#ffd166', water: '#9ad4ff', park: '#b8f2c9' },
   },
   night: {
     styles: NIGHT,
     mapTypeId: 'roadmap',
-    pins: { next: '#ff9f1a', done: '#32ff7e', me: '#74b9ff' },
+    pins: { next: '#ff9f1a', done: '#32ff7e' },
     routeColor: '#fdcb6e',
-    dashedRoute: false,
     swatch: { land: '#242f3e', road: '#746855', water: '#17263c', park: '#263c3f' },
   },
   blueprint: {
     styles: BLUEPRINT,
     mapTypeId: 'roadmap',
-    pins: { next: '#ff7a1a', done: '#ffd166', me: '#ff4d6d' },
+    pins: { next: '#ff7a1a', done: '#ffd166' },
     routeColor: '#ff7a1a',
     routeOutline: '#0a2347',
-    dashedRoute: true,
     overlay: 'grid',
     swatch: { land: '#1d4f91', road: '#ffffff', water: '#123a6e', park: '#24609f' },
   },
   satellite: {
     styles: [],
     mapTypeId: 'hybrid',
-    pins: { next: '#ffdd00', done: '#00e5ff', me: '#ff4d6d' },
+    pins: { next: '#ffdd00', done: '#00e5ff' },
     routeColor: '#ffd166',
-    dashedRoute: false,
     swatch: { land: '#4a5a3a', road: '#c9c2b0', water: '#1e3a4a', park: '#2f4a2a' },
   },
 };
@@ -357,8 +346,8 @@ export function mapOptionsFor(design: MapDesign | undefined): Pick<google.maps.M
 }
 
 export function routeLineOptions(look: MapLook): google.maps.PolylineOptions {
-  if (!look.dashedRoute) {
-    return { strokeColor: look.routeColor, strokeWeight: 5, strokeOpacity: 0.85 };
+  if (!look.routeOutline) {
+    return { strokeColor: look.routeColor, strokeWeight: 8, strokeOpacity: 0.9 };
   }
   const dash = (strokeColor: string, strokeWeight: number): google.maps.IconSequence => ({
     icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, strokeColor, strokeWeight, scale: 3.5 },
@@ -367,9 +356,6 @@ export function routeLineOptions(look: MapLook): google.maps.PolylineOptions {
   });
   return {
     strokeOpacity: 0,
-    icons: [
-      ...(look.routeOutline ? [dash(look.routeOutline, 9)] : []),
-      dash(look.routeColor, 5),
-    ],
+    icons: [dash(look.routeOutline, 12), dash(look.routeColor, 8)],
   };
 }

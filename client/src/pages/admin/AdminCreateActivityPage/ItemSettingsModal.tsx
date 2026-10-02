@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import TranslationsModal from './TranslationsModal';
+import MapIconSection from './MapIconSection';
 import { styled } from '@mui/material/styles';
 import { Input } from '../../../components/styled';
 import FileUploadButton from '../../../components/FileUploadButton';
 import type { ItemLocation, ModuleItem } from './types';
 import { geocodeAddress, isMapsAvailable, loadGoogleMaps } from '../../../utils/googleMaps';
+import { cleanCipherInput } from '../../../utils/cipher';
 
 const Overlay = styled('div')({
   position: 'fixed',
@@ -258,6 +260,39 @@ function LocationSection({
   );
 }
 
+const CipherInput = styled(Input)({
+  width: 72,
+  textAlign: 'center',
+  fontSize: 22,
+  fontWeight: 700,
+});
+
+function CipherCharSection({
+  value,
+  onChange,
+  t,
+}: {
+  value?: string;
+  onChange: (cipherChar: string | undefined) => void;
+  t: Record<string, string>;
+}) {
+  return (
+    <Section>
+      <SectionTitle>{t.cipherCharTitle}</SectionTitle>
+      <Hint>{t.cipherCharHint}</Hint>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <CipherInput
+          value={value ?? ''}
+          onChange={(e) => onChange(cleanCipherInput(e.target.value) || undefined)}
+          placeholder="?"
+          aria-label={t.cipherCharTitle}
+        />
+        {value && <SecondaryBtn type="button" onClick={() => onChange(undefined)}>{t.cipherCharClear}</SecondaryBtn>}
+      </div>
+    </Section>
+  );
+}
+
 interface ItemSettingsModalProps {
   item: ModuleItem;
   index: number;
@@ -267,6 +302,8 @@ interface ItemSettingsModalProps {
   isSpiders: boolean;
   onUpdateGroups: (index: number, groups: string[]) => void;
   onUpdateLocation?: (index: number, location: ItemLocation | undefined) => void;
+  onUpdateMapIcon?: (index: number, mapIcon: string | undefined) => void;
+  onUpdateCipherChar?: (index: number, cipherChar: string | undefined) => void;
   onUpdateSvg?: (index: number, svgUrl: string) => void;
   onToggleFinal?: (index: number) => void;
   onToggleRevisitable?: (index: number) => void;
@@ -285,6 +322,8 @@ export default function ItemSettingsModal({
   isSpiders,
   onUpdateGroups,
   onUpdateLocation,
+  onUpdateMapIcon,
+  onUpdateCipherChar,
   onUpdateSvg,
   onToggleFinal,
   onToggleRevisitable,
@@ -360,6 +399,14 @@ export default function ItemSettingsModal({
 
         {isMap && onUpdateLocation && (
           <LocationSection item={item} onChange={(loc) => onUpdateLocation(index, loc)} t={t} />
+        )}
+
+        {isMap && onUpdateCipherChar && (
+          <CipherCharSection value={item.cipherChar} onChange={(c) => onUpdateCipherChar(index, c)} t={t} />
+        )}
+
+        {isMap && onUpdateMapIcon && (
+          <MapIconSection icon={item.mapIcon} onChange={(icon) => onUpdateMapIcon(index, icon)} />
         )}
 
         {isSpiders && onUpdateSvg && (

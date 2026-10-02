@@ -397,6 +397,12 @@ const SmsVarChip = styled('button')({
 });
 
 
+const MapSettingsBlock = styled('div')({
+  marginTop: 16,
+  paddingTop: 16,
+  borderTop: '1px solid #eee',
+});
+
 const ThemeRow = styled('button')({
   display: 'flex',
   alignItems: 'center',
@@ -486,6 +492,9 @@ export default function AdminCreateActivityPage() {
   const [groupOrders, setGroupOrders] = useState<Record<string, number[]>>({});
   const [proximityMeters, setProximityMeters] = useState(DEFAULT_PROXIMITY_METERS);
   const [mapDesign, setMapDesign] = useState<MapDesign>(DEFAULT_MAP_DESIGN);
+  const [openAnywhere, setOpenAnywhere] = useState(false);
+  const [showStationNames, setShowStationNames] = useState(false);
+  const [cipherEnabled, setCipherEnabled] = useState(false);
 
   const [openingType, setOpeningType] = useState<OpeningType>('none');
   const [openingUrl, setOpeningUrl] = useState('');
@@ -645,11 +654,16 @@ export default function AdminCreateActivityPage() {
                 revisitable: (item as { revisitable?: boolean }).revisitable || undefined,
                 collageSplit: (item as { collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number } }).collageSplit as ModuleItem['collageSplit'],
                 location: item.location,
+                mapIcon: item.mapIcon,
+                cipherChar: item.cipherChar,
               }))
             );
           }
           if (a.module.groupOrders) setGroupOrders(a.module.groupOrders);
           if (a.module.proximityMeters) setProximityMeters(a.module.proximityMeters);
+          setOpenAnywhere(a.module.openAnywhere === true);
+          setShowStationNames(a.module.showStationNames === true);
+          setCipherEnabled(a.module.cipherEnabled === true);
           if (a.module.mapDesign) {
             setMapDesign({
               style: a.module.mapDesign.style ?? DEFAULT_MAP_DESIGN.style,
@@ -937,6 +951,14 @@ export default function AdminCreateActivityPage() {
     setSelectedItems((prev) => prev.map((item, i) => (i === index ? { ...item, location } : item)));
   };
 
+  const updateItemMapIcon = (index: number, mapIcon: string | undefined) => {
+    setSelectedItems((prev) => prev.map((item, i) => (i === index ? { ...item, mapIcon } : item)));
+  };
+
+  const updateItemCipherChar = (index: number, cipherChar: string | undefined) => {
+    setSelectedItems((prev) => prev.map((item, i) => (i === index ? { ...item, cipherChar } : item)));
+  };
+
   const updateItemSvg = (index: number, svgUrl: string) => {
     setSelectedItems((prev) => prev.map((item, i) => i === index ? { ...item, spiderSvg: svgUrl || undefined } : item));
   };
@@ -980,8 +1002,11 @@ export default function AdminCreateActivityPage() {
   const isWizard = isWizardModule(moduleType);
 
   const mapMissingLocationsCount = moduleType === 'map' ? selectedItems.filter((i) => !i.location).length : 0;
-  const mapPoints = useMemo(
-    () => selectedItems.flatMap((i) => (i.location ? [i.location] : [])),
+  const mapUnplacedStart = moduleType === 'map' && selectedItems.length > 0 && !selectedItems[0].location;
+  const mapStops = useMemo(
+    () => selectedItems.flatMap((item, i) => (
+      item.location ? [{ location: item.location, mark: { number: i + 1, icon: item.mapIcon } }] : []
+    )),
     [selectedItems],
   );
 
@@ -989,7 +1014,7 @@ export default function AdminCreateActivityPage() {
 
   const canReachStep2 = name.trim().length > 0;
   const canReachStep3 = isWizard && canReachStep2 && hasAnyField;
-  const canReachStep4 = canReachStep3 && selectedItems.length > 0 && mapMissingLocationsCount === 0;
+  const canReachStep4 = canReachStep3 && selectedItems.length > 0 && !mapUnplacedStart;
   const canReachStep5 = isWizard ? canReachStep4 : (canReachStep2 && hasAnyField);
   const canReach: Record<StepId, boolean> = {
     1: true, 2: canReachStep2, 3: canReachStep3, 4: canReachStep4, 5: canReachStep5, 6: canReachStep5,
@@ -1081,7 +1106,7 @@ export default function AdminCreateActivityPage() {
       setStep(5);
       return;
     }
-    if (moduleType === 'map' && selectedItems.some((i) => !i.location)) {
+    if (mapUnplacedStart) {
       setError(t.mapMissingLocations);
       setStep(3);
       return;
@@ -1150,10 +1175,12 @@ export default function AdminCreateActivityPage() {
             ...(i.revisitable && { revisitable: true }),
             ...(i.collageSplit && { collageSplit: i.collageSplit }),
             ...(moduleType === 'map' && i.location && { location: i.location }),
+            ...(moduleType === 'map' && i.mapIcon && { mapIcon: i.mapIcon }),
+            ...(moduleType === 'map' && i.cipherChar && { cipherChar: i.cipherChar }),
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
           ...(showItemTitleNumbers && { showItemTitleNumbers: true }),
-          ...(moduleType === 'map' && { proximityMeters, groupOrders: liveGroupOrders(), mapDesign }),
+          ...(moduleType === 'map' && { proximityMeters, groupOrders: liveGroupOrders(), mapDesign, openAnywhere, showStationNames, cipherEnabled }),
         };
         if (popups.length > 0) {
           modulePayload.popups = popups
@@ -1269,11 +1296,8 @@ export default function AdminCreateActivityPage() {
   if (isWizard && selectedItems.length === 0) {
     reviewIssues.push({ text: t.step2ItemsRequired, step: 3 });
   }
-  if (moduleType === 'map' && mapMissingLocationsCount > 0) {
-    reviewIssues.push({
-      text: t.mapLocationsMissingCount.replace('{count}', String(mapMissingLocationsCount)).replace('{total}', String(selectedItems.length)),
-      step: 3,
-    });
+  if (mapUnplacedStart) {
+    reviewIssues.push({ text: t.mapMissingLocations, step: 3 });
   }
   if (smsAvailable && groupRewardEnabled && !groupRewardCoupon.trim()) {
     reviewIssues.push({ text: t.groupRewardCouponRequired, step: 5 });
@@ -1390,7 +1414,53 @@ export default function AdminCreateActivityPage() {
                   )}
 
                   {moduleType === 'map' && (
-                    <MapDesignSection design={mapDesign} onChange={setMapDesign} points={mapPoints} />
+                    <MapDesignSection design={mapDesign} onChange={setMapDesign} stops={mapStops} />
+                  )}
+                  {moduleType === 'map' && (
+                    <MapSettingsBlock>
+                      <SectionLabelSmall>{t.mapOpenRule}</SectionLabelSmall>
+                      <SelectionGroup>
+                        <SelectionButton type="button" selected={!openAnywhere} onClick={() => setOpenAnywhere(false)}>
+                          {t.mapOpenNear}
+                        </SelectionButton>
+                        <SelectionButton type="button" selected={openAnywhere} onClick={() => setOpenAnywhere(true)}>
+                          {t.mapOpenAnywhere}
+                        </SelectionButton>
+                      </SelectionGroup>
+                      {openAnywhere && <SectionDescription style={{ marginTop: 4 }}>{t.mapOpenAnywhereHint}</SectionDescription>}
+
+                      <SectionLabelSmall style={{ marginTop: 12 }}>{t.mapProximity}</SectionLabelSmall>
+                      <Input
+                        type="number"
+                        min={5}
+                        max={200}
+                        value={proximityMeters}
+                        onChange={(e) => setProximityMeters(Math.max(5, Math.min(200, Number(e.target.value) || DEFAULT_PROXIMITY_METERS)))}
+                        style={{ maxWidth: 120 }}
+                      />
+                      <SectionDescription style={{ marginTop: 4 }}>{t.mapProximityHint}</SectionDescription>
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 12 }}>
+                        <input
+                          type="checkbox"
+                          checked={showStationNames}
+                          onChange={(e) => setShowStationNames(e.target.checked)}
+                          style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                        />
+                        {t.mapShowStationNames}
+                      </label>
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 14, marginTop: 12 }}>
+                        <input
+                          type="checkbox"
+                          checked={cipherEnabled}
+                          onChange={(e) => setCipherEnabled(e.target.checked)}
+                          style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                        />
+                        {t.mapCipher}
+                      </label>
+                      {cipherEnabled && <SectionDescription style={{ marginTop: 4 }}>{t.mapCipherHint}</SectionDescription>}
+                    </MapSettingsBlock>
                   )}
                 </SectionCard>
 
@@ -1843,10 +1913,15 @@ export default function AdminCreateActivityPage() {
                   {selectedItems.length === 0 && (
                     <IssueBanner><span>{t.step2ItemsRequired}</span></IssueBanner>
                   )}
-                  {moduleType === 'map' && mapMissingLocationsCount > 0 && (
+                  {mapUnplacedStart && (
                     <IssueBanner>
-                      <span>{t.mapLocationsMissingCount.replace('{count}', String(mapMissingLocationsCount)).replace('{total}', String(selectedItems.length))}</span>
+                      <span>{t.mapMissingLocations}</span>
                     </IssueBanner>
+                  )}
+                  {moduleType === 'map' && mapMissingLocationsCount > 0 && !mapUnplacedStart && (
+                    <SectionDescription style={{ margin: 0 }}>
+                      {t.mapLocationsMissingCount.replace('{count}', String(mapMissingLocationsCount)).replace('{total}', String(selectedItems.length))}
+                    </SectionDescription>
                   )}
                   <div style={{ marginTop: (selectedItems.length === 0 || mapMissingLocationsCount > 0) ? 14 : 0 }}>
                     <ModuleItemsSection
@@ -1865,23 +1940,11 @@ export default function AdminCreateActivityPage() {
                       connectionType={connectionType}
                       groupNames={groupNames}
                       onUpdateItemLocation={updateItemLocation}
+                      onUpdateItemMapIcon={updateItemMapIcon}
+                      onUpdateItemCipherChar={moduleType === 'map' && cipherEnabled ? updateItemCipherChar : undefined}
                       t={t}
                     />
                   </div>
-                  {moduleType === 'map' && (
-                    <div style={{ marginTop: 12 }}>
-                      <SectionLabelSmall>{t.mapProximity}</SectionLabelSmall>
-                      <Input
-                        type="number"
-                        min={5}
-                        max={200}
-                        value={proximityMeters}
-                        onChange={(e) => setProximityMeters(Math.max(5, Math.min(200, Number(e.target.value) || DEFAULT_PROXIMITY_METERS)))}
-                        style={{ maxWidth: 120 }}
-                      />
-                      <SectionDescription style={{ marginTop: 4 }}>{t.mapProximityHint}</SectionDescription>
-                    </div>
-                  )}
                   {moduleType === 'map' && connectionType === 'group' && (
                     <GroupOrderEditor
                       groupNames={groupNames}

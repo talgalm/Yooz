@@ -4,6 +4,7 @@ import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HelpChatHeaderButton, useHelpChat, setHelpChatActivityContext } from '../../components/HelpChat';
 import { useAuth } from '../../context/AuthContext';
 import { ActivityPlayingHeaderProvider } from '../../context/activityPlayingHeaderContext';
+import { opensRightAfter } from '../../utils/mapChain';
 import { useTranslations, useLang } from '../../context/LanguageContext';
 import { apiFetch, apiFetchPersistSilent, apiFetchWithRetry } from '../../utils/api';
 import { isRequestQueued, subscribeOfflineQueue } from '../../utils/offlineQueue';
@@ -761,6 +762,15 @@ export default function StoryModulePage() {
             showPopupsOrRun('endOfActivity', undefined, () => setPhase('finish'));
             return;
           }
+          const locked = typeof lockedFromIndex === 'number' && nextIndex >= lockedFromIndex;
+          if (opensRightAfter(data.module.items, nextIndex) && !locked) {
+            showPopupsOrRun('beforeItem', nextIndex, () => {
+              itemStartTime.current = Date.now();
+              setCurrentItemIndex(nextIndex);
+              setPhase('playing');
+            });
+            return;
+          }
           setCurrentItemIndex(nextIndex);
           setPhase('roadmap');
         });
@@ -1453,9 +1463,15 @@ export default function StoryModulePage() {
             geoError={mapRun.geoError}
             proximityMeters={data.module.proximityMeters}
             design={data.module.mapDesign}
+            openAnywhere={data.module.openAnywhere === true}
+            showStationNames={data.module.showStationNames === true}
+            cipherEnabled={data.module.cipherEnabled === true}
+            cipherSeenKey={`yooz_cipher_seen_${code}`}
             onArrive={() => handleNodeTap(currentItemIndex)}
-            t={t}
+            sessionTexts={t}
             currentPoints={isGroupMap ? (mapRun.run?.score ?? roadmapTotalPoints) : roadmapTotalPoints}
+            pointsRoll={isGroupMap ? null : pointsRoll}
+            onPointsRollComplete={handlePointsRollComplete}
             onLogout={doExit}
             onViewLeaderboard={handleViewLeaderboard}
             hideLeaderboardInHeader={data.hideLeaderboardInHeader}
@@ -1724,6 +1740,7 @@ export default function StoryModulePage() {
     <>
       <ActivityPlayingHeaderProvider>
       <PlayingPhase
+        key={currentItemIndex}
         currentItem={currentItem}
         currentItemIndex={currentItemIndex}
         stationHintText={currentItemHint?.text || null}

@@ -36,6 +36,7 @@ export function useMapRun(code: string, enabled: boolean, team: boolean): MapRun
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           accuracy: pos.coords.accuracy ?? 999,
+          heading: Number.isFinite(pos.coords.heading) ? pos.coords.heading : null,
         };
         latestFix.current = next;
         if (next.accuracy <= MAX_USABLE_ACCURACY_M) setFix(next);

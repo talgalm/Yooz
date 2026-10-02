@@ -26,6 +26,8 @@ export interface IModuleItem {
   type: 'game' | 'station' | 'mission';
   ref: Types.ObjectId;
   location?: IItemLocation;
+  mapIcon?: string;
+  cipherChar?: string;
   groups?: string[];
   spiderSvg?: string;
   isFinal?: boolean;
@@ -61,6 +63,9 @@ export interface IModuleConfig {
   showItemTitleNumbers?: boolean;
   groupOrders?: Record<string, number[]>;
   proximityMeters?: number;
+  openAnywhere?: boolean;
+  showStationNames?: boolean;
+  cipherEnabled?: boolean;
   mapDesign?: IMapDesign;
 }
 
@@ -219,6 +224,8 @@ const moduleItemSchema = new Schema<IModuleItem>({
   revisitable: { type: Boolean },
   collageSplit: { type: collageSplitSchema },
   location: { type: itemLocationSchema },
+  mapIcon: { type: String },
+  cipherChar: { type: String },
 }, { _id: false });
 
 const mapDesignSchema = new Schema<IMapDesign>({
@@ -237,6 +244,9 @@ const moduleConfigSchema = new Schema<IModuleConfig>({
   missionRef: { type: Schema.Types.ObjectId, ref: 'Mission' },
   groupOrders: { type: Schema.Types.Mixed, default: undefined },
   proximityMeters: { type: Number, default: undefined },
+  openAnywhere: { type: Boolean, default: undefined },
+  showStationNames: { type: Boolean, default: undefined },
+  cipherEnabled: { type: Boolean, default: undefined },
   mapDesign: { type: mapDesignSchema, default: undefined },
 }, { _id: false });
 

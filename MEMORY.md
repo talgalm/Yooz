@@ -143,10 +143,14 @@ Login config: `loginFields: ('email'|'phoneNumber'|'name')[]`, `emailGoogle?`,
   groups?: string[] (only these groups see it), spiderSvg?, isFinal? (spiders lock),
   collageSplit? (split a collage station into N parts across the activity),
   revisitable? (completed item stays re-openable from the roadmap — see §11),
-  location? ({lat,lng,address?} — where the station physically is, map modules only, §16)}`.
+  location? ({lat,lng,address?} — where the station physically is, map modules only, §16),
+  cipherChar? (map: the character this station reveals in the cipher, §16)}`.
 - `missionRef?` (when `type='mission'`), `showStationNumbers?`, `showItemTitleNumbers?`.
 - `groupOrders?` (map: group name → permutation of item indices), `proximityMeters?` (map: §16),
   `mapDesign?` (map: `{style, hidden[]}`, the map's look and which Google places it shows, §16).
+  `openAnywhere?` (map: stations open from anywhere instead of only on arrival, §16).
+  `showStationNames?` (map: a name label under each station pin, §16).
+  `cipherEnabled?` (map: the cipher button and the per-station characters, §16).
 - `popups?: IPopupMessage[]` — see §11.
 
 **Leaderboard/scoring flags**: `leaderboardMode: 'points'|'time'|'both'`,
@@ -970,10 +974,24 @@ fix isn't "at" every station), ignores fixes worse than 50m, and applies 2.5× e
 a jittering fix doesn't flip a station open and shut. Arrival belongs to one station: when the
 target changes the hysteresis starts over, so the next station 30m on doesn't open early. The UI
 shows live distance **and** accuracy — a participant who can see the number walks the last few
-metres themselves. A walk must never deadlock, so: Start works without a fix; a station with no
-location just opens; and the "I'm here" override appears when location is blocked, beyond 40m
-(GPS under canopy can simply refuse), and anywhere 30s after a station becomes the target
-(a steady reading 25m off beside a building). Once the team has progress the walk counts as
+metres themselves. Stations chain (`utils/mapChain.ts`, tested): a station with no location, or one within
+`SAME_PLACE_M` (15m) of the last place set before it, opens straight after the previous station
+(`opensRightAfter` - `advanceToNextItem` runs the station's `beforeItem` popups and then swaps
+straight to the next station without passing the map, unless the manager lock covers it;
+`PlayingPhase` is keyed by item index so the new station mounts fresh) and has no pin of its own; only the first
+station of a place is walked to. Once every station of a place is done (`placeGroupEnd`), its pin reads
+the range ("1-3", a pill as tall as the next-station circle) with a "3 תחנות" label under it; the next
+station always shows only its own number. A station with no location uses that place (`placeOf`). A station without a
+location inherits the last location **before** it, never after, and the item list tags it in
+blue "מיקום של תחנה N". So the first station must have one: the admin blocks moving on and
+saving while it has none (`mapUnplacedStart`), and tags every station with nothing to inherit
+in red "אין מיקום". A station with a location opens **only** on arrival: the "I'm here" override appears solely when
+the participant is within `proximityMeters + 50` and GPS has not confirmed arrival for 30s (a
+steady reading off beside a building). It used to also appear beyond 40m and whenever location
+was blocked, which let anyone open a station from anywhere - removed 2026-09-28. Blocked
+location now just shows the warning. When Google Maps fails to load, the fallback panel still
+runs the same GPS walk (`walkPanel`), since GPS does not need the map. The server does not
+check position on `/map/complete`; the rule is client-side. Once the team has progress the walk counts as
 started — nobody presses Start twice. Covered by `geo.test.ts`.
 
 **Client.** `MapView.tsx` (sibling of `RoadmapView`/`SpidersView`), `hooks/useMapRun.ts` (GPS
@@ -981,13 +999,96 @@ watch + 10s poll + position push), `utils/googleMaps.ts` (script-tag loader, no 
 the JS API already ships map, geocoder and walking directions). Needs `VITE_GOOGLE_MAPS_KEY` (§2);
 without it — or when Google rejects it for the page's domain (`window.gm_authFailure`,
 `onMapsAuthFailure`) — the map degrades to a panel with the station, its address and an open
-button. A failed or empty walking route is ignored; the pins still show the way. Above the map sits
-the same `ActivitySessionHeader` as the roadmap views — exit, help, leaderboard, points or timer —
-on the theme's colour (`getThemeKit`/`getHeaderIconColor`), and the map fills the rest of the
-`100dvh` screen. A team's header shows its shared `MapGroupState.score` — the number the
-leaderboard ranks teams by — and a solo player's their own points. Routes are redrawn only when the target changes or the walker drifts ~100m —
-Directions is billed per call. `advanceToNextItem` shows the station's `afterItem` popups before
+button. A failed or empty walking route is ignored; the pins still show the way. A team's header shows its
+shared `MapGroupState.score` - the number the leaderboard ranks teams by - and a solo player's
+their own points. The walk is Google-Maps-like, per station: an **overview** (route from
+you to the station, framed with your dot and the station, "8 min walk · 560 m", "יוצאים לדרך"),
+then **navigation** (the camera flies in - a smooth `panTo`, then one zoom level at a time via
+`flyTo`, since a raster map only animates single-level zooms and a jump to 18 snapped - to zoom 18, the camera follows you until you drag - then "חזרה אליי" brings it
+back; your dot becomes an arrow pointing where the phone faces, like Google Maps - the compass
+(`hooks/useCompassHeading.ts`, `utils/compass.ts`: iOS `webkitCompassHeading`, Android
+`deviceorientationabsolute` as `360 - alpha`, plus the screen angle; a relative
+`deviceorientation` has no north and is ignored, except in dev builds, where it is trusted so
+DevTools' Sensors > Orientation can drive it - once a real absolute reading arrives, relative
+ones are ignored again), whose iOS permission is
+requested by the "יוצאים לדרך" tap itself since iOS only asks from a user gesture; without a
+compass it falls back to GPS `heading`, then the bearing between fixes 4m apart; a top
+bar shows the next turn from the Directions steps, "בעוד 80 מ׳" + instruction; the sheet shows
+distance and time left and "עצירת ניווט"), then **arrival**: the sheet keeps its size (growing it to half the screen was tried and left
+dead space) and its content fades in from below one piece after another (`Rise` with staggered delays): a green "הגעתם!" chip,
+the name, "תחנה 1 מתוך 5 · משחק", centred, and a big "התחילו את התחנה" at the bottom. The
+description and address were tried there and dropped as noise. With
+`module.openAnywhere` (admin, first step under "עיצוב מפה" together with the opening distance and
+"הצג את שם התחנה מתחת לכל תחנה במפה": "פתיחת תחנה" - "רק בקרבת התחנה" / "מכל מקום") the sheet also offers "פתחו את התחנה עכשיו" in overview and navigation, and the
+"I'm here" override is not needed; arriving still shows the station card. The step maths
+is pure and tested (`utils/walkNavigation.ts`). The map screen carries the regular session header (exit, help, points or timer, leaderboard -
+the same `ActivitySessionHeader` as the roadmap and spiders views, built inside `MapView` from its
+header props, icons in the theme's `getHeaderIconColor`), floating over the full-screen map on a
+progressive blur that fades out downward (`FADE_LAYERS`: three
+`backdrop-filter` layers of rising strength, each masked over a shorter band, plus a faint tint -
+a single masked blur left a visible line; the header's own `backdrop-filter`, which stops
+hard at its 56px edge, is switched off here too; the blur layers bleed 48px past the top and
+side edges, because `backdrop-filter` mirrors content at its own edges and the mirror showed as
+duplicated roads along the top of the screen); the turn banner sits 16px below it (measured with a `ResizeObserver`) and above the blur
+layers in z-order, or the fade washes over it. If Google Maps fails to load, the screen takes the
+theme's background (`getThemeKit`/`roadmapImage`) so the header stays readable.
+The screen is styled after Google Maps navigation: a dark-green
+turn banner with a big arrow (one SVG, `DirectionArrow`, in four directions only - every Google manoeuvre
+maps to up, left, right or down for a U-turn via `maneuverDirection`; the glyph set with a
+roundabout symbol read as noise) and a "ואז" tab under it for a turn within 150m of the next one
+(`NextTurn.thenManeuver`; the banner squares its corner above the tab so the two join with no gap), a round
+compass button whose needle tracks north and snaps the map north-up on tap, a round blue "חזרה אליי" button
+under it (shown only when not following), both kept 16px above the bottom sheet by measuring the
+sheet with a `ResizeObserver` (it grows when "הגעתי לתחנה" appears), and a bottom sheet with big minutes, "distance · arrival clock", a red "יציאה"
+and a blue "יוצאים לדרך". SVGs for the needle and locate arrow live in `MapView.icons.tsx`. While navigating, the map turns heading-up: the canvas
+is always drawn as a `150vmax` square (so no corner shows while it turns; it keeps that size in
+overview too, because resizing it on "יוצאים לדרך" made the view jump sideways and back, and
+`overviewPadding()` adds the hidden margins, the header and the sheet to `fitBounds`) and rotated by CSS against the compass
+heading (unwrapped through `angleDelta`, 0.3s ease), so your arrow always points up. The map
+stays rotated while you move it: during navigation a transparent `Gestures` layer takes the
+pointer events instead of Google (which does not know the canvas is rotated and would pan the
+wrong way), rotates each drag delta into the canvas frame (`screenToMapDelta`) and calls
+`panBy`; two-finger pinch and the mouse wheel zoom one level at a time (`PINCH_STEP_RATIO`).
+A two-finger twist rotates the map by hand (after a 10° dead zone,
+`TWIST_START_DEG`, so a pinch does not rotate by accident) and hands rotation over from the
+compass to the user (`compassSteering`), like Google Maps. Dragging stops following your
+position; "חזרה אליי" re-centres and gives rotation back to the compass. Google's own rotation needs a
+vector map with a `mapId`, which would switch off the JSON map styles - hence CSS. Station and team pins stay upright: on the participant map
+they are not Google markers but HTML pins (`attachUprightPin` in `utils/mapPins.ts`, an
+`OverlayView` in `markerLayer` - in `overlayLayer` the route drew over them - same sizes and
+colours via `stationPinStyle`) counter-rotated by
+the same angle and ease as the canvas, with an optional name label under the circle
+(`module.showStationNames`; participant map only - the admin preview keeps plain markers); on arrival the next station's pin grows 1.2x
+(`stationPinStyle(..., arrived)`), moves to `floatPane` above your arrow (you are standing on it,
+so the arrow and its white disc would hide it) and slowly grows and shrinks (`setBreathing`, a
+Web Animation; a bounce was tried and rejected). The admin preview does
+not rotate and keeps Google markers. Trade-offs: street labels rotate with the map, and the oversized canvas pushes the Google logo and credit
+off screen during navigation (team decision, 2026-09-28). Directions is billed per call,
+so a route is fetched once per station and again only when navigating >35m off it (at most every
+15s) or, in overview, after moving 150m. Instructions come in the participant's language
+(`&language=` on the Maps script). Map texts live in `MapView.i18n.ts`. `advanceToNextItem` shows the station's `afterItem` popups before
 returning to the map (then `endOfActivity` when the walk is done).
+
+**Cipher.** `module.cipherEnabled` (admin, step 1 under "עיצוב מפה": "צופן - כל תחנה יכולה לחשוף
+תו כשמסיימים אותה") turns on a per-station `cipherChar` - one or two characters (a digit, letter or
+emoji), edited in the station's settings right under its location ("תו בצופן"; the field only shows
+while the cipher is on, and the station row gets a purple "צופן: 7" tag). The server trims it and
+drops anything longer (`sanitizeCipherChar`), and serves `cipherChar` and `cipherEnabled` only when
+the switch is on, so turning it off keeps the characters for later. On the map the cipher is
+always on screen, in the floating header under the session buttons (`CipherStrip.tsx`, on the
+same fading blur): dark characters on white rounded tiles (hidden ones are translucent white with a white "?"), one per station with a character, in
+station order; a slot fills when its station is in `completedIndices` (a team shares its run, so a
+teammate's station fills it too). A small white caption above the tiles reads "הצופן", and "פיצחתם את הצופן!" once every tile is full.
+A lock icon beside it and a frosted bar around the tiles (label on the side) were tried and dropped. A modal behind a lock button was tried first and rejected - the
+code has to be visible all the time. Stations revealed since the strip last showed (seen indices in
+`localStorage`, `yooz_cipher_seen_<code>`, `hooks/useCipherSeen.ts`) spin in like a slot-machine
+reel through characters of the same kind (`reelStrip`: digits, Hebrew, Latin or a mix;
+deterministic, so no `Math.random` in render) and land with a pop, one after another,
+when you come back to the map; they are marked seen once they land. The turn banner sits below
+the strip, since it measures the whole top block. The row reads
+right to left only when a character is Hebrew or Arabic (`cipherDirection`), so a number code keeps
+its order. The characters reach the browser with the module, so the cipher is a game element, not a
+secret. The maths is in `utils/cipher.ts` and tested.
 
 **Look.** `module.mapDesign = {style, hidden[]}`, set in the activity wizard's step 1 under the
 theme row ("עיצוב מפה", `AdminCreateActivityPage/MapDesignSection.tsx`, with a live preview map).
@@ -1007,27 +1108,39 @@ enums and `sanitizeMapDesign`) and `client/src/utils/mapDesign.ts` (the Google s
 `mapDesign.test.ts` fails if they drift. The untouched default (`standard`, nothing hidden) is
 never stored, so an activity without the field looks exactly as map activities always did.
 The looks are Google's classic JSON `styles` (recolouring roads, water, parks, labels) plus, for
-`vintage`/`wildWest`/`treasure`, a parchment texture (`public/images/map/paper-grain.svg`) and a
-dashed route line. The texture lives **inside** the Google map, in the `mapPane` above the tiles
+`vintage`/`wildWest`/`treasure`, a parchment texture (`public/images/map/paper-grain.svg`). The texture lives **inside** the Google map, in the `mapPane` above the tiles
 and below the pins and route (`utils/mapLookLayer.ts::attachMapLookLayer`, an `OverlayView` that
 re-covers the viewport on every `bounds_changed`), so it tints the streets but never the
 stations. The blend mode is set on the pane itself, not the texture div: panes are stacking
 contexts, so a blended child would only blend with the empty pane. A CSS layer over the whole
 map element would tint the pins too, which is why `MapLookOverlay` is used only for the small
 style swatches, which are not maps. `wildWest` is a grey map under a brown multiply wash (sepia, like an old photo), and
-`blueprint` gets a white drafting grid instead of paper (`grid` overlay, normal blending). Each look has its own bold pin colours (`MapLook.pins: {next, done, me}`), picked to stand out on
-that look's background. Markers are built in `utils/mapPins.ts`, shared by the participant map
-and the admin preview: the next station is a bigger numbered circle (`nextStationMarker`, bounces on
-arrival) with soft waves rippling out from it (`attachPulse`: two staggered rings, one every ~1.8s (three
+`blueprint` gets a white drafting grid instead of paper (`grid` overlay, normal blending). Each look has its own bold pin colours (`MapLook.pins: {next, done}`), picked to stand out on
+that look's background. The "you" marker takes the look's route colour, like Google's blue dot on
+a blue route, and is created with `optimized: false`: an optimised legacy marker is drawn on a
+canvas below the texture pane and came out tinted. While navigating, the arrow sits on a 75% white disc
+(`meHaloIcon`, a second marker) and is anchored at its centre (`ARROW_CENTER_Y`), not its tip,
+so it turns in place. Markers are built in `utils/mapPins.ts`, shared by the participant map
+and the admin preview: the next station is a bigger numbered circle (`nextStationMarker`; on the participant map
+it grows and shrinks on arrival) with soft waves rippling out from it (`attachPulse`: two staggered rings, one every ~1.8s (three
 every 0.8s was too busy),
 each a radial-gradient band with faded edges rather than a hard border, in an `OverlayView` div
 in `overlayLayer` under the markers, animated with the Web Animations API and held still under
 `prefers-reduced-motion`); finished stations are smaller
 numbered circles (`doneStationMarker`); future stations are not drawn. A teardrop location pin
 with a static halo was tried for "next" and rejected as unclear. Pin numbers switch to dark text
-on light pins (`textColorOn`). Stacking order is `PIN_LAYERS`: you > next > done. The route line colour also changes per look. A dashed route also gets `routeOutline`, a wider
-dash in a contrasting colour drawn under the coloured one - on textured, same-toned maps a
-colour alone disappears into the roads.
+on light pins (`textColorOn`). A station can show an uploaded image instead of its number:
+`module.items[].mapIcon`, an image URL (map modules only, on the item, not the Station, for the
+same reason as `location`), uploaded in the item's settings dialog (`MapIconSection`,
+`FileUploadButton`, SVG/PNG/WebP/JPEG). The circle keeps its colour and the image is a second
+marker centred on it (`stationMarkers` returns `[circle, image]`).
+`sanitizeMapIcon` keeps only http(s) links - no `data:` or `javascript:`. Like every item field,
+`mapIcon` is copied by hand in `admin.ts` (save and edit-load) and in all three item branches of
+`GET /:code/module`. The preview keys its pins on icons but its route on coordinates only, so
+changing an icon never refetches the billed route. Stacking order is `PIN_LAYERS`: next > done > you - your arrow passes under station pins and their labels, so standing on a station never hides it. The route line colour also changes per look. Looks with a `routeOutline` (vintage, Wild West, treasure,
+blueprint) draw the route dashed, each dash on a wider dash in the outline colour; the rest draw
+it solid. The outline is there because on textured, same-toned maps a colour alone disappears
+into the roads. Each look keeps its own route colour (tried all-blue, rejected); the line is 8px thick. A dotted Google-style route was tried and rejected by the owner.
 The admin preview draws the walking route through the stations in module order (one
 `DirectionsService` call with the middle stations as waypoints, falling back to straight lines if
 Google finds no route or there are more than 25 waypoints). Directions is billed per call, so the
