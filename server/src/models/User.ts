@@ -9,6 +9,7 @@ export interface IUser {
   role: UserRole;
   googleId?: string;
   name?: string;
+  manageUserId?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,6 +20,7 @@ const userSchema = new Schema<IUser>({
   role: { type: String, required: true, enum: ['viewer', 'admin', 'super_admin', 'customer'], default: 'viewer' },
   googleId: { type: String },
   name: { type: String, trim: true },
+  manageUserId: { type: Schema.Types.ObjectId, ref: 'ManageUser' },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });

@@ -6,12 +6,10 @@ export interface IManageUser {
   _id: Types.ObjectId;
   name: string;
   email: string;
-  passwordHash: string;
   role: ManageRole;
   phone?: string;
   color: string;
   active: boolean;
-  mustChangePassword: boolean;
 
   weeklyCapacityHours: number;
   workDays: number[];
@@ -30,12 +28,10 @@ const manageUserSchema = new Schema<IManageUser>(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    passwordHash: { type: String, required: true },
     role: { type: String, required: true, enum: ['owner', 'pm', 'member'], default: 'member' },
     phone: { type: String, trim: true },
     color: { type: String, default: '#6c5ce7' },
     active: { type: Boolean, default: true },
-    mustChangePassword: { type: Boolean, default: false },
 
     weeklyCapacityHours: { type: Number, default: 40 },
     workDays: { type: [Number], default: [0, 1, 2, 3, 4] },

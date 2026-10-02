@@ -30,12 +30,12 @@ export default function TimeEntryModal({ entry, defaultDate, onClose, onSaved }:
   const [category, setCategory] = useState<TimeCategory>(entry?.category ?? 'client_project');
   const [projectId, setProjectId] = useState(refId(entry?.projectId) ?? '');
   const [note, setNote] = useState(entry?.note ?? '');
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<Pick<Project, '_id' | 'name'>[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    manageApiFetch<{ projects: Project[] }>('/api/manage/projects')
+    manageApiFetch<{ projects: Pick<Project, '_id' | 'name'>[] }>('/api/manage/time/projects')
       .then((r) => setProjects(r.projects))
       .catch(() => setProjects([]));
   }, []);

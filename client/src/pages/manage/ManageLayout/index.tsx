@@ -113,18 +113,6 @@ const UserBox = styled('div')({
 const UserName = styled('div')({ fontWeight: 600 });
 const UserRole = styled('div')({ color: TEXT_LIGHT, fontSize: 12 });
 
-const LogoutButton = styled('button')({
-  marginTop: 6,
-  padding: 0,
-  border: 'none',
-  background: 'none',
-  color: TEXT_LIGHT,
-  fontSize: 12,
-  cursor: 'pointer',
-  fontFamily: 'inherit',
-  '&:hover': { color: PRIMARY },
-});
-
 const Content = styled('div')({
   flex: 1,
   minWidth: 0,
@@ -177,7 +165,7 @@ const Main = styled('main')({
 });
 
 export default function ManageLayout() {
-  const { user, logout, isOwner } = useManageAuth();
+  const { user, isOwner } = useManageAuth();
   const t = useTranslations(texts);
   const nav = useTranslations(navTexts);
   const { pathname } = useLocation();
@@ -215,7 +203,6 @@ export default function ManageLayout() {
         <UserBox>
           <UserName>{user?.name}</UserName>
           <UserRole>{user ? t.roles[user.role] : ''}</UserRole>
-          <LogoutButton onClick={logout}>{t.signOut}</LogoutButton>
         </UserBox>
       </Sidebar>
       <Content>

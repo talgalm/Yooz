@@ -97,7 +97,7 @@ localStorage key. **Never mix them.** All five share one `JWT_SECRET`, so a clai
 | **Participant** | activity code (anonymous) or portal login | n/a | `yooz_token` (+ cookie mirror) | `api.ts` / `AuthContext` |
 | **Manager** | per-activity email + bcrypt password (or Google) | `manager` | `yooz_manager_token` | `managerApi.ts` / `ManagerAuthContext` |
 | **Portal user** | portal code + username/password (bcrypt) | issues a participant token | `yooz_token` | via `PortalPage` |
-| **Manage** (YOOZ Manage, §16) | email + bcrypt password in `mng_users` | `owner`/`pm`/`member` + `realm:'manage'` | `yz_manage_token` | `manageApi.ts` / `ManageAuthContext` |
+| **Manage** (YOOZ Manage, §17) | no login of its own: an **employee**'s admin session is exchanged for it | `owner`/`pm`/`member` + `realm:'manage'` | `yz_manage_token` | `manageApi.ts` / `ManageAuthContext` |
 
 - Middleware: `authenticateAdmin`+`requireRole(...)` (`middleware/adminAuth.ts`),
   `authenticateToken` (participant, `middleware/auth.ts`), `authenticateManager`
@@ -1162,19 +1162,31 @@ profitability, capacity). It has nothing to do with the gamification product exc
 lives in the same repo, process and database. Built from the `yooz-manage-spec/` folder (kept
 outside the repo); "spec ch.NN" comments in the code point into it.
 
-- **Realm**: own users (`ManageUser`, `mng_users`), own JWT (12h, carries `realm:'manage'`),
-  own context (`ManageAuthContext`, `yz_manage_token`), own fetch wrapper (`manageApi.ts`).
-  Login `POST /api/manage/auth/login` (5/min/IP). Roles `owner` > `pm` > `member`.
-  `seedManageUsers()` creates the owner (`MANAGE_OWNER_*`, `tracksTime:false`) and one member
-  (`MANAGE_MEMBER_*`) on first boot; it never touches an existing user.
+- **Realm**: own JWT (12h, carries `realm:'manage'`), own context (`ManageAuthContext`,
+  `yz_manage_token`), own fetch wrapper (`manageApi.ts`). Roles `owner` > `pm` > `member`.
+  **No Manage login**: credentials live only in `users`. An **employee** is a `User` with
+  `manageUserId` (always `super_admin` in the admin panel); `mng_users` holds just the employee
+  profile (Manage role, cost, capacity, colour) that every `mng_*` record points at. Employees
+  are created/deleted in the admin Users tab (`role:'employee'` + `manageRole` →
+  `createEmployeeProfile`); deleting the user deactivates the profile, editing email/name syncs it.
+  `migrateManageLoginsToUsers()` (boot, idempotent) moved the old `mng_users.passwordHash` into
+  `users` — same bcrypt hash, so passwords carried over; a matching email (e.g. admin@yooz.com) is
+  linked and raised to `super_admin` (logged), keeping its admin password. Inactive profiles get no login.
+  Dry run: `npx tsx server/src/scripts/check-employee-links.ts` (read-only).
 - **Collections** (all `mng_*`, models in `server/src/models/manage/`): `ManageUser`,
   `ManageClient` (+ embedded contacts), `ManageInteraction`, `ManageProject` (stages, payment
   milestones, contract, recurring fee, stored `health`), `ManageTask` (checklist, comments,
   watchers, `visibleToAll`), `ManageTimeEntry` (timer or manual, `costRateSnapshot`,
-  `afterProjectClose`, `locked`, `autoStopped`), `ManageExpense`, `ManageChangeRequest`,
+  `afterProjectClose`, `locked`, `autoStopped`), `ManageTravelEntry` (`mng_travel_entries`:
+  per-day travel allowance in ₪, `userId`/`date`/`amount`/`note`), `ManageExpense`, `ManageChangeRequest`,
   `ManageSettings` (singleton: stage template, time categories, alert thresholds, defaults).
 - **Routers** (`routes/manage*.ts`, all under `/api/manage`): `clients`, `projects`, `time`,
   `tasks`, `dashboard`, `calendar`, `finance`, `reports`, `employees`, `settings`.
+  `time/projects` lists every non-archived project (`_id`, `name`) for the hour/timer pickers, so
+  members can log against projects they aren't assigned to (`/projects` stays visibility-scoped).
+  `time/travel` (GET/POST, PATCH/DELETE `/:id`) is the travel allowance: anyone logs their own;
+  only the owner reads others'. `time/month/:month` adds `days[].travel` + `totalTravel`, and
+  employees carry `monthTravel`.
   Owner-only whole routers: **finance, reports, employees, settings**. Clients/projects: edit
   is owner+pm, delete is owner. `time/lock` is owner. Report `profitability_by_client` is owner.
 - **Money never leaves the server for non-owners**: `serializeManageUser` and
@@ -1192,8 +1204,11 @@ outside the repo); "spec ch.NN" comments in the code point into it.
   `dropManageProjectCodeIndex()` removes a legacy unique `code_1` index at boot.
 - **Client**: `pages/manage/*` under `ManageLayout` + `ManageTimerProvider`; menu in
   `pages/manage/nav.ts` (`ownerOnly` there is cosmetic, the server gate is real). Desktop only.
-  The admin dashboard sidebar links to it ("לקוחות", admin/super_admin only); the link is only
-  navigation, since `/manage` still needs its own login.
+  The admin dashboard sidebar links to it ("לקוחות", admin/super_admin only). `ManageProtectedRoute`
+  (`App.tsx`) calls `POST /api/manage/auth/from-admin` (admin JWT) whenever there is no Manage
+  session for the current admin email (also after a 401), which returns a session for the admin's
+  linked `manageUserId`. No admin session → `/admin/login`; not an employee (404) → `/admin/dashboard`.
+  The Employees page edits profiles only; adding people and passwords are in admin → Users.
 
 ---
 
@@ -1448,7 +1463,9 @@ headers). 502 on upstream failure.
 ### `routes/users.ts` — admin user management (`/api/admin/users`, **super_admin only**)
 `GET /` (no passwords), `POST /` (email+role required, unique, bcrypt password),
 `PUT /:id` (**can't demote the last super_admin**), `DELETE /:id` (**can't delete self or the
-last super_admin**). All audit-logged.
+last super_admin**). All audit-logged. `role:'employee'` (+ `manageRole`) on POST/PUT creates a
+Manage profile and stores the user as `super_admin` with `manageUserId`; an employee's role is
+fixed, and email/name edits sync to the profile; delete deactivates it (§17).
 
 ### Folder routers — `routes/{activity,station,game,mission}Folders.ts`
 Identical shape (mounted at `/api/admin/*-folders`, `authenticateAdmin`, customer-scoped):

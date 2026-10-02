@@ -17,12 +17,12 @@ export default function StartTimerModal({ onClose }: { onClose: () => void }) {
   const [category, setCategory] = useState<TimeCategory>('client_project');
   const [projectId, setProjectId] = useState('');
   const [note, setNote] = useState('');
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<Pick<Project, '_id' | 'name'>[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    manageApiFetch<{ projects: Project[] }>('/api/manage/projects')
+    manageApiFetch<{ projects: Pick<Project, '_id' | 'name'>[] }>('/api/manage/time/projects')
       .then((r) => setProjects(r.projects))
       .catch(() => setProjects([]));
   }, []);

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { manageApiFetch } from '../utils/manageApi';
+import { adminApiFetch } from '../utils/adminApi';
 import { decodeJwtPayload } from '../utils/jwt';
 
 export type ManageRole = 'owner' | 'pm' | 'member';
@@ -18,8 +18,7 @@ interface ManageAuthContextType {
   user: ManageUser | null;
   isManageAuthenticated: boolean;
   isOwner: boolean;
-  login: (email: string, password: string, newPassword?: string) => Promise<void>;
-  logout: () => void;
+  loginFromAdmin: () => Promise<void>;
 }
 
 const ManageAuthContext = createContext<ManageAuthContextType | null>(null);
@@ -64,15 +63,17 @@ export function ManageAuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const login = async (email: string, password: string, newPassword?: string) => {
-    const data = await manageApiFetch<{ token: string; user: ManageUser }>('/api/manage/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, newPassword }),
-    });
+  const startSession = (data: { token: string; user: ManageUser }) => {
     localStorage.setItem(TOKEN_KEY, data.token);
     localStorage.setItem(USER_KEY, JSON.stringify(data.user));
     setToken(data.token);
     setUser(data.user);
+  };
+
+  const loginFromAdmin = async () => {
+    startSession(await adminApiFetch<{ token: string; user: ManageUser }>('/api/manage/auth/from-admin', {
+      method: 'POST',
+    }));
   };
 
   useEffect(() => {
@@ -87,8 +88,7 @@ export function ManageAuthProvider({ children }: { children: ReactNode }) {
         user,
         isManageAuthenticated: !!token,
         isOwner: user?.role === 'owner',
-        login,
-        logout: clear,
+        loginFromAdmin,
       }}
     >
       {children}

@@ -1102,7 +1102,7 @@ export const RemoveItemButton = styled('button')({
   '&:hover': { background: '#ffebee' },
 });
 
-export const RoleBadge = styled('span')<{ role: 'viewer' | 'admin' | 'super_admin' | 'customer' }>(({ role }) => ({
+export const RoleBadge = styled('span')<{ role: 'viewer' | 'admin' | 'super_admin' | 'customer' | 'employee' }>(({ role }) => ({
   display: 'inline-block',
   padding: '4px 11px',
   fontSize: 11,
@@ -1110,12 +1110,14 @@ export const RoleBadge = styled('span')<{ role: 'viewer' | 'admin' | 'super_admi
   borderRadius: 999,
   whiteSpace: 'nowrap',
   background:
-    role === 'super_admin' ? '#fde8e8'
+    role === 'employee' ? '#e3f2fd'
+      : role === 'super_admin' ? '#fde8e8'
       : role === 'admin' ? '#e8f5e9'
         : role === 'customer' ? '#fff8e1'
           : '#f0eefa',
   color:
-    role === 'super_admin' ? '#c0392b'
+    role === 'employee' ? '#1565c0'
+      : role === 'super_admin' ? '#c0392b'
       : role === 'admin' ? '#2e7d32'
         : role === 'customer' ? '#e65100'
           : PRIMARY,

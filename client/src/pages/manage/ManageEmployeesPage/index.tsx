@@ -22,6 +22,7 @@ interface Employee {
   color?: string;
   weeklyCapacityHours: number;
   monthHours: number;
+  monthTravel: number;
   email?: string;
   phone?: string;
   hourlyCost?: number;
@@ -50,8 +51,6 @@ export default function ManageEmployeesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState<Employee | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [resetting, setResetting] = useState<Employee | null>(null);
   const [deactivating, setDeactivating] = useState<Employee | null>(null);
 
   const load = useCallback(async () => {
@@ -87,7 +86,6 @@ export default function ManageEmployeesPage() {
     <>
       <PageHeader>
         <SectionTitle>{t.title}</SectionTitle>
-        {isOwner && <Button onClick={() => setCreating(true)}>{t.addEmployee}</Button>}
       </PageHeader>
 
       <Toolbar>
@@ -110,6 +108,7 @@ export default function ManageEmployeesPage() {
                   <th>{t.role}</th>
                   <DesktopHead>{t.capacity}</DesktopHead>
                   <th>{t.monthHours}</th>
+                  <DesktopHead>{t.monthTravel}</DesktopHead>
                   {isOwner && <DesktopHead>{t.effectiveCost}</DesktopHead>}
                   {isOwner && <DesktopHead>{t.monthCost}</DesktopHead>}
                   {isOwner && <th>{t.actions}</th>}
@@ -130,13 +129,13 @@ export default function ManageEmployeesPage() {
                     <td>{t.roles[e.role]}</td>
                     <DesktopCell>{e.weeklyCapacityHours}</DesktopCell>
                     <td><b>{e.monthHours}</b></td>
+                    <DesktopCell>{formatMoney(e.monthTravel ?? 0)}</DesktopCell>
                     {isOwner && <DesktopCell>{formatMoney(e.effectiveHourlyCost ?? 0)}</DesktopCell>}
                     {isOwner && <DesktopCell>{formatMoney(e.monthCost ?? 0)}</DesktopCell>}
                     {isOwner && (
                       <td>
                         <Actions>
                           <LinkButton onClick={() => setEditing(e)}>{t.edit}</LinkButton>
-                          <LinkButton onClick={() => setResetting(e)}>{t.resetPassword}</LinkButton>
                           {e.active && e._id !== user?._id && (
                             <LinkButton onClick={() => setDeactivating(e)}>{t.deactivate}</LinkButton>
                           )}
@@ -152,19 +151,13 @@ export default function ManageEmployeesPage() {
       </Panel>
 
       <Note>{t.deactivateNote}</Note>
+      <Note>{t.addInAdmin}</Note>
 
-      {(creating || editing) && (
+      {editing && (
         <EmployeeModal
-          employee={editing ?? undefined}
-          onClose={() => { setCreating(false); setEditing(null); }}
-          onSaved={() => { setCreating(false); setEditing(null); load(); }}
-        />
-      )}
-      {resetting && (
-        <ResetPasswordModal
-          employee={resetting}
-          onClose={() => setResetting(null)}
-          onSaved={() => setResetting(null)}
+          employee={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); load(); }}
         />
       )}
       {deactivating && (
@@ -181,17 +174,15 @@ export default function ManageEmployeesPage() {
 }
 
 function EmployeeModal({ employee, onClose, onSaved }: {
-  employee?: Employee; onClose: () => void; onSaved: () => void;
+  employee: Employee; onClose: () => void; onSaved: () => void;
 }) {
   const t = useTranslations(texts);
-  const [name, setName] = useState(employee?.name ?? '');
-  const [email, setEmail] = useState(employee?.email ?? '');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState(employee?.role ?? 'member');
-  const [weeklyCapacityHours, setCapacity] = useState(String(employee?.weeklyCapacityHours ?? 40));
-  const [hourlyCost, setHourlyCost] = useState(String(employee?.hourlyCost ?? 0));
-  const [tracksTime, setTracksTime] = useState(employee?.tracksTime ?? true);
-  const [color, setColor] = useState(employee?.color ?? '#6c5ce7');
+  const [name, setName] = useState(employee.name ?? '');
+  const [role, setRole] = useState(employee.role ?? 'member');
+  const [weeklyCapacityHours, setCapacity] = useState(String(employee.weeklyCapacityHours ?? 40));
+  const [hourlyCost, setHourlyCost] = useState(String(employee.hourlyCost ?? 0));
+  const [tracksTime, setTracksTime] = useState(employee.tracksTime ?? true);
+  const [color, setColor] = useState(employee.color ?? '#6c5ce7');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -201,13 +192,12 @@ function EmployeeModal({ employee, onClose, onSaved }: {
     setSaving(true);
     try {
       const body: Record<string, unknown> = {
-        name, email, role, tracksTime, color,
+        name, role, tracksTime, color,
         weeklyCapacityHours: Number(weeklyCapacityHours) || 40,
         hourlyCost: Number(hourlyCost) || 0,
       };
-      if (!employee) body.password = password;
-      await manageApiFetch(employee ? `/api/manage/employees/${employee._id}` : '/api/manage/employees', {
-        method: employee ? 'PATCH' : 'POST',
+      await manageApiFetch(`/api/manage/employees/${employee._id}`, {
+        method: 'PATCH',
         body: JSON.stringify(body),
       });
       onSaved();
@@ -221,7 +211,7 @@ function EmployeeModal({ employee, onClose, onSaved }: {
   return (
     <ModalBackdrop onClick={onClose}>
       <ModalCard onClick={(e) => e.stopPropagation()}>
-        <ModalTitle>{employee ? t.editEmployee : t.addEmployee}</ModalTitle>
+        <ModalTitle>{t.editEmployee}</ModalTitle>
         {error && <ErrorNote>{error}</ErrorNote>}
         <form onSubmit={submit}>
           <FieldGrid>
@@ -229,19 +219,6 @@ function EmployeeModal({ employee, onClose, onSaved }: {
               {t.name}
               <SmallInput value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
             </Field>
-            <Field>
-              {t.email}
-              <SmallInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </Field>
-            {!employee && (
-              <Field>
-                {t.password}
-                <SmallInput
-                  type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                  minLength={8} required autoComplete="new-password"
-                />
-              </Field>
-            )}
             <Field>
               {t.role}
               <SmallSelect value={role} onChange={(e) => setRole(e.target.value as Employee['role'])}>
@@ -275,57 +252,9 @@ function EmployeeModal({ employee, onClose, onSaved }: {
           <Note>{t.tracksTimeNote}</Note>
           <ModalActions>
             <GhostButton type="button" onClick={onClose}>{t.cancel}</GhostButton>
-            <Button type="submit" disabled={saving || !name.trim() || !email.trim()}>
+            <Button type="submit" disabled={saving || !name.trim()}>
               {saving ? t.saving : t.save}
             </Button>
-          </ModalActions>
-        </form>
-      </ModalCard>
-    </ModalBackdrop>
-  );
-}
-
-function ResetPasswordModal({ employee, onClose, onSaved }: {
-  employee: Employee; onClose: () => void; onSaved: () => void;
-}) {
-  const t = useTranslations(texts);
-  const [password, setPassword] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSaving(true);
-    try {
-      await manageApiFetch(`/api/manage/employees/${employee._id}/reset-password`, {
-        method: 'POST', body: JSON.stringify({ password }),
-      });
-      onSaved();
-    } catch (err) {
-      const code = err instanceof Error ? err.message : '';
-      setError(t.errors[code as keyof typeof t.errors] ?? code);
-      setSaving(false);
-    }
-  };
-
-  return (
-    <ModalBackdrop onClick={onClose}>
-      <ModalCard onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
-        <ModalTitle>{t.resetPassword} — {employee.name}</ModalTitle>
-        {error && <ErrorNote>{error}</ErrorNote>}
-        <form onSubmit={submit}>
-          <Field>
-            {t.newPassword}
-            <SmallInput
-              type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-              minLength={8} required autoFocus autoComplete="new-password"
-            />
-          </Field>
-          <Note>{t.passwordNote}</Note>
-          <ModalActions>
-            <GhostButton type="button" onClick={onClose}>{t.cancel}</GhostButton>
-            <Button type="submit" disabled={saving || password.length < 8}>{saving ? t.saving : t.save}</Button>
           </ModalActions>
         </form>
       </ModalCard>

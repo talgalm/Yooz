@@ -7,7 +7,7 @@ import MonthSheet from '../MonthSheet';
 import { useManageTimer } from '../TimerContext';
 import { Table } from '../../../components/styled';
 import {
-  TimeEntry, TeamMember, TIME_CATEGORIES, refName, formatDate,
+  TimeEntry, TravelEntry, TeamMember, TIME_CATEGORIES, refName, formatDate, formatMoney,
 } from '../manageTypes';
 import { formatHours } from '../duration';
 import {
@@ -30,6 +30,7 @@ export default function ManageHoursPage() {
   const [personId, setPersonId] = useState('');
   const [category, setCategory] = useState('');
   const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [travel, setTravel] = useState<TravelEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -48,18 +49,27 @@ export default function ManageHoursPage() {
       const params = new URLSearchParams();
       if (personId) params.set('userId', personId);
       if (category) params.set('category', category);
-      const r = await manageApiFetch<{ entries: TimeEntry[] }>(`/api/manage/time?${params}`);
+      const travelParams = new URLSearchParams(personId ? { userId: personId } : {});
+      const [r, tr] = await Promise.all([
+        manageApiFetch<{ entries: TimeEntry[] }>(`/api/manage/time?${params}`),
+        user?.role === 'owner' || !personId || personId === user?._id
+          ? manageApiFetch<{ entries: TravelEntry[] }>(`/api/manage/time/travel?${travelParams}`)
+          : Promise.resolve({ entries: [] as TravelEntry[] }),
+      ]);
       setEntries(r.entries);
+      setTravel(tr.entries);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed');
     } finally {
       setLoading(false);
     }
-  }, [view, personId, category]);
+  }, [view, personId, category, user]);
 
   useEffect(() => { loadList(); }, [loadList, version]);
 
   const total = entries.reduce((a, e) => a + e.minutes, 0);
+  const travelTotal = travel.reduce((a, e) => a + e.amount, 0);
+  const showTravelPerson = user?.role === 'owner';
 
   return (
     <>
@@ -134,6 +144,43 @@ export default function ManageHoursPage() {
                     <td style={{ background: '#faf9fd' }} />
                     <DesktopCell style={{ background: '#faf9fd' }} />
                     {canSeeOthers && <DesktopCell style={{ background: '#faf9fd' }} />}
+                    <DesktopCell style={{ background: '#faf9fd' }} />
+                  </tr>
+                </tbody>
+              </Table>
+            </TableScroll>
+          )}
+        </Panel>
+      )}
+
+      {view === 'list' && !loading && (
+        <Panel style={{ marginTop: 16 }}>
+          {travel.length === 0 ? (
+            <EmptyState>{t.noTravel}</EmptyState>
+          ) : (
+            <TableScroll>
+              <Table>
+                <thead>
+                  <tr>
+                    <th>{t.date}</th>
+                    <th>{t.travel}</th>
+                    {showTravelPerson && <DesktopHead>{t.person}</DesktopHead>}
+                    <DesktopHead>{t.note}</DesktopHead>
+                  </tr>
+                </thead>
+                <tbody>
+                  {travel.map((e) => (
+                    <tr key={e._id} style={{ cursor: 'default' }}>
+                      <td>{formatDate(e.date)}</td>
+                      <td><b>{formatMoney(e.amount)}</b></td>
+                      {showTravelPerson && <DesktopCell>{refName(e.userId) ?? '—'}</DesktopCell>}
+                      <DesktopCell>{e.note ?? '—'}</DesktopCell>
+                    </tr>
+                  ))}
+                  <tr style={{ cursor: 'default' }}>
+                    <td style={{ fontWeight: 700, background: '#faf9fd' }}>{t.total}</td>
+                    <td style={{ fontWeight: 700, background: '#faf9fd' }}>{formatMoney(travelTotal)}</td>
+                    {showTravelPerson && <DesktopCell style={{ background: '#faf9fd' }} />}
                     <DesktopCell style={{ background: '#faf9fd' }} />
                   </tr>
                 </tbody>

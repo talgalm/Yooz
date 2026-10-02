@@ -46,6 +46,14 @@ export const texts = {
     locked: 'נעול',
     ownerNoTrack: 'בעל העסק אינו מדווח שעות, ולכן אין כאן טיימר.',
 
+    travel: 'נסיעות',
+    addTravel: 'דיווח נסיעות',
+    editTravel: 'עריכת נסיעות',
+    amount: 'סכום (₪)',
+    totalTravel: 'נסיעות החודש',
+    noTravel: 'אין דיווחי נסיעות.',
+    confirmDeleteTravel: 'למחוק את דיווח הנסיעות?',
+
     days: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'],
     categories: {
       client_project: 'פרויקט לקוח',
@@ -68,6 +76,8 @@ export const texts = {
       entry_locked: 'החודש נעול. רק בעל העסק יכול לשנות.',
       not_your_entry: 'אפשר לערוך רק דיווחים שלך.',
       no_running_timer: 'אין טיימר פועל.',
+      amount_must_be_positive: 'צריך להזין סכום חיובי.',
+      invalid_date: 'תאריך לא תקין.',
     },
   },
   en: {
@@ -117,6 +127,14 @@ export const texts = {
     locked: 'Locked',
     ownerNoTrack: 'The owner does not report hours, so there is no timer here.',
 
+    travel: 'Travel',
+    addTravel: 'Log travel',
+    editTravel: 'Edit travel',
+    amount: 'Amount (₪)',
+    totalTravel: 'Travel this month',
+    noTravel: 'No travel logged.',
+    confirmDeleteTravel: 'Delete this travel entry?',
+
     days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
     categories: {
       client_project: 'Client project',
@@ -139,6 +157,8 @@ export const texts = {
       entry_locked: 'The month is locked. Only the owner can change it.',
       not_your_entry: 'You can only edit your own entries.',
       no_running_timer: 'No timer is running.',
+      amount_must_be_positive: 'Enter a positive amount.',
+      invalid_date: 'Invalid date.',
     },
   },
 };

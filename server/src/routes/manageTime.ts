@@ -5,6 +5,7 @@ import {
   TimeEntry, TIME_CATEGORIES, TimeCategory,
 } from '../models/manage/TimeEntry';
 import { Project } from '../models/manage/Project';
+import { TravelEntry } from '../models/manage/TravelEntry';
 import { ManageUser, effectiveHourlyCost } from '../models/manage/ManageUser';
 import { round2 } from '../services/manageMetrics';
 import { getSettings, categoriesRequiringProject } from '../services/manageSettings';
@@ -110,6 +111,87 @@ router.get('/categories', async (_req: Request, res: Response) => {
     categories: settings.timeCategories,
     requiringProject: settings.timeCategories.filter((c) => c.requiresProject).map((c) => c.key),
   });
+});
+
+router.get('/projects', async (_req: Request, res: Response) => {
+  const projects = await Project.find({ archived: { $ne: true } }).select('name').sort({ name: 1 }).lean();
+  res.json({ projects });
+});
+
+function travelUserId(req: Request, requested?: string): string | null {
+  const { role, userId } = req.manageUser!;
+  if (role !== 'owner') return userId;
+  if (requested && Types.ObjectId.isValid(requested)) return requested;
+  return null;
+}
+
+function parseTravel(body: Record<string, unknown>): { date: Date; amount: number; note?: string } | { error: string } {
+  const date = body.date ? toLocalMidnight(body.date as string) : toLocalMidnight(new Date());
+  if (Number.isNaN(date.getTime())) return { error: 'invalid_date' };
+  if (date.getTime() > endOfDay(new Date()).getTime()) return { error: 'future_date' };
+  const amount = Number(body.amount);
+  if (!Number.isFinite(amount) || amount <= 0) return { error: 'amount_must_be_positive' };
+  return { date, amount: round2(amount), note: typeof body.note === 'string' ? body.note.trim() : undefined };
+}
+
+router.get('/travel', async (req: Request, res: Response) => {
+  const { from, to, userId } = req.query as Record<string, string | undefined>;
+  const filter: Record<string, unknown> = {};
+  const scoped = travelUserId(req, userId);
+  if (scoped) filter.userId = scoped;
+  if (from || to) {
+    const range: Record<string, Date> = {};
+    if (from) range.$gte = toLocalMidnight(from);
+    if (to) range.$lte = endOfDay(toLocalMidnight(to));
+    filter.date = range;
+  }
+  const entries = await TravelEntry.find(filter).sort({ date: -1, createdAt: -1 })
+    .populate('userId', 'name color').lean();
+  res.json({ entries });
+});
+
+router.post('/travel', async (req: Request, res: Response) => {
+  const parsed = parseTravel((req.body ?? {}) as Record<string, unknown>);
+  if ('error' in parsed) {
+    res.status(400).json(parsed);
+    return;
+  }
+  const entry = await TravelEntry.create({ ...parsed, userId: req.manageUser!.userId });
+  res.status(201).json({ entry });
+});
+
+async function ownTravelEntry(req: Request, res: Response) {
+  if (badId(res, String(req.params.id))) return null;
+  const entry = await TravelEntry.findById(String(req.params.id));
+  if (!entry) {
+    res.status(404).json({ error: 'not_found' });
+    return null;
+  }
+  if (String(entry.userId) !== req.manageUser!.userId && req.manageUser!.role !== 'owner') {
+    res.status(403).json({ error: 'not_your_entry' });
+    return null;
+  }
+  return entry;
+}
+
+router.patch('/travel/:id', async (req: Request, res: Response) => {
+  const entry = await ownTravelEntry(req, res);
+  if (!entry) return;
+  const parsed = parseTravel({ date: entry.date, amount: entry.amount, note: entry.note, ...req.body });
+  if ('error' in parsed) {
+    res.status(400).json(parsed);
+    return;
+  }
+  entry.set(parsed);
+  await entry.save();
+  res.json({ entry });
+});
+
+router.delete('/travel/:id', async (req: Request, res: Response) => {
+  const entry = await ownTravelEntry(req, res);
+  if (!entry) return;
+  await entry.deleteOne();
+  res.json({ ok: true });
 });
 
 router.get('/timer', async (req: Request, res: Response) => {
@@ -377,7 +459,12 @@ router.get('/month/:month', async (req: Request, res: Response) => {
     date: { $gte: start, $lte: endOfDay(end) },
   }).sort({ date: 1, createdAt: 1 }).populate('projectId', 'name').lean();
 
-  const days: { date: string; minutes: number; entries: unknown[] }[] = [];
+  const travelUser = travelUserId(req, userId) ?? req.manageUser!.userId;
+  const travel = travelUser === String(userId)
+    ? await TravelEntry.find({ userId, date: { $gte: start, $lte: endOfDay(end) } }).sort({ createdAt: 1 }).lean()
+    : [];
+
+  const days: { date: string; minutes: number; entries: unknown[]; travel: unknown[] }[] = [];
   for (let d = 1; d <= end.getDate(); d++) {
     const day = new Date(year, monthIndex, d);
     const dayEntries = entries.filter((e) => toLocalMidnight(e.date).getTime() === day.getTime());
@@ -385,6 +472,7 @@ router.get('/month/:month', async (req: Request, res: Response) => {
       date: day.toISOString(),
       minutes: dayEntries.reduce((a, e) => a + e.minutes, 0),
       entries: dayEntries.map((e) => serializeTimeEntry(e, req.manageUser!.role)),
+      travel: travel.filter((e) => toLocalMidnight(e.date).getTime() === day.getTime()),
     });
   }
 
@@ -394,6 +482,7 @@ router.get('/month/:month', async (req: Request, res: Response) => {
     days,
     totalMinutes: days.reduce((a, d) => a + d.minutes, 0),
     daysWorked: days.filter((d) => d.minutes > 0).length,
+    totalTravel: round2(travel.reduce((a, e) => a + e.amount, 0)),
   });
 });
 
