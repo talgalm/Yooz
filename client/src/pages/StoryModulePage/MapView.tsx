@@ -19,7 +19,7 @@ import { PIN_LAYERS, attachPulse, attachUprightPin, meHaloIcon, meMarkerIcon, st
 import { attachMapLookLayer } from '../../utils/mapLookLayer';
 import { maneuverDirection, nextTurn, offRouteMeters, remainingWalk, type WalkRoute } from '../../utils/walkNavigation';
 import { useTranslations } from '../../context/LanguageContext';
-import { opensRightAfter, placeGroupEnd, placeOf } from '../../utils/mapChain';
+import { laterAtSamePlace, opensRightAfter, placeGroupEnd, placeOf } from '../../utils/mapChain';
 import { useCompassHeading } from '../../hooks/useCompassHeading';
 import { texts } from './MapView.i18n';
 import { CheckMark, CompassNeedle, DirectionArrow, LocateArrow } from './MapView.icons';
@@ -486,6 +486,7 @@ export default function MapView({
     const pins = items.flatMap((item, i) => {
       const isNext = i === currentItemIndex;
       if (!isNext && opensRightAfter(items, i)) return [];
+      if (!isNext && laterAtSamePlace(items, i, currentItemIndex)) return [];
       const where = item.location ?? (isNext ? placeOf(items, i) : undefined);
       if (!where) return [];
       const groupEnd = isNext ? i : placeGroupEnd(items, i);
