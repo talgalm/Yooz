@@ -605,7 +605,11 @@ hand-rolled (HTML5 drag API + tap-to-swap touch fallback) — no dnd library.
   `client/public/assets/games/ballgame/`).
 - **Puzzle**: slide/drag puzzle over an image + optional per-question timer + speed bonus.
   `components/games/PuzzleGame/`.
-- **True/False**: per-statement countdown, correctPts/wrongPenalty. `components/games/TrueFalseGame/`.
+- **True/False**: `statements:{text, isTrue, media?, instruction?}[]`, `scoring:{correctPoints, wrongPenalty,
+  timeLimitSeconds}` - `timeLimitSeconds: 0` means no time limit (no timer, no timeout), like trivia. The play
+  screen stacks a small timer badge at the top, the statement with its optional `instruction` under it in the
+  same card, then the image filling the space left above the true/false buttons (it was a thumbnail under a
+  big timer circle). `components/games/TrueFalseGame/`.
 - **Trash Sort**: sort falling items into correct bins (also embedded in Missions).
   `components/games/TrashSortGame/`.
 
@@ -914,7 +918,7 @@ present view (`OrderSurveyPresentPage` / `manager/present`).
   return **410**.
 - **Customers can view reports** (Statistics tab) scoped to their own/managed activities (§7);
   audit log stays admin-only.
-- **Video stations gate Continue** until the video ends (§10); iframes exempt. A bottom-left "skip the video" button (`SkipVideoButton`, PlayingPhase) bypasses the gate.
+- **Video stations gate Continue** until the video ends (§10); iframes exempt. A bottom-left "skip the video" button (`SkipVideoButton`, PlayingPhase) bypasses the gate. `settings.mustWatchToEnd: false` (admin toggle "חובה לצפות בסרטון עד הסוף כדי להמשיך", default on) drops the gate, and `settings.continueButtonText` replaces "המשך" on the green button - both translated with the rest of the station's prose. The locked label stays the translated "watch to the end" string.
 - **Per-item re-entry** (§11) — completed roadmap items flagged `revisitable` stay open and are
   tinted brighter than locked-behind ones; revisits never re-score.
 - Collage encode is the main scaling pressure point (Lambda + load shedding + boot recovery).

@@ -49,6 +49,7 @@ export interface PuzzleScoring {
 
 export interface TrueFalseStatement {
   text: string;
+  instruction: string;
   media: string;
   isTrue: boolean;
 }

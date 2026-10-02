@@ -24,9 +24,9 @@ import {
   TFProgressBadge,
   QuestionBanner,
   QuestionBannerText,
-  TimerCircleWrapper,
-  TimerCircle,
-  TimerCircleNumber,
+  StatementInstruction,
+  TFTimerBadge,
+  NatureSpacer,
   NatureButtonRow,
   WrongButton,
   CorrectButton,
@@ -99,6 +99,7 @@ interface TrueFalseStatement {
   text: string;
   isTrue: boolean;
   media?: string;
+  instruction?: string;
 }
 
 interface TrueFalseScoring {
@@ -165,6 +166,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
   const questionStartTime = useRef(Date.now());
 
   const scoring = settings.scoring || { correctPoints: 10, wrongPenalty: 0, timeLimitSeconds: 10 };
+  const timed = scoring.timeLimitSeconds > 0;
   const feedbackDuration = settings.feedbackDurationMs || GAME_CONSTANTS.FEEDBACK_DURATION_MS;
 
   const statements = settings.statements || [];
@@ -272,7 +274,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
   }, [scoring.timeLimitSeconds]);
 
   useEffect(() => {
-    if (countdown !== null || showInstructions || gameComplete || answered) return;
+    if (!timed || countdown !== null || showInstructions || gameComplete || answered) return;
     if (timeLeft <= 0) return;
 
     timerRef.current = setInterval(() => {
@@ -291,7 +293,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
   }, [countdown, showInstructions, gameComplete, answered, timeLeft <= 0]);
 
   useEffect(() => {
-    if (timeLeft === 0 && !answered && countdown === null && !showInstructions && !gameComplete) {
+    if (timed && timeLeft === 0 && !answered && countdown === null && !showInstructions && !gameComplete) {
       handleAnswer(null);
     }
   }, [timeLeft, answered, countdown, showInstructions, gameComplete]);
@@ -450,7 +452,7 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
               {settings.instructions?.trim() ? (
                 <IntroDescCustom>{settings.instructions.trim()}</IntroDescCustom>
               ) : (
-                t.defaultInstructionLines.map((line, i) => (
+                (timed ? t.defaultInstructionLines : t.defaultInstructionLinesUntimed).map((line, i) => (
                   <IntroDescLine key={i}>{line}</IntroDescLine>
                 ))
               )}
@@ -540,11 +542,20 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
         </TFHeaderRight>
       </TFHeader>
 
+      {timed && (
+        <TFTimerBadge critical={timerCritical} role="timer" aria-label={`${t.timeLeft}: ${timeLeft}`}>
+          {timeLeft}
+        </TFTimerBadge>
+      )}
+
       <QuestionBanner key={currentIndex}>
         <QuestionBannerText>{statement.text}</QuestionBannerText>
+        {statement.instruction?.trim() && (
+          <StatementInstruction>{statement.instruction.trim()}</StatementInstruction>
+        )}
       </QuestionBanner>
 
-      {statement.media && (
+      {statement.media ? (
         <NatureMediaContainer>
           <NatureMediaImage
             src={statement.media}
@@ -552,6 +563,8 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
             onClick={() => setZoomedImageUrl(statement.media!)}
           />
         </NatureMediaContainer>
+      ) : (
+        <NatureSpacer aria-hidden />
       )}
 
       {zoomedImageUrl && createPortal(
@@ -619,12 +632,6 @@ export default function TrueFalseGame({ game, onComplete }: GameProps) {
           />
         </div>
       )}
-
-      <TimerCircleWrapper>
-        <TimerCircle critical={timerCritical}>
-          <TimerCircleNumber critical={timerCritical}>{timeLeft}</TimerCircleNumber>
-        </TimerCircle>
-      </TimerCircleWrapper>
 
       {showFeedback &&
         typeof document !== 'undefined' &&

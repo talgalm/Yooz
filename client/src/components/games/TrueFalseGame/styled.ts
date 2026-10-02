@@ -6,7 +6,6 @@ const TIMER_RED = '#c0392b';
 
 const TIMER_PURPLE_FILL = '#8E24AA';
 const TIMER_PURPLE_BORDER = '#4A148C';
-const TIMER_NUMBER_STROKE = '#000000';
 
 const HILL_1 = '#9dbb76';
 const HILL_2 = '#8dae63';
@@ -154,7 +153,7 @@ export const QuestionBanner = styled('div')({
   position: 'relative',
   zIndex: 2,
   overflow: 'hidden',
-  marginTop: 'clamp(14px, 4vw, 22px)',
+  marginTop: 'clamp(10px, 3vw, 16px)',
   boxSizing: 'border-box',
   animation: `${slideUp} 0.3s ease-out`,
   flexShrink: 1,
@@ -174,46 +173,42 @@ export const QuestionBannerText = styled('p')({
   whiteSpace: 'pre-wrap',
 });
 
-export const TimerCircleWrapper = styled('div')({
+export const TFTimerBadge = styled('div')<{ critical?: boolean }>(({ critical }) => ({
+  minWidth: 38,
+  height: 38,
+  padding: '0 8px',
+  boxSizing: 'border-box',
+  borderRadius: 19,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  position: 'relative',
-  zIndex: 1,
-  flex: '1 0 auto',
-  minHeight: 'clamp(150px, 28vh, 200px)',
-  width: '100%',
-  transform: 'translateY(clamp(-28px, -5.5vh, -10px))',
+  backgroundColor: critical ? '#b71c1c' : TIMER_PURPLE_FILL,
+  border: `3px solid ${critical ? '#5c0a0a' : TIMER_PURPLE_BORDER}`,
+  color: WHITE,
+  fontFamily: TF_FONT_FAMILY,
+  fontSize: 18,
+  fontWeight: 700,
+  lineHeight: 1,
+  fontVariantNumeric: 'tabular-nums',
+  transition: 'background-color 0.3s ease, border-color 0.3s ease',
+}));
+
+export const StatementInstruction = styled('p')({
+  margin: '8px 0 0',
+  paddingTop: 8,
+  borderTop: `1px solid rgba(74, 20, 140, 0.18)`,
+  fontFamily: TF_FONT_FAMILY,
+  fontSize: 14,
+  fontWeight: 500,
+  lineHeight: 1.35,
+  color: 'rgba(74, 20, 140, 0.8)',
+  whiteSpace: 'pre-wrap',
 });
 
-export const TimerCircle = styled('div')<{ critical?: boolean }>(({ critical }) => ({
-  width: 'clamp(150px, 28vh, 200px)',
-  aspectRatio: '1 / 1',
-  backgroundColor: critical ? '#b71c1c' : TIMER_PURPLE_FILL,
-  borderRadius: '50%',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  border: critical
-    ? `clamp(8px, 1.8vw, 14px) solid #5c0a0a`
-    : `clamp(8px, 1.8vw, 14px) solid ${TIMER_PURPLE_BORDER}`,
-  boxSizing: 'border-box',
-  boxShadow: critical
-    ? '0 4px 0 rgba(0,0,0,0.2)'
-    : '0 4px 0 rgba(0,0,0,0.15)',
-  transition: 'background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
-}));
-
-export const TimerCircleNumber = styled('span')<{ critical?: boolean }>(({ critical }) => ({
-  fontFamily: TF_FONT_FAMILY,
-  fontSize: 'clamp(64px, 12vh, 92px)',
-  fontWeight: 400,
-  color: WHITE,
-  WebkitTextStroke: `clamp(2px, 0.35vw, 3px) ${critical ? '#3d0a0a' : TIMER_NUMBER_STROKE}`,
-  paintOrder: 'stroke fill',
-  lineHeight: 1,
-  transition: 'color 0.3s ease, -webkit-text-stroke 0.3s ease',
-}));
+export const NatureSpacer = styled('div')({
+  flex: '1 1 0',
+  minHeight: 12,
+});
 
 export const NatureButtonRow = styled('div')({
   display: 'flex',
@@ -384,24 +379,30 @@ export const NatureCountdownNumber = styled('div')({
 });
 
 export const NatureMediaContainer = styled('div')({
-  textAlign: 'center',
   position: 'relative',
   zIndex: 1,
-  flexShrink: 1,
+  flex: '1 1 0',
   minHeight: 0,
-  overflow: 'hidden',
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '10px 0',
+  boxSizing: 'border-box',
 });
 
 export const NatureMediaImage = styled('img')({
+  display: 'block',
   maxWidth: '100%',
-  maxHeight: 'clamp(72px, 12vh, 100px)',
-  borderRadius: 12,
+  maxHeight: '100%',
+  borderRadius: 16,
   objectFit: 'contain',
-  border: '3px solid rgba(255,255,255,0.3)',
+  border: '3px solid rgba(255,255,255,0.45)',
+  boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+  boxSizing: 'border-box',
   cursor: 'zoom-in',
   '@media (min-width: 768px)': {
-    maxWidth: 'min(420px, 40vw)',
-    maxHeight: 'min(36vh, 320px)',
+    maxWidth: 'min(520px, 100%)',
   },
 });
 
