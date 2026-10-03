@@ -605,7 +605,13 @@ hand-rolled (HTML5 drag API + tap-to-swap touch fallback) — no dnd library.
   `client/public/assets/games/ballgame/`).
 - **Puzzle**: slide/drag puzzle over an image + optional per-question timer + speed bonus.
   `components/games/PuzzleGame/`.
-- **True/False**: per-statement countdown, correctPts/wrongPenalty. `components/games/TrueFalseGame/`.
+- **True/False**: `statements:{text, isTrue, media?, instruction?}[]`, `scoring:{correctPoints, wrongPenalty,
+  timeLimitSeconds}` - `timeLimitSeconds: 0` means no time limit (no timer, no timeout), like trivia. The play
+  screen stacks a small timer badge at the top, the statement with its optional `instruction` under it in the
+  same card, then the image filling the space left above the true/false buttons (it was a thumbnail under a
+  big timer circle). Without an image the timer and a bigger statement card sit centred in that space with a
+  "נכון או לא נכון?" prompt under them (`StatementStage`), since the top-aligned card left the middle empty.
+  `components/games/TrueFalseGame/`.
 - **Trash Sort**: sort falling items into correct bins (also embedded in Missions).
   `components/games/TrashSortGame/`.
 
@@ -914,7 +920,7 @@ present view (`OrderSurveyPresentPage` / `manager/present`).
   return **410**.
 - **Customers can view reports** (Statistics tab) scoped to their own/managed activities (§7);
   audit log stays admin-only.
-- **Video stations gate Continue** until the video ends (§10); iframes exempt. A bottom-left "skip the video" button (`SkipVideoButton`, PlayingPhase) bypasses the gate.
+- **Video stations gate Continue** until the video ends (§10); iframes exempt. A bottom-left "skip the video" button (`SkipVideoButton`, PlayingPhase) bypasses the gate. `settings.mustWatchToEnd: false` (admin toggle "חובה לצפות בסרטון עד הסוף כדי להמשיך", default on) drops the gate, and `settings.continueButtonText` replaces "המשך" on the green button - both translated with the rest of the station's prose. The locked label stays the translated "watch to the end" string.
 - **Per-item re-entry** (§11) — completed roadmap items flagged `revisitable` stay open and are
   tinted brighter than locked-behind ones; revisits never re-score.
 - Collage encode is the main scaling pressure point (Lambda + load shedding + boot recovery).
@@ -981,7 +987,9 @@ straight to the next station without passing the map, unless the manager lock co
 `PlayingPhase` is keyed by item index so the new station mounts fresh) and has no pin of its own; only the first
 station of a place is walked to. Once every station of a place is done (`placeGroupEnd`), its pin reads
 the range ("1-3", a pill as tall as the next-station circle) with a "3 תחנות" label under it; the next
-station always shows only its own number. A station with no location uses that place (`placeOf`). A station without a
+station always shows only its own number. While the next station is a later station of a place (back on the map
+mid-place after a reload, or behind the manager lock), that place's done first station gets no pin of its own
+(`laterAtSamePlace`), so the two names never stack. A station with no location uses that place (`placeOf`). A station without a
 location inherits the last location **before** it, never after, and the item list tags it in
 blue "מיקום של תחנה N". So the first station must have one: the admin blocks moving on and
 saving while it has none (`mapUnplacedStart`), and tags every station with nothing to inherit

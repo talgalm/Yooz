@@ -6,7 +6,6 @@ const TIMER_RED = '#c0392b';
 
 const TIMER_PURPLE_FILL = '#8E24AA';
 const TIMER_PURPLE_BORDER = '#4A148C';
-const TIMER_NUMBER_STROKE = '#000000';
 
 const HILL_1 = '#9dbb76';
 const HILL_2 = '#8dae63';
@@ -138,13 +137,17 @@ const LEAF_BANNER_DARK = FINISH_PURPLE_DARK;
 const INTRO_DESC_PURPLE = '#4a148c';
 const INTRO_DESC_PANEL_BG = '#f8f8ff';
 
-export const QuestionBanner = styled('div')({
+const noForward = { shouldForwardProp: (prop: PropertyKey) => !String(prop).startsWith('$') };
+
+export const QuestionBanner = styled('div', noForward)<{ $roomy?: boolean }>(({ $roomy }) => ({
   width: '100%',
   backgroundColor: INTRO_DESC_PANEL_BG,
   color: INTRO_DESC_PURPLE,
   textAlign: 'center',
-  padding: 'clamp(14px, 3.8vw, 22px) clamp(18px, 4.5vw, 24px)',
-  borderRadius: 22,
+  padding: $roomy
+    ? 'clamp(24px, 7vw, 36px) clamp(20px, 5.5vw, 30px)'
+    : 'clamp(14px, 3.8vw, 22px) clamp(18px, 4.5vw, 24px)',
+  borderRadius: $roomy ? 26 : 22,
   lineHeight: 1.25,
   border: `2px solid ${INTRO_DESC_PURPLE}`,
   boxShadow: `
@@ -154,66 +157,82 @@ export const QuestionBanner = styled('div')({
   position: 'relative',
   zIndex: 2,
   overflow: 'hidden',
-  marginTop: 'clamp(14px, 4vw, 22px)',
+  marginTop: $roomy ? 0 : 'clamp(10px, 3vw, 16px)',
   boxSizing: 'border-box',
   animation: `${slideUp} 0.3s ease-out`,
   flexShrink: 1,
   minHeight: 0,
-});
+}));
 
-export const QuestionBannerText = styled('p')({
+export const QuestionBannerText = styled('p', noForward)<{ $roomy?: boolean }>(({ $roomy }) => ({
   margin: 0,
   fontFamily: TF_FONT_FAMILY,
-  fontSize: 'clamp(16px, 3.25vw, 16px)',
-  fontWeight: 600,
-  lineHeight: 1.25,
+  fontSize: $roomy ? 'clamp(20px, 5.6vw, 25px)' : 'clamp(16px, 3.25vw, 16px)',
+  fontWeight: $roomy ? 700 : 600,
+  lineHeight: $roomy ? 1.3 : 1.25,
   color: INTRO_DESC_PURPLE,
   letterSpacing: '0.01em',
   position: 'relative',
   zIndex: 1,
   whiteSpace: 'pre-wrap',
-});
+}));
 
-export const TimerCircleWrapper = styled('div')({
+export const TFTimerBadge = styled('div')<{ critical?: boolean }>(({ critical }) => ({
+  minWidth: 38,
+  height: 38,
+  padding: '0 8px',
+  boxSizing: 'border-box',
+  borderRadius: 19,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  backgroundColor: critical ? '#b71c1c' : TIMER_PURPLE_FILL,
+  border: `3px solid ${critical ? '#5c0a0a' : TIMER_PURPLE_BORDER}`,
+  color: WHITE,
+  fontFamily: TF_FONT_FAMILY,
+  fontSize: 18,
+  fontWeight: 700,
+  lineHeight: 1,
+  fontVariantNumeric: 'tabular-nums',
+  transition: 'background-color 0.3s ease, border-color 0.3s ease',
+}));
+
+export const StatementInstruction = styled('p', noForward)<{ $roomy?: boolean }>(({ $roomy }) => ({
+  margin: $roomy ? '14px 0 0' : '8px 0 0',
+  paddingTop: $roomy ? 12 : 8,
+  borderTop: `1px solid rgba(74, 20, 140, 0.18)`,
+  fontFamily: TF_FONT_FAMILY,
+  fontSize: $roomy ? 16 : 14,
+  fontWeight: 500,
+  lineHeight: 1.35,
+  color: 'rgba(74, 20, 140, 0.8)',
+  whiteSpace: 'pre-wrap',
+}));
+
+export const StatementStage = styled('div', noForward)<{ $centered: boolean }>(({ $centered }) => ({
   position: 'relative',
   zIndex: 1,
-  flex: '1 0 auto',
-  minHeight: 'clamp(150px, 28vh, 200px)',
+  flex: '1 1 0',
+  minHeight: 0,
   width: '100%',
-  transform: 'translateY(clamp(-28px, -5.5vh, -10px))',
-});
-
-export const TimerCircle = styled('div')<{ critical?: boolean }>(({ critical }) => ({
-  width: 'clamp(150px, 28vh, 200px)',
-  aspectRatio: '1 / 1',
-  backgroundColor: critical ? '#b71c1c' : TIMER_PURPLE_FILL,
-  borderRadius: '50%',
   display: 'flex',
-  justifyContent: 'center',
+  flexDirection: 'column',
   alignItems: 'center',
-  border: critical
-    ? `clamp(8px, 1.8vw, 14px) solid #5c0a0a`
-    : `clamp(8px, 1.8vw, 14px) solid ${TIMER_PURPLE_BORDER}`,
+  justifyContent: $centered ? 'center' : 'flex-start',
+  gap: $centered ? 14 : 8,
+  paddingBottom: $centered ? 'clamp(8px, 3vh, 28px)' : 0,
   boxSizing: 'border-box',
-  boxShadow: critical
-    ? '0 4px 0 rgba(0,0,0,0.2)'
-    : '0 4px 0 rgba(0,0,0,0.15)',
-  transition: 'background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
 }));
 
-export const TimerCircleNumber = styled('span')<{ critical?: boolean }>(({ critical }) => ({
+export const TrueOrFalsePrompt = styled('div')({
   fontFamily: TF_FONT_FAMILY,
-  fontSize: 'clamp(64px, 12vh, 92px)',
-  fontWeight: 400,
+  fontSize: 17,
+  fontWeight: 700,
   color: WHITE,
-  WebkitTextStroke: `clamp(2px, 0.35vw, 3px) ${critical ? '#3d0a0a' : TIMER_NUMBER_STROKE}`,
-  paintOrder: 'stroke fill',
-  lineHeight: 1,
-  transition: 'color 0.3s ease, -webkit-text-stroke 0.3s ease',
-}));
+  letterSpacing: '0.02em',
+  textShadow: '0 2px 8px rgba(0,0,0,0.35)',
+  animation: `${slideUp} 0.3s ease-out 0.1s both`,
+});
 
 export const NatureButtonRow = styled('div')({
   display: 'flex',
@@ -384,24 +403,30 @@ export const NatureCountdownNumber = styled('div')({
 });
 
 export const NatureMediaContainer = styled('div')({
-  textAlign: 'center',
   position: 'relative',
   zIndex: 1,
-  flexShrink: 1,
+  flex: '1 1 0',
   minHeight: 0,
-  overflow: 'hidden',
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '10px 0',
+  boxSizing: 'border-box',
 });
 
 export const NatureMediaImage = styled('img')({
+  display: 'block',
   maxWidth: '100%',
-  maxHeight: 'clamp(72px, 12vh, 100px)',
-  borderRadius: 12,
+  maxHeight: '100%',
+  borderRadius: 16,
   objectFit: 'contain',
-  border: '3px solid rgba(255,255,255,0.3)',
+  border: '3px solid rgba(255,255,255,0.45)',
+  boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+  boxSizing: 'border-box',
   cursor: 'zoom-in',
   '@media (min-width: 768px)': {
-    maxWidth: 'min(420px, 40vw)',
-    maxHeight: 'min(36vh, 320px)',
+    maxWidth: 'min(520px, 100%)',
   },
 });
 

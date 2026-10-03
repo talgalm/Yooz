@@ -27,3 +27,7 @@ export function placeGroupEnd(items: Placed[], start: number): number {
   while (end + 1 < items.length && opensRightAfter(items, end + 1)) end += 1;
   return end;
 }
+
+export function laterAtSamePlace(items: Placed[], start: number, index: number): boolean {
+  return index > start && index <= placeGroupEnd(items, start);
+}

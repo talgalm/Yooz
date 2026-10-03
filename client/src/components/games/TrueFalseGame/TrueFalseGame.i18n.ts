@@ -1,6 +1,7 @@
 export const texts = {
   en: {
     gameTitle: 'True or False',
+    trueOrFalse: 'True or false?',
     gameTitleLine1: 'True or',
     gameTitleLine2: 'False',
     true: 'True',
@@ -36,9 +37,14 @@ export const texts = {
       'You have limited time to answer',
       'each question.',
     ],
+    defaultInstructionLinesUntimed: [
+      'Answer each question by',
+      'choosing between true and false.',
+    ],
   },
   he: {
     gameTitle: 'נכון או לא נכון',
+    trueOrFalse: 'נכון או לא נכון?',
     gameTitleLine1: 'נכון או',
     gameTitleLine2: 'לא נכון',
     true: 'נכון',
@@ -73,6 +79,10 @@ export const texts = {
       'בחירה בין נכון לבין לא נכון',
       'לרשותך זמן מוגבל למענה על',
       'כל שאלה',
+    ],
+    defaultInstructionLinesUntimed: [
+      'יש לענות על השאלות מתוך',
+      'בחירה בין נכון לבין לא נכון',
     ],
   },
 };

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { offsetMeters } from './geo';
-import { opensRightAfter, placeGroupEnd, placeOf } from './mapChain';
+import { laterAtSamePlace, opensRightAfter, placeGroupEnd, placeOf } from './mapChain';
 
 const square = { lat: 32.08, lng: 34.78 };
 const park = offsetMeters(square, 300, 0);
@@ -36,4 +36,12 @@ test('a place groups its first station with every station chained after it', () 
   assert.equal(placeGroupEnd(items, 0), 2);
   assert.equal(placeGroupEnd(items, 3), 4);
   assert.equal(placeGroupEnd([{ location: square }, { location: park }], 0), 0);
+});
+
+test('a later station of the same place is recognised, so its place shows one pin', () => {
+  const items = [{ location: square }, {}, { location: offsetMeters(square, 4, 4) }, { location: park }];
+  assert.equal(laterAtSamePlace(items, 0, 1), true);
+  assert.equal(laterAtSamePlace(items, 0, 2), true);
+  assert.equal(laterAtSamePlace(items, 0, 0), false);
+  assert.equal(laterAtSamePlace(items, 0, 3), false);
 });
