@@ -43,7 +43,7 @@ interface TrueFalseGameConfigProps {
 export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
   function TrueFalseGameConfig({ t, initialSettings }, ref) {
     const [tfStatements, setTfStatements] = useState<TrueFalseStatement[]>([
-      { text: '', media: '', isTrue: true },
+      { text: '', instruction: '', media: '', isTrue: true },
     ]);
     const [tfScoring, setTfScoring] = useState<TrueFalseScoring>({
       correctPoints: 10,
@@ -58,8 +58,9 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
       const s = initialSettings;
       if (Array.isArray(s.statements)) {
         setTfStatements(
-          (s.statements as { text: string; media?: string; isTrue: boolean }[]).map((st) => ({
+          (s.statements as { text: string; instruction?: string; media?: string; isTrue: boolean }[]).map((st) => ({
             text: st.text || '',
+            instruction: st.instruction || '',
             media: st.media || '',
             isTrue: st.isTrue ?? true,
           }))
@@ -70,7 +71,7 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
         setTfScoring({
           correctPoints: (sc.correctPoints as number) ?? 10,
           wrongPenalty: (sc.wrongPenalty as number) ?? 0,
-          timeLimitSeconds: (sc.timeLimitSeconds as number) || 10,
+          timeLimitSeconds: typeof sc.timeLimitSeconds === 'number' ? Math.max(0, sc.timeLimitSeconds) : 10,
         });
       }
       if (typeof s.showCountdown === 'boolean') {
@@ -93,6 +94,7 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
             .filter((s) => s.text.trim())
             .map((s) => ({
               text: s.text.trim(),
+              instruction: s.instruction.trim() || undefined,
               isTrue: s.isTrue,
               media: s.media.trim() || undefined,
             })),
@@ -107,12 +109,12 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
       },
       fillRandom() {
         setTfStatements([
-          { text: 'כדור הארץ הוא כוכב הלכת הגדול ביותר במערכת השמש', media: '', isTrue: false },
-          { text: 'מגדל אייפל נמצא בפריז', media: '', isTrue: true },
-          { text: 'יש 206 עצמות בגוף האדם הבוגר', media: '', isTrue: true },
-          { text: 'השמש סובבת סביב כדור הארץ', media: '', isTrue: false },
-          { text: 'ים המלח הוא המקום הנמוך ביותר בעולם', media: '', isTrue: true },
-          { text: 'היהלום הוא החומר הקשה ביותר בטבע', media: '', isTrue: true },
+          { text: 'כדור הארץ הוא כוכב הלכת הגדול ביותר במערכת השמש', instruction: '', media: '', isTrue: false },
+          { text: 'מגדל אייפל נמצא בפריז', instruction: '', media: '', isTrue: true },
+          { text: 'יש 206 עצמות בגוף האדם הבוגר', instruction: '', media: '', isTrue: true },
+          { text: 'השמש סובבת סביב כדור הארץ', instruction: '', media: '', isTrue: false },
+          { text: 'ים המלח הוא המקום הנמוך ביותר בעולם', instruction: '', media: '', isTrue: true },
+          { text: 'היהלום הוא החומר הקשה ביותר בטבע', instruction: '', media: '', isTrue: true },
         ]);
         setTfScoring({ correctPoints: 10, wrongPenalty: 0, timeLimitSeconds: 10 });
         setShowCountdown(true);
@@ -121,14 +123,14 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
     }));
 
     const addTfStatement = () => {
-      setTfStatements((prev) => [...prev, { text: '', media: '', isTrue: true }]);
+      setTfStatements((prev) => [...prev, { text: '', instruction: '', media: '', isTrue: true }]);
     };
 
     const removeTfStatement = (si: number) => {
       setTfStatements((prev) => prev.filter((_, i) => i !== si));
     };
 
-    const updateTfStatement = (si: number, field: 'text' | 'media', value: string) => {
+    const updateTfStatement = (si: number, field: 'text' | 'instruction' | 'media', value: string) => {
       setTfStatements((prev) => prev.map((s, i) => (i === si ? { ...s, [field]: value } : s)));
     };
 
@@ -166,6 +168,11 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
                 placeholder={t.statementText}
                 value={stmt.text}
                 onChange={(e) => updateTfStatement(si, 'text', e.target.value)}
+              />
+              <InputMb8
+                placeholder={t.statementInstruction}
+                value={stmt.instruction}
+                onChange={(e) => updateTfStatement(si, 'instruction', e.target.value)}
               />
 
               <MediaUploadRow>
@@ -223,8 +230,8 @@ export default forwardRef<GameConfigHandle, TrueFalseGameConfigProps>(
               <ScoringInput
                 type="number"
                 value={tfScoring.timeLimitSeconds}
-                onChange={(e) => setTfScoring((s) => ({ ...s, timeLimitSeconds: Math.max(1, Number(e.target.value)) }))}
-                min={1}
+                onChange={(e) => setTfScoring((s) => ({ ...s, timeLimitSeconds: Math.max(0, Number(e.target.value) || 0) }))}
+                min={0}
               />
             </ScoringRow>
             <ScoringRow>

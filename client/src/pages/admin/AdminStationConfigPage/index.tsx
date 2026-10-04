@@ -179,6 +179,8 @@ export default function AdminStationConfigPage() {
   const [textContent, setTextContent] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
   const [descPosition, setDescPosition] = useState<'before' | 'after'>('before');
+  const [videoMustWatch, setVideoMustWatch] = useState(true);
+  const [videoButtonText, setVideoButtonText] = useState('');
   const [narrativeTitle, setNarrativeTitle] = useState('');
   const [narrativeBody, setNarrativeBody] = useState('');
   const [narrativeButtonText, setNarrativeButtonText] = useState('');
@@ -336,6 +338,9 @@ export default function AdminStationConfigPage() {
         }
         if (settings.content) setTextContent(settings.content as string);
         if (settings.mediaUrl) setMediaUrl(settings.mediaUrl as string);
+        setDescPosition(settings.descPosition === 'after' ? 'after' : 'before');
+        setVideoMustWatch(settings.mustWatchToEnd !== false);
+        setVideoButtonText((settings.continueButtonText as string) || '');
         if (settings.title) setNarrativeTitle(settings.title as string);
         if (settings.bodyText) setNarrativeBody(settings.bodyText as string);
         if (settings.buttonText) setNarrativeButtonText(settings.buttonText as string);
@@ -455,6 +460,8 @@ export default function AdminStationConfigPage() {
     if (settings.content) setTextContent(settings.content as string);
     if (settings.mediaUrl) setMediaUrl(settings.mediaUrl as string);
     if (settings.descPosition === 'after') setDescPosition('after');
+    setVideoMustWatch(settings.mustWatchToEnd !== false);
+    setVideoButtonText((settings.continueButtonText as string) || '');
     if (settings.title) setNarrativeTitle(settings.title as string);
     if (settings.bodyText) setNarrativeBody(settings.bodyText as string);
     if (settings.buttonText) setNarrativeButtonText(settings.buttonText as string);
@@ -563,6 +570,10 @@ export default function AdminStationConfigPage() {
       if (stationType === 'video' || stationType === 'image') {
         settings.mediaUrl = mediaUrl.trim();
         settings.descPosition = descPosition;
+      }
+      if (stationType === 'video') {
+        settings.mustWatchToEnd = videoMustWatch;
+        if (videoButtonText.trim()) settings.continueButtonText = videoButtonText.trim();
       }
       if (stationType === 'narrative') {
         settings.title = narrativeTitle.trim();
@@ -842,6 +853,8 @@ export default function AdminStationConfigPage() {
     setHintFree(false);
     setTextContent('');
     setMediaUrl('');
+    setVideoMustWatch(true);
+    setVideoButtonText('');
     setCollageHeader('');
     setCollageDescription('');
     setCollageMissions([{ title: '', description: '' }]);
@@ -1185,6 +1198,25 @@ export default function AdminStationConfigPage() {
                     <SelectionButton type="button" selected={descPosition === 'before'} onClick={() => setDescPosition('before')}>{t.descBefore}</SelectionButton>
                     <SelectionButton type="button" selected={descPosition === 'after'} onClick={() => setDescPosition('after')}>{t.descAfter}</SelectionButton>
                   </SelectionGroup>
+                  <HintToggleRow>
+                    <SectionLabelNoMargin>{t.videoMustWatch}</SectionLabelNoMargin>
+                    <ToggleButton
+                      type="button"
+                      selected={videoMustWatch}
+                      onClick={() => setVideoMustWatch((v) => !v)}
+                    >
+                      {videoMustWatch ? 'ON' : 'OFF'}
+                    </ToggleButton>
+                  </HintToggleRow>
+                  <div style={{ fontSize: 12, color: '#888', marginTop: -4, marginBottom: 4 }}>
+                    {videoMustWatch ? t.videoMustWatchOnHelper : t.videoMustWatchOffHelper}
+                  </div>
+                  <SectionLabelNoMargin>{t.videoButtonText}</SectionLabelNoMargin>
+                  <FlexInput
+                    placeholder={t.videoButtonTextPlaceholder}
+                    value={videoButtonText}
+                    onChange={(e) => setVideoButtonText(e.target.value)}
+                  />
                 </VerticalStack>
               )}
 

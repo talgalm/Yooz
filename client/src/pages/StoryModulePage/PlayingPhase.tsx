@@ -968,7 +968,9 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
   const [videoEnded, setVideoEnded] = useState(false);
   const source = resolveVideoSource(station.settings?.mediaUrl as string);
 
-  const canContinue = source.kind === 'iframe' || videoEnded;
+  const watchRequired = station.settings?.mustWatchToEnd !== false;
+  const canContinue = source.kind === 'iframe' || videoEnded || !watchRequired;
+  const customButtonText = (station.settings?.continueButtonText as string | undefined)?.trim();
 
   const handleEnded = useCallback(() => {
     setShowReplay(true);
@@ -1036,7 +1038,7 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
         </SkipVideoButton>
       )}
       <FixedContinueButton onClick={onContinue} disabled={!canContinue}>
-        {canContinue ? t.continueButton : (t.videoWatchToContinue || t.continueButton)}
+        {canContinue ? (customButtonText || t.continueButton) : t.videoWatchToContinue}
       </FixedContinueButton>
     </MediaStationLayout>
   );
