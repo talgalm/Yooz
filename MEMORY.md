@@ -1815,7 +1815,10 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   - **`ActivitySessionHeader.tsx`** — top bar (progress, leaderboard trophy, logout, mute). The
     button row keeps `direction: ltr` so the score reads as a number, and mirrors itself with
     `flex-direction: row-reverse` under `[dir="ltr"]`: exit at the edge the language ends on,
-    score at the edge it starts from, in both languages.
+    score at the edge it starts from, in both languages. When the activity offers more than one
+    language, a globe button sits right after "?" and opens the same `LangDrawer` sheet as the entry
+    screen; the bar reads the offered languages from `activityLanguages(code)` (stored by the page on
+    load), so no view has to pass them down. With five cells the row switches to its compact sizing.
 - **`MissionPage/index.tsx`** (`/mission/:code`) — standalone 3-part mission: explanation screens
   → `MissionPuzzle.tsx` → `MissionTrashSort.tsx` (+ `MissionFrame`, `MissionTopMenu`); posts
   `mission-event` analytics.
