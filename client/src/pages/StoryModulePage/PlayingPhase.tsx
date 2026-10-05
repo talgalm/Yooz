@@ -752,6 +752,7 @@ export default function PlayingPhase({
       currentPoints={currentPoints}
       t={t}
       headerIconColor={headerIconColor}
+      languageButton={false}
       omitThirdSlot={hideLeaderboardInHeader && !showMusicInGameSlot}
       thirdSlot={headerThirdSlot}
       chromeVariant={puzzleSessionChrome}

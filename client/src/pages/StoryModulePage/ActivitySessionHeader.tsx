@@ -222,6 +222,7 @@ export interface ActivitySessionHeaderProps {
   activityDurationMinutes?: number;
   roadmapTimerMinutes?: number;
   headerIconColor?: string;
+  languageButton?: boolean;
 }
 
 export default function ActivitySessionHeader({
@@ -239,6 +240,7 @@ export default function ActivitySessionHeader({
   activityDurationMinutes,
   roadmapTimerMinutes,
   headerIconColor,
+  languageButton = true,
 }: ActivitySessionHeaderProps) {
   const puzzleChrome = chromeVariant === 'puzzle';
   const iconColor = puzzleChrome ? undefined : headerIconColor;
@@ -247,7 +249,7 @@ export default function ActivitySessionHeader({
   const showFakeTimer = roadmapTimerMinutes != null && roadmapTimerMinutes > 0;
   const { pathname } = useLocation();
   const offeredLanguages = activityLanguages(activityCodeFromPathname(pathname) ?? undefined) ?? [];
-  const showLanguage = useLanguageChoices(offeredLanguages).length >= 2;
+  const showLanguage = useLanguageChoices(offeredLanguages).length >= 2 && languageButton;
   const cellCount = 2
     + (showFakeTimer ? 1 : 0)
     + (omitThirdSlot ? 0 : 1)

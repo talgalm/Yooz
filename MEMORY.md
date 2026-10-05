@@ -599,7 +599,9 @@ hand-rolled (HTML5 drag API + tap-to-swap touch fallback) — no dnd library.
   (`index.tsx`, `OrderSurveyGame.tsx`, `GolfChallenge.tsx`).
 - **Trivia** (`TriviaGameSettings`): `questions:{text,hint?,media?,answers:{text,isCorrect,
   explanation?}[]}[]`, `scoring:{correctAnswerPoints, wrongAnswerPenalty, timeLimitSeconds?}`,
-  `shuffleAnswers?`, `includeHelpers?` (one-time 1/2 or 3/4 eliminations). `components/games/TriviaGame/`.
+  `shuffleAnswers?`, `includeHelpers?` (one-time 1/2 or 3/4 eliminations). The intro title is the game's
+  name (it was always "טריוויה"), like the order game; the card under it shows `instructions` and is left
+  out when there are none. `components/games/TriviaGame/`.
 - **Ball Game** (`BallGameSettings`): Phaser physics quiz — `questions:{text,answers[4] one
   correct}[]`, `scoring:{timeLimitSeconds}`. `components/games/BallGame/` (Phaser assets in
   `client/public/assets/games/ballgame/`).
@@ -1816,9 +1818,10 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
     button row keeps `direction: ltr` so the score reads as a number, and mirrors itself with
     `flex-direction: row-reverse` under `[dir="ltr"]`: exit at the edge the language ends on,
     score at the edge it starts from, in both languages. When the activity offers more than one
-    language, a globe button sits right after "?" and opens the same `LangDrawer` sheet as the entry
-    screen; the bar reads the offered languages from `activityLanguages(code)` (stored by the page on
-    load), so no view has to pass them down. With five cells the row switches to its compact sizing.
+    language, a globe button sits right after "?" on the stations screens (map, roadmap, spiders) and
+    opens the same `LangDrawer` sheet as the entry screen; the bar reads the offered languages from
+    `activityLanguages(code)` (stored by the page on load), so no view has to pass them down. Inside a
+    station (`PlayingPhase`, `languageButton={false}`) it is left out - five buttons was too many.
 - **`MissionPage/index.tsx`** (`/mission/:code`) — standalone 3-part mission: explanation screens
   → `MissionPuzzle.tsx` → `MissionTrashSort.tsx` (+ `MissionFrame`, `MissionTopMenu`); posts
   `mission-event` analytics.
