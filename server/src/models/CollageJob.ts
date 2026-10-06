@@ -1,4 +1,5 @@
 import { Schema, model } from 'mongoose';
+import type { CustomCollageVideo } from '../utils/collageSlots';
 
 export type CollageJobPhase =
   | 'collecting'
@@ -14,6 +15,7 @@ export interface ICollageJob {
   activityCode: string;
   splitGroupId?: string;
   template: string;
+  customVideo?: CustomCollageVideo;
   logoUrl?: string;
   logoRightUrl?: string;
   title?: string;
@@ -39,6 +41,7 @@ const collageJobSchema = new Schema<ICollageJob>(
     activityCode: { type: String, required: true, index: true },
     splitGroupId: { type: String, index: true },
     template: { type: String, required: true, default: 'default' },
+    customVideo: { type: Schema.Types.Mixed },
     logoUrl: { type: String },
     logoRightUrl: { type: String },
     title: { type: String },

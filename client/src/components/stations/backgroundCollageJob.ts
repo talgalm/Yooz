@@ -39,6 +39,7 @@ export interface CollageUploadParams {
   splitGroupId?: string;
   jobId: string;
   requiredImages: number;
+  stationId?: string;
 }
 
 export interface BackgroundJob {
@@ -105,6 +106,7 @@ async function runAsyncCollageJob(
     logoRightUrl: params.logoRightUrl,
     requiredImages: params.requiredImages,
     title: params.title,
+    stationId: params.stationId,
   };
 
   await ensureCollageJob(jobParams);

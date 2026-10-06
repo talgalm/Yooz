@@ -710,6 +710,37 @@ composited foreground at the mirrored box (`width - logo.x - logo.w`) since no s
 region exists in the source MP4. Templates with `logo: null` (e.g. `gan-yehoshua`) draw neither.
 Self-check: `npx tsx server/src/routes/collageFilter.check.ts`.
 
+**Photo count.** The number of photos is the number of missions (or `multiSelectCount`). A built-in
+video has six green-screen scenes baked into its MP4, so it used to need exactly six - fewer broke the
+filter graph. `templateForPhotos(template, n)` now keeps the first `n` scenes and cuts the video one
+second after the last one leaves (`TRIMMED_TAIL_SECONDS`), fading the music out over that second; six
+photos give the exact same filter as before. More than six: the extras are not used.
+
+**Custom video** (station `settings.template: 'custom'` + `settings.customVideo = {url, width, height,
+duration, slots[]}`, each slot `{startSec, endSec, x, y, w, h}` with the box as fractions of the frame).
+The admin uploads any video (up to 90s, up to 12 photo slots) and places each photo by time and
+position in `AdminStationConfigPage/CollageVideoEditor.tsx`: drag the frame over the video to move it,
+drag its corners to resize, drag a slot's edges on the timeline or type its times; slots are kept in
+the order they appear, which is the photo order. Photos go **on top** of the video (no green screen),
+cropped to fill their box, with a 0.25s fade in and out (`buildCustomFilterComplex` /
+`runCustomFfmpeg`); a title image overlays at the top; output is 540 wide (960 for landscape). More
+slots than photos reuse photos in order (`photoForSlot`); fewer slots leave photos out - the editor
+says which. The participant's `POST /jobs` sends `stationId`; for `template: 'custom'` the server reads
+the station's `customVideo` itself (the station must be in the activity) and copies it onto the job,
+so the Lambda - which only reads the job - downloads that video. Nothing a participant sends can
+choose the video. Limits and the pure maths live twice, `server/src/utils/collageSlots.ts` and
+`client/src/utils/collageVideo.ts`, and `collageSlots.test.ts` fails if the limits drift.
+
+**Previews in the station settings.** A live preview in the browser: for a built-in video
+(`CollageTemplatePreview.tsx`) the template MP4 (served by `GET /api/collage/templates/:id/video`,
+scene boxes from `GET /api/collage/templates`) is drawn to a canvas and its green replaced by numbered
+sample photos per frame (`utils/collageChroma.ts`), stopping where the trimmed video ends; only one
+poster frame loads up front. For a custom video the editor itself shows the sample photos in their
+boxes. A real preview (`CollageRenderPreview.tsx`): `POST /api/collage/admin-preview` (admin JWT)
+uploads numbered sample photos once (`yooz/collage-samples`), creates a job under activity code
+`admin-preview` and sends it through the same Lambda; the page polls `/progress/:jobId` and plays the
+result. Locally that needs a Lambda; the render paths were checked with `ffmpeg-static` directly.
+
 ---
 
 ## 13. Client architecture
@@ -1551,6 +1582,9 @@ optional logo placeholder + iconRecolor. `DEFAULT_TEMPLATE_ID='default'`. Source
 - `POST /upload-photo` — legacy: stream a photo through the server to Cloudinary (multer 15MB).
 - `POST /upload-title` — upload the title image.
 - `POST /jobs` — create/get a `CollageJob` (idempotent by jobId; `requiredImages` from template).
+  With `template: 'custom'` + `stationId`, copies the station's `customVideo` onto the job (§12).
+- `GET /templates`, `GET /templates/:id/video` — built-in template scene boxes and MP4, for the live
+  preview. `POST /admin-preview` *(admin)* — render a sample collage with numbered photos (§12).
 - `GET /jobs/:jobId`, `GET /jobs?activityCode=&splitGroupId=` — fetch job(s).
 - `POST /jobs/:jobId/start` *(loadShed)* — validate all photos present → `phase='queued'` +
   `scheduleCollageEncode` (202). Idempotent if already done/encoding.
