@@ -5,6 +5,7 @@ import { formatSeconds, trimmedDuration, usedSceneCount } from '../../../utils/c
 import { samplePhotoImage } from '../../../utils/collageSamples';
 import { replaceKeyGreen } from '../../../utils/collageChroma';
 import { texts } from './CollageEditor.i18n';
+import { PauseIcon, PlayIcon } from './CollageEditor.icons';
 
 interface SceneBox {
   startSec: number;
@@ -45,23 +46,24 @@ function loadTemplates(): Promise<TemplateInfo[]> {
 
 const Wrap = styled('div')({ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 });
 const Title = styled('div')({ alignSelf: 'stretch', fontSize: 14, fontWeight: 700, color: '#2d2540' });
-const Hint = styled('div')({ alignSelf: 'stretch', fontSize: 12, color: '#888' });
 const Screen = styled('canvas')({ display: 'block', borderRadius: 12, background: '#111', boxShadow: '0 4px 18px rgba(40,30,70,0.18)' });
 const HiddenVideo = styled('video')({ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' });
 const Controls = styled('div')({ display: 'flex', alignItems: 'center', gap: 10, width: CANVAS_WIDTH, direction: 'ltr' });
 const PlayButton = styled('button')({
   flexShrink: 0,
-  minWidth: 60,
-  height: 32,
-  borderRadius: 16,
+  width: 36,
+  height: 36,
+  borderRadius: '50%',
   border: 'none',
   background: PURPLE,
   color: '#fff',
-  fontSize: 13,
-  fontWeight: 700,
-  fontFamily: 'inherit',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
   cursor: 'pointer',
-  '&:disabled': { opacity: 0.45, cursor: 'default' },
+  boxShadow: '0 2px 8px rgba(108,92,231,0.35)',
+  '&:disabled': { opacity: 0.45, cursor: 'default', boxShadow: 'none' },
 });
 const Bar = styled('div')({ position: 'relative', flex: 1, height: 8, borderRadius: 4, background: '#e6e1f5', cursor: 'pointer' });
 const Fill = styled('div')({ position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 4, background: PURPLE });
@@ -191,7 +193,6 @@ export default function CollageTemplatePreview({ templateId, photoCount }: Props
   return (
     <Wrap>
       <Title>{t.livePreview}</Title>
-      <Hint>{t.livePreviewHint}</Hint>
       <Screen ref={canvasRef} width={CANVAS_WIDTH} height={height} style={{ width: CANVAS_WIDTH, height }} />
       {info && (
         <HiddenVideo
@@ -211,7 +212,9 @@ export default function CollageTemplatePreview({ templateId, photoCount }: Props
         />
       )}
       <Controls>
-        <PlayButton type="button" onClick={togglePlay} disabled={!info}>{playing ? t.pause : t.play}</PlayButton>
+        <PlayButton type="button" onClick={togglePlay} disabled={!info} aria-label={playing ? t.pause : t.play}>
+          {playing ? <PauseIcon /> : <PlayIcon />}
+        </PlayButton>
         <Bar
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();

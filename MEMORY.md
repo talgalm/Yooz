@@ -716,20 +716,49 @@ filter graph. `templateForPhotos(template, n)` now keeps the first `n` scenes an
 second after the last one leaves (`TRIMMED_TAIL_SECONDS`), fading the music out over that second; six
 photos give the exact same filter as before. More than six: the extras are not used.
 
-**Custom video** (station `settings.template: 'custom'` + `settings.customVideo = {url, width, height,
-duration, slots[]}`, each slot `{startSec, endSec, x, y, w, h}` with the box as fractions of the frame).
-The admin uploads any video (up to 90s, up to 12 photo slots) and places each photo by time and
-position in `AdminStationConfigPage/CollageVideoEditor.tsx`: drag the frame over the video to move it,
-drag its corners to resize, drag a slot's edges on the timeline or type its times; slots are kept in
-the order they appear, which is the photo order. Photos go **on top** of the video (no green screen),
-cropped to fill their box, with a 0.25s fade in and out (`buildCustomFilterComplex` /
-`runCustomFfmpeg`); a title image overlays at the top; output is 540 wide (960 for landscape). More
-slots than photos reuse photos in order (`photoForSlot`); fewer slots leave photos out - the editor
-says which. The participant's `POST /jobs` sends `stationId`; for `template: 'custom'` the server reads
-the station's `customVideo` itself (the station must be in the activity) and copies it onto the job,
-so the Lambda - which only reads the job - downloads that video. Nothing a participant sends can
-choose the video. Limits and the pure maths live twice, `server/src/utils/collageSlots.ts` and
-`client/src/utils/collageVideo.ts`, and `collageSlots.test.ts` fails if the limits drift.
+**Custom video** (station `settings.template: 'custom'` + `settings.customVideo`). A full editor in
+the station settings (`AdminStationConfigPage/CollageVideoEditor.tsx` with `CollageStage.tsx`,
+`CollageTimeline.tsx` and `CollageInspector.tsx`). Shape: `{url, width, height, duration, trimStart?, trimEnd?, freezes?:
+{atSec, holdSec}[], keyColor?, keySimilarity?, slots[]}`; each slot `{startSec, endSec, x, y, w, h,
+layer?: 'front'|'behind'|'green', maskUrl?, track?}` with the box as fractions of the frame.
+- **One timeline, two clocks.** The source video can be up to 300s; the handles at the ends of the
+  video row trim it (the cut parts stay on the timeline, dimmed, so the original length is always
+  visible), and "freeze this frame" holds the current source frame for 0.5-10s (up to 6
+  freezes, audio is silent while frozen). `timelinePieces` turns trim + freezes into play/freeze
+  pieces; the final video (at most 90s) is those pieces back to back. **Slot times are on the final
+  timeline**, which is what the editor plays (`sourceAt` maps final time to a source frame; the
+  editor drives the hidden source `<video>` from a wall clock and pauses it on freezes). Adding,
+  lengthening or removing a freeze, or trimming the start, shifts later slots with their content
+  (`shiftSlotsFrom`, `withFreezeAdded`, `withTrim`...), so photos stay on the moment they were put on.
+- **Placing photos:** drag the frame over the video, drag its corners, drag a slot's edges on the
+  final timeline or type its times; clicking a slot's bar jumps to that point. Slots stay in order of
+  appearance, which is the photo order.
+- **Which photo is in front.** Each slot sits on a timeline row (`track`, 0 = top); the top row is
+  in front, the same on the editor canvas and in the render (`stackOrder`, back to front, mirrored
+  in `collageSlots.ts`). Slots without a `track` are packed into the first free row by start time
+  (`slotLanes`). The admin swaps two rows with the button between them, or drags a bar up or down
+  to another row (bars it lands on that overlap it swap rows with it). A new photo goes on the top
+  row; a bar moved in time onto a busy row drops to the next free one.
+- **Layers per photo.** `front`: on top of the video. `green`: behind the video, showing only where
+  the video is the key colour (`keyColor`, default `#00ff00`, picked with a colour input or by
+  clicking the video; `keySimilarity` 0.05-0.6) - ffmpeg `chromakey`, and the editor previews it with
+  the same chroma distance (`utils/collageChroma.ts`). `behind`: the admin erases, on a frame, the parts
+  of the photo where the video should stand in front of it (a door, a person) - the editor shows
+  the video through the erased parts live; the mask is uploaded as a black/white PNG (`maskUrl`), and the render puts the photo on, then the video again through that mask
+  (`alphamerge`). A mask is a still, so it fits a frozen frame or a static camera. A `behind` slot
+  without a mask simply shows on top.
+- **Rendering** (`buildCustomFilterComplex` / `runCustomFfmpeg`): split the source into the
+  pieces (`trim`; a freeze is a one-frame grab padded with `tpad`, its audio `anullsrc`), `concat`
+  them (with audio only if the source has any - probed with ffmpeg first), then green photos +
+  the keyed video, then masked photos, then front photos, each cropped to fill its box with a 0.25s
+  fade; a title image overlays at the top; output 540 wide (960 landscape). More slots than photos
+  reuse photos in order; fewer leave photos out, and the editor says which.
+- **Getting it to the Lambda.** The participant's `POST /jobs` sends `stationId`; for
+  `template: 'custom'` the server reads that station's `customVideo` itself (the station must be in
+  the activity), sanitizes it (`sanitizeCustomCollageVideo`) and copies it onto the job; the Lambda
+  downloads the video and any masks. Nothing a participant sends can choose the video. Limits and
+  the timeline maths live twice (`server/src/utils/collageSlots.ts`, `client/src/utils/collageVideo.ts`)
+  and `collageSlots.test.ts` fails if the limits drift.
 
 **Previews in the station settings.** A live preview in the browser: for a built-in video
 (`CollageTemplatePreview.tsx`) the template MP4 (served by `GET /api/collage/templates/:id/video`,

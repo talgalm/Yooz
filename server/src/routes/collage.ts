@@ -2,7 +2,7 @@
 import { Router, Request, Response } from 'express';
 import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
-import { spawn } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import { Readable } from 'stream';
 import fs from 'fs';
 import path from 'path';
@@ -26,10 +26,16 @@ import { authenticateAdmin } from '../middleware/adminAuth';
 import { Station } from '../models/Station';
 import {
   CUSTOM_VIDEO_MAX_SLOTS,
+  DEFAULT_KEY_COLOR,
+  DEFAULT_KEY_SIMILARITY,
   TRIMMED_TAIL_SECONDS,
   evenPixels,
+  ffmpegColor,
+  outputDuration,
   outputWidth,
   sanitizeCustomCollageVideo,
+  stackOrder,
+  timelinePieces,
   trimmedDuration,
   usedSceneCount,
   type CustomCollageVideo,
@@ -328,23 +334,97 @@ export function runFfmpeg(
 const SLOT_FADE_SECONDS = 0.25;
 const TITLE_WIDTH_SHARE = 0.85;
 const TITLE_TOP_SHARE = 0.03;
+const FREEZE_GRAB_SECONDS = 0.06;
+const KEY_BLEND = 0.08;
+const AUDIO_FORMAT = 'aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo';
 
-export function buildCustomFilterComplex(video: CustomCollageVideo, opts: { titleIdx: number | null }): string {
-  const parts: string[] = [`[0:v]fps=20,setpts=PTS-STARTPTS,format=yuv420p[base]`];
-  let prev = 'base';
-  video.slots.forEach((slot, i) => {
+export function videoHasAudio(videoPath: string): boolean {
+  const probe = spawnSync(FFMPEG_BIN, ['-hide_banner', '-i', videoPath], { encoding: 'utf8' });
+  return /Stream #\d+:\d+.*Audio:/.test(probe.stderr ?? '');
+}
+
+function timelineFilters(video: CustomCollageVideo, hasAudio: boolean): string[] {
+  const pieces = timelinePieces(video);
+  const parts: string[] = [];
+  const videoTaps = pieces.map((_, i) => `[src${i}]`).join('');
+  parts.push(`[0:v]fps=20,setpts=PTS-STARTPTS,format=yuv420p,split=${pieces.length}${videoTaps}`);
+  const audioPieces = pieces.filter((piece) => piece.kind === 'play');
+  if (hasAudio && audioPieces.length > 0) {
+    parts.push(`[0:a]${AUDIO_FORMAT},asplit=${audioPieces.length}${audioPieces.map((_, i) => `[asrc${i}]`).join('')}`);
+  }
+  let audioTap = 0;
+  const concatInputs: string[] = [];
+  pieces.forEach((piece, i) => {
+    const hold = (piece.outEnd - piece.outStart).toFixed(3);
+    if (piece.kind === 'play') {
+      parts.push(`[src${i}]trim=start=${piece.srcStart}:end=${piece.srcEnd},setpts=PTS-STARTPTS[pv${i}]`);
+      if (hasAudio) parts.push(`[asrc${audioTap++}]atrim=start=${piece.srcStart}:end=${piece.srcEnd},asetpts=PTS-STARTPTS[pa${i}]`);
+    } else {
+      const grabAt = Math.max(0, Math.min(piece.srcStart, video.duration - FREEZE_GRAB_SECONDS * 2));
+      parts.push(
+        `[src${i}]trim=start=${grabAt}:duration=${FREEZE_GRAB_SECONDS},setpts=PTS-STARTPTS,` +
+          `tpad=stop_mode=clone:stop_duration=${hold},trim=duration=${hold},setpts=PTS-STARTPTS[pv${i}]`,
+      );
+      if (hasAudio) parts.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${hold},aformat=sample_fmts=fltp[pa${i}]`);
+    }
+    concatInputs.push(hasAudio ? `[pv${i}][pa${i}]` : `[pv${i}]`);
+  });
+  parts.push(`${concatInputs.join('')}concat=n=${pieces.length}:v=1:a=${hasAudio ? 1 : 0}[timeline]${hasAudio ? '[aout]' : ''}`);
+  return parts;
+}
+
+export function buildCustomFilterComplex(
+  video: CustomCollageVideo,
+  opts: { hasAudio: boolean; maskIdx: (number | null)[]; titleIdx: number | null },
+): string {
+  const parts = timelineFilters(video, opts.hasAudio);
+  const layerOf = (i: number) => video.slots[i].layer ?? 'front';
+  const green = video.slots.some((_, i) => layerOf(i) === 'green');
+  const masked = video.slots.filter((_, i) => layerOf(i) === 'behind' && opts.maskIdx[i] !== null).length;
+  const copies = 1 + (green ? 1 : 0) + masked;
+  const copyLabels = Array.from({ length: copies }, (_, i) => `[base${i}]`);
+  parts.push(copies > 1 ? `[timeline]split=${copies}${copyLabels.join('')}` : `[timeline]null[base0]`);
+  let nextCopy = 1;
+  let prev = 'base0';
+  const placePhoto = (i: number) => {
+    const slot = video.slots[i];
     const w = evenPixels(slot.w, video.width);
     const h = evenPixels(slot.h, video.height);
-    const x = Math.round(slot.x * video.width);
-    const y = Math.round(slot.y * video.height);
     const fade = Math.min(SLOT_FADE_SECONDS, (slot.endSec - slot.startSec) / 2);
     parts.push(
       `[${i + 1}:v]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},setsar=1,format=yuva420p,` +
         `fade=t=in:st=${slot.startSec}:d=${fade}:alpha=1,fade=t=out:st=${(slot.endSec - fade).toFixed(3)}:d=${fade}:alpha=1[p${i}]`,
     );
-    parts.push(`[${prev}][p${i}]overlay=x=${x}:y=${y}:enable='between(t,${slot.startSec},${slot.endSec})'[o${i}]`);
+    parts.push(
+      `[${prev}][p${i}]overlay=x=${Math.round(slot.x * video.width)}:y=${Math.round(slot.y * video.height)}` +
+        `:enable='between(t,${slot.startSec},${slot.endSec})'[o${i}]`,
+    );
     prev = `o${i}`;
+  };
+  const backToFront = stackOrder(video.slots);
+  const indicesOf = (layer: 'front' | 'behind' | 'green') => backToFront.filter((i) => layerOf(i) === layer);
+
+  indicesOf('green').forEach(placePhoto);
+  if (green) {
+    const key = ffmpegColor(video.keyColor ?? DEFAULT_KEY_COLOR);
+    const similarity = video.keySimilarity ?? DEFAULT_KEY_SIMILARITY;
+    parts.push(`[base${nextCopy++}]chromakey=color=${key}:similarity=${similarity}:blend=${KEY_BLEND},format=yuva420p[keyed]`);
+    parts.push(`[${prev}][keyed]overlay=0:0:format=auto[greenDone]`);
+    prev = 'greenDone';
+  }
+  indicesOf('behind').forEach((i) => {
+    placePhoto(i);
+    const maskInput = opts.maskIdx[i];
+    if (maskInput === null || maskInput === undefined) return;
+    const slot = video.slots[i];
+    parts.push(`[${maskInput}:v]scale=${video.width}:${video.height},format=gray[mask${i}]`);
+    parts.push(`[base${nextCopy++}]format=yuva420p[fgsrc${i}]`);
+    parts.push(`[fgsrc${i}][mask${i}]alphamerge[fg${i}]`);
+    parts.push(`[${prev}][fg${i}]overlay=0:0:format=auto:enable='between(t,${slot.startSec},${slot.endSec})'[m${i}]`);
+    prev = `m${i}`;
   });
+  indicesOf('front').forEach(placePhoto);
+
   if (opts.titleIdx !== null) {
     const titleW = evenPixels(TITLE_WIDTH_SHARE, video.width);
     parts.push(`[${opts.titleIdx}:v]scale=${titleW}:-1,format=rgba,setsar=1[title]`);
@@ -360,22 +440,31 @@ export function runCustomFfmpeg(
   video: CustomCollageVideo,
   videoPath: string,
   slotImagePaths: string[],
-  extras: { titlePath?: string; onProgress?: (frame: number) => void },
+  extras: { maskPaths?: (string | undefined)[]; titlePath?: string; onProgress?: (frame: number) => void },
 ): { stdout: Readable; done: Promise<void> } {
+  const length = String(outputDuration(video));
   const args: string[] = ['-y', '-progress', 'pipe:3', '-nostats', '-i', videoPath];
   for (const p of slotImagePaths) {
-    args.push('-loop', '1', '-framerate', '20', '-t', String(video.duration), '-i', p);
+    args.push('-loop', '1', '-framerate', '20', '-t', length, '-i', p);
   }
+  let nextIdx = 1 + slotImagePaths.length;
+  const maskIdx = video.slots.map((_, i) => {
+    const maskPath = extras.maskPaths?.[i];
+    if (!maskPath) return null;
+    args.push('-loop', '1', '-framerate', '20', '-t', length, '-i', maskPath);
+    return nextIdx++;
+  });
   let titleIdx: number | null = null;
   if (extras.titlePath) {
-    args.push('-loop', '1', '-framerate', '20', '-t', String(video.duration), '-i', extras.titlePath);
-    titleIdx = 1 + slotImagePaths.length;
+    args.push('-loop', '1', '-framerate', '20', '-t', length, '-i', extras.titlePath);
+    titleIdx = nextIdx;
   }
+  const hasAudio = videoHasAudio(videoPath);
   args.push(
-    '-filter_complex', buildCustomFilterComplex(video, { titleIdx }),
+    '-filter_complex', buildCustomFilterComplex(video, { hasAudio, maskIdx, titleIdx }),
     '-map', '[vout]',
-    '-map', '0:a?',
-    '-t', String(video.duration),
+    ...(hasAudio ? ['-map', '[aout]'] : []),
+    '-t', length,
     ...ENCODE_OUTPUT_ARGS,
   );
   return spawnFfmpeg(args, extras.onProgress);

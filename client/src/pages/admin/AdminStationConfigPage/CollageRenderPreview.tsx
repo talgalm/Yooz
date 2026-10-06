@@ -107,7 +107,7 @@ export default function CollageRenderPreview({ request, blocked }: Props) {
   return (
     <Box>
       <Title>{t.renderTitle}</Title>
-      <Hint>{blocked ? t.renderNeedsVideo : t.renderHint}</Hint>
+      {blocked && <Hint>{t.renderNeedsVideo}</Hint>}
       <Button type="button" onClick={() => void start()} disabled={blocked || working}>
         {progress?.phase === 'done' ? t.renderAgain : t.renderButton}
       </Button>

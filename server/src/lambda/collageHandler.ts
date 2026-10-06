@@ -6,7 +6,7 @@ import sharp from 'sharp';
 import mongoose from 'mongoose';
 import { CollageJob } from '../models/CollageJob';
 import { TEMPLATES, DEFAULT_TEMPLATE_ID, CUSTOM_TEMPLATE_ID, runFfmpeg, runCustomFfmpeg, templateForPhotos } from '../routes/collage';
-import { photoForSlot, sanitizeCustomCollageVideo } from '../utils/collageSlots';
+import { outputDuration, photoForSlot, sanitizeCustomCollageVideo } from '../utils/collageSlots';
 import {
   CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY,
@@ -141,9 +141,16 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
 
     const customVideoPath = customVideo ? path.join(tmpDir, 'custom-video.mp4') : undefined;
     if (customVideo && customVideoPath) await downloadToFile(customVideo.url, customVideoPath);
+    const maskPaths = customVideo
+      ? await Promise.all(customVideo.slots.map(async (slot, i) => {
+          if (!slot.maskUrl) return undefined;
+          const maskPath = path.join(tmpDir, `mask_${i}.png`);
+          try { await downloadToFile(slot.maskUrl, maskPath); return maskPath; } catch { return undefined; }
+        }))
+      : [];
 
     const ffStart = Date.now();
-    const totalFrames = Math.max(1, Math.round((customVideo?.duration ?? template.duration) * 20));
+    const totalFrames = Math.max(1, Math.round((customVideo ? outputDuration(customVideo) : template.duration) * 20));
     const onProgress = (frame: number) => {
       const ratio = Math.min(1, frame / totalFrames);
       void patchJob(jobId, {
@@ -157,7 +164,7 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
           customVideo,
           customVideoPath,
           customVideo.slots.map((_, i) => imagePaths[photoForSlot(i, imagePaths.length)]),
-          { titlePath, onProgress },
+          { maskPaths, titlePath, onProgress },
         )
       : runFfmpeg(template, templatePath, imagePaths, { logoPath, logoRightPath, titlePath, onProgress });
 

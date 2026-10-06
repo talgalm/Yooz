@@ -1400,6 +1400,7 @@ export default function AdminStationConfigPage() {
                     blocked={collageTemplate === 'custom' && customVideoProblem(collageCustomVideo) !== null}
                   />
 
+                  {collageTemplate !== 'custom' && (<>
                   <SectionLabelNoMargin>{t.collageLogo}</SectionLabelNoMargin>
                   <div style={{ fontSize: 12, color: '#888', marginTop: -4, marginBottom: 4 }}>{t.collageLogoDesc}</div>
                   <InlineRow>
@@ -1431,6 +1432,7 @@ export default function AdminStationConfigPage() {
                       onChange={(e) => setCollageLogoRightUrl(e.target.value)}
                     />
                   </InlineRow>
+                  </>)}
 
                   <HintToggleRow>
                     <SectionLabelNoMargin>{t.collageMultiSelect}</SectionLabelNoMargin>
