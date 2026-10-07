@@ -11,13 +11,13 @@ const POLL_MS = 2000;
 const Box = styled('div')({
   display: 'flex',
   flexDirection: 'column',
-  gap: 8,
-  padding: 14,
-  borderRadius: 12,
-  border: '1px solid #e6e2f2',
-  background: '#faf9ff',
+  gap: 12,
+  padding: 16,
+  borderRadius: 18,
+  border: '1px solid #ebe7f5',
+  background: '#f7f6fb',
 });
-const Title = styled('div')({ fontSize: 14, fontWeight: 700, color: '#2d2540' });
+const Title = styled('div')({ fontSize: 16, fontWeight: 800, color: '#2d2540' });
 const Hint = styled('div')({ fontSize: 12, color: '#888' });
 const Button = styled('button')({
   alignSelf: 'flex-start',
@@ -36,7 +36,7 @@ const Bar = styled('div')({ height: 8, borderRadius: 4, background: '#e6e1f5', o
 const Fill = styled('div')({ height: '100%', background: PURPLE, transition: 'width 0.4s ease-out' });
 const Status = styled('div')({ fontSize: 13, color: '#2d2540' });
 const Failure = styled('div')({ fontSize: 13, fontWeight: 600, color: '#c0392b' });
-const Result = styled('video')({ alignSelf: 'center', maxWidth: '100%', maxHeight: 420, borderRadius: 12, background: '#000' });
+const Result = styled('video')({ display: 'block', width: '100%', maxHeight: 480, padding: 14, boxSizing: 'border-box', background: '#000' });
 
 interface Progress {
   phase: string;

@@ -770,6 +770,16 @@ uploads numbered sample photos once (`yooz/collage-samples`), creates a job unde
 `admin-preview` and sends it through the same Lambda; the page polls `/progress/:jobId` and plays the
 result. Locally that needs a Lambda; the render paths were checked with `ffmpeg-static` directly.
 
+**Editing a built-in video's timing.** "Edit timing" on the built-in preview calls
+`POST /api/collage/templates/:id/editable` (admin JWT, body `{photoCount}`), which turns the template
+into a custom video and switches the station to `template: 'custom'`: the template MP4 is uploaded once
+to Cloudinary (`yooz/collage-templates/<id>-v1`, looked up first so it uploads only once; a template
+with `iconRecolor` is baked with that recolour first, since the custom render does not do it), and
+each used scene becomes a `green` slot over its window (panel + `buffer`, from 0.3s before to 0.4s
+after the scene) with the template's chroma as `keyColor`/`keySimilarity` and `trimEnd` where the
+built-in would cut. The result renders like the built-in (checked frame by frame), and from there it
+is a normal custom video. The station logos are not carried over (custom videos have no logo slots).
+
 ---
 
 ## 13. Client architecture
@@ -1614,6 +1624,7 @@ optional logo placeholder + iconRecolor. `DEFAULT_TEMPLATE_ID='default'`. Source
   With `template: 'custom'` + `stationId`, copies the station's `customVideo` onto the job (§12).
 - `GET /templates`, `GET /templates/:id/video` — built-in template scene boxes and MP4, for the live
   preview. `POST /admin-preview` *(admin)* — render a sample collage with numbered photos (§12).
+  `POST /templates/:id/editable` *(admin)* — turn a built-in video into an editable custom video (§12).
 - `GET /jobs/:jobId`, `GET /jobs?activityCode=&splitGroupId=` — fetch job(s).
 - `POST /jobs/:jobId/start` *(loadShed)* — validate all photos present → `phase='queued'` +
   `scheduleCollageEncode` (202). Idempotent if already done/encoding.

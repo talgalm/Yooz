@@ -118,11 +118,11 @@ export default function ClientFormModal({ client, onClose, onSaved }: Props) {
             </Field>
             <Field>
               {t.fieldWebsite}
-              <SmallInput value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
+              <SmallInput dir="ltr" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://" />
             </Field>
             <Field>
               {t.fieldDrive}
-              <SmallInput value={driveUrl} onChange={(e) => setDriveUrl(e.target.value)} placeholder="https://drive.google.com/..." />
+              <SmallInput dir="ltr" value={driveUrl} onChange={(e) => setDriveUrl(e.target.value)} placeholder="https://drive.google.com/..." />
             </Field>
           </FieldGrid>
           <Field style={{ marginTop: 14 }}>

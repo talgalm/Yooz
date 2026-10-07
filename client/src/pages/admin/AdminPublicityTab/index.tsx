@@ -68,7 +68,7 @@ function ImageField({ label, url, onChange, t }: { label: string; url?: string; 
       <SectionLabel>{label}</SectionLabel>
       <Row>
         {url && <ImgPreview src={url} alt="" />}
-        <Input style={{ flex: 1, minWidth: 200 }} value={url || ''} placeholder="https://…" onChange={(e) => onChange(e.target.value)} />
+        <Input dir="ltr" style={{ flex: 1, minWidth: 200 }} value={url || ''} placeholder="https://…" onChange={(e) => onChange(e.target.value)} />
         <FileUploadButton accept="image/*" label={t.upload} onUploaded={(u) => onChange(u)} />
       </Row>
     </div>
