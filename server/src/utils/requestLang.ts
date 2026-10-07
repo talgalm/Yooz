@@ -21,3 +21,10 @@ export function sanitiseLanguages(raw: unknown): Lang[] | undefined {
   if (!Array.isArray(raw)) return undefined;
   return raw.filter((l): l is Lang => typeof l === 'string' && l !== DEFAULT_LANG && isLanguage(l));
 }
+
+export function sanitiseStartLanguage(raw: unknown, offered: Lang[] | undefined): Lang | null | undefined {
+  if (raw === undefined) return undefined;
+  if (typeof raw !== 'string' || raw === DEFAULT_LANG || !isLanguage(raw)) return null;
+  if (offered && !offered.includes(raw)) return null;
+  return raw;
+}

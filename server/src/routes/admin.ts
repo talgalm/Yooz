@@ -14,7 +14,7 @@ import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginFiel
 import { Activity, ActivityFolder, ActivityGroup, MapGroupState, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
 import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
-import { sanitiseLanguages } from '../utils/requestLang';
+import { sanitiseLanguages, sanitiseStartLanguage } from '../utils/requestLang';
 import { sanitizeLocation, sanitizeProximityMeters, sanitizeGroupOrders } from '../utils/moduleItems';
 import { sanitizeCipherChar, sanitizeMapDesign, sanitizeMapIcon } from '../utils/mapDesign';
 import { pretranslateActivity } from '../services/activityPretranslate';
@@ -84,7 +84,7 @@ async function buildActivityData(
   existingPasswordHash?: string,
   existing?: IActivity,
 ): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, userControl, guidelines, extraSupportInfo, organizerContactName, organizerContactPhone, helpCategoriesDisabled, helpCategoryResponses, helpOtherCategoryEnabled, customInstructions, languages, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, dailyReset, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
+  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, userControl, guidelines, extraSupportInfo, organizerContactName, organizerContactPhone, helpCategoriesDisabled, helpCategoryResponses, helpOtherCategoryEnabled, customInstructions, languages, defaultLanguage, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, dailyReset, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -202,7 +202,9 @@ async function buildActivityData(
 
   data.guidelines = guidelines?.trim() || null;
 
-  data.languages = sanitiseLanguages(languages);
+  const offeredLanguages = sanitiseLanguages(languages);
+  data.languages = offeredLanguages;
+  data.defaultLanguage = sanitiseStartLanguage(defaultLanguage, offeredLanguages);
 
   data.extraSupportInfo = extraSupportInfo?.trim().slice(0, 2000) || null;
 

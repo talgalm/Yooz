@@ -505,6 +505,8 @@ export default function AdminCreateActivityPage() {
 
   const [guidelines, setGuidelines] = useState('');
   const [languages, setLanguages] = useState<string[]>([]);
+  const [defaultLanguage, setDefaultLanguage] = useState<string>('he');
+  const startLanguage = languages.includes(defaultLanguage) ? defaultLanguage : 'he';
   const [storedTranslations, setStoredTranslations] = useState<Record<string, number>>({});
   const [extraSupportInfo, setExtraSupportInfo] = useState('');
   const [organizerContactName, setOrganizerContactName] = useState('');
@@ -675,6 +677,7 @@ export default function AdminCreateActivityPage() {
         setUserControl(a.userControl === true);
         if (a.guidelines) setGuidelines(a.guidelines);
         if (a.languages) setLanguages(a.languages);
+        if (a.defaultLanguage) setDefaultLanguage(a.defaultLanguage);
         adminApiFetch<{ languages: { code: string; reviewed: number }[] }>(
           `/api/admin/translations/activity/${id}/languages`,
         )
@@ -1210,6 +1213,7 @@ export default function AdminCreateActivityPage() {
       }
       payload.guidelines = guidelines.trim() || undefined;
       payload.languages = languages;
+      payload.defaultLanguage = startLanguage;
       payload.organizerContactName = organizerContactName.trim() || undefined;
       payload.organizerContactPhone = organizerContactPhone.trim() || undefined;
       payload.extraSupportInfo = extraSupportInfo.trim() || undefined;
@@ -2104,6 +2108,19 @@ export default function AdminCreateActivityPage() {
                   })}
                   {Object.values(storedTranslations).some((n) => n > 0) && (
                     <SectionDescription style={{ margin: '2px 0 0' }}>{t.languagesKeptHint}</SectionDescription>
+                  )}
+                  {languages.length > 0 && (
+                    <>
+                      <SectionLabelSmall style={{ marginTop: 12 }}>{t.startLanguage}</SectionLabelSmall>
+                      <SelectionGroup>
+                        {LANGS.filter((l) => l.code === 'he' || languages.includes(l.code)).map((l) => (
+                          <SelectionButton key={l.code} type="button" selected={startLanguage === l.code} onClick={() => setDefaultLanguage(l.code)}>
+                            {l.label}
+                          </SelectionButton>
+                        ))}
+                      </SelectionGroup>
+                      <SectionDescription style={{ margin: '4px 0 0' }}>{t.startLanguageHint}</SectionDescription>
+                    </>
                   )}
                 </SectionCardWide>
 

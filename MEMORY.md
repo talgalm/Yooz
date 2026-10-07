@@ -428,6 +428,11 @@ No admin auth — the `statsShareToken` is the credential.
   exactly as written, and the whole interface inside it falls back to Hebrew
   (`ParticipantActivityScope` → `LanguageContext.restrictToLanguages`) rather than wrapping
   Hebrew content in an English shell.
+  `Activity.defaultLanguage` ("שפת פתיחה" under the languages in the wizard) is the language the
+  activity opens in; it must be one of `languages` (`sanitiseStartLanguage`), and Hebrew is stored
+  as no setting. The config reports it, and `PlayPage` switches to it the first time a device
+  enters that activity code (`takeStartLanguage`, remembered in `localStorage`
+  `yooz_activity_started_langs`), so a participant who then picks another language keeps it.
 - **`routes/adminTranslations.ts`** (`/api/admin/translations/:kind/:id`, `kind` = `stations` |
   `games`) — the review half. `GET ?lang=en` lists every translatable string in the item with its
   machine translation and any human correction. **It translates nothing on its own**: it reads
@@ -1094,7 +1099,13 @@ code has to be visible all the time. Stations revealed since the strip last show
 `localStorage`, `yooz_cipher_seen_<code>`, `hooks/useCipherSeen.ts`) spin in like a slot-machine
 reel through characters of the same kind (`reelStrip`: digits, Hebrew, Latin or a mix;
 deterministic, so no `Math.random` in render) and land with a pop, one after another,
-when you come back to the map; they are marked seen once they land. The turn banner sits below
+when you come back to the map; they are marked seen once they land. The spin runs through the Web
+Animations API with plain pixel values (an earlier CSS version ended at a `var()` inside
+`@keyframes`), and it only starts after 0.7s of the page actually being visible and drawing
+(`afterSteadyFrames` caps each frame's share at 100ms): on a slower Android phone the map's first
+second blocks the main thread, and a spin started then was over before anything was drawn. Seen is
+written when the animations finish, not on a timer, and hiding the page mid-spin replays it on
+return. The turn banner sits below
 the strip, since it measures the whole top block. The row reads
 right to left only when a character is Hebrew or Arabic (`cipherDirection`), so a number code keeps
 its order. The characters reach the browser with the module, so the cipher is a game element, not a

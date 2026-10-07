@@ -99,6 +99,7 @@ export interface IActivity {
   module?: IModuleConfig;
   guidelines?: string;
   languages?: string[];
+  defaultLanguage?: string;
   extraSupportInfo?: string;
   organizerContactName?: string;
   organizerContactPhone?: string;
@@ -277,6 +278,7 @@ const activitySchema = new Schema<IActivity>({
   module: { type: moduleConfigSchema },
   guidelines: { type: String },
   languages: { type: [String], default: undefined },
+  defaultLanguage: { type: String },
   extraSupportInfo: { type: String },
   organizerContactName: { type: String },
   organizerContactPhone: { type: String },
