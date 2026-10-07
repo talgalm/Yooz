@@ -1387,7 +1387,15 @@ export default function AdminStationConfigPage() {
                       photoCount={collagePhotoCount}
                     />
                   ) : (
-                    <CollageTemplatePreview templateId={collageTemplate} photoCount={collagePhotoCount} />
+                    <CollageTemplatePreview
+                      templateId={collageTemplate}
+                      photoCount={collagePhotoCount}
+                      replacesCustom={!!collageCustomVideo?.url}
+                      onEdit={(video) => {
+                        setCollageCustomVideo(video);
+                        setCollageTemplate('custom');
+                      }}
+                    />
                   )}
                   <CollageRenderPreview
                     request={{

@@ -652,6 +652,123 @@ router.get('/templates/:id/video', (req: Request<{ id: string }>, res: Response)
   res.sendFile(path.join(process.cwd(), 'assets', template.videoFile), { maxAge: '7d' });
 });
 
+const EDITABLE_LEAD_SECONDS = 0.3;
+const EDITABLE_TAIL_SECONDS = 0.4;
+const EDITABLE_VERSION = 'v1';
+const EDITABLE_UPLOAD_CHUNK_BYTES = 20_000_000;
+const editableTemplateUrls = new Map<string, Promise<string>>();
+
+export function editableTemplateVideo(template: TemplateMeta, url: string, photoCount: number): CustomCollageVideo | undefined {
+  const used = templateForPhotos(template, photoCount);
+  const { width, height, buffer } = template;
+  return sanitizeCustomCollageVideo({
+    url,
+    width,
+    height,
+    duration: template.duration,
+    ...(used.duration < template.duration && { trimEnd: used.duration }),
+    keyColor: `#${template.chroma.color.replace(/^0x/i, '')}`,
+    keySimilarity: template.chroma.similarity,
+    slots: used.scenes.map((scene) => {
+      const [, x, y] = scene.keyframes[0] ?? [0, 0, 0];
+      const left = Math.max(0, x - buffer);
+      const top = Math.max(0, y - buffer);
+      const right = Math.min(width, x + scene.panelW + buffer);
+      const bottom = Math.min(height, y + scene.panelH + buffer);
+      return {
+        startSec: Math.max(0, scene.startSec - EDITABLE_LEAD_SECONDS),
+        endSec: Math.min(used.duration, scene.endSec + EDITABLE_TAIL_SECONDS),
+        x: left / width,
+        y: top / height,
+        w: (right - left) / width,
+        h: (bottom - top) / height,
+        layer: 'green',
+        track: 0,
+      };
+    }),
+  });
+}
+
+export function iconRecolorFilter(template: TemplateMeta): string | null {
+  const r = template.iconRecolor;
+  if (!r) return null;
+  return [
+    `[0:v]split=2[main][corner]`,
+    `[corner]crop=${r.w}:${r.h}:${r.x}:${r.y},colorkey=color=${r.fromColor}:similarity=${r.similarity}:blend=${r.blend}[keyed]`,
+    `color=color=${r.toColor}:size=${r.w}x${r.h}:rate=${template.fps},format=yuv420p[fill]`,
+    `[fill][keyed]overlay=0:0:format=auto:shortest=1[cornerOut]`,
+    `[main][cornerOut]overlay=${r.x}:${r.y}:format=auto[vout]`,
+  ].join(';');
+}
+
+function runFfmpegToFile(args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(FFMPEG_BIN, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+    let tail = '';
+    proc.stderr.on('data', (chunk: Buffer) => { tail = (tail + chunk.toString()).slice(-2000); });
+    proc.on('error', reject);
+    proc.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg exited with ${code}: ${tail}`))));
+  });
+}
+
+async function prepareEditableTemplate(id: string, template: TemplateMeta): Promise<string> {
+  const publicId = `yooz/collage-templates/${id}-${EDITABLE_VERSION}`;
+  const existing = await cloudinary.api.resource(publicId, { resource_type: 'video' }).catch(() => null);
+  if (existing?.secure_url) return existing.secure_url as string;
+  const source = path.join(process.cwd(), 'assets', template.videoFile);
+  const filter = iconRecolorFilter(template);
+  const baked = filter ? path.join(os.tmpdir(), `editable-${id}-${Date.now()}.mp4`) : null;
+  try {
+    if (baked && filter) {
+      await runFfmpegToFile([
+        '-y', '-i', source,
+        '-filter_complex', filter,
+        '-map', '[vout]', '-map', '0:a?',
+        '-t', String(template.duration),
+        '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
+        '-c:a', 'copy', '-movflags', '+faststart',
+        baked,
+      ]);
+    }
+    const uploaded = await new Promise<{ secure_url: string }>((resolve, reject) => {
+      cloudinary.uploader.upload_large(
+        baked ?? source,
+        { resource_type: 'video', public_id: publicId, overwrite: false, chunk_size: EDITABLE_UPLOAD_CHUNK_BYTES },
+        (error, result) => (error || !result ? reject(error ?? new Error('Upload failed')) : resolve(result as { secure_url: string })),
+      );
+    });
+    return uploaded.secure_url;
+  } finally {
+    if (baked) fs.promises.rm(baked, { force: true }).catch(() => undefined);
+  }
+}
+
+function editableTemplateUrl(id: string, template: TemplateMeta): Promise<string> {
+  const cached = editableTemplateUrls.get(id);
+  if (cached) return cached;
+  const pending = prepareEditableTemplate(id, template);
+  editableTemplateUrls.set(id, pending);
+  pending.catch(() => editableTemplateUrls.delete(id));
+  return pending;
+}
+
+router.post('/templates/:id/editable', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
+  const template = TEMPLATES[req.params.id];
+  if (!template) {
+    res.status(404).json({ error: 'Template not found' });
+    return;
+  }
+  const photoCount = Number((req.body as { photoCount?: unknown } | undefined)?.photoCount) || 0;
+  try {
+    const video = editableTemplateVideo(template, await editableTemplateUrl(req.params.id, template), photoCount);
+    if (!video) throw new Error('The template did not make a valid custom video');
+    res.json({ video });
+  } catch (err) {
+    console.error('[collage] editable template failed:', err);
+    res.status(500).json({ error: 'Could not prepare the video for editing' });
+  }
+});
+
 function serializeCollageJob(job: InstanceType<typeof CollageJob>) {
   const uploaded = job.imageUrls.filter(Boolean).length;
   return {

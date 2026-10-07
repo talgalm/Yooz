@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
-import { formatSeconds, formatShort, trimmedDuration, usedSceneCount } from '../../../utils/collageVideo';
+import { adminApiFetch } from '../../../utils/adminApi';
+import { formatSeconds, formatShort, trimmedDuration, usedSceneCount, type CustomCollageVideo } from '../../../utils/collageVideo';
 import { samplePhotoImage } from '../../../utils/collageSamples';
 import { replaceKeyGreen } from '../../../utils/collageChroma';
 import { texts } from './CollageEditor.i18n';
@@ -65,6 +66,20 @@ const LengthChip = styled('span')({
   fontWeight: 800,
   fontVariantNumeric: 'tabular-nums',
 });
+const HeaderButton = styled('button')({
+  height: 34,
+  padding: '0 14px',
+  borderRadius: 10,
+  border: `1px solid ${LINE}`,
+  background: '#fff',
+  color: INK,
+  fontSize: 13,
+  fontWeight: 700,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+  '&:disabled': { opacity: 0.6, cursor: 'default' },
+});
+const Failure = styled('div')({ fontSize: 13, fontWeight: 600, color: '#c0392b' });
 const Monitor = styled('div')({ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 14, background: '#000' });
 const Screen = styled('canvas')({ display: 'block', background: '#000' });
 const HiddenVideo = styled('video')({ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' });
@@ -101,9 +116,11 @@ function drawCover(ctx: CanvasRenderingContext2D, image: HTMLImageElement, x: nu
 interface Props {
   templateId: string;
   photoCount: number;
+  replacesCustom: boolean;
+  onEdit: (video: CustomCollageVideo) => void;
 }
 
-export default function CollageTemplatePreview({ templateId, photoCount }: Props) {
+export default function CollageTemplatePreview({ templateId, photoCount, replacesCustom, onEdit }: Props) {
   const t = useTranslations(texts);
   const [templates, setTemplates] = useState<TemplateInfo[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -113,6 +130,8 @@ export default function CollageTemplatePreview({ templateId, photoCount }: Props
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const layerRef = useRef<HTMLCanvasElement | null>(null);
   const startedRef = useRef(false);
+  const [preparing, setPreparing] = useState(false);
+  const [editFailed, setEditFailed] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -204,6 +223,24 @@ export default function CollageTemplatePreview({ templateId, photoCount }: Props
     void video.play();
   };
 
+  const editTiming = async () => {
+    if (replacesCustom && !window.confirm(t.replaceCustomConfirm)) return;
+    videoRef.current?.pause();
+    setPreparing(true);
+    setEditFailed(false);
+    try {
+      const data = await adminApiFetch<{ video: CustomCollageVideo }>(`/api/collage/templates/${templateId}/editable`, {
+        method: 'POST',
+        body: JSON.stringify({ photoCount }),
+      });
+      onEdit(data.video);
+    } catch {
+      setEditFailed(true);
+    } finally {
+      setPreparing(false);
+    }
+  };
+
   const seekTo = (fraction: number) => {
     const video = videoRef.current;
     if (!video) return;
@@ -217,7 +254,13 @@ export default function CollageTemplatePreview({ templateId, photoCount }: Props
       <Header>
         <Title>{t.livePreview}</Title>
         {info && <LengthChip>{t.finalLength(formatShort(endAt))}</LengthChip>}
+        {info && (
+          <HeaderButton type="button" onClick={() => void editTiming()} disabled={preparing}>
+            {preparing ? t.preparingEdit : t.editTiming}
+          </HeaderButton>
+        )}
       </Header>
+      {editFailed && <Failure>{t.editFailed}</Failure>}
       <Monitor>
         <Screen ref={canvasRef} width={Math.round(screenW * pixelRatio)} height={Math.round(screenH * pixelRatio)} style={{ width: screenW, height: screenH }} />
         {info && (
