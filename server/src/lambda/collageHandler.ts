@@ -5,7 +5,8 @@ import path from 'path';
 import sharp from 'sharp';
 import mongoose from 'mongoose';
 import { CollageJob } from '../models/CollageJob';
-import { TEMPLATES, DEFAULT_TEMPLATE_ID, runFfmpeg } from '../routes/collage';
+import { TEMPLATES, DEFAULT_TEMPLATE_ID, CUSTOM_TEMPLATE_ID, runFfmpeg, runCustomFfmpeg, templateForPhotos } from '../routes/collage';
+import { outputDuration, photoForSlot, sanitizeCustomCollageVideo } from '../utils/collageSlots';
 import {
   CLOUDINARY_CLOUD_NAME,
   CLOUDINARY_API_KEY,
@@ -74,8 +75,13 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
   if (!job) return { ok: false, jobId };
   if (job.phase === 'done' && job.resultUrl) return { ok: true, jobId };
 
+  const customVideo = job.template === CUSTOM_TEMPLATE_ID ? sanitizeCustomCollageVideo(job.customVideo) : undefined;
+  if (job.template === CUSTOM_TEMPLATE_ID && !customVideo) {
+    await patchJob(jobId, { phase: 'error', error: 'Custom collage video missing', message: 'שגיאת שרת' });
+    return { ok: false, jobId };
+  }
   const templateId = job.template && TEMPLATES[job.template] ? job.template : DEFAULT_TEMPLATE_ID;
-  const template = TEMPLATES[templateId];
+  const template = templateForPhotos(TEMPLATES[templateId], job.requiredImages);
   const orderedUrls = Array.from({ length: job.requiredImages }, (_, i) => job.imageUrls[i] || '');
   if (orderedUrls.some((u) => !u)) {
     await patchJob(jobId, { phase: 'error', error: 'Missing photo uploads', message: 'שגיאה — חסרות תמונות' });
@@ -83,7 +89,7 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
   }
 
   const templatePath = path.join(process.cwd(), 'assets', template.videoFile);
-  if (!fs.existsSync(templatePath)) {
+  if (!customVideo && !fs.existsSync(templatePath)) {
     await patchJob(jobId, { phase: 'error', error: `Template missing: ${template.videoFile}`, message: 'שגיאת שרת' });
     return { ok: false, jobId };
   }
@@ -92,7 +98,7 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
   fs.mkdirSync(tmpDir, { recursive: true });
 
   try {
-    console.log(`[lambda-collage] preparing job=${jobId} images=${orderedUrls.length} template=${templateId}`);
+    console.log(`[lambda-collage] preparing job=${jobId} images=${orderedUrls.length} template=${customVideo ? CUSTOM_TEMPLATE_ID : templateId}`);
     await patchJob(jobId, { phase: 'preparing', percent: 5, message: 'מכין תמונות...' });
 
     const imagePaths = await Promise.all(
@@ -133,26 +139,34 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
       })(),
     ]);
 
+    const customVideoPath = customVideo ? path.join(tmpDir, 'custom-video.mp4') : undefined;
+    if (customVideo && customVideoPath) await downloadToFile(customVideo.url, customVideoPath);
+    const maskPaths = customVideo
+      ? await Promise.all(customVideo.slots.map(async (slot, i) => {
+          if (!slot.maskUrl) return undefined;
+          const maskPath = path.join(tmpDir, `mask_${i}.png`);
+          try { await downloadToFile(slot.maskUrl, maskPath); return maskPath; } catch { return undefined; }
+        }))
+      : [];
+
     const ffStart = Date.now();
-    const totalFrames = Math.max(1, Math.round(template.duration * 20));
-    const { stdout: encodedStream, done: ffmpegDone } = runFfmpeg(
-      template,
-      templatePath,
-      imagePaths,
-      {
-        logoPath,
-        logoRightPath,
-        titlePath,
-        onProgress: (frame) => {
-          const ratio = Math.min(1, frame / totalFrames);
-          void patchJob(jobId, {
-            phase: 'encoding',
-            percent: 15 + ratio * 80,
-            message: `מקודד ומעלה (${Math.round(ratio * 100)}%)...`,
-          });
-        },
-      },
-    );
+    const totalFrames = Math.max(1, Math.round((customVideo ? outputDuration(customVideo) : template.duration) * 20));
+    const onProgress = (frame: number) => {
+      const ratio = Math.min(1, frame / totalFrames);
+      void patchJob(jobId, {
+        phase: 'encoding',
+        percent: 15 + ratio * 80,
+        message: `מקודד ומעלה (${Math.round(ratio * 100)}%)...`,
+      });
+    };
+    const { stdout: encodedStream, done: ffmpegDone } = customVideo && customVideoPath
+      ? runCustomFfmpeg(
+          customVideo,
+          customVideoPath,
+          customVideo.slots.map((_, i) => imagePaths[photoForSlot(i, imagePaths.length)]),
+          { maskPaths, titlePath, onProgress },
+        )
+      : runFfmpeg(template, templatePath, imagePaths, { logoPath, logoRightPath, titlePath, onProgress });
 
     const uploadPromise = new Promise<{ secure_url: string; bytes: number }>((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(

@@ -12,6 +12,7 @@ on:
       - 'server/src/routes/collage.ts'
       - 'server/src/services/collageProcessor.ts'
       - 'server/src/models/CollageJob.ts'
+      - 'server/src/utils/collageSlots.ts'
       - 'server/src/config.ts'
       - 'server/src/data/collage-template-*.json'
       - 'server/assets/collage-template*.mp4'
