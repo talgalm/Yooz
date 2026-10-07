@@ -350,6 +350,15 @@ export const FlexInput = styled(Input)({
   flex: 1,
 });
 
+const typedUrlLeftToRight = {
+  direction: 'ltr',
+  '&:placeholder-shown': { direction: 'inherit' },
+} as const;
+
+export const UrlInput = styled(Input)(typedUrlLeftToRight);
+
+export const FlexUrlInput = styled(FlexInput)(typedUrlLeftToRight);
+
 export const AdminCardNoPadding = styled(AdminCard)({
   padding: 0,
 });

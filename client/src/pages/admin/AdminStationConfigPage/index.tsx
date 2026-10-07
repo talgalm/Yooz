@@ -34,6 +34,8 @@ import {
   InlineRow,
   InlineRowGap12,
   FlexInput,
+  FlexUrlInput,
+  UrlInput,
   VerticalStack,
   SelectionSubtextSmall,
   SelectionGroupWrap,
@@ -1126,7 +1128,7 @@ export default function AdminStationConfigPage() {
                             label={t.upload}
                             uploadingLabel={t.uploading}
                           />
-                          <FlexInput
+                          <FlexUrlInput
                             placeholder={t.hintImagePlaceholder}
                             value={hintImageUrl}
                             onChange={(e) => setHintImageUrl(e.target.value)}
@@ -1187,7 +1189,7 @@ export default function AdminStationConfigPage() {
                       label={t.upload}
                       uploadingLabel={t.uploading}
                     />
-                    <FlexInput
+                    <FlexUrlInput
                       placeholder={t.mediaUrl}
                       value={mediaUrl}
                       onChange={(e) => setMediaUrl(e.target.value)}
@@ -1230,7 +1232,7 @@ export default function AdminStationConfigPage() {
                       label={t.upload}
                       uploadingLabel={t.uploading}
                     />
-                    <FlexInput
+                    <FlexUrlInput
                       placeholder={t.mediaUrl}
                       value={mediaUrl}
                       onChange={(e) => setMediaUrl(e.target.value)}
@@ -1303,7 +1305,7 @@ export default function AdminStationConfigPage() {
                       label={t.upload}
                       uploadingLabel={t.uploading}
                     />
-                    <FlexInput
+                    <FlexUrlInput
                       placeholder={t.badgeImage}
                       value={badgeImageUrl}
                       onChange={(e) => setBadgeImageUrl(e.target.value)}
@@ -1362,6 +1364,7 @@ export default function AdminStationConfigPage() {
                       uploadingLabel={t.uploading}
                     />
                     <FlexInput
+                      dir="ltr"
                       placeholder="https://..."
                       value={collageLogoUrl}
                       onChange={(e) => setCollageLogoUrl(e.target.value)}
@@ -1378,6 +1381,7 @@ export default function AdminStationConfigPage() {
                       uploadingLabel={t.uploading}
                     />
                     <FlexInput
+                      dir="ltr"
                       placeholder="https://..."
                       value={collageLogoRightUrl}
                       onChange={(e) => setCollageLogoRightUrl(e.target.value)}
@@ -1444,7 +1448,7 @@ export default function AdminStationConfigPage() {
                           label={t.upload}
                           uploadingLabel={t.uploading}
                         />
-                        <FlexInput
+                        <FlexUrlInput
                           placeholder={t.collageMissionRefImage}
                           value={mission.referenceImageUrl || ''}
                           onChange={(e) => setCollageMissions((ms) => ms.map((m, i) => i === idx ? { ...m, referenceImageUrl: e.target.value } : m))}
@@ -1587,7 +1591,7 @@ export default function AdminStationConfigPage() {
                       label={t.upload}
                       uploadingLabel={t.uploading}
                     />
-                    <FlexInput
+                    <FlexUrlInput
                       placeholder={t.mediaUrl}
                       value={riddleMediaUrl}
                       onChange={(e) => setRiddleMediaUrl(e.target.value)}
@@ -1623,7 +1627,7 @@ export default function AdminStationConfigPage() {
                       label={t.upload}
                       uploadingLabel={t.uploading}
                     />
-                    <FlexInput
+                    <FlexUrlInput
                       placeholder={t.riddleSuccessImagePlaceholder}
                       value={riddleSuccessImageUrl}
                       onChange={(e) => setRiddleSuccessImageUrl(e.target.value)}
@@ -1655,7 +1659,7 @@ export default function AdminStationConfigPage() {
                       label={t.upload}
                       uploadingLabel={t.uploading}
                     />
-                    <FlexInput
+                    <FlexUrlInput
                       placeholder={t.avatarCharacterImage}
                       value={avatarCharacterImageUrl}
                       onChange={(e) => setAvatarCharacterImageUrl(e.target.value)}
@@ -1776,7 +1780,7 @@ export default function AdminStationConfigPage() {
                           label={t.upload}
                           uploadingLabel={t.uploading}
                         />
-                        <FlexInput
+                        <FlexUrlInput
                           placeholder={t.avatarVideoUrl}
                           value={video.url}
                           onChange={(e) => setAvatarVideos(avatarVideos.map((v, j) => j === vi ? { ...v, url: e.target.value } : v))}
@@ -1943,7 +1947,7 @@ export default function AdminStationConfigPage() {
                   <SectionLabel>{t.avatarCharacterImage}</SectionLabel>
                   <InlineRowGap12>
                     <FileUploadButton accept="image/*" onUploaded={(url) => setQuizCharacterImageUrl(url)} />
-                    <Input
+                    <UrlInput
                       placeholder={t.avatarCharacterImage}
                       value={quizCharacterImageUrl}
                       onChange={(e) => setQuizCharacterImageUrl(e.target.value)}
@@ -2174,7 +2178,7 @@ export default function AdminStationConfigPage() {
                         <SectionLabelNoMargin style={{ marginTop: 6 }}>{t.quizQuestionMedia}</SectionLabelNoMargin>
                         <InlineRowGap12>
                           <FileUploadButton accept="image/*" onUploaded={(url) => update({ mediaUrl: url, mediaType: 'image' })} />
-                          <Input
+                          <UrlInput
                             placeholder={t.quizQuestionMedia}
                             value={q.mediaUrl}
                             onChange={(e) => update({ mediaUrl: e.target.value })}
@@ -2189,7 +2193,7 @@ export default function AdminStationConfigPage() {
                             value={q.points}
                             onChange={(e) => update({ points: e.target.value })}
                           />
-                          <Input
+                          <UrlInput
                             placeholder={t.quizLearnMoreUrl}
                             value={q.learnMoreUrl}
                             onChange={(e) => update({ learnMoreUrl: e.target.value })}
@@ -2335,7 +2339,7 @@ export default function AdminStationConfigPage() {
                           label={t.upload}
                           uploadingLabel={t.uploading}
                         />
-                        <FlexInput
+                        <FlexUrlInput
                           placeholder={t.enteringTextSuccessMediaUrlPlaceholder}
                           value={enteringTextSuccessMediaUrl}
                           onChange={(e) => setEnteringTextSuccessMediaUrl(e.target.value)}
