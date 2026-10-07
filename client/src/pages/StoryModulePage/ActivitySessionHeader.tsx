@@ -1,11 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { keyframes, styled } from '@mui/material/styles';
+import { useLocation } from 'react-router-dom';
 import ActivityLogoutButton from '../../components/ActivityLogoutButton';
 import { HelpChatHeaderButton } from '../../components/HelpChat';
+import LangDrawer, { useLanguageChoices } from '../../components/LangDrawer';
+import { activityLanguages } from '../../utils/activityLanguages';
+import { activityCodeFromPathname } from '../../utils/participantActivity';
 const ROADMAP_HEADER_BTN_BORDER = '#d4d4d4';
 const ROADMAP_HEADER_BTN_BORDER_PUZZLE = 'rgba(0,0,0,0.45)';
 const ROADMAP_HEADER_ICON_PX = 20;
 const ROADMAP_HEADER_CELL_W = 76;
+const ROADMAP_HEADER_ROOMY_CELLS = 4;
 
 const GameHeader = styled('div')({
   display: 'flex',
@@ -217,6 +222,7 @@ export interface ActivitySessionHeaderProps {
   activityDurationMinutes?: number;
   roadmapTimerMinutes?: number;
   headerIconColor?: string;
+  languageButton?: boolean;
 }
 
 export default function ActivitySessionHeader({
@@ -234,13 +240,22 @@ export default function ActivitySessionHeader({
   activityDurationMinutes,
   roadmapTimerMinutes,
   headerIconColor,
+  languageButton = true,
 }: ActivitySessionHeaderProps) {
   const puzzleChrome = chromeVariant === 'puzzle';
   const iconColor = puzzleChrome ? undefined : headerIconColor;
   const RoadmapItem = puzzleChrome ? RoadmapHeaderItemPuzzle : RoadmapHeaderItem;
   const RoadmapPoints = puzzleChrome ? RoadmapHeaderPointsPuzzle : RoadmapHeaderPoints;
   const showFakeTimer = roadmapTimerMinutes != null && roadmapTimerMinutes > 0;
-  const compact = leaderboardMode === 'both' || showFakeTimer;
+  const { pathname } = useLocation();
+  const offeredLanguages = activityLanguages(activityCodeFromPathname(pathname) ?? undefined) ?? [];
+  const showLanguage = useLanguageChoices(offeredLanguages).length >= 2 && languageButton;
+  const cellCount = 2
+    + (showFakeTimer ? 1 : 0)
+    + (omitThirdSlot ? 0 : 1)
+    + (showLanguage ? 1 : 0)
+    + (leaderboardMode === 'both' ? 2 : 1);
+  const compact = leaderboardMode === 'both' || showFakeTimer || cellCount > ROADMAP_HEADER_ROOMY_CELLS;
   const compactCellStyle: React.CSSProperties = {
     flex: '1 1 0',
     width: 'auto',
@@ -332,6 +347,11 @@ export default function ActivitySessionHeader({
           <RoadmapItem style={compact ? compactCellStyle : undefined}>
             <HelpChatHeaderButton tone={puzzleChrome ? 'puzzle' : 'dark'} iconColor={iconColor} />
           </RoadmapItem>
+          {showLanguage ? (
+            <RoadmapItem style={compact ? compactCellStyle : undefined}>
+              <LangDrawer variant={puzzleChrome ? 'puzzleHeader' : 'darkHeader'} only={offeredLanguages} iconColor={iconColor} />
+            </RoadmapItem>
+          ) : null}
           {showFakeTimer ? (() => {
             const mins = Math.floor(elapsedSeconds / 60);
             const secs = elapsedSeconds % 60;

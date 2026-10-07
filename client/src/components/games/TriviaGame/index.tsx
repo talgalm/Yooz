@@ -564,14 +564,16 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
             </div>
           )}
           <IntroContent>
-            <IntroTitle>{t.triviaTitle}</IntroTitle>
+            <IntroTitle dir="auto">{game.name?.trim() || t.triviaTitle}</IntroTitle>
 
             <IntroWelcomeMidSpacer aria-hidden />
 
             <IntroDescStack>
-              <IntroDescCard>
-                <IntroDescText>{settings.instructions || game.name}</IntroDescText>
-              </IntroDescCard>
+              {settings.instructions?.trim() && (
+                <IntroDescCard>
+                  <IntroDescText>{settings.instructions.trim()}</IntroDescText>
+                </IntroDescCard>
+              )}
               <IntroStartButton onClick={() => {
                 setShowInstructions(false);
                 sounds.startBgMusic();

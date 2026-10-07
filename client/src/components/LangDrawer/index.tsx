@@ -3,12 +3,20 @@ import { createPortal } from 'react-dom';
 import { styled, keyframes } from '@mui/material/styles';
 import { LANGS, useLang } from '../../context/LanguageContext';
 import { storeLang } from '../../utils/currentLang';
-import { IconButton, DarkHeaderActionIconButton } from '../styled';
+import { IconButton, DarkHeaderActionIconButton, PuzzleDarkHeaderActionIconButton } from '../styled';
 import { GlobeIcon, CheckIcon } from './LangDrawer.icons';
 
 interface LangDrawerProps {
-  variant?: 'default' | 'darkHeader' | 'fab';
+  variant?: 'default' | 'darkHeader' | 'puzzleHeader' | 'fab';
   only?: string[];
+  iconColor?: string;
+}
+
+export function useLanguageChoices(only?: string[]) {
+  const { lang } = useLang();
+  return only
+    ? LANGS.filter((l) => l.code === 'he' || l.code === lang || only.includes(l.code))
+    : LANGS;
 }
 
 const PRIMARY = '#6C5CE7';
@@ -94,8 +102,9 @@ const Option = styled('button')<{ current?: boolean }>(({ current }) => ({
   '&:hover': { background: current ? '#efeaff' : '#f7f6fb' },
 }));
 
-export default function LangDrawer({ variant = 'default', only }: LangDrawerProps) {
+export default function LangDrawer({ variant = 'default', only, iconColor }: LangDrawerProps) {
   const { lang } = useLang();
+  const available = useLanguageChoices(only);
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const exitTimer = useRef<number | null>(null);
@@ -113,10 +122,6 @@ export default function LangDrawer({ variant = 'default', only }: LangDrawerProp
     if (exitTimer.current) window.clearTimeout(exitTimer.current);
   }, []);
 
-  const available = only
-    ? LANGS.filter((l) => l.code === 'he' || l.code === lang || only.includes(l.code))
-    : LANGS;
-
   if (available.length < 2) return null;
 
   const choose = (code: string) => {
@@ -128,13 +133,27 @@ export default function LangDrawer({ variant = 'default', only }: LangDrawerProp
     window.location.reload();
   };
 
-  const Trigger = variant === 'fab' ? LangFab : variant === 'darkHeader' ? DarkHeaderActionIconButton : IconButton;
+  const openSheet = () => setOpen(true);
+  const globe = <GlobeIcon size={variant === 'fab' ? 26 : 21} />;
+  const trigger = variant === 'darkHeader' || variant === 'puzzleHeader' ? (
+    variant === 'puzzleHeader' ? (
+      <PuzzleDarkHeaderActionIconButton type="button" onClick={openSheet} aria-label="Language" title="Language" aria-haspopup="menu">
+        {globe}
+      </PuzzleDarkHeaderActionIconButton>
+    ) : (
+      <DarkHeaderActionIconButton type="button" onClick={openSheet} aria-label="Language" title="Language" aria-haspopup="menu" iconColor={iconColor}>
+        {globe}
+      </DarkHeaderActionIconButton>
+    )
+  ) : variant === 'fab' ? (
+    <LangFab type="button" onClick={openSheet} aria-label="Language" aria-haspopup="menu">{globe}</LangFab>
+  ) : (
+    <IconButton type="button" onClick={openSheet} aria-label="Language" aria-haspopup="menu">{globe}</IconButton>
+  );
 
   return (
     <>
-      <Trigger type="button" onClick={() => setOpen(true)} aria-label="Language" aria-haspopup="menu">
-        <GlobeIcon size={variant === 'fab' ? 26 : 21} />
-      </Trigger>
+      {trigger}
 
       {open && createPortal(
         <>
