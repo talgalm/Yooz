@@ -69,6 +69,15 @@ export const texts = {
       ? `${photos} משימות צילום אבל ${slots} תמונות בסרטון - תמונה ${photos} לא תיכנס`
       : `${photos} משימות צילום אבל ${slots} תמונות בסרטון - תמונות ${slots + 1}-${photos} לא ייכנסו`),
     fitNone: 'עוד לא הוספתם תמונות',
+    builtInTooMany: (max: number) => `בסרטון הזה יש מקום ל-${max} תמונות - רק ${max} הראשונות ייכנסו. לעוד תמונות בחרו "סרטון משלי".`,
+    livePreview: 'תצוגה מקדימה',
+    previewLoading: 'טוען את הסרטון...',
+    renderTitle: 'סרטון אמיתי לדוגמה',
+    renderButton: 'יצירת סרטון לדוגמה',
+    renderAgain: 'יצירה מחדש',
+    renderWorking: (percent: number) => `יוצר את הסרטון... ${percent}%`,
+    renderFailed: 'יצירת הסרטון נכשלה',
+    renderNeedsVideo: 'כדי ליצור סרטון לדוגמה צריך סרטון ולפחות תמונה אחת.',
   },
 
   en: {
@@ -141,5 +150,14 @@ export const texts = {
       ? `${photos} photo missions but ${slots} photos in the video - photo ${photos} won't be used`
       : `${photos} photo missions but ${slots} photos in the video - photos ${slots + 1}-${photos} won't be used`),
     fitNone: 'No photos added yet',
+    builtInTooMany: (max: number) => `This video has room for ${max} photos - only the first ${max} will be used. For more photos choose "My own video".`,
+    livePreview: 'Preview',
+    previewLoading: 'Loading the video...',
+    renderTitle: 'Real sample video',
+    renderButton: 'Make a sample video',
+    renderAgain: 'Make it again',
+    renderWorking: (percent: number) => `Making the video... ${percent}%`,
+    renderFailed: 'Making the video failed',
+    renderNeedsVideo: 'A sample video needs a video and at least one photo.',
   },
 };

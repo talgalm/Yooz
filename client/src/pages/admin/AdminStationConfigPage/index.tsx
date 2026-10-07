@@ -9,6 +9,8 @@ import ImagePositionPicker from '../../../components/ImagePositionPicker';
 import EditOnly from '../../../components/EditOnly';
 import ContentLanguageTabs from '../../../components/TranslationsPanel/ContentLanguageTabs';
 import CollageVideoEditor from './CollageVideoEditor';
+import CollageTemplatePreview from './CollageTemplatePreview';
+import CollageRenderPreview from './CollageRenderPreview';
 import { customVideoProblem, type CollageTemplateId, type CustomCollageVideo } from '../../../utils/collageVideo';
 import {
   AdminPage,
@@ -1378,13 +1380,25 @@ export default function AdminStationConfigPage() {
                     </SelectionButton>
                   </SelectionGroup>
 
-                  {collageTemplate === 'custom' && (
+                  {collageTemplate === 'custom' ? (
                     <CollageVideoEditor
                       value={collageCustomVideo}
                       onChange={setCollageCustomVideo}
                       photoCount={collagePhotoCount}
                     />
+                  ) : (
+                    <CollageTemplatePreview templateId={collageTemplate} photoCount={collagePhotoCount} />
                   )}
+                  <CollageRenderPreview
+                    request={{
+                      template: collageTemplate,
+                      photoCount: collagePhotoCount,
+                      customVideo: collageTemplate === 'custom' ? collageCustomVideo : undefined,
+                      logoUrl: collageLogoUrl.trim() || undefined,
+                      logoRightUrl: collageLogoRightUrl.trim() || undefined,
+                    }}
+                    blocked={collageTemplate === 'custom' && customVideoProblem(collageCustomVideo) !== null}
+                  />
 
                   {collageTemplate !== 'custom' && (<>
                   <SectionLabelNoMargin>{t.collageLogo}</SectionLabelNoMargin>

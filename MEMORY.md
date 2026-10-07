@@ -760,6 +760,16 @@ layer?: 'front'|'behind'|'green', maskUrl?, track?}` with the box as fractions o
   the timeline maths live twice (`server/src/utils/collageSlots.ts`, `client/src/utils/collageVideo.ts`)
   and `collageSlots.test.ts` fails if the limits drift.
 
+**Previews in the station settings.** A live preview in the browser: for a built-in video
+(`CollageTemplatePreview.tsx`) the template MP4 (served by `GET /api/collage/templates/:id/video`,
+scene boxes from `GET /api/collage/templates`) is drawn to a canvas and its green replaced by numbered
+sample photos per frame (`utils/collageChroma.ts`), stopping where the trimmed video ends; only the
+first frame loads up front. For a custom video the editor itself shows the sample photos in their
+boxes. A real preview (`CollageRenderPreview.tsx`): `POST /api/collage/admin-preview` (admin JWT)
+uploads numbered sample photos once (`yooz/collage-samples`), creates a job under activity code
+`admin-preview` and sends it through the same Lambda; the page polls `/progress/:jobId` and plays the
+result. Locally that needs a Lambda; the render paths were checked with `ffmpeg-static` directly.
+
 ---
 
 ## 13. Client architecture
@@ -1602,6 +1612,8 @@ optional logo placeholder + iconRecolor. `DEFAULT_TEMPLATE_ID='default'`. Source
 - `POST /upload-title` — upload the title image.
 - `POST /jobs` — create/get a `CollageJob` (idempotent by jobId; `requiredImages` from template).
   With `template: 'custom'` + `stationId`, copies the station's `customVideo` onto the job (§12).
+- `GET /templates`, `GET /templates/:id/video` — built-in template scene boxes and MP4, for the live
+  preview. `POST /admin-preview` *(admin)* — render a sample collage with numbered photos (§12).
 - `GET /jobs/:jobId`, `GET /jobs?activityCode=&splitGroupId=` — fetch job(s).
 - `POST /jobs/:jobId/start` *(loadShed)* — validate all photos present → `phase='queued'` +
   `scheduleCollageEncode` (202). Idempotent if already done/encoding.
