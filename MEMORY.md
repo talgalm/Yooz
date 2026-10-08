@@ -716,22 +716,35 @@ filter graph. `templateForPhotos(template, n)` now keeps the first `n` scenes an
 second after the last one leaves (`TRIMMED_TAIL_SECONDS`), fading the music out over that second; six
 photos give the exact same filter as before. More than six: the extras are not used.
 
-**Custom video** (station `settings.template: 'custom'` + `settings.customVideo`). Shape: `{url,
-width, height, duration, trimStart?, trimEnd?, freezes?: {atSec, holdSec}[], keyColor?, keySimilarity?,
-slots[]}`; each slot `{startSec, endSec, x, y, w, h, layer?: 'front'|'behind'|'green', maskUrl?,
-track?}` with the box as fractions of the frame.
-- **Two clocks.** The source video can be up to 300s; `trimStart`/`trimEnd` cut it, and each freeze
-  holds a source frame for 0.5-10s (up to 6 freezes, audio is silent while frozen). `timelinePieces`
-  turns trim + freezes into play/freeze pieces; the final video (at most 90s) is those pieces back to
-  back. **Slot times are on the final timeline** (`sourceAt` maps final time to a source frame).
-  Slots stay in order of appearance, which is the photo order.
+**Custom video** (station `settings.template: 'custom'` + `settings.customVideo`). A full editor in
+the station settings (`AdminStationConfigPage/CollageVideoEditor.tsx` with `CollageStage.tsx`,
+`CollageTimeline.tsx` and `CollageInspector.tsx`). Shape: `{url, width, height, duration, trimStart?, trimEnd?, freezes?:
+{atSec, holdSec}[], keyColor?, keySimilarity?, slots[]}`; each slot `{startSec, endSec, x, y, w, h,
+layer?: 'front'|'behind'|'green', maskUrl?, track?}` with the box as fractions of the frame.
+- **One timeline, two clocks.** The source video can be up to 300s; the handles at the ends of the
+  video row trim it (the cut parts stay on the timeline, dimmed, so the original length is always
+  visible), and "freeze this frame" holds the current source frame for 0.5-10s (up to 6
+  freezes, audio is silent while frozen). `timelinePieces` turns trim + freezes into play/freeze
+  pieces; the final video (at most 90s) is those pieces back to back. **Slot times are on the final
+  timeline**, which is what the editor plays (`sourceAt` maps final time to a source frame; the
+  editor drives the hidden source `<video>` from a wall clock and pauses it on freezes). Adding,
+  lengthening or removing a freeze, or trimming the start, shifts later slots with their content
+  (`shiftSlotsFrom`, `withFreezeAdded`, `withTrim`...), so photos stay on the moment they were put on.
+- **Placing photos:** drag the frame over the video, drag its corners, drag a slot's edges on the
+  final timeline or type its times; clicking a slot's bar jumps to that point. Slots stay in order of
+  appearance, which is the photo order.
 - **Which photo is in front.** Each slot sits on a timeline row (`track`, 0 = top); the top row is
-  in front (`stackOrder`, back to front, the same in `collageSlots.ts` and `collageVideo.ts`). Slots
-  without a `track` are packed into the first free row by start time (`slotLanes`).
+  in front, the same on the editor canvas and in the render (`stackOrder`, back to front, mirrored
+  in `collageSlots.ts`). Slots without a `track` are packed into the first free row by start time
+  (`slotLanes`). The admin swaps two rows with the button between them, or drags a bar up or down
+  to another row (bars it lands on that overlap it swap rows with it). A new photo goes on the top
+  row; a bar moved in time onto a busy row drops to the next free one.
 - **Layers per photo.** `front`: on top of the video. `green`: behind the video, showing only where
-  the video is the key colour (`keyColor`, default `#00ff00`; `keySimilarity` 0.05-0.6) - ffmpeg
-  `chromakey`. `behind`: a black/white mask PNG (`maskUrl`) marks the parts of the frame that stand
-  in front of the photo; the render puts the photo on, then the video again through that mask
+  the video is the key colour (`keyColor`, default `#00ff00`, picked with a colour input or by
+  clicking the video; `keySimilarity` 0.05-0.6) - ffmpeg `chromakey`, and the editor previews it with
+  the same chroma distance (`utils/collageChroma.ts`). `behind`: the admin erases, on a frame, the parts
+  of the photo where the video should stand in front of it (a door, a person) - the editor shows
+  the video through the erased parts live; the mask is uploaded as a black/white PNG (`maskUrl`), and the render puts the photo on, then the video again through that mask
   (`alphamerge`). A mask is a still, so it fits a frozen frame or a static camera. A `behind` slot
   without a mask simply shows on top.
 - **Rendering** (`buildCustomFilterComplex` / `runCustomFfmpeg`): split the source into the
