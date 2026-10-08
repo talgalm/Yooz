@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { styled } from '@mui/material/styles';
 import { DESKTOP_BREAKPOINT, DESKTOP_STATION_WIDTH } from '../games/styled';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
-import { useTranslations } from '../../context/LanguageContext';
+import { useLang, useTranslations } from '../../context/LanguageContext';
 import { texts } from './FeedbackStation.i18n';
 
 interface FeedbackQuestion {
@@ -30,6 +30,8 @@ const RATING_LEVELS = [
   { value: 5, emoji: '😊' },
   { value: 6, emoji: '🤩' },
 ];
+
+const noForward = { shouldForwardProp: (prop: PropertyKey) => !String(prop).startsWith('$') };
 
 const FeedbackContainer = styled('div')({
   flex: 1,
@@ -100,22 +102,22 @@ const SliderTrack = styled('div')({
   borderRadius: 2,
 });
 
-const SliderFill = styled('div')<{ pct: number }>(({ pct }) => ({
+const SliderFill = styled('div', noForward)<{ pct: number; $rtl: boolean }>(({ pct, $rtl }) => ({
   position: 'absolute',
-  right: 0,
+  [$rtl ? 'right' : 'left']: 0,
   top: 0,
   height: '100%',
   width: `${pct}%`,
-  background: 'linear-gradient(90deg, #e74c8b, #6c5ce7)',
+  background: `linear-gradient(${$rtl ? 90 : 270}deg, #e74c8b, #6c5ce7)`,
   borderRadius: 2,
   transition: 'width 0.15s',
 }));
 
-const ThumbOuter = styled('div')<{ pct: number }>(({ pct }) => ({
+const ThumbOuter = styled('div', noForward)<{ pct: number; $rtl: boolean }>(({ pct, $rtl }) => ({
   position: 'absolute',
   top: -14,
-  right: `${pct}%`,
-  transform: 'translateX(50%)',
+  [$rtl ? 'right' : 'left']: `${pct}%`,
+  transform: `translateX(${$rtl ? 50 : -50}%)`,
   width: 32,
   height: 32,
   borderRadius: '50%',
@@ -128,11 +130,11 @@ const ThumbOuter = styled('div')<{ pct: number }>(({ pct }) => ({
   fontWeight: 700,
   boxShadow: '0 2px 8px rgba(231,76,139,0.35)',
   cursor: 'grab',
-  transition: 'right 0.15s',
+  transition: `${$rtl ? 'right' : 'left'} 0.15s`,
   zIndex: 2,
   '&:active': {
     cursor: 'grabbing',
-    transform: 'translateX(50%) scale(1.1)',
+    transform: `translateX(${$rtl ? 50 : -50}%) scale(1.1)`,
   },
 }));
 
@@ -229,16 +231,17 @@ function SliderQuestion({
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+  const rtl = useLang().dir === 'rtl';
 
   const valueToPercent = (v: number) => ((v - 1) / 5) * 100;
 
   const percentToValue = useCallback((clientX: number) => {
     if (!trackRef.current) return 1;
     const rect = trackRef.current.getBoundingClientRect();
-    const pct = 1 - (clientX - rect.left) / rect.width;
-    const clamped = Math.max(0, Math.min(1, pct));
+    const fromLeft = (clientX - rect.left) / rect.width;
+    const clamped = Math.max(0, Math.min(1, rtl ? 1 - fromLeft : fromLeft));
     return Math.round(clamped * 5) + 1;
-  }, []);
+  }, [rtl]);
 
   const handleTrackClick = (e: React.MouseEvent) => {
     const val = percentToValue(e.clientX);
@@ -272,10 +275,11 @@ function SliderQuestion({
 
       <SliderContainer>
         <SliderTrack ref={trackRef} onClick={handleTrackClick}>
-          {hasValue && <SliderFill pct={pct} />}
+          {hasValue && <SliderFill pct={pct} $rtl={rtl} />}
           {hasValue && (
             <ThumbOuter
               pct={pct}
+              $rtl={rtl}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
