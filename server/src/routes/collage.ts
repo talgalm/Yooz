@@ -2,7 +2,7 @@
 import { Router, Request, Response } from 'express';
 import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
-import { spawn } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import { Readable } from 'stream';
 import fs from 'fs';
 import path from 'path';
@@ -22,6 +22,22 @@ import {
   scheduleCollageEncode,
 } from '../services/collageProcessor';
 import { loadShed } from '../middleware/loadShedding';
+import { Station } from '../models/Station';
+import {
+  DEFAULT_KEY_COLOR,
+  DEFAULT_KEY_SIMILARITY,
+  TRIMMED_TAIL_SECONDS,
+  evenPixels,
+  ffmpegColor,
+  outputDuration,
+  outputWidth,
+  sanitizeCustomCollageVideo,
+  stackOrder,
+  timelinePieces,
+  trimmedDuration,
+  usedSceneCount,
+  type CustomCollageVideo,
+} from '../utils/collageSlots';
 
 const router = Router();
 
@@ -56,6 +72,7 @@ export interface TemplateMeta {
     similarity: number; blend: number;
   } | null;
   scenes: MotionScene[];
+  fadeOutAt?: number;
 }
 
 export const TEMPLATES: Record<string, TemplateMeta> = {
@@ -91,6 +108,19 @@ export const TEMPLATES: Record<string, TemplateMeta> = {
 };
 
 export const DEFAULT_TEMPLATE_ID = 'default';
+export const CUSTOM_TEMPLATE_ID = 'custom';
+
+export function templateForPhotos(template: TemplateMeta, photoCount: number): TemplateMeta {
+  const count = usedSceneCount(template.scenes.length, photoCount);
+  if (count >= template.scenes.length) return template;
+  const duration = trimmedDuration(template.scenes.map((s) => s.endSec), count, template.duration);
+  return {
+    ...template,
+    scenes: template.scenes.slice(0, count),
+    duration,
+    fadeOutAt: Math.max(0, duration - TRIMMED_TAIL_SECONDS),
+  };
+}
 
 const FFMPEG_BIN = process.env.FFMPEG_PATH || ffmpegPath || 'ffmpeg';
 
@@ -208,48 +238,17 @@ export function buildFilterComplex(
   return parts.join(';');
 }
 
-export function runFfmpeg(
-  template: TemplateMeta,
-  templatePath: string,
-  imagePaths: string[],
-  extras: { logoPath?: string; logoRightPath?: string; titlePath?: string; onProgress?: (frame: number) => void },
-): { stdout: Readable; done: Promise<void> } {
-  const args: string[] = ['-y', '-progress', 'pipe:3', '-nostats', '-i', templatePath];
-  for (const p of imagePaths) {
-    args.push('-loop', '1', '-t', String(template.duration), '-i', p);
-  }
+const ENCODE_OUTPUT_ARGS = [
+  '-r', '20',
+  '-threads', '0',
+  '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '28',
+  '-c:a', 'aac', '-b:a', '128k',
+  '-movflags', '+empty_moov+frag_keyframe+default_base_moof',
+  '-f', 'mp4',
+  'pipe:1',
+];
 
-  let nextIdx = 1 + imagePaths.length;
-  let logoIdx: number | null = null;
-  let logoRightIdx: number | null = null;
-  let titleIdx: number | null = null;
-  if (extras.logoPath && template.logo) {
-    args.push('-loop', '1', '-t', String(template.duration), '-i', extras.logoPath);
-    logoIdx = nextIdx++;
-  }
-  if (extras.logoRightPath && template.logo) {
-    args.push('-loop', '1', '-t', String(template.duration), '-i', extras.logoRightPath);
-    logoRightIdx = nextIdx++;
-  }
-  if (extras.titlePath) {
-    args.push('-loop', '1', '-t', String(template.duration), '-i', extras.titlePath);
-    titleIdx = nextIdx;
-  }
-
-  args.push(
-    '-filter_complex', buildFilterComplex(template, { logoIdx, logoRightIdx, titleIdx }),
-    '-map', '[vout]',
-    '-map', '0:a?',
-    '-t', String(template.duration),
-    '-r', '20',
-    '-threads', '0',
-    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'ultrafast', '-crf', '28',
-    '-c:a', 'aac', '-b:a', '128k',
-    '-movflags', '+empty_moov+frag_keyframe+default_base_moof',
-    '-f', 'mp4',
-    'pipe:1',
-  );
-
+function spawnFfmpeg(args: string[], onProgress?: (frame: number) => void): { stdout: Readable; done: Promise<void> } {
   const proc = spawn(FFMPEG_BIN, args, { stdio: ['ignore', 'pipe', 'pipe', 'pipe'] });
 
   let progressBuf = '';
@@ -260,9 +259,9 @@ export function runFfmpeg(
     progressBuf = lines.pop() ?? '';
     for (const line of lines) {
       const m = /^frame=(\d+)/.exec(line.trim());
-      if (m && extras.onProgress) {
+      if (m && onProgress) {
         const n = parseInt(m[1], 10);
-        if (Number.isFinite(n)) extras.onProgress(n);
+        if (Number.isFinite(n)) onProgress(n);
       }
     }
   });
@@ -285,6 +284,188 @@ export function runFfmpeg(
   });
 
   return { stdout: proc.stdout!, done };
+}
+
+export function runFfmpeg(
+  template: TemplateMeta,
+  templatePath: string,
+  imagePaths: string[],
+  extras: { logoPath?: string; logoRightPath?: string; titlePath?: string; onProgress?: (frame: number) => void },
+): { stdout: Readable; done: Promise<void> } {
+  const scenePaths = imagePaths.slice(0, template.scenes.length);
+  const args: string[] = ['-y', '-progress', 'pipe:3', '-nostats', '-i', templatePath];
+  for (const p of scenePaths) {
+    args.push('-loop', '1', '-t', String(template.duration), '-i', p);
+  }
+
+  let nextIdx = 1 + scenePaths.length;
+  let logoIdx: number | null = null;
+  let logoRightIdx: number | null = null;
+  let titleIdx: number | null = null;
+  if (extras.logoPath && template.logo) {
+    args.push('-loop', '1', '-t', String(template.duration), '-i', extras.logoPath);
+    logoIdx = nextIdx++;
+  }
+  if (extras.logoRightPath && template.logo) {
+    args.push('-loop', '1', '-t', String(template.duration), '-i', extras.logoRightPath);
+    logoRightIdx = nextIdx++;
+  }
+  if (extras.titlePath) {
+    args.push('-loop', '1', '-t', String(template.duration), '-i', extras.titlePath);
+    titleIdx = nextIdx;
+  }
+
+  args.push(
+    '-filter_complex', buildFilterComplex(template, { logoIdx, logoRightIdx, titleIdx }),
+    '-map', '[vout]',
+    '-map', '0:a?',
+    '-t', String(template.duration),
+  );
+  if (template.fadeOutAt !== undefined) {
+    args.push('-af', `afade=t=out:st=${template.fadeOutAt}:d=${TRIMMED_TAIL_SECONDS}`);
+  }
+  args.push(...ENCODE_OUTPUT_ARGS);
+
+  return spawnFfmpeg(args, extras.onProgress);
+}
+
+const SLOT_FADE_SECONDS = 0.25;
+const TITLE_WIDTH_SHARE = 0.85;
+const TITLE_TOP_SHARE = 0.03;
+const FREEZE_GRAB_SECONDS = 0.06;
+const KEY_BLEND = 0.08;
+const AUDIO_FORMAT = 'aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo';
+
+export function videoHasAudio(videoPath: string): boolean {
+  const probe = spawnSync(FFMPEG_BIN, ['-hide_banner', '-i', videoPath], { encoding: 'utf8' });
+  return /Stream #\d+:\d+.*Audio:/.test(probe.stderr ?? '');
+}
+
+function timelineFilters(video: CustomCollageVideo, hasAudio: boolean): string[] {
+  const pieces = timelinePieces(video);
+  const parts: string[] = [];
+  const videoTaps = pieces.map((_, i) => `[src${i}]`).join('');
+  parts.push(`[0:v]fps=20,setpts=PTS-STARTPTS,format=yuv420p,split=${pieces.length}${videoTaps}`);
+  const audioPieces = pieces.filter((piece) => piece.kind === 'play');
+  if (hasAudio && audioPieces.length > 0) {
+    parts.push(`[0:a]${AUDIO_FORMAT},asplit=${audioPieces.length}${audioPieces.map((_, i) => `[asrc${i}]`).join('')}`);
+  }
+  let audioTap = 0;
+  const concatInputs: string[] = [];
+  pieces.forEach((piece, i) => {
+    const hold = (piece.outEnd - piece.outStart).toFixed(3);
+    if (piece.kind === 'play') {
+      parts.push(`[src${i}]trim=start=${piece.srcStart}:end=${piece.srcEnd},setpts=PTS-STARTPTS[pv${i}]`);
+      if (hasAudio) parts.push(`[asrc${audioTap++}]atrim=start=${piece.srcStart}:end=${piece.srcEnd},asetpts=PTS-STARTPTS[pa${i}]`);
+    } else {
+      const grabAt = Math.max(0, Math.min(piece.srcStart, video.duration - FREEZE_GRAB_SECONDS * 2));
+      parts.push(
+        `[src${i}]trim=start=${grabAt}:duration=${FREEZE_GRAB_SECONDS},setpts=PTS-STARTPTS,` +
+          `tpad=stop_mode=clone:stop_duration=${hold},trim=duration=${hold},setpts=PTS-STARTPTS[pv${i}]`,
+      );
+      if (hasAudio) parts.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${hold},aformat=sample_fmts=fltp[pa${i}]`);
+    }
+    concatInputs.push(hasAudio ? `[pv${i}][pa${i}]` : `[pv${i}]`);
+  });
+  parts.push(`${concatInputs.join('')}concat=n=${pieces.length}:v=1:a=${hasAudio ? 1 : 0}[timeline]${hasAudio ? '[aout]' : ''}`);
+  return parts;
+}
+
+export function buildCustomFilterComplex(
+  video: CustomCollageVideo,
+  opts: { hasAudio: boolean; maskIdx: (number | null)[]; titleIdx: number | null },
+): string {
+  const parts = timelineFilters(video, opts.hasAudio);
+  const layerOf = (i: number) => video.slots[i].layer ?? 'front';
+  const green = video.slots.some((_, i) => layerOf(i) === 'green');
+  const masked = video.slots.filter((_, i) => layerOf(i) === 'behind' && opts.maskIdx[i] !== null).length;
+  const copies = 1 + (green ? 1 : 0) + masked;
+  const copyLabels = Array.from({ length: copies }, (_, i) => `[base${i}]`);
+  parts.push(copies > 1 ? `[timeline]split=${copies}${copyLabels.join('')}` : `[timeline]null[base0]`);
+  let nextCopy = 1;
+  let prev = 'base0';
+  const placePhoto = (i: number) => {
+    const slot = video.slots[i];
+    const w = evenPixels(slot.w, video.width);
+    const h = evenPixels(slot.h, video.height);
+    const fade = Math.min(SLOT_FADE_SECONDS, (slot.endSec - slot.startSec) / 2);
+    parts.push(
+      `[${i + 1}:v]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},setsar=1,format=yuva420p,` +
+        `fade=t=in:st=${slot.startSec}:d=${fade}:alpha=1,fade=t=out:st=${(slot.endSec - fade).toFixed(3)}:d=${fade}:alpha=1[p${i}]`,
+    );
+    parts.push(
+      `[${prev}][p${i}]overlay=x=${Math.round(slot.x * video.width)}:y=${Math.round(slot.y * video.height)}` +
+        `:enable='between(t,${slot.startSec},${slot.endSec})'[o${i}]`,
+    );
+    prev = `o${i}`;
+  };
+  const backToFront = stackOrder(video.slots);
+  const indicesOf = (layer: 'front' | 'behind' | 'green') => backToFront.filter((i) => layerOf(i) === layer);
+
+  indicesOf('green').forEach(placePhoto);
+  if (green) {
+    const key = ffmpegColor(video.keyColor ?? DEFAULT_KEY_COLOR);
+    const similarity = video.keySimilarity ?? DEFAULT_KEY_SIMILARITY;
+    parts.push(`[base${nextCopy++}]chromakey=color=${key}:similarity=${similarity}:blend=${KEY_BLEND},format=yuva420p[keyed]`);
+    parts.push(`[${prev}][keyed]overlay=0:0:format=auto[greenDone]`);
+    prev = 'greenDone';
+  }
+  indicesOf('behind').forEach((i) => {
+    placePhoto(i);
+    const maskInput = opts.maskIdx[i];
+    if (maskInput === null || maskInput === undefined) return;
+    const slot = video.slots[i];
+    parts.push(`[${maskInput}:v]scale=${video.width}:${video.height},format=gray[mask${i}]`);
+    parts.push(`[base${nextCopy++}]format=yuva420p[fgsrc${i}]`);
+    parts.push(`[fgsrc${i}][mask${i}]alphamerge[fg${i}]`);
+    parts.push(`[${prev}][fg${i}]overlay=0:0:format=auto:enable='between(t,${slot.startSec},${slot.endSec})'[m${i}]`);
+    prev = `m${i}`;
+  });
+  indicesOf('front').forEach(placePhoto);
+
+  if (opts.titleIdx !== null) {
+    const titleW = evenPixels(TITLE_WIDTH_SHARE, video.width);
+    parts.push(`[${opts.titleIdx}:v]scale=${titleW}:-1,format=rgba,setsar=1[title]`);
+    parts.push(`[${prev}][title]overlay=x=(W-w)/2:y=${Math.round(video.height * TITLE_TOP_SHARE)}:format=auto[vraw]`);
+  } else {
+    parts.push(`[${prev}]null[vraw]`);
+  }
+  parts.push(`[vraw]scale=${outputWidth(video.width, video.height)}:-2[vout]`);
+  return parts.join(';');
+}
+
+export function runCustomFfmpeg(
+  video: CustomCollageVideo,
+  videoPath: string,
+  slotImagePaths: string[],
+  extras: { maskPaths?: (string | undefined)[]; titlePath?: string; onProgress?: (frame: number) => void },
+): { stdout: Readable; done: Promise<void> } {
+  const length = String(outputDuration(video));
+  const args: string[] = ['-y', '-progress', 'pipe:3', '-nostats', '-i', videoPath];
+  for (const p of slotImagePaths) {
+    args.push('-loop', '1', '-framerate', '20', '-t', length, '-i', p);
+  }
+  let nextIdx = 1 + slotImagePaths.length;
+  const maskIdx = video.slots.map((_, i) => {
+    const maskPath = extras.maskPaths?.[i];
+    if (!maskPath) return null;
+    args.push('-loop', '1', '-framerate', '20', '-t', length, '-i', maskPath);
+    return nextIdx++;
+  });
+  let titleIdx: number | null = null;
+  if (extras.titlePath) {
+    args.push('-loop', '1', '-framerate', '20', '-t', length, '-i', extras.titlePath);
+    titleIdx = nextIdx;
+  }
+  const hasAudio = videoHasAudio(videoPath);
+  args.push(
+    '-filter_complex', buildCustomFilterComplex(video, { hasAudio, maskIdx, titleIdx }),
+    '-map', '[vout]',
+    ...(hasAudio ? ['-map', '[aout]'] : []),
+    '-t', length,
+    ...ENCODE_OUTPUT_ARGS,
+  );
+  return spawnFfmpeg(args, extras.onProgress);
 }
 
 type JobPhase = 'preparing' | 'encoding' | 'uploading' | 'done' | 'error';
@@ -363,6 +544,17 @@ router.get('/progress/:jobId', async (req: Request<{ jobId: string }>, res: Resp
     error: job.error,
   });
 });
+
+async function customVideoForStation(
+  activity: InstanceType<typeof Activity>,
+  stationId: string | undefined,
+): Promise<CustomCollageVideo | undefined> {
+  if (!stationId || !/^[a-f0-9]{24}$/i.test(stationId)) return undefined;
+  const inActivity = activity.module?.items?.some((item) => item.type === 'station' && item.ref.toString() === stationId);
+  if (!inActivity) return undefined;
+  const station = await Station.findById(stationId).lean();
+  return sanitizeCustomCollageVideo((station?.settings as Record<string, unknown> | undefined)?.customVideo);
+}
 
 function serializeCollageJob(job: InstanceType<typeof CollageJob>) {
   const uploaded = job.imageUrls.filter(Boolean).length;
@@ -558,6 +750,7 @@ router.post('/jobs', async (req: Request, res: Response) => {
     logoRightUrl,
     title,
     requiredImages: requiredImagesBody,
+    stationId,
   } = req.body as {
     jobId?: string;
     activityCode?: string;
@@ -567,6 +760,7 @@ router.post('/jobs', async (req: Request, res: Response) => {
     logoRightUrl?: string;
     title?: string;
     requiredImages?: number;
+    stationId?: string;
   };
 
   if (!jobId || !activityCode) {
@@ -580,18 +774,25 @@ router.post('/jobs', async (req: Request, res: Response) => {
     return;
   }
 
-  const requiredImages = requiredImagesBody ?? requiredImageCount(templateId);
   const existing = await CollageJob.findOne({ jobId });
   if (existing) {
     res.json(serializeCollageJob(existing));
     return;
   }
 
+  const customVideo = templateId === CUSTOM_TEMPLATE_ID ? await customVideoForStation(activity, stationId) : undefined;
+  if (templateId === CUSTOM_TEMPLATE_ID && !customVideo) {
+    res.status(400).json({ error: 'This station has no custom collage video' });
+    return;
+  }
+  const requiredImages = requiredImagesBody ?? (customVideo ? customVideo.slots.length : requiredImageCount(templateId));
+
   const job = await CollageJob.create({
     jobId,
     activityCode,
     splitGroupId,
-    template: templateId && TEMPLATES[templateId] ? templateId : DEFAULT_TEMPLATE_ID,
+    template: customVideo ? CUSTOM_TEMPLATE_ID : templateId && TEMPLATES[templateId] ? templateId : DEFAULT_TEMPLATE_ID,
+    ...(customVideo && { customVideo }),
     logoUrl,
     logoRightUrl,
     title,

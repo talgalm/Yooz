@@ -712,6 +712,43 @@ composited foreground at the mirrored box (`width - logo.x - logo.w`) since no s
 region exists in the source MP4. Templates with `logo: null` (e.g. `gan-yehoshua`) draw neither.
 Self-check: `npx tsx server/src/routes/collageFilter.check.ts`.
 
+**Photo count.** The number of photos is the number of missions (or `multiSelectCount`). A built-in
+video has six green-screen scenes baked into its MP4, so it used to need exactly six - fewer broke the
+filter graph. `templateForPhotos(template, n)` now keeps the first `n` scenes and cuts the video one
+second after the last one leaves (`TRIMMED_TAIL_SECONDS`), fading the music out over that second; six
+photos give the exact same filter as before. More than six: the extras are not used.
+
+**Custom video** (station `settings.template: 'custom'` + `settings.customVideo`). Shape: `{url,
+width, height, duration, trimStart?, trimEnd?, freezes?: {atSec, holdSec}[], keyColor?, keySimilarity?,
+slots[]}`; each slot `{startSec, endSec, x, y, w, h, layer?: 'front'|'behind'|'green', maskUrl?,
+track?}` with the box as fractions of the frame.
+- **Two clocks.** The source video can be up to 300s; `trimStart`/`trimEnd` cut it, and each freeze
+  holds a source frame for 0.5-10s (up to 6 freezes, audio is silent while frozen). `timelinePieces`
+  turns trim + freezes into play/freeze pieces; the final video (at most 90s) is those pieces back to
+  back. **Slot times are on the final timeline** (`sourceAt` maps final time to a source frame).
+  Slots stay in order of appearance, which is the photo order.
+- **Which photo is in front.** Each slot sits on a timeline row (`track`, 0 = top); the top row is
+  in front (`stackOrder`, back to front, the same in `collageSlots.ts` and `collageVideo.ts`). Slots
+  without a `track` are packed into the first free row by start time (`slotLanes`).
+- **Layers per photo.** `front`: on top of the video. `green`: behind the video, showing only where
+  the video is the key colour (`keyColor`, default `#00ff00`; `keySimilarity` 0.05-0.6) - ffmpeg
+  `chromakey`. `behind`: a black/white mask PNG (`maskUrl`) marks the parts of the frame that stand
+  in front of the photo; the render puts the photo on, then the video again through that mask
+  (`alphamerge`). A mask is a still, so it fits a frozen frame or a static camera. A `behind` slot
+  without a mask simply shows on top.
+- **Rendering** (`buildCustomFilterComplex` / `runCustomFfmpeg`): split the source into the
+  pieces (`trim`; a freeze is a one-frame grab padded with `tpad`, its audio `anullsrc`), `concat`
+  them (with audio only if the source has any - probed with ffmpeg first), then green photos +
+  the keyed video, then masked photos, then front photos, each cropped to fill its box with a 0.25s
+  fade; a title image overlays at the top; output 540 wide (960 landscape). More slots than photos
+  reuse photos in order; fewer leave photos out, and the editor says which.
+- **Getting it to the Lambda.** The participant's `POST /jobs` sends `stationId`; for
+  `template: 'custom'` the server reads that station's `customVideo` itself (the station must be in
+  the activity), sanitizes it (`sanitizeCustomCollageVideo`) and copies it onto the job; the Lambda
+  downloads the video and any masks. Nothing a participant sends can choose the video. Limits and
+  the timeline maths live twice (`server/src/utils/collageSlots.ts`, `client/src/utils/collageVideo.ts`)
+  and `collageSlots.test.ts` fails if the limits drift.
+
 ---
 
 ## 13. Client architecture
@@ -1553,6 +1590,7 @@ optional logo placeholder + iconRecolor. `DEFAULT_TEMPLATE_ID='default'`. Source
 - `POST /upload-photo` — legacy: stream a photo through the server to Cloudinary (multer 15MB).
 - `POST /upload-title` — upload the title image.
 - `POST /jobs` — create/get a `CollageJob` (idempotent by jobId; `requiredImages` from template).
+  With `template: 'custom'` + `stationId`, copies the station's `customVideo` onto the job (§12).
 - `GET /jobs/:jobId`, `GET /jobs?activityCode=&splitGroupId=` — fetch job(s).
 - `POST /jobs/:jobId/start` *(loadShed)* — validate all photos present → `phase='queued'` +
   `scheduleCollageEncode` (202). Idempotent if already done/encoding.

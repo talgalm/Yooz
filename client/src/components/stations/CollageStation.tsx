@@ -556,6 +556,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
               logoUrl,
               logoRightUrl,
               requiredImages: totalImages,
+              stationId: station._id,
             },
             '',
           );
@@ -649,6 +650,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
         splitGroupId: splitMeta ? splitGroupId : undefined,
         jobId,
         requiredImages: totalImages,
+        stationId: station._id,
       });
 
       startPoll(jobId);

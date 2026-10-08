@@ -27,6 +27,7 @@ export interface CollageJobParams {
   logoRightUrl?: string;
   requiredImages: number;
   title?: string;
+  stationId?: string;
 }
 
 const RETRY_ATTEMPTS = 5;
@@ -64,6 +65,7 @@ export async function ensureCollageJob(params: CollageJobParams): Promise<Collag
       logoRightUrl: params.logoRightUrl,
       title: params.title,
       requiredImages: params.requiredImages,
+      stationId: params.stationId,
     }),
   });
 }
