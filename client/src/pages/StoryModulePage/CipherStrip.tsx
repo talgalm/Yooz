@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { styled, keyframes } from '@mui/material/styles';
+import { useEffect, useRef } from 'react';
+import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../context/LanguageContext';
 import { REEL_LENGTH, cipherDirection, reelStrip, unseenSlots, type CipherSlot } from '../../utils/cipher';
 import { useCipherSeen } from '../../hooks/useCipherSeen';
@@ -9,22 +9,37 @@ const SPIN_MS = 1400;
 const SPIN_START_MS = 700;
 const SPIN_STAGGER_MS = 300;
 const POP_MS = 500;
+const SPIN_EASING = 'cubic-bezier(0.1, 0.75, 0.2, 1)';
+const FRAME_CAP_MS = 100;
 
 const INK = '#1d2433';
 const TILE_SHADOW = '0 3px 10px rgba(0,0,0,0.22)';
 
 const noForward = { shouldForwardProp: (prop: PropertyKey) => !String(prop).startsWith('$') };
 
-const spin = keyframes`
-  from { transform: translateY(0); }
-  to { transform: translateY(var(--reel-end)); }
-`;
+const LAND_POP: Keyframe[] = [
+  { transform: 'scale(1)', boxShadow: TILE_SHADOW },
+  { transform: 'scale(1.18)', boxShadow: '0 0 0 4px rgba(255,255,255,0.45), 0 6px 18px rgba(0,0,0,0.25)', offset: 0.4 },
+  { transform: 'scale(1)', boxShadow: TILE_SHADOW },
+];
 
-const landPop = keyframes`
-  0% { transform: scale(1); box-shadow: ${TILE_SHADOW}; }
-  40% { transform: scale(1.18); box-shadow: 0 0 0 4px rgba(255,255,255,0.45), 0 6px 18px rgba(0,0,0,0.25); }
-  100% { transform: scale(1); box-shadow: ${TILE_SHADOW}; }
-`;
+function afterSteadyFrames(ms: number, onReady: () => void): () => void {
+  let frame = 0;
+  let shown = 0;
+  let last: number | null = null;
+  const tick = (now: number) => {
+    if (document.visibilityState === 'visible') {
+      if (last !== null) shown += Math.min(now - last, FRAME_CAP_MS);
+      last = now;
+    } else {
+      last = null;
+    }
+    if (shown >= ms) onReady();
+    else frame = requestAnimationFrame(tick);
+  };
+  frame = requestAnimationFrame(tick);
+  return () => cancelAnimationFrame(frame);
+}
 
 const Wrap = styled('div')({
   display: 'flex',
@@ -57,7 +72,7 @@ interface TileSize {
   gap: number;
 }
 
-const Tile = styled('div', noForward)<{ $size: TileSize; $filled: boolean; $popAt: number | null }>(({ $size, $filled, $popAt }) => ({
+const Tile = styled('div', noForward)<{ $size: TileSize; $filled: boolean }>(({ $size, $filled }) => ({
   position: 'relative',
   width: $size.w,
   height: $size.h,
@@ -68,7 +83,6 @@ const Tile = styled('div', noForward)<{ $size: TileSize; $filled: boolean; $popA
   border: `1.5px solid ${$filled ? '#ffffff' : 'rgba(255,255,255,0.75)'}`,
   boxShadow: $filled ? TILE_SHADOW : '0 2px 6px rgba(0,0,0,0.12)',
   transition: 'background 0.25s ease-out',
-  ...($popAt !== null && { animation: `${landPop} ${POP_MS}ms ease-out ${$popAt}ms both` }),
 }));
 
 const Glyph = styled('div', noForward)<{ $h: number; $font: number }>(({ $h, $font }) => ({
@@ -87,12 +101,6 @@ const HiddenGlyph = styled(Glyph)({
   color: 'rgba(255,255,255,0.95)',
   textShadow: '0 1px 3px rgba(0,0,0,0.35)',
 });
-
-const Reel = styled('div', noForward)<{ $delay: number; $end: number }>(({ $delay, $end }) => ({
-  '--reel-end': `${$end}px`,
-  animation: `${spin} ${SPIN_MS}ms cubic-bezier(0.1, 0.75, 0.2, 1) ${$delay}ms both`,
-  willChange: 'transform',
-}));
 
 function tileSize(count: number): TileSize {
   if (count <= 6) return { w: 38, h: 46, font: 26, radius: 11, gap: 8 };
@@ -113,15 +121,59 @@ export default function CipherStrip({ slots, seenKey }: Props) {
   const innerHeight = size.h - 3;
   const freshKey = fresh.join(',');
   const cracked = fresh.length === 0 && slots.every((slot) => slot.revealed);
+  const reels = useRef(new Map<number, HTMLDivElement>());
+  const tiles = useRef(new Map<number, HTMLDivElement>());
 
   useEffect(() => {
     if (!freshKey) return;
-    const settleMs = SPIN_START_MS + (freshKey.split(',').length - 1) * SPIN_STAGGER_MS + SPIN_MS + POP_MS;
+    const order = freshKey.split(',').map(Number);
     const revealed = slots.filter((slot) => slot.revealed).map((slot) => slot.itemIndex);
-    const timer = window.setTimeout(() => markSeen(revealed), settleMs);
-    return () => window.clearTimeout(timer);
+    const reelEnd = -(REEL_LENGTH - 1) * innerHeight;
+    let running: Animation[] = [];
+    let stopWaiting: () => void = () => undefined;
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      markSeen(revealed);
+    };
+    const play = () => {
+      const canAnimate = order.every((itemIndex) => typeof reels.current.get(itemIndex)?.animate === 'function');
+      if (!canAnimate) {
+        settle();
+        return;
+      }
+      running = order.flatMap((itemIndex, k) => {
+        const delay = k * SPIN_STAGGER_MS;
+        const reel = reels.current.get(itemIndex) as HTMLDivElement;
+        const spin = reel.animate(
+          [{ transform: 'translateY(0)' }, { transform: `translateY(${reelEnd}px)` }],
+          { duration: SPIN_MS, delay, easing: SPIN_EASING, fill: 'both' },
+        );
+        const pop = tiles.current.get(itemIndex)?.animate(LAND_POP, { duration: POP_MS, delay: delay + SPIN_MS - POP_MS / 3, easing: 'ease-out' });
+        return pop ? [spin, pop] : [spin];
+      });
+      Promise.all(running.map((animation) => animation.finished)).then(settle, () => undefined);
+    };
+    const replayWhenShown = () => {
+      running.forEach((animation) => animation.cancel());
+      running = [];
+      stopWaiting();
+      stopWaiting = afterSteadyFrames(SPIN_START_MS, play);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden' && !settled) replayWhenShown();
+    };
+    replayWhenShown();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      settled = true;
+      stopWaiting();
+      running.forEach((animation) => animation.cancel());
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [freshKey, markSeen]);
+  }, [freshKey, markSeen, innerHeight]);
 
   return (
     <Wrap>
@@ -133,22 +185,28 @@ export default function CipherStrip({ slots, seenKey }: Props) {
         style={{ direction: cipherDirection(slots) }}
       >
         {slots.map((slot) => {
-          const freshAt = fresh.indexOf(slot.itemIndex);
-          const spinDelay = SPIN_START_MS + freshAt * SPIN_STAGGER_MS;
-          const spinning = slot.revealed && freshAt >= 0;
+          const spinning = slot.revealed && fresh.includes(slot.itemIndex);
           return (
             <Tile
               key={slot.itemIndex}
+              ref={(el: HTMLDivElement | null) => {
+                if (el) tiles.current.set(slot.itemIndex, el);
+                else tiles.current.delete(slot.itemIndex);
+              }}
               $size={size}
               $filled={slot.revealed}
-              $popAt={spinning ? spinDelay + SPIN_MS - POP_MS / 3 : null}
             >
               {spinning ? (
-                <Reel $delay={spinDelay} $end={-(REEL_LENGTH - 1) * innerHeight}>
+                <div
+                  ref={(el) => {
+                    if (el) reels.current.set(slot.itemIndex, el);
+                    else reels.current.delete(slot.itemIndex);
+                  }}
+                >
                   {reelStrip(slot.char, slot.itemIndex + 1).map((c, k) => (
                     <Glyph key={k} $h={innerHeight} $font={size.font}>{c}</Glyph>
                   ))}
-                </Reel>
+                </div>
               ) : (
                 slot.revealed
                   ? <Glyph $h={innerHeight} $font={size.font}>{slot.char}</Glyph>

@@ -37,7 +37,7 @@ import {
   LoginFormWrapper,
 } from '../admin/styled';
 import LangDrawer from '../../components/LangDrawer';
-import { rememberActivityLanguages } from '../../utils/activityLanguages';
+import { rememberActivityLanguages, takeStartLanguage } from '../../utils/activityLanguages';
 
 type LoginField = 'email' | 'phoneNumber' | 'name';
 
@@ -63,6 +63,7 @@ interface ActivityConfig {
   scheduledEnd?: string;
   moduleType?: string;
   languages?: string[];
+  defaultLanguage?: string;
 }
 
 type GroupFlow = 'choice' | 'create' | 'join-paste' | 'join-login' | 'success';
@@ -252,7 +253,7 @@ export default function PlayPage() {
   const { login, establishSession, isAuthenticated, participant } = useAuth();
   const navigate = useNavigate();
   const t = useTranslations(texts);
-  const { restrictToLanguages } = useLang();
+  const { restrictToLanguages, setLang } = useLang();
   const resumeCheckedForCode = useRef<string | null>(null);
 
   const isSelfService = activity?.connectionType === 'group' && activity?.groupEntryMode === 'selfService';
@@ -279,6 +280,11 @@ export default function PlayPage() {
   useEffect(() => {
     if (code) rememberActivityCode(code);
   }, [code]);
+
+  useEffect(() => {
+    const start = activity ? takeStartLanguage(activity.code, activity.defaultLanguage) : null;
+    if (start) setLang(start);
+  }, [activity, setLang]);
 
   useEffect(() => {
     if (!code) return;

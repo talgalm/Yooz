@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readLang, normaliseLang, sanitiseLanguages } from './requestLang';
+import { readLang, normaliseLang, sanitiseLanguages, sanitiseStartLanguage } from './requestLang';
 
 const req = (headers: Record<string, unknown> = {}, query: Record<string, unknown> = {}) =>
   ({ headers, query }) as never;
@@ -46,4 +46,13 @@ test('saying nothing about languages leaves the stored value alone', () => {
 
 test('Hebrew is implicit, and unknown codes are dropped', () => {
   assert.deepEqual(sanitiseLanguages(['he', 'en', 'klingon', 42, null]), ['en']);
+});
+
+test('an activity starts only in a language it is offered in, Hebrew being no setting at all', () => {
+  assert.equal(sanitiseStartLanguage('en', ['en']), 'en');
+  assert.equal(sanitiseStartLanguage('en', []), null);
+  assert.equal(sanitiseStartLanguage('he', ['en']), null);
+  assert.equal(sanitiseStartLanguage('xx', ['en']), null);
+  assert.equal(sanitiseStartLanguage(undefined, ['en']), undefined);
+  assert.equal(sanitiseStartLanguage('en', undefined), 'en');
 });
