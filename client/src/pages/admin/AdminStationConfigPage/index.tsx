@@ -8,6 +8,10 @@ import FileUploadButton from '../../../components/FileUploadButton';
 import ImagePositionPicker from '../../../components/ImagePositionPicker';
 import EditOnly from '../../../components/EditOnly';
 import ContentLanguageTabs from '../../../components/TranslationsPanel/ContentLanguageTabs';
+import CollageVideoEditor from './CollageVideoEditor';
+import CollageTemplatePreview from './CollageTemplatePreview';
+import CollageRenderPreview from './CollageRenderPreview';
+import { customVideoProblem, type CollageTemplateId, type CustomCollageVideo } from '../../../utils/collageVideo';
 import {
   AdminPage,
   AdminHeader,
@@ -199,8 +203,12 @@ export default function AdminStationConfigPage() {
   ]);
   const [collageMultiSelect, setCollageMultiSelect] = useState(false);
   const [collageMultiSelectCount, setCollageMultiSelectCount] = useState('6');
-  const [collageTemplate, setCollageTemplate] = useState<'default' | 'gan-yehoshua'>('default');
+  const [collageTemplate, setCollageTemplate] = useState<CollageTemplateId>('default');
+  const [collageCustomVideo, setCollageCustomVideo] = useState<CustomCollageVideo | undefined>(undefined);
   const [collageDisclaimer, setCollageDisclaimer] = useState('');
+  const collagePhotoCount = collageMultiSelect
+    ? Math.max(1, parseInt(collageMultiSelectCount, 10) || 1)
+    : Math.max(1, collageMissions.filter((m) => m.title.trim()).length);
   const [feedbackTitle, setFeedbackTitle] = useState('');
   const [feedbackIntroText, setFeedbackIntroText] = useState('');
   const [feedbackQuestions, setFeedbackQuestions] = useState<{ text: string }[]>([{ text: '' }]);
@@ -364,8 +372,11 @@ export default function AdminStationConfigPage() {
           if (typeof settings.multiSelectCount === 'number') {
             setCollageMultiSelectCount(String(settings.multiSelectCount));
           }
-          if (settings.template === 'gan-yehoshua' || settings.template === 'default') {
+          if (settings.template === 'gan-yehoshua' || settings.template === 'default' || settings.template === 'custom') {
             setCollageTemplate(settings.template);
+          }
+          if (settings.customVideo && typeof settings.customVideo === 'object') {
+            setCollageCustomVideo(settings.customVideo as CustomCollageVideo);
           }
           if (settings.disclaimer) setCollageDisclaimer(settings.disclaimer as string);
         }
@@ -485,8 +496,11 @@ export default function AdminStationConfigPage() {
       if (typeof settings.multiSelectCount === 'number') {
         setCollageMultiSelectCount(String(settings.multiSelectCount));
       }
-      if (settings.template === 'gan-yehoshua' || settings.template === 'default') {
+      if (settings.template === 'gan-yehoshua' || settings.template === 'default' || settings.template === 'custom') {
         setCollageTemplate(settings.template);
+      }
+      if (settings.customVideo && typeof settings.customVideo === 'object') {
+        setCollageCustomVideo(settings.customVideo as CustomCollageVideo);
       }
       if (settings.disclaimer) setCollageDisclaimer(settings.disclaimer as string);
     }
@@ -605,7 +619,13 @@ export default function AdminStationConfigPage() {
           const n = parseInt(collageMultiSelectCount, 10);
           settings.multiSelectCount = Number.isFinite(n) && n > 0 ? n : 1;
         }
+        if (collageTemplate === 'custom' && customVideoProblem(collageCustomVideo)) {
+          setError(t.collageCustomVideoInvalid);
+          setLoading(false);
+          return;
+        }
         settings.template = collageTemplate;
+        if (collageCustomVideo) settings.customVideo = collageCustomVideo;
         const disc = collageDisclaimer.trim();
         if (disc) settings.disclaimer = disc;
       }
@@ -863,6 +883,7 @@ export default function AdminStationConfigPage() {
     setCollageMultiSelect(false);
     setCollageMultiSelectCount('6');
     setCollageTemplate('default');
+    setCollageCustomVideo(undefined);
     setFeedbackTitle('');
     setFeedbackIntroText('');
     setFeedbackQuestions([{ text: '' }]);
@@ -1352,8 +1373,44 @@ export default function AdminStationConfigPage() {
                     >
                       {t.collageTemplateGanYehoshua}
                     </SelectionButton>
+                    <SelectionButton
+                      type="button"
+                      selected={collageTemplate === 'custom'}
+                      onClick={() => setCollageTemplate('custom')}
+                    >
+                      {t.collageTemplateCustom}
+                    </SelectionButton>
                   </SelectionGroup>
 
+                  {collageTemplate === 'custom' ? (
+                    <CollageVideoEditor
+                      value={collageCustomVideo}
+                      onChange={setCollageCustomVideo}
+                      photoCount={collagePhotoCount}
+                    />
+                  ) : (
+                    <CollageTemplatePreview
+                      templateId={collageTemplate}
+                      photoCount={collagePhotoCount}
+                      replacesCustom={!!collageCustomVideo?.url}
+                      onEdit={(video) => {
+                        setCollageCustomVideo(video);
+                        setCollageTemplate('custom');
+                      }}
+                    />
+                  )}
+                  <CollageRenderPreview
+                    request={{
+                      template: collageTemplate,
+                      photoCount: collagePhotoCount,
+                      customVideo: collageTemplate === 'custom' ? collageCustomVideo : undefined,
+                      logoUrl: collageLogoUrl.trim() || undefined,
+                      logoRightUrl: collageLogoRightUrl.trim() || undefined,
+                    }}
+                    blocked={collageTemplate === 'custom' && customVideoProblem(collageCustomVideo) !== null}
+                  />
+
+                  {collageTemplate !== 'custom' && (<>
                   <SectionLabelNoMargin>{t.collageLogo}</SectionLabelNoMargin>
                   <div style={{ fontSize: 12, color: '#888', marginTop: -4, marginBottom: 4 }}>{t.collageLogoDesc}</div>
                   <InlineRow>
@@ -1387,6 +1444,7 @@ export default function AdminStationConfigPage() {
                       onChange={(e) => setCollageLogoRightUrl(e.target.value)}
                     />
                   </InlineRow>
+                  </>)}
 
                   <HintToggleRow>
                     <SectionLabelNoMargin>{t.collageMultiSelect}</SectionLabelNoMargin>

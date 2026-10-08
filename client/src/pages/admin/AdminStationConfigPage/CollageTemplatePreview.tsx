@@ -1,0 +1,303 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { styled } from '@mui/material/styles';
+import { useTranslations } from '../../../context/LanguageContext';
+import { adminApiFetch } from '../../../utils/adminApi';
+import { formatSeconds, formatShort, trimmedDuration, usedSceneCount, type CustomCollageVideo } from '../../../utils/collageVideo';
+import { samplePhotoImage } from '../../../utils/collageSamples';
+import { replaceKeyGreen } from '../../../utils/collageChroma';
+import { texts } from './CollageEditor.i18n';
+import { PauseIcon, PlayIcon } from './CollageEditor.icons';
+
+interface SceneBox {
+  startSec: number;
+  endSec: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+interface TemplateInfo {
+  id: string;
+  width: number;
+  height: number;
+  duration: number;
+  scenes: SceneBox[];
+}
+
+const INK = '#2d2540';
+const LINE = '#ebe7f5';
+const SCREEN_MAX_WIDTH = 420;
+const SCREEN_MAX_HEIGHT = 480;
+const SCENE_BUFFER_PX = 30;
+const SHOW_BEFORE_SEC = 0.2;
+const SHOW_AFTER_SEC = 0.4;
+
+let templatesRequest: Promise<TemplateInfo[]> | null = null;
+
+function loadTemplates(): Promise<TemplateInfo[]> {
+  templatesRequest ??= fetch('/api/collage/templates')
+    .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+    .then((data: { templates: TemplateInfo[] }) => data.templates)
+    .catch((err) => {
+      templatesRequest = null;
+      throw err;
+    });
+  return templatesRequest;
+}
+
+const Studio = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 14,
+  padding: 16,
+  borderRadius: 18,
+  background: '#f7f6fb',
+  border: `1px solid ${LINE}`,
+});
+const Header = styled('div')({ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' });
+const Title = styled('div')({ fontSize: 16, fontWeight: 800, color: INK, flex: 1 });
+const LengthChip = styled('span')({
+  padding: '4px 10px',
+  borderRadius: 999,
+  background: '#ece8fb',
+  color: '#5b4fc4',
+  fontSize: 12.5,
+  fontWeight: 800,
+  fontVariantNumeric: 'tabular-nums',
+});
+const HeaderButton = styled('button')({
+  height: 34,
+  padding: '0 14px',
+  borderRadius: 10,
+  border: `1px solid ${LINE}`,
+  background: '#fff',
+  color: INK,
+  fontSize: 13,
+  fontWeight: 700,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+  '&:disabled': { opacity: 0.6, cursor: 'default' },
+});
+const Failure = styled('div')({ fontSize: 13, fontWeight: 600, color: '#c0392b' });
+const Monitor = styled('div')({ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 14, background: '#000' });
+const Screen = styled('canvas')({ display: 'block', background: '#000' });
+const HiddenVideo = styled('video')({ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' });
+const Transport = styled('div')({ display: 'flex', alignItems: 'center', gap: 12, alignSelf: 'stretch', direction: 'ltr' });
+const PlayButton = styled('button')({
+  width: 42,
+  height: 42,
+  borderRadius: '50%',
+  border: 'none',
+  background: '#fff',
+  color: INK,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  cursor: 'pointer',
+  flexShrink: 0,
+  '&:disabled': { opacity: 0.4, cursor: 'default' },
+});
+const Clock = styled('div')({ fontSize: 14, fontWeight: 700, color: '#fff', fontVariantNumeric: 'tabular-nums', flexShrink: 0 });
+const ClockTotal = styled('span')({ color: 'rgba(255,255,255,0.5)', fontWeight: 600 });
+const Bar = styled('div')({ position: 'relative', flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.18)', cursor: 'pointer' });
+const Fill = styled('div')({ position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 3, background: '#fff' });
+const Warn = styled('div')({ fontSize: 13, fontWeight: 600, color: '#b26a00' });
+
+function drawCover(ctx: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, w: number, h: number) {
+  if (!image.complete || !image.naturalWidth) return;
+  const scale = Math.max(w / image.naturalWidth, h / image.naturalHeight);
+  const sw = w / scale;
+  const sh = h / scale;
+  ctx.drawImage(image, (image.naturalWidth - sw) / 2, (image.naturalHeight - sh) / 2, sw, sh, x, y, w, h);
+}
+
+interface Props {
+  templateId: string;
+  photoCount: number;
+  replacesCustom: boolean;
+  onEdit: (video: CustomCollageVideo) => void;
+}
+
+export default function CollageTemplatePreview({ templateId, photoCount, replacesCustom, onEdit }: Props) {
+  const t = useTranslations(texts);
+  const [templates, setTemplates] = useState<TemplateInfo[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [time, setTime] = useState(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const layerRef = useRef<HTMLCanvasElement | null>(null);
+  const startedRef = useRef(false);
+  const [preparing, setPreparing] = useState(false);
+  const [editFailed, setEditFailed] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    loadTemplates().then((list) => alive && setTemplates(list)).catch(() => alive && setFailed(true));
+    return () => { alive = false; };
+  }, []);
+
+  const info = templates?.find((tpl) => tpl.id === templateId) ?? null;
+  const sceneCount = info ? usedSceneCount(info.scenes.length, photoCount) : 0;
+  const endAt = info ? trimmedDuration(info.scenes.map((s) => s.endSec), photoCount, info.duration) : 0;
+  const aspect = info ? info.width / info.height : 9 / 16;
+  const screenW = Math.round(Math.min(SCREEN_MAX_WIDTH, SCREEN_MAX_HEIGHT * aspect));
+  const screenH = Math.round(screenW / aspect);
+  const pixelRatio = Math.min(2, typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1);
+
+  const draw = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || !info || video.readyState < 2) return;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+    const layer = layerRef.current ?? document.createElement('canvas');
+    layerRef.current = layer;
+    layer.width = canvas.width;
+    layer.height = canvas.height;
+    const lctx = layer.getContext('2d', { willReadFrequently: true });
+    if (!lctx) return;
+    const now = video.currentTime;
+    const buffer = (SCENE_BUFFER_PX * canvas.width) / info.width;
+    lctx.clearRect(0, 0, layer.width, layer.height);
+    info.scenes.slice(0, sceneCount).forEach((scene, i) => {
+      if (now < scene.startSec - SHOW_BEFORE_SEC || now > scene.endSec + SHOW_AFTER_SEC) return;
+      drawCover(
+        lctx,
+        samplePhotoImage(i),
+        scene.x * canvas.width - buffer,
+        scene.y * canvas.height - buffer,
+        scene.w * canvas.width + buffer * 2,
+        scene.h * canvas.height + buffer * 2,
+      );
+    });
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    replaceKeyGreen(frame.data, lctx.getImageData(0, 0, layer.width, layer.height).data);
+    ctx.putImageData(frame, 0, 0);
+  }, [info, sceneCount]);
+
+  useEffect(() => {
+    if (!playing) return;
+    let handle = 0;
+    const tick = () => {
+      const video = videoRef.current;
+      if (video) {
+        if (video.currentTime >= endAt) {
+          video.pause();
+          video.currentTime = endAt;
+        }
+        setTime(video.currentTime);
+        draw();
+      }
+      handle = requestAnimationFrame(tick);
+    };
+    handle = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(handle);
+  }, [playing, draw, endAt]);
+
+  useEffect(() => {
+    draw();
+    const pending = Array.from({ length: sceneCount }, (_, i) => samplePhotoImage(i)).filter((image) => !image.complete);
+    pending.forEach((image) => image.addEventListener('load', draw));
+    return () => pending.forEach((image) => image.removeEventListener('load', draw));
+  }, [draw, sceneCount]);
+
+  useEffect(() => {
+    startedRef.current = false;
+    setPlaying(false);
+    setTime(0);
+  }, [templateId]);
+
+  const togglePlay = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (!video.paused) {
+      video.pause();
+      return;
+    }
+    if (!startedRef.current || video.currentTime >= endAt - 0.05) video.currentTime = 0;
+    startedRef.current = true;
+    void video.play();
+  };
+
+  const editTiming = async () => {
+    if (replacesCustom && !window.confirm(t.replaceCustomConfirm)) return;
+    videoRef.current?.pause();
+    setPreparing(true);
+    setEditFailed(false);
+    try {
+      const data = await adminApiFetch<{ video: CustomCollageVideo }>(`/api/collage/templates/${templateId}/editable`, {
+        method: 'POST',
+        body: JSON.stringify({ photoCount }),
+      });
+      onEdit(data.video);
+    } catch {
+      setEditFailed(true);
+    } finally {
+      setPreparing(false);
+    }
+  };
+
+  const seekTo = (fraction: number) => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = Math.min(endAt, Math.max(0, fraction * endAt));
+  };
+
+  if (failed) return null;
+
+  return (
+    <Studio>
+      <Header>
+        <Title>{t.livePreview}</Title>
+        {info && <LengthChip>{t.finalLength(formatShort(endAt))}</LengthChip>}
+        {info && (
+          <HeaderButton type="button" onClick={() => void editTiming()} disabled={preparing}>
+            {preparing ? t.preparingEdit : t.editTiming}
+          </HeaderButton>
+        )}
+      </Header>
+      {editFailed && <Failure>{t.editFailed}</Failure>}
+      <Monitor>
+        <Screen ref={canvasRef} width={Math.round(screenW * pixelRatio)} height={Math.round(screenH * pixelRatio)} style={{ width: screenW, height: screenH }} />
+        {info && (
+          <HiddenVideo
+            key={info.id}
+            ref={videoRef}
+            src={`/api/collage/templates/${info.id}/video`}
+            preload="metadata"
+            playsInline
+            onLoadedMetadata={(e) => {
+              if (!startedRef.current) e.currentTarget.currentTime = 0;
+            }}
+            onLoadedData={draw}
+            onSeeked={() => { setTime(videoRef.current?.currentTime ?? 0); draw(); }}
+            onPlay={() => setPlaying(true)}
+            onPause={() => setPlaying(false)}
+          />
+        )}
+        <Transport>
+          <PlayButton type="button" onClick={togglePlay} disabled={!info} aria-label={playing ? t.pause : t.play}>
+            {playing ? <PauseIcon size={20} /> : <PlayIcon size={20} />}
+          </PlayButton>
+          <Clock>
+            {info ? formatSeconds(time) : t.previewLoading}
+            {info && <ClockTotal>{` / ${formatSeconds(endAt)}`}</ClockTotal>}
+          </Clock>
+          <Bar
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              seekTo((e.clientX - rect.left) / rect.width);
+            }}
+          >
+            <Fill style={{ width: `${endAt ? Math.min(100, (time / endAt) * 100) : 0}%` }} />
+          </Bar>
+        </Transport>
+      </Monitor>
+      {info && photoCount > info.scenes.length && <Warn>{t.builtInTooMany(info.scenes.length)}</Warn>}
+    </Studio>
+  );
+}

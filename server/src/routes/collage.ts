@@ -22,8 +22,10 @@ import {
   scheduleCollageEncode,
 } from '../services/collageProcessor';
 import { loadShed } from '../middleware/loadShedding';
+import { authenticateAdmin } from '../middleware/adminAuth';
 import { Station } from '../models/Station';
 import {
+  CUSTOM_VIDEO_MAX_SLOTS,
   DEFAULT_KEY_COLOR,
   DEFAULT_KEY_SIMILARITY,
   TRIMMED_TAIL_SECONDS,
@@ -555,6 +557,217 @@ async function customVideoForStation(
   const station = await Station.findById(stationId).lean();
   return sanitizeCustomCollageVideo((station?.settings as Record<string, unknown> | undefined)?.customVideo);
 }
+
+function sceneBox(template: TemplateMeta, scene: MotionScene) {
+  const [, x, y] = scene.keyframes[0] ?? [0, 0, 0];
+  return {
+    startSec: scene.startSec,
+    endSec: scene.endSec,
+    x: x / template.width,
+    y: y / template.height,
+    w: scene.panelW / template.width,
+    h: scene.panelH / template.height,
+  };
+}
+
+const PREVIEW_ACTIVITY_CODE = 'admin-preview';
+const SAMPLE_COLORS = ['#E63946', '#F77F00', '#06A77D', '#118AB2', '#7209B7', '#FCBF49', '#EF476F', '#26547C', '#2A9D8F', '#8338EC', '#FB5607', '#3A86FF'];
+const sampleImageUrls = new Map<number, string>();
+
+async function sampleImageUrl(index: number): Promise<string> {
+  const cached = sampleImageUrls.get(index);
+  if (cached) return cached;
+  const label = index + 1;
+  const svg = `<svg width="900" height="1200" xmlns="http://www.w3.org/2000/svg"><rect width="900" height="1200" fill="${SAMPLE_COLORS[index % SAMPLE_COLORS.length]}"/><text x="450" y="600" font-family="Arial, sans-serif" font-size="520" font-weight="900" fill="white" text-anchor="middle" dominant-baseline="central">${label}</text></svg>`;
+  const jpeg = await sharp(Buffer.from(svg)).jpeg({ quality: 85 }).toBuffer();
+  const uploaded = await new Promise<{ secure_url: string }>((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { resource_type: 'image', folder: 'yooz/collage-samples', public_id: `sample-${label}`, overwrite: false },
+      (error, result) => (error || !result ? reject(error ?? new Error('Upload failed')) : resolve(result as { secure_url: string })),
+    );
+    stream.end(jpeg);
+  });
+  sampleImageUrls.set(index, uploaded.secure_url);
+  return uploaded.secure_url;
+}
+
+router.post('/admin-preview', authenticateAdmin, async (req: Request, res: Response) => {
+  const { template: templateId, photoCount, customVideo: rawVideo, logoUrl, logoRightUrl } = req.body as {
+    template?: string;
+    photoCount?: number;
+    customVideo?: unknown;
+    logoUrl?: string;
+    logoRightUrl?: string;
+  };
+  const customVideo = templateId === CUSTOM_TEMPLATE_ID ? sanitizeCustomCollageVideo(rawVideo) : undefined;
+  if (templateId === CUSTOM_TEMPLATE_ID && !customVideo) {
+    res.status(400).json({ error: 'The custom video needs a video and at least one photo slot' });
+    return;
+  }
+  const count = Math.min(CUSTOM_VIDEO_MAX_SLOTS, Math.max(1, Math.floor(Number(photoCount)) || 1));
+  try {
+    const imageUrls = await Promise.all(Array.from({ length: count }, (_, i) => sampleImageUrl(i)));
+    const jobId = `preview_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    await CollageJob.create({
+      jobId,
+      activityCode: PREVIEW_ACTIVITY_CODE,
+      template: customVideo ? CUSTOM_TEMPLATE_ID : templateId && TEMPLATES[templateId] ? templateId : DEFAULT_TEMPLATE_ID,
+      ...(customVideo && { customVideo }),
+      ...(typeof logoUrl === 'string' && /^https?:\/\//i.test(logoUrl) && { logoUrl }),
+      ...(typeof logoRightUrl === 'string' && /^https?:\/\//i.test(logoRightUrl) && { logoRightUrl }),
+      requiredImages: count,
+      imageUrls,
+      phase: 'queued',
+      percent: 2,
+      message: 'ממתין לקידוד...',
+      isVideo: true,
+    });
+    scheduleCollageEncode(jobId);
+    res.status(202).json({ jobId });
+  } catch (err) {
+    console.error('[collage] admin preview failed:', err);
+    res.status(500).json({ error: 'Could not start the preview' });
+  }
+});
+
+router.get('/templates', (_req: Request, res: Response) => {
+  res.json({
+    templates: Object.entries(TEMPLATES).map(([id, template]) => ({
+      id,
+      width: template.width,
+      height: template.height,
+      duration: template.duration,
+      chroma: template.chroma.color,
+      scenes: template.scenes.map((scene) => sceneBox(template, scene)),
+    })),
+  });
+});
+
+router.get('/templates/:id/video', (req: Request<{ id: string }>, res: Response) => {
+  const template = TEMPLATES[req.params.id];
+  if (!template) {
+    res.status(404).json({ error: 'Template not found' });
+    return;
+  }
+  res.sendFile(path.join(process.cwd(), 'assets', template.videoFile), { maxAge: '7d' });
+});
+
+const EDITABLE_LEAD_SECONDS = 0.3;
+const EDITABLE_TAIL_SECONDS = 0.4;
+const EDITABLE_VERSION = 'v1';
+const EDITABLE_UPLOAD_CHUNK_BYTES = 20_000_000;
+const editableTemplateUrls = new Map<string, Promise<string>>();
+
+export function editableTemplateVideo(template: TemplateMeta, url: string, photoCount: number): CustomCollageVideo | undefined {
+  const used = templateForPhotos(template, photoCount);
+  const { width, height, buffer } = template;
+  return sanitizeCustomCollageVideo({
+    url,
+    width,
+    height,
+    duration: template.duration,
+    ...(used.duration < template.duration && { trimEnd: used.duration }),
+    keyColor: `#${template.chroma.color.replace(/^0x/i, '')}`,
+    keySimilarity: template.chroma.similarity,
+    slots: used.scenes.map((scene) => {
+      const [, x, y] = scene.keyframes[0] ?? [0, 0, 0];
+      const left = Math.max(0, x - buffer);
+      const top = Math.max(0, y - buffer);
+      const right = Math.min(width, x + scene.panelW + buffer);
+      const bottom = Math.min(height, y + scene.panelH + buffer);
+      return {
+        startSec: Math.max(0, scene.startSec - EDITABLE_LEAD_SECONDS),
+        endSec: Math.min(used.duration, scene.endSec + EDITABLE_TAIL_SECONDS),
+        x: left / width,
+        y: top / height,
+        w: (right - left) / width,
+        h: (bottom - top) / height,
+        layer: 'green',
+        track: 0,
+      };
+    }),
+  });
+}
+
+export function iconRecolorFilter(template: TemplateMeta): string | null {
+  const r = template.iconRecolor;
+  if (!r) return null;
+  return [
+    `[0:v]split=2[main][corner]`,
+    `[corner]crop=${r.w}:${r.h}:${r.x}:${r.y},colorkey=color=${r.fromColor}:similarity=${r.similarity}:blend=${r.blend}[keyed]`,
+    `color=color=${r.toColor}:size=${r.w}x${r.h}:rate=${template.fps},format=yuv420p[fill]`,
+    `[fill][keyed]overlay=0:0:format=auto:shortest=1[cornerOut]`,
+    `[main][cornerOut]overlay=${r.x}:${r.y}:format=auto[vout]`,
+  ].join(';');
+}
+
+function runFfmpegToFile(args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(FFMPEG_BIN, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+    let tail = '';
+    proc.stderr.on('data', (chunk: Buffer) => { tail = (tail + chunk.toString()).slice(-2000); });
+    proc.on('error', reject);
+    proc.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg exited with ${code}: ${tail}`))));
+  });
+}
+
+async function prepareEditableTemplate(id: string, template: TemplateMeta): Promise<string> {
+  const publicId = `yooz/collage-templates/${id}-${EDITABLE_VERSION}`;
+  const existing = await cloudinary.api.resource(publicId, { resource_type: 'video' }).catch(() => null);
+  if (existing?.secure_url) return existing.secure_url as string;
+  const source = path.join(process.cwd(), 'assets', template.videoFile);
+  const filter = iconRecolorFilter(template);
+  const baked = filter ? path.join(os.tmpdir(), `editable-${id}-${Date.now()}.mp4`) : null;
+  try {
+    if (baked && filter) {
+      await runFfmpegToFile([
+        '-y', '-i', source,
+        '-filter_complex', filter,
+        '-map', '[vout]', '-map', '0:a?',
+        '-t', String(template.duration),
+        '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
+        '-c:a', 'copy', '-movflags', '+faststart',
+        baked,
+      ]);
+    }
+    const uploaded = await new Promise<{ secure_url: string }>((resolve, reject) => {
+      cloudinary.uploader.upload_large(
+        baked ?? source,
+        { resource_type: 'video', public_id: publicId, overwrite: false, chunk_size: EDITABLE_UPLOAD_CHUNK_BYTES },
+        (error, result) => (error || !result ? reject(error ?? new Error('Upload failed')) : resolve(result as { secure_url: string })),
+      );
+    });
+    return uploaded.secure_url;
+  } finally {
+    if (baked) fs.promises.rm(baked, { force: true }).catch(() => undefined);
+  }
+}
+
+function editableTemplateUrl(id: string, template: TemplateMeta): Promise<string> {
+  const cached = editableTemplateUrls.get(id);
+  if (cached) return cached;
+  const pending = prepareEditableTemplate(id, template);
+  editableTemplateUrls.set(id, pending);
+  pending.catch(() => editableTemplateUrls.delete(id));
+  return pending;
+}
+
+router.post('/templates/:id/editable', authenticateAdmin, async (req: Request<{ id: string }>, res: Response) => {
+  const template = TEMPLATES[req.params.id];
+  if (!template) {
+    res.status(404).json({ error: 'Template not found' });
+    return;
+  }
+  const photoCount = Number((req.body as { photoCount?: unknown } | undefined)?.photoCount) || 0;
+  try {
+    const video = editableTemplateVideo(template, await editableTemplateUrl(req.params.id, template), photoCount);
+    if (!video) throw new Error('The template did not make a valid custom video');
+    res.json({ video });
+  } catch (err) {
+    console.error('[collage] editable template failed:', err);
+    res.status(500).json({ error: 'Could not prepare the video for editing' });
+  }
+});
 
 function serializeCollageJob(job: InstanceType<typeof CollageJob>) {
   const uploaded = job.imageUrls.filter(Boolean).length;

@@ -723,22 +723,35 @@ filter graph. `templateForPhotos(template, n)` now keeps the first `n` scenes an
 second after the last one leaves (`TRIMMED_TAIL_SECONDS`), fading the music out over that second; six
 photos give the exact same filter as before. More than six: the extras are not used.
 
-**Custom video** (station `settings.template: 'custom'` + `settings.customVideo`). Shape: `{url,
-width, height, duration, trimStart?, trimEnd?, freezes?: {atSec, holdSec}[], keyColor?, keySimilarity?,
-slots[]}`; each slot `{startSec, endSec, x, y, w, h, layer?: 'front'|'behind'|'green', maskUrl?,
-track?}` with the box as fractions of the frame.
-- **Two clocks.** The source video can be up to 300s; `trimStart`/`trimEnd` cut it, and each freeze
-  holds a source frame for 0.5-10s (up to 6 freezes, audio is silent while frozen). `timelinePieces`
-  turns trim + freezes into play/freeze pieces; the final video (at most 90s) is those pieces back to
-  back. **Slot times are on the final timeline** (`sourceAt` maps final time to a source frame).
-  Slots stay in order of appearance, which is the photo order.
+**Custom video** (station `settings.template: 'custom'` + `settings.customVideo`). A full editor in
+the station settings (`AdminStationConfigPage/CollageVideoEditor.tsx` with `CollageStage.tsx`,
+`CollageTimeline.tsx` and `CollageInspector.tsx`). Shape: `{url, width, height, duration, trimStart?, trimEnd?, freezes?:
+{atSec, holdSec}[], keyColor?, keySimilarity?, slots[]}`; each slot `{startSec, endSec, x, y, w, h,
+layer?: 'front'|'behind'|'green', maskUrl?, track?}` with the box as fractions of the frame.
+- **One timeline, two clocks.** The source video can be up to 300s; the handles at the ends of the
+  video row trim it (the cut parts stay on the timeline, dimmed, so the original length is always
+  visible), and "freeze this frame" holds the current source frame for 0.5-10s (up to 6
+  freezes, audio is silent while frozen). `timelinePieces` turns trim + freezes into play/freeze
+  pieces; the final video (at most 90s) is those pieces back to back. **Slot times are on the final
+  timeline**, which is what the editor plays (`sourceAt` maps final time to a source frame; the
+  editor drives the hidden source `<video>` from a wall clock and pauses it on freezes). Adding,
+  lengthening or removing a freeze, or trimming the start, shifts later slots with their content
+  (`shiftSlotsFrom`, `withFreezeAdded`, `withTrim`...), so photos stay on the moment they were put on.
+- **Placing photos:** drag the frame over the video, drag its corners, drag a slot's edges on the
+  final timeline or type its times; clicking a slot's bar jumps to that point. Slots stay in order of
+  appearance, which is the photo order.
 - **Which photo is in front.** Each slot sits on a timeline row (`track`, 0 = top); the top row is
-  in front (`stackOrder`, back to front, the same in `collageSlots.ts` and `collageVideo.ts`). Slots
-  without a `track` are packed into the first free row by start time (`slotLanes`).
+  in front, the same on the editor canvas and in the render (`stackOrder`, back to front, mirrored
+  in `collageSlots.ts`). Slots without a `track` are packed into the first free row by start time
+  (`slotLanes`). The admin swaps two rows with the button between them, or drags a bar up or down
+  to another row (bars it lands on that overlap it swap rows with it). A new photo goes on the top
+  row; a bar moved in time onto a busy row drops to the next free one.
 - **Layers per photo.** `front`: on top of the video. `green`: behind the video, showing only where
-  the video is the key colour (`keyColor`, default `#00ff00`; `keySimilarity` 0.05-0.6) - ffmpeg
-  `chromakey`. `behind`: a black/white mask PNG (`maskUrl`) marks the parts of the frame that stand
-  in front of the photo; the render puts the photo on, then the video again through that mask
+  the video is the key colour (`keyColor`, default `#00ff00`, picked with a colour input or by
+  clicking the video; `keySimilarity` 0.05-0.6) - ffmpeg `chromakey`, and the editor previews it with
+  the same chroma distance (`utils/collageChroma.ts`). `behind`: the admin erases, on a frame, the parts
+  of the photo where the video should stand in front of it (a door, a person) - the editor shows
+  the video through the erased parts live; the mask is uploaded as a black/white PNG (`maskUrl`), and the render puts the photo on, then the video again through that mask
   (`alphamerge`). A mask is a still, so it fits a frozen frame or a static camera. A `behind` slot
   without a mask simply shows on top.
 - **Rendering** (`buildCustomFilterComplex` / `runCustomFfmpeg`): split the source into the
@@ -753,6 +766,26 @@ track?}` with the box as fractions of the frame.
   downloads the video and any masks. Nothing a participant sends can choose the video. Limits and
   the timeline maths live twice (`server/src/utils/collageSlots.ts`, `client/src/utils/collageVideo.ts`)
   and `collageSlots.test.ts` fails if the limits drift.
+
+**Previews in the station settings.** A live preview in the browser: for a built-in video
+(`CollageTemplatePreview.tsx`) the template MP4 (served by `GET /api/collage/templates/:id/video`,
+scene boxes from `GET /api/collage/templates`) is drawn to a canvas and its green replaced by numbered
+sample photos per frame (`utils/collageChroma.ts`), stopping where the trimmed video ends; only the
+first frame loads up front. For a custom video the editor itself shows the sample photos in their
+boxes. A real preview (`CollageRenderPreview.tsx`): `POST /api/collage/admin-preview` (admin JWT)
+uploads numbered sample photos once (`yooz/collage-samples`), creates a job under activity code
+`admin-preview` and sends it through the same Lambda; the page polls `/progress/:jobId` and plays the
+result. Locally that needs a Lambda; the render paths were checked with `ffmpeg-static` directly.
+
+**Editing a built-in video's timing.** "Edit timing" on the built-in preview calls
+`POST /api/collage/templates/:id/editable` (admin JWT, body `{photoCount}`), which turns the template
+into a custom video and switches the station to `template: 'custom'`: the template MP4 is uploaded once
+to Cloudinary (`yooz/collage-templates/<id>-v1`, looked up first so it uploads only once; a template
+with `iconRecolor` is baked with that recolour first, since the custom render does not do it), and
+each used scene becomes a `green` slot over its window (panel + `buffer`, from 0.3s before to 0.4s
+after the scene) with the template's chroma as `keyColor`/`keySimilarity` and `trimEnd` where the
+built-in would cut. The result renders like the built-in (checked frame by frame), and from there it
+is a normal custom video. The station logos are not carried over (custom videos have no logo slots).
 
 ---
 
@@ -1602,6 +1635,9 @@ optional logo placeholder + iconRecolor. `DEFAULT_TEMPLATE_ID='default'`. Source
 - `POST /upload-title` — upload the title image.
 - `POST /jobs` — create/get a `CollageJob` (idempotent by jobId; `requiredImages` from template).
   With `template: 'custom'` + `stationId`, copies the station's `customVideo` onto the job (§12).
+- `GET /templates`, `GET /templates/:id/video` — built-in template scene boxes and MP4, for the live
+  preview. `POST /admin-preview` *(admin)* — render a sample collage with numbered photos (§12).
+  `POST /templates/:id/editable` *(admin)* — turn a built-in video into an editable custom video (§12).
 - `GET /jobs/:jobId`, `GET /jobs?activityCode=&splitGroupId=` — fetch job(s).
 - `POST /jobs/:jobId/start` *(loadShed)* — validate all photos present → `phase='queued'` +
   `scheduleCollageEncode` (202). Idempotent if already done/encoding.
