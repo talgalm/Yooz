@@ -701,7 +701,9 @@ Participant photos → Cloudinary → an ffmpeg collage (video or static). State
 `LAMBDA_SETUP.md`), kicked fire-and-forget by `services/collageProcessor.ts` - there is no local
 fallback in that path. Upload/start routes are protected by `loadShed` (503 + Retry-After when
 event-loop lag or RSS trips; the queue-depth signal always reads 0 now that AWS owns concurrency).
-Boot recovery in `index.ts` resurrects jobs 30s–15min stale, aborts older ones. A split collage
+Boot recovery in `index.ts` resurrects jobs 30s–15min stale, aborts older ones - only on a server
+with `COLLAGE_LAMBDA_FUNCTION_NAME` set, because a dev server on the shared database used to abort
+or fail production jobs every time it restarted. A split collage
 (`module.items[].collageSplit`) spreads photo capture across several stations. Every collage
 storage/job key is scoped by `participantSessionId()` (`utils/participantActivity.ts`) — a random
 id minted on each login — so a second participant on the same phone can't be handed the previous
@@ -759,7 +761,12 @@ layer?: 'front'|'behind'|'green', maskUrl?, track?}` with the box as fractions o
   them (with audio only if the source has any - probed with ffmpeg first), then green photos +
   the keyed video, then masked photos, then front photos, each cropped to fill its box with a 0.25s
   fade; a title image overlays at the top; output 540 wide (960 landscape). More slots than photos
-  reuse photos in order; fewer leave photos out, and the editor says which.
+  reuse photos in order; fewer leave photos out, and the editor says which. Inputs come from
+  `customFfmpegArgs`: photos are looped stills (the fade needs frames over time), but a **mask is a
+  single still** that `alphamerge` keeps reusing. Looped, ffmpeg read each mask far ahead of the
+  video and queued its 720x1280 frames: four masks peaked at 3.5GB, past the Lambda's 3008MB, so
+  the Lambda was killed around the first freeze and every retry died at the same frame while the
+  job sat at "encoding". As a single still it peaks near 700MB with bit-identical output.
 - **Getting it to the Lambda.** The participant's `POST /jobs` sends `stationId`; for
   `template: 'custom'` the server reads that station's `customVideo` itself (the station must be in
   the activity), sanitizes it (`sanitizeCustomCollageVideo`) and copies it onto the job; the Lambda

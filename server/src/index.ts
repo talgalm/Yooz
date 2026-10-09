@@ -228,7 +228,8 @@ async function start() {
   }, COLLAGE_SMS_POLL_MS);
 
   const isPrimaryWorker = !process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === '0';
-  if (isPrimaryWorker) {
+  const rendersCollages = !!process.env.COLLAGE_LAMBDA_FUNCTION_NAME;
+  if (isPrimaryWorker && rendersCollages) {
     try {
       const now = Date.now();
       const resumeFloor = new Date(now - 15 * 60 * 1000);

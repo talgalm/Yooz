@@ -436,12 +436,12 @@ export function buildCustomFilterComplex(
   return parts.join(';');
 }
 
-export function runCustomFfmpeg(
+export function customFfmpegArgs(
   video: CustomCollageVideo,
   videoPath: string,
   slotImagePaths: string[],
-  extras: { maskPaths?: (string | undefined)[]; titlePath?: string; onProgress?: (frame: number) => void },
-): { stdout: Readable; done: Promise<void> } {
+  extras: { maskPaths?: (string | undefined)[]; titlePath?: string; hasAudio: boolean },
+): string[] {
   const length = String(outputDuration(video));
   const args: string[] = ['-y', '-progress', 'pipe:3', '-nostats', '-i', videoPath];
   for (const p of slotImagePaths) {
@@ -451,7 +451,7 @@ export function runCustomFfmpeg(
   const maskIdx = video.slots.map((_, i) => {
     const maskPath = extras.maskPaths?.[i];
     if (!maskPath) return null;
-    args.push('-loop', '1', '-framerate', '20', '-t', length, '-i', maskPath);
+    args.push('-i', maskPath);
     return nextIdx++;
   });
   let titleIdx: number | null = null;
@@ -459,14 +459,27 @@ export function runCustomFfmpeg(
     args.push('-loop', '1', '-framerate', '20', '-t', length, '-i', extras.titlePath);
     titleIdx = nextIdx;
   }
-  const hasAudio = videoHasAudio(videoPath);
   args.push(
-    '-filter_complex', buildCustomFilterComplex(video, { hasAudio, maskIdx, titleIdx }),
+    '-filter_complex', buildCustomFilterComplex(video, { hasAudio: extras.hasAudio, maskIdx, titleIdx }),
     '-map', '[vout]',
-    ...(hasAudio ? ['-map', '[aout]'] : []),
+    ...(extras.hasAudio ? ['-map', '[aout]'] : []),
     '-t', length,
     ...ENCODE_OUTPUT_ARGS,
   );
+  return args;
+}
+
+export function runCustomFfmpeg(
+  video: CustomCollageVideo,
+  videoPath: string,
+  slotImagePaths: string[],
+  extras: { maskPaths?: (string | undefined)[]; titlePath?: string; onProgress?: (frame: number) => void },
+): { stdout: Readable; done: Promise<void> } {
+  const args = customFfmpegArgs(video, videoPath, slotImagePaths, {
+    maskPaths: extras.maskPaths,
+    titlePath: extras.titlePath,
+    hasAudio: videoHasAudio(videoPath),
+  });
   return spawnFfmpeg(args, extras.onProgress);
 }
 
