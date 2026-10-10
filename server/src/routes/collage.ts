@@ -560,15 +560,31 @@ router.get('/progress/:jobId', async (req: Request<{ jobId: string }>, res: Resp
   });
 });
 
-async function customVideoForStation(
+async function collageStationSettings(
   activity: InstanceType<typeof Activity>,
   stationId: string | undefined,
-): Promise<CustomCollageVideo | undefined> {
+): Promise<Record<string, unknown> | undefined> {
   if (!stationId || !/^[a-f0-9]{24}$/i.test(stationId)) return undefined;
   const inActivity = activity.module?.items?.some((item) => item.type === 'station' && item.ref.toString() === stationId);
   if (!inActivity) return undefined;
   const station = await Station.findById(stationId).lean();
-  return sanitizeCustomCollageVideo((station?.settings as Record<string, unknown> | undefined)?.customVideo);
+  return station?.settings as Record<string, unknown> | undefined;
+}
+
+export function hasAllPhotos(job: { requiredImages: number; imageUrls: string[] }): boolean {
+  return Array.from({ length: job.requiredImages }, (_, i) => job.imageUrls[i] || '').every(Boolean);
+}
+
+const STARTED_PHASES = ['queued', 'preparing', 'encoding'];
+
+async function queueCollageJob(jobId: string, fromPhases: { $in: string[] } | { $nin: string[] }): Promise<boolean> {
+  const queued = await CollageJob.updateOne(
+    { jobId, phase: fromPhases },
+    { $set: { phase: 'queued', message: 'ממתין לקידוד...' }, $max: { percent: 2 }, $unset: { error: 1 } },
+  );
+  if (queued.modifiedCount === 0) return false;
+  scheduleCollageEncode(jobId);
+  return true;
 }
 
 function sceneBox(template: TemplateMeta, scene: MotionScene) {
@@ -856,6 +872,9 @@ router.post('/photo-uploaded', async (req: Request, res: Response) => {
   if (job.phase === 'error') job.phase = 'collecting';
   job.message = `הועלו ${job.imageUrls.filter(Boolean).length}/${job.requiredImages} תמונות`;
   await job.save();
+  if (job.autoStart && job.phase === 'collecting' && hasAllPhotos(job)) {
+    await queueCollageJob(jobId, { $in: ['collecting'] });
+  }
   res.json({ url, jobId, imageIndex });
 });
 
@@ -1006,7 +1025,8 @@ router.post('/jobs', async (req: Request, res: Response) => {
     return;
   }
 
-  const customVideo = templateId === CUSTOM_TEMPLATE_ID ? await customVideoForStation(activity, stationId) : undefined;
+  const stationSettings = await collageStationSettings(activity, stationId);
+  const customVideo = templateId === CUSTOM_TEMPLATE_ID ? sanitizeCustomCollageVideo(stationSettings?.customVideo) : undefined;
   if (templateId === CUSTOM_TEMPLATE_ID && !customVideo) {
     res.status(400).json({ error: 'This station has no custom collage video' });
     return;
@@ -1028,6 +1048,7 @@ router.post('/jobs', async (req: Request, res: Response) => {
     percent: 0,
     message: 'אוסף תמונות...',
     isVideo: true,
+    ...(stationSettings?.startWhenComplete === true && { autoStart: true }),
     lang: readLang(req),
   });
 
@@ -1082,19 +1103,14 @@ router.post('/jobs/:jobId/start', loadShed, async (req: Request<{ jobId: string 
     return;
   }
 
-  if (job.phase === 'encoding' || job.phase === 'preparing' || job.phase === 'queued') {
+  if (STARTED_PHASES.includes(job.phase)) {
     res.status(202).json(serializeCollageJob(job));
     return;
   }
 
-  job.phase = 'queued';
-  job.percent = Math.max(job.percent, 2);
-  job.message = 'ממתין לקידוד...';
-  job.error = undefined;
   await job.save();
-
-  scheduleCollageEncode(job.jobId);
-  res.status(202).json(serializeCollageJob(job));
+  await queueCollageJob(job.jobId, { $nin: STARTED_PHASES });
+  res.status(202).json(serializeCollageJob((await CollageJob.findOne({ jobId: job.jobId })) ?? job));
 });
 
 async function renderVideoSharePage(
