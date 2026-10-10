@@ -533,6 +533,16 @@ No admin auth — the `statsShareToken` is the credential.
   live in free-form bags like `game.settings`, so a field list would silently rot) and
   `findMediaUsage(publicId)` → every activity/game/station/mission/theme/library/siteContent/
   portal/layout/tutorial still pointing at the asset. Delete-time only, never on list.
+- **`services/mediaCleanup.ts`** — daily Cloudinary sweep (`startMediaCleanupScheduler`,
+  production + primary worker only, first run 10 min after boot). `RETENTION_DAYS`: collage
+  inputs 2 days, finished collages 30 days (SMS/share links die with them), admin uploads
+  (`isDeletableAsset`) 30 days *and* not mentioned in any document of any Mongo collection.
+  Only touches the `yooz/` prefix. Dry run: `runMediaCleanup({ dryRun: true })`.
+- **Cloudinary bandwidth** is the credit that runs out (free plan: 25 credits/month, ~1 credit per
+  GB delivered). `client/public/sw.js` serves Cloudinary images cache-first (URLs are versioned,
+  never revalidate) and leaves videos and Range requests to the browser - the Cache API cannot
+  store 206s, so intercepting them re-downloaded the video on every seek. Participant media
+  goes through `utils/participantMedia.ts` (`q_auto,w_720` video, `f_auto,q_auto,w_1200` image).
 - **`utils/groupStatus.ts`** — `getGroupStatus` (member/completion counts, **scoped to today**),
   `resolveGroupMinMembers`.
 - **`utils/orderSurveyBorda.ts` / `orderSurveySession.ts`** — live order-game Borda aggregation.
@@ -703,7 +713,9 @@ fallback in that path. Upload/start routes are protected by `loadShed` (503 + Re
 event-loop lag or RSS trips; the queue-depth signal always reads 0 now that AWS owns concurrency).
 Boot recovery in `index.ts` resurrects jobs 30s–15min stale, aborts older ones - only on a server
 with `COLLAGE_LAMBDA_FUNCTION_NAME` set, because a dev server on the shared database used to abort
-or fail production jobs every time it restarted. A split collage
+or fail production jobs every time it restarted. A warm Lambda keeps the last custom collage video
+in `/tmp/last-custom-video` (keyed by its versioned URL) instead of pulling 20-85MB from
+Cloudinary on every render. A split collage
 (`module.items[].collageSplit`) spreads photo capture across several stations. Every collage
 storage/job key is scoped by `participantSessionId()` (`utils/participantActivity.ts`) — a random
 id minted on each login — so a second participant on the same phone can't be handed the previous

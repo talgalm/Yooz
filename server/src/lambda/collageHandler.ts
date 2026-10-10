@@ -1,5 +1,6 @@
 
 import { v2 as cloudinary } from 'cloudinary';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
@@ -62,6 +63,18 @@ async function downloadToFile(url: string, dest: string): Promise<void> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Download failed (${res.status})`);
   fs.writeFileSync(dest, Buffer.from(await res.arrayBuffer()));
+}
+
+const LAST_CUSTOM_VIDEO_DIR = '/tmp/last-custom-video';
+
+async function downloadReusingLastCustomVideo(url: string): Promise<string> {
+  const file = path.join(LAST_CUSTOM_VIDEO_DIR, `${crypto.createHash('sha1').update(url).digest('hex')}.mp4`);
+  if (fs.existsSync(file)) return file;
+  fs.rmSync(LAST_CUSTOM_VIDEO_DIR, { recursive: true, force: true });
+  fs.mkdirSync(LAST_CUSTOM_VIDEO_DIR, { recursive: true });
+  await downloadToFile(url, `${file}.part`);
+  fs.renameSync(`${file}.part`, file);
+  return file;
 }
 
 export async function handler(event: { jobId?: string }): Promise<{ ok: boolean; jobId?: string }> {
@@ -139,8 +152,7 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
       })(),
     ]);
 
-    const customVideoPath = customVideo ? path.join(tmpDir, 'custom-video.mp4') : undefined;
-    if (customVideo && customVideoPath) await downloadToFile(customVideo.url, customVideoPath);
+    const customVideoPath = customVideo ? await downloadReusingLastCustomVideo(customVideo.url) : undefined;
     const maskPaths = customVideo
       ? await Promise.all(customVideo.slots.map(async (slot, i) => {
           if (!slot.maskUrl) return undefined;

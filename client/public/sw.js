@@ -2,7 +2,7 @@ const CACHE = 'yooz-media-v1';
 
 function isMediaRequest(url) {
   if (url.origin === self.location.origin && url.pathname.startsWith('/images/')) return true;
-  if (url.hostname === 'res.cloudinary.com') return true;
+  if (url.hostname === 'res.cloudinary.com') return !url.pathname.includes('/video/upload/');
   return false;
 }
 
@@ -20,23 +20,23 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  if (event.request.method !== 'GET' || !isMediaRequest(url)) return;
+  if (event.request.method !== 'GET' || event.request.headers.has('range') || !isMediaRequest(url)) return;
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(event.request);
-    const networkPromise = fetch(event.request).then((res) => {
-      if (res.ok) void cache.put(event.request, res.clone());
+    const fetchAndCache = () => fetch(event.request).then((res) => {
+      if (res.status === 200) void cache.put(event.request, res.clone());
       return res;
     });
 
     if (cached) {
-      void networkPromise.catch(() => {});
+      if (url.origin === self.location.origin) void fetchAndCache().catch(() => {});
       return cached;
     }
 
     try {
-      return await networkPromise;
+      return await fetchAndCache();
     } catch {
       return new Response('', { status: 504, statusText: 'Offline' });
     }

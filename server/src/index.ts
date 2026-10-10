@@ -20,6 +20,7 @@ import { migrateActivities, migrateActivityGroups, seedSuperAdmin, seedBuiltInMi
 import { processExpiredRewardTimers } from './services/groupRewardService';
 import { CollageJob } from './models/CollageJob';
 import { scheduleCollageEncode } from './services/collageProcessor';
+import { startMediaCleanupScheduler } from './services/mediaCleanup';
 import { setSmsProvider } from './services/sms/smsProvider';
 import { TextmeSmsProvider } from './services/sms/textmeSmsProvider';
 import rewardDownloadRouter from './routes/rewardDownload';
@@ -228,6 +229,7 @@ async function start() {
   }, COLLAGE_SMS_POLL_MS);
 
   const isPrimaryWorker = !process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === '0';
+  if (isPrimaryWorker) startMediaCleanupScheduler();
   const rendersCollages = !!process.env.COLLAGE_LAMBDA_FUNCTION_NAME;
   if (isPrimaryWorker && rendersCollages) {
     try {
