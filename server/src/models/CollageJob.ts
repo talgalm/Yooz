@@ -29,6 +29,7 @@ export interface ICollageJob {
   resultUrl?: string;
   isVideo: boolean;
   smsPhone?: string;
+  autoStart?: boolean;
   lang?: string;
   smsSentAt?: Date;
   createdAt: Date;
@@ -59,6 +60,7 @@ const collageJobSchema = new Schema<ICollageJob>(
     resultUrl: { type: String },
     isVideo: { type: Boolean, default: true },
     smsPhone: { type: String },
+    autoStart: { type: Boolean },
     lang: { type: String },
     smsSentAt: { type: Date },
   },
