@@ -677,7 +677,8 @@ Shared: `StationDescriptionPopup`, floating clue button for info stations.
 ## 11. Popup / hint / opening / leaderboard systems
 
 - **Popups** (`Activity.module.popups[]`, model `IPopupMessage`): `title`, `contentType:
-  'text'|'image'`, `text?`/`image?`, `includeUsername?`, `trigger.point:
+  'text'|'image'|'video'`, `text?`/`image?`/`video?` (a video is an uploaded file or a YouTube /
+  Vimeo link, played through `resolveVideoSource` like a video station), `includeUsername?`, `trigger.point:
   'afterLogin'|'beforeItem'|'afterItem'|'endOfActivity'` (+ `itemIndex` for before/after),
   optional `condition:{type:'participantCount', threshold}`, `enabled`. New trigger point → extend
   the union in model + client and add the call site in `StoryModulePage`. Editor:

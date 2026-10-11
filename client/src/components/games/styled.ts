@@ -876,6 +876,22 @@ export const PopupImageWrapper = styled('div')({
   textAlign: 'center',
 });
 
+export const PopupVideo = styled('video')({
+  width: '100%',
+  maxHeight: 320,
+  borderRadius: 10,
+  background: '#000',
+  display: 'block',
+});
+
+export const PopupVideoFrame = styled('iframe')({
+  width: '100%',
+  aspectRatio: '16 / 9',
+  border: 0,
+  borderRadius: 10,
+  display: 'block',
+});
+
 const _spinAnim = keyframes`to { transform: rotate(360deg); }`;
 
 export const GameLoadingSpinner = styled('div')({

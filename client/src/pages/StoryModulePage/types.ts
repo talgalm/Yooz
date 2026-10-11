@@ -96,9 +96,10 @@ export type ModuleItemData = GameItemData | StationItemData | MissionItemData;
 export interface PopupData {
   _id: string;
   title: string;
-  contentType?: 'text' | 'image';
+  contentType?: 'text' | 'image' | 'video';
   text?: string;
   image?: string;
+  video?: string;
   includeUsername?: boolean;
   trigger: {
     point: 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';

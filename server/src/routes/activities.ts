@@ -319,6 +319,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
       contentType: p.contentType || 'text',
       text: p.text,
       image: p.image,
+      video: p.video,
       includeUsername: p.includeUsername === true,
       trigger: p.trigger,
     })),

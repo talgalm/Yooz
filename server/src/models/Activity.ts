@@ -43,9 +43,10 @@ export interface IPopupCondition {
 export interface IPopupMessage {
   _id?: Types.ObjectId;
   title: string;
-  contentType: 'text' | 'image';
+  contentType: 'text' | 'image' | 'video';
   text?: string;
   image?: string;
+  video?: string;
   includeUsername?: boolean;
   trigger: IPopupTrigger;
   condition?: IPopupCondition;
@@ -192,9 +193,10 @@ const popupConditionSchema = new Schema({
 
 const popupMessageSchema = new Schema({
   title: { type: String, required: true },
-  contentType: { type: String, enum: ['text', 'image'], default: 'text' },
+  contentType: { type: String, enum: ['text', 'image', 'video'], default: 'text' },
   text: { type: String },
   image: { type: String },
+  video: { type: String },
   includeUsername: { type: Boolean, default: false },
   trigger: { type: popupTriggerSchema, required: true },
   condition: { type: popupConditionSchema },
