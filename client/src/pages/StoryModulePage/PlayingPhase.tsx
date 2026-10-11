@@ -654,7 +654,7 @@ export default function PlayingPhase({
           game={gameData}
           onComplete={isSurvey && onOrderSurveyComplete ? onOrderSurveyComplete : onGameComplete}
           activityCode={code}
-          itemIndex={currentItemIndex}
+          itemIndex={gameItem.stationIndex ?? currentItemIndex}
           onSurveySubmit={isSurvey ? onOrderSurveySubmit : undefined}
         />
       );

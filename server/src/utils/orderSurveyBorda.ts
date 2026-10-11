@@ -1,3 +1,5 @@
+import { resultStationIndex } from './stationIndex';
+
 export interface BordaRankedItem {
   item: string;
   bordaScore: number;
@@ -6,6 +8,7 @@ export interface BordaRankedItem {
 
 interface SurveyItemResult {
   itemIndex: number;
+  stationIndex?: number;
   metadata?: Record<string, unknown>;
 }
 
@@ -33,7 +36,7 @@ export function computeBordaRanking(rankings: string[][], referenceItems: string
 
 function latestSurveyResult(report: SurveyReport, itemIndex: number): SurveyItemResult | null {
   const matches = (report.data?.itemResults ?? []).filter((ir) => {
-    if (ir.itemIndex !== itemIndex) return false;
+    if (resultStationIndex(ir) !== itemIndex) return false;
     const meta = ir.metadata;
     return meta?.orderSurvey === true && Array.isArray(meta.ranking);
   });

@@ -1,5 +1,6 @@
 
 import { Types } from 'mongoose';
+import { reportByStation } from '../utils/stationIndex';
 import { Activity, Report } from '../models';
 
 export interface ReportContextOptions {
@@ -89,7 +90,7 @@ export async function buildReportContext(opts: ReportContextOptions): Promise<Re
   const activity = await Activity.findById(activityId).lean();
   if (!activity) return null;
 
-  const reports = await Report.find({ activityId: new Types.ObjectId(activityId) }).lean();
+  const reports = (await Report.find({ activityId: new Types.ObjectId(activityId) }).lean()).map(reportByStation);
 
   const totalItemsInModule = Math.max(
     activity.module?.items?.length ?? 0,

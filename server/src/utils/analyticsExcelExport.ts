@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import { reportByStation } from './stationIndex';
 import {
   resolvePassThreshold,
   normalizeScore,
@@ -1406,6 +1407,7 @@ function addActivityReportSheets(
   exportType: AnalyticsExportType,
   nameSuffix = '',
 ) {
+  reports = reports.map(reportByStation);
   const stats = buildStats(activity, reports);
   addSummarySheet(workbook, activity, stats, exportType, nameSuffix);
 

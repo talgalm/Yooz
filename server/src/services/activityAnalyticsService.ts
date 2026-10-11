@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { STATION_KEY } from '../utils/stationIndex';
 import { Report } from '../models';
 import { israelDayRange } from '../utils/israelTime';
 import {
@@ -250,7 +251,7 @@ export async function getItems(activityId: string | Types.ObjectId, period: Anal
     { $unwind: '$data.itemResults' },
     {
       $group: {
-        _id: '$data.itemResults.itemIndex',
+        _id: STATION_KEY,
         itemName: { $first: '$data.itemResults.itemName' },
         itemType: { $first: '$data.itemResults.itemType' },
         gameType: { $first: '$data.itemResults.gameType' },
@@ -288,7 +289,7 @@ export async function getQuestions(activityId: string | Types.ObjectId, itemInde
   const pipeline = await Report.aggregate([
     { $match: { ...reportMatch(activityId, period, excludeIds), 'data.itemResults': { $exists: true } } },
     { $unwind: '$data.itemResults' },
-    { $match: { 'data.itemResults.itemIndex': itemIndex } },
+    { $match: { $expr: { $eq: [STATION_KEY, itemIndex] } } },
     { $unwind: '$data.itemResults.questionAnswers' },
     {
       $group: {
@@ -353,7 +354,7 @@ export async function getAnomalies(activityId: string | Types.ObjectId, period: 
     { $unwind: '$data.itemResults' },
     {
       $group: {
-        _id: '$data.itemResults.itemIndex',
+        _id: STATION_KEY,
         itemName: { $first: '$data.itemResults.itemName' },
         participantCount: { $sum: 1 },
         completionCount: { $sum: { $cond: [{ $ne: ['$data.itemResults.completedAt', null] }, 1, 0] } },

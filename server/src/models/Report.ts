@@ -12,6 +12,7 @@ export interface IQuestionAnswer {
 
 export interface IItemResult {
   itemIndex: number;
+  stationIndex?: number;
   itemId: string;
   itemType: 'game' | 'station';
   itemName: string;

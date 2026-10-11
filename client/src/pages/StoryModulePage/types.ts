@@ -10,6 +10,7 @@ export interface GameData {
 
 export interface GameItemData {
   type: 'game';
+  stationIndex?: number;
   _id: string;
   name: string;
   gameType: string;
@@ -34,6 +35,7 @@ export interface CollageSplitData {
 
 export interface StationItemData {
   type: 'station';
+  stationIndex?: number;
   _id: string;
   name: string;
   stationType: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText';
@@ -78,6 +80,7 @@ export interface MissionTrashSortConfig {
 
 export interface MissionItemData {
   type: 'mission';
+  stationIndex?: number;
   _id: string;
   name: string;
   explanationScreens: MissionScreen[];

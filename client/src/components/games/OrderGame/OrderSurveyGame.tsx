@@ -128,11 +128,11 @@ export default function OrderSurveyGame({
     (async () => {
       try {
         const progress = await apiFetch<{
-          itemResults?: Array<{ itemIndex: number; metadata?: Record<string, unknown> }>;
+          itemResults?: Array<{ itemIndex: number; stationIndex?: number; metadata?: Record<string, unknown> }>;
         }>(`/api/activities/${activityCode}/my-progress`);
         if (cancelled) return;
         const matches = (progress.itemResults ?? []).filter((ir) => {
-          if (ir.itemIndex !== itemIndex) return false;
+          if ((ir.stationIndex ?? ir.itemIndex) !== itemIndex) return false;
           return ir.metadata?.orderSurvey === true && Array.isArray(ir.metadata.ranking);
         });
         const last = matches[matches.length - 1];
