@@ -13,6 +13,7 @@ import {
 import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginField } from '../types';
 import { Activity, ActivityFolder, ActivityGroup, MapGroupState, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
 import { clampPassThreshold } from '../utils/scoreNormalization';
+import { sanitizeOrganizerContacts } from '../utils/organizerContacts';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { sanitiseLanguages, sanitiseStartLanguage } from '../utils/requestLang';
 import { sanitizeLocation, sanitizeProximityMeters, sanitizeGroupOrders, sanitizeRoutes, sanitizeGroupRoutes, ordersFromRoutes, sanitizeCollageSplit } from '../utils/moduleItems';
@@ -225,10 +226,11 @@ async function buildActivityData(
 
   data.extraSupportInfo = extraSupportInfo?.trim().slice(0, 2000) || null;
 
-  const contactName = organizerContactName?.trim();
-  const contactPhone = organizerContactPhone?.trim();
-  data.organizerContactName = contactName && contactPhone ? contactName.slice(0, 100) : null;
-  data.organizerContactPhone = contactName && contactPhone ? contactPhone.slice(0, 30) : null;
+  data.organizerContacts = sanitizeOrganizerContacts(
+    Array.isArray(body.organizerContacts) ? body.organizerContacts : [{ name: organizerContactName, phone: organizerContactPhone }],
+  );
+  data.organizerContactName = null;
+  data.organizerContactPhone = null;
 
   const disabledCategories = Array.isArray(helpCategoriesDisabled)
     ? helpCategoriesDisabled.filter((c): c is string => typeof c === 'string' && VALID_HELP_CATEGORIES.includes(c))

@@ -152,6 +152,7 @@ export interface Activity {
   languages?: string[];
   defaultLanguage?: string;
   extraSupportInfo?: string;
+  organizerContacts?: { name: string; phone: string }[];
   organizerContactName?: string;
   organizerContactPhone?: string;
   helpCategoriesDisabled?: string[];
