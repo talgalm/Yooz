@@ -82,9 +82,10 @@ export interface PopupConditionConfig {
 
 export interface PopupMessageConfig {
   title: string;
-  contentType: 'text' | 'image';
+  contentType: 'text' | 'image' | 'video';
   text?: string;
   image?: string;
+  video?: string;
   includeUsername?: boolean;
   trigger: PopupTriggerConfig;
   condition?: PopupConditionConfig;

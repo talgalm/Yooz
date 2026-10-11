@@ -41,7 +41,10 @@ import {
   SummaryScoreValue,
   PopupImageWrapper,
   PopupImage,
+  PopupVideo,
+  PopupVideoFrame,
 } from '../../components/games/styled';
+import { resolveVideoSource } from '../../utils/videoSource';
 import type {
   ActivityModuleResponse,
   PopupData,
@@ -1422,7 +1425,27 @@ export default function StoryModulePage() {
     <PopupModalOverlay key={currentPopup._id}>
       <PopupModalCard onClick={(e) => e.stopPropagation()}>
         <PopupTitle>{currentPopup.title}</PopupTitle>
-        {currentPopup.contentType === 'image' && currentPopup.image ? (
+        {currentPopup.contentType === 'video' && currentPopup.video ? (() => {
+          const source = resolveVideoSource(currentPopup.video);
+          return (
+            <>
+              {currentPopup.includeUsername && participant?.name && (
+                <PopupParticipantName>{participant.name}</PopupParticipantName>
+              )}
+              <PopupImageWrapper>
+                {source.kind === 'iframe' ? (
+                  <PopupVideoFrame
+                    src={source.src}
+                    allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                    allowFullScreen
+                  />
+                ) : (
+                  <PopupVideo src={source.src} controls autoPlay playsInline preload="metadata" />
+                )}
+              </PopupImageWrapper>
+            </>
+          );
+        })() : currentPopup.contentType === 'image' && currentPopup.image ? (
           <>
             {currentPopup.includeUsername && participant?.name && (
               <PopupParticipantName>{participant.name}</PopupParticipantName>

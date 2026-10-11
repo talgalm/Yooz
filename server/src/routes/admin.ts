@@ -192,12 +192,13 @@ async function buildActivityData(
         ...(isMap && mod.cipherEnabled === true && { cipherEnabled: true }),
         items,
         popups: Array.isArray(mod.popups) ? mod.popups.map((p: Record<string, unknown>) => {
-          const ct = p.contentType === 'image' ? 'image' : 'text';
+          const ct = p.contentType === 'image' || p.contentType === 'video' ? p.contentType : 'text';
           return {
             title: (p.title as string || '').trim(),
             contentType: ct,
             text: ct === 'text' ? (p.text as string || '').trim() : undefined,
             image: ct === 'image' ? (p.image as string || '').trim() : undefined,
+            video: ct === 'video' ? (p.video as string || '').trim() : undefined,
             includeUsername: p.includeUsername === true,
             trigger: p.trigger || { point: 'afterLogin' },
             condition: p.condition || undefined,
@@ -209,7 +210,7 @@ async function buildActivityData(
             }),
             enabled: p.enabled !== false,
           };
-        }).filter((p: { title: string; contentType: string; text?: string; image?: string }) => p.title && (p.contentType === 'image' ? !!p.image : !!p.text)) : [],
+        }).filter((p: { title: string; contentType: string; text?: string; image?: string; video?: string }) => p.title && !!p[p.contentType as 'text' | 'image' | 'video']) : [],
       };
     }
   }

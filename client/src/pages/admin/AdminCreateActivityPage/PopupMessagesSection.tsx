@@ -102,6 +102,13 @@ export default function PopupMessagesSection({
                 >
                   {t.popupContentImage}
                 </SmallSelectionButton>
+                <SmallSelectionButton
+                  type="button"
+                  selected={popup.contentType === 'video'}
+                  onClick={() => onUpdatePopup(i, 'contentType', 'video')}
+                >
+                  {t.popupContentVideo}
+                </SmallSelectionButton>
               </SelectionGroupNoFlex>
               <PopupLabel>
                 <input
@@ -123,6 +130,21 @@ export default function PopupMessagesSection({
                     placeholder={t.popupImageUrl}
                     value={popup.image}
                     onChange={(e) => onUpdatePopup(i, 'image', e.target.value)}
+                  />
+                </>
+              ) : popup.contentType === 'video' ? (
+                <>
+                  <FileUploadButton
+                    accept="video/*"
+                    onUploaded={(url) => onUpdatePopup(i, 'video', url)}
+                    label={t.upload}
+                    uploadingLabel={t.uploading}
+                  />
+                  <PopupContentInput
+                    placeholder={t.popupVideoUrl}
+                    value={popup.video}
+                    onChange={(e) => onUpdatePopup(i, 'video', e.target.value)}
+                    dir="ltr"
                   />
                 </>
               ) : (

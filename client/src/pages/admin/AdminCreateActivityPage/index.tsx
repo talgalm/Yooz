@@ -725,9 +725,10 @@ export default function AdminCreateActivityPage() {
         if (a.module?.popups && a.module.popups.length > 0) {
           setPopups(a.module.popups.map((p) => ({
             title: p.title,
-            contentType: (p.contentType === 'image' ? 'image' : 'text') as PopupContentType,
+            contentType: (p.contentType === 'image' || p.contentType === 'video' ? p.contentType : 'text') as PopupContentType,
             text: p.text || '',
             image: p.image || '',
+            video: p.video || '',
             includeUsername: p.includeUsername === true,
             triggerPoint: p.trigger.point as PopupMessage['triggerPoint'],
             itemIndex: p.trigger.itemIndex ?? 0,
@@ -1033,7 +1034,7 @@ export default function AdminCreateActivityPage() {
 
   const addPopup = () => {
     setPopups((prev) => [...prev, {
-      title: '', contentType: 'text' as PopupContentType, text: '', image: '', includeUsername: false,
+      title: '', contentType: 'text' as PopupContentType, text: '', image: '', video: '', includeUsername: false,
       triggerPoint: 'afterLogin', itemIndex: 0, conditionType: 'none', threshold: 20, enabled: true,
       groups: [], routes: [], itemUid: selectedItems[0]?.uid,
     }]);
@@ -1228,12 +1229,13 @@ export default function AdminCreateActivityPage() {
         };
         if (popups.length > 0) {
           modulePayload.popups = popups
-            .filter((p) => p.title.trim() && (p.contentType === 'image' ? p.image.trim() : p.text.trim()))
+            .filter((p) => p.title.trim() && p[p.contentType].trim())
             .map((p) => ({
               title: p.title.trim(),
               contentType: p.contentType,
               ...(p.contentType === 'text' && { text: p.text.trim() }),
               ...(p.contentType === 'image' && { image: p.image.trim() }),
+              ...(p.contentType === 'video' && { video: p.video.trim() }),
               ...(p.includeUsername && { includeUsername: true }),
               trigger: {
                 point: p.triggerPoint,

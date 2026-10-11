@@ -281,7 +281,7 @@ Missions appear as a separate picker tab when adding module items.
 ================================================================
 POPUP MESSAGES (Activity Step 2 → Popup Messages section)
 ================================================================
-Each popup: title, contentType ('text' or 'image' — MUTUALLY EXCLUSIVE), text (when text), image url (when image), includeUsername (inject {participant name} into text), enabled toggle.
+Each popup: title, contentType ('text', 'image' or 'video' — MUTUALLY EXCLUSIVE), text (when text), image url (when image), video url (when video - an uploaded file or a YouTube/Vimeo link), includeUsername (inject {participant name} into text), enabled toggle.
 Trigger points: 'afterLogin' / 'beforeItem' / 'afterItem' / 'endOfActivity' (Note: triggers reference ITEMS, not stations — item N can be a game, station, or mission). For beforeItem/afterItem, set itemIndex.
 Condition: 'participantCount' with threshold N (e.g., show only after participant #20). No condition = always shows. Evaluated server-side in GET /api/activities/:code/module — client only receives popups it should show.
 Multiple popups at same trigger run sequentially.

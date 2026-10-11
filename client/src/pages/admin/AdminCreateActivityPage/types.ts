@@ -18,13 +18,14 @@ export interface ItemLocation {
 export type OpeningType = 'none' | 'video' | 'image';
 export type TriggerPoint = 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
 export type ConditionType = 'none' | 'participantCount';
-export type PopupContentType = 'text' | 'image';
+export type PopupContentType = 'text' | 'image' | 'video';
 
 export interface PopupMessage {
   title: string;
   contentType: PopupContentType;
   text: string;
   image: string;
+  video: string;
   includeUsername: boolean;
   triggerPoint: TriggerPoint;
   itemIndex: number;
@@ -138,6 +139,7 @@ export interface Activity {
       contentType?: string;
       text?: string;
       image?: string;
+      video?: string;
       includeUsername?: boolean;
       trigger: { point: string; itemIndex?: number };
       condition?: { type: string; threshold: number };
