@@ -85,6 +85,11 @@ export interface ICustomInstructions {
   buttonText?: string;
 }
 
+export interface IOrganizerContact {
+  name: string;
+  phone: string;
+}
+
 export interface IActivity {
   _id?: Types.ObjectId;
   code: string;
@@ -101,6 +106,7 @@ export interface IActivity {
   languages?: string[];
   defaultLanguage?: string;
   extraSupportInfo?: string;
+  organizerContacts?: IOrganizerContact[];
   organizerContactName?: string;
   organizerContactPhone?: string;
   helpCategoriesDisabled?: string[];
@@ -280,6 +286,7 @@ const activitySchema = new Schema<IActivity>({
   languages: { type: [String], default: undefined },
   defaultLanguage: { type: String },
   extraSupportInfo: { type: String },
+  organizerContacts: { type: [{ _id: false, name: String, phone: String }], default: undefined },
   organizerContactName: { type: String },
   organizerContactPhone: { type: String },
   helpCategoriesDisabled: { type: [String], default: undefined },

@@ -204,8 +204,9 @@ Israel day** may create a self-service group — otherwise `POST /:code/groups` 
 A cashier ticket code doubles one group's cap: `POST /:code/groups/redeem-capacity
 {groupToken, code}` checks `code` against `GROUP_CAPACITY_CODE` (default `'2026'`) and sets
 `ActivityGroup.maxMembersOverride`, which `checkGroupCapacity` prefers over the activity cap.
-**Participant help chat (per activity)**: `organizerContactName?`/`organizerContactPhone?` (who
-the bot points people to), `helpCategoriesDisabled?` (FAQ keys to hide: login, game_start,
+**Participant help chat (per activity)**: `organizerContacts?: {name, phone}[]` (up to 5 - who the
+bot points people to, joined as "A at X or B at Y"; `organizerContactName?`/`organizerContactPhone?`
+are the old single contact, still read by `organizerContactsOf` and cleared on the next save), `helpCategoriesDisabled?` (FAQ keys to hide: login, game_start,
 score, loading, kicked_out, button_stuck, task_stuck, video_missing), `helpCategoryResponses?`
 (per-key answer overrides), `helpOtherCategoryEnabled?` (free-text "something else" chat, off by
 default), `extraSupportInfo?`.

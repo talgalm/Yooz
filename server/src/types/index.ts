@@ -262,6 +262,7 @@ export interface CreateActivityRequest {
   languages?: string[];
   defaultLanguage?: string;
   extraSupportInfo?: string;
+  organizerContacts?: { name: string; phone: string }[];
   organizerContactName?: string;
   organizerContactPhone?: string;
   helpCategoriesDisabled?: string[];
@@ -306,8 +307,7 @@ export interface ActivityConfigResponse {
   scheduledStart?: string;
   scheduledEnd?: string;
   isContinuous?: boolean;
-  organizerContactName?: string;
-  organizerContactPhone?: string;
+  organizerContacts?: { name: string; phone: string }[];
   helpCategoriesDisabled?: string[];
   helpCategoryResponses?: Record<string, string>;
   helpOtherCategoryEnabled?: boolean;

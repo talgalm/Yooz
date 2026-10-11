@@ -10,6 +10,7 @@ import { getParticipantCount } from '../utils/participantCountCache';
 import { getOrderSurveyLiveState } from '../utils/orderSurveySession';
 import { getGroupStatus } from '../utils/groupStatus';
 import { ownReportFilter } from '../utils/participantAuth';
+import { organizerContactsOf } from '../utils/organizerContacts';
 import { resolveCeiling, normalizeScore } from '../utils/scoreNormalization';
 import { startOfTodayIsrael, israelDayString } from '../utils/israelTime';
 import { readLang } from '../utils/requestLang';
@@ -84,6 +85,7 @@ router.get('/:code', async (req: Request<{ code: string }>, res: Response<Activi
     connectionType = 'single';
   }
 
+  const organizerContacts = organizerContactsOf(activity);
   const data: ActivityConfigResponse = {
     code: activity.code,
     name: activity.name,
@@ -97,10 +99,7 @@ router.get('/:code', async (req: Request<{ code: string }>, res: Response<Activi
     ...(activity.scheduledEnd && { scheduledEnd: activity.scheduledEnd.toISOString() }),
     ...(activity.module && { moduleType: activity.module.type }),
     ...(activity.isContinuous && { isContinuous: true }),
-    ...(activity.organizerContactName && activity.organizerContactPhone && {
-      organizerContactName: activity.organizerContactName,
-      organizerContactPhone: activity.organizerContactPhone,
-    }),
+    ...(organizerContacts.length > 0 && { organizerContacts }),
     ...(activity.helpCategoriesDisabled?.length && { helpCategoriesDisabled: activity.helpCategoriesDisabled }),
     ...(activity.helpCategoryResponses && Object.keys(activity.helpCategoryResponses).length > 0 && {
       helpCategoryResponses: activity.helpCategoryResponses,

@@ -61,6 +61,8 @@ import { useAdminAuth } from '../../../context/AdminAuthContext';
 import EditOnly from '../../../components/EditOnly';
 import CollageSplitEditor, { type SplitEditorResult } from './CollageSplitEditor';
 
+const ORGANIZER_CONTACTS_MAX = 5;
+
 const SectionCard = styled('section')({
   display: 'flex',
   flexDirection: 'column',
@@ -509,8 +511,9 @@ export default function AdminCreateActivityPage() {
   const startLanguage = languages.includes(defaultLanguage) ? defaultLanguage : 'he';
   const [storedTranslations, setStoredTranslations] = useState<Record<string, number>>({});
   const [extraSupportInfo, setExtraSupportInfo] = useState('');
-  const [organizerContactName, setOrganizerContactName] = useState('');
-  const [organizerContactPhone, setOrganizerContactPhone] = useState('');
+  const [organizerContacts, setOrganizerContacts] = useState<{ name: string; phone: string }[]>([{ name: '', phone: '' }]);
+  const updateOrganizerContact = (index: number, change: Partial<{ name: string; phone: string }>) =>
+    setOrganizerContacts((prev) => prev.map((c, i) => (i === index ? { ...c, ...change } : c)));
   const [helpCategoriesDisabled, setHelpCategoriesDisabled] = useState<string[]>([]);
   const [helpCategoryResponses, setHelpCategoryResponses] = useState<Record<string, string>>({});
   const [helpOtherCategoryEnabled, setHelpOtherCategoryEnabled] = useState(false);
@@ -687,8 +690,10 @@ export default function AdminCreateActivityPage() {
             ),
           )
           .catch(() => undefined);
-        if (a.organizerContactName) setOrganizerContactName(a.organizerContactName);
-        if (a.organizerContactPhone) setOrganizerContactPhone(a.organizerContactPhone);
+        if (a.organizerContacts?.length) setOrganizerContacts(a.organizerContacts.map(({ name, phone }) => ({ name, phone })));
+        else if (a.organizerContactName || a.organizerContactPhone) {
+          setOrganizerContacts([{ name: a.organizerContactName ?? '', phone: a.organizerContactPhone ?? '' }]);
+        }
         if (a.extraSupportInfo) setExtraSupportInfo(a.extraSupportInfo);
         if (a.helpCategoriesDisabled?.length) setHelpCategoriesDisabled(a.helpCategoriesDisabled);
         if (a.helpCategoryResponses) setHelpCategoryResponses(a.helpCategoryResponses);
@@ -1214,8 +1219,9 @@ export default function AdminCreateActivityPage() {
       payload.guidelines = guidelines.trim() || undefined;
       payload.languages = languages;
       payload.defaultLanguage = startLanguage;
-      payload.organizerContactName = organizerContactName.trim() || undefined;
-      payload.organizerContactPhone = organizerContactPhone.trim() || undefined;
+      payload.organizerContacts = organizerContacts
+        .map((c) => ({ name: c.name.trim(), phone: c.phone.trim() }))
+        .filter((c) => c.name && c.phone);
       payload.extraSupportInfo = extraSupportInfo.trim() || undefined;
       payload.helpCategoriesDisabled = helpCategoriesDisabled.length > 0 ? helpCategoriesDisabled : undefined;
       payload.helpCategoryResponses = Object.keys(helpCategoryResponses).length > 0 ? helpCategoryResponses : undefined;
@@ -1795,19 +1801,39 @@ export default function AdminCreateActivityPage() {
                         <SectionHeaderTitle>{t.organizerContactSection}</SectionHeaderTitle>
                       </SectionHeader>
                       <SectionDescription style={{ margin: 0 }}>{t.organizerContactDesc}</SectionDescription>
-                      <FormGrid style={{ marginTop: 8 }}>
-                        <Input
-                          placeholder={t.organizerContactNamePlaceholder}
-                          value={organizerContactName}
-                          onChange={(e) => setOrganizerContactName(e.target.value)}
-                        />
-                        <Input
-                          type="tel"
-                          placeholder={t.organizerContactPhonePlaceholder}
-                          value={organizerContactPhone}
-                          onChange={(e) => setOrganizerContactPhone(e.target.value)}
-                        />
-                      </FormGrid>
+                      <VerticalStack style={{ marginTop: 8, gap: 8 }}>
+                        {organizerContacts.map((contact, i) => (
+                          <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <Input
+                              style={{ flex: 1 }}
+                              placeholder={t.organizerContactNamePlaceholder}
+                              value={contact.name}
+                              onChange={(e) => updateOrganizerContact(i, { name: e.target.value })}
+                            />
+                            <Input
+                              style={{ flex: 1 }}
+                              type="tel"
+                              placeholder={t.organizerContactPhonePlaceholder}
+                              value={contact.phone}
+                              onChange={(e) => updateOrganizerContact(i, { phone: e.target.value })}
+                            />
+                            {organizerContacts.length > 1 && (
+                              <OutlineButton type="button" onClick={() => setOrganizerContacts((prev) => prev.filter((_, k) => k !== i))}>
+                                {t.organizerContactRemove}
+                              </OutlineButton>
+                            )}
+                          </div>
+                        ))}
+                        {organizerContacts.length < ORGANIZER_CONTACTS_MAX && (
+                          <OutlineButton
+                            type="button"
+                            style={{ alignSelf: 'flex-start' }}
+                            onClick={() => setOrganizerContacts((prev) => [...prev, { name: '', phone: '' }])}
+                          >
+                            {t.organizerContactAdd}
+                          </OutlineButton>
+                        )}
+                      </VerticalStack>
 
                       <SectionHeader style={{ marginTop: 14 }}>
                         <SectionHeaderTitle>{t.helpCategoriesSection}</SectionHeaderTitle>

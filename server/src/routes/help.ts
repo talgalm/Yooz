@@ -6,6 +6,7 @@ import { languageOf } from '../utils/languages';
 import { normaliseLang } from '../utils/requestLang';
 import { translateText } from '../services/contentTranslation';
 import { createRateLimiter } from '../utils/participantRateLimit';
+import { organizerContactsOf } from '../utils/organizerContacts';
 
 const router = Router();
 
@@ -15,17 +16,14 @@ const isRateLimited = createRateLimiter({
   perAddress: 150,
 });
 
-async function fetchActivityExtras(code?: string): Promise<{ extraSupportInfo?: string; contact?: OrganizerContact }> {
+async function fetchActivityExtras(code?: string): Promise<{ extraSupportInfo?: string; contacts?: OrganizerContact[] }> {
   if (!code) return {};
-  const activity = await Activity.findOne({ code }).select('extraSupportInfo organizerContactName organizerContactPhone').lean();
+  const activity = await Activity.findOne({ code }).select('extraSupportInfo organizerContacts organizerContactName organizerContactPhone').lean();
   if (!activity) return {};
-  const contact = activity.organizerContactName && activity.organizerContactPhone
-    ? { name: activity.organizerContactName, phone: activity.organizerContactPhone }
-    : undefined;
-  return { extraSupportInfo: activity.extraSupportInfo || undefined, contact };
+  return { extraSupportInfo: activity.extraSupportInfo || undefined, contacts: organizerContactsOf(activity) };
 }
 
-function buildSystemPrompt(examples: 'en' | 'he', replyLang: string, contact?: OrganizerContact): string {
+function buildSystemPrompt(examples: 'en' | 'he', replyLang: string, contacts?: OrganizerContact[]): string {
   const langName = languageOf(replyLang).name;
 
   return `You are a helpful support assistant for Yooz, an interactive group activity platform. Participants join activities using a unique code, then see a roadmap of stations/items they must tap to open and play. Station types include: games (trivia, puzzles, ordering, true/false, ball-catch game, jigsaw, trash-sort), text/video/image content stations, and badge stations. Participants earn scores and appear on a leaderboard.
@@ -78,8 +76,8 @@ ${examples === 'he'
 
 5. SCORE — Questions about points, scoring, wrong score
 ${examples === 'he'
-    ? `Response: ניקוד נשמר אוטומטית כשמסיימים משחק. שימוש ברמז מוריד 5 נקודות. בדקו את טבלת המובילים לדירוג הסופי. אם עדיין לא נכון, ${contactClause(examples, contact)}.`
-    : `Response: Scores are saved automatically when you finish a game. Hint usage deducts 5 points each. Check the leaderboard for your final ranking. If still wrong, ${contactClause(examples, contact)}.`}
+    ? `Response: ניקוד נשמר אוטומטית כשמסיימים משחק. שימוש ברמז מוריד 5 נקודות. בדקו את טבלת המובילים לדירוג הסופי. אם עדיין לא נכון, ${contactClause(examples, contacts)}.`
+    : `Response: Scores are saved automatically when you finish a game. Hint usage deducts 5 points each. Check the leaderboard for your final ranking. If still wrong, ${contactClause(examples, contacts)}.`}
 
 6. LOADING — Page stuck, not loading, errors, crashes
 ${examples === 'he'
@@ -120,8 +118,8 @@ Additional: Group/branch selection only appears in activities that require it. I
 
 13. GENERAL — Catch-all for other issues
 ${examples === 'he'
-    ? `Response: אם אתם חווים בעיות, נסו לרענן את הדף קודם. אם הבעיה ממשיכה, ${contactClause(examples, contact)} או התקשרו לקו התמיכה שלנו.`
-    : `Response: If you're having trouble, try refreshing the page first. If the issue persists, ${contactClause(examples, contact)} or call our support line.`}
+    ? `Response: אם אתם חווים בעיות, נסו לרענן את הדף קודם. אם הבעיה ממשיכה, ${contactClause(examples, contacts)} או התקשרו לקו התמיכה שלנו.`
+    : `Response: If you're having trouble, try refreshing the page first. If the issue persists, ${contactClause(examples, contacts)} or call our support line.`}
 
 14. GAME_START — Game not starting, don't know what to press, nothing happens, activity not beginning, how to start
 ${examples === 'he'
@@ -136,8 +134,8 @@ If nothing happens, try refreshing the page.`}
 
 15. KICKED_OUT — Thrown out of the activity, session lost, has to start over, lost the link
 ${examples === 'he'
-    ? `Response: היכנסו שוב מהקישור שנשלח אליכם. אם אין לכם יותר את הקישור — ${askClause(examples, contact)} קישור חדש לפעילות. בכניסה מחדש בחרו את שם הקבוצה מהרשימה, והזינו בדיוק את אותו השם שהזנתם קודם — כך ההתקדמות שלכם נמצאת שוב.`
-    : `Response: Open the activity again from the link you were sent. If you don't have the link any more, ${askClause(examples, contact)} for a new one. When you log back in, pick your group from the list and type exactly the same name you used before — that's how your progress is found again.`}
+    ? `Response: היכנסו שוב מהקישור שנשלח אליכם. אם אין לכם יותר את הקישור — ${askClause(examples, contacts)} קישור חדש לפעילות. בכניסה מחדש בחרו את שם הקבוצה מהרשימה, והזינו בדיוק את אותו השם שהזנתם קודם — כך ההתקדמות שלכם נמצאת שוב.`
+    : `Response: Open the activity again from the link you were sent. If you don't have the link any more, ${askClause(examples, contacts)} for a new one. When you log back in, pick your group from the list and type exactly the same name you used before — that's how your progress is found again.`}
 
 16. BUTTON_STUCK — A button does nothing when pressed
 ${examples === 'he'
@@ -146,8 +144,8 @@ ${examples === 'he'
 
 17. TASK_STUCK — Cannot complete/solve a task, too hard, needs the answer
 ${examples === 'he'
-    ? `Response: נסו קודם את הרמז שבתוך המשחק (הוא עולה 5 נקודות). אם אין רמז, או שהוא לא מספיק — ${contactClause(examples, contact)}, שיכול לחשוף לכם את הפתרון מדף התשובות.`
-    : `Response: Try the hint inside the game first (it costs 5 points). If there's no hint, or it isn't enough, ${askClause(examples, contact)} — they can reveal the solution from the answer sheet.`}
+    ? `Response: נסו קודם את הרמז שבתוך המשחק (הוא עולה 5 נקודות). אם אין רמז, או שהוא לא מספיק — ${contactClause(examples, contacts)}, שיכול לחשוף לכם את הפתרון מדף התשובות.`
+    : `Response: Try the hint inside the game first (it costs 5 points). If there's no hint, or it isn't enough, ${askClause(examples, contacts)} — they can reveal the solution from the answer sheet.`}
 
 18. VIDEO_MISSING — The collage video never appeared
 ${examples === 'he'
@@ -221,7 +219,7 @@ interface HistoryEntry {
   text: string;
 }
 
-async function askGemini(message: string, examples: 'en' | 'he', replyLang: string, history: HistoryEntry[] = [], context: HelpContext | null = null, contact?: OrganizerContact, extraSupportInfo?: string): Promise<string> {
+async function askGemini(message: string, examples: 'en' | 'he', replyLang: string, history: HistoryEntry[] = [], context: HelpContext | null = null, contacts?: OrganizerContact[], extraSupportInfo?: string): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
   const priorTurns = history.slice(-6).map((h) => ({
@@ -236,7 +234,7 @@ async function askGemini(message: string, examples: 'en' | 'he', replyLang: stri
 
   const body = {
     contents,
-    systemInstruction: { parts: [{ text: buildSystemPrompt(examples, replyLang, contact) + (extraSupportInfo ? buildActivitySupportPrompt(extraSupportInfo) : '') + (context ? buildContextPrompt(context) : '') }] },
+    systemInstruction: { parts: [{ text: buildSystemPrompt(examples, replyLang, contacts) + (extraSupportInfo ? buildActivitySupportPrompt(extraSupportInfo) : '') + (context ? buildContextPrompt(context) : '') }] },
     generationConfig: {
       temperature: 0.3,
       maxOutputTokens: 300,
@@ -289,19 +287,19 @@ router.post('/', async (req: Request, res: Response) => {
     ? history.filter((h) => h && typeof h.text === 'string' && (h.from === 'bot' || h.from === 'user')).slice(0, 20)
     : [];
   const safeContext = sanitizeContext(context);
-  const { extraSupportInfo, contact } = await fetchActivityExtras(safeContext?.code);
+  const { extraSupportInfo, contacts } = await fetchActivityExtras(safeContext?.code);
 
   if (!GEMINI_API_KEY) {
-    res.json({ response: await translateText(buildFallbackMessage(examples, contact), safeLang), source: 'fallback' });
+    res.json({ response: await translateText(buildFallbackMessage(examples, contacts), safeLang), source: 'fallback' });
     return;
   }
 
   try {
-    const response = await askGemini(safeMessage, examples, safeLang, safeHistory, safeContext, contact, extraSupportInfo);
+    const response = await askGemini(safeMessage, examples, safeLang, safeHistory, safeContext, contacts, extraSupportInfo);
     res.json({ response, source: 'gemini' });
   } catch (err) {
     console.error('Gemini help endpoint error:', err);
-    res.json({ response: await translateText(buildFallbackMessage(examples, contact), safeLang), source: 'fallback' });
+    res.json({ response: await translateText(buildFallbackMessage(examples, contacts), safeLang), source: 'fallback' });
   }
 });
 

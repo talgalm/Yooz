@@ -57,8 +57,8 @@ export function setHelpChatActivityContext(ctx: HelpActivityContext | null): voi
   helpActivityContext = ctx;
 }
 
-function resolveResponse(entry: string | ((contact?: OrganizerContact) => string), contact?: OrganizerContact): string {
-  return typeof entry === 'function' ? entry(contact) : entry;
+function resolveResponse(entry: string | ((contacts?: OrganizerContact[]) => string), contacts: OrganizerContact[]): string {
+  return typeof entry === 'function' ? entry(contacts) : entry;
 }
 
 type View = 'menu' | 'faq' | 'other';
@@ -103,7 +103,7 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [typing, setTyping] = useState(false);
-  const [organizerContact, setOrganizerContact] = useState<OrganizerContact | undefined>(undefined);
+  const [organizerContacts, setOrganizerContacts] = useState<OrganizerContact[]>([]);
   const [disabledCategories, setDisabledCategories] = useState<string[]>([]);
   const [otherCategoryEnabled, setOtherCategoryEnabled] = useState(false);
   const [categoryResponses, setCategoryResponses] = useState<Record<string, string>>({});
@@ -118,8 +118,8 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (cancelled || !data) return;
-        if (data.organizerContactName && data.organizerContactPhone) {
-          setOrganizerContact({ name: data.organizerContactName, phone: data.organizerContactPhone });
+        if (Array.isArray(data.organizerContacts)) {
+          setOrganizerContacts(data.organizerContacts);
         }
         if (Array.isArray(data.helpCategoriesDisabled)) {
           setDisabledCategories(data.helpCategoriesDisabled);
@@ -227,7 +227,7 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
     setTimeout(() => {
       setTyping(false);
       const override = categoryResponses[FAQ_KEY_TO_CATEGORY[faqKey]];
-      const text = override?.trim() || resolveResponse(t[faqKey], organizerContact);
+      const text = override?.trim() || resolveResponse(t[faqKey], organizerContacts);
       setMessages((prev) => [...prev, { from: 'bot', text }]);
     }, 600);
   };
@@ -271,7 +271,7 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
 
       if (match) {
         const entry = t[match.responseKey as keyof typeof t] || t.responseGeneral;
-        setMessages((prev) => [...prev, { from: 'bot', text: resolveResponse(entry, organizerContact) }]);
+        setMessages((prev) => [...prev, { from: 'bot', text: resolveResponse(entry, organizerContacts) }]);
       } else {
         setMessages((prev) => [...prev, { from: 'bot', text: t.noMatch }]);
       }
