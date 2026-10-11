@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 import { DarkHeaderActionIconButton } from '../../components/styled';
 import { loadGoogleMaps, isMapsAvailable, onMapsAuthFailure } from '../../utils/googleMaps';
@@ -16,7 +16,7 @@ import { getHeaderIconColor, getThemeKit } from './roadmapThemes';
 import { teamMarkerColor, teamMarkerLabel } from './teamMarker';
 import { lookFor, mapOptionsFor, routeLineOptions, type MapDesign } from '../../utils/mapDesign';
 import { PIN_LAYERS, attachPulse, attachUprightPin, meHaloIcon, meMarkerIcon, stationPinStyle, type UprightPin } from '../../utils/mapPins';
-import { attachMapLookLayer } from '../../utils/mapLookLayer';
+import { attachMapLookLayer, type MapLookLayer } from '../../utils/mapLookLayer';
 import { maneuverDirection, nextTurn, offRouteMeters, remainingWalk, type WalkRoute } from '../../utils/walkNavigation';
 import { useTranslations } from '../../context/LanguageContext';
 import { laterAtSamePlace, opensRightAfter, placeGroupEnd, placeOf } from '../../utils/mapChain';
@@ -379,6 +379,7 @@ export default function MapView({
   const stationPins = useRef<UprightPin[]>([]);
   const groupPins = useRef<Map<string, UprightPin>>(new Map());
   const spinRef = useRef(0);
+  const lookLayer = useRef<MapLookLayer | null>(null);
   const renderer = useRef<google.maps.DirectionsRenderer | null>(null);
   const routeRef = useRef<LoadedRoute | null>(null);
   const routeRequestedAt = useRef(0);
@@ -469,8 +470,18 @@ export default function MapView({
   useEffect(() => {
     const maps = window.google?.maps;
     if (!maps || !mapRef.current || !mapReady) return;
-    return attachMapLookLayer(maps, mapRef.current, look.overlay);
+    const layer = attachMapLookLayer(maps, mapRef.current, look.overlay);
+    layer.setRotation(spinRef.current);
+    lookLayer.current = layer;
+    return () => {
+      layer.remove();
+      lookLayer.current = null;
+    };
   }, [mapReady, look.overlay]);
+
+  useLayoutEffect(() => {
+    lookLayer.current?.setRotation(mapSpin);
+  }, [mapSpin]);
 
   useEffect(() => {
     mapRef.current?.setOptions(mapOptionsFor(design));
