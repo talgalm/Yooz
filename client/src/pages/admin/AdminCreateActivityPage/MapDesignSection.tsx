@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { SectionLabelSmall, SectionDescription } from '../styled';
 import { useTranslations } from '../../../context/LanguageContext';
-import { isMapsAvailable, loadGoogleMaps, onMapsAuthFailure } from '../../../utils/googleMaps';
+import { isMapsAvailable, loadGoogleMaps, mapsAuthFailed, onMapsAuthFailure } from '../../../utils/googleMaps';
 import {
   MAP_FEATURE_KEYS,
   MAP_LOOKS,
@@ -235,11 +235,13 @@ function MapDesignPreview({ design, stops, noKeyText, failedText }: {
   useEffect(() => {
     const maps = window.google?.maps;
     const map = mapRef.current;
-    if (!maps || !map || status !== 'ready') return;
-    return attachMapLookLayer(maps, map, look.overlay);
+    if (!maps || !map || status !== 'ready' || mapsAuthFailed()) return;
+    const layer = attachMapLookLayer(maps, map, look.overlay);
+    return () => { if (!mapsAuthFailed()) layer.remove(); };
   }, [look.overlay, status]);
 
   useEffect(() => {
+    if (mapsAuthFailed()) return;
     const line = routeLineOptions(look);
     straightRef.current?.setOptions(line);
     const route = routeRef.current;
@@ -253,7 +255,7 @@ function MapDesignPreview({ design, stops, noKeyText, failedText }: {
     const maps = window.google?.maps;
     const route = routeRef.current;
     const straight = straightRef.current;
-    if (!maps || !route || !straight || status !== 'ready') return;
+    if (!maps || !route || !straight || status !== 'ready' || mapsAuthFailed()) return;
     const stops = pointsRef.current;
     route.set('directions', null);
     straight.setPath([]);
@@ -279,20 +281,21 @@ function MapDesignPreview({ design, stops, noKeyText, failedText }: {
   useEffect(() => {
     const maps = window.google?.maps;
     const map = mapRef.current;
-    if (!maps || !map || status !== 'ready') return;
+    if (!maps || !map || status !== 'ready' || mapsAuthFailed()) return;
     const current = stopsRef.current;
     pinsRef.current.forEach((pin) => pin.setMap(null));
     pinsRef.current = current.flatMap(({ location, mark }, i) => (
       i === 0 ? nextStationMarkers(maps, look, mark) : doneStationMarkers(maps, look, mark)
     ).map((part) => new maps.Marker({ map, position: location, ...part })));
     if (current.length === 0) return;
-    return attachPulse(maps, map, current[0].location, look.pins.next);
+    const detach = attachPulse(maps, map, current[0].location, look.pins.next);
+    return () => { if (!mapsAuthFailed()) detach(); };
   }, [marksKey, status, look]);
 
   useEffect(() => {
     const maps = window.google?.maps;
     const map = mapRef.current;
-    if (!maps || !map || status !== 'ready') return;
+    if (!maps || !map || status !== 'ready' || mapsAuthFailed()) return;
     const points = pointsRef.current;
     if (points.length === 0) {
       map.setCenter(PREVIEW_FALLBACK_CENTER);

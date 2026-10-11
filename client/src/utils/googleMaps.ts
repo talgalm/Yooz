@@ -12,6 +12,10 @@ let authFailed = false;
   window.dispatchEvent(new Event(AUTH_FAILURE_EVENT));
 };
 
+export function mapsAuthFailed(): boolean {
+  return authFailed;
+}
+
 export function isMapsAvailable(): boolean {
   return !!API_KEY;
 }
