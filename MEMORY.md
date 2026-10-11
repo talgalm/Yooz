@@ -754,7 +754,15 @@ with `COLLAGE_LAMBDA_FUNCTION_NAME` set, because a dev server on the shared data
 or fail production jobs every time it restarted. A warm Lambda keeps the last custom collage video
 in `/tmp/last-custom-video` (keyed by its versioned URL) instead of pulling 20-85MB from
 Cloudinary on every render. A split collage
-(`module.items[].collageSplit`) spreads photo capture across several stations. Each part takes a
+(`module.items[].collageSplit`) spreads photo capture across several stations. Every collage
+storage/job key is scoped by `participantSessionId()` (`utils/participantActivity.ts`) — a random
+id minted on each login — so a second participant on the same phone can't be handed the previous
+one's finished video. Never derive that scope from name/email/phone: those collide. Optional SMS
+delivery of the finished video (`smsForCollage*`, polled every 15s). Client:
+`components/stations/CollageStation.tsx` + `collageJobStorage`/`collageSplitStorage`/
+`backgroundCollageJob` + `utils/collageApi`/`collagePhotoCompress`.
+
+**Split collage parts.** Each part takes a
 contiguous slice (`partSizes`) of the missions in `photoOrder`; `partName` is the name the
 participant and the admin lists show for that part (`itemDisplayName`, falling back to the
 station's name). `videoOrder[mission] = slot` says where each mission's photo lands in the video
@@ -767,13 +775,7 @@ overwritten. Which part opens the collage and which makes the video follow the o
 participant is served, not `partIndex`: the module endpoint adds `servedFirst` (the first part
 served - no skip button there) and `servedFinale` (the video part, or with none the last part
 served) to each part's `collageSplit` (`collageVisitRoles`), so a route that starts or ends
-with any part works. Every collage
-storage/job key is scoped by `participantSessionId()` (`utils/participantActivity.ts`) — a random
-id minted on each login — so a second participant on the same phone can't be handed the previous
-one's finished video. Never derive that scope from name/email/phone: those collide. Optional SMS
-delivery of the finished video (`smsForCollage*`, polled every 15s). Client:
-`components/stations/CollageStation.tsx` + `collageJobStorage`/`collageSplitStorage`/
-`backgroundCollageJob` + `utils/collageApi`/`collagePhotoCompress`.
+with any part works.
 
 **Logos** (station `settings.logoUrl` / `settings.logoRightUrl`, both optional). The left logo
 is drawn *behind* the template and shows through the template's yellow placeholder box
