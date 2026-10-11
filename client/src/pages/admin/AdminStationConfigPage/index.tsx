@@ -202,6 +202,7 @@ export default function AdminStationConfigPage() {
     { title: '', description: '' },
   ]);
   const [collageMultiSelect, setCollageMultiSelect] = useState(false);
+  const [collageStartWhenComplete, setCollageStartWhenComplete] = useState(false);
   const [collageMultiSelectCount, setCollageMultiSelectCount] = useState('6');
   const [collageTemplate, setCollageTemplate] = useState<CollageTemplateId>('default');
   const [collageCustomVideo, setCollageCustomVideo] = useState<CustomCollageVideo | undefined>(undefined);
@@ -369,6 +370,7 @@ export default function AdminStationConfigPage() {
             setCollageMissions(settings.missions as { title: string; description: string; referenceImageUrl?: string }[]);
           }
           setCollageMultiSelect(!!settings.multiSelect);
+          setCollageStartWhenComplete(settings.startWhenComplete === true);
           if (typeof settings.multiSelectCount === 'number') {
             setCollageMultiSelectCount(String(settings.multiSelectCount));
           }
@@ -493,6 +495,7 @@ export default function AdminStationConfigPage() {
         setCollageMissions(settings.missions as { title: string; description: string; referenceImageUrl?: string }[]);
       }
       setCollageMultiSelect(!!settings.multiSelect);
+      setCollageStartWhenComplete(settings.startWhenComplete === true);
       if (typeof settings.multiSelectCount === 'number') {
         setCollageMultiSelectCount(String(settings.multiSelectCount));
       }
@@ -615,6 +618,7 @@ export default function AdminStationConfigPage() {
             ...(m.referenceImageUrl?.trim() ? { referenceImageUrl: m.referenceImageUrl.trim() } : {}),
           }));
         settings.multiSelect = collageMultiSelect;
+        if (collageStartWhenComplete) settings.startWhenComplete = true;
         if (collageMultiSelect) {
           const n = parseInt(collageMultiSelectCount, 10);
           settings.multiSelectCount = Number.isFinite(n) && n > 0 ? n : 1;
@@ -881,6 +885,7 @@ export default function AdminStationConfigPage() {
     setCollageDescription('');
     setCollageMissions([{ title: '', description: '' }]);
     setCollageMultiSelect(false);
+    setCollageStartWhenComplete(false);
     setCollageMultiSelectCount('6');
     setCollageTemplate('default');
     setCollageCustomVideo(undefined);
@@ -1445,6 +1450,18 @@ export default function AdminStationConfigPage() {
                     />
                   </InlineRow>
                   </>)}
+
+                  <HintToggleRow>
+                    <SectionLabelNoMargin>{t.collageStartWhenComplete}</SectionLabelNoMargin>
+                    <ToggleButton
+                      type="button"
+                      selected={collageStartWhenComplete}
+                      onClick={() => setCollageStartWhenComplete((v) => !v)}
+                    >
+                      {collageStartWhenComplete ? 'ON' : 'OFF'}
+                    </ToggleButton>
+                  </HintToggleRow>
+                  <div style={{ fontSize: 12, color: '#888', marginTop: -4, marginBottom: 4 }}>{t.collageStartWhenCompleteHelper}</div>
 
                   <HintToggleRow>
                     <SectionLabelNoMargin>{t.collageMultiSelect}</SectionLabelNoMargin>

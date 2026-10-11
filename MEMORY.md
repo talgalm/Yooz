@@ -716,7 +716,15 @@ with `COLLAGE_LAMBDA_FUNCTION_NAME` set, because a dev server on the shared data
 or fail production jobs every time it restarted. A warm Lambda keeps the last custom collage video
 in `/tmp/last-custom-video` (keyed by its versioned URL) instead of pulling 20-85MB from
 Cloudinary on every render. A split collage
-(`module.items[].collageSplit`) spreads photo capture across several stations. Every collage
+(`module.items[].collageSplit`) spreads photo capture across several stations. With the station's
+`settings.startWhenComplete` ("יצירת הסרטון ברקע כשכל התמונות נאספו") the job is created with
+`autoStart` (read from the station, never from the request), and `POST /photo-uploaded` queues it
+the moment the last photo is recorded - so a split collage's video is rendering while the team
+walks to the video station, even if the phone slept right after the last part (before, only the
+phone's own background upload started it). It only changes anything for photos uploaded in the
+background - the parts before a video part; a station that shows the video itself uploads only after
+its review screen, exactly as before. Queuing is one atomic `updateOne` on the phase (`queueCollageJob`), shared with `/start`, so a
+photo arriving while the participant presses start cannot launch two renders. Every collage
 storage/job key is scoped by `participantSessionId()` (`utils/participantActivity.ts`) — a random
 id minted on each login — so a second participant on the same phone can't be handed the previous
 one's finished video. Never derive that scope from name/email/phone: those collide. Optional SMS
