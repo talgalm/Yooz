@@ -50,7 +50,7 @@ import type {
 } from './types';
 import ModuleItemsSection from './ModuleItemsSection';
 import GroupRoutesEditor from './GroupRoutesEditor';
-import { draftsToRoutes, newItemUid, routesFromGroupOrders, routesToDrafts, withItemUids, type RouteDraft } from './groupRoutes';
+import { draftsToRoutes, newItemUid, popupStationIndex, routesFromGroupOrders, routesToDrafts, withItemUids, type RouteDraft } from './groupRoutes';
 import PopupMessagesSection from './PopupMessagesSection';
 import ThemeFormModal, { type CustomTheme } from './ThemeFormModal';
 import ThemePickerModal, {
@@ -636,6 +636,7 @@ export default function AdminCreateActivityPage() {
           setOpeningType(a.opening.type as OpeningType);
           setOpeningUrl(a.opening.url || '');
         }
+        let loadedItems: ModuleItem[] = [];
         if (a.module) {
           const mType = a.module.type === 'mission' ? 'story' : a.module.type;
           setModuleType(mType as ModuleType);
@@ -644,7 +645,7 @@ export default function AdminCreateActivityPage() {
           if (a.module.showStationNumbers) setShowStationNumbers(true);
           if (a.module.showItemTitleNumbers) setShowItemTitleNumbers(true);
           if (a.module.items && a.module.items.length > 0) {
-            const loadedItems: ModuleItem[] = a.module.items.map((item) => ({
+            loadedItems = a.module.items.map((item) => ({
                 uid: newItemUid(),
                 itemType: item.type,
                 ref: item.data?._id || item.ref,
@@ -730,6 +731,7 @@ export default function AdminCreateActivityPage() {
             includeUsername: p.includeUsername === true,
             triggerPoint: p.trigger.point as PopupMessage['triggerPoint'],
             itemIndex: p.trigger.itemIndex ?? 0,
+            itemUid: loadedItems[p.trigger.itemIndex ?? 0]?.uid,
             conditionType: p.condition?.type === 'participantCount' ? 'participantCount' : 'none',
             threshold: p.condition?.threshold ?? 20,
             groups: p.groups ?? [],
@@ -1033,12 +1035,13 @@ export default function AdminCreateActivityPage() {
     setPopups((prev) => [...prev, {
       title: '', contentType: 'text' as PopupContentType, text: '', image: '', includeUsername: false,
       triggerPoint: 'afterLogin', itemIndex: 0, conditionType: 'none', threshold: 20, enabled: true,
-      groups: [], routes: [],
+      groups: [], routes: [], itemUid: selectedItems[0]?.uid,
     }]);
   };
   const removePopup = (index: number) => setPopups((prev) => prev.filter((_, i) => i !== index));
   const updatePopup = (index: number, field: keyof PopupMessage, value: string | number | boolean | string[] | number[]) => {
-    setPopups((prev) => prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)));
+    const followed = field === 'itemIndex' && typeof value === 'number' ? { itemUid: selectedItems[value]?.uid } : {};
+    setPopups((prev) => prev.map((p, i) => (i === index ? { ...p, [field]: value, ...followed } : p)));
   };
 
   const smsAvailable = connectionType === 'group' && groupEntryMode === 'selfService';
@@ -1235,10 +1238,7 @@ export default function AdminCreateActivityPage() {
               trigger: {
                 point: p.triggerPoint,
                 ...((['beforeItem', 'afterItem'].includes(p.triggerPoint)) && {
-                  itemIndex:
-                    selectedItems.length > 0
-                      ? Math.min(Math.max(0, p.itemIndex), selectedItems.length - 1)
-                      : 0,
+                  itemIndex: popupStationIndex(p, selectedItems),
                 }),
               },
               ...(p.conditionType === 'participantCount' && {

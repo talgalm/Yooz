@@ -715,7 +715,9 @@ Shared: `StationDescriptionPopup`, floating clue button for info stations.
   not the position, so with routes it shows at that station wherever each route puts it. When the
   audience walks a single route (that route, or groups assigned to it) the editor numbers the "איזה
   שלב" list in that route's order (`popupAudienceRoute`); the stored `itemIndex` is still the
-  station's index in `module.items`. New trigger point → extend
+  station's index in `module.items`. In the editor a popup also holds its station's `uid` (`itemUid`,
+  resolved by `popupStationIndex` on save), so dragging, adding or removing stations keeps it on
+  its station. New trigger point → extend
   the union in model + client and add the call site in `StoryModulePage`. Editor:
   `AdminCreateActivityPage/PopupMessagesSection.tsx`.
 - **Hints**: per-question `hint` (trivia) or station clue; using a hint applies a points penalty

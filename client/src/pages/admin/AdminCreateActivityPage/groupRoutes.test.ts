@@ -4,6 +4,7 @@ import {
   blockOrder,
   collageVideoPartTooEarly,
   popupAudienceRoute,
+  popupStationIndex,
   draftsToRoutes,
   locationBlocks,
   routeIndices,
@@ -88,4 +89,12 @@ test('a popup for one route, or for groups on one route, is numbered by that rou
   assert.deepEqual(popupAudienceRoute({ groups: ['Red', 'Blue'], routes: [] }, groupRoutes, 2), { route: null, mixed: true });
   assert.deepEqual(popupAudienceRoute({ groups: ['Yellow'], routes: [] }, groupRoutes, 2), { route: null, mixed: false });
   assert.deepEqual(popupAudienceRoute({ groups: ['Yellow'], routes: [0] }, groupRoutes, 2), { route: null, mixed: true });
+});
+
+test('a popup follows its station when the list is reordered', () => {
+  const items = [{ uid: 'b' }, { uid: 'c' }, { uid: 'a' }];
+  assert.equal(popupStationIndex({ itemIndex: 0, itemUid: 'a' }, items), 2);
+  assert.equal(popupStationIndex({ itemIndex: 1 }, items), 1);
+  assert.equal(popupStationIndex({ itemIndex: 7, itemUid: 'gone' }, items), 2);
+  assert.equal(popupStationIndex({ itemIndex: 3, itemUid: 'a' }, []), 0);
 });

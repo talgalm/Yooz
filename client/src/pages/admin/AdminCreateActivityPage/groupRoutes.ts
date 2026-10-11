@@ -84,6 +84,12 @@ export function draftsToRoutes(drafts: RouteDraft[], items: (Keyed & { location?
   return drafts.map((draft) => ({ name: draft.name.trim(), order: blockOrder(routeIndices(draft, items), blocks).flat() }));
 }
 
+export function popupStationIndex(popup: { itemIndex: number; itemUid?: string }, items: Keyed[]): number {
+  if (items.length === 0) return 0;
+  const followed = popup.itemUid ? items.findIndex((item) => item.uid === popup.itemUid) : -1;
+  return followed !== -1 ? followed : Math.min(Math.max(0, popup.itemIndex), items.length - 1);
+}
+
 export function popupAudienceRoute(
   popup: { groups: string[]; routes: number[] },
   groupRoutes: Record<string, number>,

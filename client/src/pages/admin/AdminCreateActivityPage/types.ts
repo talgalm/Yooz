@@ -28,6 +28,7 @@ export interface PopupMessage {
   includeUsername: boolean;
   triggerPoint: TriggerPoint;
   itemIndex: number;
+  itemUid?: string;
   conditionType: ConditionType;
   threshold: number;
   groups: string[];

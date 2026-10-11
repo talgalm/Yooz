@@ -1,6 +1,6 @@
 import FileUploadButton from '../../../components/FileUploadButton';
 import { itemDisplayName, type PopupMessage, type ModuleItem } from './types';
-import { popupAudienceRoute } from './groupRoutes';
+import { popupAudienceRoute, popupStationIndex } from './groupRoutes';
 import {
   SectionLabel,
   VerticalStackGap12,
@@ -163,12 +163,7 @@ export default function PopupMessagesSection({
                       </span>
                     ) : (
                       <PopupSelect
-                        value={String(
-                          Math.min(
-                            Math.max(0, popup.itemIndex),
-                            selectedItems.length - 1,
-                          ),
-                        )}
+                        value={String(popupStationIndex(popup, selectedItems))}
                         onChange={(e) => onUpdatePopup(i, 'itemIndex', Number(e.target.value))}
                       >
                         {stages.order.map((idx, pos) => (
