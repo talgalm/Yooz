@@ -13,6 +13,7 @@ export interface ItemLocation {
   lat: number;
   lng: number;
   address?: string;
+  placeName?: string;
 }
 export type OpeningType = 'none' | 'video' | 'image';
 export type TriggerPoint = 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
@@ -27,8 +28,11 @@ export interface PopupMessage {
   includeUsername: boolean;
   triggerPoint: TriggerPoint;
   itemIndex: number;
+  itemUid?: string;
   conditionType: ConditionType;
   threshold: number;
+  groups: string[];
+  routes: number[];
   enabled: boolean;
 }
 
@@ -59,6 +63,8 @@ export interface CollageSplit {
   totalParts?: number;
   videoPartIndex?: number | null;
   photoOrder?: number[];
+  videoOrder?: number[];
+  partName?: string;
 }
 
 export interface ModuleItem {
@@ -78,6 +84,11 @@ export interface ModuleItem {
   location?: ItemLocation;
   mapIcon?: string;
   cipherChar?: string;
+  uid?: string;
+}
+
+export function itemDisplayName(item: Pick<ModuleItem, 'name' | 'collageSplit'>): string {
+  return item.collageSplit?.partName?.trim() || item.name;
 }
 
 export interface CustomInstructions {
@@ -112,6 +123,9 @@ export interface Activity {
     showStationNumbers?: boolean;
     showItemTitleNumbers?: boolean;
     groupOrders?: Record<string, number[]>;
+    routes?: { name: string; order: number[] }[];
+    groupRoutes?: Record<string, number>;
+    startLocation?: ItemLocation;
     proximityMeters?: number;
     mapDesign?: Partial<MapDesign>;
     openAnywhere?: boolean;
@@ -127,6 +141,8 @@ export interface Activity {
       includeUsername?: boolean;
       trigger: { point: string; itemIndex?: number };
       condition?: { type: string; threshold: number };
+      groups?: string[];
+      routes?: number[];
       enabled: boolean;
     }[];
   };
@@ -149,6 +165,7 @@ export interface Activity {
   folderId?: string | null;
   includeOnRoadmap?: boolean;
   hideLeaderboardInHeader?: boolean;
+  leaderboardAllGroups?: boolean;
   leaderboardCurrentDayOnly?: boolean;
   dailyReset?: boolean;
   leaderboardAsGrade?: boolean;

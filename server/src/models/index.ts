@@ -1,6 +1,6 @@
 export { Station, type IStation } from './Station';
 export { Layout, type ILayout } from './Layout';
-export { Activity, type IActivity, type IModuleConfig, type IModuleItem, type IItemLocation } from './Activity';
+export { Activity, type IActivity, type IModuleConfig, type IModuleItem, type IItemLocation, type IGroupRoute } from './Activity';
 export { ActivityGroup, type IActivityGroup, normalizeGroupName } from './ActivityGroup';
 export { PhoneRegistration, type IPhoneRegistration } from './PhoneRegistration';
 export {

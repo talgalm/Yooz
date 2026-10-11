@@ -4,7 +4,7 @@ import MapIconSection from './MapIconSection';
 import { styled } from '@mui/material/styles';
 import { Input } from '../../../components/styled';
 import FileUploadButton from '../../../components/FileUploadButton';
-import type { ItemLocation, ModuleItem } from './types';
+import { itemDisplayName, type ItemLocation, type ModuleItem } from './types';
 import { geocodeAddress, isMapsAvailable, loadGoogleMaps } from '../../../utils/googleMaps';
 import { cleanCipherInput } from '../../../utils/cipher';
 
@@ -152,16 +152,24 @@ const PickedCoords = styled('div')({
 
 const DEFAULT_PICKER_CENTER = { lat: 32.0853, lng: 34.7818 };
 
-function LocationSection({
-  item,
+export function LocationSection({
+  location,
   onChange,
+  title,
+  hint,
+  placeNameFallback,
   t,
 }: {
-  item: ModuleItem;
+  location?: ItemLocation;
   onChange: (location: ItemLocation | undefined) => void;
+  title: string;
+  hint?: string;
+  placeNameFallback?: string;
   t: Record<string, string>;
 }) {
-  const [address, setAddress] = useState(item.location?.address || '');
+  const [address, setAddress] = useState(location?.address || '');
+  const current = useRef(location);
+  current.current = location;
   const [status, setStatus] = useState<'idle' | 'searching' | 'notFound' | 'noKey' | 'mapFailed'>('idle');
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -172,7 +180,8 @@ function LocationSection({
   const place = useCallback((lat: number, lng: number, addr?: string) => {
     markerRef.current?.setPosition({ lat, lng });
     mapRef.current?.panTo({ lat, lng });
-    commit.current({ lat, lng, address: addr });
+    const placeName = current.current?.placeName;
+    commit.current({ lat, lng, address: addr, ...(placeName && { placeName }) });
   }, []);
 
   useEffect(() => {
@@ -181,10 +190,10 @@ function LocationSection({
     loadGoogleMaps()
       .then((maps) => {
         if (cancelled || !canvasRef.current) return;
-        const start = item.location ?? DEFAULT_PICKER_CENTER;
+        const start = location ?? DEFAULT_PICKER_CENTER;
         const map = new maps.Map(canvasRef.current, {
           center: start,
-          zoom: item.location ? 17 : 12,
+          zoom: location ? 17 : 12,
           disableDefaultUI: true,
           zoomControl: true,
           clickableIcons: false,
@@ -193,7 +202,7 @@ function LocationSection({
           map,
           position: start,
           draggable: true,
-          visible: !!item.location,
+          visible: !!location,
         });
         map.addListener('click', (e: google.maps.MapMouseEvent) => {
           if (!e.latLng) return;
@@ -231,10 +240,11 @@ function LocationSection({
     onChange(undefined);
   };
 
-  const loc = item.location;
+  const loc = location;
   return (
     <Section>
-      <SectionTitle>{t.mapLocation}</SectionTitle>
+      <SectionTitle>{title}</SectionTitle>
+      {hint && <Hint>{hint}</Hint>}
       <div style={{ display: 'flex', gap: 6 }}>
         <Input
           value={address}
@@ -253,6 +263,18 @@ function LocationSection({
       {status === 'noKey' && <Hint style={{ color: '#c0392b' }}>{t.mapNoKey}</Hint>}
       {status === 'mapFailed' && <Hint style={{ color: '#c0392b' }}>{t.mapPickerFailed}</Hint>}
       <PickedCoords>{loc ? `${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}` : t.mapNoPoint}</PickedCoords>
+      {loc && placeNameFallback !== undefined && (
+        <>
+          <SectionTitle>{t.mapPlaceName}</SectionTitle>
+          <Hint>{t.mapPlaceNameHint}</Hint>
+          <Input
+            value={loc.placeName ?? ''}
+            placeholder={placeNameFallback}
+            onChange={(e) => onChange({ ...loc, placeName: e.target.value || undefined })}
+            aria-label={t.mapPlaceName}
+          />
+        </>
+      )}
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <SecondaryBtn type="button" onClick={clear}>{t.mapClearPoint}</SecondaryBtn>
       </div>
@@ -342,7 +364,7 @@ export default function ItemSettingsModal({
       <TranslationsModal
         kind={item.itemType === 'game' ? 'games' : 'stations'}
         id={item.ref}
-        title={item.name}
+        title={itemDisplayName(item)}
         onClose={() => setReviewing(false)}
       />
     );
@@ -351,7 +373,7 @@ export default function ItemSettingsModal({
   return (
     <Overlay onClick={onClose}>
       <Card onClick={(e) => e.stopPropagation()}>
-        <Title>{item.name}</Title>
+        <Title>{itemDisplayName(item)}</Title>
 
         {translatable && (
           <Section style={{ borderTop: 'none', paddingTop: 0 }}>
@@ -397,8 +419,15 @@ export default function ItemSettingsModal({
           </Section>
         )}
 
-        {isMap && onUpdateLocation && (
-          <LocationSection item={item} onChange={(loc) => onUpdateLocation(index, loc)} t={t} />
+        {(isMap || (connectionType === 'group' && !isSpiders)) && onUpdateLocation && (
+          <LocationSection
+            location={item.location}
+            onChange={(loc) => onUpdateLocation(index, loc)}
+            title={t.mapLocation}
+            hint={isMap ? undefined : t.locationForRoutesHint}
+            placeNameFallback={isMap ? itemDisplayName(item) : undefined}
+            t={t}
+          />
         )}
 
         {isMap && onUpdateCipherChar && (

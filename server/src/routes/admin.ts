@@ -15,7 +15,7 @@ import { Activity, ActivityFolder, ActivityGroup, MapGroupState, Report, Game, S
 import { clampPassThreshold } from '../utils/scoreNormalization';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { sanitiseLanguages, sanitiseStartLanguage } from '../utils/requestLang';
-import { sanitizeLocation, sanitizeProximityMeters, sanitizeGroupOrders } from '../utils/moduleItems';
+import { sanitizeLocation, sanitizeProximityMeters, sanitizeGroupOrders, sanitizeRoutes, sanitizeGroupRoutes, ordersFromRoutes, sanitizeCollageSplit } from '../utils/moduleItems';
 import { sanitizeCipherChar, sanitizeMapDesign, sanitizeMapIcon } from '../utils/mapDesign';
 import { pretranslateActivity } from '../services/activityPretranslate';
 import { IActivity, IScheduledReport } from '../models/Activity';
@@ -84,7 +84,7 @@ async function buildActivityData(
   existingPasswordHash?: string,
   existing?: IActivity,
 ): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, userControl, guidelines, extraSupportInfo, organizerContactName, organizerContactPhone, helpCategoriesDisabled, helpCategoryResponses, helpOtherCategoryEnabled, customInstructions, languages, defaultLanguage, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardCurrentDayOnly, dailyReset, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
+  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, userControl, guidelines, extraSupportInfo, organizerContactName, organizerContactPhone, helpCategoriesDisabled, helpCategoryResponses, helpOtherCategoryEnabled, customInstructions, languages, defaultLanguage, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardAllGroups, leaderboardCurrentDayOnly, dailyReset, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -148,7 +148,7 @@ async function buildActivityData(
               mapIcon?: unknown;
               cipherChar?: unknown;
             }) => {
-              const location = isMap ? sanitizeLocation(item.location) : undefined;
+              const location = sanitizeLocation(item.location);
               const mapIcon = isMap ? sanitizeMapIcon(item.mapIcon) : undefined;
               const cipherChar = isMap ? sanitizeCipherChar(item.cipherChar) : undefined;
               return {
@@ -158,7 +158,7 @@ async function buildActivityData(
                 ...(item.spiderSvg && { spiderSvg: item.spiderSvg }),
                 ...(item.isFinal && { isFinal: true }),
                 ...(item.revisitable && { revisitable: true }),
-                ...(item.collageSplit && { collageSplit: item.collageSplit }),
+                ...(sanitizeCollageSplit(item.collageSplit) && { collageSplit: sanitizeCollageSplit(item.collageSplit) }),
                 ...(location && { location }),
                 ...(mapIcon && { mapIcon }),
                 ...(cipherChar && { cipherChar }),
@@ -166,7 +166,14 @@ async function buildActivityData(
             })
         : [];
       const proximityMeters = isMap ? sanitizeProximityMeters(mod.proximityMeters) : undefined;
-      const groupOrders = isMap ? sanitizeGroupOrders(mod.groupOrders, items.length) : undefined;
+      const usesRoutes = connectionType === 'group' && moduleConfig.type !== 'spiders';
+      const routes = usesRoutes ? sanitizeRoutes(mod.routes, items.length) : undefined;
+      const groupNames = Array.isArray(groups) ? groups.map((g: { name?: string }) => (g?.name || '').trim()) : [];
+      const groupRoutes = routes ? sanitizeGroupRoutes(mod.groupRoutes, routes.length, groupNames) : undefined;
+      const startLocation = usesRoutes ? sanitizeLocation(mod.startLocation) : undefined;
+      const groupOrders = routes && groupRoutes
+        ? ordersFromRoutes(routes, groupRoutes, items)
+        : isMap ? sanitizeGroupOrders(mod.groupOrders, items.length) : undefined;
       const mapDesign = isMap ? sanitizeMapDesign(mod.mapDesign) : undefined;
       data.module = {
         type: moduleConfig.type || 'story',
@@ -176,6 +183,9 @@ async function buildActivityData(
         ...(mod.showItemTitleNumbers === true && { showItemTitleNumbers: true }),
         ...(proximityMeters !== undefined && { proximityMeters }),
         ...(groupOrders && { groupOrders }),
+        ...(routes && { routes }),
+        ...(groupRoutes && { groupRoutes }),
+        ...(startLocation && { startLocation }),
         ...(mapDesign && { mapDesign }),
         ...(isMap && mod.openAnywhere === true && { openAnywhere: true }),
         ...(isMap && mod.showStationNames === true && { showStationNames: true }),
@@ -191,6 +201,12 @@ async function buildActivityData(
             includeUsername: p.includeUsername === true,
             trigger: p.trigger || { point: 'afterLogin' },
             condition: p.condition || undefined,
+            ...(Array.isArray(p.groups) && p.groups.some((g) => typeof g === 'string' && g.trim()) && {
+              groups: (p.groups as unknown[]).filter((g): g is string => typeof g === 'string' && !!g.trim()).map((g) => g.trim()),
+            }),
+            ...(routes && Array.isArray(p.routes) && p.routes.some((r) => Number.isInteger(r) && r >= 0 && r < routes.length) && {
+              routes: (p.routes as unknown[]).filter((r): r is number => Number.isInteger(r) && (r as number) >= 0 && (r as number) < routes.length),
+            }),
             enabled: p.enabled !== false,
           };
         }).filter((p: { title: string; contentType: string; text?: string; image?: string }) => p.title && (p.contentType === 'image' ? !!p.image : !!p.text)) : [],
@@ -254,6 +270,7 @@ async function buildActivityData(
       : 'points';
   data.leaderboardAsGrade = leaderboardAsGrade === true;
   data.hideLeaderboardInHeader = hideLeaderboardInHeader === true;
+  data.leaderboardAllGroups = leaderboardAllGroups === true;
   data.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly !== false;
   data.dailyReset = dailyReset === true;
   data.userControl = userControl === true;

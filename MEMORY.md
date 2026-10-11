@@ -141,17 +141,46 @@ Login config: `loginFields: ('email'|'phoneNumber'|'name')[]`, `emailGoogle?`,
 - `type: 'story'|'mission'|'spiders'|'map'`, `theme?` (e.g. `'spy'`), `backgroundImage?`.
 - `items: IModuleItem[]` — ordered `{type:'game'|'station'|'mission', ref: ObjectId,
   groups?: string[] (only these groups see it), spiderSvg?, isFinal? (spiders lock),
-  collageSplit? (split a collage station into N parts across the activity),
+  collageSplit? (split a collage station into N parts across the activity: `{splitGroupId,
+  partIndex, partSizes, videoPartIndex?, photoOrder?, videoOrder?, partName?}`, cleaned on save by
+  `sanitizeCollageSplit`),
   revisitable? (completed item stays re-openable from the roadmap — see §11),
-  location? ({lat,lng,address?} — where the station physically is, map modules only, §16),
+  location? ({lat,lng,address?,placeName?} — where the station physically is: map modules, and group
+  activities of any kind for measuring routes, §16. `placeName` is what the map's navigation card
+  and arrival card show instead of the station name, e.g. the building the station is in),
   cipherChar? (map: the character this station reveals in the cipher, §16)}`.
 - `missionRef?` (when `type='mission'`), `showStationNumbers?`, `showItemTitleNumbers?`.
-- `groupOrders?` (map: group name → permutation of item indices), `proximityMeters?` (map: §16),
+- `routes?: {name, order[]}[]`, `groupRoutes?` (group name → route index), `startLocation?` -
+  routes for groups (below). `groupOrders?` (group name → permutation of item indices) is what the
+  participant path serves; with routes it is derived from them on save. `proximityMeters?` (map: §16),
   `mapDesign?` (map: `{style, hidden[]}`, the map's look and which Google places it shows, §16).
   `openAnywhere?` (map: stations open from anywhere instead of only on arrival, §16).
   `showStationNames?` (map: a name label under each station pin, §16).
   `cipherEnabled?` (map: the cipher button and the per-station characters, §16).
 - `popups?: IPopupMessage[]` — see §11.
+
+**Routes for groups** (group activities with preset groups, story or map modules - the wizard's
+`GroupRoutesEditor`, which replaced the map-only per-group order editor). The admin builds a few
+routes - each a full order of the same stations - and picks a route per group (no route = the
+stored order). Self-service teams don't exist in advance, so they always walk the stored order.
+Saving (`buildActivityData`) sanitizes routes (`sanitizeRoutes`: every station once, missing ones
+appended), keeps only known groups (`sanitizeGroupRoutes`) and derives `groupOrders` from them
+(`ordersFromRoutes`), so the participant path (`visibleOrderedIndices`, `popupsForServedItems`)
+needs no change. A route may visit a split collage's photo parts in any order. A dedicated video
+part has to come after all of them: `keepCollageVideoPartLast` moves it there on save, and the
+editor warns (`collageVideoPartTooEarly`). Without one, whichever photo part the route visits last
+makes the video (below).
+In the editor routes hold item ids (`ModuleItem.uid`, given to every item by `withItemUids`), not
+indices, so adding, removing or reordering stations or splitting a collage doesn't scramble them;
+`draftsToRoutes` turns them back into indices on save. A station with no location sticks to the
+located station before it in the activity's list (`locationBlocks`; leading ones join the first
+located station), shows indented under it with "+N באותו מקום", and moves with it as one block
+(`blockOrder`, also applied on save). An activity saved with the old per-group
+orders opens with one route per distinct order (`routesFromGroupOrders`). Each route shows its
+length from `startLocation` through the located stations: straight-line at once (`pathMeters`), walking on
+demand (`walkingMeters`, Google Directions in chunks of 25 points), with the extra meters over the
+shortest route, so routes can be balanced. Station locations are edited in the item dialog for
+group activities too (participants of a story activity never see them).
 
 **Leaderboard/scoring flags**: `leaderboardMode: 'points'|'time'|'both'`,
 `leaderboardAsGrade?` (show points as 0-100 normalized grade), `hideLeaderboardInHeader?`,
@@ -679,7 +708,16 @@ Shared: `StationDescriptionPopup`, floating clue button for info stations.
 - **Popups** (`Activity.module.popups[]`, model `IPopupMessage`): `title`, `contentType:
   'text'|'image'`, `text?`/`image?`, `includeUsername?`, `trigger.point:
   'afterLogin'|'beforeItem'|'afterItem'|'endOfActivity'` (+ `itemIndex` for before/after),
-  optional `condition:{type:'participantCount', threshold}`, `enabled`. New trigger point → extend
+  optional `condition:{type:'participantCount', threshold}`, optional `groups` / `routes` (only
+  these preset groups, or the groups assigned to these routes in `groupRoutes`, get it -
+  `popupVisibleTo`, filtered in `GET /:code/module`; the editor's "מי רואה" chips; removing a route
+  shifts the popups' route indices), `enabled`. A before/after-station popup is tied to the station,
+  not the position, so with routes it shows at that station wherever each route puts it. When the
+  audience walks a single route (that route, or groups assigned to it) the editor numbers the "איזה
+  שלב" list in that route's order (`popupAudienceRoute`); the stored `itemIndex` is still the
+  station's index in `module.items`. In the editor a popup also holds its station's `uid` (`itemUid`,
+  resolved by `popupStationIndex` on save), so dragging, adding or removing stations keeps it on
+  its station. New trigger point → extend
   the union in model + client and add the call site in `StoryModulePage`. Editor:
   `AdminCreateActivityPage/PopupMessagesSection.tsx`.
 - **Hints**: per-question `hint` (trivia) or station clue; using a hint applies a points penalty
@@ -690,7 +728,9 @@ Shared: `StationDescriptionPopup`, floating clue button for info stations.
   default today-only. `LeaderboardView` (participant) + `ManagerDashboardPage/AnimatedLeaderboard`.
   In a **group** activity the participant sees only their own group: one group card (with its
   real rank among all groups) and their own teammates, re-ranked 1..n *within* the group —
-  never another group's players. Solo activities keep the top-3 + me-and-neighbours window.
+  never another group's players - unless `Activity.leaderboardAllGroups` ("כל המשתתפים רואים את
+  הניקוד של כל הקבוצות" in the wizard) is on, which shows every group's standings, as a map
+  activity always does. Solo activities keep the top-3 + me-and-neighbours window.
   The viewer's own row is bold pure white, everyone else 600/82% — that is the "which one is
   me" cue, alongside the highlighted card.
 - **Roadmap**: `RoadmapView` (story path) / `SpidersView` (graph, `isFinal` lock) — themed via
@@ -731,6 +771,21 @@ one's finished video. Never derive that scope from name/email/phone: those colli
 delivery of the finished video (`smsForCollage*`, polled every 15s). Client:
 `components/stations/CollageStation.tsx` + `collageJobStorage`/`collageSplitStorage`/
 `backgroundCollageJob` + `utils/collageApi`/`collagePhotoCompress`.
+
+**Split collage parts.** Each part takes a
+contiguous slice (`partSizes`) of the missions in `photoOrder`; `partName` is the name the
+participant and the admin lists show for that part (`itemDisplayName`, falling back to the
+station's name). `videoOrder[mission] = slot` says where each mission's photo lands in the video
+(default: mission order), so the photo of a given mission always lands in its own slot whichever
+part takes it and whatever order a route visits the parts in (`videoSlotOf` in `CollageStation`).
+The split editor (`CollageSplitEditor`) edits names, parts and the video numbers; saving
+(`applySplitEditorResult`) updates the group's existing items where they stand, adds new parts
+after the last one and drops extra ones from the end, so stations between parts are never
+overwritten. Which part opens the collage and which makes the video follow the order the
+participant is served, not `partIndex`: the module endpoint adds `servedFirst` (the first part
+served - no skip button there) and `servedFinale` (the video part, or with none the last part
+served) to each part's `collageSplit` (`collageVisitRoles`), so a route that starts or ends
+with any part works.
 
 **Logos** (station `settings.logoUrl` / `settings.logoRightUrl`, both optional). The left logo
 is drawn *behind* the template and shows through the template's yellow placeholder box
@@ -1048,9 +1103,9 @@ of item indices, so each team walks its own order). Per-group order needs **pres
 self-service teams don't exist until the day, so they all walk the stored order. Admin UI:
 each item's settings dialog (`ItemSettingsModal` → `LocationSection`: address geocode **and** a
 click-to-drop map picker with a draggable pin, for spots no address describes — a gate, a
-courtyard, a tree) and `GroupOrderEditor.tsx` (hand-rolled DnD + tap-to-swap, no library).
-Saving goes through `routes/admin.ts::buildActivityData`, which keeps these three fields for map
-modules only and sanitises them in `utils/moduleItems.ts` — `sanitizeLocation` drops missing,
+courtyard, a tree) and `GroupRoutesEditor.tsx` (routes for groups, §4 - hand-rolled DnD +
+tap-to-swap, no library). Saving goes through `routes/admin.ts::buildActivityData`, which keeps
+the map fields for map modules (and `location` for group activities too) and sanitises them in `utils/moduleItems.ts` — `sanitizeLocation` drops missing,
 non-finite or out-of-range coordinates, `sanitizeProximityMeters` clamps to 5-200,
 `sanitizeGroupOrders` keeps distinct in-range indices. The admin read returns `location` too,
 so a reopened activity keeps its pins (it used to drop all three on every save).
@@ -1086,8 +1141,10 @@ target changes the hysteresis starts over, so the next station 30m on doesn't op
 shows live distance **and** accuracy — a participant who can see the number walks the last few
 metres themselves. Stations chain (`utils/mapChain.ts`, tested): a station with no location, or one within
 `SAME_PLACE_M` (15m) of the last place set before it, opens straight after the previous station
-(`opensRightAfter` - `advanceToNextItem` runs the station's `beforeItem` popups and then swaps
-straight to the next station without passing the map, unless the manager lock covers it;
+(`opensRightAfter` - `advanceToNextItem` swaps straight to the next station without passing the
+map, unless the manager lock covers it or a popup sits between the two: an `afterItem` popup of the
+finished station or a `beforeItem` popup of the next one sends the participant back to the map, the
+`afterItem` one shows there, and the `beforeItem` one shows when they press start;
 `PlayingPhase` is keyed by item index so the new station mounts fresh) and has no pin of its own; only the first
 station of a place is walked to. Once every station of a place is done (`placeGroupEnd`), its pin reads
 the range ("1-3", a pill as tall as the next-station circle) with a "3 תחנות" label under it; the next
@@ -1961,7 +2018,7 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   group visibility / location / spider SVG / final / re-entry / collage split),
   `ThemePickerModal` (theme gallery; previews are painted from `roadmapThemes.ts`'s own kits so
   they can't drift from the participant roadmap), `PopupMessagesSection`, `ThemeFormModal`,
-  `GroupOrderEditor`, `CollageSplitEditor`, `ItemPreviewModal`.
+  `GroupRoutesEditor`, `CollageSplitEditor`, `ItemPreviewModal`.
   **Admin UI here is deliberately icon-free** — state reads through colour, border and text
   badges; drag handles are CSS dot-grids, not glyphs.
 - **`AdminGameConfigPage/`** — per-type config forms: `TriviaGameConfig`, `OrderGameConfig`,

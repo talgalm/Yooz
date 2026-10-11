@@ -17,6 +17,10 @@ export function distanceMeters(a: LatLng, b: LatLng): number {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+export function pathMeters(points: LatLng[]): number {
+  return points.slice(1).reduce((sum, point, i) => sum + distanceMeters(points[i], point), 0);
+}
+
 export function bearingDegrees(a: LatLng, b: LatLng): number {
   const lat1 = toRad(a.lat);
   const lat2 = toRad(b.lat);

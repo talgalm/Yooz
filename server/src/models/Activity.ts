@@ -14,12 +14,15 @@ export interface ICollageSplit {
   totalParts?: number;
   videoPartIndex?: number | null;
   photoOrder?: number[];
+  videoOrder?: number[];
+  partName?: string;
 }
 
 export interface IItemLocation {
   lat: number;
   lng: number;
   address?: string;
+  placeName?: string;
 }
 
 export interface IModuleItem {
@@ -49,7 +52,14 @@ export interface IPopupMessage {
   includeUsername?: boolean;
   trigger: IPopupTrigger;
   condition?: IPopupCondition;
+  groups?: string[];
+  routes?: number[];
   enabled: boolean;
+}
+
+export interface IGroupRoute {
+  name: string;
+  order: number[];
 }
 
 export interface IModuleConfig {
@@ -62,6 +72,9 @@ export interface IModuleConfig {
   showStationNumbers?: boolean;
   showItemTitleNumbers?: boolean;
   groupOrders?: Record<string, number[]>;
+  routes?: IGroupRoute[];
+  groupRoutes?: Record<string, number>;
+  startLocation?: IItemLocation;
   proximityMeters?: number;
   openAnywhere?: boolean;
   showStationNames?: boolean;
@@ -123,6 +136,7 @@ export interface IActivity {
   leaderboardMode?: 'points' | 'time' | 'both';
   leaderboardAsGrade?: boolean;
   hideLeaderboardInHeader?: boolean;
+  leaderboardAllGroups?: boolean;
   leaderboardCurrentDayOnly?: boolean;
   dailyReset?: boolean;
   lastDailyResetDay?: string;
@@ -198,8 +212,15 @@ const popupMessageSchema = new Schema({
   includeUsername: { type: Boolean, default: false },
   trigger: { type: popupTriggerSchema, required: true },
   condition: { type: popupConditionSchema },
+  groups: { type: [String], default: undefined },
+  routes: { type: [Number], default: undefined },
   enabled: { type: Boolean, default: true },
 });
+
+const groupRouteSchema = new Schema<IGroupRoute>({
+  name: { type: String, required: true },
+  order: { type: [Number], default: [] },
+}, { _id: false });
 
 const collageSplitSchema = new Schema<ICollageSplit>({
   splitGroupId: { type: String, required: true },
@@ -208,12 +229,15 @@ const collageSplitSchema = new Schema<ICollageSplit>({
   totalParts: { type: Number },
   videoPartIndex: { type: Number, default: null },
   photoOrder: { type: [Number], default: undefined },
+  videoOrder: { type: [Number], default: undefined },
+  partName: { type: String },
 }, { _id: false });
 
 const itemLocationSchema = new Schema<IItemLocation>({
   lat: { type: Number, required: true },
   lng: { type: Number, required: true },
   address: { type: String },
+  placeName: { type: String },
 }, { _id: false });
 
 const moduleItemSchema = new Schema<IModuleItem>({
@@ -244,6 +268,9 @@ const moduleConfigSchema = new Schema<IModuleConfig>({
   popups: { type: [popupMessageSchema], default: [] },
   missionRef: { type: Schema.Types.ObjectId, ref: 'Mission' },
   groupOrders: { type: Schema.Types.Mixed, default: undefined },
+  routes: { type: [groupRouteSchema], default: undefined },
+  groupRoutes: { type: Schema.Types.Mixed, default: undefined },
+  startLocation: { type: itemLocationSchema, default: undefined },
   proximityMeters: { type: Number, default: undefined },
   openAnywhere: { type: Boolean, default: undefined },
   showStationNames: { type: Boolean, default: undefined },
@@ -302,6 +329,7 @@ const activitySchema = new Schema<IActivity>({
   leaderboardMode: { type: String, enum: ['points', 'time', 'both'], default: 'points' },
   leaderboardAsGrade: { type: Boolean, default: false },
   hideLeaderboardInHeader: { type: Boolean, default: false },
+  leaderboardAllGroups: { type: Boolean, default: false },
   leaderboardCurrentDayOnly: { type: Boolean, default: true },
   dailyReset: { type: Boolean, default: false },
   lastDailyResetDay: { type: String },

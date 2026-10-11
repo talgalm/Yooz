@@ -14,7 +14,7 @@ import { resolveCeiling, normalizeScore } from '../utils/scoreNormalization';
 import { startOfTodayIsrael, israelDayString } from '../utils/israelTime';
 import { readLang } from '../utils/requestLang';
 import { translateContent, applyTranslations } from '../services/contentTranslation';
-import { visibleOrderedIndices, popupsForServedItems } from '../utils/moduleItems';
+import { visibleOrderedIndices, popupsForServedItems, popupVisibleTo, collageVisitRoles } from '../utils/moduleItems';
 import { onGroupMemberCompleted } from '../services/groupRewardService';
 import activityGroupsRouter from './activityGroups';
 import mapRunRouter from './mapRun';
@@ -198,12 +198,13 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
 
   const servedOrder = visibleOrderedIndices(activity.module, participantGroup);
   const moduleItems = servedOrder.map((i) => activity.module!.items[i]);
+  const collageRoles = collageVisitRoles(moduleItems);
 
   const requested = readLang(req);
   const lang = activity.languages?.includes(requested) ? requested : 'he';
 
   const cipherOn = activity.module.type === 'map' && activity.module.cipherEnabled === true;
-  const populated = moduleItems.map((item) => {
+  const populated = moduleItems.map((item, position) => {
     if (item.type === 'mission') {
       const data = missionMap.get(item.ref.toString());
       if (!data) return null;
@@ -245,14 +246,14 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
       return withReviewedTranslations({
         type: 'station' as const,
         _id: data._id,
-        name: data.name,
+        name: item.collageSplit?.partName || data.name,
         stationType: data.type,
         description: data.description,
         settings: publicStationSettings(data.type, data.settings || {}),
         spiderSvg: item.spiderSvg,
         ...(item.isFinal && { isFinal: true }),
         ...(item.revisitable && { revisitable: true }),
-        ...(item.collageSplit && { collageSplit: item.collageSplit }),
+        ...(item.collageSplit && { collageSplit: { ...item.collageSplit, ...collageRoles[position] } }),
         ...(item.location && { location: item.location }),
         ...(item.mapIcon && { mapIcon: item.mapIcon }),
         ...(cipherOn && item.cipherChar && { cipherChar: item.cipherChar }),
@@ -267,6 +268,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     const reportCount = await getParticipantCount(activity._id, activity.dailyReset === true);
     filteredPopups = activity.module.popups.filter((p) => {
       if (!p.enabled) return false;
+      if (!popupVisibleTo(p, participantGroup, activity.module?.groupRoutes)) return false;
       if (p.condition && p.condition.type === 'participantCount') {
         return reportCount >= p.condition.threshold;
       }
@@ -336,6 +338,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     leaderboardMode: activity.leaderboardMode || 'points',
     ...(activity.leaderboardAsGrade && { leaderboardAsGrade: true }),
     ...(activity.hideLeaderboardInHeader && { hideLeaderboardInHeader: true }),
+    ...(activity.leaderboardAllGroups && { leaderboardAllGroups: true }),
     ...(activity.activityDurationMinutes && { activityDurationMinutes: activity.activityDurationMinutes }),
     ...(activity.roadmapTimerMinutes && { roadmapTimerMinutes: activity.roadmapTimerMinutes }),
     lockedFromIndex: typeof activity.lockedFromIndex === 'number' ? activity.lockedFromIndex : null,

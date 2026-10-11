@@ -818,7 +818,7 @@ export default function MapView({
     flyTo(fix, NAVIGATION_ZOOM);
   };
 
-  const name = items[currentItemIndex]?.name ?? '';
+  const name = target?.placeName?.trim() || items[currentItemIndex]?.name || '';
   const turn = navigating && currentRoute && fix && !arrived ? nextTurn(currentRoute.walk, fix) : null;
   const left = navigating && currentRoute && fix ? remainingWalk(currentRoute.walk, fix) : null;
 
