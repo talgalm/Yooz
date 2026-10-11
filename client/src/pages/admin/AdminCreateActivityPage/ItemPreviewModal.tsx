@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { styled } from '@mui/material/styles';
 import { adminApiFetch } from '../../../utils/adminApi';
-import type { ModuleItem } from './types';
+import { itemDisplayName, type ModuleItem } from './types';
 
 import OrderGame from '../../../components/games/OrderGame';
 import TriviaGame from '../../../components/games/TriviaGame';
@@ -237,7 +237,7 @@ export default function ItemPreviewModal({ item, onClose }: ItemPreviewModalProp
       <Container>
         <Header>
           <div style={{ display: 'flex', alignItems: 'center', minWidth: 0, flex: 1 }}>
-            <HeaderTitle>{item.name}</HeaderTitle>
+            <HeaderTitle>{itemDisplayName(item)}</HeaderTitle>
             <HeaderBadge>{item.subType || item.itemType}</HeaderBadge>
           </div>
           <CloseButton onClick={onClose}>&times;</CloseButton>

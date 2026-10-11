@@ -18,7 +18,7 @@ export interface GameItemData {
   spiderSvg?: string;
   isFinal?: boolean;
   revisitable?: boolean;
-  location?: LatLng & { address?: string };
+  location?: LatLng & { address?: string; placeName?: string };
   mapIcon?: string;
   cipherChar?: string;
 }
@@ -30,6 +30,10 @@ export interface CollageSplitData {
   totalParts?: number;
   videoPartIndex?: number | null;
   photoOrder?: number[];
+  videoOrder?: number[];
+  partName?: string;
+  servedFirst?: boolean;
+  servedFinale?: boolean;
 }
 
 export interface StationItemData {
@@ -42,7 +46,7 @@ export interface StationItemData {
   spiderSvg?: string;
   isFinal?: boolean;
   revisitable?: boolean;
-  location?: LatLng & { address?: string };
+  location?: LatLng & { address?: string; placeName?: string };
   mapIcon?: string;
   cipherChar?: string;
   collageSplit?: CollageSplitData;
@@ -86,7 +90,7 @@ export interface MissionItemData {
   spiderSvg?: string;
   isFinal?: boolean;
   revisitable?: boolean;
-  location?: LatLng & { address?: string };
+  location?: LatLng & { address?: string; placeName?: string };
   mapIcon?: string;
   cipherChar?: string;
 }
@@ -153,6 +157,7 @@ export interface ActivityModuleResponse {
   leaderboardMode?: 'points' | 'time' | 'both';
   leaderboardAsGrade?: boolean;
   hideLeaderboardInHeader?: boolean;
+  leaderboardAllGroups?: boolean;
   activityDurationMinutes?: number;
   roadmapTimerMinutes?: number;
   lockedFromIndex?: number | null;

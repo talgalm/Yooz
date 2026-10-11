@@ -9,6 +9,7 @@ import {
   hasArrived,
   DEFAULT_PROXIMITY_METERS,
   type Fix,
+  pathMeters,
 } from './geo';
 
 const tlv = { lat: 32.0853, lng: 34.7818 };
@@ -59,4 +60,13 @@ test('hysteresis keeps an opened station open while the fix jitters', () => {
   assert.ok(!hasArrived(edge, station, 10, false));
   assert.ok(hasArrived(edge, station, 10, true));
   assert.ok(!hasArrived(at(40, 0, 0), station, 10, true));
+});
+
+test('a path adds up its legs in order', () => {
+  const a = { lat: 32, lng: 34.8 };
+  const b = { lat: 32.001, lng: 34.8 };
+  const c = { lat: 32.001, lng: 34.801 };
+  assert.ok(Math.abs(pathMeters([a, b, c]) - (distanceMeters(a, b) + distanceMeters(b, c))) < 1e-6);
+  assert.equal(pathMeters([a]), 0);
+  assert.equal(pathMeters([]), 0);
 });

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { styled } from '@mui/material/styles';
 import { adminApiFetch } from '../../../utils/adminApi';
 import FileUploadButton from '../../../components/FileUploadButton';
-import type { ModuleItem, GameOption, StationOption, ItemLocation } from './types';
+import { itemDisplayName, type ModuleItem, type GameOption, type StationOption, type ItemLocation } from './types';
 import ItemPreviewModal from './ItemPreviewModal';
 import ItemSettingsModal from './ItemSettingsModal';
 import {
@@ -568,7 +568,7 @@ export default function ModuleItemsSection({
                   <ItemTypeBadge itemType={item.itemType === 'mission' ? 'station' : item.itemType} style={{ fontSize: 11, padding: '1px 6px', flexShrink: 0, ...(item.itemType === 'mission' ? { background: '#fff3e0', color: '#e65100' } : {}) }}>
                     {item.itemType === 'game' ? t.itemGame : item.itemType === 'mission' ? (t.mission || 'Mission') : t.itemStation}
                   </ItemTypeBadge>
-                  <DragItemName>{item.name}</DragItemName>
+                  <DragItemName>{itemDisplayName(item)}</DragItemName>
                   {restrictedGroups && (
                     <StatusBadge tone="purple">{t.groupsBadgeLabel}: {item.groups!.length}/{groupNames.length}</StatusBadge>
                   )}

@@ -358,6 +358,11 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       ? splitMeta.photoOrder.map((i) => baseMissions[i] ?? baseMissions[0])
       : baseMissions;
   const totalImages = fullMissions.length;
+  const videoSlotOf = (position: number): number => {
+    const mission = splitMeta?.photoOrder && splitMeta.photoOrder.length === totalImages ? splitMeta.photoOrder[position] : position;
+    const order = splitMeta?.videoOrder;
+    return order && order.length === totalImages ? (order[mission] ?? mission) : mission;
+  };
   const videoPartIndex = splitMeta?.videoPartIndex ?? null;
   const hasVideoPart = typeof videoPartIndex === 'number' && videoPartIndex >= 0;
   const partSizes: number[] = (() => {
@@ -388,8 +393,8 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   const totalParts = partSizes.length;
   const partIndex = Math.min(splitMeta?.partIndex ?? 0, totalParts - 1);
   const isSplit = totalParts > 1;
-  const isFirstPart = partIndex === 0;
-  const isLastPart = partIndex === totalParts - 1;
+  const isFirstPart = splitMeta?.servedFirst ?? partIndex === 0;
+  const isLastPart = splitMeta?.servedFinale ?? partIndex === totalParts - 1;
   const isVideoPart = hasVideoPart && partIndex === videoPartIndex;
   const finalizesCollage = isVideoPart || (isLastPart && !hasVideoPart);
   const partSize = isVideoPart ? 0 : Math.max(1, partSizes[partIndex] ?? 1);
@@ -507,7 +512,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   ): CapturedPhoto[] => {
     const merged: CapturedPhoto[] = [];
     for (const stored of prior) {
-      if (stored.partIndex >= partIndex) continue;
+      if (stored.partIndex === partIndex) continue;
       const globalStart = partSizes.slice(0, stored.partIndex).reduce((a, b) => a + b, 0);
       stored.photos.forEach((ph, i) => {
         merged.push({
@@ -548,7 +553,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
             activityCode,
             splitGroupId,
             localPhotos.map((p) => ({
-              globalIndex: partStartIndex + p.missionIndex,
+              globalIndex: videoSlotOf(partStartIndex + p.missionIndex),
               blob: p.blob,
             })),
             {
@@ -641,7 +646,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     try {
       const bg = startBackgroundCollage(bgKey, {
         photos: orderedPhotos.map((p) => ({ blob: p.blob, isVideo: p.isVideo })),
-        photoIndices: orderedPhotos.map((p) => p.missionIndex),
+        photoIndices: orderedPhotos.map((p) => (isSplit ? videoSlotOf(p.missionIndex) : p.missionIndex)),
         title: effectiveTitle,
         logoUrl,
         logoRightUrl,

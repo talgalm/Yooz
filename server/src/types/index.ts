@@ -88,6 +88,8 @@ export interface PopupMessageConfig {
   includeUsername?: boolean;
   trigger: PopupTriggerConfig;
   condition?: PopupConditionConfig;
+  groups?: string[];
+  routes?: number[];
   enabled: boolean;
 }
 
@@ -96,6 +98,8 @@ export interface CollageSplitRequest {
   partIndex: number;
   partSizes?: number[];
   totalParts?: number;
+  videoOrder?: number[];
+  partName?: string;
 }
 
 export interface ModuleItemRequest {
@@ -106,7 +110,7 @@ export interface ModuleItemRequest {
   isFinal?: boolean;
   revisitable?: boolean;
   collageSplit?: CollageSplitRequest;
-  location?: { lat: number; lng: number; address?: string };
+  location?: { lat: number; lng: number; address?: string; placeName?: string };
   mapIcon?: string;
   cipherChar?: string;
 }
@@ -119,6 +123,9 @@ export interface ModuleConfigRequest {
   missionRef?: string;
   proximityMeters?: number;
   groupOrders?: Record<string, number[]>;
+  routes?: { name: string; order: number[] }[];
+  groupRoutes?: Record<string, number>;
+  startLocation?: { lat: number; lng: number; address?: string };
   mapDesign?: { style?: string; hidden?: string[] };
   openAnywhere?: boolean;
   showStationNames?: boolean;
@@ -277,6 +284,7 @@ export interface CreateActivityRequest {
   leaderboardMode?: 'points' | 'time' | 'both';
   leaderboardAsGrade?: boolean;
   hideLeaderboardInHeader?: boolean;
+  leaderboardAllGroups?: boolean;
   leaderboardCurrentDayOnly?: boolean;
   dailyReset?: boolean;
   userControl?: boolean;

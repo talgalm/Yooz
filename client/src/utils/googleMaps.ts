@@ -62,6 +62,25 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
   return loading;
 }
 
+const DIRECTIONS_POINTS_PER_REQUEST = 25;
+
+export async function walkingMeters(points: LatLng[]): Promise<number> {
+  const maps = await loadGoogleMaps();
+  const service = new maps.DirectionsService();
+  let total = 0;
+  for (let from = 0; from < points.length - 1; from += DIRECTIONS_POINTS_PER_REQUEST - 1) {
+    const chunk = points.slice(from, from + DIRECTIONS_POINTS_PER_REQUEST);
+    const result = await service.route({
+      origin: chunk[0],
+      destination: chunk[chunk.length - 1],
+      waypoints: chunk.slice(1, -1).map((location) => ({ location, stopover: true })),
+      travelMode: maps.TravelMode.WALKING,
+    });
+    total += (result.routes[0]?.legs ?? []).reduce((sum, leg) => sum + (leg.distance?.value ?? 0), 0);
+  }
+  return total;
+}
+
 export async function geocodeAddress(address: string): Promise<(LatLng & { address: string }) | null> {
   const maps = await loadGoogleMaps();
   const geocoder = new maps.Geocoder();

@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { styled } from '@mui/material/styles';
 
 interface PhotoLabel { title: string; description?: string }
@@ -8,13 +8,18 @@ export interface SplitEditorResult {
   partSizes: number[];
   videoPartIndex: number | null;
   photoOrder: number[];
+  partNames: string[];
+  videoOrder: number[];
 }
 
 interface Props {
   stationName: string;
   photos: PhotoLabel[];
+  missions: PhotoLabel[];
   initialPartSizes: number[];
   initialVideoPartIndex: number | null;
+  initialPartNames: string[];
+  initialVideoOrder?: number[];
   onCancel: () => void;
   onSave: (result: SplitEditorResult) => void;
   t: Record<string, string>;
@@ -187,6 +192,66 @@ const SaveBtn = styled('button')({
   '&:hover': { background: '#8b5cf6' },
 });
 
+const PartNameInput = styled('input')({
+  flex: 1,
+  minWidth: 0,
+  padding: '5px 8px',
+  border: '1px solid #fde68a',
+  borderRadius: 8,
+  background: '#fff',
+  fontSize: 14,
+  fontWeight: 800,
+  color: '#3a2e0c',
+  fontFamily: 'inherit',
+});
+
+const VideoOrderCard = styled('div')({
+  position: 'relative',
+  background: '#fffbeb',
+  border: '2px solid #fde68a',
+  borderRadius: 12,
+  padding: '10px 12px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+});
+
+const VideoOrderHint = styled('div')({ fontSize: 12, color: '#a16207' });
+
+const noForward = { shouldForwardProp: (prop: PropertyKey) => !String(prop).startsWith('$') };
+
+const VideoOrderRow = styled('div', noForward)<{ $dragging: boolean; $picked: boolean }>(({ $dragging, $picked }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '6px 8px',
+  fontSize: 13,
+  color: '#3a2e0c',
+  cursor: 'grab',
+  borderRadius: 8,
+  border: `1px ${$dragging ? 'dashed #f59e0b' : 'solid #fde68a'}`,
+  background: $dragging ? '#fef3c7' : '#fff',
+  opacity: $dragging ? 0.6 : 1,
+  boxShadow: $picked ? '0 0 0 2px #f59e0b, 0 4px 10px rgba(161,98,7,0.18)' : 'none',
+  userSelect: 'none',
+  transition: 'box-shadow 120ms, opacity 120ms',
+  '&:active': { cursor: 'grabbing' },
+}));
+
+const SlotNumber = styled('span')({
+  width: 22,
+  height: 22,
+  flexShrink: 0,
+  borderRadius: '50%',
+  background: '#f59e0b',
+  color: '#fff',
+  fontSize: 12,
+  fontWeight: 800,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+});
+
 const VideoOnlyTag = styled('div')({
   fontSize: 12,
   fontWeight: 600,
@@ -218,11 +283,20 @@ function buildInitialParts(
   });
 }
 
+function videoListFrom(count: number, videoOrder?: number[]): number[] {
+  const missions = Array.from({ length: count }, (_, i) => i);
+  const valid = videoOrder && videoOrder.length === count && new Set(videoOrder).size === count;
+  return valid ? [...missions].sort((a, b) => videoOrder[a] - videoOrder[b]) : missions;
+}
+
 export default function CollageSplitEditor({
   stationName,
   photos,
+  missions,
   initialPartSizes,
   initialVideoPartIndex,
+  initialPartNames,
+  initialVideoOrder,
   onCancel,
   onSave,
   t,
@@ -231,6 +305,45 @@ export default function CollageSplitEditor({
   const [parts, setParts] = useState<PartState[]>(() =>
     buildInitialParts(totalPhotos, initialPartSizes, initialVideoPartIndex),
   );
+  const [partNames, setPartNames] = useState<string[]>(() =>
+    Array.from({ length: Math.max(initialPartSizes.length, 1) }, (_, i) => initialPartNames[i] ?? ''),
+  );
+  const [videoList, setVideoList] = useState<number[]>(() => videoListFrom(missions.length, initialVideoOrder));
+
+  const [videoDragging, setVideoDragging] = useState<number | null>(null);
+  const [videoPicked, setVideoPicked] = useState<number | null>(null);
+  const videoRows = useRef(new Map<number, HTMLDivElement>());
+  const videoTops = useRef(new Map<number, number>());
+
+  useLayoutEffect(() => {
+    videoRows.current.forEach((row, mission) => {
+      const top = row.offsetTop;
+      const before = videoTops.current.get(mission);
+      videoTops.current.set(mission, top);
+      if (before === undefined || before === top) return;
+      row.animate(
+        [{ transform: `translateY(${before - top}px)` }, { transform: 'translateY(0)' }],
+        { duration: 220, easing: 'cubic-bezier(0.2, 0, 0, 1)' },
+      );
+    });
+  }, [videoList]);
+
+  const flashVideoRow = (mission: number) => {
+    videoRows.current.get(mission)?.animate(
+      [{ backgroundColor: '#fde68a' }, { backgroundColor: '#ffffff' }],
+      { duration: 800, easing: 'ease-out' },
+    );
+  };
+
+  const moveVideoMission = (mission: number, to: number) => {
+    setVideoList((prev) => {
+      const from = prev.indexOf(mission);
+      if (from === -1 || from === to) return prev;
+      const next = [...prev];
+      next.splice(to, 0, ...next.splice(from, 1));
+      return next;
+    });
+  };
   const [dragging, setDragging] = useState<{ partIdx: number; photoIdx: number } | null>(null);
   const [dragOverPart, setDragOverPart] = useState<number | null>(null);
 
@@ -245,10 +358,12 @@ export default function CollageSplitEditor({
 
   const addPart = () => {
     setParts((prev) => [...prev, { photoIndices: [], isVideoOnly: false }]);
+    setPartNames((prev) => [...prev, '']);
   };
 
   const removePart = (idx: number) => {
     if (parts.length <= 1) return;
+    setPartNames((prev) => prev.filter((_, i) => i !== idx));
     setParts((prev) => {
       const removed = prev[idx];
       const rest = prev.filter((_, i) => i !== idx);
@@ -274,6 +389,8 @@ export default function CollageSplitEditor({
   };
 
   const toggleVideoPart = () => {
+    if (hasVideoPart) setPartNames((prev) => prev.filter((_, i) => i !== videoPartIndex));
+    else setPartNames((prev) => [...prev, '']);
     setParts((prev) => {
       if (hasVideoPart) {
         return prev.filter((p) => !p.isVideoOnly);
@@ -337,7 +454,9 @@ export default function CollageSplitEditor({
       partSizes.push(p.photoIndices.length);
       photoOrder.push(...p.photoIndices);
     });
-    onSave({ partSizes, videoPartIndex: videoIdx, photoOrder });
+    const videoOrder = new Array<number>(videoList.length);
+    videoList.forEach((mission, slot) => { videoOrder[mission] = slot; });
+    onSave({ partSizes, videoPartIndex: videoIdx, photoOrder, partNames: parts.map((_, i) => (partNames[i] ?? '').trim()), videoOrder });
   };
 
   return (
@@ -355,9 +474,13 @@ export default function CollageSplitEditor({
               onDrop={(e) => onPartDrop(e, pIdx)}
             >
               <PartHeader>
-                <PartTitle>
-                  {(t.collageSplitEditorSubPart || 'Sub-station')} {pIdx + 1}
-                </PartTitle>
+                <PartTitle>{pIdx + 1}.</PartTitle>
+                <PartNameInput
+                  value={partNames[pIdx] ?? ''}
+                  onChange={(e) => setPartNames((prev) => prev.map((n, i) => (i === pIdx ? e.target.value : n)))}
+                  placeholder={`${t.collageSplitEditorSubPart || 'Sub-station'} ${pIdx + 1}`}
+                  aria-label={t.collageSplitEditorPartName}
+                />
                 {parts.length > 1 && (
                   <RemoveBtn type="button" onClick={() => removePart(pIdx)}>
                     {t.collageSplitEditorRemove || 'Remove'}
@@ -400,6 +523,52 @@ export default function CollageSplitEditor({
             />
             <span>{t.collageSplitEditorVideoToggle || 'Dedicated video creation sub-station'}</span>
           </VideoToggleRow>
+
+          <VideoOrderCard>
+            <PartTitle>{t.collageSplitEditorVideoOrder}</PartTitle>
+            <VideoOrderHint>{t.collageSplitEditorVideoOrderHint}</VideoOrderHint>
+            {videoList.map((mission, slot) => (
+              <VideoOrderRow
+                key={mission}
+                ref={(row) => { if (row) videoRows.current.set(mission, row); else videoRows.current.delete(mission); }}
+                draggable
+                $dragging={videoDragging === mission}
+                $picked={videoPicked === mission}
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('text/plain', String(mission));
+                  setVideoPicked(null);
+                  setVideoDragging(mission);
+                }}
+                onDragOver={(e) => {
+                  if (videoDragging === null) return;
+                  e.preventDefault();
+                  if (videoDragging === mission) return;
+                  const from = videoList.indexOf(videoDragging);
+                  const box = e.currentTarget.getBoundingClientRect();
+                  const middle = box.top + box.height / 2;
+                  if (from < slot ? e.clientY > middle : e.clientY < middle) moveVideoMission(videoDragging, slot);
+                }}
+                onDrop={(e) => e.preventDefault()}
+                onDragEnd={() => {
+                  if (videoDragging !== null) flashVideoRow(videoDragging);
+                  setVideoDragging(null);
+                }}
+                onClick={() => {
+                  if (videoPicked === null) { setVideoPicked(mission); return; }
+                  if (videoPicked !== mission) {
+                    moveVideoMission(videoPicked, slot);
+                    flashVideoRow(videoPicked);
+                  }
+                  setVideoPicked(null);
+                }}
+              >
+                <DragGrip />
+                <SlotNumber>{slot + 1}</SlotNumber>
+                <span>{missions[mission]?.title || `${t.photoLabel} ${mission + 1}`}</span>
+              </VideoOrderRow>
+            ))}
+          </VideoOrderCard>
         </Scroll>
 
         <Footer>

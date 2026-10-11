@@ -1,5 +1,6 @@
 import FileUploadButton from '../../../components/FileUploadButton';
-import type { PopupMessage, ModuleItem } from './types';
+import { itemDisplayName, type PopupMessage, type ModuleItem } from './types';
+import { popupAudienceRoute } from './groupRoutes';
 import {
   SectionLabel,
   VerticalStackGap12,
@@ -30,7 +31,11 @@ interface PopupMessagesSectionProps {
   selectedItems: ModuleItem[];
   onAddPopup: () => void;
   onRemovePopup: (index: number) => void;
-  onUpdatePopup: (index: number, field: keyof PopupMessage, value: string | number | boolean) => void;
+  onUpdatePopup: (index: number, field: keyof PopupMessage, value: string | number | boolean | string[] | number[]) => void;
+  groupNames: string[];
+  routeNames: string[];
+  routeOrders: number[][];
+  groupRoutes: Record<string, number>;
   t: Record<string, string>;
 }
 
@@ -40,8 +45,19 @@ export default function PopupMessagesSection({
   onAddPopup,
   onRemovePopup,
   onUpdatePopup,
+  groupNames,
+  routeNames,
+  routeOrders,
+  groupRoutes,
   t,
 }: PopupMessagesSectionProps) {
+  const stageOrder = (popup: PopupMessage) => {
+    const audience = popupAudienceRoute(popup, groupRoutes, routeOrders.length);
+    const routeOrder = audience.route !== null ? routeOrders[audience.route] : undefined;
+    const order = routeOrder && routeOrder.length === selectedItems.length ? routeOrder : selectedItems.map((_, k) => k);
+    return { order, route: routeOrder ? audience.route : null, mixed: audience.mixed };
+  };
+
   return (
     <div>
       <SectionLabel>{t.popupMessages}</SectionLabel>
@@ -132,32 +148,40 @@ export default function PopupMessagesSection({
                 </PopupSelect>
               </PopupFieldColumn>
 
-              {(popup.triggerPoint === 'beforeItem' || popup.triggerPoint === 'afterItem') && (
-                <PopupFieldColumn style={{ minWidth: 200, flex: '1 1 220px' }}>
-                  <TinyLabel>{t.popupItemIndex}</TinyLabel>
-                  {selectedItems.length === 0 ? (
-                    <span style={{ fontSize: 13, color: 'var(--mui-palette-text-secondary, #666)' }}>
-                      {t.popupNoItemsForTrigger}
-                    </span>
-                  ) : (
-                    <PopupSelect
-                      value={String(
-                        Math.min(
-                          Math.max(0, popup.itemIndex),
-                          selectedItems.length - 1,
-                        ),
-                      )}
-                      onChange={(e) => onUpdatePopup(i, 'itemIndex', Number(e.target.value))}
-                    >
-                      {selectedItems.map((item, idx) => (
-                        <option key={`${item.ref}-${idx}`} value={idx}>
-                          {idx + 1}. {item.name} ({itemTypeLabel(item.itemType, t)})
-                        </option>
-                      ))}
-                    </PopupSelect>
-                  )}
-                </PopupFieldColumn>
-              )}
+              {(popup.triggerPoint === 'beforeItem' || popup.triggerPoint === 'afterItem') && (() => {
+                const stages = stageOrder(popup);
+                return (
+                  <PopupFieldColumn style={{ minWidth: 200, flex: '1 1 220px' }}>
+                    <TinyLabel>
+                      {stages.route !== null
+                        ? t.popupItemIndexInRoute.replace('{route}', routeNames[stages.route] ?? '')
+                        : t.popupItemIndex}
+                    </TinyLabel>
+                    {selectedItems.length === 0 ? (
+                      <span style={{ fontSize: 13, color: 'var(--mui-palette-text-secondary, #666)' }}>
+                        {t.popupNoItemsForTrigger}
+                      </span>
+                    ) : (
+                      <PopupSelect
+                        value={String(
+                          Math.min(
+                            Math.max(0, popup.itemIndex),
+                            selectedItems.length - 1,
+                          ),
+                        )}
+                        onChange={(e) => onUpdatePopup(i, 'itemIndex', Number(e.target.value))}
+                      >
+                        {stages.order.map((idx, pos) => (
+                          <option key={`${selectedItems[idx].ref}-${idx}`} value={idx}>
+                            {pos + 1}. {itemDisplayName(selectedItems[idx])} ({itemTypeLabel(selectedItems[idx].itemType, t)})
+                          </option>
+                        ))}
+                      </PopupSelect>
+                    )}
+                    {stages.mixed && <TinyLabel>{t.popupItemIndexMixed}</TinyLabel>}
+                  </PopupFieldColumn>
+                );
+              })()}
 
               <PopupFieldColumn>
                 <TinyLabel>{t.popupCondition}</TinyLabel>
@@ -182,6 +206,48 @@ export default function PopupMessagesSection({
                 </PopupFieldColumnSmall>
               )}
             </InlineRowWrap>
+            {groupNames.length > 0 && (
+              <PopupFieldColumn>
+                <TinyLabel>{t.popupAudience}</TinyLabel>
+                <SelectionGroupNoFlex>
+                  <SmallSelectionButton
+                    type="button"
+                    selected={popup.groups.length === 0 && popup.routes.length === 0}
+                    onClick={() => { onUpdatePopup(i, 'groups', []); onUpdatePopup(i, 'routes', []); }}
+                  >
+                    {t.popupAudienceAll}
+                  </SmallSelectionButton>
+                  {routeNames.map((route, r) => (
+                    <SmallSelectionButton
+                      key={`route-${r}`}
+                      type="button"
+                      selected={popup.routes.includes(r)}
+                      onClick={() => onUpdatePopup(
+                        i,
+                        'routes',
+                        popup.routes.includes(r) ? popup.routes.filter((x) => x !== r) : [...popup.routes, r],
+                      )}
+                    >
+                      {route}
+                    </SmallSelectionButton>
+                  ))}
+                  {groupNames.map((group) => (
+                    <SmallSelectionButton
+                      key={group}
+                      type="button"
+                      selected={popup.groups.includes(group)}
+                      onClick={() => onUpdatePopup(
+                        i,
+                        'groups',
+                        popup.groups.includes(group) ? popup.groups.filter((g) => g !== group) : [...popup.groups, group],
+                      )}
+                    >
+                      {group}
+                    </SmallSelectionButton>
+                  ))}
+                </SelectionGroupNoFlex>
+              </PopupFieldColumn>
+            )}
           </PopupCard>
         ))}
       </VerticalStackGap12>

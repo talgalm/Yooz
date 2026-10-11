@@ -756,24 +756,32 @@ export default function StoryModulePage() {
     const completedIdx = currentItemIndex;
 
     if (isMap) {
-      const settle = (finished: boolean, nextIndex: number) =>
+      const settle = (finished: boolean, nextIndex: number) => {
+        const locked = typeof lockedFromIndex === 'number' && nextIndex >= lockedFromIndex;
+        const samePlaceNext = !finished && !locked && opensRightAfter(data.module.items, nextIndex);
+        const popupBetween = getPopupsForTrigger('afterItem', completedIdx).length > 0
+          || getPopupsForTrigger('beforeItem', nextIndex).length > 0;
+        if (samePlaceNext && popupBetween) {
+          setCurrentItemIndex(nextIndex);
+          setPhase('roadmap');
+          showPopupsOrRun('afterItem', completedIdx, () => undefined);
+          return;
+        }
         showPopupsOrRun('afterItem', completedIdx, () => {
           if (finished) {
             showPopupsOrRun('endOfActivity', undefined, () => setPhase('finish'));
             return;
           }
-          const locked = typeof lockedFromIndex === 'number' && nextIndex >= lockedFromIndex;
-          if (opensRightAfter(data.module.items, nextIndex) && !locked) {
-            showPopupsOrRun('beforeItem', nextIndex, () => {
-              itemStartTime.current = Date.now();
-              setCurrentItemIndex(nextIndex);
-              setPhase('playing');
-            });
+          if (samePlaceNext) {
+            itemStartTime.current = Date.now();
+            setCurrentItemIndex(nextIndex);
+            setPhase('playing');
             return;
           }
           setCurrentItemIndex(nextIndex);
           setPhase('roadmap');
         });
+      };
       if (!isGroupMap) {
         settle(completedIdx + 1 >= data.module.items.length, completedIdx + 1);
         return;
@@ -1626,7 +1634,7 @@ export default function StoryModulePage() {
       <>
         <LeaderboardView
           languages={data.languages}
-          showAllGroups={isMap}
+          showAllGroups={isMap || data.leaderboardAllGroups === true}
           activityName={data.name}
           leaderboard={leaderboard}
           groupLeaderboard={groupLeaderboard}

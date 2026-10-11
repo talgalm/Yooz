@@ -49,7 +49,8 @@ import type {
   ItemLocation,
 } from './types';
 import ModuleItemsSection from './ModuleItemsSection';
-import GroupOrderEditor from './GroupOrderEditor';
+import GroupRoutesEditor from './GroupRoutesEditor';
+import { draftsToRoutes, newItemUid, routesFromGroupOrders, routesToDrafts, withItemUids, type RouteDraft } from './groupRoutes';
 import PopupMessagesSection from './PopupMessagesSection';
 import ThemeFormModal, { type CustomTheme } from './ThemeFormModal';
 import ThemePickerModal, {
@@ -489,7 +490,9 @@ export default function AdminCreateActivityPage() {
   const [moduleTheme, setModuleTheme] = useState<string>('');
   const [backgroundImage, setBackgroundImage] = useState('');
   const [selectedItems, setSelectedItems] = useState<ModuleItem[]>([]);
-  const [groupOrders, setGroupOrders] = useState<Record<string, number[]>>({});
+  const [routes, setRoutes] = useState<RouteDraft[]>([]);
+  const [groupRoutes, setGroupRoutes] = useState<Record<string, number>>({});
+  const [startLocation, setStartLocation] = useState<ItemLocation | undefined>(undefined);
   const [proximityMeters, setProximityMeters] = useState(DEFAULT_PROXIMITY_METERS);
   const [mapDesign, setMapDesign] = useState<MapDesign>(DEFAULT_MAP_DESIGN);
   const [openAnywhere, setOpenAnywhere] = useState(false);
@@ -540,6 +543,7 @@ export default function AdminCreateActivityPage() {
   const [leaderboardAsGrade, setLeaderboardAsGrade] = useState(false);
   const [displayLeaderboardInHeader, setDisplayLeaderboardInHeader] = useState(false);
   const [leaderboardCurrentDayOnly, setLeaderboardCurrentDayOnly] = useState(true);
+  const [leaderboardAllGroups, setLeaderboardAllGroups] = useState(false);
   const [activityDurationMinutes, setActivityDurationMinutes] = useState('');
   const [roadmapTimerEnabled, setRoadmapTimerEnabled] = useState(false);
   const [roadmapTimerMinutes, setRoadmapTimerMinutes] = useState('');
@@ -640,8 +644,8 @@ export default function AdminCreateActivityPage() {
           if (a.module.showStationNumbers) setShowStationNumbers(true);
           if (a.module.showItemTitleNumbers) setShowItemTitleNumbers(true);
           if (a.module.items && a.module.items.length > 0) {
-            setSelectedItems(
-              a.module.items.map((item) => ({
+            const loadedItems: ModuleItem[] = a.module.items.map((item) => ({
+                uid: newItemUid(),
                 itemType: item.type,
                 ref: item.data?._id || item.ref,
                 name: item.data?.name || '?',
@@ -658,10 +662,18 @@ export default function AdminCreateActivityPage() {
                 location: item.location,
                 mapIcon: item.mapIcon,
                 cipherChar: item.cipherChar,
-              }))
-            );
+              }));
+            setSelectedItems(loadedItems);
+            if (a.module.routes?.length) {
+              setRoutes(routesToDrafts(a.module.routes, loadedItems));
+              setGroupRoutes(a.module.groupRoutes ?? {});
+            } else if (a.module.groupOrders && Object.keys(a.module.groupOrders).length > 0) {
+              const legacy = routesFromGroupOrders(a.module.groupOrders, loadedItems);
+              setRoutes(legacy.routes);
+              setGroupRoutes(legacy.groupRoutes);
+            }
           }
-          if (a.module.groupOrders) setGroupOrders(a.module.groupOrders);
+          if (a.module.startLocation) setStartLocation(a.module.startLocation);
           if (a.module.proximityMeters) setProximityMeters(a.module.proximityMeters);
           setOpenAnywhere(a.module.openAnywhere === true);
           setShowStationNames(a.module.showStationNames === true);
@@ -720,6 +732,8 @@ export default function AdminCreateActivityPage() {
             itemIndex: p.trigger.itemIndex ?? 0,
             conditionType: p.condition?.type === 'participantCount' ? 'participantCount' : 'none',
             threshold: p.condition?.threshold ?? 20,
+            groups: p.groups ?? [],
+            routes: p.routes ?? [],
             enabled: p.enabled,
           })));
         }
@@ -731,6 +745,7 @@ export default function AdminCreateActivityPage() {
         setLeaderboardAsGrade(a.leaderboardAsGrade === true);
         setDisplayLeaderboardInHeader(!a.hideLeaderboardInHeader);
         setLeaderboardCurrentDayOnly(a.leaderboardCurrentDayOnly !== false);
+        setLeaderboardAllGroups(a.leaderboardAllGroups === true);
         setDailyReset(a.dailyReset === true);
         if (a.activityDurationMinutes) setActivityDurationMinutes(String(a.activityDurationMinutes));
         if (a.roadmapTimerMinutes) {
@@ -824,6 +839,10 @@ export default function AdminCreateActivityPage() {
     });
   };
 
+  useEffect(() => {
+    setSelectedItems((prev) => withItemUids(prev));
+  }, [selectedItems]);
+
   const addItem = (item: ModuleItem) => setSelectedItems((prev) => [...prev, item]);
 
   const getCollageLimit = (settings: Record<string, unknown> | undefined): number => {
@@ -863,18 +882,26 @@ export default function AdminCreateActivityPage() {
     partSizes: number[],
     videoPartIndex: number | null = null,
     photoOrder: number[] | null = null,
+    extras: { partNames?: string[]; videoOrder?: number[] } = {},
   ): ModuleItem[] => {
-    let partIdx = 0;
-    return items.map((it) => {
+    const members = items.map((it, i) => (it.collageSplit?.splitGroupId === groupId ? i : -1)).filter((i) => i >= 0);
+    const byPart = [...members].sort((a, b) => ((items[a].collageSplit?.partIndex ?? 0) - (items[b].collageSplit?.partIndex ?? 0)) || a - b);
+    const rank = new Map(byPart.map((itemIndex, k) => [itemIndex, k]));
+    return items.map((it, i) => {
       if (it.collageSplit?.splitGroupId !== groupId) return it;
+      const partIndex = rank.get(i) ?? 0;
+      const partName = extras.partNames ? extras.partNames[partIndex]?.trim() : it.collageSplit.partName;
+      const videoOrder = extras.videoOrder ?? it.collageSplit.videoOrder;
       return {
         ...it,
         collageSplit: {
           splitGroupId: groupId,
-          partIndex: partIdx++,
+          partIndex,
           partSizes,
           ...(videoPartIndex !== null && { videoPartIndex }),
           ...(photoOrder !== null && { photoOrder }),
+          ...(videoOrder && { videoOrder }),
+          ...(partName && { partName }),
         },
       };
     });
@@ -899,7 +926,11 @@ export default function AdminCreateActivityPage() {
     if (sizesAfter.length === 0) return items;
     const mergeInto = removedIdx === 0 ? 0 : removedIdx - 1;
     sizesAfter[mergeInto] = (sizesAfter[mergeInto] ?? 0) + removedSize;
-    return applyGroupPartSizes(items, groupId, sizesAfter);
+    const oldVideo = split.videoPartIndex;
+    const videoPartIndex = typeof oldVideo === 'number' && oldVideo >= 0 && oldVideo !== removedIdx
+      ? (oldVideo > removedIdx ? oldVideo - 1 : oldVideo)
+      : null;
+    return applyGroupPartSizes(items, groupId, sizesAfter, videoPartIndex, split.photoOrder ?? null);
   };
 
   const removeItem = (index: number) => setSelectedItems((prev) => {
@@ -917,7 +948,7 @@ export default function AdminCreateActivityPage() {
 
   const applySplitEditorResult = (
     index: number,
-    result: { partSizes: number[]; videoPartIndex: number | null; photoOrder: number[] },
+    result: { partSizes: number[]; videoPartIndex: number | null; photoOrder: number[]; partNames: string[]; videoOrder: number[] },
   ) => {
     setSelectedItems((prev) => {
       const target = prev[index];
@@ -925,28 +956,37 @@ export default function AdminCreateActivityPage() {
 
       const groupId = target.collageSplit?.splitGroupId
         ?? `csg_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      const marked = prev.map((it, i) => (
+        i === index && !it.collageSplit
+          ? { ...it, collageSplit: { splitGroupId: groupId, partIndex: 0, partSizes: result.partSizes } }
+          : it
+      ));
+      const members = marked.map((it, i) => (it.collageSplit?.splitGroupId === groupId ? i : -1)).filter((i) => i >= 0);
+      const byPart = [...members].sort((a, b) => ((marked[a].collageSplit?.partIndex ?? 0) - (marked[b].collageSplit?.partIndex ?? 0)) || a - b);
+      const wanted = result.partSizes.length;
 
-      const groupIndices = prev
-        .map((it, i) => (it.collageSplit?.splitGroupId === groupId || i === index ? i : -1))
-        .filter((i) => i >= 0);
-      const anchor = groupIndices[0] ?? index;
-      const oldGroupLen = groupIndices.length || 1;
-      const newGroupLen = result.partSizes.length;
-
-      const template: ModuleItem = { ...target, collageSplit: undefined };
-
-      const before = prev.slice(0, anchor);
-      const after = prev.slice(anchor + oldGroupLen);
-      const fresh: ModuleItem[] = Array.from({ length: newGroupLen }, () => ({
-        ...template,
-        collageSplit: { splitGroupId: groupId, partIndex: 0, partSizes: result.partSizes },
-      }));
-      const next = [...before, ...fresh, ...after];
+      let next = marked;
+      if (wanted > members.length) {
+        const insertAt = members[members.length - 1] + 1;
+        const extra: ModuleItem[] = Array.from({ length: wanted - members.length }, (_, k) => ({
+          ...target,
+          uid: undefined,
+          location: undefined,
+          collageSplit: { splitGroupId: groupId, partIndex: members.length + k, partSizes: result.partSizes },
+        }));
+        next = [...marked.slice(0, insertAt), ...extra, ...marked.slice(insertAt)];
+      } else if (wanted < members.length) {
+        const dropped = new Set(byPart.slice(wanted));
+        next = marked.filter((_, i) => !dropped.has(i));
+      }
 
       const isIdentity = result.photoOrder.every((v, i) => v === i);
       const photoOrder = isIdentity ? null : result.photoOrder;
 
-      return applyGroupPartSizes(next, groupId, result.partSizes, result.videoPartIndex, photoOrder);
+      return applyGroupPartSizes(next, groupId, result.partSizes, result.videoPartIndex, photoOrder, {
+        partNames: result.partNames,
+        videoOrder: result.videoOrder,
+      });
     });
     setSplitEditorIndex(null);
   };
@@ -993,10 +1033,11 @@ export default function AdminCreateActivityPage() {
     setPopups((prev) => [...prev, {
       title: '', contentType: 'text' as PopupContentType, text: '', image: '', includeUsername: false,
       triggerPoint: 'afterLogin', itemIndex: 0, conditionType: 'none', threshold: 20, enabled: true,
+      groups: [], routes: [],
     }]);
   };
   const removePopup = (index: number) => setPopups((prev) => prev.filter((_, i) => i !== index));
-  const updatePopup = (index: number, field: keyof PopupMessage, value: string | number | boolean) => {
+  const updatePopup = (index: number, field: keyof PopupMessage, value: string | number | boolean | string[] | number[]) => {
     setPopups((prev) => prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)));
   };
 
@@ -1156,14 +1197,6 @@ export default function AdminCreateActivityPage() {
       } else if (openingUrl.trim()) {
         payload.opening = { type: openingType, url: openingUrl.trim() };
       }
-      const liveGroupOrders = (): Record<string, number[]> =>
-        Object.fromEntries(
-          groupNames
-            .map((n) => n.trim() || 'Group')
-            .filter((n) => groupOrders[n]?.length)
-            .map((n) => [n, groupOrders[n]]),
-        );
-
       if (isWizardModule(moduleType)) {
         const modulePayload: Record<string, unknown> = {
           type: moduleType,
@@ -1177,13 +1210,18 @@ export default function AdminCreateActivityPage() {
             ...(moduleType === 'spiders' && i.isFinal && { isFinal: true }),
             ...(i.revisitable && { revisitable: true }),
             ...(i.collageSplit && { collageSplit: i.collageSplit }),
-            ...(moduleType === 'map' && i.location && { location: i.location }),
+            ...(i.location && { location: i.location }),
             ...(moduleType === 'map' && i.mapIcon && { mapIcon: i.mapIcon }),
             ...(moduleType === 'map' && i.cipherChar && { cipherChar: i.cipherChar }),
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
           ...(showItemTitleNumbers && { showItemTitleNumbers: true }),
-          ...(moduleType === 'map' && { proximityMeters, groupOrders: liveGroupOrders(), mapDesign, openAnywhere, showStationNames, cipherEnabled }),
+          ...(moduleType === 'map' && { proximityMeters, mapDesign, openAnywhere, showStationNames, cipherEnabled }),
+          ...(connectionType === 'group' && moduleType !== 'spiders' && {
+            routes: draftsToRoutes(routes, selectedItems),
+            groupRoutes,
+            ...(startLocation && { startLocation }),
+          }),
         };
         if (popups.length > 0) {
           modulePayload.popups = popups
@@ -1206,6 +1244,8 @@ export default function AdminCreateActivityPage() {
               ...(p.conditionType === 'participantCount' && {
                 condition: { type: 'participantCount', threshold: p.threshold },
               }),
+              ...(p.groups.length > 0 && { groups: p.groups }),
+              ...(connectionType === 'group' && p.routes.length > 0 && { routes: p.routes }),
               enabled: p.enabled,
             }));
         }
@@ -1238,6 +1278,7 @@ export default function AdminCreateActivityPage() {
       payload.leaderboardAsGrade = leaderboardMode !== 'time' && leaderboardAsGrade;
       payload.hideLeaderboardInHeader = !displayLeaderboardInHeader;
       payload.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly;
+      payload.leaderboardAllGroups = connectionType === 'group' && leaderboardAllGroups;
       payload.dailyReset = dailyReset;
       payload.userControl = userControl;
       if ((leaderboardMode === 'time' || leaderboardMode === 'both') && activityDurationMinutes.trim()) {
@@ -1949,12 +1990,20 @@ export default function AdminCreateActivityPage() {
                       t={t}
                     />
                   </div>
-                  {moduleType === 'map' && connectionType === 'group' && (
-                    <GroupOrderEditor
+                  {connectionType === 'group' && (moduleType === 'map' || moduleType === 'story') && (
+                    <GroupRoutesEditor
                       groupNames={groupNames}
                       items={selectedItems}
-                      orders={groupOrders}
-                      setOrders={setGroupOrders}
+                      routes={routes}
+                      setRoutes={setRoutes}
+                      groupRoutes={groupRoutes}
+                      setGroupRoutes={setGroupRoutes}
+                      startLocation={startLocation}
+                      setStartLocation={setStartLocation}
+                      onRouteRemoved={(removed) => setPopups((prev) => prev.map((p) => ({
+                        ...p,
+                        routes: p.routes.filter((r) => r !== removed).map((r) => (r > removed ? r - 1 : r)),
+                      })))}
                       selfService={groupEntryMode === 'selfService'}
                       t={t}
                     />
@@ -2071,6 +2120,17 @@ export default function AdminCreateActivityPage() {
                     />
                     {t.leaderboardCurrentDayOnly}
                   </label>
+                  {connectionType === 'group' && moduleType !== 'map' && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, cursor: 'pointer', fontSize: 14, color: '#444' }}>
+                      <input
+                        type="checkbox"
+                        checked={leaderboardAllGroups}
+                        onChange={(e) => setLeaderboardAllGroups(e.target.checked)}
+                        style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                      />
+                      {t.leaderboardAllGroups}
+                    </label>
+                  )}
                 </SectionCardWide>
 
                 <SectionCardWide>
@@ -2261,6 +2321,10 @@ export default function AdminCreateActivityPage() {
                   <PopupMessagesSection
                     popups={popups}
                     selectedItems={selectedItems}
+                    groupNames={connectionType === 'group' && groupEntryMode !== 'selfService' ? groupNames.map((g) => g.trim()).filter(Boolean) : []}
+                    routeNames={connectionType === 'group' && groupEntryMode !== 'selfService' ? routes.map((r, i) => r.name.trim() || t.routeDefaultName.replace('{n}', String(i + 1))) : []}
+                    routeOrders={connectionType === 'group' && groupEntryMode !== 'selfService' ? draftsToRoutes(routes, selectedItems).map((r) => r.order) : []}
+                    groupRoutes={groupRoutes}
                     onAddPopup={addPopup}
                     onRemovePopup={removePopup}
                     onUpdatePopup={updatePopup}
@@ -2597,12 +2661,22 @@ export default function AdminCreateActivityPage() {
           ? target.collageSplit.partSizes
           : [limit];
         const initialVideoPartIndex = target.collageSplit?.videoPartIndex ?? null;
+        const groupMembers = target.collageSplit
+          ? selectedItems.filter((it) => it.collageSplit?.splitGroupId === target.collageSplit?.splitGroupId)
+          : [target];
+        const initialPartNames = groupMembers
+          .slice()
+          .sort((a, b) => (a.collageSplit?.partIndex ?? 0) - (b.collageSplit?.partIndex ?? 0))
+          .map((it) => it.collageSplit?.partName ?? '');
         return (
           <CollageSplitEditor
             stationName={target.name}
             photos={orderedLabels}
+            missions={photoLabels}
             initialPartSizes={initialPartSizes}
             initialVideoPartIndex={initialVideoPartIndex}
+            initialPartNames={initialPartNames}
+            initialVideoOrder={target.collageSplit?.videoOrder}
             onCancel={() => setSplitEditorIndex(null)}
             onSave={(res: SplitEditorResult) => {
               const baseOrder = existingOrder && existingOrder.length === photoLabels.length
