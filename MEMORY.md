@@ -776,7 +776,7 @@ delivery of the finished video (`smsForCollage*`, polled every 15s). Client:
 
 **Split collage parts.** Each part takes a
 contiguous slice (`partSizes`) of the missions in `photoOrder`; `partName` is the name the
-participant and the admin lists show for that part (`itemDisplayName`, falling back to the
+participant (roadmap, and the station's title in place of `settings.header`) and the admin lists show for that part (`itemDisplayName`, falling back to the
 station's name). `videoOrder[mission] = slot` says where each mission's photo lands in the video
 (default: mission order), so the photo of a given mission always lands in its own slot whichever
 part takes it and whatever order a route visits the parts in (`videoSlotOf` in `CollageStation`).

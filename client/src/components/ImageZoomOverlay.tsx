@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { styled } from '@mui/material/styles';
 import { clampPan, clampScale, distance, MIN_SCALE } from '../utils/zoomPan';
 
+const ZOOM_BADGE_SIZE = 34;
+const ZOOM_BADGE_INSET = 8;
+
 export const ZoomBadge = styled('button')({
   position: 'absolute',
-  top: 8,
-  right: 8,
-  width: 34,
-  height: 34,
+  top: ZOOM_BADGE_INSET,
+  right: ZOOM_BADGE_INSET,
+  width: ZOOM_BADGE_SIZE,
+  height: ZOOM_BADGE_SIZE,
   padding: 0,
   borderRadius: '50%',
   border: 'none',
@@ -22,6 +25,32 @@ export const ZoomBadge = styled('button')({
   WebkitTapHighlightColor: 'transparent',
   boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
 });
+
+export function useZoomBadgeOnImage(image: RefObject<HTMLImageElement | null>, src: string | undefined): CSSProperties {
+  const [spot, setSpot] = useState<CSSProperties>({ visibility: 'hidden' });
+  useEffect(() => {
+    const element = image.current;
+    if (!element) return;
+    const place = () => {
+      if (!element.offsetWidth) return;
+      setSpot({
+        top: element.offsetTop + ZOOM_BADGE_INSET,
+        left: element.offsetLeft + element.offsetWidth - ZOOM_BADGE_INSET - ZOOM_BADGE_SIZE,
+        right: 'auto',
+      });
+    };
+    place();
+    const observer = new ResizeObserver(place);
+    observer.observe(element);
+    if (element.parentElement) observer.observe(element.parentElement);
+    element.addEventListener('load', place);
+    return () => {
+      observer.disconnect();
+      element.removeEventListener('load', place);
+    };
+  }, [image, src]);
+  return spot;
+}
 
 export function ZoomGlassIcon({ zoomed }: { zoomed: boolean }) {
   return (

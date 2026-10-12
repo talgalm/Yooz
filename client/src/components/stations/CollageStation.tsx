@@ -73,7 +73,7 @@ const Wrap = styled('div')({
   overflow: 'hidden',
   height: '100dvh',
   maxHeight: '100dvh',
-  animation: `${fadeIn} 400ms ease both`,
+  animation: `${fadeIn} 400ms ease backwards`,
 });
 
 const Content = styled('div')({
@@ -83,7 +83,6 @@ const Content = styled('div')({
   padding: '24px 20px calc(24px + env(safe-area-inset-bottom, 0px))',
   display: 'flex',
   flexDirection: 'column',
-  WebkitOverflowScrolling: 'touch',
   '@media (min-width: 768px)': {
     width: 'min(720px, 90vw)',
     marginInline: 'auto',
@@ -298,8 +297,8 @@ const SmsCalloutBtn = styled('button')({
   '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
 });
 
-const VideoWrap = styled('div')({ borderRadius: 16, overflow: 'hidden', width: '100%', marginBottom: 20, background: '#000', position: 'relative' });
-const ResultVideo = styled('video')({ width: '100%', display: 'block' });
+const VideoWrap = styled('div')({ borderRadius: 16, overflow: 'hidden', width: '100%', marginBottom: 20, background: '#000', position: 'relative', flexShrink: 0 });
+const ResultVideo = styled('video')({ width: '100%', maxHeight: 'min(60dvh, 640px)', objectFit: 'contain', display: 'block', background: '#000' });
 const VideoPlayOverlay = styled('button')({
   position: 'absolute',
   inset: 0,
@@ -335,7 +334,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   const singleGroupId = `single_${station._id}_${userTag}`;
 
   const settings = (station.settings ?? {}) as Record<string, unknown>;
-  const header = (settings.header as string) || station.name || t.stationName;
+  const header = station.collageSplit?.partName || (settings.header as string) || station.name || t.stationName;
   const description = (settings.description as string) || station.description || '';
   const disclaimer = (settings.disclaimer as string) || '';
   const logoUrl = (settings.logoUrl as string) || '';
