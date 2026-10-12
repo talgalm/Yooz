@@ -1145,10 +1145,14 @@ metres themselves. Stations chain (`utils/mapChain.ts`, tested): a station with 
 `SAME_PLACE_M` (15m) of the last place set before it, opens straight after the previous station
 (`opensRightAfter` - `advanceToNextItem` swaps straight to the next station without passing the
 map, unless the manager lock covers it or a popup sits between the two: an `afterItem` popup of the
-finished station or a `beforeItem` popup of the next one sends the participant back to the map, the
-`afterItem` one shows there, and the `beforeItem` one shows when they press start;
+finished station or a `beforeItem` popup of the next one sends the participant back to the map;
 `PlayingPhase` is keyed by item index so the new station mounts fresh) and has no pin of its own; only the first
-station of a place is walked to. Once every station of a place is done (`placeGroupEnd`), its pin reads
+station of a place is walked to. Popups on a map never show over a station: finishing one goes
+back to the map aimed at the next station, and `MAP_POPUP_DELAY_MS` later - once its card is up -
+the finished station's `afterItem` popups show, then the next station's `beforeItem` ones (an effect
+on the roadmap phase, waiting for the guidelines and any open popup; pressing start before that
+shows them first). After the last station the `afterItem` and `endOfActivity` popups show on the map
+before the finish screen (`mapEndingRef` holds the group run's own jump to it). Once every station of a place is done (`placeGroupEnd`), its pin reads
 the range ("1-3", a pill as tall as the next-station circle) with a "3 תחנות" label under it; the next
 station always shows only its own number. While the next station is a later station of a place (back on the map
 mid-place after a reload, or behind the manager lock), that place's done first station gets no pin of its own

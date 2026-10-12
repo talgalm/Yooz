@@ -259,6 +259,8 @@ const SceneTransitionOverlay = styled('div')<{ stage: 'closing' | 'opening'; tra
 const ENTRY_TRANSITION_CLOSE_MS = 320;
 const ENTRY_TRANSITION_OPEN_MS = 480;
 
+const MAP_POPUP_DELAY_MS = 1200;
+
 export default function StoryModulePage() {
   const { code } = useParams<{ code: string }>();
   const { participant } = useAuth();
@@ -335,6 +337,7 @@ export default function StoryModulePage() {
   const shownPopupIds = useRef<Set<string>>(new Set());
   const pendingAction = useRef<(() => void) | null>(null);
   const pendingAfterItemPopupRef = useRef<number | null>(null);
+  const mapEndingRef = useRef(false);
 
   const [countdown, setCountdown] = useState<number | null>(90);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -760,30 +763,33 @@ export default function StoryModulePage() {
 
     if (isMap) {
       const settle = (finished: boolean, nextIndex: number) => {
-        const locked = typeof lockedFromIndex === 'number' && nextIndex >= lockedFromIndex;
-        const samePlaceNext = !finished && !locked && opensRightAfter(data.module.items, nextIndex);
-        const popupBetween = getPopupsForTrigger('afterItem', completedIdx).length > 0
-          || getPopupsForTrigger('beforeItem', nextIndex).length > 0;
-        if (samePlaceNext && popupBetween) {
-          setCurrentItemIndex(nextIndex);
+        const afterThis = getPopupsForTrigger('afterItem', completedIdx).length > 0;
+        if (finished) {
+          if (!afterThis && getPopupsForTrigger('endOfActivity').length === 0) {
+            setPhase('finish');
+            return;
+          }
+          mapEndingRef.current = true;
           setPhase('roadmap');
-          showPopupsOrRun('afterItem', completedIdx, () => undefined);
+          showPopupsOrRun('afterItem', completedIdx, () => {
+            showPopupsOrRun('endOfActivity', undefined, () => {
+              mapEndingRef.current = false;
+              setPhase('finish');
+            });
+          });
           return;
         }
-        showPopupsOrRun('afterItem', completedIdx, () => {
-          if (finished) {
-            showPopupsOrRun('endOfActivity', undefined, () => setPhase('finish'));
-            return;
-          }
-          if (samePlaceNext) {
-            itemStartTime.current = Date.now();
-            setCurrentItemIndex(nextIndex);
-            setPhase('playing');
-            return;
-          }
+        const locked = typeof lockedFromIndex === 'number' && nextIndex >= lockedFromIndex;
+        const popupBetween = afterThis || getPopupsForTrigger('beforeItem', nextIndex).length > 0;
+        if (!locked && !popupBetween && opensRightAfter(data.module.items, nextIndex)) {
+          itemStartTime.current = Date.now();
           setCurrentItemIndex(nextIndex);
-          setPhase('roadmap');
-        });
+          setPhase('playing');
+          return;
+        }
+        pendingAfterItemPopupRef.current = completedIdx;
+        setCurrentItemIndex(nextIndex);
+        setPhase('roadmap');
       };
       if (!isGroupMap) {
         settle(completedIdx + 1 >= data.module.items.length, completedIdx + 1);
@@ -830,11 +836,23 @@ export default function StoryModulePage() {
   useEffect(() => {
     if (!isGroupMap || !mapRun.run || phase !== 'roadmap') return;
     if (mapRun.run.finished) {
-      setPhase('finish');
+      if (!mapEndingRef.current) setPhase('finish');
       return;
     }
     setCurrentItemIndex(mapRun.run.currentItemIndex);
   }, [isGroupMap, mapRun.run, phase]);
+
+  useEffect(() => {
+    if (!isMap || phase !== 'roadmap' || !progressChecked || showGuidelines || currentPopup || mapEndingRef.current) return;
+    const timer = setTimeout(() => {
+      const finishedItem = pendingAfterItemPopupRef.current;
+      pendingAfterItemPopupRef.current = null;
+      const headingTo = () => showPopupsOrRun('beforeItem', currentItemIndex, () => undefined);
+      if (finishedItem !== null) showPopupsOrRun('afterItem', finishedItem, headingTo);
+      else headingTo();
+    }, MAP_POPUP_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [isMap, phase, progressChecked, showGuidelines, currentPopup, currentItemIndex, showPopupsOrRun]);
 
   const spidersFinalItemIndex = data
     ? data.module.items.findIndex((it) => it.isFinal)
