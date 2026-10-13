@@ -5,6 +5,7 @@ import { JWT_SECRET } from '../config';
 import { authenticateToken } from '../middleware/auth';
 import { Activity, Report, Game, Station, Mission, CustomTheme, MapGroupState } from '../models';
 import mongoose from 'mongoose';
+import { stationIndexFor } from '../utils/stationIndex';
 import { subscribe, sendLockEvent } from '../utils/lockBroadcaster';
 import { getParticipantCount } from '../utils/participantCountCache';
 import { getOrderSurveyLiveState } from '../utils/orderSurveySession';
@@ -259,7 +260,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
       }, data, lang);
     }
   });
-  const populatedItems = populated.filter(Boolean);
+  const populatedItems = populated.flatMap((item, position) => (item ? [{ ...item, stationIndex: servedOrder[position] }] : []));
   const servedIndices = servedOrder.filter((_, position) => populated[position]);
 
   let filteredPopups: typeof activity.module.popups = [];
@@ -501,7 +502,15 @@ router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: s
 
   const updatePayload: Record<string, unknown> = { $set: updateOps };
   if (!progressOnly && itemResult) {
-    updatePayload.$push = { 'data.itemResults': itemResult };
+    const activity = await Activity.findOne({ code: activityCode })
+      .select('module.items.ref module.items.groups module.groupOrders')
+      .lean();
+    const stationIndex = activity?.module
+      ? stationIndexFor(activity.module, req.participant!.group, itemResult.itemIndex, itemResult.itemId)
+      : undefined;
+    updatePayload.$push = {
+      'data.itemResults': { ...itemResult, stationIndex: typeof stationIndex === 'number' ? stationIndex : undefined },
+    };
   }
 
   const report = await Report.findOneAndUpdate(

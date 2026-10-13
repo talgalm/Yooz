@@ -244,6 +244,15 @@ attachmentType?:'image'|'pdf', downloadToken?}` — top scorer gets an SMS coupo
 **Collage SMS**: `smsForCollage?` (requires phone login), `smsForCollageMessage?` (`{link}`
 placeholder), `smsForCollageShare?` (link → share landing page vs raw video).
 
+**Per-station results.** `itemResults[].itemIndex` is the item's place in the order the
+participant was served, which differs between groups with their own order (routes, `groupOrders`,
+or items hidden from some groups). `PATCH /:code/progress` therefore also stores `stationIndex` -
+the item's index in `module.items` (`stationIndexFor`: the served position, checked against the
+result's `itemId`) - and the module endpoint sends each item's `stationIndex`. Everything that
+counts per station uses it (`STATION_KEY` in the analytics aggregations, `reportByStation` before
+the Excel sheets and the AI report context, the order-survey votes), falling back to `itemIndex`
+for older results. Resume and `lastActiveItemIndex` stay on the served position.
+
 **Automated reports**: `scheduledReport?: {enabled, reportType:AnalyticsExportType, recipients:
 string[], frequency:'daily'|'weekly', dayOfWeek? (0-6, weekly only), scheduleHour (0-23, Israel
 time, **whole hour only — no minutes field**), skipIfUnchanged, lastSentAt?, lastSentSnapshot?}`.
