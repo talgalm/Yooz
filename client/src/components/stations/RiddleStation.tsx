@@ -4,7 +4,7 @@ import type { StationItemData } from '../../pages/StoryModulePage/types';
 import type { GameResult } from '../games/types';
 import { resolveVideoSource } from '../../utils/videoSource';
 import { StationContinueButton } from '../games/styled';
-import ImageZoomOverlay, { ZoomBadge, ZoomGlassIcon } from '../ImageZoomOverlay';
+import ImageZoomOverlay, { ZoomBadge, ZoomGlassIcon, useZoomBadgeOnImage } from '../ImageZoomOverlay';
 import { useLang, useTranslations } from '../../context/LanguageContext';
 import { texts } from './RiddleStation.i18n';
 
@@ -138,6 +138,7 @@ const BoxesArea = styled('div')<{ isrtl: string }>(({ isrtl }) => ({
   width: '100%',
   padding: '4px 0',
   flexShrink: 0,
+  position: 'relative',
 }));
 
 const WordGroup = styled('div')({
@@ -146,34 +147,49 @@ const WordGroup = styled('div')({
   gap: 5,
 });
 
-const LetterBoxInput = styled('input')<{ filled: string; shaking: string }>(({ filled, shaking }) => ({
-  width: 38,
-  height: 46,
-  border: `2.5px solid ${
-    shaking === 'true' ? '#e74c3c' : filled === 'true' ? '#6c5ce7' : '#ccc'
-  }`,
-  borderRadius: 10,
-  textAlign: 'center',
-  fontSize: 20,
-  fontWeight: 700,
-  color: shaking === 'true' ? '#c0392b' : '#111',
-  background: shaking === 'true' ? '#fdecea' : filled === 'true' ? '#f0eefa' : '#fafafa',
-  outline: 'none',
-  transition: 'border-color 0.15s, background 0.15s, box-shadow 0.15s, color 0.15s',
-  fontFamily: 'inherit',
+const LetterBox = styled('div')<{ filled: string; shaking: string; active: string }>(({ filled, shaking, active }) => {
+  const isShaking = shaking === 'true';
+  const isActive = active === 'true';
+  return {
+    width: 38,
+    height: 46,
+    boxSizing: 'border-box',
+    border: `2.5px solid ${isShaking ? '#e74c3c' : isActive ? '#8B2FC9' : filled === 'true' ? '#6c5ce7' : '#ccc'}`,
+    borderRadius: 10,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 20,
+    fontWeight: 700,
+    lineHeight: 1,
+    fontVariantNumeric: 'tabular-nums',
+    color: isShaking ? '#c0392b' : '#111',
+    background: isShaking ? '#fdecea' : isActive ? '#f5f0ff' : filled === 'true' ? '#f0eefa' : '#fafafa',
+    transition: 'border-color 0.15s, background 0.15s, box-shadow 0.15s, color 0.15s',
+    cursor: 'text',
+    userSelect: 'none',
+    animation: isShaking ? `${shakeAnim} 0.45s ease` : 'none',
+    boxShadow: isShaking
+      ? '0 0 0 3px rgba(231,76,60,0.18)'
+      : isActive ? '0 0 0 3px rgba(139,47,201,0.18)' : 'none',
+  };
+});
+
+const AnswerInput = styled('input')({
+  position: 'absolute',
+  inset: 0,
+  width: '100%',
+  height: '100%',
+  margin: 0,
+  padding: 0,
+  border: 0,
+  opacity: 0,
+  fontSize: 16,
+  color: 'transparent',
+  background: 'transparent',
   caretColor: 'transparent',
-  cursor: 'text',
-  animation: shaking === 'true' ? `${shakeAnim} 0.45s ease` : 'none',
-  boxShadow: shaking === 'true' ? '0 0 0 3px rgba(231,76,60,0.18)' : 'none',
-  '&:focus': {
-    borderColor: shaking === 'true' ? '#e74c3c' : '#8B2FC9',
-    background: shaking === 'true' ? '#fdecea' : '#f5f0ff',
-    boxShadow: shaking === 'true'
-      ? '0 0 0 3px rgba(231,76,60,0.25)'
-      : '0 0 0 3px rgba(139,47,201,0.18)',
-  },
-  '-webkit-user-select': 'text',
-}));
+  pointerEvents: 'none',
+});
 
 const WrongHint = styled('div')({
   fontSize: 15,
@@ -364,9 +380,11 @@ export default function RiddleStation({
   hintLabel,
 }: RiddleStationProps) {
   const [imageFullscreen, setImageFullscreen] = useState(false);
+  const mediaImage = useRef<HTMLImageElement | null>(null);
   const t = useTranslations(texts);
   const { dir } = useLang();
   const settings = (station.settings || {}) as RiddleSettings;
+  const zoomSpot = useZoomBadgeOnImage(mediaImage, settings.mediaUrl);
   const clue = settings.clue || '';
   const answer = settings.answer || '';
   const maxScore = typeof settings.maxScore === 'number' ? settings.maxScore : 100;
@@ -391,16 +409,20 @@ export default function RiddleStation({
     wordGroups.push(indices);
   }
 
-  const [inputs, setInputs] = useState<string[]>(Array(totalChars).fill(''));
+  const [typed, setTyped] = useState('');
+  const [cursor, setCursor] = useState(0);
+  const [answerFocused, setAnswerFocused] = useState(false);
+  const typedChars = Array.from(typed);
+  const inputs = Array.from({ length: totalChars }, (_, i) => typedChars[i] ?? '');
   const [attempt, setAttempt] = useState(0);
   const [shaking, setShaking] = useState(false);
   const [phase, setPhase] = useState<'playing' | 'success' | 'failure'>('playing');
   const [earnedScore, setEarnedScore] = useState(0);
   const [startTime] = useState(() => Date.now());
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const answerInput = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => inputRefs.current[0]?.focus(), 120);
+    const t = setTimeout(() => answerInput.current?.focus(), 120);
     return () => clearTimeout(t);
   }, []);
 
@@ -425,56 +447,36 @@ export default function RiddleStation({
       } else {
         setAttempt(nextAttempt);
         setTimeout(() => {
-          setInputs(Array(totalChars).fill(''));
-          setTimeout(() => inputRefs.current[0]?.focus(), 80);
+          setTyped('');
+          setCursor(0);
+          setTimeout(() => answerInput.current?.focus(), 80);
         }, 400);
       }
     }
-  }, [phase, inputs, answer, attempt, maxScore, totalChars, startTime, onComplete, unlimitedAttempts]);
+  }, [phase, inputs, answer, attempt, maxScore, startTime, onComplete, unlimitedAttempts]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>, flatIndex: number) => {
-    const val = e.target.value;
-    if (!val) return;
-    const char = val[val.length - 1];
-    const updated = [...inputs];
-    updated[flatIndex] = char;
-    setInputs(updated);
-    if (flatIndex < totalChars - 1) {
-      inputRefs.current[flatIndex + 1]?.focus();
-    }
+  const followCaret = (el: HTMLInputElement) => {
+    setCursor(Math.min(el.selectionStart ?? el.value.length, Math.max(totalChars - 1, 0)));
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, flatIndex: number) => {
-    if (e.key === 'Backspace') {
-      e.preventDefault();
-      const updated = [...inputs];
-      if (inputs[flatIndex]) {
-        updated[flatIndex] = '';
-        setInputs(updated);
-      } else if (flatIndex > 0) {
-        updated[flatIndex - 1] = '';
-        setInputs(updated);
-        inputRefs.current[flatIndex - 1]?.focus();
-      }
-      return;
-    }
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      const prev = flatIndex - 1;
-      if (prev >= 0) inputRefs.current[prev]?.focus();
-      return;
-    }
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      const next = flatIndex + 1;
-      if (next < totalChars) inputRefs.current[next]?.focus();
-      return;
-    }
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (inputs.every((c) => c !== '')) handleCheck();
-      return;
-    }
+  const handleAnswerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTyped(Array.from(e.target.value.replace(/\s/g, '')).slice(0, totalChars).join(''));
+    followCaret(e.target);
+  };
+
+  const handleAnswerKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (inputs.every((c) => c !== '')) handleCheck();
+  };
+
+  const focusBox = (index: number) => {
+    const el = answerInput.current;
+    if (!el || phase !== 'playing') return;
+    el.focus();
+    const at = Math.min(index, typedChars.length);
+    el.setSelectionRange(at, at < typedChars.length ? at + 1 : at);
+    setCursor(Math.min(at, Math.max(totalChars - 1, 0)));
   };
 
   const allFilled = inputs.every((c) => c !== '');
@@ -488,12 +490,14 @@ export default function RiddleStation({
         {settings.mediaUrl && settings.mediaType === 'image' && (
           <MediaSlot>
             <RiddleMediaImage
+              ref={mediaImage}
               src={settings.mediaUrl}
               alt=""
               onClick={() => setImageFullscreen(true)}
               onTouchStart={(e) => { if (e.touches.length >= 2) setImageFullscreen(true); }}
             />
             <ZoomBadge type="button" aria-label="Enlarge image" title="Enlarge image"
+              style={zoomSpot}
               onClick={() => setImageFullscreen(true)}>
               <ZoomGlassIcon zoomed={false} />
             </ZoomBadge>
@@ -524,26 +528,38 @@ export default function RiddleStation({
           {wordGroups.map((indices, wIdx) => (
             <WordGroup key={wIdx}>
               {indices.map((flatIndex) => (
-                <LetterBoxInput
+                <LetterBox
                   key={flatIndex}
-                  ref={(el) => { inputRefs.current[flatIndex] = el; }}
-                  type="text"
-                  maxLength={2}
-                  value={inputs[flatIndex]}
                   filled={String(inputs[flatIndex] !== '')}
                   shaking={String(shaking)}
-                  onChange={(e) => handleChange(e, flatIndex)}
-                  onKeyDown={(e) => handleKeyDown(e, flatIndex)}
-                  onFocus={(e) => e.target.select()}
-                  disabled={phase !== 'playing'}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  dir={isRTL ? 'rtl' : 'ltr'}
-                />
+                  active={String(answerFocused && phase === 'playing' && cursor === flatIndex)}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => focusBox(flatIndex)}
+                >
+                  {inputs[flatIndex]}
+                </LetterBox>
               ))}
             </WordGroup>
           ))}
+          <AnswerInput
+            ref={answerInput}
+            type="text"
+            value={typed}
+            maxLength={totalChars}
+            onChange={handleAnswerChange}
+            onKeyDown={handleAnswerKeyDown}
+            onSelect={(e) => followCaret(e.currentTarget)}
+            onFocus={() => setAnswerFocused(true)}
+            onBlur={() => setAnswerFocused(false)}
+            disabled={phase !== 'playing'}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            enterKeyHint="done"
+            dir={isRTL ? 'rtl' : 'ltr'}
+            aria-label={t.answerLabel}
+          />
         </BoxesArea>
 
         <AttemptsRow>
