@@ -1,4 +1,5 @@
 import type { MapLook } from './mapDesign';
+import { angleDelta } from './geo';
 
 export const PIN_LAYERS = { me: 5, done: 10, next: 30 } as const;
 
@@ -72,39 +73,68 @@ export function doneStationMarkers(maps: typeof google.maps, look: MapLook, mark
   return stationMarkers(maps, look.pins.done, mark, DONE_SIZE);
 }
 
-const ARROW_CENTER_Y = 2.6;
+const ME_TURN_EASE = 'transform 0.3s ease-out';
+const ARROW_SHAPE = 'polygon(50% 0%, 100% 100%, 50% 78%, 0% 100%)';
+const ARROW_OUTLINE_PX = 5;
 
-export function meMarkerIcon(maps: typeof google.maps, look: MapLook, heading?: number | null): google.maps.Symbol {
-  const color = look.routeColor;
-  if (heading !== null && heading !== undefined && Number.isFinite(heading)) {
-    return {
-      path: maps.SymbolPath.FORWARD_CLOSED_ARROW,
-      scale: 10,
-      anchor: new maps.Point(0, ARROW_CENTER_Y),
-      rotation: heading,
-      fillColor: color,
-      fillOpacity: 1,
-      strokeColor: '#ffffff',
-      strokeWeight: 3,
-    };
-  }
-  return {
-    path: maps.SymbolPath.CIRCLE,
-    scale: 11,
-    fillColor: color,
-    fillOpacity: 1,
-    strokeColor: '#ffffff',
-    strokeWeight: 4,
-  };
+export interface MeArrow {
+  update: (position: google.maps.LatLngLiteral | null, heading: number | null) => void;
+  remove: () => void;
 }
 
-export function meHaloIcon(maps: typeof google.maps): google.maps.Symbol {
+function placed(el: HTMLElement, style: Partial<CSSStyleDeclaration>): HTMLElement {
+  Object.assign(el.style, { position: 'absolute', ...style });
+  return el;
+}
+
+export function attachMeArrow(maps: typeof google.maps, map: google.maps.Map, color: string, title: string): MeArrow {
+  let position: google.maps.LatLngLiteral | null = null;
+  let turned = 0;
+  const anchor = placed(document.createElement('div'), { width: '0', height: '0', zIndex: String(PIN_LAYERS.me), display: 'none' });
+  anchor.title = title;
+  const halo = placed(document.createElement('div'), {
+    left: '-30px', top: '-30px', width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(255,255,255,0.75)',
+  });
+  const dot = placed(document.createElement('div'), {
+    left: '-13px', top: '-13px', width: '26px', height: '26px', boxSizing: 'border-box', borderRadius: '50%',
+    border: '4px solid #ffffff', background: color, boxShadow: '0 1px 4px rgba(0,0,0,0.35)',
+  });
+  const arrow = placed(document.createElement('div'), {
+    left: '-15px', top: '-18px', width: '30px', height: '36px', transformOrigin: '50% 50%', transition: ME_TURN_EASE,
+  });
+  arrow.append(
+    placed(document.createElement('div'), { inset: '0', background: '#ffffff', clipPath: ARROW_SHAPE }),
+    placed(document.createElement('div'), { inset: `${ARROW_OUTLINE_PX}px`, background: color, clipPath: ARROW_SHAPE }),
+  );
+  anchor.append(halo, dot, arrow);
+
+  const overlay = new maps.OverlayView();
+  overlay.onAdd = () => overlay.getPanes()?.markerLayer.appendChild(anchor);
+  overlay.draw = () => {
+    if (!position) return;
+    const point = overlay.getProjection()?.fromLatLngToDivPixel(new maps.LatLng(position));
+    if (!point) return;
+    anchor.style.left = `${point.x}px`;
+    anchor.style.top = `${point.y}px`;
+  };
+  overlay.onRemove = () => anchor.remove();
+  overlay.setMap(map);
+
   return {
-    path: maps.SymbolPath.CIRCLE,
-    scale: 30,
-    fillColor: '#ffffff',
-    fillOpacity: 0.75,
-    strokeWeight: 0,
+    update: (next, heading) => {
+      position = next;
+      anchor.style.display = next ? 'block' : 'none';
+      const pointing = heading !== null && Number.isFinite(heading);
+      halo.style.display = pointing ? 'block' : 'none';
+      arrow.style.display = pointing ? 'block' : 'none';
+      dot.style.display = pointing ? 'none' : 'block';
+      if (pointing) {
+        turned += angleDelta(((turned % 360) + 360) % 360, heading);
+        arrow.style.transform = `rotate(${turned}deg)`;
+      }
+      overlay.draw();
+    },
+    remove: () => overlay.setMap(null),
   };
 }
 

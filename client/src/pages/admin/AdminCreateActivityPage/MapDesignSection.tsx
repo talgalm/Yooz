@@ -16,7 +16,6 @@ import {
   type MapStyleId,
 } from '../../../utils/mapDesign';
 import MapLookOverlay from '../../../components/MapLookOverlay';
-import { attachMapLookLayer } from '../../../utils/mapLookLayer';
 import { attachPulse, doneStationMarkers, nextStationMarkers } from '../../../utils/mapPins';
 import { texts } from './MapDesignSection.i18n';
 import type { ItemLocation } from './types';
@@ -233,14 +232,6 @@ function MapDesignPreview({ design, stops, noKeyText, failedText }: {
 
   const look = lookFor(design);
   useEffect(() => {
-    const maps = window.google?.maps;
-    const map = mapRef.current;
-    if (!maps || !map || status !== 'ready' || mapsAuthFailed()) return;
-    const layer = attachMapLookLayer(maps, map, look.overlay);
-    return () => { if (!mapsAuthFailed()) layer.remove(); };
-  }, [look.overlay, status]);
-
-  useEffect(() => {
     if (mapsAuthFailed()) return;
     const line = routeLineOptions(look);
     straightRef.current?.setOptions(line);
@@ -313,6 +304,7 @@ function MapDesignPreview({ design, stops, noKeyText, failedText }: {
   return (
     <Preview>
       <PreviewCanvas ref={canvasRef} />
+      {status === 'ready' && <MapLookOverlay kind={look.overlay} />}
       {status === 'noKey' && <PreviewMessage>{noKeyText}</PreviewMessage>}
       {status === 'failed' && <PreviewMessage>{failedText}</PreviewMessage>}
     </Preview>
