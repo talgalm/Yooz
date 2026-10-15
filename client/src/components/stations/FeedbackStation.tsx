@@ -4,6 +4,7 @@ import { DESKTOP_BREAKPOINT, DESKTOP_STATION_WIDTH } from '../games/styled';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 import { useLang, useTranslations } from '../../context/LanguageContext';
 import { texts } from './FeedbackStation.i18n';
+import { combinedNotes, feedbackItemsFrom } from './feedbackItems';
 
 interface FeedbackQuestion {
   text: string;
@@ -20,6 +21,7 @@ interface FeedbackSettings {
 export interface FeedbackResult {
   answers: { questionIndex: number; questionText: string; value: number; label: string }[];
   notes: string;
+  texts: { itemIndex: number; prompt: string; text: string }[];
 }
 
 const RATING_LEVELS = [
@@ -182,6 +184,15 @@ const NotesCard = styled('div')({
   border: '2px solid #e8e4ef',
 });
 
+const NotesPrompt = styled('div')({
+  fontSize: 17,
+  fontWeight: 600,
+  color: '#333',
+  textAlign: 'center',
+  marginBottom: 10,
+  lineHeight: 1.5,
+});
+
 const NotesArea = styled('textarea')({
   width: '100%',
   minHeight: 60,
@@ -330,11 +341,14 @@ interface FeedbackStationProps {
 export default function FeedbackStation({ station, onContinue, textColor }: FeedbackStationProps) {
   const t = useTranslations(texts);
   const settings = (station.settings || {}) as FeedbackSettings;
-  const questions = settings.questions || [];
+  const items = feedbackItemsFrom((station.settings || {}) as Record<string, unknown>);
+  const sliderNumber = new Map<number, number>();
+  items.forEach((item, i) => { if (item.type === 'slider') sliderNumber.set(i, sliderNumber.size); });
+  const sliderCount = sliderNumber.size;
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [notes, setNotes] = useState('');
+  const [textAnswers, setTextAnswers] = useState<Record<number, string>>({});
 
-  const allAnswered = questions.length > 0 && questions.every((_, i) => answers[i] !== undefined);
+  const allAnswered = Array.from({ length: sliderCount }, (_, i) => answers[i] !== undefined).every(Boolean);
   const answeredCount = Object.keys(answers).length;
 
   const handleSelect = (qIndex: number, value: number) => {
@@ -344,17 +358,23 @@ export default function FeedbackStation({ station, onContinue, textColor }: Feed
   const handleSubmit = () => {
     if (!allAnswered) return;
 
+    const texts = items.flatMap((item, itemIndex) => (item.type === 'text'
+      ? [{ itemIndex, prompt: item.text, text: (textAnswers[itemIndex] ?? '').trim() }]
+      : []));
     const result: FeedbackResult = {
-      answers: questions.map((q, i) => {
-        const val = answers[i];
-        return {
-          questionIndex: i,
-          questionText: q.text,
+      answers: items.flatMap((item, itemIndex) => {
+        if (item.type !== 'slider') return [];
+        const questionIndex = sliderNumber.get(itemIndex) as number;
+        const val = answers[questionIndex];
+        return [{
+          questionIndex,
+          questionText: item.text,
           value: val,
           label: t.levels[val - 1] || '',
-        };
+        }];
       }),
-      notes: notes.trim(),
+      notes: combinedNotes(texts),
+      texts: texts.filter((entry) => entry.text),
     };
 
     onContinue(result);
@@ -371,31 +391,30 @@ export default function FeedbackStation({ station, onContinue, textColor }: Feed
         </IntroText>
       )}
 
-      {questions.map((q, qIndex) => (
+      {items.map((item, itemIndex) => (item.type === 'slider' ? (
         <SliderQuestion
-          key={qIndex}
-          question={q}
-          index={qIndex}
-          value={answers[qIndex]}
+          key={itemIndex}
+          question={{ text: item.text }}
+          index={sliderNumber.get(itemIndex) as number}
+          value={answers[sliderNumber.get(itemIndex) as number]}
           onSelect={handleSelect}
         />
-      ))}
-
-      {settings.notesEnabled !== false && (
-        <NotesCard>
+      ) : (
+        <NotesCard key={itemIndex}>
+          {item.text && <NotesPrompt>{item.text}</NotesPrompt>}
           <NotesArea
-            placeholder={settings.notesPlaceholder || t.notesPlaceholder}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            placeholder={item.placeholder || (item.text ? t.writeHere : t.notesPlaceholder)}
+            value={textAnswers[itemIndex] ?? ''}
+            onChange={(e) => setTextAnswers((prev) => ({ ...prev, [itemIndex]: e.target.value }))}
           />
         </NotesCard>
-      )}
+      )))}
 
       <SubmitButton
         disabled={!allAnswered}
         onClick={handleSubmit}
       >
-        {allAnswered ? t.finish : t.answerAll(answeredCount, questions.length)}
+        {allAnswered ? t.finish : t.answerAll(answeredCount, sliderCount)}
       </SubmitButton>
     </FeedbackContainer>
   );
