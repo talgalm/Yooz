@@ -58,7 +58,9 @@ import ActivitySessionHeader, {
 } from './ActivitySessionHeader';
 import {
   useActivityPlayingHeaderSlot,
+  useActivityPlayingHeaderHostActive,
   useActivityGameHeaderFallbackWhenNeeded,
+  useRegisterActivityGameHeader,
 } from '../../context/activityPlayingHeaderContext';
 import { useHelpChat } from '../../components/HelpChat/HelpChatContext';
 import type { GameResult } from '../../components/games/types';
@@ -438,7 +440,8 @@ export default function PlayingPhase({
   const headerIconColor = getHeaderIconColor(theme, customTheme);
   const SessionHeaderIconButton = useDarkChrome ? PuzzleDarkHeaderActionIconButton : DarkHeaderActionIconButton;
   useActivityGameHeaderFallbackWhenNeeded(isGameStep, currentItem._id);
-  const showMusicInGameSlot = isGameStep && activityHeaderSlot != null;
+  const isVideoStation = currentItem.type === 'station' && (currentItem as StationItemData).stationType === 'video';
+  const showMusicInGameSlot = (isGameStep || isVideoStation) && activityHeaderSlot != null;
   const showStandaloneLeaderboard =
     !isGameStep && Boolean(onViewLeaderboard) && !hideLeaderboardInHeader;
   const isEnteringTextStation = currentItem.type === 'station' && (currentItem as StationItemData).stationType === 'enteringText';
@@ -732,8 +735,8 @@ export default function PlayingPhase({
       onClick={activityHeaderSlot.toggleMute}
       onMouseDown={(e) => e.preventDefault()}
       onTouchStart={(e) => e.preventDefault()}
-      aria-label={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
-      title={activityHeaderSlot.isMuted ? 'Unmute game music' : 'Mute game music'}
+      aria-label={activityHeaderSlot.isMuted ? t.unmuteSound : t.muteSound}
+      title={activityHeaderSlot.isMuted ? t.unmuteSound : t.muteSound}
       {...themedIconProps}
     >
       {activityHeaderSlot.isMuted ? <MutedIcon /> : <SpeakerIcon />}
@@ -967,7 +970,17 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showReplay, setShowReplay] = useState(false);
   const [videoEnded, setVideoEnded] = useState(false);
+  const [videoMuted, setVideoMuted] = useState(false);
   const source = resolveVideoSource(station.settings?.mediaUrl as string);
+  const autoplay = station.settings?.autoplay !== false;
+  const headerHostActive = useActivityPlayingHeaderHostActive();
+  const toggleVideoMute = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setVideoMuted(video.muted);
+  }, []);
+  useRegisterActivityGameHeader(headerHostActive && source.kind === 'video', 'playing', videoMuted, toggleVideoMute);
 
   const watchRequired = station.settings?.mustWatchToEnd !== false;
   const canContinue = source.kind === 'iframe' || videoEnded || !watchRequired;
@@ -1004,8 +1017,10 @@ function VideoStationPlayer({ station, onContinue, t, textColor }: {
               ref={videoRef}
               src={source.src}
               controls
-              autoPlay
+              autoPlay={autoplay}
+              playsInline
               onEnded={handleEnded}
+              onVolumeChange={(e) => setVideoMuted(e.currentTarget.muted)}
             />
             {showReplay && (
               <ReplayOverlay onClick={handleReplay} type="button" aria-label="Replay video">

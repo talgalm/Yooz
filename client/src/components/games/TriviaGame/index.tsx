@@ -7,6 +7,7 @@ import { decodeJwtPayload } from '../../../utils/jwt';
 import { useGameHint } from '../../../hooks/useGameHint';
 import HintModals from '../HintModals';
 import HintButton from '../HintButton';
+import TriviaSuccessPopup, { hasSuccessPopupContent, type TriviaSuccessPopupContent } from './TriviaSuccessPopup';
 import { GameProps, QuestionAnswerRecord, HintConfig, GAME_CONSTANTS } from '../types';
 import { useGameSounds } from '../../../hooks/useGameSounds';
 import {
@@ -78,7 +79,10 @@ interface TriviaQuestion {
   hint?: string;
   media?: string;
   answers: TriviaAnswer[];
+  successPopup?: TriviaSuccessPopupContent;
 }
+
+const SUCCESS_POPUP_DELAY_MS = 1100;
 
 interface TriviaScoring {
   correctAnswerPoints: number;
@@ -250,6 +254,11 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Set<number>>(new Set());
   const [checked, setChecked] = useState(false);
+  const [successPopup, setSuccessPopup] = useState<TriviaSuccessPopupContent | null>(null);
+  const successPopupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (successPopupTimer.current) clearTimeout(successPopupTimer.current);
+  }, []);
   const [questionScore, setQuestionScore] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
   const [gameComplete, setGameComplete] = useState(false);
@@ -469,6 +478,10 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
 
     if (selectedCorrectCount === totalCorrectInQuestion && selectedWrongCount === 0) {
       sounds.playCorrect();
+      const reward = question.successPopup;
+      if (hasSuccessPopupContent(reward)) {
+        successPopupTimer.current = setTimeout(() => setSuccessPopup(reward), SUCCESS_POPUP_DELAY_MS);
+      }
     } else {
       sounds.playWrong();
     }
@@ -499,10 +512,10 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   }, [checked, currentQuestion]);
 
   useEffect(() => {
-    if (!checked) return;
+    if (!checked || successPopup) return;
     const id = window.setTimeout(() => handleNextRef.current(), 5000);
     return () => clearTimeout(id);
-  }, [checked, currentQuestion]);
+  }, [checked, currentQuestion, successPopup]);
 
   useEffect(() => {
     if (gameComplete && !noContent) {
@@ -842,6 +855,9 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
         onDismissText={gameHint.dismissHintText}
         t={t}
       />
+      {successPopup && (
+        <TriviaSuccessPopup popup={successPopup} continueLabel={t.continue} onClose={() => setSuccessPopup(null)} />
+      )}
     </TriviaContainer>
   );
 }

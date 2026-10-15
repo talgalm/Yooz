@@ -660,7 +660,10 @@ hand-rolled (HTML5 drag API + tap-to-swap touch fallback) — no dnd library.
   driven by the manager, see `orderSurveySession`). Player: `components/games/OrderGame/`
   (`index.tsx`, `OrderSurveyGame.tsx`, `GolfChallenge.tsx`).
 - **Trivia** (`TriviaGameSettings`): `questions:{text,hint?,media?,answers:{text,isCorrect,
-  explanation?}[]}[]`, `scoring:{correctAnswerPoints, wrongAnswerPenalty, timeLimitSeconds?}`,
+  explanation?}[], successPopup?:{title?, contentType:'text'|'image'|'video', text?/image?/video?}}[]`
+  (the per-question "פופאפ אחרי תשובה נכונה": `TriviaSuccessPopup.tsx` opens 1.1s after a fully right
+  answer and holds the 5s move to the next question until it is closed),
+  `scoring:{correctAnswerPoints, wrongAnswerPenalty, timeLimitSeconds?}`,
   `shuffleAnswers?`, `includeHelpers?` (one-time 1/2 or 3/4 eliminations). The intro title is the game's
   name (it was always "טריוויה"), like the order game; the card under it shows `instructions` and is left
   out when there are none. `components/games/TriviaGame/`.
@@ -706,6 +709,8 @@ Rendered in `pages/StoryModulePage/PlayingPhase.tsx` (story) / `StationStage` / 
   can be split across the activity via `module.items[].collageSplit`.
 - **feedback** — feedback/survey capture (`FeedbackStation`).
 - **riddle** — riddle with media + checked answer (`RiddleStation`, may use `/api/check-answer`).
+  `settings.attemptsText` ("טקסט מתחת לריבועים") replaces the "ניסיון 1 מתוך 3" line under the
+  boxes; `{n}` in it becomes the attempt number. The dots stay.
 - **avatar** — AI chat with a character (`AvatarStation` → `/api/avatar-chat`).
 - **avatarQuiz** — a character *asks* the participant questions and an AI grades each free-text
   answer 0-100 (`AvatarQuizStation` → `/api/avatar-quiz`). Settings: `characterName`,
@@ -1098,7 +1103,7 @@ present view (`OrderSurveyPresentPage` / `manager/present`).
   return **410**.
 - **Customers can view reports** (Statistics tab) scoped to their own/managed activities (§7);
   audit log stays admin-only.
-- **Video stations gate Continue** until the video ends (§10); iframes exempt. A bottom-left "skip the video" button (`SkipVideoButton`, PlayingPhase) bypasses the gate. `settings.mustWatchToEnd: false` (admin toggle "חובה לצפות בסרטון עד הסוף כדי להמשיך", default on) drops the gate, and `settings.continueButtonText` replaces "המשך" on the green button - both translated with the rest of the station's prose. The locked label stays the translated "watch to the end" string.
+- **Video stations gate Continue** until the video ends (§10); iframes exempt. A bottom-left "skip the video" button (`SkipVideoButton`, PlayingPhase) bypasses the gate. `settings.mustWatchToEnd: false` (admin toggle "חובה לצפות בסרטון עד הסוף כדי להמשיך", default on) drops the gate, `settings.autoplay: false` ("הפעלה אוטומטית של הסרטון", default on) keeps an uploaded video waiting for play (YouTube / Vimeo frames never autoplay), an uploaded video puts a mute button in the session header like a game's (`useRegisterActivityGameHeader`; a frame cannot be muted from outside, so it keeps the leaderboard button), and `settings.continueButtonText` replaces "המשך" on the green button - both translated with the rest of the station's prose. The locked label stays the translated "watch to the end" string.
 - **Per-item re-entry** (§11) — completed roadmap items flagged `revisitable` stay open and are
   tinted brighter than locked-behind ones; revisits never re-score.
 - Collage encode is the main scaling pressure point (Lambda + load shedding + boot recovery).

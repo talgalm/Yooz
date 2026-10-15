@@ -175,11 +175,20 @@ export interface TriviaAnswer {
   explanation?: string;
 }
 
+export interface TriviaSuccessPopup {
+  title?: string;
+  contentType: 'text' | 'image' | 'video';
+  text?: string;
+  image?: string;
+  video?: string;
+}
+
 export interface TriviaQuestion {
   text: string;
   hint?: string;
   media?: string;
   answers: TriviaAnswer[];
+  successPopup?: TriviaSuccessPopup;
 }
 
 export interface TriviaScoringConfig {
