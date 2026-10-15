@@ -1,6 +1,7 @@
-const heDistance = (m: number) => (m < 1000 ? `${Math.max(1, Math.round(m / 10) * 10)} מ׳` : `${(m / 1000).toFixed(1)} ק״מ`);
+const nearMeters = (m: number) => (m < 100 ? Math.max(1, Math.round(m)) : Math.round(m / 10) * 10);
+const heDistance = (m: number) => (m < 1000 ? `${nearMeters(m)} מ׳` : `${(m / 1000).toFixed(1)} ק״מ`);
 const heMinutes = (s: number) => `${Math.max(1, Math.round(s / 60))} דק׳ הליכה`;
-const enDistance = (m: number) => (m < 1000 ? `${Math.max(1, Math.round(m / 10) * 10)} m` : `${(m / 1000).toFixed(1)} km`);
+const enDistance = (m: number) => (m < 1000 ? `${nearMeters(m)} m` : `${(m / 1000).toFixed(1)} km`);
 const enMinutes = (s: number) => `${Math.max(1, Math.round(s / 60))} min walk`;
 const arrivalClock = (s: number, locale: string) => new Date(Date.now() + s * 1000).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 

@@ -45,15 +45,22 @@ export const DEFAULT_PROXIMITY_METERS = 10;
 export const MAX_USABLE_ACCURACY_M = 50;
 const MAX_FORGIVEN_ACCURACY_M = 25;
 const LEAVE_HYSTERESIS = 2.5;
+export const WALK_END_MAX_GAP_M = 40;
 
 export interface Fix extends LatLng {
   accuracy: number;
   heading?: number | null;
 }
 
-export function effectiveDistance(from: Fix, target: LatLng): number {
+export function reachMeters(from: LatLng, station: LatLng, walkEnd?: LatLng | null): number {
+  const toStation = distanceMeters(from, station);
+  if (!walkEnd || distanceMeters(walkEnd, station) > WALK_END_MAX_GAP_M) return toStation;
+  return Math.min(toStation, distanceMeters(from, walkEnd));
+}
+
+export function effectiveDistance(from: Fix, target: LatLng, walkEnd?: LatLng | null): number {
   const forgiven = Math.min(Math.max(from.accuracy, 0), MAX_FORGIVEN_ACCURACY_M);
-  return Math.max(0, distanceMeters(from, target) - forgiven);
+  return Math.max(0, reachMeters(from, target, walkEnd) - forgiven);
 }
 
 export function hasArrived(
@@ -61,7 +68,8 @@ export function hasArrived(
   target: LatLng,
   radius = DEFAULT_PROXIMITY_METERS,
   wasArrived = false,
+  walkEnd?: LatLng | null,
 ): boolean {
   if (from.accuracy > MAX_USABLE_ACCURACY_M) return wasArrived;
-  return effectiveDistance(from, target) <= (wasArrived ? radius * LEAVE_HYSTERESIS : radius);
+  return effectiveDistance(from, target, walkEnd) <= (wasArrived ? radius * LEAVE_HYSTERESIS : radius);
 }

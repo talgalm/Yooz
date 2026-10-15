@@ -1153,7 +1153,13 @@ apart. A team with no record yet has no position to draw anyway, so nothing is m
 `distance <= radius` leaves people standing at the sign with nothing happening.
 `utils/geo.ts::hasArrived` subtracts the fix's own `coords.accuracy` (capped at 25m so one wide
 fix isn't "at" every station), ignores fixes worse than 50m, and applies 2.5× exit hysteresis so
-a jittering fix doesn't flip a station open and shut. Arrival belongs to one station: when the
+a jittering fix doesn't flip a station open and shut. Google ends a walking route on the nearest
+path, which can sit tens of metres from a pin inside a building or a courtyard, so the end of the
+route counts as the station when it is within `WALK_END_MAX_GAP_M` (40m) of it (`reachMeters`, the
+`walkEnd` argument). Near the station (under 100m) the sheet shows that same reach distance, in whole
+metres, instead of the remaining route length rounded to tens - so a number on screen at or under
+the radius always opens the station. Before 2026-10-15 the sheet could read "10 מ׳" (route
+remaining, or 14m rounded down) while the station stayed shut. Arrival belongs to one station: when the
 target changes the hysteresis starts over, so the next station 30m on doesn't open early. The UI
 shows live distance **and** accuracy — a participant who can see the number walks the last few
 metres themselves. Stations chain (`utils/mapChain.ts`, tested): a station with no location, or one within
@@ -1271,7 +1277,9 @@ drops anything longer (`sanitizeCipherChar`), and serves `cipherChar` and `ciphe
 the switch is on, so turning it off keeps the characters for later. On the map the cipher is
 always on screen, in the floating header under the session buttons (`CipherStrip.tsx`, on the
 same fading blur): dark characters on white rounded tiles (hidden ones are translucent white with a white "?"), one per station with a character, in
-station order; a slot fills when the participant has done its station (`completedIndices`). A small white caption above the tiles reads "הצופן", and "פיצחתם את הצופן!" once every tile is full.
+station order; a slot fills when the participant has done its station (`completedIndices`). Letters always show as capitals
+(CSS `uppercase`, so stored characters keep their case), and tiles scale by count (`tileSize`: 34px characters for up to 6 tiles,
+down to 21px past 10). A white caption above the tiles reads "הצופן", and "פיצחתם את הצופן!" once every tile is full.
 A lock icon beside it and a frosted bar around the tiles (label on the side) were tried and dropped. A modal behind a lock button was tried first and rejected - the
 code has to be visible all the time. Stations revealed since the strip last showed (seen indices in
 `localStorage`, `yooz_cipher_seen_<code>`, `hooks/useCipherSeen.ts`) spin in like a slot-machine
