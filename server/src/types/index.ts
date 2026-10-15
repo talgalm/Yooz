@@ -137,10 +137,12 @@ export interface ModuleConfigRequest {
 export interface OrderGameRound {
   title?: string;
   cards: string[];
+  successPopup?: GameSuccessPopup;
 }
 
 export interface OrderGameScoringConfig {
   firstAttemptPoints: number;
+  allowRetry?: boolean;
   retryPoints: number;
   speedBonus: boolean;
   timeLimitSeconds?: number;
@@ -173,6 +175,14 @@ export interface TriviaAnswer {
   text: string;
   isCorrect: boolean;
   explanation?: string;
+}
+
+export interface GameSuccessPopup {
+  title?: string;
+  contentType: 'text' | 'image' | 'video';
+  text?: string;
+  image?: string;
+  video?: string;
 }
 
 export interface TriviaQuestion {

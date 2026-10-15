@@ -1,10 +1,14 @@
+import type { SuccessPopupDraft } from './SuccessPopupFields';
+
 export interface OrderRound {
   title: string;
   cards: string[];
+  successPopup?: SuccessPopupDraft;
 }
 
 export interface OrderScoring {
   firstAttemptPoints: number;
+  allowRetry: boolean;
   retryPoints: number;
   speedBonus: boolean;
   timeLimitSeconds: number;

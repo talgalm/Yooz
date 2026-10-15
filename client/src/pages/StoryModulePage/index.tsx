@@ -981,7 +981,7 @@ export default function StoryModulePage() {
       completedAt: now,
       durationMs: result.durationMs,
       hintUsed: result.hintUsed,
-      hintPenalty: result.hintUsed ? GAME_CONSTANTS.HINT_PENALTY : 0,
+      hintPenalty: result.hintUsed ? (result.hintPenalty ?? GAME_CONSTANTS.HINT_PENALTY) : 0,
       questionAnswers: result.questionAnswers,
       attempts: result.attempts,
       metadata: result.metadata,

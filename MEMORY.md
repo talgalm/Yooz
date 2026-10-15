@@ -656,10 +656,22 @@ Add a new type: add the union in `types/index.ts`, a client config form in
 hand-rolled (HTML5 drag API + tap-to-swap touch fallback) — no dnd library.
 
 - **Order** (`OrderGameSettings`): `mode:'quiz'|'survey'` (default quiz), `rounds:{title?,
-  cards[] in correct order}[]`, `scoring:{firstAttemptPoints(100), retryPoints(50), speedBonus,
-  timeLimitSeconds?}`. `survey` mode = live class-ranking poll (no scoring; Borda aggregation
-  driven by the manager, see `orderSurveySession`). Player: `components/games/OrderGame/`
-  (`index.tsx`, `OrderSurveyGame.tsx`, `GolfChallenge.tsx`).
+  cards[] in correct order}[]`, `scoring:{firstAttemptPoints(100), allowRetry?(off), retryPoints(50),
+  speedBonus, timeLimitSeconds?}`, `golfChallenge` (default on). `survey` mode = live class-ranking
+  poll (no scoring; Borda aggregation driven by the manager, see `orderSurveySession`). Player:
+  `components/games/OrderGame/` (`index.tsx`, `OrderSurveyGame.tsx`, `GolfChallenge.tsx`).
+  Scoring lives in `OrderGame/orderScoring.ts` (tested): partial credit - each card in its right
+  place earns `firstAttemptPoints / cards`; with `allowRetry` a wrong check offers "נסו שוב" /
+  "המשך", and each card fixed on the second try earns `retryPoints / cards` (cards right the first
+  time keep their full share, so the retry can only add). Speed bonus (only with a time limit): up
+  to half a round on a fully right check, scaled by the time left. Golf success adds 25. A hint
+  costs a quarter of a round, sent up as the result's `hintPenalty` (the dialog states the real
+  number). `maxPossibleScore` counts every round's best speed bonus and the golf, so a perfect run
+  is 100%. Timing out checks the cards as they stand and ends the round, with no retry. A round can
+  have a `successPopup` ("פופאפ אחרי סדר נכון", the shared `SuccessPopupFields` in the editor, quiz
+  mode only) that `components/games/SuccessPopup.tsx` opens once every card is in place; the next
+  round waits until it is closed. Until
+  2026-10-15 a round was all or nothing, and `retryPoints` and `speedBonus` were shown but unused.
 - **Trivia** (`TriviaGameSettings`): `questions:{text,hint?,media?,answers:{text,isCorrect,
   explanation?}[]}[]`, `scoring:{correctAnswerPoints, wrongAnswerPenalty, timeLimitSeconds?}`,
   `shuffleAnswers?`, `includeHelpers?` (one-time 1/2 or 3/4 eliminations). The intro title is the game's
