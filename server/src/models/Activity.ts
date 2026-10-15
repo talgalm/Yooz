@@ -5,6 +5,8 @@ import { MAP_STYLE_IDS, MAP_FEATURE_KEYS, type IMapDesign } from '../utils/mapDe
 export interface IPopupTrigger {
   point: 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
   itemIndex?: number;
+  byStep?: boolean;
+  onTheWay?: boolean;
 }
 
 export interface ICollageSplit {
@@ -51,6 +53,7 @@ export interface IPopupMessage {
   text?: string;
   image?: string;
   video?: string;
+  sound?: string;
   includeUsername?: boolean;
   trigger: IPopupTrigger;
   condition?: IPopupCondition;
@@ -205,6 +208,8 @@ function generateCode(): string {
 const popupTriggerSchema = new Schema({
   point: { type: String, required: true, enum: ['afterLogin', 'beforeItem', 'afterItem', 'endOfActivity'] },
   itemIndex: { type: Number },
+  byStep: { type: Boolean },
+  onTheWay: { type: Boolean },
 }, { _id: false });
 
 const popupConditionSchema = new Schema({
@@ -218,6 +223,7 @@ const popupMessageSchema = new Schema({
   text: { type: String },
   image: { type: String },
   video: { type: String },
+  sound: { type: String },
   includeUsername: { type: Boolean, default: false },
   trigger: { type: popupTriggerSchema, required: true },
   condition: { type: popupConditionSchema },

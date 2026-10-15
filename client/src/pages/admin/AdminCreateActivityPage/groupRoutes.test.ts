@@ -5,6 +5,7 @@ import {
   collageVideoPartTooEarly,
   popupAudienceRoute,
   popupStationIndex,
+  popupSavedIndex,
   draftsToRoutes,
   locationBlocks,
   routeIndices,
@@ -97,4 +98,12 @@ test('a popup follows its station when the list is reordered', () => {
   assert.equal(popupStationIndex({ itemIndex: 1 }, items), 1);
   assert.equal(popupStationIndex({ itemIndex: 7, itemUid: 'gone' }, items), 2);
   assert.equal(popupStationIndex({ itemIndex: 3, itemUid: 'a' }, []), 0);
+});
+
+test('a step popup saves its step, not the station that sits there now', () => {
+  const items = [{ uid: 'b' }, { uid: 'c' }, { uid: 'a' }];
+  assert.equal(popupSavedIndex({ itemIndex: 1, itemUid: 'a', byStep: true }, items), 1);
+  assert.equal(popupSavedIndex({ itemIndex: 9, byStep: true }, items), 2);
+  assert.equal(popupSavedIndex({ itemIndex: 1, itemUid: 'a' }, items), 2);
+  assert.equal(popupSavedIndex({ itemIndex: 4, byStep: true }, []), 0);
 });

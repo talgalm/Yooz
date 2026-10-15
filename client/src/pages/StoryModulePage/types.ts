@@ -110,10 +110,12 @@ export interface PopupData {
   text?: string;
   image?: string;
   video?: string;
+  sound?: string;
   includeUsername?: boolean;
   trigger: {
     point: 'afterLogin' | 'beforeItem' | 'afterItem' | 'endOfActivity';
     itemIndex?: number;
+    onTheWay?: boolean;
   };
 }
 

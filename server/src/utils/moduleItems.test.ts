@@ -13,6 +13,7 @@ import {
   sanitizeCollageSplit,
   ordersFromRoutes,
   popupVisibleTo,
+  sanitizePopupTrigger,
 } from './moduleItems';
 
 const items = (...groups: (string[] | undefined)[]) =>
@@ -78,6 +79,25 @@ test('team orders keep only real, distinct station indices', () => {
   assert.equal(sanitizeGroupOrders({ red: [] }, 3), undefined);
   assert.equal(sanitizeGroupOrders([[0]], 3), undefined);
   assert.equal(sanitizeGroupOrders(null, 3), undefined);
+});
+
+test('a step popup stays on its step, whichever station the route puts there', () => {
+  const stepPopup = (point: string, itemIndex: number) => ({ title: `${point}:${itemIndex}`, trigger: { point, itemIndex, byStep: true } });
+  const out = popupsForServedItems([stepPopup('beforeItem', 0), stepPopup('afterItem', 1), stepPopup('beforeItem', 2)], [2, 0]);
+  assert.deepEqual(out.map((p) => [p.title, p.trigger.itemIndex]), [
+    ['beforeItem:0', 0],
+    ['afterItem:1', 1],
+  ]);
+});
+
+test('a saved popup trigger keeps only what its point can use', () => {
+  assert.deepEqual(sanitizePopupTrigger({ point: 'beforeItem', itemIndex: 2, byStep: true, onTheWay: true }, true), { point: 'beforeItem', itemIndex: 2, byStep: true, onTheWay: true });
+  assert.deepEqual(sanitizePopupTrigger({ point: 'beforeItem', itemIndex: 2, onTheWay: true }, false), { point: 'beforeItem', itemIndex: 2 });
+  assert.deepEqual(sanitizePopupTrigger({ point: 'afterItem', itemIndex: 1, onTheWay: true, byStep: 'yes' }, true), { point: 'afterItem', itemIndex: 1 });
+  assert.deepEqual(sanitizePopupTrigger({ point: 'afterLogin', itemIndex: 3, byStep: true }, true), { point: 'afterLogin' });
+  assert.deepEqual(sanitizePopupTrigger({ point: 'beforeItem', itemIndex: -1, byStep: true }, true), { point: 'beforeItem' });
+  assert.deepEqual(sanitizePopupTrigger({ point: 'nope' }, true), { point: 'afterLogin' });
+  assert.deepEqual(sanitizePopupTrigger(undefined, true), { point: 'afterLogin' });
 });
 
 test('station popups follow the station into the order the player is served', () => {

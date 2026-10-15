@@ -1,4 +1,4 @@
-import type { IModuleConfig, IModuleItem, IItemLocation, IGroupRoute } from '../models';
+import type { IModuleConfig, IModuleItem, IItemLocation, IGroupRoute, IPopupTrigger } from '../models';
 
 export const ROUTES_MAX = 12;
 const ROUTE_NAME_MAX = 60;
@@ -187,15 +187,31 @@ export function visibleOrderedIndices(
 }
 
 const ITEM_TRIGGER_POINTS = new Set(['beforeItem', 'afterItem']);
+const TRIGGER_POINTS: IPopupTrigger['point'][] = ['afterLogin', 'beforeItem', 'afterItem', 'endOfActivity'];
 
-export function popupsForServedItems<P extends { trigger: { point: string; itemIndex?: number | null } }>(
+export function sanitizePopupTrigger(raw: unknown, isMap: boolean): IPopupTrigger {
+  const trigger = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  const point = TRIGGER_POINTS.find((p) => p === trigger.point) ?? 'afterLogin';
+  if (!ITEM_TRIGGER_POINTS.has(point)) return { point };
+  const itemIndex = typeof trigger.itemIndex === 'number' && Number.isInteger(trigger.itemIndex) && trigger.itemIndex >= 0
+    ? trigger.itemIndex
+    : undefined;
+  return {
+    point,
+    ...(itemIndex !== undefined && { itemIndex }),
+    ...(itemIndex !== undefined && trigger.byStep === true && { byStep: true }),
+    ...(isMap && point === 'beforeItem' && trigger.onTheWay === true && { onTheWay: true }),
+  };
+}
+
+export function popupsForServedItems<P extends { trigger: { point: string; itemIndex?: number | null; byStep?: boolean | null } }>(
   popups: P[],
   served: number[],
 ): P[] {
   return popups.flatMap((p) => {
     const stored = p.trigger.itemIndex;
     if (!ITEM_TRIGGER_POINTS.has(p.trigger.point) || stored === undefined || stored === null) return [p];
-    const position = served.indexOf(stored);
+    const position = p.trigger.byStep ? (stored < served.length ? stored : -1) : served.indexOf(stored);
     return position === -1 ? [] : [{ ...p, trigger: { ...p.trigger, itemIndex: position } }];
   });
 }

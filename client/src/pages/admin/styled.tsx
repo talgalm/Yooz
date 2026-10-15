@@ -14,6 +14,7 @@ import {
   PRIMARY,
   PRIMARY_DISABLED,
   BORDER,
+  TEXT,
 } from '../../components/styled';
 
 export const AdminLogo = styled(Logo)({
@@ -621,16 +622,15 @@ export const StationOrderGames = styled('span')({
   color: '#aaa',
 });
 
-export const PopupCard = styled('div')<{ enabled?: boolean }>(({ enabled = true }) => ({
+export const PopupCard = styled('div')({
   padding: '12px 16px',
-  background: enabled ? '#f9f9fb' : '#fafafa',
+  background: '#f9f9fb',
   borderRadius: 10,
-  border: `1px solid ${enabled ? '#e8e8ec' : '#eee'}`,
-  opacity: enabled ? 1 : 0.7,
+  border: '1px solid #e8e8ec',
   display: 'flex',
   flexDirection: 'column',
   gap: 8,
-}));
+});
 
 export const PopupLabel = styled('label')({
   display: 'flex',
@@ -655,8 +655,8 @@ export const PopupContentInput = styled(Input)({
 });
 
 export const PopupTinyDangerButton = styled(DangerButton)({
-  padding: '4px 10px',
-  fontSize: 11,
+  padding: '0 18px',
+  fontSize: 13,
 });
 
 export const PopupFieldColumn = styled('div')({
@@ -665,6 +665,42 @@ export const PopupFieldColumn = styled('div')({
   gap: 2,
   flex: 1,
   minWidth: 140,
+});
+
+export const PopupAudiencePill = styled('button')<{ selected?: boolean }>(({ selected }) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '7px 16px',
+  borderRadius: 999,
+  border: `2px solid ${selected ? PRIMARY : BORDER}`,
+  background: selected ? PRIMARY : '#fff',
+  color: selected ? '#fff' : TEXT,
+  fontSize: 13,
+  fontWeight: 600,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+  transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+}));
+
+export const PopupPillCount = styled('span')<{ onPurple?: boolean }>(({ onPurple }) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: 18,
+  height: 18,
+  padding: '0 5px',
+  marginInlineStart: 8,
+  borderRadius: 9,
+  background: onPurple ? 'rgba(255, 255, 255, 0.28)' : 'rgba(0, 0, 0, 0.08)',
+  fontSize: 11,
+  fontWeight: 700,
+}));
+
+export const PopupFieldGrid = styled('div')({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+  gap: 12,
+  alignItems: 'end',
 });
 
 export const PopupFieldColumnSmall = styled('div')({

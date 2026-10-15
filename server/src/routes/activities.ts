@@ -325,6 +325,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
       text: p.text,
       image: p.image,
       video: p.video,
+      ...(p.sound && { sound: p.sound }),
       includeUsername: p.includeUsername === true,
       trigger: p.trigger,
     })),

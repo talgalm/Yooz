@@ -50,8 +50,8 @@ import type {
 } from './types';
 import ModuleItemsSection from './ModuleItemsSection';
 import GroupRoutesEditor from './GroupRoutesEditor';
-import { draftsToRoutes, newItemUid, popupStationIndex, routesFromGroupOrders, routesToDrafts, withItemUids, type RouteDraft } from './groupRoutes';
-import PopupMessagesSection from './PopupMessagesSection';
+import { draftsToRoutes, newItemUid, popupSavedIndex, routesFromGroupOrders, routesToDrafts, withItemUids, type RouteDraft } from './groupRoutes';
+import PopupMessagesSection, { isBuiltInPopupSound, type PopupAudience } from './PopupMessagesSection';
 import ThemeFormModal, { type CustomTheme } from './ThemeFormModal';
 import ThemePickerModal, {
   ThemeSwatchTiny,
@@ -735,15 +735,18 @@ export default function AdminCreateActivityPage() {
             text: p.text || '',
             image: p.image || '',
             video: p.video || '',
+            sound: p.sound || '',
+            soundCustom: !!p.sound && !isBuiltInPopupSound(p.sound),
             includeUsername: p.includeUsername === true,
             triggerPoint: p.trigger.point as PopupMessage['triggerPoint'],
             itemIndex: p.trigger.itemIndex ?? 0,
-            itemUid: loadedItems[p.trigger.itemIndex ?? 0]?.uid,
+            itemUid: p.trigger.byStep ? undefined : loadedItems[p.trigger.itemIndex ?? 0]?.uid,
+            byStep: p.trigger.byStep === true,
+            onTheWay: p.trigger.onTheWay === true,
             conditionType: p.condition?.type === 'participantCount' ? 'participantCount' : 'none',
             threshold: p.condition?.threshold ?? 20,
             groups: p.groups ?? [],
             routes: p.routes ?? [],
-            enabled: p.enabled,
           })));
         }
         if (a.isContinuous) {
@@ -1043,11 +1046,11 @@ export default function AdminCreateActivityPage() {
     });
   };
 
-  const addPopup = () => {
+  const addPopup = (audience: PopupAudience) => {
     setPopups((prev) => [...prev, {
       title: '', contentType: 'text' as PopupContentType, text: '', image: '', video: '', includeUsername: false,
-      triggerPoint: 'afterLogin', itemIndex: 0, conditionType: 'none', threshold: 20, enabled: true,
-      groups: [], routes: [], itemUid: selectedItems[0]?.uid,
+      triggerPoint: 'afterLogin', itemIndex: 0, conditionType: 'none', threshold: 20,
+      groups: audience.groups, routes: audience.routes, itemUid: selectedItems[0]?.uid,
     }]);
   };
   const removePopup = (index: number) => setPopups((prev) => prev.filter((_, i) => i !== index));
@@ -1248,19 +1251,22 @@ export default function AdminCreateActivityPage() {
               ...(p.contentType === 'text' && { text: p.text.trim() }),
               ...(p.contentType === 'image' && { image: p.image.trim() }),
               ...(p.contentType === 'video' && { video: p.video.trim() }),
+              ...(p.sound?.trim() && { sound: p.sound.trim() }),
               ...(p.includeUsername && { includeUsername: true }),
               trigger: {
                 point: p.triggerPoint,
                 ...((['beforeItem', 'afterItem'].includes(p.triggerPoint)) && {
-                  itemIndex: popupStationIndex(p, selectedItems),
+                  itemIndex: popupSavedIndex(p, selectedItems),
+                  ...(p.byStep && { byStep: true }),
                 }),
+                ...(moduleType === 'map' && p.triggerPoint === 'beforeItem' && p.onTheWay && { onTheWay: true }),
               },
               ...(p.conditionType === 'participantCount' && {
                 condition: { type: 'participantCount', threshold: p.threshold },
               }),
               ...(p.groups.length > 0 && { groups: p.groups }),
               ...(connectionType === 'group' && p.routes.length > 0 && { routes: p.routes }),
-              enabled: p.enabled,
+              enabled: true,
             }));
         }
         payload.module = modulePayload;
@@ -2361,6 +2367,7 @@ export default function AdminCreateActivityPage() {
                     routeNames={connectionType === 'group' && groupEntryMode !== 'selfService' ? routes.map((r, i) => r.name.trim() || t.routeDefaultName.replace('{n}', String(i + 1))) : []}
                     routeOrders={connectionType === 'group' && groupEntryMode !== 'selfService' ? draftsToRoutes(routes, selectedItems).map((r) => r.order) : []}
                     groupRoutes={groupRoutes}
+                    isMap={moduleType === 'map'}
                     onAddPopup={addPopup}
                     onRemovePopup={removePopup}
                     onUpdatePopup={updatePopup}

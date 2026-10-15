@@ -336,6 +336,12 @@ export default function StoryModulePage() {
 
   const [popupQueue, setPopupQueue] = useState<PopupData[]>([]);
   const [currentPopup, setCurrentPopup] = useState<PopupData | null>(null);
+  useEffect(() => {
+    if (!currentPopup?.sound) return;
+    const audio = new Audio(currentPopup.sound);
+    audio.play().catch(() => undefined);
+    return () => audio.pause();
+  }, [currentPopup]);
   const shownPopupIds = useRef<Set<string>>(new Set());
   const pendingAction = useRef<(() => void) | null>(null);
   const pendingAfterItemPopupRef = useRef<number | null>(null);
@@ -680,11 +686,12 @@ export default function StoryModulePage() {
     }
   };
 
-  const getPopupsForTrigger = useCallback((point: string, itemIndex?: number): PopupData[] => {
+  const getPopupsForTrigger = useCallback((point: string, itemIndex?: number, onTheWayOnly = false): PopupData[] => {
     if (!data?.module.popups) return [];
     return data.module.popups.filter((p) => {
       if (shownPopupIds.current.has(p._id)) return false;
       if (p.trigger.point !== point) return false;
+      if (onTheWayOnly && !p.trigger.onTheWay) return false;
       if (itemIndex !== undefined && p.trigger.itemIndex !== undefined) {
         return p.trigger.itemIndex === itemIndex;
       }
@@ -692,8 +699,8 @@ export default function StoryModulePage() {
     });
   }, [data]);
 
-  const showPopupsOrRun = useCallback((point: string, itemIndex: number | undefined, action: () => void) => {
-    const popups = getPopupsForTrigger(point, itemIndex);
+  const showPopupsOrRun = useCallback((point: string, itemIndex: number | undefined, action: () => void, onTheWayOnly = false) => {
+    const popups = getPopupsForTrigger(point, itemIndex, onTheWayOnly);
     if (popups.length > 0) {
       popups.forEach((p) => shownPopupIds.current.add(p._id));
       setPopupQueue(popups.slice(1));
@@ -833,17 +840,18 @@ export default function StoryModulePage() {
     if (!isMap || phase !== 'roadmap' || !progressChecked || showGuidelines || currentPopup || mapEndingRef.current) return;
     const finishedItem = pendingAfterItemPopupRef.current;
     const reachedNext = reachedIndex === currentItemIndex;
-    if (finishedItem === null && !reachedNext) return;
+    const onTheWay = !reachedNext && getPopupsForTrigger('beforeItem', currentItemIndex, true).length > 0;
+    if (finishedItem === null && !reachedNext && !onTheWay) return;
     const timer = setTimeout(() => {
       if (finishedItem !== null) {
         pendingAfterItemPopupRef.current = null;
         showPopupsOrRun('afterItem', finishedItem, () => undefined);
         return;
       }
-      showPopupsOrRun('beforeItem', currentItemIndex, () => undefined);
-    }, finishedItem !== null ? MAP_POPUP_DELAY_MS : ARRIVAL_POPUP_DELAY_MS);
+      showPopupsOrRun('beforeItem', currentItemIndex, () => undefined, onTheWay);
+    }, finishedItem !== null || onTheWay ? MAP_POPUP_DELAY_MS : ARRIVAL_POPUP_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [isMap, phase, progressChecked, showGuidelines, currentPopup, currentItemIndex, reachedIndex, showPopupsOrRun]);
+  }, [isMap, phase, progressChecked, showGuidelines, currentPopup, currentItemIndex, reachedIndex, getPopupsForTrigger, showPopupsOrRun]);
 
   const spidersFinalItemIndex = data
     ? data.module.items.findIndex((it) => it.isFinal)
