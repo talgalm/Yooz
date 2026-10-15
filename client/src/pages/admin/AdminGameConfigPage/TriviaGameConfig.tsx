@@ -28,6 +28,7 @@ import {
   ExplanationInput,
 } from '../styled';
 import type { TriviaQuestion, TriviaAnswer, TriviaScoring, GameConfigHandle } from './types';
+import SuccessPopupFields, { patchSuccessPopup, successPopupDraftFrom, successPopupToSave, type SuccessPopupDraft } from './SuccessPopupFields';
 
 const MediaUploadRow = styled(InlineRow)({
   marginBottom: 12,
@@ -57,10 +58,11 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
       const s = initialSettings;
       if (Array.isArray(s.questions)) {
         setQuestions(
-          (s.questions as { text: string; hint?: string; media?: string; answers: { text: string; isCorrect: boolean; explanation?: string }[] }[]).map((q) => ({
+          (s.questions as { text: string; hint?: string; media?: string; successPopup?: unknown; answers: { text: string; isCorrect: boolean; explanation?: string }[] }[]).map((q) => ({
             text: q.text || '',
             hint: q.hint || '',
             media: q.media || '',
+            successPopup: successPopupDraftFrom(q.successPopup),
             answers: (q.answers || []).map((a) => ({
               text: a.text || '',
               isCorrect: a.isCorrect || false,
@@ -105,6 +107,7 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
               text: q.text.trim(),
               hint: q.hint.trim() || undefined,
               media: q.media.trim() || undefined,
+              ...(successPopupToSave(q.successPopup) && { successPopup: successPopupToSave(q.successPopup) }),
               answers: q.answers
                 .filter((a) => a.text.trim())
                 .map((a) => ({
@@ -186,6 +189,10 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
 
     const removeQuestion = (qi: number) => {
       setQuestions((prev) => prev.filter((_, i) => i !== qi));
+    };
+
+    const updateSuccessPopup = (qi: number, patch: Partial<SuccessPopupDraft> | null) => {
+      setQuestions((prev) => prev.map((q, i) => (i === qi ? { ...q, successPopup: patchSuccessPopup(q.successPopup, patch) } : q)));
     };
 
     const updateQuestion = (qi: number, field: keyof TriviaQuestion, value: string) => {
@@ -333,6 +340,8 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
               >
                 + {t.addAnswer}
               </AddButton>
+
+              <SuccessPopupFields popup={question.successPopup} after="question" onChange={(patch) => updateSuccessPopup(qi, patch)} />
             </ItemPanel>
           ))}
         </div>

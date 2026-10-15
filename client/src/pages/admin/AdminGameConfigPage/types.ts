@@ -25,6 +25,7 @@ export interface TriviaQuestion {
   hint: string;
   media: string;
   answers: TriviaAnswer[];
+  successPopup?: SuccessPopupDraft;
 }
 
 export interface TriviaScoring {

@@ -19,6 +19,7 @@ interface RiddleSettings {
   continueButtonText?: string;
   successImageUrl?: string;
   unlimitedAttempts?: boolean;
+  attemptsText?: string;
 }
 
 function isHebrewText(text: string): boolean {
@@ -394,6 +395,7 @@ export default function RiddleStation({
   const continueLabel = settings.continueButtonText?.trim() || t.continue;
   const checkLabel = t.check;
   const customSuccessImage = settings.successImageUrl?.trim();
+  const attemptsText = settings.attemptsText?.trim();
 
   const words = answer ? answer.split(' ') : [];
   const letters = answer ? answer.replace(/ /g, '').split('') : [];
@@ -565,7 +567,7 @@ export default function RiddleStation({
         <AttemptsRow>
           {unlimitedAttempts ? (
             <span style={{ marginInlineStart: 4 }}>
-              {t.attempt(attempt + 1)}
+              {attemptsText ? attemptsText.replace('{n}', String(attempt + 1)) : t.attempt(attempt + 1)}
             </span>
           ) : (
             <>
@@ -573,7 +575,7 @@ export default function RiddleStation({
                 <AttemptDot key={i} used={String(i < attempt)} />
               ))}
               <span style={{ marginInlineStart: 4 }}>
-                {t.attemptOfThree(attempt + 1)}
+                {attemptsText ? attemptsText.replace('{n}', String(attempt + 1)) : t.attemptOfThree(attempt + 1)}
               </span>
             </>
           )}

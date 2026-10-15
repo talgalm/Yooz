@@ -186,6 +186,7 @@ export default function AdminStationConfigPage() {
   const [mediaUrl, setMediaUrl] = useState('');
   const [descPosition, setDescPosition] = useState<'before' | 'after'>('before');
   const [videoMustWatch, setVideoMustWatch] = useState(true);
+  const [videoAutoplay, setVideoAutoplay] = useState(true);
   const [videoButtonText, setVideoButtonText] = useState('');
   const [narrativeTitle, setNarrativeTitle] = useState('');
   const [narrativeBody, setNarrativeBody] = useState('');
@@ -225,6 +226,7 @@ export default function AdminStationConfigPage() {
   const [riddleContinueBtnText, setRiddleContinueBtnText] = useState('');
   const [riddleSuccessImageUrl, setRiddleSuccessImageUrl] = useState('');
   const [riddleUnlimitedAttempts, setRiddleUnlimitedAttempts] = useState(false);
+  const [riddleAttemptsText, setRiddleAttemptsText] = useState('');
   const [avatarCharacterName, setAvatarCharacterName] = useState('');
   const [avatarCharacterImageUrl, setAvatarCharacterImageUrl] = useState('');
   const [avatarCharacterImagePosition, setAvatarCharacterImagePosition] = useState('');
@@ -351,6 +353,7 @@ export default function AdminStationConfigPage() {
         if (settings.mediaUrl) setMediaUrl(settings.mediaUrl as string);
         setDescPosition(settings.descPosition === 'after' ? 'after' : 'before');
         setVideoMustWatch(settings.mustWatchToEnd !== false);
+        setVideoAutoplay(settings.autoplay !== false);
         setVideoButtonText((settings.continueButtonText as string) || '');
         if (settings.title) setNarrativeTitle(settings.title as string);
         if (settings.bodyText) setNarrativeBody(settings.bodyText as string);
@@ -402,6 +405,7 @@ export default function AdminStationConfigPage() {
           if (settings.continueButtonText) setRiddleContinueBtnText(settings.continueButtonText as string);
           if (settings.successImageUrl) setRiddleSuccessImageUrl(settings.successImageUrl as string);
           setRiddleUnlimitedAttempts(settings.unlimitedAttempts === true);
+          if (settings.attemptsText) setRiddleAttemptsText(settings.attemptsText as string);
         }
         if (s.type === 'avatar') {
           if (settings.characterName) setAvatarCharacterName(settings.characterName as string);
@@ -476,6 +480,7 @@ export default function AdminStationConfigPage() {
     if (settings.mediaUrl) setMediaUrl(settings.mediaUrl as string);
     if (settings.descPosition === 'after') setDescPosition('after');
     setVideoMustWatch(settings.mustWatchToEnd !== false);
+    setVideoAutoplay(settings.autoplay !== false);
     setVideoButtonText((settings.continueButtonText as string) || '');
     if (settings.title) setNarrativeTitle(settings.title as string);
     if (settings.bodyText) setNarrativeBody(settings.bodyText as string);
@@ -527,6 +532,7 @@ export default function AdminStationConfigPage() {
       if (settings.continueButtonText) setRiddleContinueBtnText(settings.continueButtonText as string);
       if (settings.successImageUrl) setRiddleSuccessImageUrl(settings.successImageUrl as string);
       setRiddleUnlimitedAttempts(settings.unlimitedAttempts === true);
+      if (settings.attemptsText) setRiddleAttemptsText(settings.attemptsText as string);
     }
     if (lib.type === 'avatarQuiz') {
       applyQuizSettings(settings);
@@ -592,6 +598,7 @@ export default function AdminStationConfigPage() {
       }
       if (stationType === 'video') {
         settings.mustWatchToEnd = videoMustWatch;
+        settings.autoplay = videoAutoplay;
         if (videoButtonText.trim()) settings.continueButtonText = videoButtonText.trim();
       }
       if (stationType === 'narrative') {
@@ -656,6 +663,7 @@ export default function AdminStationConfigPage() {
         if (riddleContinueBtnText.trim()) settings.continueButtonText = riddleContinueBtnText.trim();
         if (riddleSuccessImageUrl.trim()) settings.successImageUrl = riddleSuccessImageUrl.trim();
         settings.unlimitedAttempts = riddleUnlimitedAttempts;
+        if (riddleAttemptsText.trim()) settings.attemptsText = riddleAttemptsText.trim();
       }
       if (stationType === 'avatar') {
         settings.characterName = avatarCharacterName.trim();
@@ -880,6 +888,7 @@ export default function AdminStationConfigPage() {
     setTextContent('');
     setMediaUrl('');
     setVideoMustWatch(true);
+    setVideoAutoplay(true);
     setVideoButtonText('');
     setCollageHeader('');
     setCollageDescription('');
@@ -1238,6 +1247,19 @@ export default function AdminStationConfigPage() {
                   </HintToggleRow>
                   <div style={{ fontSize: 12, color: '#888', marginTop: -4, marginBottom: 4 }}>
                     {videoMustWatch ? t.videoMustWatchOnHelper : t.videoMustWatchOffHelper}
+                  </div>
+                  <HintToggleRow>
+                    <SectionLabelNoMargin>{t.videoAutoplay}</SectionLabelNoMargin>
+                    <ToggleButton
+                      type="button"
+                      selected={videoAutoplay}
+                      onClick={() => setVideoAutoplay((v) => !v)}
+                    >
+                      {videoAutoplay ? 'ON' : 'OFF'}
+                    </ToggleButton>
+                  </HintToggleRow>
+                  <div style={{ fontSize: 12, color: '#888', marginTop: -4, marginBottom: 4 }}>
+                    {videoAutoplay ? t.videoAutoplayOnHelper : t.videoAutoplayOffHelper}
                   </div>
                   <SectionLabelNoMargin>{t.videoButtonText}</SectionLabelNoMargin>
                   <FlexInput
@@ -1653,6 +1675,14 @@ export default function AdminStationConfigPage() {
                     <SelectionButton type="button" selected={riddleUnlimitedAttempts} onClick={() => setRiddleUnlimitedAttempts(true)}>{t.riddleAttemptsUnlimited}</SelectionButton>
                   </SelectionGroup>
                   <span style={{ fontSize: 12, color: '#999', marginTop: -8 }}>{t.riddleAttemptsHint}</span>
+
+                  <SectionLabel>{t.riddleAttemptsText}</SectionLabel>
+                  <Input
+                    placeholder={t.riddleAttemptsTextPlaceholder}
+                    value={riddleAttemptsText}
+                    onChange={(e) => setRiddleAttemptsText(e.target.value)}
+                  />
+                  <span style={{ fontSize: 12, color: '#999', marginTop: -8 }}>{t.riddleAttemptsTextHint}</span>
 
                   <SectionLabel>{t.riddleMedia}</SectionLabel>
                   <SelectionGroup>
