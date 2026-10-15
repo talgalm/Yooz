@@ -1,0 +1,28 @@
+export const texts = {
+  en: {
+    afterQuestion: 'Popup after a correct answer',
+    afterRound: 'Popup after a correct order',
+    title: 'Popup title (optional)',
+    text: 'Text',
+    image: 'Image',
+    video: 'Video',
+    textPlaceholder: 'What the popup says',
+    imageUrl: 'Image link',
+    videoUrl: 'Video link (uploaded, YouTube or Vimeo)',
+    hintQuestion: 'Opens after the question is answered right; the game moves on once it is closed.',
+    hintRound: 'Opens once every card is in its place; the game moves on once it is closed.',
+  },
+  he: {
+    afterQuestion: 'פופאפ אחרי תשובה נכונה',
+    afterRound: 'פופאפ אחרי סדר נכון',
+    title: 'כותרת הפופאפ (אופציונלי)',
+    text: 'טקסט',
+    image: 'תמונה',
+    video: 'סרטון',
+    textPlaceholder: 'מה כתוב בפופאפ',
+    imageUrl: 'קישור לתמונה',
+    videoUrl: 'קישור לסרטון (שהועלה, YouTube או Vimeo)',
+    hintQuestion: 'נפתח אחרי שעונים נכון על השאלה; המשחק ממשיך אחרי שסוגרים אותו.',
+    hintRound: 'נפתח כשכל הכרטיסיות במקום הנכון; המשחק ממשיך אחרי שסוגרים אותו.',
+  },
+};

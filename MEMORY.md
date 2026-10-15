@@ -661,7 +661,8 @@ hand-rolled (HTML5 drag API + tap-to-swap touch fallback) — no dnd library.
   (`index.tsx`, `OrderSurveyGame.tsx`, `GolfChallenge.tsx`).
 - **Trivia** (`TriviaGameSettings`): `questions:{text,hint?,media?,answers:{text,isCorrect,
   explanation?}[], successPopup?:{title?, contentType:'text'|'image'|'video', text?/image?/video?}}[]`
-  (the per-question "פופאפ אחרי תשובה נכונה": `TriviaSuccessPopup.tsx` opens 1.1s after a fully right
+  (the per-question "פופאפ אחרי תשובה נכונה": `components/games/SuccessPopup.tsx`, edited with the
+  shared `AdminGameConfigPage/SuccessPopupFields.tsx`, opens 1.1s after a fully right
   answer and holds the 5s move to the next question until it is closed),
   `scoring:{correctAnswerPoints, wrongAnswerPenalty, timeLimitSeconds?}`,
   `shuffleAnswers?`, `includeHelpers?` (one-time 1/2 or 3/4 eliminations). The intro title is the game's

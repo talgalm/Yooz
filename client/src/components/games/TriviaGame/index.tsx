@@ -7,7 +7,7 @@ import { decodeJwtPayload } from '../../../utils/jwt';
 import { useGameHint } from '../../../hooks/useGameHint';
 import HintModals from '../HintModals';
 import HintButton from '../HintButton';
-import TriviaSuccessPopup, { hasSuccessPopupContent, type TriviaSuccessPopupContent } from './TriviaSuccessPopup';
+import SuccessPopup, { hasSuccessPopupContent, type SuccessPopupContent } from '../SuccessPopup';
 import { GameProps, QuestionAnswerRecord, HintConfig, GAME_CONSTANTS } from '../types';
 import { useGameSounds } from '../../../hooks/useGameSounds';
 import {
@@ -79,7 +79,7 @@ interface TriviaQuestion {
   hint?: string;
   media?: string;
   answers: TriviaAnswer[];
-  successPopup?: TriviaSuccessPopupContent;
+  successPopup?: SuccessPopupContent;
 }
 
 const SUCCESS_POPUP_DELAY_MS = 1100;
@@ -254,7 +254,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Set<number>>(new Set());
   const [checked, setChecked] = useState(false);
-  const [successPopup, setSuccessPopup] = useState<TriviaSuccessPopupContent | null>(null);
+  const [successPopup, setSuccessPopup] = useState<SuccessPopupContent | null>(null);
   const successPopupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
     if (successPopupTimer.current) clearTimeout(successPopupTimer.current);
@@ -856,7 +856,7 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
         t={t}
       />
       {successPopup && (
-        <TriviaSuccessPopup popup={successPopup} continueLabel={t.continue} onClose={() => setSuccessPopup(null)} />
+        <SuccessPopup popup={successPopup} continueLabel={t.continue} onClose={() => setSuccessPopup(null)} />
       )}
     </TriviaContainer>
   );

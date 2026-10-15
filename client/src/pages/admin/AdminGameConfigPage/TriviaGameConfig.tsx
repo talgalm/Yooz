@@ -26,18 +26,9 @@ import {
   CardItemRow,
   AnswerInput,
   ExplanationInput,
-  SmallSelectionButton,
-  SelectionGroupNoFlex,
 } from '../styled';
-import type { TriviaQuestion, TriviaAnswer, TriviaScoring, TriviaSuccessPopup, GameConfigHandle } from './types';
-
-const EMPTY_SUCCESS_POPUP: TriviaSuccessPopup = { title: '', contentType: 'text', text: '', image: '', video: '' };
-
-function successPopupHasContent(popup: TriviaSuccessPopup): boolean {
-  if (popup.contentType === 'image') return !!popup.image.trim();
-  if (popup.contentType === 'video') return !!popup.video.trim();
-  return !!popup.text.trim() || !!popup.title.trim();
-}
+import type { TriviaQuestion, TriviaAnswer, TriviaScoring, GameConfigHandle } from './types';
+import SuccessPopupFields, { patchSuccessPopup, successPopupDraftFrom, successPopupToSave, type SuccessPopupDraft } from './SuccessPopupFields';
 
 const MediaUploadRow = styled(InlineRow)({
   marginBottom: 12,
@@ -67,19 +58,11 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
       const s = initialSettings;
       if (Array.isArray(s.questions)) {
         setQuestions(
-          (s.questions as { text: string; hint?: string; media?: string; successPopup?: Partial<TriviaSuccessPopup>; answers: { text: string; isCorrect: boolean; explanation?: string }[] }[]).map((q) => ({
+          (s.questions as { text: string; hint?: string; media?: string; successPopup?: unknown; answers: { text: string; isCorrect: boolean; explanation?: string }[] }[]).map((q) => ({
             text: q.text || '',
             hint: q.hint || '',
             media: q.media || '',
-            ...(q.successPopup && {
-              successPopup: {
-                title: q.successPopup.title || '',
-                contentType: q.successPopup.contentType === 'image' || q.successPopup.contentType === 'video' ? q.successPopup.contentType : 'text',
-                text: q.successPopup.text || '',
-                image: q.successPopup.image || '',
-                video: q.successPopup.video || '',
-              },
-            }),
+            successPopup: successPopupDraftFrom(q.successPopup),
             answers: (q.answers || []).map((a) => ({
               text: a.text || '',
               isCorrect: a.isCorrect || false,
@@ -124,15 +107,7 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
               text: q.text.trim(),
               hint: q.hint.trim() || undefined,
               media: q.media.trim() || undefined,
-              ...(q.successPopup && successPopupHasContent(q.successPopup) && {
-                successPopup: {
-                  ...(q.successPopup.title.trim() && { title: q.successPopup.title.trim() }),
-                  contentType: q.successPopup.contentType,
-                  ...(q.successPopup.contentType === 'text' && { text: q.successPopup.text.trim() }),
-                  ...(q.successPopup.contentType === 'image' && { image: q.successPopup.image.trim() }),
-                  ...(q.successPopup.contentType === 'video' && { video: q.successPopup.video.trim() }),
-                },
-              }),
+              ...(successPopupToSave(q.successPopup) && { successPopup: successPopupToSave(q.successPopup) }),
               answers: q.answers
                 .filter((a) => a.text.trim())
                 .map((a) => ({
@@ -216,12 +191,8 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
       setQuestions((prev) => prev.filter((_, i) => i !== qi));
     };
 
-    const updateSuccessPopup = (qi: number, patch: Partial<TriviaSuccessPopup> | null) => {
-      setQuestions((prev) => prev.map((q, i) => {
-        if (i !== qi) return q;
-        if (patch === null) return { ...q, successPopup: undefined };
-        return { ...q, successPopup: { ...(q.successPopup ?? EMPTY_SUCCESS_POPUP), ...patch } };
-      }));
+    const updateSuccessPopup = (qi: number, patch: Partial<SuccessPopupDraft> | null) => {
+      setQuestions((prev) => prev.map((q, i) => (i === qi ? { ...q, successPopup: patchSuccessPopup(q.successPopup, patch) } : q)));
     };
 
     const updateQuestion = (qi: number, field: keyof TriviaQuestion, value: string) => {
@@ -370,61 +341,7 @@ export default forwardRef<GameConfigHandle, TriviaGameConfigProps>(
                 + {t.addAnswer}
               </AddButton>
 
-              <ScoringRow style={{ marginTop: 14 }}>
-                <ScoringLabel>{t.successPopup}</ScoringLabel>
-                <ScoringToggleButton
-                  type="button"
-                  selected={!!question.successPopup}
-                  onClick={() => updateSuccessPopup(qi, question.successPopup ? null : {})}
-                >
-                  {question.successPopup ? 'ON' : 'OFF'}
-                </ScoringToggleButton>
-              </ScoringRow>
-              {question.successPopup && (() => {
-                const popup = question.successPopup;
-                return (
-                  <VerticalStackGap10 style={{ marginTop: 8 }}>
-                    <FlexInput
-                      placeholder={t.successPopupTitle}
-                      value={popup.title}
-                      onChange={(e) => updateSuccessPopup(qi, { title: e.target.value })}
-                    />
-                    <SelectionGroupNoFlex>
-                      {(['text', 'image', 'video'] as const).map((kind) => (
-                        <SmallSelectionButton
-                          key={kind}
-                          type="button"
-                          selected={popup.contentType === kind}
-                          onClick={() => updateSuccessPopup(qi, { contentType: kind })}
-                        >
-                          {kind === 'text' ? t.successPopupText : kind === 'image' ? t.successPopupImage : t.successPopupVideo}
-                        </SmallSelectionButton>
-                      ))}
-                    </SelectionGroupNoFlex>
-                    {popup.contentType === 'text' ? (
-                      <FlexInput
-                        placeholder={t.successPopupTextPlaceholder}
-                        value={popup.text}
-                        onChange={(e) => updateSuccessPopup(qi, { text: e.target.value })}
-                      />
-                    ) : (
-                      <MediaUploadRow>
-                        <FileUploadButton
-                          accept={popup.contentType === 'image' ? 'image/*' : 'video/*'}
-                          onUploaded={(url) => updateSuccessPopup(qi, popup.contentType === 'image' ? { image: url } : { video: url })}
-                        />
-                        <FlexInput
-                          placeholder={popup.contentType === 'image' ? t.successPopupImageUrl : t.successPopupVideoUrl}
-                          value={popup.contentType === 'image' ? popup.image : popup.video}
-                          onChange={(e) => updateSuccessPopup(qi, popup.contentType === 'image' ? { image: e.target.value } : { video: e.target.value })}
-                          dir="ltr"
-                        />
-                      </MediaUploadRow>
-                    )}
-                    <span style={{ fontSize: 12, color: '#999' }}>{t.successPopupHint}</span>
-                  </VerticalStackGap10>
-                );
-              })()}
+              <SuccessPopupFields popup={question.successPopup} after="question" onChange={(patch) => updateSuccessPopup(qi, patch)} />
             </ItemPanel>
           ))}
         </div>

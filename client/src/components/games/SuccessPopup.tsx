@@ -1,8 +1,8 @@
 import { createPortal } from 'react-dom';
 import { styled } from '@mui/material/styles';
-import { resolveVideoSource } from '../../../utils/videoSource';
+import { resolveVideoSource } from '../../utils/videoSource';
 
-export interface TriviaSuccessPopupContent {
+export interface SuccessPopupContent {
   title?: string;
   contentType?: 'text' | 'image' | 'video';
   text?: string;
@@ -10,7 +10,7 @@ export interface TriviaSuccessPopupContent {
   video?: string;
 }
 
-export function hasSuccessPopupContent(popup?: TriviaSuccessPopupContent | null): popup is TriviaSuccessPopupContent {
+export function hasSuccessPopupContent(popup?: SuccessPopupContent | null): popup is SuccessPopupContent {
   if (!popup) return false;
   if (popup.contentType === 'image') return !!popup.image?.trim();
   if (popup.contentType === 'video') return !!popup.video?.trim();
@@ -88,8 +88,8 @@ const ContinueButton = styled('button')({
   fontFamily: 'inherit',
 });
 
-export default function TriviaSuccessPopup({ popup, continueLabel, onClose }: {
-  popup: TriviaSuccessPopupContent;
+export default function SuccessPopup({ popup, continueLabel, onClose }: {
+  popup: SuccessPopupContent;
   continueLabel: string;
   onClose: () => void;
 }) {

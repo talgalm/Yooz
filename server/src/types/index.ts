@@ -175,7 +175,7 @@ export interface TriviaAnswer {
   explanation?: string;
 }
 
-export interface TriviaSuccessPopup {
+export interface GameSuccessPopup {
   title?: string;
   contentType: 'text' | 'image' | 'video';
   text?: string;
@@ -188,7 +188,7 @@ export interface TriviaQuestion {
   hint?: string;
   media?: string;
   answers: TriviaAnswer[];
-  successPopup?: TriviaSuccessPopup;
+  successPopup?: GameSuccessPopup;
 }
 
 export interface TriviaScoringConfig {
