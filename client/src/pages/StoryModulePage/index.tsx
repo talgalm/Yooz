@@ -261,6 +261,7 @@ const ENTRY_TRANSITION_CLOSE_MS = 320;
 const ENTRY_TRANSITION_OPEN_MS = 480;
 
 const MAP_POPUP_DELAY_MS = 1200;
+const ARRIVAL_POPUP_DELAY_MS = 700;
 
 export default function StoryModulePage() {
   const { code } = useParams<{ code: string }>();
@@ -339,6 +340,7 @@ export default function StoryModulePage() {
   const pendingAction = useRef<(() => void) | null>(null);
   const pendingAfterItemPopupRef = useRef<number | null>(null);
   const mapEndingRef = useRef(false);
+  const [reachedIndex, setReachedIndex] = useState<number | null>(null);
 
   const [countdown, setCountdown] = useState<number | null>(90);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -845,15 +847,19 @@ export default function StoryModulePage() {
 
   useEffect(() => {
     if (!isMap || phase !== 'roadmap' || !progressChecked || showGuidelines || currentPopup || mapEndingRef.current) return;
+    const finishedItem = pendingAfterItemPopupRef.current;
+    const reachedNext = reachedIndex === currentItemIndex;
+    if (finishedItem === null && !reachedNext) return;
     const timer = setTimeout(() => {
-      const finishedItem = pendingAfterItemPopupRef.current;
-      pendingAfterItemPopupRef.current = null;
-      const headingTo = () => showPopupsOrRun('beforeItem', currentItemIndex, () => undefined);
-      if (finishedItem !== null) showPopupsOrRun('afterItem', finishedItem, headingTo);
-      else headingTo();
-    }, MAP_POPUP_DELAY_MS);
+      if (finishedItem !== null) {
+        pendingAfterItemPopupRef.current = null;
+        showPopupsOrRun('afterItem', finishedItem, () => undefined);
+        return;
+      }
+      showPopupsOrRun('beforeItem', currentItemIndex, () => undefined);
+    }, finishedItem !== null ? MAP_POPUP_DELAY_MS : ARRIVAL_POPUP_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [isMap, phase, progressChecked, showGuidelines, currentPopup, currentItemIndex, showPopupsOrRun]);
+  }, [isMap, phase, progressChecked, showGuidelines, currentPopup, currentItemIndex, reachedIndex, showPopupsOrRun]);
 
   const spidersFinalItemIndex = data
     ? data.module.items.findIndex((it) => it.isFinal)
@@ -1518,6 +1524,7 @@ export default function StoryModulePage() {
             cipherEnabled={data.module.cipherEnabled === true}
             cipherSeenKey={`yooz_cipher_seen_${code}_${participantSessionId()}`}
             onArrive={() => handleNodeTap(currentItemIndex)}
+            onReachStation={setReachedIndex}
             sessionTexts={t}
             currentPoints={isGroupMap ? (mapRun.run?.score ?? roadmapTotalPoints) : roadmapTotalPoints}
             pointsRoll={isGroupMap ? null : pointsRoll}
