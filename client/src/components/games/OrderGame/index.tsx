@@ -15,6 +15,7 @@ import HintButton from '../HintButton';
 import { GameProps, HintConfig, GAME_CONSTANTS } from '../types';
 import GolfChallenge from './GolfChallenge';
 import OrderSurveyGame, { type OrderSurveySubmitPayload } from './OrderSurveyGame';
+import SuccessPopup, { hasSuccessPopupContent, type SuccessPopupContent } from '../SuccessPopup';
 import {
   hintPenaltyPoints,
   maxOrderScore,
@@ -74,6 +75,7 @@ import {
 interface OrderRound {
   title?: string;
   cards: string[];
+  successPopup?: SuccessPopupContent;
 }
 
 interface OrderSettings {
@@ -141,6 +143,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
   const [placedCount, setPlacedCount] = useState<{ placed: number; total: number } | null>(null);
   const [firstTry, setFirstTry] = useState<boolean[] | null>(null);
   const [awaitingRetry, setAwaitingRetry] = useState(false);
+  const [roundPopup, setRoundPopup] = useState<SuccessPopupContent | null>(null);
   const hideFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [checked, setChecked] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
@@ -296,12 +299,18 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     }
   };
 
-  const finishRound = (points: number, delayMs: number) => {
+  const finishRound = (points: number, delayMs: number, popup?: SuccessPopupContent) => {
     setRoundScore(points);
     setTotalScore((prev) => prev + points);
     setAwaitingRetry(false);
-    if (delayMs > 0) setTimeout(goToNextRound, delayMs);
-    else goToNextRound();
+    const next = popup ? () => setRoundPopup(popup) : goToNextRound;
+    if (delayMs > 0) setTimeout(next, delayMs);
+    else next();
+  };
+
+  const closeRoundPopup = () => {
+    setRoundPopup(null);
+    goToNextRound();
   };
 
   const handleCheck = () => {
@@ -332,7 +341,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
       hideFeedbackTimer.current = setTimeout(() => setShowFeedback(null), GAME_CONSTANTS.FEEDBACK_DURATION_MS);
       return;
     }
-    finishRound(points, GAME_CONSTANTS.FEEDBACK_DURATION_MS);
+    finishRound(points, GAME_CONSTANTS.FEEDBACK_DURATION_MS, allCorrect && hasSuccessPopupContent(round.successPopup) ? round.successPopup : undefined);
   };
 
   const handleRetry = () => {
@@ -676,6 +685,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
         onDismissText={hint.dismissHintText}
         t={{ ...t, hintWarning: t.hintWarning.replace('{points}', String(hintPenalty)) }}
       />
+      {roundPopup && <SuccessPopup popup={roundPopup} continueLabel={t.continue} onClose={closeRoundPopup} />}
     </OrderContainer>
     </OrderPhaseRoot>
   );

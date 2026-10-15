@@ -26,6 +26,7 @@ import {
 } from '../styled';
 import { SelectionButton } from '../../../components/styled';
 import type { OrderRound, OrderScoring, GameConfigHandle } from './types';
+import SuccessPopupFields, { patchSuccessPopup, successPopupDraftFrom, successPopupToSave, type SuccessPopupDraft } from './SuccessPopupFields';
 
 type OrderMode = 'quiz' | 'survey';
 
@@ -54,9 +55,10 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
       else setMode('quiz');
       if (Array.isArray(s.rounds)) {
         setRounds(
-          (s.rounds as { title?: string; cards: string[] }[]).map((r) => ({
+          (s.rounds as { title?: string; cards: string[]; successPopup?: unknown }[]).map((r) => ({
             title: r.title || '',
             cards: r.cards || ['', ''],
+            successPopup: successPopupDraftFrom(r.successPopup),
           }))
         );
       }
@@ -97,6 +99,7 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
           .map((r) => ({
             title: r.title.trim() || undefined,
             cards: r.cards.filter((c) => c.trim()),
+            ...(mode === 'quiz' && successPopupToSave(r.successPopup) && { successPopup: successPopupToSave(r.successPopup) }),
           }));
 
         const base = {
@@ -146,6 +149,10 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
 
     const updateRoundTitle = (roundIndex: number, title: string) => {
       setRounds((prev) => prev.map((r, i) => (i === roundIndex ? { ...r, title } : r)));
+    };
+
+    const updateRoundPopup = (roundIndex: number, patch: Partial<SuccessPopupDraft> | null) => {
+      setRounds((prev) => prev.map((r, i) => (i === roundIndex ? { ...r, successPopup: patchSuccessPopup(r.successPopup, patch) } : r)));
     };
 
     const addCard = (roundIndex: number) => {
@@ -266,6 +273,9 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
               <AddButton type="button" onClick={() => addCard(ri)}>
                 + {t.addCard}
               </AddButton>
+              {mode === 'quiz' && (
+                <SuccessPopupFields popup={round.successPopup} after="round" onChange={(patch) => updateRoundPopup(ri, patch)} />
+              )}
             </ItemPanel>
           ))}
         </div>
