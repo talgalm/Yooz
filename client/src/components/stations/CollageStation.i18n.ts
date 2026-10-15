@@ -2,7 +2,6 @@ export const texts = {
   en: {
     stationName: 'Photo station',
     collageStation: 'Collage station',
-    partSuffix: (part: number, total: number) => ` — part ${part}/${total}`,
     itemLabel: (n: number) => `Item ${n}`,
     photoLabel: (n: number) => `Photo ${n}`,
     takePhoto: 'Take a photo',
@@ -13,7 +12,7 @@ export const texts = {
     videoReady: 'The video is ready!',
     videoReadyTitle: 'The video is ready! 🎉',
     videoError: 'Could not create the video',
-    videoErrorRetrying: 'Could not create the video — retrying...',
+    videoErrorRetrying: 'Could not create the video, retrying...',
     loadPhotosError: 'Could not load the photos',
     noSavedPhotos: 'No saved photos were found from the earlier parts',
     needImagesEarlier: (total: number, have: number) =>
@@ -29,8 +28,6 @@ export const texts = {
     minutesLeft: (m: number) => `About ${m} minutes left`,
     minutesSecondsLeft: (m: number, s: string) => `About ${m}:${s} minutes left`,
 
-    partHeader: (part: number, total: number, size: number) =>
-      `🎬 Part ${part} of ${total} – ${size} photos in this part`,
     chooseN: (n: number) => `Choose ${n} photos or videos`,
     chooseAllAtOnce: 'You can pick them all at once from the gallery',
     selectedOf: (n: number, total: number) => `${n} of ${total} selected`,
@@ -40,7 +37,6 @@ export const texts = {
     remove: 'Remove',
     openCamera: '📷 Open camera',
     fromGallery: '🖼 From the gallery',
-    takeOrUpload: 'Take a photo or upload one from the gallery',
     retake: 'Choose again',
     saveAndContinue: 'Save and go to the next station',
     confirmAndContinue: 'Confirm and continue',
@@ -55,14 +51,14 @@ export const texts = {
     backToShooting: 'Back to shooting',
 
     generatingIntro: 'Turning your photos into a great video... this takes a few minutes',
-    weakReception: 'Weak signal — waiting for the connection...',
+    weakReception: 'Weak signal, waiting for the connection...',
     noNeedToWait: 'You do not have to wait here! 👇',
     sending: 'Sending...',
     smsWhenReady: '📲 Text me the video when it is ready',
-    errorTryAgain: 'Something went wrong — try again',
+    errorTryAgain: 'Something went wrong, try again',
 
     playVideo: 'Play video',
-    shareCopied: 'Text copied — share the video you downloaded',
+    shareCopied: 'Text copied. Share the video you downloaded',
     shareVideo: 'Share the video',
     downloadVideo: 'Download the video ⬇️',
     backToActivity: 'Back to the activity',
@@ -70,7 +66,6 @@ export const texts = {
   he: {
     stationName: 'תחנת צילום',
     collageStation: 'תחנת קולאז׳',
-    partSuffix: (part: number, total: number) => ` — חלק ${part}/${total}`,
     itemLabel: (n: number) => `פריט ${n}`,
     photoLabel: (n: number) => `תמונה ${n}`,
     takePhoto: 'צלמו תמונה',
@@ -81,7 +76,7 @@ export const texts = {
     videoReady: 'הסרטון מוכן!',
     videoReadyTitle: 'הסרטון מוכן! 🎉',
     videoError: 'שגיאה ביצירת הסרטון',
-    videoErrorRetrying: 'שגיאה ביצירת הסרטון — מנסה שוב...',
+    videoErrorRetrying: 'שגיאה ביצירת הסרטון, מנסים שוב...',
     loadPhotosError: 'שגיאה בטעינת התמונות',
     noSavedPhotos: 'לא נמצאו תמונות שמורות מהחלקים הקודמים',
     needImagesEarlier: (total: number, have: number) =>
@@ -97,8 +92,6 @@ export const texts = {
     minutesLeft: (m: number) => `נותרו כ-${m} דקות`,
     minutesSecondsLeft: (m: number, s: string) => `נותרו כ-${m}:${s} דקות`,
 
-    partHeader: (part: number, total: number, size: number) =>
-      `🎬 חלק ${part} מתוך ${total} – ${size} תמונות בחלק הזה`,
     chooseN: (n: number) => `בחרו ${n} תמונות או סרטונים`,
     chooseAllAtOnce: 'אפשר לבחור הכול בבת אחת מהגלריה',
     selectedOf: (n: number, total: number) => `נבחרו ${n} מתוך ${total}`,
@@ -108,7 +101,6 @@ export const texts = {
     remove: 'הסר',
     openCamera: '📷 פתח מצלמה',
     fromGallery: '🖼 מהגלריה',
-    takeOrUpload: 'צלמו תמונה או העלו מהגלריה',
     retake: 'בחר מחדש',
     saveAndContinue: 'שמור והמשך לתחנה הבאה',
     confirmAndContinue: 'אישור והמשך',
@@ -123,14 +115,14 @@ export const texts = {
     backToShooting: 'חזרה לצילום',
 
     generatingIntro: 'הופכים את התמונות שלכם לסרטון מדהים... זה יקח כמה דקות',
-    weakReception: 'קליטה חלשה — ממתינים לחיבור...',
+    weakReception: 'קליטה חלשה, ממתינים לחיבור...',
     noNeedToWait: 'לא חייבים לחכות כאן! 👇',
     sending: 'שולח...',
     smsWhenReady: '📲 שלחו לי את הסרטון ב-SMS כשהוא מוכן',
-    errorTryAgain: 'שגיאה — נסו שוב',
+    errorTryAgain: 'שגיאה, נסו שוב',
 
     playVideo: 'נגן סרטון',
-    shareCopied: 'הטקסט הועתק — שתפו את הסרטון שהורדתם',
+    shareCopied: 'הטקסט הועתק. שתפו את הסרטון שהורדתם',
     shareVideo: 'שתפו את הסרטון',
     downloadVideo: 'הורידו את הסרטון ⬇️',
     backToActivity: 'חזרה לפעילות',

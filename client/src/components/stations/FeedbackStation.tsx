@@ -50,10 +50,13 @@ const FeedbackContainer = styled('div')({
   },
 });
 
+const READABLE_ON_ANY_BACKGROUND = '0 1px 3px rgba(0,0,0,0.45)';
+
 const Title = styled('h2')({
-  fontSize: 20,
+  fontSize: 24,
   fontWeight: 700,
   color: '#fff',
+  textShadow: READABLE_ON_ANY_BACKGROUND,
   textAlign: 'center',
   margin: '0 0 4px',
   [DESKTOP_BREAKPOINT]: {
@@ -63,11 +66,13 @@ const Title = styled('h2')({
 });
 
 const IntroText = styled('p')({
-  fontSize: 14,
-  color: 'rgba(255,255,255,0.75)',
+  fontSize: 18,
+  fontWeight: 500,
+  color: 'rgba(255,255,255,0.92)',
+  textShadow: READABLE_ON_ANY_BACKGROUND,
   textAlign: 'center',
-  margin: '0 0 8px',
-  lineHeight: 1.5,
+  margin: '0 0 10px',
+  lineHeight: 1.55,
 });
 
 const QuestionCard = styled('div')<{ answered: boolean }>(({ answered }) => ({
@@ -80,7 +85,7 @@ const QuestionCard = styled('div')<{ answered: boolean }>(({ answered }) => ({
 }));
 
 const QuestionText = styled('div')({
-  fontSize: 15,
+  fontSize: 17,
   fontWeight: 600,
   color: '#333',
   textAlign: 'center',
@@ -150,7 +155,7 @@ const Tick = styled('button')<{ active: boolean }>(({ active }) => ({
   border: 'none',
   padding: '4px 0',
   cursor: 'pointer',
-  fontSize: 10,
+  fontSize: 13,
   fontWeight: active ? 700 : 500,
   color: active ? '#6c5ce7' : '#999',
   fontFamily: 'inherit',
@@ -164,7 +169,7 @@ const AnswerLabel = styled('div')({
   alignItems: 'center',
   gap: 6,
   marginTop: 10,
-  fontSize: 13,
+  fontSize: 15,
   fontWeight: 600,
   color: '#6c5ce7',
   minHeight: 20,
@@ -185,7 +190,7 @@ const NotesArea = styled('textarea')({
   border: '1.5px solid #e0dce8',
   background: '#faf8fe',
   color: '#333',
-  fontSize: 14,
+  fontSize: 16,
   fontFamily: 'inherit',
   resize: 'vertical',
   outline: 'none',

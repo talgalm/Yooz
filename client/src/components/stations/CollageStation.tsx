@@ -111,9 +111,9 @@ const CaptureLayout = styled('div')({
 const CaptureHeader = styled('div')({ flexShrink: 0, textAlign: 'center' });
 const CaptureActions = styled('div')({ flexShrink: 0, marginTop: 'auto', paddingTop: 8 });
 
-const TopLabel = styled('p')({ textAlign: 'center', fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 4, marginTop: 0, letterSpacing: 1 });
-const BigTitle = styled('h1')({ textAlign: 'center', fontSize: 26, fontWeight: 800, margin: '0 0 18px', lineHeight: 1.25 });
-const SubText = styled('p')({ textAlign: 'center', fontSize: 15, color: 'rgba(255,255,255,0.72)', margin: '0 0 24px', lineHeight: 1.6 });
+const TopLabel = styled('p')({ textAlign: 'center', fontSize: 15, color: 'rgba(255,255,255,0.6)', marginBottom: 4, marginTop: 0, letterSpacing: 1 });
+const BigTitle = styled('h1')({ textAlign: 'center', fontSize: 30, fontWeight: 800, margin: '0 0 16px', lineHeight: 1.25 });
+const SubText = styled('p')({ textAlign: 'center', fontSize: 18, color: 'rgba(255,255,255,0.88)', margin: '0 0 22px', lineHeight: 1.55 });
 
 const DisclaimerCard = styled('div')({
   alignSelf: 'stretch',
@@ -140,17 +140,9 @@ const CompactDisclaimer = styled('div')({
   margin: '0 0 10px',
   textAlign: 'center',
   fontWeight: 700,
-  fontSize: 13,
+  fontSize: 15,
   lineHeight: 1.4,
   whiteSpace: 'pre-line',
-});
-
-const PartBadge = styled('div')({
-  textAlign: 'center',
-  fontSize: 14,
-  fontWeight: 700,
-  color: '#fde68a',
-  margin: '0 0 18px',
 });
 
 const MissionCard = styled('div')({
@@ -170,8 +162,8 @@ const MissionNum = styled('div')({
   fontWeight: 800, fontSize: 16, flexShrink: 0, color: '#fff',
 });
 const MissionInfo = styled('div')({ flex: 1, textAlign: 'start' });
-const MissionTitle = styled('div')({ fontWeight: 800, fontSize: 16, color: '#fff' });
-const MissionDesc = styled('div')({ fontSize: 13, color: 'rgba(255,255,255,0.62)', marginTop: 3 });
+const MissionTitle = styled('div')({ fontWeight: 800, fontSize: 19, color: '#fff' });
+const MissionDesc = styled('div')({ fontSize: 16, color: 'rgba(255,255,255,0.82)', marginTop: 4, lineHeight: 1.45 });
 
 const PrimaryBtn = styled('button')({
   width: '100%', padding: '18px 16px', borderRadius: 18, border: 'none',
@@ -182,8 +174,8 @@ const PrimaryBtn = styled('button')({
   '&:disabled': { opacity: 0.45, cursor: 'not-allowed' },
 });
 const OutlineBtn = styled('button')({
-  background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)',
-  fontSize: 14, cursor: 'pointer', textDecoration: 'underline',
+  background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)',
+  fontSize: 16, cursor: 'pointer', textDecoration: 'underline',
   padding: '8px 0', fontFamily: 'inherit', width: '100%', textAlign: 'center', marginTop: 4,
 });
 
@@ -223,12 +215,11 @@ const ReferenceImg = styled('img')({
   objectFit: 'cover', opacity: 0.7, pointerEvents: 'none',
 });
 const PlaceholderIcon = styled('div')({ fontSize: 56, marginBottom: 12, opacity: 0.55, position: 'relative' });
-const PlaceholderText = styled('div')({ fontSize: 17, fontWeight: 700, color: 'rgba(255,255,255,0.78)', lineHeight: 1.4, position: 'relative' });
 
 const ButtonRow = styled('div')({ display: 'flex', gap: 8, marginBottom: 6 });
 const HalfBtn = styled('button')({
   flex: 1, padding: '14px 10px', borderRadius: 12, border: 'none',
-  background: 'rgba(255,255,255,0.09)', color: '#fff', fontSize: 15, fontWeight: 700,
+  background: 'rgba(255,255,255,0.09)', color: '#fff', fontSize: 17, fontWeight: 700,
   cursor: 'pointer', fontFamily: 'inherit',
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
   '&:disabled': { opacity: 0.35, cursor: 'not-allowed' },
@@ -403,7 +394,8 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     : fullMissions.slice(partStartIndex, partStartIndex + partSize);
   const partMultiSelectCount = multiSelect ? Math.max(1, partSize) : multiSelectCount;
 
-  const initialPhase: Phase = isVideoPart ? 'generating' : 'intro';
+  const startPhase: Phase = isSplit && !isFirstPart ? 'capture' : 'intro';
+  const initialPhase: Phase = isVideoPart ? 'generating' : startPhase;
   const [phase, setPhase] = useState<Phase>(initialPhase);
   const [currentMission, setCurrentMission] = useState(0);
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
@@ -880,7 +872,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
             setResultIsVideo(result.isVideo);
             setPhase('result');
           } catch {
-            if (!(await restoreFromIdb())) setPhase('intro');
+            if (!(await restoreFromIdb())) setPhase(startPhase);
           }
           return;
         }
@@ -1024,12 +1016,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
             <DisclaimerCard>{disclaimer}</DisclaimerCard>
           )}
 
-          {isSplit && (
-            <PartBadge>
-              {t.partHeader(partIndex + 1, totalParts, partSize)}
-            </PartBadge>
-          )}
-
           {multiSelect ? (
             <MissionCard>
               <MissionNum>{partMultiSelectCount}</MissionNum>
@@ -1067,8 +1053,8 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       <Wrap>
         <CaptureLayout>
           <CaptureHeader>
-            <TopLabel style={{ marginBottom: 4, fontSize: 15 }}>{t.stationName}{isSplit ? t.partSuffix(partIndex + 1, totalParts) : ''}</TopLabel>
-            <BigTitle style={{ fontSize: 26, marginBottom: 6 }}>{t.chooseN(partMultiSelectCount)}</BigTitle>
+            <TopLabel style={{ marginBottom: 4 }}>{t.stationName}</TopLabel>
+            <BigTitle style={{ fontSize: 28, marginBottom: 6 }}>{t.chooseN(partMultiSelectCount)}</BigTitle>
             <SubText style={{ margin: '0 0 10px', fontSize: 16, color: 'rgba(255,255,255,0.85)' }}>
               {t.selectedOf(photos.length, partMultiSelectCount)}
             </SubText>
@@ -1137,19 +1123,17 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       <Wrap>
         <CaptureLayout>
           <CaptureHeader>
-            <TopLabel style={{ marginBottom: 4, fontSize: 15 }}>
-              {t.shotOf(currentMission + 1, missions.length)}
-              {isSplit ? t.partSuffix(partIndex + 1, totalParts) : ''}
-            </TopLabel>
-            <BigTitle style={{ fontSize: 26, marginBottom: 6 }}>{mission.title}</BigTitle>
+            {missions.length > 1 && (
+              <TopLabel style={{ marginBottom: 4 }}>{t.shotOf(currentMission + 1, missions.length)}</TopLabel>
+            )}
+            <BigTitle style={{ fontSize: 28, marginBottom: 6 }}>{mission.title}</BigTitle>
             {mission.description && (
               <SubText style={{
                 margin: '0 0 8px',
-                fontSize: 16,
+                fontSize: 18,
                 lineHeight: 1.45,
-                color: 'rgba(255,255,255,0.85)',
                 display: '-webkit-box',
-                WebkitLineClamp: 2,
+                WebkitLineClamp: 4,
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
               }}>
@@ -1174,7 +1158,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
                 : <CapturePreviewImg src={displayUrl} alt="preview" />
               : <>
                   {mission.referenceImageUrl && <ReferenceImg src={mission.referenceImageUrl} alt="" />}
-                  <PlaceholderIcon>📷</PlaceholderIcon><PlaceholderText>{t.takeOrUpload}</PlaceholderText>
+                  <PlaceholderIcon>📷</PlaceholderIcon>
                 </>
             }
           </CaptureArea>
