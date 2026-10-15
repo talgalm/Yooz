@@ -104,9 +104,16 @@ localStorage key. **Never mix them.** All five share one `JWT_SECRET`, so a clai
   (`middleware/managerAuth.ts`), `authenticateManage`+`requireManageRole(...)`
   (`middleware/manageAuth.ts`). All read `Authorization: Bearer <jwt>`, verify with `JWT_SECRET`.
 - **Participant token** is mirrored to a `yooz_token` cookie (7-day) because in-app webviews
-  can drop localStorage between opens (`AuthContext.tsx`). On login as a *different* user,
-  local progress keys (`yooz_session_*`, `yooz_game_progress_*`, `puzzle_progress_*`,
-  `yooz_avatar_chat_*`, `yooz_entering_text_*`, `yooz_start_*`) are wiped.
+  can drop localStorage between opens (`AuthContext.tsx`). Every login mints a new
+  `participantSessionId()`, and the story progress (`yooz_session_<code>_<sessionId>`), the mission
+  page, the entering-text station and the cipher's seen characters are keyed by it - so a new login
+  on the same phone always starts from scratch (the server opens a new report on every login too),
+  while a reload keeps the progress. They used to be keyed by the activity code alone and were
+  wiped only when the regular login form saw a different name/email/phone: an expired login, the
+  daily reset, the home-page exit or the group screen (`establishSession`) handed the next
+  participant the previous one's station. `persistSession` also drops every old `yooz_session_*`
+  (`forgetAllStorySessions`). On login as a *different* user the other local progress keys
+  (`yooz_game_progress_*`, `puzzle_progress_*`, `yooz_avatar_chat_*`, `yooz_start_*`) are wiped.
 - **Admin roles** (least to most): `viewer` = **read-only**, sees all content; `authenticateAdmin`
   refuses any non-GET/HEAD/OPTIONS for it (`authenticateAdminAllowViewerWrites` only on dev-task
   reporting), no analytics/media/publicity. `customer` = **scoped to their own activities** (see §7),
@@ -1938,8 +1945,8 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 - **`participantActivity.ts`** — resolve/remember the activity code from URL/storage/JWT:
   `rememberActivityCode`, `readStoredActivityCode`, `activityCodeFromPathname`,
   `resolveParticipantActivityCode`, `participantPlayPath/StoryPath/MissionPath`.
-- **`storySession.ts`** — `storySessionKey`/`load|save|clearStorySessionRaw` (per-code play
-  progress, mirrored to localStorage). **`moduleCache.ts`** — in-memory module cache by code+group.
+- **`storySession.ts`** — `storySessionKey`/`load|save|clearStorySessionRaw` (play progress per
+  activity code and login session, mirrored to localStorage), `forgetAllStorySessions`. **`moduleCache.ts`** — in-memory module cache by code+group.
 - **`earlyModulePrefetch.ts`** — `prefetchActivityModule`/`startEarlyModulePrefetch` (warm the
   module during login). **`mediaPreloader.ts`** — `preloadActivityMedia`. **`participantMedia.ts`**
   — Cloudinary URL transforms (`participantImageUrl`/`participantVideoUrl`,

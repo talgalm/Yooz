@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { rememberActivityCode } from '../../utils/participantActivity';
+import { participantSessionId, rememberActivityCode } from '../../utils/participantActivity';
 import { useParticipantExit } from '../../hooks/useParticipantExit';
 import { useTranslations } from '../../context/LanguageContext';
 import { apiFetchPersistSilent, apiFetchWithRetry } from '../../utils/api';
@@ -133,7 +133,7 @@ const ErrorWrapper = styled('div')({
 
 type Phase = 'screens' | 'puzzle' | 'done';
 
-function sessionKey(code: string) { return `mission_${code}`; }
+function sessionKey(code: string) { return `mission_${code}_${participantSessionId()}`; }
 
 function loadSession(code: string): { phase: Phase; currentScreen: number } {
   try {

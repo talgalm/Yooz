@@ -3,6 +3,7 @@ import { apiFetchWithRetry } from '../utils/api';
 import { flushOfflineQueue } from '../utils/offlineQueue';
 import { newParticipantSessionId, rememberActivityCode, rememberParticipantActivity } from '../utils/participantActivity';
 import { deleteCollageDatabases } from '../components/stations/collageSplitStorage';
+import { forgetAllStorySessions } from '../utils/storySession';
 import { decodeJwtPayload, isStaleDailyResetToken } from '../utils/jwt';
 
 type ConnectionType = 'single' | 'group';
@@ -105,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const persistSession = (newToken: string, activityCode?: string) => {
     const decoded = decodeToken(newToken);
     if (!decoded) return;
+    forgetAllStorySessions();
     newParticipantSessionId();
     deleteCollageDatabases();
     localStorage.setItem('yooz_token', newToken);

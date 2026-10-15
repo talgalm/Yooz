@@ -15,6 +15,7 @@ import { optimizeActivityMediaData } from '../../utils/participantMedia';
 import { getCachedModuleData, setCachedModuleData } from '../../utils/moduleCache';
 import { rememberActivityLanguages } from '../../utils/activityLanguages';
 import { clearStorySession, loadStorySessionRaw, saveStorySessionRaw } from '../../utils/storySession';
+import { participantSessionId } from '../../utils/participantActivity';
 import { texts } from './StoryModulePage.i18n';
 import { GAME_CONSTANTS, type GameResult } from '../../components/games/types';
 import type { OrderSurveySubmitPayload } from '../../components/games/OrderGame';
@@ -1515,7 +1516,7 @@ export default function StoryModulePage() {
             openAnywhere={data.module.openAnywhere === true}
             showStationNames={data.module.showStationNames === true}
             cipherEnabled={data.module.cipherEnabled === true}
-            cipherSeenKey={`yooz_cipher_seen_${code}`}
+            cipherSeenKey={`yooz_cipher_seen_${code}_${participantSessionId()}`}
             onArrive={() => handleNodeTap(currentItemIndex)}
             sessionTexts={t}
             currentPoints={isGroupMap ? (mapRun.run?.score ?? roadmapTotalPoints) : roadmapTotalPoints}

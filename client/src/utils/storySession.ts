@@ -1,5 +1,22 @@
+import { participantSessionId } from './participantActivity';
+
+const STORY_SESSION_PREFIX = 'yooz_session_';
+
 export function storySessionKey(code: string): string {
-  return `yooz_session_${code.trim()}`;
+  return `${STORY_SESSION_PREFIX}${code.trim()}_${participantSessionId()}`;
+}
+
+export function forgetAllStorySessions(): void {
+  for (const store of [localStorage, sessionStorage]) {
+    try {
+      for (let i = store.length - 1; i >= 0; i -= 1) {
+        const key = store.key(i);
+        if (key?.startsWith(STORY_SESSION_PREFIX)) store.removeItem(key);
+      }
+    } catch {
+      continue;
+    }
+  }
 }
 
 export function loadStorySessionRaw(code: string): string | null {
