@@ -148,6 +148,7 @@ async function buildActivityData(
               location?: unknown;
               mapIcon?: unknown;
               cipherChar?: unknown;
+              openAnywhere?: unknown;
             }) => {
               const location = sanitizeLocation(item.location);
               const mapIcon = isMap ? sanitizeMapIcon(item.mapIcon) : undefined;
@@ -163,6 +164,7 @@ async function buildActivityData(
                 ...(location && { location }),
                 ...(mapIcon && { mapIcon }),
                 ...(cipherChar && { cipherChar }),
+                ...(isMap && item.openAnywhere === true && { openAnywhere: true }),
               };
             })
         : [];
@@ -364,6 +366,7 @@ async function populateActivityItems(activities: any[]): Promise<any[]> {
           location: item.location,
           mapIcon: item.mapIcon,
           cipherChar: item.cipherChar,
+          openAnywhere: item.openAnywhere,
         };
       });
     }

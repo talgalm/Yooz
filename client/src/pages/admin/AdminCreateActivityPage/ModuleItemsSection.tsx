@@ -359,6 +359,7 @@ interface ModuleItemsSectionProps {
   onUpdateItemSvg?: (index: number, svgUrl: string) => void;
   onToggleItemFinal?: (index: number) => void;
   onToggleItemRevisitable?: (index: number) => void;
+  onToggleItemOpenAnywhere?: (index: number) => void;
   onConfigureCollageSplit?: (index: number) => void;
   onUpdateItemLocation?: (index: number, location: ItemLocation | undefined) => void;
   onUpdateItemMapIcon?: (index: number, mapIcon: string | undefined) => void;
@@ -380,6 +381,7 @@ export default function ModuleItemsSection({
   onUpdateItemSvg,
   onToggleItemFinal,
   onToggleItemRevisitable,
+  onToggleItemOpenAnywhere,
   onConfigureCollageSplit,
   onUpdateItemLocation,
   onUpdateItemMapIcon,
@@ -584,6 +586,7 @@ export default function ModuleItemsSection({
                   )}
                   {isSpiders && item.isFinal && <StatusBadge tone="neutral">{t.spidersFinal}</StatusBadge>}
                   {item.revisitable && <StatusBadge tone="neutral">{t.revisitable}</StatusBadge>}
+                  {onToggleItemOpenAnywhere && item.openAnywhere && <StatusBadge tone="blue">{t.itemOpenAnywhereBadge}</StatusBadge>}
                   {splitText && <StatusBadge tone="purple">{splitText}</StatusBadge>}
                   <RowButton type="button" onClick={(e) => { e.stopPropagation(); setSettingsItemIndex(index); }}>
                     {t.settingsButton}
@@ -789,6 +792,7 @@ export default function ModuleItemsSection({
           onUpdateSvg={onUpdateItemSvg}
           onToggleFinal={onToggleItemFinal}
           onToggleRevisitable={onToggleItemRevisitable}
+          onToggleOpenAnywhere={onToggleItemOpenAnywhere}
           onConfigureSplit={onConfigureCollageSplit}
           onPreview={() => setPreviewItem(selectedItems[settingsItemIndex])}
           onClose={() => setSettingsItemIndex(null)}

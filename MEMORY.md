@@ -155,7 +155,9 @@ Login config: `loginFields: ('email'|'phoneNumber'|'name')[]`, `emailGoogle?`,
   location? ({lat,lng,address?,placeName?} — where the station physically is: map modules, and group
   activities of any kind for measuring routes, §16. `placeName` is what the map's navigation card
   and arrival card show instead of the station name, e.g. the building the station is in),
-  cipherChar? (map: the character this station reveals in the cipher, §16)}`.
+  cipherChar? (map: the character this station reveals in the cipher, §16),
+  openAnywhere? (map: this one station opens from anywhere - the module's `openAnywhere` for a single
+  station; the wizard offers it only while the module-wide option is off)}`.
 - `missionRef?` (when `type='mission'`), `showStationNumbers?`, `showItemTitleNumbers?`.
 - `routes?: {name, order[]}[]`, `groupRoutes?` (group name → route index), `startLocation?` -
   routes for groups (below). `groupOrders?` (group name → permutation of item indices) is what the

@@ -81,6 +81,7 @@ export interface ModuleItem {
   spiderSvg?: string;
   isFinal?: boolean;
   revisitable?: boolean;
+  openAnywhere?: boolean;
   collageSplit?: CollageSplit;
   location?: ItemLocation;
   mapIcon?: string;

@@ -1,7 +1,7 @@
 const heDistance = (m: number) => (m < 1000 ? `${Math.max(1, Math.round(m / 10) * 10)} מ׳` : `${(m / 1000).toFixed(1)} ק״מ`);
-const heMinutes = (s: number) => `${Math.max(1, Math.round(s / 60))} דק׳`;
+const heMinutes = (s: number) => `${Math.max(1, Math.round(s / 60))} דק׳ הליכה`;
 const enDistance = (m: number) => (m < 1000 ? `${Math.max(1, Math.round(m / 10) * 10)} m` : `${(m / 1000).toFixed(1)} km`);
-const enMinutes = (s: number) => `${Math.max(1, Math.round(s / 60))} min`;
+const enMinutes = (s: number) => `${Math.max(1, Math.round(s / 60))} min walk`;
 const arrivalClock = (s: number, locale: string) => new Date(Date.now() + s * 1000).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
 export const texts = {
@@ -21,8 +21,7 @@ export const texts = {
     mapUnavailable: 'לא הצלחנו לטעון את המפה.',
     noStationLocation: 'לא הוגדר מיקום לתחנה הזו.',
     minutes: heMinutes,
-    distanceAndArrival: (meters: number, seconds: number) => `${heDistance(meters)} · ${arrivalClock(seconds, 'he-IL')}`,
-    exit: 'יציאה',
+    distanceAndArrival: (meters: number, seconds: number) => `${heDistance(meters)} · הגעה ב-${arrivalClock(seconds, 'he-IL')}`,
     openNow: 'פתחו את התחנה עכשיו',
     startStation: 'התחילו את התחנה',
     stationsHere: (count: number) => `${count} תחנות`,
@@ -51,8 +50,7 @@ export const texts = {
     mapUnavailable: 'The map could not be loaded.',
     noStationLocation: 'This station has no location set.',
     minutes: enMinutes,
-    distanceAndArrival: (meters: number, seconds: number) => `${enDistance(meters)} · ${arrivalClock(seconds, 'en-US')}`,
-    exit: 'Exit',
+    distanceAndArrival: (meters: number, seconds: number) => `${enDistance(meters)} · arrive ${arrivalClock(seconds, 'en-US')}`,
     openNow: 'Open the station now',
     startStation: 'Start the station',
     stationsHere: (count: number) => `${count} stations`,

@@ -733,11 +733,6 @@ export default function MapView({
     flyTo(fix, NAVIGATION_ZOOM);
   };
 
-  const stopWalking = () => {
-    setNavigatingFor(null);
-    framedIndex.current = null;
-  };
-
   const pointers = useRef(new Map<number, GesturePoint>());
   const dragged = useRef(false);
   const pinchFrom = useRef<number | null>(null);
@@ -852,6 +847,7 @@ export default function MapView({
     </StationName>
   );
 
+  const opensFromHere = openAnywhere || items[currentItemIndex]?.openAnywhere === true;
   const sheetBody = (() => {
     if (!target) {
       return <WidePill type="button" $color={GOOGLE_BLUE} onClick={onArrive}>{t.openStation}</WidePill>;
@@ -886,9 +882,8 @@ export default function MapView({
                 </>
               ) : distance !== null && <BigTime>{t.fromHere(distance)}</BigTime>}
             </SheetText>
-            {navigating && <Pill type="button" $color={EXIT_RED} onClick={stopWalking}>{t.exit}</Pill>}
           </SheetRow>
-          {openAnywhere
+          {opensFromHere
             ? <Ghost type="button" onClick={onArrive}>{t.openNow}</Ghost>
             : offerOverride && <Ghost type="button" onClick={onArrive}>{t.imHere}</Ghost>}
         </>
@@ -911,7 +906,7 @@ export default function MapView({
           <Pill type="button" $color={GOOGLE_BLUE} disabled={!fix} onClick={startWalking}>{t.start}</Pill>
         </SheetRow>
         {routeFailedFor === currentItemIndex && <Readout>{t.noRoute}</Readout>}
-        {openAnywhere && <Ghost type="button" onClick={onArrive}>{t.openNow}</Ghost>}
+        {opensFromHere && <Ghost type="button" onClick={onArrive}>{t.openNow}</Ghost>}
       </>
     );
   })();
