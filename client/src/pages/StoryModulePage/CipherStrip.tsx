@@ -3,6 +3,7 @@ import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../context/LanguageContext';
 import { REEL_LENGTH, cipherDirection, reelStrip, unseenSlots, type CipherSlot } from '../../utils/cipher';
 import { useCipherSeen } from '../../hooks/useCipherSeen';
+import { playCipherRevealSound, stopCipherRevealSound } from '../../utils/cipherRevealSound';
 import { texts } from './CipherStrip.i18n';
 
 const SPIN_MS = 1400;
@@ -132,7 +133,12 @@ export default function CipherStrip({ slots, seenKey }: Props) {
     const revealed = slots.filter((slot) => slot.revealed).map((slot) => slot.itemIndex);
     const reelEnd = -(REEL_LENGTH - 1) * innerHeight;
     let running: Animation[] = [];
+    let soundTimer: ReturnType<typeof setTimeout> | undefined;
     let stopWaiting: () => void = () => undefined;
+    const silence = () => {
+      clearTimeout(soundTimer);
+      stopCipherRevealSound();
+    };
     let settled = false;
     const settle = () => {
       if (settled) return;
@@ -155,11 +161,13 @@ export default function CipherStrip({ slots, seenKey }: Props) {
         const pop = tiles.current.get(itemIndex)?.animate(LAND_POP, { duration: POP_MS, delay: delay + SPIN_MS - POP_MS / 3, easing: 'ease-out' });
         return pop ? [spin, pop] : [spin];
       });
+      soundTimer = setTimeout(playCipherRevealSound, (order.length - 1) * SPIN_STAGGER_MS);
       Promise.all(running.map((animation) => animation.finished)).then(settle, () => undefined);
     };
     const replayWhenShown = () => {
       running.forEach((animation) => animation.cancel());
       running = [];
+      silence();
       stopWaiting();
       stopWaiting = afterSteadyFrames(SPIN_START_MS, play);
     };
@@ -169,6 +177,7 @@ export default function CipherStrip({ slots, seenKey }: Props) {
     replayWhenShown();
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
+      if (!settled) silence();
       settled = true;
       stopWaiting();
       running.forEach((animation) => animation.cancel());
