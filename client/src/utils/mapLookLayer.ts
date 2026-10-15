@@ -5,13 +5,6 @@ const SEPIA_WASH = 'rgba(176, 112, 48, 0.6)';
 const GRID_MINOR = 'rgba(255, 255, 255, 0.07)';
 const GRID_MAJOR = 'rgba(255, 255, 255, 0.14)';
 
-const COUNTER_ROTATION_EASE = 'transform 0.3s ease-out';
-
-export interface MapLookLayer {
-  setRotation: (degrees: number) => void;
-  remove: () => void;
-}
-
 export interface OverlayLayer {
   background: string;
   size: string;
@@ -45,59 +38,3 @@ export const OVERLAY_LAYERS: Record<MapOverlayKind, OverlayLayer> = {
     opacity: 1,
   },
 };
-
-export function attachMapLookLayer(
-  maps: typeof google.maps,
-  map: google.maps.Map,
-  kind: MapOverlayKind | undefined,
-): MapLookLayer {
-  if (!kind) return { setRotation: () => {}, remove: () => {} };
-  const layer = OVERLAY_LAYERS[kind];
-  const el = document.createElement('div');
-  el.setAttribute('aria-hidden', 'true');
-  Object.assign(el.style, {
-    position: 'absolute',
-    pointerEvents: 'none',
-    backgroundImage: layer.background,
-    backgroundSize: layer.size,
-    opacity: String(layer.opacity),
-    transformOrigin: 'center',
-    transition: COUNTER_ROTATION_EASE,
-  });
-
-  let pane: HTMLElement | null = null;
-  const overlay = new maps.OverlayView();
-  overlay.onAdd = () => {
-    const mapPane = overlay.getPanes()?.mapPane;
-    if (!(mapPane instanceof HTMLElement)) return;
-    pane = mapPane;
-    pane.style.mixBlendMode = layer.blend;
-    pane.appendChild(el);
-  };
-  overlay.draw = () => {
-    const projection = overlay.getProjection();
-    const corner = projection?.fromContainerPixelToLatLng(new maps.Point(0, 0));
-    const origin = corner && projection.fromLatLngToDivPixel(corner);
-    if (!origin) return;
-    const box = map.getDiv();
-    el.style.left = `${origin.x}px`;
-    el.style.top = `${origin.y}px`;
-    el.style.width = `${box.offsetWidth}px`;
-    el.style.height = `${box.offsetHeight}px`;
-  };
-  overlay.onRemove = () => {
-    el.remove();
-    if (pane) pane.style.mixBlendMode = '';
-  };
-  overlay.setMap(map);
-  const follow = map.addListener('bounds_changed', () => overlay.draw());
-  return {
-    setRotation: (degrees) => {
-      el.style.transform = `rotate(${degrees}deg)`;
-    },
-    remove: () => {
-      follow.remove();
-      overlay.setMap(null);
-    },
-  };
-}

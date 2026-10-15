@@ -1219,13 +1219,11 @@ description and address were tried there and dropped as noise. With
 is pure and tested (`utils/walkNavigation.ts`). The map screen carries the regular session header (exit, help, points or timer, leaderboard -
 the same `ActivitySessionHeader` as the roadmap and spiders views, built inside `MapView` from its
 header props, icons in the theme's `getHeaderIconColor`), floating over the full-screen map on a
-progressive blur that fades out downward (`FADE_LAYERS`: three
-`backdrop-filter` layers of rising strength, each masked over a shorter band, plus a faint tint -
-a single masked blur left a visible line; the header's own `backdrop-filter`, which stops
-hard at its 56px edge, is switched off here too; the blur layers bleed 48px past the top and
-side edges, because `backdrop-filter` mirrors content at its own edges and the mirror showed as
-duplicated roads along the top of the screen); the turn banner sits 16px below it (measured with a `ResizeObserver`) and above the blur
-layers in z-order, or the fade washes over it. If Google Maps fails to load, the screen takes the
+dark gradient tint that fades out downward (`TopTint`). There is deliberately no `backdrop-filter`
+on the map screen (the header's own is switched off here too): the three masked blur layers that
+used to sit there re-blurred the moving, rotating map on every frame and made the whole
+navigation flicker on weak phones. The turn banner sits 16px below the header (measured with a
+`ResizeObserver`) and above the tint in z-order. If Google Maps fails to load, the screen takes the
 theme's background (`getThemeKit`/`roadmapImage`) so the header stays readable.
 The screen is styled after Google Maps navigation: a dark-green
 turn banner with a big arrow (one SVG, `DirectionArrow`, in four directions only - every Google manoeuvre
@@ -1234,10 +1232,12 @@ roundabout symbol read as noise) and a "ואז" tab under it for a turn within 1
 (`NextTurn.thenManeuver`; the banner squares its corner above the tab so the two join with no gap), a round
 compass button whose needle tracks north and snaps the map north-up on tap, a round blue "חזרה אליי" button
 under it (shown only when not following), both kept 16px above the bottom sheet by measuring the
-sheet with a `ResizeObserver` (it grows when "הגעתי לתחנה" appears), and a bottom sheet with big minutes, "distance · arrival clock", a red "יציאה"
-and a blue "יוצאים לדרך". SVGs for the needle and locate arrow live in `MapView.icons.tsx`. While navigating, the map turns heading-up: the canvas
-is always drawn as a `150vmax` square (so no corner shows while it turns; it keeps that size in
-overview too, because resizing it on "יוצאים לדרך" made the view jump sideways and back, and
+sheet with a `ResizeObserver` (it grows when "הגעתי לתחנה" appears), and a bottom sheet with "X דק׳ הליכה", "distance · הגעה ב-clock"
+and a blue "יוצאים לדרך" (the red "יציאה" that stopped navigating was removed - nobody needed it). SVGs for the needle and locate arrow live in `MapView.icons.tsx`. While navigating, the map turns heading-up: the canvas
+is always drawn as a square whose side is the screen's diagonal (`rotationCoverSide`, rounded up to
+32px: the smallest square that hides every corner at any angle - it used to be `150vmax`, nearly
+twice the pixels on a phone, a heavy layer for weak phones to turn). It keeps that size in
+overview too and only ever grows, because resizing it on "יוצאים לדרך" made the view jump sideways and back, and
 `overviewPadding()` adds the hidden margins, the header and the sheet to `fitBounds`) and rotated by CSS against the compass
 heading (unwrapped through `angleDelta`, 0.3s ease), so your arrow always points up. The map
 stays rotated while you move it: during navigation a transparent `Gestures` layer takes the
@@ -1252,7 +1252,10 @@ vector map with a `mapId`, which would switch off the JSON map styles - hence CS
 they are not Google markers but HTML pins (`attachUprightPin` in `utils/mapPins.ts`, an
 `OverlayView` in `markerLayer` - in `overlayLayer` the route drew over them - same sizes and
 colours via `stationPinStyle`) counter-rotated by
-the same angle and ease as the canvas, with an optional name label under the circle
+the same angle and ease as the canvas (the pins effect keys on the completed list's content,
+`completedKey`, never its array identity: the parent builds a new array on every render, and
+re-creating every pin on each timer tick and GPS fix was the worst of the navigation flicker),
+with an optional name label under the circle
 (`module.showStationNames`; participant map only - the admin preview keeps plain markers); on arrival the next station's pin grows 1.2x
 (`stationPinStyle(..., arrived)`), moves to `floatPane` above your arrow (you are standing on it,
 so the arrow and its white disc would hide it) and slowly grows and shrinks (`setBreathing`, a
@@ -1309,19 +1312,19 @@ enums and `sanitizeMapDesign`) and `client/src/utils/mapDesign.ts` (the Google s
 `mapDesign.test.ts` fails if they drift. The untouched default (`standard`, nothing hidden) is
 never stored, so an activity without the field looks exactly as map activities always did.
 The looks are Google's classic JSON `styles` (recolouring roads, water, parks, labels) plus, for
-`vintage`/`wildWest`/`treasure`, a parchment texture (`public/images/map/paper-grain.svg`). The texture lives **inside** the Google map, in the `mapPane` above the tiles
-and below the pins and route (`utils/mapLookLayer.ts::attachMapLookLayer`, an `OverlayView` that
-re-covers the viewport on every `bounds_changed`), so it tints the streets but never the
-stations. The blend mode is set on the pane itself, not the texture div: panes are stacking
-contexts, so a blended child would only blend with the empty pane. A CSS layer over the whole
-map element would tint the pins too, which is why `MapLookOverlay` is used only for the small
-style swatches, which are not maps. `wildWest` is a grey map under a brown multiply wash (sepia, like an old photo), and
+`vintage`/`wildWest`/`treasure`, a parchment texture (`public/images/map/paper-grain.svg`). The texture is a
+fixed screen layer over the map (`MapLookOverlay`, the same component as the style swatches and
+the admin preview), above the rotating canvas and below the header, banner and sheet, so it
+stays still while the map turns and pans. It used to live inside the map's `mapPane`, counter-
+rotated and re-placed on every `bounds_changed`: on weak phones the two rotations drifted apart
+(the "clouds" visibly turned) and the per-frame repositioning flickered. The price of the fixed
+layer is that the pins get the texture too. `wildWest` is a grey map under a brown multiply wash (sepia, like an old photo), and
 `blueprint` gets a white drafting grid instead of paper (`grid` overlay, normal blending). Each look has its own bold pin colours (`MapLook.pins: {next, done}`), picked to stand out on
 that look's background. The "you" marker takes the look's route colour, like Google's blue dot on
-a blue route, and is created with `optimized: false`: an optimised legacy marker is drawn on a
-canvas below the texture pane and came out tinted. While navigating, the arrow sits on a 75% white disc
-(`meHaloIcon`, a second marker) and is anchored at its centre (`ARROW_CENTER_Y`), not its tip,
-so it turns in place. Markers are built in `utils/mapPins.ts`, shared by the participant map
+a blue route. It is an HTML element, not a Google marker (`attachMeArrow` in `utils/mapPins.ts`): a
+dot without a heading, and while navigating an arrow on a 75% white disc that turns with a CSS
+`transform` and the canvas's own ease, so it keeps pointing up on screen. A Google symbol marker
+had to be rebuilt (`setIcon`) on every compass reading, up to ten times a second. Markers are built in `utils/mapPins.ts`, shared by the participant map
 and the admin preview: the next station is a bigger numbered circle (`nextStationMarker`; on the participant map
 it grows and shrinks on arrival) with soft waves rippling out from it (`attachPulse`: two staggered rings, one every ~1.8s (three
 every 0.8s was too busy),

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 import { DarkHeaderActionIconButton } from '../../components/styled';
 import { loadGoogleMaps, isMapsAvailable, onMapsAuthFailure } from '../../utils/googleMaps';
@@ -15,8 +15,8 @@ import ActivitySessionHeader, { SessionHeaderTrophyIcon } from './ActivitySessio
 import { getHeaderIconColor, getThemeKit } from './roadmapThemes';
 import { teamMarkerColor, teamMarkerLabel } from './teamMarker';
 import { lookFor, mapOptionsFor, routeLineOptions, type MapDesign } from '../../utils/mapDesign';
-import { PIN_LAYERS, attachPulse, attachUprightPin, meHaloIcon, meMarkerIcon, stationPinStyle, type UprightPin } from '../../utils/mapPins';
-import { attachMapLookLayer, type MapLookLayer } from '../../utils/mapLookLayer';
+import { PIN_LAYERS, attachMeArrow, attachPulse, attachUprightPin, stationPinStyle, type MeArrow, type UprightPin } from '../../utils/mapPins';
+import MapLookOverlay from '../../components/MapLookOverlay';
 import { maneuverDirection, nextTurn, offRouteMeters, remainingWalk, type WalkRoute } from '../../utils/walkNavigation';
 import { useTranslations } from '../../context/LanguageContext';
 import { laterAtSamePlace, opensRightAfter, placeGroupEnd, placeOf } from '../../utils/mapChain';
@@ -29,7 +29,11 @@ import type { CustomThemeData, MapGroupMarker, ModuleItemData } from './types';
 
 const Wrap = styled('div')({ position: 'relative', width: '100%', height: '100dvh', overflow: 'hidden' });
 const Canvas = styled('div')({ position: 'absolute', inset: 0 });
-const ROTATING_CANVAS_SIZE = '150vmax';
+const COVER_STEP_PX = 32;
+
+function rotationCoverSide(width: number, height: number): number {
+  return Math.ceil(Math.hypot(width, height) / COVER_STEP_PX) * COVER_STEP_PX;
+}
 const ROTATION_EASE = 'transform 0.3s ease-out';
 
 const Gestures = styled('div')({ position: 'absolute', inset: 0, zIndex: 2, touchAction: 'none' });
@@ -158,25 +162,15 @@ const Ghost = styled('button')({
 const TopChrome = styled('div')({ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 4 });
 
 const FADE_EXTRA_PX = 70;
-const FADE_LAYERS = [
-  { blurPx: 2, mask: 'linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%)' },
-  { blurPx: 6, mask: 'linear-gradient(to bottom, #000 0%, #000 35%, transparent 75%)' },
-  { blurPx: 12, mask: 'linear-gradient(to bottom, #000 0%, #000 20%, transparent 55%)' },
-];
 
-const BLUR_BLEED_PX = 48;
-
-const TopFadeLayer = styled('div')({
+const TopTint = styled('div')({
   position: 'absolute',
-  top: -BLUR_BLEED_PX,
-  left: -BLUR_BLEED_PX,
-  right: -BLUR_BLEED_PX,
+  top: 0,
+  left: 0,
+  right: 0,
   bottom: -FADE_EXTRA_PX,
   pointerEvents: 'none',
-});
-
-const TopTint = styled(TopFadeLayer)({
-  background: 'linear-gradient(to bottom, rgba(18, 22, 32, 0.28) 0%, rgba(18, 22, 32, 0.12) 50%, rgba(18, 22, 32, 0) 100%)',
+  background: 'linear-gradient(to bottom, rgba(18, 22, 32, 0.42) 0%, rgba(18, 22, 32, 0.2) 50%, rgba(18, 22, 32, 0) 100%)',
 });
 
 const TopContent = styled('div')({
@@ -376,12 +370,10 @@ export default function MapView({
   const topRef = useRef<HTMLDivElement | null>(null);
   const [topHeight, setTopHeight] = useState(0);
   const mapRef = useRef<google.maps.Map | null>(null);
-  const meMarker = useRef<google.maps.Marker | null>(null);
-  const meHalo = useRef<google.maps.Marker | null>(null);
+  const meArrow = useRef<MeArrow | null>(null);
   const stationPins = useRef<UprightPin[]>([]);
   const groupPins = useRef<Map<string, UprightPin>>(new Map());
   const spinRef = useRef(0);
-  const lookLayer = useRef<MapLookLayer | null>(null);
   const renderer = useRef<google.maps.DirectionsRenderer | null>(null);
   const routeRef = useRef<LoadedRoute | null>(null);
   const routeRequestedAt = useRef(0);
@@ -420,6 +412,20 @@ export default function MapView({
   const cipher = cipherEnabled ? cipherSlots(items, completedIndices) : [];
 
   useEffect(() => onMapsAuthFailure(() => setMapsError(true)), []);
+
+  const [canvasSide, setCanvasSide] = useState(() => rotationCoverSide(window.innerWidth, window.innerHeight));
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap || typeof ResizeObserver === 'undefined') return;
+    let measured = false;
+    const observer = new ResizeObserver(() => {
+      const needed = rotationCoverSide(wrap.clientWidth, wrap.clientHeight);
+      setCanvasSide((was) => (measured ? Math.max(was, needed) : needed));
+      measured = true;
+    });
+    observer.observe(wrap);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const sheet = sheetRef.current;
@@ -473,29 +479,15 @@ export default function MapView({
   }, []);
 
   useEffect(() => {
-    const maps = window.google?.maps;
-    if (!maps || !mapRef.current || !mapReady) return;
-    const layer = attachMapLookLayer(maps, mapRef.current, look.overlay);
-    layer.setRotation(spinRef.current);
-    lookLayer.current = layer;
-    return () => {
-      layer.remove();
-      lookLayer.current = null;
-    };
-  }, [mapReady, look.overlay]);
-
-  useLayoutEffect(() => {
-    lookLayer.current?.setRotation(mapSpin);
-  }, [mapSpin]);
-
-  useEffect(() => {
     mapRef.current?.setOptions(mapOptionsFor(design));
     const shown = renderer.current?.getDirections();
     renderer.current?.setOptions({ polylineOptions: routeLineOptions(lookFor(design)) });
     if (shown) renderer.current?.setDirections(shown);
   }, [design]);
 
+  const completedKey = completedIndices.join(',');
   useEffect(() => {
+    const done = new Set(completedKey ? completedKey.split(',').map(Number) : []);
     const maps = window.google?.maps;
     const map = mapRef.current;
     if (!maps || !map || !mapReady) return;
@@ -506,8 +498,8 @@ export default function MapView({
       const where = item.location ?? (isNext ? placeOf(items, i) : undefined);
       if (!where) return [];
       const groupEnd = isNext ? i : placeGroupEnd(items, i);
-      const wholeGroupDone = groupEnd > i && items.slice(i, groupEnd + 1).every((_, k) => completedIndices.includes(i + k));
-      if (!isNext && !completedIndices.includes(i)) return [];
+      const wholeGroupDone = groupEnd > i && items.slice(i, groupEnd + 1).every((_, k) => done.has(i + k));
+      if (!isNext && !done.has(i)) return [];
       const pin = attachUprightPin(maps, map, {
         position: where,
         style: stationPinStyle(look, isNext, arrived, wholeGroupDone),
@@ -523,7 +515,7 @@ export default function MapView({
     });
     stationPins.current = pins;
     return () => pins.forEach((pin) => pin.remove());
-  }, [items, currentItemIndex, completedIndices, arrived, look, mapReady, showStationNames, t]);
+  }, [items, currentItemIndex, completedKey, arrived, look, mapReady, showStationNames, t]);
 
   useEffect(() => {
     const maps = window.google?.maps;
@@ -544,31 +536,18 @@ export default function MapView({
 
   useEffect(() => {
     const maps = window.google?.maps;
-    if (!maps || !mapRef.current || !mapReady || !fix) return;
-    const meIcon = meMarkerIcon(maps, look, facing);
-    if (!meMarker.current) {
-      meMarker.current = new maps.Marker({
-        map: mapRef.current,
-        title: t.you,
-        icon: meIcon,
-        zIndex: PIN_LAYERS.me,
-        optimized: false,
-      });
-    }
-    meMarker.current.setIcon(meIcon);
-    meMarker.current.setPosition(fix);
-    if (!meHalo.current) {
-      meHalo.current = new maps.Marker({
-        map: mapRef.current,
-        icon: meHaloIcon(maps),
-        zIndex: PIN_LAYERS.me - 1,
-        optimized: false,
-        clickable: false,
-      });
-    }
-    meHalo.current.setPosition(fix);
-    meHalo.current.setVisible(facing !== null);
-  }, [fix, t.you, look, facing, mapReady]);
+    if (!maps || !mapRef.current || !mapReady) return;
+    const arrow = attachMeArrow(maps, mapRef.current, look.routeColor, t.you);
+    meArrow.current = arrow;
+    return () => {
+      arrow.remove();
+      meArrow.current = null;
+    };
+  }, [mapReady, look.routeColor, t.you]);
+
+  useEffect(() => {
+    meArrow.current?.update(fix ?? null, facing);
+  }, [fix, facing, mapReady, look.routeColor]);
 
   useEffect(() => {
     const maps = window.google?.maps;
@@ -952,13 +931,14 @@ export default function MapView({
             inset: 'auto',
             left: '50%',
             top: '50%',
-            width: ROTATING_CANVAS_SIZE,
-            height: ROTATING_CANVAS_SIZE,
+            width: canvasSide,
+            height: canvasSide,
             transform: `translate(-50%, -50%) rotate(${-mapSpin}deg)`,
             transition: ROTATION_EASE,
           }}
         />
       )}
+      {!mapsError && <MapLookOverlay kind={look.overlay} />}
 
       {navigating && !mapsError && (
         <Gestures
@@ -971,18 +951,6 @@ export default function MapView({
       )}
 
       <TopChrome ref={topRef}>
-        {FADE_LAYERS.map((layer) => (
-          <TopFadeLayer
-            key={layer.blurPx}
-            aria-hidden
-            style={{
-              backdropFilter: `blur(${layer.blurPx}px)`,
-              WebkitBackdropFilter: `blur(${layer.blurPx}px)`,
-              maskImage: layer.mask,
-              WebkitMaskImage: layer.mask,
-            }}
-          />
-        ))}
         <TopTint aria-hidden />
         <TopContent>
           {header}
