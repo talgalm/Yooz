@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   visibleOrderedIndices,
-  nextIncompleteIndex,
   sanitizeLocation,
   sanitizeProximityMeters,
   sanitizeGroupOrders,
@@ -47,12 +46,6 @@ test('a stale order degrades instead of losing stations', () => {
 test('an order cannot smuggle in an item the group filter hid', () => {
   const m = { ...(items(undefined, ['blue']) as object), groupOrders: { red: [1, 0] } } as never;
   assert.deepEqual(visibleOrderedIndices(m, 'red'), [0]);
-});
-
-test('nextIncompleteIndex walks the gaps, then reports done', () => {
-  assert.equal(nextIncompleteIndex([], 3), 0);
-  assert.equal(nextIncompleteIndex([0, 2], 3), 1);
-  assert.equal(nextIncompleteIndex([0, 1, 2], 3), 3);
 });
 
 test('a station location keeps real coordinates and a trimmed address', () => {

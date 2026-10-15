@@ -185,7 +185,6 @@ export interface GroupLeaderboardEntry {
   name: string;
   score: number;
   members?: number;
-  completed?: number;
 }
 
 export type Phase = 'roadmap' | 'playing' | 'summary' | 'finish' | 'leaderboard';
@@ -208,18 +207,6 @@ export interface ConfettiPiece {
 
 export interface MapGroupMarker {
   groupName: string;
-  score: number;
-  completedCount: number;
-  totalItems: number;
   position?: LatLng;
   positionAt?: string;
-}
-
-export interface MapRunState {
-  groupName: string;
-  completedIndices: number[];
-  currentItemIndex: number;
-  score: number;
-  totalItems: number;
-  finished: boolean;
 }

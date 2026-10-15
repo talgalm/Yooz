@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { ActivityConfigResponse, JwtPayload } from '../types';
 import { JWT_SECRET } from '../config';
 import { authenticateToken } from '../middleware/auth';
-import { Activity, Report, Game, Station, Mission, CustomTheme, MapGroupState } from '../models';
+import { Activity, Report, Game, Station, Mission, CustomTheme } from '../models';
 import mongoose from 'mongoose';
 import { stationIndexFor } from '../utils/stationIndex';
 import { subscribe, sendLockEvent } from '../utils/lockBroadcaster';
@@ -13,7 +13,7 @@ import { getGroupStatus } from '../utils/groupStatus';
 import { ownReportFilter } from '../utils/participantAuth';
 import { organizerContactsOf } from '../utils/organizerContacts';
 import { resolveCeiling, normalizeScore } from '../utils/scoreNormalization';
-import { startOfTodayIsrael, israelDayString } from '../utils/israelTime';
+import { startOfTodayIsrael } from '../utils/israelTime';
 import { readLang } from '../utils/requestLang';
 import { translateContent, applyTranslations } from '../services/contentTranslation';
 import { visibleOrderedIndices, popupsForServedItems, popupVisibleTo, collageVisitRoles } from '../utils/moduleItems';
@@ -452,18 +452,7 @@ router.get('/:code/leaderboard', async (req: Request<{ code: string }>, res: Res
   }
 
   let groups;
-  if (activity.module?.type === 'map') {
-    const runs = await MapGroupState.find(
-      { activityId: activity._id, activityDay: israelDayString() },
-      { groupName: 1, score: 1, completedIndices: 1 },
-    ).sort({ score: -1 }).lean();
-    groups = runs.map((r, i) => ({
-      rank: i + 1,
-      name: r.groupName,
-      score: r.score || 0,
-      completed: (r.completedIndices || []).length,
-    }));
-  } else if (activity.connectionType === 'group') {
+  if (activity.connectionType === 'group') {
     const agg = await Report.aggregate([
       { $match: { activityId: activity._id, group: { $type: 'string', $ne: '' }, 'data.totalScore': { $exists: true }, ...dateFilter } },
       { $group: { _id: '$group', score: { $sum: '$data.totalScore' }, members: { $sum: 1 } } },

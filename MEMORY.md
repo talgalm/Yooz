@@ -370,16 +370,15 @@ lets async handlers throw. `/api/health` (DB check) and `/api/load-status` are p
 - `GET /:code/lock-stream` — SSE of `lockedFromIndex` (manager live lock).
 - `GET /:code/leaderboard` — points/time/group standings; respects `leaderboardCurrentDayOnly`
   (forced on by `dailyReset`), `leaderboardAsGrade`; group standings = summed member scores
-  (Borda not used here) — except map modules, which rank teams by today's `MapGroupState.score`. Row cap is 50, or 500 for group activities — the participant view
+  (Borda not used here), map modules included. Row cap is 50, or 500 for group activities — the participant view
   lists every teammate of the viewer's own group, so the cap must clear all groups combined.
 - `PATCH /:code/progress` *(participant JWT)* — incremental per-item progress save.
 - `POST /:code/scores` *(participant JWT)* — final score submit → completes the Report.
 - `DELETE /:code/my-report` / `GET /:code/my-progress` *(participant JWT)* — replay support.
 - `GET /:code/order-survey/status` *(participant JWT)* — live order-survey phase.
-- **Map runs** (mounted via `mapRunRouter`, all *participant JWT*, all group-scoped — §16):
+- **Map team markers** (mounted via `mapRunRouter`, all *participant JWT*, all group-scoped - §16):
   `POST /:code/map/position` (report a GPS fix; server decides if you're the group's broadcaster),
-  `GET /:code/map/state` (own group's shared progress + every *other* group's marker/score),
-  `POST /:code/map/complete` (record a finished station for the whole team; idempotent).
+  `GET /:code/map/state` (every *other* group's position from the last 5 minutes). No progress lives here.
 - `POST /:code/mission-event`, `POST /:code/share-event` — analytics counters.
 - **Groups** (mounted via `activityGroupsRouter`): `GET /:code/groups/check-name`,
   `/today`, `/by-name`, `/by-token/:token`, `/status` *(JWT)*, `POST /:code/groups` (create). §8.
@@ -1113,8 +1112,10 @@ present view (`OrderSurveyPresentPage` / `manager/present`).
 A **team** walks to real places. Same shape as `spiders` (a module type, not a new model): the
 roadmap is swapped for a map, the advance logic changes, everything else — games, stations,
 popups, hints, `PlayingPhase` — is untouched and works inside a map activity for free.
-A **solo** (single-login) map works too: the phone still tracks GPS and walks the stations in
-order, but progress is the ordinary story session — none of the team calls below are made.
+Progress is always per participant, in a team or solo: the ordinary story session plus the
+participant's own `Report` (`/progress`, `/my-progress`), exactly as on a roadmap. There is no team
+progress - someone who joins a team mid-day starts at station 1, and their points add to the team's
+sum. A solo (single-login) map makes none of the team-marker calls below.
 
 **Config.** Per item: `location {lat,lng,address?}` — on the *module item*, never on the Station,
 because a Station is a reusable template that can appear in several activities at different
@@ -1130,19 +1131,15 @@ non-finite or out-of-range coordinates, `sanitizeProximityMeters` clamps to 5-20
 `sanitizeGroupOrders` keeps distinct in-range indices. The admin read returns `location` too,
 so a reopened activity keeps its pins (it used to drop all three on every save).
 
-**Shared group progress.** `MapGroupState` (`map_group_states`), day-scoped and unique on
-`{activityId, activityDay, groupName}`. Whoever reaches a station first completes it **for the
-whole team**; teammates pick the new target up on their next poll. `completedIndices` is the only
-progress state — the current target is *derived* (`nextIncompleteIndex`), never stored, so two
-simultaneous completions can't race a counter. `POST /map/complete` filters on
-`completedIndices: {$ne: itemIndex}`, so a second caller scores nothing (a repeat is a 200 no-op);
-it refuses any station but the team's current one (409 `not_current_station`) and a non-finite
-score (400). The points themselves are client-reported, as in `/scores`. Per-participant
-`Report`s are untouched: analytics, exports and the individual leaderboard keep working as before.
-Progress is keyed by day on purpose — tomorrow's run starts clean, as self-service teams do.
-Going live (`services/activityReset.ts::wipeActivityData`) deletes the activity's
-`MapGroupState`s along with its reports, so test walks don't carry into the real day; deleting
-the activity (`DELETE /api/admin/activities/:id`) removes them too.
+**No shared progress.** Until 2026-10-15 a team shared one run (`MapGroupState.completedIndices`
+and `score`, `POST /map/complete`): whoever reached a station first completed it for the whole
+team, and every new login in that group landed on the team's current station, even after clearing
+the phone. Removed - each member walks and scores their own run, and the team's leaderboard score is
+its members' summed `data.totalScore`, as in every group activity. `MapGroupState`
+(`map_group_states`, day-scoped, unique on `{activityId, activityDay, groupName}`) now holds only
+the team's map marker; old documents still carry the dropped fields, unread. Going live
+(`services/activityReset.ts::wipeActivityData`) and deleting the activity
+(`DELETE /api/admin/activities/:id`) remove them with the reports.
 
 **One marker per team.** A group broadcasts one position — the first member to post claims the
 carrier slot, with a 2-minute staleness takeover so a dropped phone doesn't freeze the marker.
@@ -1172,7 +1169,7 @@ the participant reaches it (`MapView`'s `onReachStation`, the same proximity tha
 card), so they never read like the last station's. Opening it without arriving ("open now", "I'm
 here", no GPS) shows them then (`handleNodeTap`). Both run from one effect on the roadmap phase that
 waits for the guidelines and any open popup. After the last station the `afterItem` and `endOfActivity` popups show on the map
-before the finish screen (`mapEndingRef` holds the group run's own jump to it). Once every station of a place is done (`placeGroupEnd`), its pin reads
+before the finish screen (`mapEndingRef` keeps the map's popup effect quiet meanwhile). Once every station of a place is done (`placeGroupEnd`), its pin reads
 the range ("1-3", a pill as tall as the next-station circle) with a "3 תחנות" label under it; the next
 station always shows only its own number. While the next station is a later station of a place (back on the map
 mid-place after a reload, or behind the manager lock), that place's done first station gets no pin of its own
@@ -1185,18 +1182,17 @@ the participant is within `proximityMeters + 50` and GPS has not confirmed arriv
 steady reading off beside a building). It used to also appear beyond 40m and whenever location
 was blocked, which let anyone open a station from anywhere - removed 2026-09-28. Blocked
 location now just shows the warning. When Google Maps fails to load, the fallback panel still
-runs the same GPS walk (`walkPanel`), since GPS does not need the map. The server does not
-check position on `/map/complete`; the rule is client-side. Once the team has progress the walk counts as
-started — nobody presses Start twice. Covered by `geo.test.ts`.
+runs the same GPS walk (`walkPanel`), since GPS does not need the map. The server never
+checks position; the rule is client-side. Once the participant has progress the walk counts as
+started - nobody presses Start twice. Covered by `geo.test.ts`.
 
 **Client.** `MapView.tsx` (sibling of `RoadmapView`/`SpidersView`), `hooks/useMapRun.ts` (GPS
 watch + 10s poll + position push), `utils/googleMaps.ts` (script-tag loader, no npm wrapper —
 the JS API already ships map, geocoder and walking directions). Needs `VITE_GOOGLE_MAPS_KEY` (§2);
 without it — or when Google rejects it for the page's domain (`window.gm_authFailure`,
 `onMapsAuthFailure`) — the map degrades to a panel with the station, its address and an open
-button. A failed or empty walking route is ignored; the pins still show the way. A team's header shows its
-shared `MapGroupState.score` - the number the leaderboard ranks teams by - and a solo player's
-their own points. The walk is Google-Maps-like, per station: an **overview** (route from
+button. A failed or empty walking route is ignored; the pins still show the way. The header shows the
+participant's own points, in a team or solo. The walk is Google-Maps-like, per station: an **overview** (route from
 you to the station, framed with your dot and the station, "8 min walk · 560 m", "יוצאים לדרך"),
 then **navigation** (the camera flies in - a smooth `panTo`, then one zoom level at a time via
 `flyTo`, since a raster map only animates single-level zooms and a jump to 18 snapped - to zoom 18, the camera follows you until you drag - then "חזרה אליי" brings it
@@ -1275,8 +1271,7 @@ drops anything longer (`sanitizeCipherChar`), and serves `cipherChar` and `ciphe
 the switch is on, so turning it off keeps the characters for later. On the map the cipher is
 always on screen, in the floating header under the session buttons (`CipherStrip.tsx`, on the
 same fading blur): dark characters on white rounded tiles (hidden ones are translucent white with a white "?"), one per station with a character, in
-station order; a slot fills when its station is in `completedIndices` (a team shares its run, so a
-teammate's station fills it too). A small white caption above the tiles reads "הצופן", and "פיצחתם את הצופן!" once every tile is full.
+station order; a slot fills when the participant has done its station (`completedIndices`). A small white caption above the tiles reads "הצופן", and "פיצחתם את הצופן!" once every tile is full.
 A lock icon beside it and a frosted bar around the tiles (label on the side) were tried and dropped. A modal behind a lock button was tried first and rejected - the
 code has to be visible all the time. Stations revealed since the strip last showed (seen indices in
 `localStorage`, `yooz_cipher_seen_<code>`, `hooks/useCipherSeen.ts`) spin in like a slot-machine

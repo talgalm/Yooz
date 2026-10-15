@@ -759,7 +759,7 @@ export default function StoryModulePage() {
     setPhase('roadmap');
   };
 
-  const advanceToNextItem = (justScored = 0) => {
+  const advanceToNextItem = () => {
     if (!data) return;
     if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const completedIdx = currentItemIndex;
@@ -794,14 +794,7 @@ export default function StoryModulePage() {
         setCurrentItemIndex(nextIndex);
         setPhase('roadmap');
       };
-      if (!isGroupMap) {
-        settle(completedIdx + 1 >= data.module.items.length, completedIdx + 1);
-        return;
-      }
-      void mapRun.complete(completedIdx, justScored).then((next) => {
-        if (next) settle(next.finished, next.currentItemIndex);
-        else setPhase('roadmap');
-      });
+      settle(completedIdx + 1 >= data.module.items.length, completedIdx + 1);
       return;
     }
 
@@ -835,15 +828,6 @@ export default function StoryModulePage() {
       });
     }
   };
-
-  useEffect(() => {
-    if (!isGroupMap || !mapRun.run || phase !== 'roadmap') return;
-    if (mapRun.run.finished) {
-      if (!mapEndingRef.current) setPhase('finish');
-      return;
-    }
-    setCurrentItemIndex(mapRun.run.currentItemIndex);
-  }, [isGroupMap, mapRun.run, phase]);
 
   useEffect(() => {
     if (!isMap || phase !== 'roadmap' || !progressChecked || showGuidelines || currentPopup || mapEndingRef.current) return;
@@ -1013,7 +997,7 @@ export default function StoryModulePage() {
       });
     }
 
-    advanceToNextItem(result.score);
+    advanceToNextItem();
   };
 
   const handleOrderSurveySubmit = async (payload: OrderSurveySubmitPayload) => {
@@ -1510,10 +1494,7 @@ export default function StoryModulePage() {
           <MapView
             items={data.module.items}
             currentItemIndex={currentItemIndex}
-            completedIndices={
-              mapRun.run?.completedIndices
-              ?? Array.from({ length: currentItemIndex }, (_, i) => i)
-            }
+            completedIndices={Array.from({ length: currentItemIndex }, (_, i) => i)}
             others={mapRun.others}
             fix={mapRun.fix}
             geoError={mapRun.geoError}
@@ -1526,8 +1507,8 @@ export default function StoryModulePage() {
             onArrive={() => handleNodeTap(currentItemIndex)}
             onReachStation={setReachedIndex}
             sessionTexts={t}
-            currentPoints={isGroupMap ? (mapRun.run?.score ?? roadmapTotalPoints) : roadmapTotalPoints}
-            pointsRoll={isGroupMap ? null : pointsRoll}
+            currentPoints={roadmapTotalPoints}
+            pointsRoll={pointsRoll}
             onPointsRollComplete={handlePointsRollComplete}
             onLogout={doExit}
             onViewLeaderboard={handleViewLeaderboard}
