@@ -7,6 +7,7 @@ import {
   bearingDegrees,
   distanceMeters,
   hasArrived,
+  reachMeters,
   DEFAULT_PROXIMITY_METERS,
   type Fix,
   type LatLng,
@@ -262,6 +263,7 @@ const RecenterButton = styled(RoundButton)({
 });
 
 const OVERRIDE_NEAR_EXTRA_M = 50;
+const NEAR_EXACT_DISTANCE_M = 100;
 const BUTTONS_ABOVE_SHEET_PX = 16;
 const BANNER_BELOW_HEADER_PX = 16;
 const OVERRIDE_AFTER_MS = 30_000;
@@ -396,13 +398,16 @@ export default function MapView({
   const [overrideDueAt, setOverrideDueAt] = useState<number | null>(null);
 
   const target = items[currentItemIndex]?.location ?? placeOf(items, currentItemIndex);
-  const distance = fix && target ? distanceMeters(fix, target) : null;
   const navigating = navigatingFor === currentItemIndex;
   const arrived = arrivedAt === currentItemIndex;
   useEffect(() => {
     if (arrived) onReachStation?.(currentItemIndex);
   }, [arrived, currentItemIndex, onReachStation]);
   const currentRoute = route?.forIndex === currentItemIndex ? route : null;
+  const walkEnd = currentRoute?.walk.steps[currentRoute.walk.steps.length - 1]?.end ?? null;
+  const distance = fix && target ? reachMeters(fix, target, walkEnd) : null;
+  const nearStation = distance !== null && distance < NEAR_EXACT_DISTANCE_M;
+  const walkEndGap = walkEnd && target ? distanceMeters(walkEnd, target) : 0;
   const compass = useCompassHeading(navigating);
   const facing = navigating ? (compass.heading ?? heading) : null;
   const headingUp = navigating && compassSteering && facing !== null;
@@ -664,8 +669,8 @@ export default function MapView({
 
   useEffect(() => {
     if (!fix || !target) return;
-    setArrivedAt((was) => (hasArrived(fix, target, proximityMeters, was === currentItemIndex) ? currentItemIndex : null));
-  }, [fix, target, proximityMeters, currentItemIndex]);
+    setArrivedAt((was) => (hasArrived(fix, target, proximityMeters, was === currentItemIndex, walkEnd) ? currentItemIndex : null));
+  }, [fix, target, proximityMeters, currentItemIndex, walkEnd]);
 
   useEffect(() => {
     if (!navigating && !mapsError) return;
@@ -862,7 +867,7 @@ export default function MapView({
               {left ? (
                 <>
                   <BigTime>{t.minutes(left.durationS)}</BigTime>
-                  <EtaLine>{t.distanceAndArrival(left.distanceM, left.durationS)}</EtaLine>
+                  <EtaLine>{t.distanceAndArrival(nearStation ? distance : left.distanceM + walkEndGap, left.durationS)}</EtaLine>
                 </>
               ) : distance !== null && <BigTime>{t.fromHere(distance)}</BigTime>}
             </SheetText>
@@ -881,7 +886,7 @@ export default function MapView({
             {currentRoute ? (
               <>
                 <BigTime>{t.minutes(currentRoute.walk.durationS)}</BigTime>
-                <EtaLine>{t.distanceAndArrival(currentRoute.walk.distanceM, currentRoute.walk.durationS)}</EtaLine>
+                <EtaLine>{t.distanceAndArrival(nearStation ? distance : currentRoute.walk.distanceM, currentRoute.walk.durationS)}</EtaLine>
               </>
             ) : fix && routeFailedFor !== currentItemIndex
               ? <Readout>{t.routing}</Readout>

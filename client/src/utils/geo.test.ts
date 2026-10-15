@@ -7,6 +7,7 @@ import {
   offsetMeters,
   effectiveDistance,
   hasArrived,
+  reachMeters,
   DEFAULT_PROXIMITY_METERS,
   type Fix,
   pathMeters,
@@ -60,6 +61,24 @@ test('hysteresis keeps an opened station open while the fix jitters', () => {
   assert.ok(!hasArrived(edge, station, 10, false));
   assert.ok(hasArrived(edge, station, 10, true));
   assert.ok(!hasArrived(at(40, 0, 0), station, 10, true));
+});
+
+test('where the walking route ends next to the station counts as the station', () => {
+  const walkEnd = offsetMeters(station, 30, 0);
+  const atWalkEnd = { ...offsetMeters(station, 32, 0), accuracy: 3 };
+  assert.ok(!hasArrived(atWalkEnd, station));
+  assert.ok(hasArrived(atWalkEnd, station, DEFAULT_PROXIMITY_METERS, false, walkEnd));
+  assert.equal(Math.round(reachMeters(atWalkEnd, station, walkEnd)), 2);
+  const farWalkEnd = offsetMeters(station, 80, 0);
+  const atFarWalkEnd = { ...offsetMeters(station, 80, 0), accuracy: 3 };
+  assert.ok(!hasArrived(atFarWalkEnd, station, DEFAULT_PROXIMITY_METERS, false, farWalkEnd));
+});
+
+test('a distance on screen at or under the radius always opens the station', () => {
+  for (const meters of [0, 4, 9, 10]) {
+    const fix = { ...offsetMeters(station, meters, 0), accuracy: 2 };
+    assert.ok(hasArrived(fix, station, 10), `${meters} m`);
+  }
 });
 
 test('a path adds up its legs in order', () => {

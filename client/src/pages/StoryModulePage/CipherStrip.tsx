@@ -52,8 +52,8 @@ const Wrap = styled('div')({
 
 const Caption = styled('div')({
   color: '#ffffff',
-  fontSize: 13,
-  fontWeight: 700,
+  fontSize: 16,
+  fontWeight: 800,
   textShadow: '0 1px 3px rgba(0,0,0,0.5)',
 });
 
@@ -94,6 +94,7 @@ const Glyph = styled('div', noForward)<{ $h: number; $font: number }>(({ $h, $fo
   fontWeight: 800,
   lineHeight: 1,
   fontVariantNumeric: 'tabular-nums',
+  textTransform: 'uppercase',
   color: INK,
 }));
 
@@ -103,9 +104,10 @@ const HiddenGlyph = styled(Glyph)({
 });
 
 function tileSize(count: number): TileSize {
-  if (count <= 6) return { w: 38, h: 46, font: 26, radius: 11, gap: 8 };
-  if (count <= 10) return { w: 30, h: 38, font: 21, radius: 9, gap: 6 };
-  return { w: 24, h: 30, font: 16, radius: 7, gap: 5 };
+  if (count <= 6) return { w: 46, h: 56, font: 34, radius: 12, gap: 8 };
+  if (count <= 8) return { w: 38, h: 48, font: 29, radius: 11, gap: 7 };
+  if (count <= 10) return { w: 31, h: 41, font: 25, radius: 9, gap: 5 };
+  return { w: 26, h: 35, font: 21, radius: 8, gap: 5 };
 }
 
 interface Props {
@@ -181,7 +183,7 @@ export default function CipherStrip({ slots, seenKey }: Props) {
       <Row
         $gap={size.gap}
         role="img"
-        aria-label={t.label(slots.map((slot) => (slot.revealed ? slot.char : '_')).join(' '))}
+        aria-label={t.label(slots.map((slot) => (slot.revealed ? slot.char.toUpperCase() : '_')).join(' '))}
         style={{ direction: cipherDirection(slots) }}
       >
         {slots.map((slot) => {
