@@ -7,10 +7,7 @@ export interface IMapGroupState {
   groupName: string;
   activityDay: string;
 
-  completedIndices: number[];
-  score: number;
   startedAt: Date;
-  completedAt?: Date;
 
   position?: { lat: number; lng: number };
   positionAt?: Date;
@@ -23,10 +20,7 @@ const mapGroupStateSchema = new Schema<IMapGroupState>({
   groupName: { type: String, required: true },
   activityDay: { type: String, required: true, index: true },
 
-  completedIndices: { type: [Number], default: [] },
-  score: { type: Number, default: 0 },
   startedAt: { type: Date, default: Date.now },
-  completedAt: { type: Date },
 
   position: {
     type: new Schema({

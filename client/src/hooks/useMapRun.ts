@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiFetch } from '../utils/api';
 import { MAX_USABLE_ACCURACY_M, type Fix } from '../utils/geo';
-import type { MapGroupMarker, MapRunState } from '../pages/StoryModulePage/types';
+import type { MapGroupMarker } from '../pages/StoryModulePage/types';
 
 const POLL_MS = 10_000;
 const PUSH_MS = 8_000;
@@ -9,16 +9,12 @@ const PUSH_MS = 8_000;
 interface MapRun {
   fix: Fix | null;
   geoError: string | null;
-  run: MapRunState | null;
   others: MapGroupMarker[];
-  complete: (itemIndex: number, score: number) => Promise<MapRunState | null>;
-  refresh: () => void;
 }
 
 export function useMapRun(code: string, enabled: boolean, team: boolean): MapRun {
   const [fix, setFix] = useState<Fix | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
-  const [run, setRun] = useState<MapRunState | null>(null);
   const [others, setOthers] = useState<MapGroupMarker[]>([]);
   const lastPush = useRef(0);
   const latestFix = useRef<Fix | null>(null);
@@ -49,11 +45,8 @@ export function useMapRun(code: string, enabled: boolean, team: boolean): MapRun
 
   const refresh = useCallback(() => {
     if (!team) return;
-    apiFetch<{ me: MapRunState; groups: MapGroupMarker[] }>(`/api/activities/${code}/map/state`)
-      .then((d) => {
-        setRun(d.me);
-        setOthers(d.groups || []);
-      })
+    apiFetch<{ groups: MapGroupMarker[] }>(`/api/activities/${code}/map/state`)
+      .then((d) => setOthers(d.groups || []))
       .catch(() => { });
   }, [code, team]);
 
@@ -74,22 +67,5 @@ export function useMapRun(code: string, enabled: boolean, team: boolean): MapRun
     return () => clearInterval(timer);
   }, [code, team, refresh]);
 
-  const complete = useCallback(
-    async (itemIndex: number, score: number) => {
-      try {
-        const next = await apiFetch<MapRunState>(`/api/activities/${code}/map/complete`, {
-          method: 'POST',
-          body: JSON.stringify({ itemIndex, score }),
-        });
-        setRun(next);
-        return next;
-      } catch {
-        refresh();
-        return null;
-      }
-    },
-    [code, refresh],
-  );
-
-  return { fix, geoError, run, others, complete, refresh };
+  return { fix, geoError, others };
 }

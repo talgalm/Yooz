@@ -186,12 +186,6 @@ export function visibleOrderedIndices(
   return ordered;
 }
 
-export function nextIncompleteIndex(completed: number[], total: number): number {
-  const done = new Set(completed);
-  for (let i = 0; i < total; i++) if (!done.has(i)) return i;
-  return total;
-}
-
 const ITEM_TRIGGER_POINTS = new Set(['beforeItem', 'afterItem']);
 
 export function popupsForServedItems<P extends { trigger: { point: string; itemIndex?: number | null } }>(

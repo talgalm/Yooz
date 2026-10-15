@@ -568,7 +568,7 @@ export default function MapView({
           position: g.position,
           style: { color: teamMarkerColor(g.groupName), diameterPx: 18, fontPx: 10, imagePx: 0, zIndex: PIN_LAYERS.done - 1 },
           text: teamMarkerLabel(g.groupName),
-          title: `${g.groupName} · ${g.score}`,
+          title: g.groupName,
           rotation: spinRef.current,
         }),
       );
