@@ -5,6 +5,7 @@ export interface OrderRound {
 
 export interface OrderScoring {
   firstAttemptPoints: number;
+  allowRetry: boolean;
   retryPoints: number;
   speedBonus: boolean;
   timeLimitSeconds: number;

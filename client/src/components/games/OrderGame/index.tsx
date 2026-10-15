@@ -15,6 +15,14 @@ import HintButton from '../HintButton';
 import { GameProps, HintConfig, GAME_CONSTANTS } from '../types';
 import GolfChallenge from './GolfChallenge';
 import OrderSurveyGame, { type OrderSurveySubmitPayload } from './OrderSurveyGame';
+import {
+  hintPenaltyPoints,
+  maxOrderScore,
+  placedCorrectly,
+  roundPoints,
+  speedBonusPoints,
+  type OrderScoringRules,
+} from './orderScoring';
 import { golfTexts } from './GolfChallenge.i18n';
 import { GameIntroHeaderBar, GameHeaderMuteButton } from '../styled';
 import {
@@ -39,6 +47,8 @@ import {
   OrderCorrectText,
   OrderWrongText,
   OrderPointsBadge,
+  OrderPlacedText,
+  OrderRetryRow,
   NatureHintWrapper,
   IntroContainer,
   IntroContent,
@@ -66,19 +76,12 @@ interface OrderRound {
   cards: string[];
 }
 
-interface OrderScoring {
-  firstAttemptPoints: number;
-  retryPoints: number;
-  speedBonus: boolean;
-  timeLimitSeconds?: number;
-}
-
 interface OrderSettings {
   mode?: 'quiz' | 'survey';
   instructions?: string;
   hint?: HintConfig;
   rounds: OrderRound[];
-  scoring: OrderScoring;
+  scoring: OrderScoringRules;
 }
 
 export type { OrderSurveySubmitPayload };
@@ -135,6 +138,10 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
   const [roundScore, setRoundScore] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
   const [showFeedback, setShowFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [placedCount, setPlacedCount] = useState<{ placed: number; total: number } | null>(null);
+  const [firstTry, setFirstTry] = useState<boolean[] | null>(null);
+  const [awaitingRetry, setAwaitingRetry] = useState(false);
+  const hideFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [checked, setChecked] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
@@ -205,10 +212,12 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
   const rounds = useMemo(() => {
     return settings.rounds || [];
   }, [settings.rounds]);
-  const scoring = useMemo(
+  const scoring = useMemo<OrderScoringRules>(
     () => settings.scoring || { firstAttemptPoints: 100, retryPoints: 50, speedBonus: false },
     [settings.scoring],
   );
+  const hintPenalty = hintPenaltyPoints(scoring);
+  const scoreAfterHint = Math.max(0, totalScore - (hint.hintUsed ? hintPenalty : 0));
 
   const initRound = useCallback((roundIdx: number) => {
     const round = rounds[roundIdx];
@@ -224,6 +233,9 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     setCardStatuses(shuffled.map(() => 'neutral'));
     setRoundScore(0);
     setShowFeedback(null);
+    setPlacedCount(null);
+    setFirstTry(null);
+    setAwaitingRetry(false);
     setChecked(false);
     setTapIndex(null);
     setDragInfo(null);
@@ -274,51 +286,76 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     }
   }, [timeLeft]);
 
+  const goToNextRound = () => {
+    const next = currentRoundRef.current + 1;
+    if (next >= roundsRef.current.length) {
+      setGameComplete(true);
+    } else {
+      setCurrentRound(next);
+      initRoundRef.current(next);
+    }
+  };
+
+  const finishRound = (points: number, delayMs: number) => {
+    setRoundScore(points);
+    setTotalScore((prev) => prev + points);
+    setAwaitingRetry(false);
+    if (delayMs > 0) setTimeout(goToNextRound, delayMs);
+    else goToNextRound();
+  };
+
   const handleCheck = () => {
     if (checked) return;
     setAttempts((prev) => prev + 1);
     const round = rounds[currentRound];
     if (!round) return;
-    const correctOrder = round.cards;
 
-    const statuses: CardStatus[] = cards.map((card, i) => (card === correctOrder[i] ? 'correct' : 'incorrect'));
-    setCardStatuses(statuses);
+    const placed = placedCorrectly(cards, round.cards);
+    setCardStatuses(placed.map((ok) => (ok ? 'correct' : 'incorrect')));
     setChecked(true);
     if (timerRef.current) clearInterval(timerRef.current);
 
-    const allCorrect = statuses.every((s) => s === 'correct');
+    const allCorrect = placed.every(Boolean);
+    const isRetry = firstTry !== null;
+    const points = (isRetry ? roundPoints(scoring, firstTry, placed) : roundPoints(scoring, placed))
+      + (allCorrect ? speedBonusPoints(scoring, timeLeft) : 0);
+    setPlacedCount({ placed: placed.filter(Boolean).length, total: placed.length });
+    setShowFeedback(allCorrect ? 'correct' : 'incorrect');
+    if (allCorrect) sounds.playCorrect();
+    else sounds.playWrong();
 
-    if (allCorrect) {
-      const points = scoring.firstAttemptPoints;
+    const canRetry = !allCorrect && !isRetry && scoring.allowRetry === true && timeLeft !== 0;
+    if (canRetry) {
+      setFirstTry(placed);
       setRoundScore(points);
-      setTotalScore((prev) => prev + points);
-      setShowFeedback('correct');
-      sounds.playCorrect();
-    } else {
-      setRoundScore(0);
-      setShowFeedback('incorrect');
-      sounds.playWrong();
+      setAwaitingRetry(true);
+      hideFeedbackTimer.current = setTimeout(() => setShowFeedback(null), GAME_CONSTANTS.FEEDBACK_DURATION_MS);
+      return;
     }
+    finishRound(points, GAME_CONSTANTS.FEEDBACK_DURATION_MS);
+  };
 
-    setTimeout(() => {
-      const next = currentRoundRef.current + 1;
-      if (next >= roundsRef.current.length) {
-        setGameComplete(true);
-      } else {
-        setCurrentRound(next);
-        initRoundRef.current(next);
-      }
-    }, 1500);
+  const handleRetry = () => {
+    if (hideFeedbackTimer.current) clearTimeout(hideFeedbackTimer.current);
+    setAwaitingRetry(false);
+    setShowFeedback(null);
+    setCardStatuses((prev) => prev.map((s) => (s === 'correct' ? 'correct' : 'neutral')));
+    setChecked(false);
+  };
+
+  const handleKeepScore = () => {
+    if (hideFeedbackTimer.current) clearTimeout(hideFeedbackTimer.current);
+    setShowFeedback(null);
+    finishRound(roundScore, 0);
   };
 
   const handleFinish = () => {
-    const adjusted = hint.applyHintPenalty(totalScore) + golfBonus;
-    const maxPossibleScore = rounds.length * (scoring.firstAttemptPoints || 100);
     onComplete({
-      score: adjusted,
-      maxPossibleScore,
+      score: scoreAfterHint + golfBonus,
+      maxPossibleScore: maxOrderScore(scoring, rounds.length, golfEnabled),
       durationMs: Date.now() - gameStartTime.current,
       hintUsed: hint.hintUsed,
+      hintPenalty: hint.hintUsed ? hintPenalty : 0,
       attempts,
     });
   };
@@ -381,7 +418,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     if (noContent) {
       return null;
     }
-    const finalScore = hint.applyHintPenalty(totalScore) + golfBonus;
+    const finalScore = scoreAfterHint + golfBonus;
     return (
       <OrderPhaseRoot $inlineBackdrop={inlineBackdrop}>
         <FinishContainer>
@@ -463,7 +500,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
       const [removed] = newCards.splice(fromIdx, 1);
       newCards.splice(toIdx, 0, removed);
       setCards(newCards);
-      setCardStatuses(newCards.map(() => 'neutral'));
+      setCardStatuses(newCards.map((card, i) => (card === cards[i] ? cardStatuses[i] : 'neutral')));
       setShowFeedback(null);
       setTapIndex(null);
     }
@@ -480,7 +517,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
       const newCards = [...cards];
       [newCards[tapIndex], newCards[index]] = [newCards[index], newCards[tapIndex]];
       setCards(newCards);
-      setCardStatuses(newCards.map(() => 'neutral'));
+      setCardStatuses(newCards.map((card, i) => (card === cards[i] ? cardStatuses[i] : 'neutral')));
       setTapIndex(null);
       setShowFeedback(null);
     }
@@ -595,23 +632,35 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
       </NatureCardsList>
 
       <OrderActionBar>
-        <NatureCheckButton onClick={!checked ? handleCheck : undefined} disabled={checked || timeLeft === 0}>
-          {t.checkAnswer}
-        </NatureCheckButton>
+        {awaitingRetry ? (
+          <OrderRetryRow>
+            <NatureCheckButton onClick={handleRetry}>{t.tryAgain}</NatureCheckButton>
+            <NatureCheckButton onClick={handleKeepScore}>{t.keepScore}</NatureCheckButton>
+          </OrderRetryRow>
+        ) : (
+          <NatureCheckButton onClick={!checked ? handleCheck : undefined} disabled={checked || timeLeft === 0}>
+            {t.checkAnswer}
+          </NatureCheckButton>
+        )}
       </OrderActionBar>
 
       {showFeedback && (
         <OrderFeedbackFloater>
           <OrderFeedbackContainer variant={showFeedback === 'correct' ? 'correct' : 'incorrect'}>
             {showFeedback === 'correct' ? (
+              <OrderCorrectText>{t.correct}</OrderCorrectText>
+            ) : (
               <>
-                <OrderCorrectText>{t.correct}</OrderCorrectText>
-                {roundScore > 0 && (
-                  <OrderPointsBadge>+{roundScore} {t.points}</OrderPointsBadge>
+                <OrderWrongText>{t.incorrect}</OrderWrongText>
+                {placedCount && (
+                  <OrderPlacedText>
+                    {t.placedOfTotal.replace('{placed}', String(placedCount.placed)).replace('{total}', String(placedCount.total))}
+                  </OrderPlacedText>
                 )}
               </>
-            ) : (
-              <OrderWrongText>{t.incorrect}</OrderWrongText>
+            )}
+            {roundScore > 0 && (
+              <OrderPointsBadge>+{roundScore} {t.points}</OrderPointsBadge>
             )}
           </OrderFeedbackContainer>
         </OrderFeedbackFloater>
@@ -625,7 +674,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
         onConfirm={hint.confirmHint}
         onDismissWarning={hint.dismissHintWarning}
         onDismissText={hint.dismissHintText}
-        t={t}
+        t={{ ...t, hintWarning: t.hintWarning.replace('{points}', String(hintPenalty)) }}
       />
     </OrderContainer>
     </OrderPhaseRoot>

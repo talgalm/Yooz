@@ -18,6 +18,7 @@ import {
   TinyDangerButton,
   AddButton,
   ScoringToggleButton,
+  TinyLabel,
   InputMb10,
   CardItemRow,
   CardInput,
@@ -39,6 +40,7 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
     const [rounds, setRounds] = useState<OrderRound[]>([{ title: '', cards: ['', ''] }]);
     const [orderScoring, setOrderScoring] = useState<OrderScoring>({
       firstAttemptPoints: 100,
+      allowRetry: false,
       retryPoints: 50,
       speedBonus: false,
       timeLimitSeconds: 0,
@@ -62,6 +64,7 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
         const sc = s.scoring as Record<string, unknown>;
         setOrderScoring({
           firstAttemptPoints: (sc.firstAttemptPoints as number) || 100,
+          allowRetry: sc.allowRetry === true,
           retryPoints: (sc.retryPoints as number) || 50,
           speedBonus: (sc.speedBonus as boolean) || false,
           timeLimitSeconds: (sc.timeLimitSeconds as number) || 0,
@@ -107,6 +110,7 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
           ...base,
           scoring: {
             firstAttemptPoints: orderScoring.firstAttemptPoints,
+            ...(orderScoring.allowRetry && { allowRetry: true }),
             retryPoints: orderScoring.retryPoints,
             speedBonus: orderScoring.speedBonus,
             timeLimitSeconds: orderScoring.timeLimitSeconds || undefined,
@@ -126,7 +130,7 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
           { title: 'ימות השבוע', cards: ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי'] },
           { title: 'חודשי השנה', cards: ['ינואר', 'פברואר', 'מרץ', 'אפריל'] },
         ]);
-        setOrderScoring({ firstAttemptPoints: 100, retryPoints: 50, speedBonus: true, timeLimitSeconds: 120 });
+        setOrderScoring({ firstAttemptPoints: 100, allowRetry: false, retryPoints: 50, speedBonus: true, timeLimitSeconds: 120 });
         setGolfChallenge(true);
       },
     }));
@@ -279,13 +283,25 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
                 />
               </ScoringRow>
               <ScoringRow>
-                <ScoringLabel>{t.retryPoints}</ScoringLabel>
-                <ScoringInput
-                  type="number"
-                  value={orderScoring.retryPoints}
-                  onChange={(e) => setOrderScoring((s) => ({ ...s, retryPoints: Number(e.target.value) }))}
-                />
+                <ScoringLabel>{t.allowRetry}</ScoringLabel>
+                <ScoringToggleButton
+                  type="button"
+                  selected={orderScoring.allowRetry}
+                  onClick={() => setOrderScoring((s) => ({ ...s, allowRetry: !s.allowRetry }))}
+                >
+                  {orderScoring.allowRetry ? 'ON' : 'OFF'}
+                </ScoringToggleButton>
               </ScoringRow>
+              {orderScoring.allowRetry && (
+                <ScoringRow>
+                  <ScoringLabel>{t.retryPoints}</ScoringLabel>
+                  <ScoringInput
+                    type="number"
+                    value={orderScoring.retryPoints}
+                    onChange={(e) => setOrderScoring((s) => ({ ...s, retryPoints: Number(e.target.value) }))}
+                  />
+                </ScoringRow>
+              )}
               <ScoringRow>
                 <ScoringLabel>{t.speedBonus}</ScoringLabel>
                 <ScoringToggleButton
@@ -296,6 +312,9 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
                   {orderScoring.speedBonus ? 'ON' : 'OFF'}
                 </ScoringToggleButton>
               </ScoringRow>
+              {orderScoring.speedBonus && !(orderScoring.timeLimitSeconds > 0) && (
+                <TinyLabel>{t.speedBonusNeedsTime}</TinyLabel>
+              )}
               <ScoringRow>
                 <ScoringLabel>{t.timeLimitSeconds}</ScoringLabel>
                 <ScoringInput
@@ -315,6 +334,7 @@ export default forwardRef<GameConfigHandle, OrderGameConfigProps>(
                   {golfChallenge ? 'ON' : 'OFF'}
                 </ScoringToggleButton>
               </ScoringRow>
+              <TinyLabel>{t.orderScoringHint}</TinyLabel>
             </VerticalStackGap10>
           </div>
         )}

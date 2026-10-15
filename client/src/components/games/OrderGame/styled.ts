@@ -333,6 +333,22 @@ export const OrderWrongText = styled('div')({
   lineHeight: 1,
 });
 
+export const OrderPlacedText = styled('div')({
+  fontSize: 16,
+  fontWeight: 700,
+  color: '#444',
+  textAlign: 'center',
+});
+
+export const OrderRetryRow = styled('div')({
+  display: 'flex',
+  gap: 10,
+  '& > *': {
+    flex: 1,
+    minWidth: 0,
+  },
+});
+
 export const OrderPointsBadge = styled('div')({
   background: '#d5f5e3',
   color: BTN_GREEN_DARK,

@@ -19,6 +19,7 @@ export interface GameResult {
   maxPossibleScore: number;
   durationMs: number;
   hintUsed: boolean;
+  hintPenalty?: number;
   questionAnswers?: QuestionAnswerRecord[];
   attempts?: number;
   metadata?: Record<string, unknown>;

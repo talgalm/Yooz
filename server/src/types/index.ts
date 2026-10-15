@@ -141,6 +141,7 @@ export interface OrderGameRound {
 
 export interface OrderGameScoringConfig {
   firstAttemptPoints: number;
+  allowRetry?: boolean;
   retryPoints: number;
   speedBonus: boolean;
   timeLimitSeconds?: number;
