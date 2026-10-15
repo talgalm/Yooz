@@ -90,6 +90,11 @@ export function popupStationIndex(popup: { itemIndex: number; itemUid?: string }
   return followed !== -1 ? followed : Math.min(Math.max(0, popup.itemIndex), items.length - 1);
 }
 
+export function popupSavedIndex(popup: { itemIndex: number; itemUid?: string; byStep?: boolean }, items: Keyed[]): number {
+  if (!popup.byStep) return popupStationIndex(popup, items);
+  return items.length === 0 ? 0 : Math.min(Math.max(0, popup.itemIndex), items.length - 1);
+}
+
 export function popupAudienceRoute(
   popup: { groups: string[]; routes: number[] },
   groupRoutes: Record<string, number>,

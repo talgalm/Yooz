@@ -16,7 +16,7 @@ import { clampPassThreshold } from '../utils/scoreNormalization';
 import { sanitizeOrganizerContacts } from '../utils/organizerContacts';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { sanitiseLanguages, sanitiseStartLanguage } from '../utils/requestLang';
-import { sanitizeLocation, sanitizeProximityMeters, sanitizeGroupOrders, sanitizeRoutes, sanitizeGroupRoutes, ordersFromRoutes, sanitizeCollageSplit } from '../utils/moduleItems';
+import { sanitizeLocation, sanitizeProximityMeters, sanitizeGroupOrders, sanitizeRoutes, sanitizeGroupRoutes, ordersFromRoutes, sanitizeCollageSplit, sanitizePopupTrigger } from '../utils/moduleItems';
 import { sanitizeCipherChar, sanitizeMapDesign, sanitizeMapIcon } from '../utils/mapDesign';
 import { pretranslateActivity } from '../services/activityPretranslate';
 import { IActivity, IScheduledReport } from '../models/Activity';
@@ -202,8 +202,9 @@ async function buildActivityData(
             text: ct === 'text' ? (p.text as string || '').trim() : undefined,
             image: ct === 'image' ? (p.image as string || '').trim() : undefined,
             video: ct === 'video' ? (p.video as string || '').trim() : undefined,
+            ...(typeof p.sound === 'string' && p.sound.trim() && { sound: p.sound.trim().slice(0, 1000) }),
             includeUsername: p.includeUsername === true,
-            trigger: p.trigger || { point: 'afterLogin' },
+            trigger: sanitizePopupTrigger(p.trigger, isMap),
             condition: p.condition || undefined,
             ...(Array.isArray(p.groups) && p.groups.some((g) => typeof g === 'string' && g.trim()) && {
               groups: (p.groups as unknown[]).filter((g): g is string => typeof g === 'string' && !!g.trim()).map((g) => g.trim()),

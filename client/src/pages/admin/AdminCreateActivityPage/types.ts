@@ -26,15 +26,18 @@ export interface PopupMessage {
   text: string;
   image: string;
   video: string;
+  sound?: string;
+  soundCustom?: boolean;
   includeUsername: boolean;
   triggerPoint: TriggerPoint;
   itemIndex: number;
   itemUid?: string;
+  byStep?: boolean;
+  onTheWay?: boolean;
   conditionType: ConditionType;
   threshold: number;
   groups: string[];
   routes: number[];
-  enabled: boolean;
 }
 
 export interface GameOption {
@@ -141,8 +144,9 @@ export interface Activity {
       text?: string;
       image?: string;
       video?: string;
+      sound?: string;
       includeUsername?: boolean;
-      trigger: { point: string; itemIndex?: number };
+      trigger: { point: string; itemIndex?: number; byStep?: boolean; onTheWay?: boolean };
       condition?: { type: string; threshold: number };
       groups?: string[];
       routes?: number[];

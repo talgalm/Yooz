@@ -366,7 +366,8 @@ lets async handlers throw. `/api/health` (DB check) and `/api/load-status` are p
   (map modules) — both via `utils/moduleItems.ts::visibleOrderedIndices`. Filtering and
   reordering shift indices: the client's 0..n-1 is the index space progress is recorded in.
   Popups follow: `popupsForServedItems` moves each `beforeItem`/`afterItem` index to its
-  station's served position and drops popups for stations this player can't see.
+  station's served position and drops popups for stations this player can't see. A step popup
+  (`trigger.byStep`) keeps its index as the position, dropped only past the end of the order.
 - `GET /:code/lock-stream` — SSE of `lockedFromIndex` (manager live lock).
 - `GET /:code/leaderboard` — points/time/group standings; respects `leaderboardCurrentDayOnly`
   (forced on by `dailyReset`), `leaderboardAsGrade`; group standings = summed member scores
@@ -725,18 +726,39 @@ Shared: `StationDescriptionPopup`, floating clue button for info stations.
 
 - **Popups** (`Activity.module.popups[]`, model `IPopupMessage`): `title`, `contentType:
   'text'|'image'|'video'`, `text?`/`image?`/`video?` (a video is an uploaded file or a YouTube /
-  Vimeo link, played through `resolveVideoSource` like a video station), `includeUsername?`, `trigger.point:
+  Vimeo link, played through `resolveVideoSource` like a video station), `includeUsername?` (the
+  participant's name as a heading above the content - "הצג את שם המשתתף מעל ההודעה"), `trigger.point:
   'afterLogin'|'beforeItem'|'afterItem'|'endOfActivity'` (+ `itemIndex` for before/after),
   optional `condition:{type:'participantCount', threshold}`, optional `groups` / `routes` (only
   these preset groups, or the groups assigned to these routes in `groupRoutes`, get it -
-  `popupVisibleTo`, filtered in `GET /:code/module`; the editor's "מי רואה" chips; removing a route
-  shifts the popups' route indices), `enabled`. A before/after-station popup is tied to the station,
-  not the position, so with routes it shows at that station wherever each route puts it. When the
+  `popupVisibleTo`, filtered in `GET /:code/module`; removing a route shifts the popups' route
+  indices), `enabled` (the editor no longer offers it and always saves `true`; no activity had a
+  disabled popup when the checkbox was removed, 2026-10-15). The editor's audience is a row of pills
+  above the popups - "כולם", every route, every preset group - that both filters the list and decides
+  who a new popup is for: "כולם" lists only popups with no audience; any other pick (several at once
+  is fine) lists every popup its participants get - the ones for everyone (marked "מוצג לכולם"), the
+  ones aimed at a picked route or group, and for a picked group the ones aimed at its route - and
+  "הוסף הודעה עבור ..." creates one aimed at all of them. Each pill counts what it would list; a
+  card aimed at more than the pick says "מוצג גם ל: ...". A
+  popup's audience is set when it is added (`addPopup(audience)`), with no per-card chips. Without
+  preset groups or routes there are no pills and every popup is listed. A before/after-station popup is tied to the station,
+  not the position, so with routes it shows at that station wherever each route puts it - unless
+  `trigger.byStep` ties it to a step instead (the editor's "צמוד ל": "תחנה" / "שלב", offered once the
+  activity has routes): `itemIndex` is then a position in each participant's own order, so "step 3"
+  shows at whatever station that route puts third and stays there when the route changes. Added
+  under a route's pill, that gives every route popups of its own. In step mode the list names the stations
+  when the audience walks one route (or there are no routes), else it reads "שלב N". Switching mode
+  keeps the same choice on screen (station -> its step in the shown order, and back). The editor
+  saves `popupSavedIndex` (the step, or the station via `popupStationIndex`); the server keeps the
+  trigger's fields only where its point can use them (`sanitizePopupTrigger`). Map `beforeItem`
+  popups also take `trigger.onTheWay` ("תזמון": "כשמגיעים לתחנה" / "מיד, בדרך אליה") - §16. When the
   audience walks a single route (that route, or groups assigned to it) the editor numbers the "איזה
   שלב" list in that route's order (`popupAudienceRoute`); the stored `itemIndex` is still the
   station's index in `module.items`. In the editor a popup also holds its station's `uid` (`itemUid`,
   resolved by `popupStationIndex` on save), so dragging, adding or removing stations keeps it on
-  its station. New trigger point → extend
+  its station. `sound?` plays when the popup shows and stops when it closes: the editor's "צליל"
+  offers none, three built-in chimes under `/sounds/` or an uploaded audio file, with "▶ השמעה" to
+  listen. New trigger point → extend
   the union in model + client and add the call site in `StoryModulePage`. Editor:
   `AdminCreateActivityPage/PopupMessagesSection.tsx`.
 - **Hints**: per-question `hint` (trivia) or station clue; using a hint applies a points penalty
@@ -1167,8 +1189,10 @@ back to the map aimed at the next station, and `MAP_POPUP_DELAY_MS` later - once
 the finished station's `afterItem` popups show. The next station's `beforeItem` popups wait until
 the participant reaches it (`MapView`'s `onReachStation`, the same proximity that shows the arrival
 card), so they never read like the last station's. Opening it without arriving ("open now", "I'm
-here", no GPS) shows them then (`handleNodeTap`). Both run from one effect on the roadmap phase that
-waits for the guidelines and any open popup. After the last station the `afterItem` and `endOfActivity` popups show on the map
+here", no GPS) shows them then (`handleNodeTap`). A popup set to show on the way (`trigger.onTheWay`,
+for directions) does not wait: it shows as soon as its station is the target - after the finished
+station's popups, `MAP_POPUP_DELAY_MS` after the card - and on arrival only the rest show. All of it
+runs from one effect on the roadmap phase that waits for the guidelines and any open popup. After the last station the `afterItem` and `endOfActivity` popups show on the map
 before the finish screen (`mapEndingRef` keeps the map's popup effect quiet meanwhile). Once every station of a place is done (`placeGroupEnd`), its pin reads
 the range ("1-3", a pill as tall as the next-station circle) with a "3 תחנות" label under it; the next
 station always shows only its own number. While the next station is a later station of a place (back on the map
