@@ -3,6 +3,7 @@ import type { IModuleConfig, IModuleItem, IItemLocation, IGroupRoute } from '../
 export const ROUTES_MAX = 12;
 const ROUTE_NAME_MAX = 60;
 const PLACE_NAME_MAX = 80;
+const PART_DESCRIPTION_MAX = 600;
 
 export function sanitizeLocation(raw: unknown): IItemLocation | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
@@ -123,6 +124,7 @@ export function sanitizeCollageSplit(raw: unknown): IModuleItem['collageSplit'] 
   const photoOrder = ints(s.photoOrder);
   const videoOrder = ints(s.videoOrder);
   const partName = typeof s.partName === 'string' ? s.partName.trim().slice(0, PART_NAME_MAX) : '';
+  const partDescription = typeof s.partDescription === 'string' ? s.partDescription.trim().slice(0, PART_DESCRIPTION_MAX) : '';
   return {
     splitGroupId: s.splitGroupId,
     partIndex: s.partIndex as number,
@@ -132,6 +134,7 @@ export function sanitizeCollageSplit(raw: unknown): IModuleItem['collageSplit'] 
     ...(isPermutation(photoOrder) && { photoOrder }),
     ...(isPermutation(videoOrder) && { videoOrder }),
     ...(partName && { partName }),
+    ...(partDescription && { partDescription }),
   };
 }
 

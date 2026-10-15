@@ -149,7 +149,7 @@ Login config: `loginFields: ('email'|'phoneNumber'|'name')[]`, `emailGoogle?`,
 - `items: IModuleItem[]` — ordered `{type:'game'|'station'|'mission', ref: ObjectId,
   groups?: string[] (only these groups see it), spiderSvg?, isFinal? (spiders lock),
   collageSplit? (split a collage station into N parts across the activity: `{splitGroupId,
-  partIndex, partSizes, videoPartIndex?, photoOrder?, videoOrder?, partName?}`, cleaned on save by
+  partIndex, partSizes, videoPartIndex?, photoOrder?, videoOrder?, partName?, partDescription?}`, cleaned on save by
   `sanitizeCollageSplit`),
   revisitable? (completed item stays re-openable from the roadmap — see §11),
   location? ({lat,lng,address?,placeName?} — where the station physically is: map modules, and group
@@ -794,7 +794,9 @@ delivery of the finished video (`smsForCollage*`, polled every 15s). Client:
 **Split collage parts.** Each part takes a
 contiguous slice (`partSizes`) of the missions in `photoOrder`; `partName` is the name the
 participant (roadmap, and the station's title in place of `settings.header`) and the admin lists show for that part (`itemDisplayName`, falling back to the
-station's name). `videoOrder[mission] = slot` says where each mission's photo lands in the video
+station's name). `partDescription` (the split editor's "הוראות לתת-התחנה") replaces the station's
+instructions (`settings.description`, "הוראות - הטקסט מתחת לכותרת") under that part's title, and a later
+part that has one opens on its intro instead of straight on the camera. `videoOrder[mission] = slot` says where each mission's photo lands in the video
 (default: mission order), so the photo of a given mission always lands in its own slot whichever
 part takes it and whatever order a route visits the parts in (`videoSlotOf` in `CollageStation`).
 The split editor (`CollageSplitEditor`) edits names, parts and the video numbers; saving

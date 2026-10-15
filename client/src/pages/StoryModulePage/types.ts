@@ -34,6 +34,7 @@ export interface CollageSplitData {
   photoOrder?: number[];
   videoOrder?: number[];
   partName?: string;
+  partDescription?: string;
   servedFirst?: boolean;
   servedFinale?: boolean;
 }

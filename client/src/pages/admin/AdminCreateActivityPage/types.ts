@@ -66,6 +66,7 @@ export interface CollageSplit {
   photoOrder?: number[];
   videoOrder?: number[];
   partName?: string;
+  partDescription?: string;
 }
 
 export interface ModuleItem {

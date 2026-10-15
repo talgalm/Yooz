@@ -16,6 +16,7 @@ export interface ICollageSplit {
   photoOrder?: number[];
   videoOrder?: number[];
   partName?: string;
+  partDescription?: string;
 }
 
 export interface IItemLocation {
@@ -240,6 +241,7 @@ const collageSplitSchema = new Schema<ICollageSplit>({
   photoOrder: { type: [Number], default: undefined },
   videoOrder: { type: [Number], default: undefined },
   partName: { type: String },
+  partDescription: { type: String },
 }, { _id: false });
 
 const itemLocationSchema = new Schema<IItemLocation>({

@@ -9,6 +9,7 @@ export interface SplitEditorResult {
   videoPartIndex: number | null;
   photoOrder: number[];
   partNames: string[];
+  partDescriptions: string[];
   videoOrder: number[];
 }
 
@@ -19,6 +20,7 @@ interface Props {
   initialPartSizes: number[];
   initialVideoPartIndex: number | null;
   initialPartNames: string[];
+  initialPartDescriptions: string[];
   initialVideoOrder?: number[];
   onCancel: () => void;
   onSave: (result: SplitEditorResult) => void;
@@ -205,6 +207,21 @@ const PartNameInput = styled('input')({
   fontFamily: 'inherit',
 });
 
+const PartDescriptionInput = styled('textarea')({
+  display: 'block',
+  width: '100%',
+  boxSizing: 'border-box',
+  margin: '0 0 8px',
+  padding: '6px 8px',
+  border: '1px solid #fde68a',
+  borderRadius: 8,
+  background: '#fff',
+  fontSize: 13,
+  color: '#3a2e0c',
+  fontFamily: 'inherit',
+  resize: 'vertical',
+});
+
 const VideoOrderCard = styled('div')({
   position: 'relative',
   background: '#fffbeb',
@@ -296,6 +313,7 @@ export default function CollageSplitEditor({
   initialPartSizes,
   initialVideoPartIndex,
   initialPartNames,
+  initialPartDescriptions,
   initialVideoOrder,
   onCancel,
   onSave,
@@ -307,6 +325,9 @@ export default function CollageSplitEditor({
   );
   const [partNames, setPartNames] = useState<string[]>(() =>
     Array.from({ length: Math.max(initialPartSizes.length, 1) }, (_, i) => initialPartNames[i] ?? ''),
+  );
+  const [partDescriptions, setPartDescriptions] = useState<string[]>(() =>
+    Array.from({ length: Math.max(initialPartSizes.length, 1) }, (_, i) => initialPartDescriptions[i] ?? ''),
   );
   const [videoList, setVideoList] = useState<number[]>(() => videoListFrom(missions.length, initialVideoOrder));
 
@@ -359,11 +380,13 @@ export default function CollageSplitEditor({
   const addPart = () => {
     setParts((prev) => [...prev, { photoIndices: [], isVideoOnly: false }]);
     setPartNames((prev) => [...prev, '']);
+    setPartDescriptions((prev) => [...prev, '']);
   };
 
   const removePart = (idx: number) => {
     if (parts.length <= 1) return;
     setPartNames((prev) => prev.filter((_, i) => i !== idx));
+    setPartDescriptions((prev) => prev.filter((_, i) => i !== idx));
     setParts((prev) => {
       const removed = prev[idx];
       const rest = prev.filter((_, i) => i !== idx);
@@ -389,8 +412,13 @@ export default function CollageSplitEditor({
   };
 
   const toggleVideoPart = () => {
-    if (hasVideoPart) setPartNames((prev) => prev.filter((_, i) => i !== videoPartIndex));
-    else setPartNames((prev) => [...prev, '']);
+    if (hasVideoPart) {
+      setPartNames((prev) => prev.filter((_, i) => i !== videoPartIndex));
+      setPartDescriptions((prev) => prev.filter((_, i) => i !== videoPartIndex));
+    } else {
+      setPartNames((prev) => [...prev, '']);
+      setPartDescriptions((prev) => [...prev, '']);
+    }
     setParts((prev) => {
       if (hasVideoPart) {
         return prev.filter((p) => !p.isVideoOnly);
@@ -456,7 +484,14 @@ export default function CollageSplitEditor({
     });
     const videoOrder = new Array<number>(videoList.length);
     videoList.forEach((mission, slot) => { videoOrder[mission] = slot; });
-    onSave({ partSizes, videoPartIndex: videoIdx, photoOrder, partNames: parts.map((_, i) => (partNames[i] ?? '').trim()), videoOrder });
+    onSave({
+      partSizes,
+      videoPartIndex: videoIdx,
+      photoOrder,
+      partNames: parts.map((_, i) => (partNames[i] ?? '').trim()),
+      partDescriptions: parts.map((_, i) => (partDescriptions[i] ?? '').trim()),
+      videoOrder,
+    });
   };
 
   return (
@@ -487,6 +522,15 @@ export default function CollageSplitEditor({
                   </RemoveBtn>
                 )}
               </PartHeader>
+              {!part.isVideoOnly && (
+                <PartDescriptionInput
+                  value={partDescriptions[pIdx] ?? ''}
+                  onChange={(e) => setPartDescriptions((prev) => prev.map((d, i) => (i === pIdx ? e.target.value : d)))}
+                  placeholder={t.collageSplitEditorPartDescription}
+                  aria-label={t.collageSplitEditorPartDescription}
+                  rows={2}
+                />
+              )}
 
               {part.isVideoOnly ? (
                 <VideoOnlyTag>
