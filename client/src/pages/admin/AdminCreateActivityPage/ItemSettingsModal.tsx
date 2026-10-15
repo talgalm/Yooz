@@ -329,6 +329,7 @@ interface ItemSettingsModalProps {
   onUpdateSvg?: (index: number, svgUrl: string) => void;
   onToggleFinal?: (index: number) => void;
   onToggleRevisitable?: (index: number) => void;
+  onToggleOpenAnywhere?: (index: number) => void;
   onConfigureSplit?: (index: number) => void;
   onPreview: () => void;
   onClose: () => void;
@@ -349,6 +350,7 @@ export default function ItemSettingsModal({
   onUpdateSvg,
   onToggleFinal,
   onToggleRevisitable,
+  onToggleOpenAnywhere,
   onConfigureSplit,
   onPreview,
   onClose,
@@ -471,7 +473,7 @@ export default function ItemSettingsModal({
           </Section>
         )}
 
-        {(onToggleFinal && isSpiders) || onToggleRevisitable ? (
+        {(onToggleFinal && isSpiders) || onToggleRevisitable || onToggleOpenAnywhere ? (
           <Section>
             <SectionTitle>{t.additionalOptionsTitle}</SectionTitle>
             {isSpiders && onToggleFinal && (
@@ -492,6 +494,16 @@ export default function ItemSettingsModal({
                   onChange={() => onToggleRevisitable(index)}
                 />
                 {t.revisitable}
+              </OptionRow>
+            )}
+            {onToggleOpenAnywhere && (
+              <OptionRow title={t.itemOpenAnywhereHint}>
+                <Checkbox
+                  type="checkbox"
+                  checked={!!item.openAnywhere}
+                  onChange={() => onToggleOpenAnywhere(index)}
+                />
+                {t.itemOpenAnywhere}
               </OptionRow>
             )}
           </Section>

@@ -221,6 +221,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.location && { location: item.location }),
         ...(item.mapIcon && { mapIcon: item.mapIcon }),
         ...(cipherOn && item.cipherChar && { cipherChar: item.cipherChar }),
+        ...(activity.module!.type === 'map' && item.openAnywhere && { openAnywhere: true }),
       };
     }
     const data = item.type === 'game'
@@ -241,6 +242,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.location && { location: item.location }),
         ...(item.mapIcon && { mapIcon: item.mapIcon }),
         ...(cipherOn && item.cipherChar && { cipherChar: item.cipherChar }),
+        ...(activity.module!.type === 'map' && item.openAnywhere && { openAnywhere: true }),
       }, data, lang);
     } else {
       return withReviewedTranslations({
@@ -257,6 +259,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.location && { location: item.location }),
         ...(item.mapIcon && { mapIcon: item.mapIcon }),
         ...(cipherOn && item.cipherChar && { cipherChar: item.cipherChar }),
+        ...(activity.module!.type === 'map' && item.openAnywhere && { openAnywhere: true }),
       }, data, lang);
     }
   });

@@ -114,6 +114,7 @@ export interface ModuleItemRequest {
   location?: { lat: number; lng: number; address?: string; placeName?: string };
   mapIcon?: string;
   cipherChar?: string;
+  openAnywhere?: boolean;
 }
 
 export interface ModuleConfigRequest {

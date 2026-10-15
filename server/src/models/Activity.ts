@@ -31,6 +31,7 @@ export interface IModuleItem {
   location?: IItemLocation;
   mapIcon?: string;
   cipherChar?: string;
+  openAnywhere?: boolean;
   groups?: string[];
   spiderSvg?: string;
   isFinal?: boolean;
@@ -259,6 +260,7 @@ const moduleItemSchema = new Schema<IModuleItem>({
   location: { type: itemLocationSchema },
   mapIcon: { type: String },
   cipherChar: { type: String },
+  openAnywhere: { type: Boolean },
 }, { _id: false });
 
 const mapDesignSchema = new Schema<IMapDesign>({

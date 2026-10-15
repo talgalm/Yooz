@@ -662,6 +662,7 @@ export default function AdminCreateActivityPage() {
                 spiderSvg: (item as { spiderSvg?: string }).spiderSvg,
                 isFinal: (item as { isFinal?: boolean }).isFinal || undefined,
                 revisitable: (item as { revisitable?: boolean }).revisitable || undefined,
+                openAnywhere: (item as { openAnywhere?: boolean }).openAnywhere || undefined,
                 collageSplit: (item as { collageSplit?: { splitGroupId: string; partIndex: number; partSizes?: number[]; totalParts?: number } }).collageSplit as ModuleItem['collageSplit'],
                 location: item.location,
                 mapIcon: item.mapIcon,
@@ -1027,6 +1028,11 @@ export default function AdminCreateActivityPage() {
       i === index ? { ...item, revisitable: item.revisitable ? undefined : true } : item
     )));
   };
+  const toggleItemOpenAnywhere = (index: number) => {
+    setSelectedItems((prev) => prev.map((item, i) => (
+      i === index ? { ...item, openAnywhere: item.openAnywhere ? undefined : true } : item
+    )));
+  };
   const moveItem = (index: number, direction: -1 | 1) => {
     setSelectedItems((prev) => {
       const next = [...prev];
@@ -1222,6 +1228,7 @@ export default function AdminCreateActivityPage() {
             ...(i.location && { location: i.location }),
             ...(moduleType === 'map' && i.mapIcon && { mapIcon: i.mapIcon }),
             ...(moduleType === 'map' && i.cipherChar && { cipherChar: i.cipherChar }),
+            ...(moduleType === 'map' && i.openAnywhere && { openAnywhere: true }),
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
           ...(showItemTitleNumbers && { showItemTitleNumbers: true }),
@@ -2008,6 +2015,7 @@ export default function AdminCreateActivityPage() {
                       onUpdateItemSvg={updateItemSvg}
                       onToggleItemFinal={toggleItemFinal}
                       onToggleItemRevisitable={toggleItemRevisitable}
+                      onToggleItemOpenAnywhere={moduleType === 'map' && !openAnywhere ? toggleItemOpenAnywhere : undefined}
                       onConfigureCollageSplit={openSplitEditor}
                       moduleType={moduleType}
                       connectionType={connectionType}

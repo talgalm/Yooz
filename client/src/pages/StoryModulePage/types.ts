@@ -19,6 +19,7 @@ export interface GameItemData {
   spiderSvg?: string;
   isFinal?: boolean;
   revisitable?: boolean;
+  openAnywhere?: boolean;
   location?: LatLng & { address?: string; placeName?: string };
   mapIcon?: string;
   cipherChar?: string;
@@ -48,6 +49,7 @@ export interface StationItemData {
   spiderSvg?: string;
   isFinal?: boolean;
   revisitable?: boolean;
+  openAnywhere?: boolean;
   location?: LatLng & { address?: string; placeName?: string };
   mapIcon?: string;
   cipherChar?: string;
@@ -93,6 +95,7 @@ export interface MissionItemData {
   spiderSvg?: string;
   isFinal?: boolean;
   revisitable?: boolean;
+  openAnywhere?: boolean;
   location?: LatLng & { address?: string; placeName?: string };
   mapIcon?: string;
   cipherChar?: string;
