@@ -152,8 +152,8 @@ test('the first part a route visits opens the collage, the last one it visits ma
 });
 
 test('a collage split keeps a part name and a video order only when they make sense', () => {
-  const clean = sanitizeCollageSplit({ splitGroupId: 'g', partIndex: 1, partSizes: [2, 3], photoOrder: [4, 3, 2, 1, 0], videoOrder: [1, 0, 2, 3, 4], partName: '  Lookout  ', junk: 1 });
-  assert.deepEqual(clean, { splitGroupId: 'g', partIndex: 1, partSizes: [2, 3], photoOrder: [4, 3, 2, 1, 0], videoOrder: [1, 0, 2, 3, 4], partName: 'Lookout' });
+  const clean = sanitizeCollageSplit({ splitGroupId: 'g', partIndex: 1, partSizes: [2, 3], photoOrder: [4, 3, 2, 1, 0], videoOrder: [1, 0, 2, 3, 4], partName: '  Lookout  ', partDescription: '  Photograph the view  ', junk: 1 });
+  assert.deepEqual(clean, { splitGroupId: 'g', partIndex: 1, partSizes: [2, 3], photoOrder: [4, 3, 2, 1, 0], videoOrder: [1, 0, 2, 3, 4], partName: 'Lookout', partDescription: 'Photograph the view' });
   assert.equal(sanitizeCollageSplit({ splitGroupId: 'g', partIndex: 0, partSizes: [2], videoOrder: [0, 0] })?.videoOrder, undefined);
   assert.equal(sanitizeCollageSplit({ partIndex: 0 }), undefined);
 });

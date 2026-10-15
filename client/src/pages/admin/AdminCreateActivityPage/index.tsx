@@ -894,7 +894,7 @@ export default function AdminCreateActivityPage() {
     partSizes: number[],
     videoPartIndex: number | null = null,
     photoOrder: number[] | null = null,
-    extras: { partNames?: string[]; videoOrder?: number[] } = {},
+    extras: { partNames?: string[]; partDescriptions?: string[]; videoOrder?: number[] } = {},
   ): ModuleItem[] => {
     const members = items.map((it, i) => (it.collageSplit?.splitGroupId === groupId ? i : -1)).filter((i) => i >= 0);
     const byPart = [...members].sort((a, b) => ((items[a].collageSplit?.partIndex ?? 0) - (items[b].collageSplit?.partIndex ?? 0)) || a - b);
@@ -903,6 +903,7 @@ export default function AdminCreateActivityPage() {
       if (it.collageSplit?.splitGroupId !== groupId) return it;
       const partIndex = rank.get(i) ?? 0;
       const partName = extras.partNames ? extras.partNames[partIndex]?.trim() : it.collageSplit.partName;
+      const partDescription = extras.partDescriptions ? extras.partDescriptions[partIndex]?.trim() : it.collageSplit.partDescription;
       const videoOrder = extras.videoOrder ?? it.collageSplit.videoOrder;
       return {
         ...it,
@@ -914,6 +915,7 @@ export default function AdminCreateActivityPage() {
           ...(photoOrder !== null && { photoOrder }),
           ...(videoOrder && { videoOrder }),
           ...(partName && { partName }),
+          ...(partDescription && { partDescription }),
         },
       };
     });
@@ -960,7 +962,7 @@ export default function AdminCreateActivityPage() {
 
   const applySplitEditorResult = (
     index: number,
-    result: { partSizes: number[]; videoPartIndex: number | null; photoOrder: number[]; partNames: string[]; videoOrder: number[] },
+    result: { partSizes: number[]; videoPartIndex: number | null; photoOrder: number[]; partNames: string[]; partDescriptions: string[]; videoOrder: number[] },
   ) => {
     setSelectedItems((prev) => {
       const target = prev[index];
@@ -997,6 +999,7 @@ export default function AdminCreateActivityPage() {
 
       return applyGroupPartSizes(next, groupId, result.partSizes, result.videoPartIndex, photoOrder, {
         partNames: result.partNames,
+        partDescriptions: result.partDescriptions,
         videoOrder: result.videoOrder,
       });
     });
@@ -2707,10 +2710,11 @@ export default function AdminCreateActivityPage() {
         const groupMembers = target.collageSplit
           ? selectedItems.filter((it) => it.collageSplit?.splitGroupId === target.collageSplit?.splitGroupId)
           : [target];
-        const initialPartNames = groupMembers
+        const membersByPart = groupMembers
           .slice()
-          .sort((a, b) => (a.collageSplit?.partIndex ?? 0) - (b.collageSplit?.partIndex ?? 0))
-          .map((it) => it.collageSplit?.partName ?? '');
+          .sort((a, b) => (a.collageSplit?.partIndex ?? 0) - (b.collageSplit?.partIndex ?? 0));
+        const initialPartNames = membersByPart.map((it) => it.collageSplit?.partName ?? '');
+        const initialPartDescriptions = membersByPart.map((it) => it.collageSplit?.partDescription ?? '');
         return (
           <CollageSplitEditor
             stationName={target.name}
@@ -2719,6 +2723,7 @@ export default function AdminCreateActivityPage() {
             initialPartSizes={initialPartSizes}
             initialVideoPartIndex={initialVideoPartIndex}
             initialPartNames={initialPartNames}
+            initialPartDescriptions={initialPartDescriptions}
             initialVideoOrder={target.collageSplit?.videoOrder}
             onCancel={() => setSplitEditorIndex(null)}
             onSave={(res: SplitEditorResult) => {

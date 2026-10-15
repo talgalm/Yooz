@@ -326,7 +326,8 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
 
   const settings = (station.settings ?? {}) as Record<string, unknown>;
   const header = station.collageSplit?.partName || (settings.header as string) || station.name || t.stationName;
-  const description = (settings.description as string) || station.description || '';
+  const partDescription = station.collageSplit?.partDescription?.trim() || '';
+  const description = partDescription || (settings.description as string) || station.description || '';
   const disclaimer = (settings.disclaimer as string) || '';
   const logoUrl = (settings.logoUrl as string) || '';
   const logoRightUrl = (settings.logoRightUrl as string) || '';
@@ -394,7 +395,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     : fullMissions.slice(partStartIndex, partStartIndex + partSize);
   const partMultiSelectCount = multiSelect ? Math.max(1, partSize) : multiSelectCount;
 
-  const startPhase: Phase = isSplit && !isFirstPart ? 'capture' : 'intro';
+  const startPhase: Phase = isSplit && !isFirstPart && !partDescription ? 'capture' : 'intro';
   const initialPhase: Phase = isVideoPart ? 'generating' : startPhase;
   const [phase, setPhase] = useState<Phase>(initialPhase);
   const [currentMission, setCurrentMission] = useState(0);
