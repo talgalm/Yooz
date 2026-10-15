@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { participantSessionId } from '../../utils/participantActivity';
 import { styled, keyframes } from '@mui/material/styles';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
 import { StationContinueButton, DESKTOP_BREAKPOINT, DESKTOP_STATION_WIDTH, DesktopStationHeaderBand } from '../games/styled';
@@ -406,7 +407,7 @@ export default function EnteringTextStation({
     return raw.filter(Boolean) as EnteringTextField[];
   }, [station.settings]);
 
-  const sessionStorageKey = code ? `yooz_entering_text_${code}_${station._id}` : undefined;
+  const sessionStorageKey = code ? `yooz_entering_text_${code}_${station._id}_${participantSessionId()}` : undefined;
 
   const persistedState = (() => {
     const fallback = { attempts: 0, failedRoundCount: 0, solutionHintUsed: false };
