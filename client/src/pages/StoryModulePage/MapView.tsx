@@ -336,6 +336,7 @@ interface Props {
   theme?: string;
   customTheme?: CustomThemeData;
   onArrive: () => void;
+  onReachStation?: (index: number) => void;
 }
 
 export default function MapView({
@@ -365,6 +366,7 @@ export default function MapView({
   theme,
   customTheme,
   onArrive,
+  onReachStation,
 }: Props) {
   const t = useTranslations(texts);
   const canvasRef = useRef<HTMLDivElement | null>(null);
@@ -405,6 +407,9 @@ export default function MapView({
   const distance = fix && target ? distanceMeters(fix, target) : null;
   const navigating = navigatingFor === currentItemIndex;
   const arrived = arrivedAt === currentItemIndex;
+  useEffect(() => {
+    if (arrived) onReachStation?.(currentItemIndex);
+  }, [arrived, currentItemIndex, onReachStation]);
   const currentRoute = route?.forIndex === currentItemIndex ? route : null;
   const compass = useCompassHeading(navigating);
   const facing = navigating ? (compass.heading ?? heading) : null;

@@ -1158,9 +1158,11 @@ finished station or a `beforeItem` popup of the next one sends the participant b
 `PlayingPhase` is keyed by item index so the new station mounts fresh) and has no pin of its own; only the first
 station of a place is walked to. Popups on a map never show over a station: finishing one goes
 back to the map aimed at the next station, and `MAP_POPUP_DELAY_MS` later - once its card is up -
-the finished station's `afterItem` popups show, then the next station's `beforeItem` ones (an effect
-on the roadmap phase, waiting for the guidelines and any open popup; pressing start before that
-shows them first). After the last station the `afterItem` and `endOfActivity` popups show on the map
+the finished station's `afterItem` popups show. The next station's `beforeItem` popups wait until
+the participant reaches it (`MapView`'s `onReachStation`, the same proximity that shows the arrival
+card), so they never read like the last station's. Opening it without arriving ("open now", "I'm
+here", no GPS) shows them then (`handleNodeTap`). Both run from one effect on the roadmap phase that
+waits for the guidelines and any open popup. After the last station the `afterItem` and `endOfActivity` popups show on the map
 before the finish screen (`mapEndingRef` holds the group run's own jump to it). Once every station of a place is done (`placeGroupEnd`), its pin reads
 the range ("1-3", a pill as tall as the next-station circle) with a "3 תחנות" label under it; the next
 station always shows only its own number. While the next station is a later station of a place (back on the map
