@@ -67,6 +67,11 @@ Push to `main` → `.github/workflows/deploy.yml`:
 3. Writes `/etc/yooz/prod.env` from Secrets Manager, regenerates PM2 ecosystem, restarts PM2 (`yooz`).
 4. Patches nginx for 200MB upload + 900s timeouts (collage ffmpeg is slow on t3.medium).
 
+Deploys run one at a time (`concurrency: production-deploy` on the deploy job; of several waiting,
+only the newest runs). Until 2026-10-16 merges landing together deployed in parallel onto the same
+box, and an older build could finish last: five merges within a minute left production without the
+newest one until a manual re-run (`workflow_dispatch`).
+
 `deploy/*.sh` (`1-create-secret.sh`, `2-launch-ec2.sh`, `3-deploy.sh`, `ssh.sh`, `logs.sh`)
 are first-time setup / manual ops. Lambda deploy: `.github/workflows/deploy-lambda.yml`.
 

@@ -51,6 +51,13 @@ jobs:
     # A pull request is checked, never deployed.
     needs: check
     if: github.event_name != 'pull_request'
+    # One deploy at a time. Merges landing together used to deploy in
+    # parallel onto the same box, and an older one could finish last and
+    # overwrite the newer build. A deploy now waits for the running one;
+    # of several waiting, only the newest runs - it carries all of main.
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
 
     steps:
       # ── 1. Checkout ─────────────────────────────────────────
