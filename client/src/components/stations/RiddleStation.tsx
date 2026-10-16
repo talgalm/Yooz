@@ -212,6 +212,17 @@ const AttemptsRow = styled('div')({
   flexShrink: 0,
 });
 
+const BelowBoxesText = styled('div')({
+  fontSize: 15,
+  fontWeight: 600,
+  lineHeight: 1.4,
+  color: '#444',
+  textAlign: 'center',
+  maxWidth: 340,
+  whiteSpace: 'pre-wrap',
+  flexShrink: 0,
+});
+
 const InlineHintButton = styled('button')({
   display: 'inline-flex',
   alignItems: 'center',
@@ -565,22 +576,23 @@ export default function RiddleStation({
           />
         </BoxesArea>
 
-        <AttemptsRow>
-          {unlimitedAttempts ? (
-            <span style={{ marginInlineStart: 4 }}>
-              {attemptsText ? attemptsText.replace('{n}', String(attempt + 1)) : t.attempt(attempt + 1)}
-            </span>
-          ) : (
-            <>
-              {[0, 1, 2].map((i) => (
-                <AttemptDot key={i} used={String(i < attempt)} />
-              ))}
+        {(!unlimitedAttempts || !attemptsText) && (
+          <AttemptsRow>
+            {!unlimitedAttempts && [0, 1, 2].map((i) => (
+              <AttemptDot key={i} used={String(i < attempt)} />
+            ))}
+            {!attemptsText && (
               <span style={{ marginInlineStart: 4 }}>
-                {attemptsText ? attemptsText.replace('{n}', String(attempt + 1)) : t.attemptOfThree(attempt + 1)}
+                {unlimitedAttempts ? t.attempt(attempt + 1) : t.attemptOfThree(attempt + 1)}
               </span>
-            </>
-          )}
-        </AttemptsRow>
+            )}
+          </AttemptsRow>
+        )}
+        {attemptsText && (
+          <BelowBoxesText style={textColor ? { color: textColor } : undefined}>
+            {attemptsText.replace('{n}', String(attempt + 1))}
+          </BelowBoxesText>
+        )}
 
         <WrongHint>
           {shaking ? t.wrong : ' '}
