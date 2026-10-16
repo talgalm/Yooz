@@ -49,7 +49,6 @@ import {
   OrderWrongText,
   OrderPointsBadge,
   OrderPlacedText,
-  OrderRetryRow,
   NatureHintWrapper,
   IntroContainer,
   IntroContent,
@@ -344,24 +343,17 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
       setFirstTry(placed);
       setRoundScore(points);
       setAwaitingRetry(true);
-      hideFeedbackTimer.current = setTimeout(() => setShowFeedback(null), GAME_CONSTANTS.FEEDBACK_DURATION_MS);
+      hideFeedbackTimer.current = setTimeout(startRetry, GAME_CONSTANTS.FEEDBACK_DURATION_MS);
       return;
     }
     finishRound(points, GAME_CONSTANTS.FEEDBACK_DURATION_MS, popupFor(round, allCorrect));
   };
 
-  const handleRetry = () => {
-    if (hideFeedbackTimer.current) clearTimeout(hideFeedbackTimer.current);
+  const startRetry = () => {
     setAwaitingRetry(false);
     setShowFeedback(null);
     setCardStatuses((prev) => prev.map((s) => (s === 'correct' ? 'correct' : 'neutral')));
     setChecked(false);
-  };
-
-  const handleKeepScore = () => {
-    if (hideFeedbackTimer.current) clearTimeout(hideFeedbackTimer.current);
-    setShowFeedback(null);
-    finishRound(roundScore, 0, popupFor(rounds[currentRound], false));
   };
 
   const handleFinish = () => {
@@ -647,16 +639,9 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
       </NatureCardsList>
 
       <OrderActionBar>
-        {awaitingRetry ? (
-          <OrderRetryRow>
-            <NatureCheckButton onClick={handleRetry}>{t.tryAgain}</NatureCheckButton>
-            <NatureCheckButton onClick={handleKeepScore}>{t.keepScore}</NatureCheckButton>
-          </OrderRetryRow>
-        ) : (
-          <NatureCheckButton onClick={!checked ? handleCheck : undefined} disabled={checked || timeLeft === 0}>
-            {t.checkAnswer}
-          </NatureCheckButton>
-        )}
+        <NatureCheckButton onClick={!checked ? handleCheck : undefined} disabled={checked || timeLeft === 0}>
+          {t.checkAnswer}
+        </NatureCheckButton>
       </OrderActionBar>
 
       {showFeedback && (
@@ -672,6 +657,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
                     {t.placedOfTotal.replace('{placed}', String(placedCount.placed)).replace('{total}', String(placedCount.total))}
                   </OrderPlacedText>
                 )}
+                {awaitingRetry && <OrderPlacedText>{t.oneMoreTry}</OrderPlacedText>}
               </>
             )}
             {roundScore > 0 && (
