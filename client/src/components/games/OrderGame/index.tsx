@@ -10,6 +10,7 @@ import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './OrderGame.i18n';
 import { shuffleArray } from '../../../utils/shuffleArray';
 import { useGameHint } from '../../../hooks/useGameHint';
+import { useEndScreenPopups } from '../../../hooks/useEndScreenPopups';
 import HintModals from '../HintModals';
 import HintButton from '../HintButton';
 import { GameProps, HintConfig, GAME_CONSTANTS } from '../types';
@@ -143,7 +144,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
   const [placedCount, setPlacedCount] = useState<{ placed: number; total: number } | null>(null);
   const [firstTry, setFirstTry] = useState<boolean[] | null>(null);
   const [awaitingRetry, setAwaitingRetry] = useState(false);
-  const [roundPopup, setRoundPopup] = useState<SuccessPopupContent | null>(null);
+  const [earnedPopups, setEarnedPopups] = useState<SuccessPopupContent[]>([]);
   const hideFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [checked, setChecked] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
@@ -191,6 +192,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
   }, [setThemedSceneOverlay, showInstructions, showGolf]);
 
   const isGolfPhaseActive = showGolf || (gameComplete && golfEnabled && !golfDone);
+  const endPopups = useEndScreenPopups(earnedPopups, gameComplete && !noContent && (!golfEnabled || golfDone));
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('yooz:order-golf-visibility', { detail: { active: isGolfPhaseActive } }));
@@ -303,20 +305,15 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     setRoundScore(points);
     setTotalScore((prev) => prev + points);
     setAwaitingRetry(false);
-    const next = popup ? () => setRoundPopup(popup) : goToNextRound;
-    if (delayMs > 0) setTimeout(next, delayMs);
-    else next();
+    if (popup) setEarnedPopups((prev) => [...prev, popup]);
+    if (delayMs > 0) setTimeout(goToNextRound, delayMs);
+    else goToNextRound();
   };
 
   const popupFor = (round: OrderRound | undefined, allCorrect: boolean) => {
     const popup = round?.successPopup;
     if (!hasSuccessPopupContent(popup)) return undefined;
     return popup.showWhen === 'correct' && !allCorrect ? undefined : popup;
-  };
-
-  const closeRoundPopup = () => {
-    setRoundPopup(null);
-    goToNextRound();
   };
 
   const handleCheck = () => {
@@ -455,10 +452,11 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
               </FinishStump>
             </FinishStumpStage>
 
-            <IntroStartButton style={{ marginTop: 'auto', marginBottom: 'clamp(8px, 2vh, 20px)' }} onClick={handleFinish}>
+            <IntroStartButton style={{ marginTop: 'auto', marginBottom: 'clamp(8px, 2vh, 20px)' }} onClick={endPopups.pending ? endPopups.showNow : handleFinish}>
               {((game.settings as Record<string, unknown>).endButtonText as string)?.trim() || t.continue}
             </IntroStartButton>
           </FinishContent>
+          {endPopups.popup && <SuccessPopup popup={endPopups.popup} continueLabel={t.continue} onClose={endPopups.close} />}
         </FinishContainer>
       </OrderPhaseRoot>
     );
@@ -691,7 +689,6 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
         onDismissText={hint.dismissHintText}
         t={{ ...t, hintWarning: t.hintWarning.replace('{points}', String(hintPenalty)) }}
       />
-      {roundPopup && <SuccessPopup popup={roundPopup} continueLabel={t.continue} onClose={closeRoundPopup} />}
     </OrderContainer>
     </OrderPhaseRoot>
   );

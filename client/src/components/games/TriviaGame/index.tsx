@@ -5,6 +5,7 @@ import { texts } from './TriviaGame.i18n';
 import { shuffleArray } from '../../../utils/shuffleArray';
 import { decodeJwtPayload } from '../../../utils/jwt';
 import { useGameHint } from '../../../hooks/useGameHint';
+import { useEndScreenPopups } from '../../../hooks/useEndScreenPopups';
 import HintModals from '../HintModals';
 import HintButton from '../HintButton';
 import SuccessPopup, { hasSuccessPopupContent, type SuccessPopupContent } from '../SuccessPopup';
@@ -82,7 +83,6 @@ interface TriviaQuestion {
   successPopup?: SuccessPopupContent;
 }
 
-const SUCCESS_POPUP_DELAY_MS = 1100;
 
 interface TriviaScoring {
   correctAnswerPoints: number;
@@ -254,11 +254,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Set<number>>(new Set());
   const [checked, setChecked] = useState(false);
-  const [successPopup, setSuccessPopup] = useState<SuccessPopupContent | null>(null);
-  const successPopupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (successPopupTimer.current) clearTimeout(successPopupTimer.current);
-  }, []);
   const [questionScore, setQuestionScore] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
   const [gameComplete, setGameComplete] = useState(false);
@@ -267,6 +262,11 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   const [helperHalfUsed, setHelperHalfUsed] = useState(false);
   const [helperThreeQuartersUsed, setHelperThreeQuartersUsed] = useState(false);
   const [eliminatedIndices, setEliminatedIndices] = useState<Set<number>>(() => new Set());
+  const earnedPopups = useMemo(() => questionAnswers.flatMap((answer): SuccessPopupContent[] => {
+    const popup = processedQuestions[answer.questionIndex]?.successPopup;
+    return hasSuccessPopupContent(popup) && (answer.isCorrect || popup.showWhen !== 'correct') ? [popup] : [];
+  }), [questionAnswers, processedQuestions]);
+  const endPopups = useEndScreenPopups(earnedPopups, gameComplete && !noContent);
 
   const [mediaFullscreen, setMediaFullscreen] = useState(false);
   const [mediaPanning, setMediaPanning] = useState(false);
@@ -479,10 +479,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
     const answeredRight = selectedCorrectCount === totalCorrectInQuestion && selectedWrongCount === 0;
     if (answeredRight) sounds.playCorrect();
     else sounds.playWrong();
-    const popup = question.successPopup;
-    if (hasSuccessPopupContent(popup) && (answeredRight || popup.showWhen !== 'correct')) {
-      successPopupTimer.current = setTimeout(() => setSuccessPopup(popup), SUCCESS_POPUP_DELAY_MS);
-    }
   };
 
   const handleNext = useCallback(() => {
@@ -510,10 +506,10 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
   }, [checked, currentQuestion]);
 
   useEffect(() => {
-    if (!checked || successPopup) return;
+    if (!checked) return;
     const id = window.setTimeout(() => handleNextRef.current(), 5000);
     return () => clearTimeout(id);
-  }, [checked, currentQuestion, successPopup]);
+  }, [checked, currentQuestion]);
 
   useEffect(() => {
     if (gameComplete && !noContent) {
@@ -634,10 +630,11 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
             </FinishStump>
           </FinishStumpStage>
 
-          <FinishContinueButton onClick={handleFinish}>
+          <FinishContinueButton onClick={endPopups.pending ? endPopups.showNow : handleFinish}>
             {((game.settings as Record<string, unknown>).endButtonText as string)?.trim() || t.continue}
           </FinishContinueButton>
         </FinishContent>
+        {endPopups.popup && <SuccessPopup popup={endPopups.popup} continueLabel={t.continue} onClose={endPopups.close} />}
       </FinishContainer>
     );
   }
@@ -853,9 +850,6 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
         onDismissText={gameHint.dismissHintText}
         t={t}
       />
-      {successPopup && (
-        <SuccessPopup popup={successPopup} continueLabel={t.continue} onClose={() => setSuccessPopup(null)} />
-      )}
     </TriviaContainer>
   );
 }
