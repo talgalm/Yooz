@@ -207,9 +207,3 @@ export interface ConfettiPiece {
   size: number;
   rotation: number;
 }
-
-export interface MapGroupMarker {
-  groupName: string;
-  position?: LatLng;
-  positionAt?: string;
-}

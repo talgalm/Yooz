@@ -14,9 +14,8 @@ import {
 } from '../../utils/geo';
 import ActivitySessionHeader, { SessionHeaderTrophyIcon } from './ActivitySessionHeader';
 import { getHeaderIconColor, getThemeKit } from './roadmapThemes';
-import { teamMarkerColor, teamMarkerLabel } from './teamMarker';
 import { lookFor, mapOptionsFor, routeLineOptions, type MapDesign } from '../../utils/mapDesign';
-import { PIN_LAYERS, attachMeArrow, attachPulse, attachUprightPin, stationPinStyle, type MeArrow, type UprightPin } from '../../utils/mapPins';
+import { attachMeArrow, attachPulse, attachUprightPin, stationPinStyle, type MeArrow, type UprightPin } from '../../utils/mapPins';
 import MapLookOverlay from '../../components/MapLookOverlay';
 import { maneuverDirection, nextTurn, offRouteMeters, remainingWalk, type WalkRoute } from '../../utils/walkNavigation';
 import { useTranslations } from '../../context/LanguageContext';
@@ -26,7 +25,7 @@ import { texts } from './MapView.i18n';
 import { CheckMark, CompassNeedle, DirectionArrow, LocateArrow } from './MapView.icons';
 import CipherStrip from './CipherStrip';
 import { cipherSlots } from '../../utils/cipher';
-import type { CustomThemeData, MapGroupMarker, ModuleItemData } from './types';
+import type { CustomThemeData, ModuleItemData } from './types';
 
 const Wrap = styled('div')({ position: 'relative', width: '100%', height: '100dvh', overflow: 'hidden' });
 const Canvas = styled('div')({ position: 'absolute', inset: 0 });
@@ -309,7 +308,6 @@ interface Props {
   items: ModuleItemData[];
   currentItemIndex: number;
   completedIndices: number[];
-  others: MapGroupMarker[];
   fix: Fix | null;
   geoError: string | null;
   proximityMeters?: number;
@@ -340,7 +338,6 @@ export default function MapView({
   items,
   currentItemIndex,
   completedIndices,
-  others,
   fix,
   geoError,
   proximityMeters = DEFAULT_PROXIMITY_METERS,
@@ -376,7 +373,6 @@ export default function MapView({
   const mapRef = useRef<google.maps.Map | null>(null);
   const meArrow = useRef<MeArrow | null>(null);
   const stationPins = useRef<UprightPin[]>([]);
-  const groupPins = useRef<Map<string, UprightPin>>(new Map());
   const spinRef = useRef(0);
   const renderer = useRef<google.maps.DirectionsRenderer | null>(null);
   const routeRef = useRef<LoadedRoute | null>(null);
@@ -557,41 +553,8 @@ export default function MapView({
   }, [fix, facing, mapReady, look.routeColor]);
 
   useEffect(() => {
-    const maps = window.google?.maps;
-    const map = mapRef.current;
-    if (!maps || !map || !mapReady) return;
-    const seen = new Set<string>();
-    for (const g of others) {
-      if (!g.position) continue;
-      seen.add(g.groupName);
-      const existing = groupPins.current.get(g.groupName);
-      if (existing) {
-        existing.setPosition(g.position);
-        continue;
-      }
-      groupPins.current.set(
-        g.groupName,
-        attachUprightPin(maps, map, {
-          position: g.position,
-          style: { color: teamMarkerColor(g.groupName), diameterPx: 18, fontPx: 10, imagePx: 0, zIndex: PIN_LAYERS.done - 1 },
-          text: teamMarkerLabel(g.groupName),
-          title: g.groupName,
-          rotation: spinRef.current,
-        }),
-      );
-    }
-    for (const [name, pin] of groupPins.current) {
-      if (!seen.has(name)) {
-        pin.remove();
-        groupPins.current.delete(name);
-      }
-    }
-  }, [others, mapReady]);
-
-  useEffect(() => {
     spinRef.current = mapSpin;
     stationPins.current.forEach((pin) => pin.setRotation(mapSpin));
-    groupPins.current.forEach((pin) => pin.setRotation(mapSpin));
   }, [mapSpin]);
 
   useEffect(() => {
