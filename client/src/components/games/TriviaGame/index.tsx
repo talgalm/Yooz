@@ -476,14 +476,12 @@ export default function TriviaGame({ game, onComplete }: GameProps) {
       timeSpentMs: Date.now() - questionStartTime.current,
     }]);
 
-    if (selectedCorrectCount === totalCorrectInQuestion && selectedWrongCount === 0) {
-      sounds.playCorrect();
-      const reward = question.successPopup;
-      if (hasSuccessPopupContent(reward)) {
-        successPopupTimer.current = setTimeout(() => setSuccessPopup(reward), SUCCESS_POPUP_DELAY_MS);
-      }
-    } else {
-      sounds.playWrong();
+    const answeredRight = selectedCorrectCount === totalCorrectInQuestion && selectedWrongCount === 0;
+    if (answeredRight) sounds.playCorrect();
+    else sounds.playWrong();
+    const popup = question.successPopup;
+    if (hasSuccessPopupContent(popup) && (answeredRight || popup.showWhen !== 'correct')) {
+      successPopupTimer.current = setTimeout(() => setSuccessPopup(popup), SUCCESS_POPUP_DELAY_MS);
     }
   };
 

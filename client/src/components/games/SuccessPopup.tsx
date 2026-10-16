@@ -8,6 +8,7 @@ export interface SuccessPopupContent {
   text?: string;
   image?: string;
   video?: string;
+  showWhen?: 'always' | 'correct';
 }
 
 export function hasSuccessPopupContent(popup?: SuccessPopupContent | null): popup is SuccessPopupContent {

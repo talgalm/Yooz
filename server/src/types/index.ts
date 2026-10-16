@@ -183,6 +183,7 @@ export interface GameSuccessPopup {
   text?: string;
   image?: string;
   video?: string;
+  showWhen?: 'always' | 'correct';
 }
 
 export interface TriviaQuestion {
