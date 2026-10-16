@@ -1097,7 +1097,7 @@ export default function StoryModulePage() {
     });
   };
 
-  const handleFeedbackContinue = async (feedbackResult: { answers: { questionIndex: number; questionText: string; value: number; label: string }[]; notes: string }) => {
+  const handleFeedbackContinue = async (feedbackResult: { answers: { questionIndex: number; questionText: string; value: number; label: string }[]; notes: string; texts?: { itemIndex: number; prompt: string; text: string }[] }) => {
     if (!data) return;
     if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const currentItem = data.module.items[currentItemIndex];
@@ -1116,6 +1116,7 @@ export default function StoryModulePage() {
         feedbackType: 'rating_6_level',
         answers: feedbackResult.answers,
         notes: feedbackResult.notes,
+        ...(feedbackResult.texts?.length && { texts: feedbackResult.texts }),
         averageRating: feedbackResult.answers.length > 0
           ? +(feedbackResult.answers.reduce((sum, a) => sum + a.value, 0) / feedbackResult.answers.length).toFixed(2)
           : 0,

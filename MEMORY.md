@@ -721,7 +721,15 @@ Rendered in `pages/StoryModulePage/PlayingPhase.tsx` (story) / `StationStage` / 
 - **badge** — award/achievement badge screen (curve text, award text).
 - **collage** — participant photo capture → async video/photo collage (§12). `CollageStation`,
   can be split across the activity via `module.items[].collageSplit`.
-- **feedback** — feedback/survey capture (`FeedbackStation`).
+- **feedback** — feedback/survey capture (`FeedbackStation`). `settings.items` is the ordered list of
+  rating sliders (`{type:'slider', text}`) and free-text fields (`{type:'text', text?, placeholder?}`,
+  `text` being a question above the box), as many of each as wanted, in any order - the admin's
+  "שאלות ושדות - לפי הסדר שבו יופיעו" with up/down buttons. `components/stations/feedbackItems.ts`
+  (tested) reads a station saved before the list as its `questions` then the notes field at the end
+  (`notesEnabled`/`notesPlaceholder`), and saving still writes those legacy fields from the list. The
+  result keeps its shape: `answers[]` per slider (`questionIndex` counts sliders only) and `notes`, now
+  every filled text field joined with its question (`combinedNotes`), plus `texts[]` per field, so the
+  Excel export and statistics read it unchanged. Only the sliders are required.
 - **riddle** — riddle with media + checked answer (`RiddleStation`, may use `/api/check-answer`).
   `settings.attemptsText` ("טקסט מתחת לריבועים") replaces the "ניסיון 1 מתוך 3" line under the
   boxes; `{n}` in it becomes the attempt number. The dots stay.
