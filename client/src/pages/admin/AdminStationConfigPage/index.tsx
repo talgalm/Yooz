@@ -11,6 +11,7 @@ import ContentLanguageTabs from '../../../components/TranslationsPanel/ContentLa
 import CollageVideoEditor from './CollageVideoEditor';
 import CollageTemplatePreview from './CollageTemplatePreview';
 import CollageRenderPreview from './CollageRenderPreview';
+import FeedbackItemsEditor, { withFeedbackKeys, type KeyedFeedbackItem } from './FeedbackItemsEditor';
 import { customVideoProblem, type CollageTemplateId, type CustomCollageVideo } from '../../../utils/collageVideo';
 import {
   AdminPage,
@@ -216,19 +217,7 @@ export default function AdminStationConfigPage() {
     : Math.max(1, collageMissions.filter((m) => m.title.trim()).length);
   const [feedbackTitle, setFeedbackTitle] = useState('');
   const [feedbackIntroText, setFeedbackIntroText] = useState('');
-  const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>(DEFAULT_FEEDBACK_ITEMS);
-  const updateFeedbackItem = (index: number, patch: { text?: string; placeholder?: string }) => {
-    setFeedbackItems((all) => all.map((item, i) => (i === index ? { ...item, ...patch } as FeedbackItem : item)));
-  };
-  const moveFeedbackItem = (index: number, by: number) => {
-    setFeedbackItems((all) => {
-      const target = index + by;
-      if (target < 0 || target >= all.length) return all;
-      const next = [...all];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
-  };
+  const [feedbackItems, setFeedbackItems] = useState<KeyedFeedbackItem[]>(() => withFeedbackKeys(DEFAULT_FEEDBACK_ITEMS));
   const [riddleClue, setRiddleClue] = useState('');
   const [riddleAnswer, setRiddleAnswer] = useState('');
   const [riddleMediaUrl, setRiddleMediaUrl] = useState('');
@@ -401,7 +390,7 @@ export default function AdminStationConfigPage() {
         if (s.type === 'feedback') {
           if (settings.title) setFeedbackTitle(settings.title as string);
           if (settings.introText) setFeedbackIntroText(settings.introText as string);
-          setFeedbackItems(feedbackItemsFrom(settings));
+          setFeedbackItems(withFeedbackKeys(feedbackItemsFrom(settings)));
         }
         if (s.type === 'riddle') {
           if (settings.clue) setRiddleClue(settings.clue as string);
@@ -524,7 +513,7 @@ export default function AdminStationConfigPage() {
     if (lib.type === 'feedback') {
       if (settings.title) setFeedbackTitle(settings.title as string);
       if (settings.introText) setFeedbackIntroText(settings.introText as string);
-      setFeedbackItems(feedbackItemsFrom(settings));
+      setFeedbackItems(withFeedbackKeys(feedbackItemsFrom(settings)));
     }
     if (lib.type === 'riddle') {
       if (settings.clue) setRiddleClue(settings.clue as string);
@@ -906,7 +895,7 @@ export default function AdminStationConfigPage() {
     setCollageCustomVideo(undefined);
     setFeedbackTitle('');
     setFeedbackIntroText('');
-    setFeedbackItems(DEFAULT_FEEDBACK_ITEMS);
+    setFeedbackItems(withFeedbackKeys(DEFAULT_FEEDBACK_ITEMS));
     setRiddleClue('');
     setRiddleAnswer('');
     setRiddleMediaUrl('');
@@ -959,7 +948,7 @@ export default function AdminStationConfigPage() {
     } else if (randomType === 'feedback') {
       setFeedbackTitle('משוב על ההרצאה');
       setFeedbackIntroText('נשמח לשמוע את דעתכם על ההרצאה. דרגו כל שאלה בסולם 1-6.');
-      setFeedbackItems([
+      setFeedbackItems(withFeedbackKeys([
         { type: 'slider', text: 'באיזו מידה אתה שבע רצון מההרצאה (1-6)' },
         { type: 'slider', text: 'באיזו מידה את/ה מעריך/ה כי תוכל/י ליישם חלק מהתוכן שהועבר בהרצאה' },
         { type: 'slider', text: 'באיזו מידה ההרצאה תרמה לך מבחינה מקצועית' },
@@ -967,7 +956,7 @@ export default function AdminStationConfigPage() {
         { type: 'slider', text: 'באיזו מידה הדוגמאות שהובאו היו רלוונטיות' },
         { type: 'slider', text: 'באיזו מידה היית ממליץ/ה על ההרצאה לעמית/ה' },
         { type: 'text', text: '', placeholder: 'עוד הערות?' },
-      ]);
+      ]));
     } else if (randomType === 'riddle') {
       setRiddleClue('אני יש לי ידיים אבל אין לי אצבעות. אני מראה לך את הזמן. מה אני?');
       setRiddleAnswer('שעון');
@@ -1579,54 +1568,7 @@ export default function AdminStationConfigPage() {
                     onChange={(e) => setFeedbackIntroText(e.target.value)}
                   />
 
-                  <SectionLabel>{t.feedbackItems}</SectionLabel>
-                  {feedbackItems.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
-                      <span
-                        style={{
-                          flexShrink: 0, minWidth: 92, textAlign: 'center', padding: '6px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
-                          background: item.type === 'slider' ? '#f0eefa' : '#e8f6ef', color: item.type === 'slider' ? '#6c5ce7' : '#1e8449',
-                        }}
-                      >
-                        {i + 1}. {item.type === 'slider' ? t.feedbackKindSlider : t.feedbackKindText}
-                      </span>
-                      <Input
-                        placeholder={item.type === 'slider' ? t.feedbackQuestionText : t.feedbackTextPrompt}
-                        value={item.text}
-                        onChange={(e) => updateFeedbackItem(i, { text: e.target.value })}
-                        style={{ flex: '2 1 220px' }}
-                      />
-                      {item.type === 'text' && (
-                        <Input
-                          placeholder={t.feedbackTextPlaceholder}
-                          value={item.placeholder}
-                          onChange={(e) => updateFeedbackItem(i, { placeholder: e.target.value })}
-                          style={{ flex: '1 1 180px' }}
-                        />
-                      )}
-                      <SmallOutlineButton type="button" disabled={i === 0} onClick={() => moveFeedbackItem(i, -1)} aria-label={t.feedbackMoveUp} title={t.feedbackMoveUp}>↑</SmallOutlineButton>
-                      <SmallOutlineButton type="button" disabled={i === feedbackItems.length - 1} onClick={() => moveFeedbackItem(i, 1)} aria-label={t.feedbackMoveDown} title={t.feedbackMoveDown}>↓</SmallOutlineButton>
-                      <SmallOutlineButton type="button" onClick={() => setFeedbackItems((all) => all.filter((_, j) => j !== i))}>
-                        {t.feedbackQuestionRemove}
-                      </SmallOutlineButton>
-                    </div>
-                  ))}
-                  <InlineRowGap12>
-                    <button
-                      type="button"
-                      onClick={() => setFeedbackItems((all) => [...all, { type: 'slider', text: '' }])}
-                      style={{ background: '#6c5ce7', border: '1px solid #6c5ce7', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 600, padding: '10px 20px', cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.15s' }}
-                    >
-                      + {t.feedbackAddSlider}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFeedbackItems((all) => [...all, { type: 'text', text: '', placeholder: '' }])}
-                      style={{ background: '#fff', border: '1px solid #1e8449', borderRadius: 8, color: '#1e8449', fontSize: 13, fontWeight: 600, padding: '10px 20px', cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.15s' }}
-                    >
-                      + {t.feedbackAddText}
-                    </button>
-                  </InlineRowGap12>
+                  <FeedbackItemsEditor items={feedbackItems} setItems={setFeedbackItems} />
                 </VerticalStack>
               )}
               {stationType === 'riddle' && (
