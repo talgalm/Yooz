@@ -660,8 +660,11 @@ hand-rolled (HTML5 drag API + tap-to-swap touch fallback) — no dnd library.
   `components/games/OrderGame/` (`index.tsx`, `OrderSurveyGame.tsx`, `GolfChallenge.tsx`).
   Scoring lives in `OrderGame/orderScoring.ts` (tested): partial credit - each card in its right
   place earns `firstAttemptPoints / cards`; with `allowRetry` a wrong first check shows which cards
-  are right ("יש לכם עוד ניסיון אחד") and then goes straight back to the cards, the right ones kept
-  green - no question asked (until 2026-10-16 it offered "נסו שוב" / "המשך"). Each card fixed on the
+  are right - an amber card, "עוד ניסיון אחד!" with how many are placed and that the green ones are
+  locked, no points yet, for 2.6s - and then goes straight back to the cards, where a pill reads
+  "ניסיון שני: ..." and the button "בדיקה אחרונה"; the right ones
+  green and locked in place (a lock instead of the drag handle; they can't be dragged or tapped, and
+  a card moved past them skips over them - `OrderGame/lockedReorder.ts`, tested) - no question asked (until 2026-10-16 it offered "נסו שוב" / "המשך"). Each card fixed on the
   second try earns `retryPoints / cards` (cards right the first time keep their full share, so the
   retry can only add). Speed bonus (only with a time limit): up
   to half a round on a fully right check, scaled by the time left. Golf success adds 25. A hint
