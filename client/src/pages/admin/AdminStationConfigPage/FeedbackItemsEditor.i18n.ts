@@ -1,0 +1,26 @@
+export const texts = {
+  he: {
+    title: 'שאלות ושדות - לפי הסדר שבו יופיעו',
+    kindSlider: 'דירוג',
+    kindText: 'טקסט חופשי',
+    questionText: 'טקסט השאלה',
+    textPrompt: 'שאלה מעל השדה (אופציונלי)',
+    textPlaceholder: 'טקסט בתוך השדה, לדוגמה: עוד הערות?',
+    remove: 'הסר',
+    dragHandle: 'גררו כדי לשנות את הסדר, או לחצו ואז לחצו על השורה שאליה להעביר',
+    addSlider: 'שאלת דירוג',
+    addText: 'שדה טקסט חופשי',
+  },
+  en: {
+    title: 'Questions and fields - in the order they appear',
+    kindSlider: 'Rating',
+    kindText: 'Free text',
+    questionText: 'Question text',
+    textPrompt: 'Question above the field (optional)',
+    textPlaceholder: 'Text inside the field, e.g. Anything else?',
+    remove: 'Remove',
+    dragHandle: 'Drag to reorder, or click it and then click the row to move it to',
+    addSlider: 'Rating question',
+    addText: 'Free text field',
+  },
+};

@@ -728,7 +728,9 @@ Rendered in `pages/StoryModulePage/PlayingPhase.tsx` (story) / `StationStage` / 
 - **feedback** — feedback/survey capture (`FeedbackStation`). `settings.items` is the ordered list of
   rating sliders (`{type:'slider', text}`) and free-text fields (`{type:'text', text?, placeholder?}`,
   `text` being a question above the box), as many of each as wanted, in any order - the admin's
-  "שאלות ושדות - לפי הסדר שבו יופיעו" with up/down buttons. `components/stations/feedbackItems.ts`
+  "שאלות ושדות - לפי הסדר שבו יופיעו" (`AdminStationConfigPage/FeedbackItemsEditor.tsx`): rows are
+  dragged by their grip and reorder live with a slide, like the collage video order, or the grip is
+  clicked and then the target row (no dnd library). `components/stations/feedbackItems.ts`
   (tested) reads a station saved before the list as its `questions` then the notes field at the end
   (`notesEnabled`/`notesPlaceholder`), and saving still writes those legacy fields from the list. The
   result keeps its shape: `answers[]` per slider (`questionIndex` counts sliders only) and `notes`, now
