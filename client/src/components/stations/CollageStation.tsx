@@ -1166,14 +1166,6 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
               <HalfBtn onClick={() => quickCaptureRef.current?.click()}>{t.openCamera}</HalfBtn>
               <HalfBtn onClick={() => fileInputRef.current?.click()}>{t.fromGallery}</HalfBtn>
             </ButtonRow>
-            {previewUrl && (
-              <OutlineBtn
-                onClick={() => { setPreviewUrl(''); setPreviewBlob(null); setPreviewIsVideo(false); }}
-                style={{ marginBottom: 4, padding: '4px 0' }}
-              >
-                {t.retake}
-              </OutlineBtn>
-            )}
             <PrimaryBtn onClick={confirmPhoto} disabled={!hasCapture} style={{ marginTop: 4 }}>
               {currentMission === missions.length - 1 && isSplit && !finalizesCollage
                 ? t.saveAndContinue
