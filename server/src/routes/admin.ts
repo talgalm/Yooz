@@ -11,7 +11,7 @@ import {
   isCustomerRole,
 } from '../middleware/customerScope';
 import { AdminLoginRequest, AdminLoginResponse, CreateActivityRequest, LoginField } from '../types';
-import { Activity, ActivityFolder, ActivityGroup, MapGroupState, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
+import { Activity, ActivityFolder, ActivityGroup, Report, Game, Station, Mission, AdminAuditLog, User } from '../models';
 import { clampPassThreshold } from '../utils/scoreNormalization';
 import { sanitizeOrganizerContacts } from '../utils/organizerContacts';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
@@ -721,7 +721,6 @@ router.delete('/activities/:id', authenticateAdmin, async (req: Request<{ id: st
   await Activity.findByIdAndDelete(req.params.id);
   await Report.deleteMany({ activityId: existing._id });
   await ActivityGroup.deleteMany({ activityId: existing._id });
-  await MapGroupState.deleteMany({ activityId: existing._id });
   logAdminAction(req, 'delete_activity', 'activity', req.params.id, existing.name);
   res.json({ success: true });
 });

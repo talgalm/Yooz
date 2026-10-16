@@ -19,7 +19,6 @@ import { translateContent, applyTranslations } from '../services/contentTranslat
 import { visibleOrderedIndices, popupsForServedItems, popupVisibleTo, collageVisitRoles } from '../utils/moduleItems';
 import { onGroupMemberCompleted } from '../services/groupRewardService';
 import activityGroupsRouter from './activityGroups';
-import mapRunRouter from './mapRun';
 
 const router = Router();
 
@@ -56,7 +55,6 @@ function withReviewedTranslations<T>(built: T, source: { translations?: Record<s
 }
 
 router.use(activityGroupsRouter);
-router.use(mapRunRouter);
 
 router.get('/:code', async (req: Request<{ code: string }>, res: Response<ActivityConfigResponse | { error: string }>) => {
   const { code } = req.params;

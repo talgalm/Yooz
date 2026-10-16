@@ -377,9 +377,6 @@ lets async handlers throw. `/api/health` (DB check) and `/api/load-status` are p
 - `POST /:code/scores` *(participant JWT)* — final score submit → completes the Report.
 - `DELETE /:code/my-report` / `GET /:code/my-progress` *(participant JWT)* — replay support.
 - `GET /:code/order-survey/status` *(participant JWT)* — live order-survey phase.
-- **Map team markers** (mounted via `mapRunRouter`, all *participant JWT*, all group-scoped - §16):
-  `POST /:code/map/position` (report a GPS fix; server decides if you're the group's broadcaster),
-  `GET /:code/map/state` (every *other* group's position from the last 5 minutes). No progress lives here.
 - `POST /:code/mission-event`, `POST /:code/share-event` — analytics counters.
 - **Groups** (mounted via `activityGroupsRouter`): `GET /:code/groups/check-name`,
   `/today`, `/by-name`, `/by-token/:token`, `/status` *(JWT)*, `POST /:code/groups` (create). §8.
@@ -1193,19 +1190,14 @@ so a reopened activity keeps its pins (it used to drop all three on every save).
 and `score`, `POST /map/complete`): whoever reached a station first completed it for the whole
 team, and every new login in that group landed on the team's current station, even after clearing
 the phone. Removed - each member walks and scores their own run, and the team's leaderboard score is
-its members' summed `data.totalScore`, as in every group activity. `MapGroupState`
-(`map_group_states`, day-scoped, unique on `{activityId, activityDay, groupName}`) now holds only
-the team's map marker; old documents still carry the dropped fields, unread. Going live
-(`services/activityReset.ts::wipeActivityData`) and deleting the activity
-(`DELETE /api/admin/activities/:id`) remove them with the reports.
+its members' summed `data.totalScore`, as in every group activity.
 
-**One marker per team.** A group broadcasts one position — the first member to post claims the
-carrier slot, with a 2-minute staleness takeover so a dropped phone doesn't freeze the marker.
-Teammates never see each other; every *other* group is visible, always, along with the full group
-leaderboard (map activities override the own-group-only rule of §11, via `showAllGroups`).
-A rival marker is labelled with the team's number (else the first letters of its name's last
-word) in a per-team colour — `StoryModulePage/teamMarker.ts` — so "קבוצה 2" and "קבוצה 3" read
-apart. A team with no record yet has no position to draw anyway, so nothing is missing.
+**No other groups on the map.** The map shows the participant and the stations, nothing of other
+teams. Until 2026-10-16 every other group's last position showed as a pin labelled with the team's
+number or the first letters of its name's last word ("Ridge Scouts" read "Sc"): one member's phone
+posted the team's position (`POST /map/position`, `MapGroupState` in `map_group_states`) and every
+phone polled the rest (`GET /map/state`, `teamMarker.ts`). Removed with its model and routes. The old `map_group_states` documents remain in the database, unread. The group
+leaderboard of a map activity still shows every group (`showAllGroups`, overriding §11).
 
 **Arrival is the part that needs care.** Phone GPS reads 5-15m off, so a raw
 `distance <= radius` leaves people standing at the sign with nothing happening.
@@ -1254,7 +1246,7 @@ checks position; the rule is client-side. Once the participant has progress the 
 started - nobody presses Start twice. Covered by `geo.test.ts`.
 
 **Client.** `MapView.tsx` (sibling of `RoadmapView`/`SpidersView`), `hooks/useMapRun.ts` (GPS
-watch + 10s poll + position push), `utils/googleMaps.ts` (script-tag loader, no npm wrapper —
+watch), `utils/googleMaps.ts` (script-tag loader, no npm wrapper —
 the JS API already ships map, geocoder and walking directions). Needs `VITE_GOOGLE_MAPS_KEY` (§2);
 without it — or when Google rejects it for the page's domain (`window.gm_authFailure`,
 `onMapsAuthFailure`) — the map degrades to a panel with the station, its address and an open

@@ -277,8 +277,7 @@ export default function StoryModulePage() {
   const hasModuleData = useRef(false);
   const lockedFromIndex = useLockStream(code, data?.lockedFromIndex ?? null);
   const isMap = data?.module?.type === 'map';
-  const isGroupMap = isMap && !!participant?.group;
-  const mapRun = useMapRun(code || '', isMap, isGroupMap);
+  const mapRun = useMapRun(isMap);
 
   useWakeLock(true);
   const { nudge: nudgeHelp } = useHelpChat();
@@ -1505,7 +1504,6 @@ export default function StoryModulePage() {
             items={data.module.items}
             currentItemIndex={currentItemIndex}
             completedIndices={Array.from({ length: currentItemIndex }, (_, i) => i)}
-            others={mapRun.others}
             fix={mapRun.fix}
             geoError={mapRun.geoError}
             proximityMeters={data.module.proximityMeters}

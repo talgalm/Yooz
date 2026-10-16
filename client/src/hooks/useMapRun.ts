@@ -1,23 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiFetch } from '../utils/api';
+import { useEffect, useState } from 'react';
 import { MAX_USABLE_ACCURACY_M, type Fix } from '../utils/geo';
-import type { MapGroupMarker } from '../pages/StoryModulePage/types';
-
-const POLL_MS = 10_000;
-const PUSH_MS = 8_000;
 
 interface MapRun {
   fix: Fix | null;
   geoError: string | null;
-  others: MapGroupMarker[];
 }
 
-export function useMapRun(code: string, enabled: boolean, team: boolean): MapRun {
+export function useMapRun(enabled: boolean): MapRun {
   const [fix, setFix] = useState<Fix | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
-  const [others, setOthers] = useState<MapGroupMarker[]>([]);
-  const lastPush = useRef(0);
-  const latestFix = useRef<Fix | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -34,7 +25,6 @@ export function useMapRun(code: string, enabled: boolean, team: boolean): MapRun
           accuracy: pos.coords.accuracy ?? 999,
           heading: Number.isFinite(pos.coords.heading) ? pos.coords.heading : null,
         };
-        latestFix.current = next;
         if (next.accuracy <= MAX_USABLE_ACCURACY_M) setFix(next);
       },
       (err) => setGeoError(err.code === err.PERMISSION_DENIED ? 'denied' : 'unavailable'),
@@ -43,29 +33,5 @@ export function useMapRun(code: string, enabled: boolean, team: boolean): MapRun
     return () => navigator.geolocation.clearWatch(watchId);
   }, [enabled]);
 
-  const refresh = useCallback(() => {
-    if (!team) return;
-    apiFetch<{ groups: MapGroupMarker[] }>(`/api/activities/${code}/map/state`)
-      .then((d) => setOthers(d.groups || []))
-      .catch(() => { });
-  }, [code, team]);
-
-  useEffect(() => {
-    if (!team) return;
-    refresh();
-    const timer = setInterval(() => {
-      refresh();
-      const current = latestFix.current;
-      if (!current || current.accuracy > MAX_USABLE_ACCURACY_M) return;
-      if (Date.now() - lastPush.current < PUSH_MS) return;
-      lastPush.current = Date.now();
-      apiFetch(`/api/activities/${code}/map/position`, {
-        method: 'POST',
-        body: JSON.stringify({ lat: current.lat, lng: current.lng }),
-      }).catch(() => { });
-    }, POLL_MS);
-    return () => clearInterval(timer);
-  }, [code, team, refresh]);
-
-  return { fix, geoError, others };
+  return { fix, geoError };
 }
