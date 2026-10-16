@@ -735,8 +735,9 @@ Rendered in `pages/StoryModulePage/PlayingPhase.tsx` (story) / `StationStage` / 
   every filled text field joined with its question (`combinedNotes`), plus `texts[]` per field, so the
   Excel export and statistics read it unchanged. Only the sliders are required.
 - **riddle** — riddle with media + checked answer (`RiddleStation`, may use `/api/check-answer`).
-  `settings.attemptsText` ("טקסט מתחת לריבועים") replaces the "ניסיון 1 מתוך 3" line under the
-  boxes; `{n}` in it becomes the attempt number. The dots stay.
+  `settings.attemptsText` ("טקסט מתחת לריבועים") replaces the "ניסיון 1 מתוך 3" label under the
+  boxes; `{n}` in it becomes the attempt number. The dots stay on their own row and the text gets a
+  centered line of its own under them (until 2026-10-16 it sat in the dots' row, small and grey).
 - **avatar** — AI chat with a character (`AvatarStation` → `/api/avatar-chat`).
 - **avatarQuiz** — a character *asks* the participant questions and an AI grades each free-text
   answer 0-100 (`AvatarQuizStation` → `/api/avatar-quiz`). Settings: `characterName`,
