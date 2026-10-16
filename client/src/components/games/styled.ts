@@ -808,13 +808,14 @@ export const StationHeadline = styled('h2')({
 
 export const StationBodyText = styled('p')({
   color: '#fff',
-  fontSize: 16,
-  lineHeight: 1.7,
+  fontSize: 18,
+  fontWeight: 500,
+  lineHeight: 1.6,
   margin: 0,
   whiteSpace: 'pre-wrap',
   '@media (min-width: 768px)': {
-    fontSize: 19,
-    lineHeight: 1.75,
+    fontSize: 21,
+    lineHeight: 1.65,
   },
 });
 

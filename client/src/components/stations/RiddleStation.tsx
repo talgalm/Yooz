@@ -7,6 +7,7 @@ import { StationContinueButton } from '../games/styled';
 import ImageZoomOverlay, { ZoomBadge, ZoomGlassIcon, useZoomBadgeOnImage } from '../ImageZoomOverlay';
 import { useLang, useTranslations } from '../../context/LanguageContext';
 import { texts } from './RiddleStation.i18n';
+import { themedTitleInk } from '../../utils/themeInk';
 
 interface RiddleSettings {
   clue?: string;
@@ -485,7 +486,7 @@ export default function RiddleStation({
   return (
     <>
       <Container>
-        <StationTitle style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitle>
+        <StationTitle style={themedTitleInk(textColor)}>{station.name}</StationTitle>
 
         {clue ? <ClueText style={textColor ? { color: textColor } : undefined}>{clue}</ClueText> : null}
 

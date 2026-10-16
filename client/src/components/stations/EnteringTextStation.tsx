@@ -6,6 +6,7 @@ import { StationContinueButton, DESKTOP_BREAKPOINT, DESKTOP_STATION_WIDTH, Deskt
 import { ModalOverlay, ModalCard } from '../styled';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './EnteringTextStation.i18n';
+import { themedTitleInk } from '../../utils/themeInk';
 
 const confettiFall = keyframes`
   0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
@@ -609,7 +610,7 @@ export default function EnteringTextStation({
   return (
     <Wrap>
       <DesktopStationHeaderBand>
-        <Title style={textColor ? { color: textColor } : undefined}>{title}</Title>
+        <Title style={themedTitleInk(textColor)}>{title}</Title>
       </DesktopStationHeaderBand>
       <Card>
         {fields.map((field, index) => (

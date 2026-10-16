@@ -39,6 +39,7 @@ import {
   ChatInput,
   FixedContinue,
 } from './avatar/styled';
+import { themedTitleInk } from '../../utils/themeInk';
 
 interface ChatMessage {
   id: number;
@@ -279,9 +280,9 @@ export default function AvatarStation({
   return (
     <Container>
       <StationHeader>
-        <StationTitle style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitle>
+        <StationTitle style={themedTitleInk(textColor)}>{station.name}</StationTitle>
         {station.description && !descriptionAsPopup && (
-          <StationDescriptionText style={textColor ? { color: textColor } : undefined}>{station.description}</StationDescriptionText>
+          <StationDescriptionText style={themedTitleInk(textColor)}>{station.description}</StationDescriptionText>
         )}
       </StationHeader>
 
