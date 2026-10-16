@@ -393,10 +393,15 @@ export const QuestionContent = styled('p')({
 });
 
 export const QuestionHintText = styled('p')({
-  fontSize: 13,
+  fontSize: 'clamp(15px, 4vw, 17px)',
+  fontWeight: 500,
+  lineHeight: 1.45,
   color: '#7f8c8d',
-  margin: '2px 0 0',
-  fontStyle: 'italic',
+  margin: '8px 0 0',
+  width: '100%',
+  textAlign: 'center',
+  overflowWrap: 'break-word',
+  [DESKTOP_BREAKPOINT]: { fontSize: 17 },
 });
 
 export const HintSpacer = styled('div')({
