@@ -114,9 +114,10 @@ function tileSize(count: number): TileSize {
 interface Props {
   slots: CipherSlot[];
   seenKey: string;
+  onRevealingChange?: (revealing: boolean) => void;
 }
 
-export default function CipherStrip({ slots, seenKey }: Props) {
+export default function CipherStrip({ slots, seenKey, onRevealingChange }: Props) {
   const t = useTranslations(texts);
   const [seen, markSeen] = useCipherSeen(seenKey);
   const fresh = unseenSlots(slots, seen);
@@ -144,6 +145,7 @@ export default function CipherStrip({ slots, seenKey }: Props) {
       if (settled) return;
       settled = true;
       markSeen(revealed);
+      onRevealingChange?.(false);
     };
     const play = () => {
       const canAnimate = order.every((itemIndex) => typeof reels.current.get(itemIndex)?.animate === 'function');
@@ -174,10 +176,14 @@ export default function CipherStrip({ slots, seenKey }: Props) {
     const onVisibility = () => {
       if (document.visibilityState === 'hidden' && !settled) replayWhenShown();
     };
+    onRevealingChange?.(true);
     replayWhenShown();
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
-      if (!settled) silence();
+      if (!settled) {
+        silence();
+        onRevealingChange?.(false);
+      }
       settled = true;
       stopWaiting();
       running.forEach((animation) => animation.cancel());
