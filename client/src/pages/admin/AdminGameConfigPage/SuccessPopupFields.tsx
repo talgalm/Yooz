@@ -19,9 +19,10 @@ export interface SuccessPopupDraft {
   text: string;
   image: string;
   video: string;
+  showWhen: 'always' | 'correct';
 }
 
-const EMPTY_SUCCESS_POPUP: SuccessPopupDraft = { title: '', contentType: 'text', text: '', image: '', video: '' };
+const EMPTY_SUCCESS_POPUP: SuccessPopupDraft = { title: '', contentType: 'text', text: '', image: '', video: '', showWhen: 'always' };
 
 export function successPopupDraftFrom(raw: unknown): SuccessPopupDraft | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
@@ -33,6 +34,7 @@ export function successPopupDraftFrom(raw: unknown): SuccessPopupDraft | undefin
     text: str(saved.text),
     image: str(saved.image),
     video: str(saved.video),
+    showWhen: saved.showWhen === 'correct' ? 'correct' : 'always',
   };
 }
 
@@ -50,6 +52,7 @@ export function successPopupToSave(draft?: SuccessPopupDraft) {
     ...(draft.contentType === 'text' && { text: draft.text.trim() }),
     ...(draft.contentType === 'image' && { image: draft.image.trim() }),
     ...(draft.contentType === 'video' && { video: draft.video.trim() }),
+    ...(draft.showWhen === 'correct' && { showWhen: 'correct' as const }),
   };
 }
 
@@ -75,6 +78,16 @@ export default function SuccessPopupFields({ popup, after, onChange }: {
       </ScoringRow>
       {popup && (
         <VerticalStackGap10 style={{ marginTop: 8 }}>
+          <ScoringRow>
+            <ScoringLabel>{t.showWhen}</ScoringLabel>
+            <SelectionGroupNoFlex>
+              {(['always', 'correct'] as const).map((when) => (
+                <SmallSelectionButton key={when} type="button" selected={popup.showWhen === when} onClick={() => onChange({ showWhen: when })}>
+                  {when === 'always' ? t.showAlways : after === 'question' ? t.showOnlyCorrectAnswer : t.showOnlyCorrect}
+                </SmallSelectionButton>
+              ))}
+            </SelectionGroupNoFlex>
+          </ScoringRow>
           <FlexInput placeholder={t.title} value={popup.title} onChange={(e) => onChange({ title: e.target.value })} />
           <SelectionGroupNoFlex>
             {(['text', 'image', 'video'] as const).map((kind) => (
@@ -99,7 +112,11 @@ export default function SuccessPopupFields({ popup, after, onChange }: {
               />
             </MediaRow>
           )}
-          <span style={{ fontSize: 12, color: '#999' }}>{after === 'question' ? t.hintQuestion : t.hintRound}</span>
+          <span style={{ fontSize: 12, color: '#999' }}>
+            {after === 'question'
+              ? (popup.showWhen === 'correct' ? t.hintQuestionCorrect : t.hintQuestionAlways)
+              : (popup.showWhen === 'correct' ? t.hintRoundCorrect : t.hintRoundAlways)}
+          </span>
         </VerticalStackGap10>
       )}
     </>

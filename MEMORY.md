@@ -668,15 +668,19 @@ hand-rolled (HTML5 drag API + tap-to-swap touch fallback) — no dnd library.
   costs a quarter of a round, sent up as the result's `hintPenalty` (the dialog states the real
   number). `maxPossibleScore` counts every round's best speed bonus and the golf, so a perfect run
   is 100%. Timing out checks the cards as they stand and ends the round, with no retry. A round can
-  have a `successPopup` ("פופאפ אחרי סדר נכון", the shared `SuccessPopupFields` in the editor, quiz
-  mode only) that `components/games/SuccessPopup.tsx` opens once every card is in place; the next
-  round waits until it is closed. Until
+  have a `successPopup` ("פופאפ בסוף הסבב", the shared `SuccessPopupFields` in the editor, quiz
+  mode only) that `components/games/SuccessPopup.tsx` opens at the end of the round; the next round
+  waits until it is closed. `showWhen` ("מתי להציג") is `always` by default - whatever the result,
+  after a time-out or "המשך" without a retry, so whoever misses the order still sees the content it
+  carries (a cipher clue, say) - or `correct` for a reward shown only once every card is in place.
+  Popups saved before the option count as `always`. Until
   2026-10-15 a round was all or nothing, and `retryPoints` and `speedBonus` were shown but unused.
 - **Trivia** (`TriviaGameSettings`): `questions:{text,hint?,media?,answers:{text,isCorrect,
   explanation?}[], successPopup?:{title?, contentType:'text'|'image'|'video', text?/image?/video?}}[]`
-  (the per-question "פופאפ אחרי תשובה נכונה": `components/games/SuccessPopup.tsx`, edited with the
-  shared `AdminGameConfigPage/SuccessPopupFields.tsx`, opens 1.1s after a fully right
-  answer and holds the 5s move to the next question until it is closed),
+  (the per-question "פופאפ אחרי השאלה": `components/games/SuccessPopup.tsx`, edited with the
+  shared `AdminGameConfigPage/SuccessPopupFields.tsx`, opens 1.1s after the check and holds the 5s
+  move to the next question until it is closed; `showWhen` is `always` by default - a wrong answer
+  and a time-out too - or `correct` for only a fully right answer, as in the order game),
   `scoring:{correctAnswerPoints, wrongAnswerPenalty, timeLimitSeconds?}`,
   `shuffleAnswers?`, `includeHelpers?` (one-time 1/2 or 3/4 eliminations). The intro title is the game's
   name (it was always "טריוויה"), like the order game; the card under it shows `instructions` and is left

@@ -308,6 +308,12 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     else next();
   };
 
+  const popupFor = (round: OrderRound | undefined, allCorrect: boolean) => {
+    const popup = round?.successPopup;
+    if (!hasSuccessPopupContent(popup)) return undefined;
+    return popup.showWhen === 'correct' && !allCorrect ? undefined : popup;
+  };
+
   const closeRoundPopup = () => {
     setRoundPopup(null);
     goToNextRound();
@@ -341,7 +347,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
       hideFeedbackTimer.current = setTimeout(() => setShowFeedback(null), GAME_CONSTANTS.FEEDBACK_DURATION_MS);
       return;
     }
-    finishRound(points, GAME_CONSTANTS.FEEDBACK_DURATION_MS, allCorrect && hasSuccessPopupContent(round.successPopup) ? round.successPopup : undefined);
+    finishRound(points, GAME_CONSTANTS.FEEDBACK_DURATION_MS, popupFor(round, allCorrect));
   };
 
   const handleRetry = () => {
@@ -355,7 +361,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
   const handleKeepScore = () => {
     if (hideFeedbackTimer.current) clearTimeout(hideFeedbackTimer.current);
     setShowFeedback(null);
-    finishRound(roundScore, 0);
+    finishRound(roundScore, 0, popupFor(rounds[currentRound], false));
   };
 
   const handleFinish = () => {
