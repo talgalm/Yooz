@@ -829,7 +829,11 @@ id minted on each login — so a second participant on the same phone can't be h
 one's finished video. Never derive that scope from name/email/phone: those collide. Optional SMS
 delivery of the finished video (`smsForCollage*`, polled every 15s). Client:
 `components/stations/CollageStation.tsx` + `collageJobStorage`/`collageSplitStorage`/
-`backgroundCollageJob` + `utils/collageApi`/`collagePhotoCompress`.
+`backgroundCollageJob` + `utils/collageApi`/`collagePhotoCompress`. The text under the finished
+video, which is also the share text, is `settings.shareText` ("טקסט מתחת לסרטון המוכן ובשיתוף"),
+else the neutral `videoShareText` ("ככה נראים רגעי השיא שלי בפעילות 🎬"); the shared file is named
+after the collage. Until 2026-10-16 every collage showed the Ganei Yehoshua "Secret Suitcase" line
+hard-coded in `ganeiYehoshuaShareText` and named the file `ganei-yehoshua-highlights.mp4`.
 
 **Split collage parts.** Each part takes a
 contiguous slice (`partSizes`) of the missions in `photoOrder`; `partName` is the name the
@@ -2015,7 +2019,7 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   **`inAppBrowserEscape.ts`** — `isInAppBrowser`, `escapeToDefaultBrowser` (break out of
   Instagram/FB webview for camera/QR). **`storageHealth.ts`** — `isStorageHealthy`.
   **`formatDuration.ts`**, **`shuffleArray.ts`**, **`linkifyText.tsx`**,
-  **`ganeiYehoshuaShareText.ts`** (customer-specific share copy).
+  **`ganeiYehoshuaShareText.ts`** (customer-specific share copy, now only the trash-sort mission's badge share).
 
 ### Hooks (`client/src/hooks/`)
 - **`useAnalytics.ts`** — data hooks for the admin stats tab: `useOverview`, `useTimeline`,

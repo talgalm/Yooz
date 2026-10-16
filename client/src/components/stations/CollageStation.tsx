@@ -2,11 +2,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { styled, keyframes } from '@mui/material/styles';
 import type { StationItemData } from '../../pages/StoryModulePage/types';
-import {
-  buildVideoSharePlainText,
-  buildVideoShareTextBody,
-} from '../../utils/ganeiYehoshuaShareText';
-import { useLang, useTranslations } from '../../context/LanguageContext';
+import { useTranslations } from '../../context/LanguageContext';
 import { currentLang } from '../../utils/currentLang';
 import { texts } from './CollageStation.i18n';
 import {
@@ -316,7 +312,6 @@ const VideoPlayIcon = styled('span')({
 
 export default function CollageStation({ station, onContinue, code, smsForCollage }: Props) {
   const t = useTranslations(texts);
-  const { lang } = useLang();
   const { participant } = useAuth();
   const userTag = participantSessionId();
   const splitGroupId = station.collageSplit
@@ -329,6 +324,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
   const partDescription = station.collageSplit?.partDescription?.trim() || '';
   const description = partDescription || (settings.description as string) || station.description || '';
   const disclaimer = (settings.disclaimer as string) || '';
+  const videoShareText = (typeof settings.shareText === 'string' && settings.shareText.trim()) || t.videoShareText;
   const logoUrl = (settings.logoUrl as string) || '';
   const logoRightUrl = (settings.logoRightUrl as string) || '';
   const template = (settings.template as string) || 'default';
@@ -734,15 +730,15 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       if (!res.ok) return null;
       const blob = await res.blob();
       const type = blob.type.startsWith('video/') ? blob.type : 'video/mp4';
-      return new File([blob], 'ganei-yehoshua-highlights.mp4', { type });
+      return new File([blob], `${collageTitle || 'collage'}.mp4`, { type });
     } catch {
       return null;
     }
   }, [resultIsVideo, resultUrl]);
 
   const handleShare = useCallback(async () => {
-    const shareText = buildVideoShareTextBody(lang);
-    const shareTextWithUrl = buildVideoSharePlainText(lang, shareUrl);
+    const shareText = videoShareText;
+    const shareTextWithUrl = shareUrl ? `${videoShareText}\n${shareUrl}` : videoShareText;
     const file = await getResultVideoFile();
 
     if (navigator.share) {
@@ -775,7 +771,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       setTimeout(() => setShareCopied(false), 2500);
     } catch {
     }
-  }, [getResultVideoFile, shareUrl]);
+  }, [getResultVideoFile, shareUrl, videoShareText]);
 
   const handleDownload = async () => {
     try {
@@ -1310,7 +1306,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
           {resultIsVideo && (
             <>
               <SubText style={{ marginBottom: 12, whiteSpace: 'pre-line' }}>
-                {buildVideoShareTextBody(lang)}
+                {videoShareText}
               </SubText>
               <PrimaryBtn onClick={() => void handleShare()}>
                 {shareCopied ? t.shareCopied : t.shareVideo}
