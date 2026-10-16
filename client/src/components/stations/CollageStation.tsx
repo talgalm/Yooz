@@ -979,11 +979,11 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       if (serverJob && ['queued', 'preparing', 'encoding', 'uploading'].includes(serverJob.phase)) {
         setPhase('generating');
         setProgress(serverJob.percent);
-        setProgressLabel(serverJob.message || t.creatingCollage);
+        setProgressLabel(serverWording(serverJob.message) ? serverJob.message as string : t.creatingCollage);
         try {
           const result = await waitForServerCollageJob(serverJob.jobId, (snap) => {
             setProgress((cur) => Math.max(cur, Math.min(99, Math.round(55 + snap.percent * 0.45))));
-            if (snap.message) setProgressLabel(snap.message);
+            if (serverWording(snap.message)) setProgressLabel(snap.message as string);
             setEtaSeconds(typeof snap.etaSeconds === 'number' ? snap.etaSeconds : null);
           });
           await finishWithResult(result.url, result.isVideo);
@@ -1244,7 +1244,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
             <LoadingGif src="/images/camera-loading.gif" alt="" />
             <ProgressTrack><ProgressFill pct={progress} /></ProgressTrack>
             <ProgressLabel>{t.creatingWithPct(progress)}</ProgressLabel>
-            <ProgressSub>{progressLabel}</ProgressSub>
+            {progressLabel !== t.creatingCollage && <ProgressSub>{progressLabel}</ProgressSub>}
             {etaSeconds !== null && progress < 100 && !pollOffline && (
               <ProgressEta>{formatEta(etaSeconds)}</ProgressEta>
             )}
