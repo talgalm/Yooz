@@ -71,7 +71,7 @@ export default function SuccessPopupFields({ popup, after, onChange }: {
   return (
     <>
       <ScoringRow style={{ marginTop: 14 }}>
-        <ScoringLabel>{after === 'question' ? t.afterQuestion : t.afterRound}</ScoringLabel>
+        <ScoringLabel>{t.endScreenPopup}</ScoringLabel>
         <ScoringToggleButton type="button" selected={!!popup} onClick={() => onChange(popup ? null : {})}>
           {popup ? 'ON' : 'OFF'}
         </ScoringToggleButton>

@@ -670,19 +670,23 @@ hand-rolled (HTML5 drag API + tap-to-swap touch fallback) — no dnd library.
   costs a quarter of a round, sent up as the result's `hintPenalty` (the dialog states the real
   number). `maxPossibleScore` counts every round's best speed bonus and the golf, so a perfect run
   is 100%. Timing out checks the cards as they stand and ends the round, with no retry. A round can
-  have a `successPopup` ("פופאפ בסוף הסבב", the shared `SuccessPopupFields` in the editor, quiz
-  mode only) that `components/games/SuccessPopup.tsx` opens at the end of the round; the next round
-  waits until it is closed. `showWhen` ("מתי להציג") is `always` by default - whatever the result,
-  after a time-out or "המשך" without a retry, so whoever misses the order still sees the content it
-  carries (a cipher clue, say) - or `correct` for a reward shown only once every card is in place.
+  have a `successPopup` ("פופאפ במסך הסיום", the shared `SuccessPopupFields` in the editor, quiz
+  mode only). The rounds' popups are collected, and `components/games/SuccessPopup.tsx` opens them
+  one after another on the final score screen, after the golf (`hooks/useEndScreenPopups.ts`: 0.9s
+  after the screen shows, or at once if its button is pressed sooner; the game ends only once they
+  are closed). Until 2026-10-16 a popup opened at the end of its round, before the player finished.
+  `showWhen` ("מתי להציג") is `always` by default - whatever the result, a time-out too, so whoever
+  misses the order still sees the content it carries (a cipher clue, say) - or `correct` for a
+  reward earned only when every card of that round is in place.
   Popups saved before the option count as `always`. Until
   2026-10-15 a round was all or nothing, and `retryPoints` and `speedBonus` were shown but unused.
 - **Trivia** (`TriviaGameSettings`): `questions:{text,hint?,media?,answers:{text,isCorrect,
   explanation?}[], successPopup?:{title?, contentType:'text'|'image'|'video', text?/image?/video?}}[]`
-  (the per-question "פופאפ אחרי השאלה": `components/games/SuccessPopup.tsx`, edited with the
-  shared `AdminGameConfigPage/SuccessPopupFields.tsx`, opens 1.1s after the check and holds the 5s
-  move to the next question until it is closed; `showWhen` is `always` by default - a wrong answer
-  and a time-out too - or `correct` for only a fully right answer, as in the order game),
+  (the per-question "פופאפ במסך הסיום": `components/games/SuccessPopup.tsx`, edited with the
+  shared `AdminGameConfigPage/SuccessPopupFields.tsx`; every popup earned opens on the final score
+  screen, in question order, as in the order game - derived from `questionAnswers`, so a resumed game
+  keeps them. Until 2026-10-16 it opened 1.1s after the check, mid-game. `showWhen` is `always` by
+  default - a wrong answer and a time-out too - or `correct` for only a fully right answer),
   `scoring:{correctAnswerPoints, wrongAnswerPenalty, timeLimitSeconds?}`,
   `shuffleAnswers?`, `includeHelpers?` (one-time 1/2 or 3/4 eliminations). The intro title is the game's
   name (it was always "טריוויה"), like the order game; the card under it shows `instructions` and is left
@@ -2052,6 +2056,8 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   current `lockedFromIndex`.
 - **`useMediaPreload.ts`** — `useMediaPreload(urls)` → `{ready, failed, retry}` (gates Continue on
   image/video stations).
+- **`useEndScreenPopups.ts`** — `useEndScreenPopups(popups, onEndScreen)`: the trivia/order games'
+  earned popups, queued for the final score screen.
 - **`useGameSounds.ts`** — `useGameSounds(custom?)` (shared game SFX). **`useGameHint.ts`** —
   `useGameHint(hint?)` (hint modal state + penalty). **`useWakeLock.ts`** — keep screen awake
   during play. **`useParticipantExit.ts`** — exit/leave handling. **`usePagination.ts`** —
