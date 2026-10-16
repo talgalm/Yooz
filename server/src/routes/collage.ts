@@ -1048,7 +1048,7 @@ router.post('/jobs', async (req: Request, res: Response) => {
     percent: 0,
     message: 'אוסף תמונות...',
     isVideo: true,
-    ...(stationSettings?.startWhenComplete === true && { autoStart: true }),
+    autoStart: true,
     lang: readLang(req),
   });
 
