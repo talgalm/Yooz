@@ -1329,7 +1329,11 @@ code has to be visible all the time. Stations revealed since the strip last show
 `localStorage`, `yooz_cipher_seen_<code>`, `hooks/useCipherSeen.ts`) spin in like a slot-machine
 reel through characters of the same kind (`reelStrip`: digits, Hebrew, Latin or a mix;
 deterministic, so no `Math.random` in render) and land with a pop, one after another,
-when you come back to the map; they are marked seen once they land. The spin runs through the Web
+when you come back to the map; they are marked seen once they land. The reveal plays
+`/sounds/cipher-reveal.wav`, cut from a combination-lock clip so its last, loudest tick lands at 1.38s -
+as the reel stops (`SPIN_MS` 1.4s; with several tiles it is timed to the last). `utils/cipherRevealSound.ts`
+keeps one preloaded element for the app, unlocked silently by the first tap anywhere so iOS lets it play
+later without a gesture; it stops only if the reveal is interrupted, so the tail is never cut. The spin runs through the Web
 Animations API with plain pixel values (an earlier CSS version ended at a `var()` inside
 `@keyframes`), and it only starts after 0.7s of the page actually being visible and drawing
 (`afterSteadyFrames` caps each frame's share at 100ms): on a slower Android phone the map's first
