@@ -347,6 +347,7 @@ export default function StoryModulePage() {
   const pendingAfterItemPopupRef = useRef<number | null>(null);
   const mapEndingRef = useRef(false);
   const [reachedIndex, setReachedIndex] = useState<number | null>(null);
+  const [cipherRevealing, setCipherRevealing] = useState(false);
 
   const [countdown, setCountdown] = useState<number | null>(90);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -837,7 +838,7 @@ export default function StoryModulePage() {
   };
 
   useEffect(() => {
-    if (!isMap || phase !== 'roadmap' || !progressChecked || showGuidelines || currentPopup || mapEndingRef.current) return;
+    if (!isMap || phase !== 'roadmap' || !progressChecked || showGuidelines || currentPopup || cipherRevealing || mapEndingRef.current) return;
     const finishedItem = pendingAfterItemPopupRef.current;
     const reachedNext = reachedIndex === currentItemIndex;
     const onTheWay = !reachedNext && getPopupsForTrigger('beforeItem', currentItemIndex, true).length > 0;
@@ -852,7 +853,7 @@ export default function StoryModulePage() {
       showBeforeNext();
     }, finishedItem !== null || onTheWay ? MAP_POPUP_DELAY_MS : ARRIVAL_POPUP_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [isMap, phase, progressChecked, showGuidelines, currentPopup, currentItemIndex, reachedIndex, getPopupsForTrigger, showPopupsOrRun]);
+  }, [isMap, phase, progressChecked, showGuidelines, currentPopup, cipherRevealing, currentItemIndex, reachedIndex, getPopupsForTrigger, showPopupsOrRun]);
 
   const spidersFinalItemIndex = data
     ? data.module.items.findIndex((it) => it.isFinal)
@@ -1514,6 +1515,7 @@ export default function StoryModulePage() {
             showStationNames={data.module.showStationNames === true}
             cipherEnabled={data.module.cipherEnabled === true}
             cipherSeenKey={`yooz_cipher_seen_${code}_${participantSessionId()}`}
+            onCipherRevealingChange={setCipherRevealing}
             onArrive={() => handleNodeTap(currentItemIndex)}
             onReachStation={setReachedIndex}
             sessionTexts={t}

@@ -318,6 +318,7 @@ interface Props {
   showStationNames?: boolean;
   cipherEnabled?: boolean;
   cipherSeenKey: string;
+  onCipherRevealingChange?: (revealing: boolean) => void;
   sessionTexts: Record<string, string>;
   currentPoints: number;
   pointsRoll?: { from: number; to: number } | null;
@@ -348,6 +349,7 @@ export default function MapView({
   showStationNames = false,
   cipherEnabled = false,
   cipherSeenKey,
+  onCipherRevealingChange,
   sessionTexts,
   currentPoints,
   pointsRoll,
@@ -959,7 +961,7 @@ export default function MapView({
         <TopTint aria-hidden />
         <TopContent>
           {header}
-          {cipher.length > 0 && <CipherStrip slots={cipher} seenKey={cipherSeenKey} />}
+          {cipher.length > 0 && <CipherStrip slots={cipher} seenKey={cipherSeenKey} onRevealingChange={onCipherRevealingChange} />}
         </TopContent>
       </TopChrome>
 

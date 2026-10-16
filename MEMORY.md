@@ -1235,7 +1235,9 @@ here", no GPS) shows them then (`handleNodeTap`). A popup set to show on the way
 for directions) does not wait: it shows as soon as its station is the target - after the finished
 station's popups, or straight away when it has none (the after-station step chains into it, so it
 never waits for a later re-render), `MAP_POPUP_DELAY_MS` after the card - and on arrival only the rest show. All of it
-runs from one effect on the roadmap phase that waits for the guidelines and any open popup. After the last station the `afterItem` and `endOfActivity` popups show on the map
+runs from one effect on the roadmap phase that waits for the guidelines, any open popup and a cipher
+reveal (`CipherStrip`'s `onRevealingChange`, so a popup opens `MAP_POPUP_DELAY_MS` after the new
+character lands instead of over the spinning reel). After the last station the `afterItem` and `endOfActivity` popups show on the map
 before the finish screen (`mapEndingRef` keeps the map's popup effect quiet meanwhile). Once every station of a place is done (`placeGroupEnd`), its pin reads
 the range ("1-3", a pill as tall as the next-station circle) with a "3 תחנות" label under it; the next
 station always shows only its own number. While the next station is a later station of a place (back on the map
