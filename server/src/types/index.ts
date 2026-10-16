@@ -300,6 +300,7 @@ export interface CreateActivityRequest {
   leaderboardAsGrade?: boolean;
   hideLeaderboardInHeader?: boolean;
   leaderboardAllGroups?: boolean;
+  leaderboardGroupTotalsOnly?: boolean;
   leaderboardCurrentDayOnly?: boolean;
   dailyReset?: boolean;
   userControl?: boolean;

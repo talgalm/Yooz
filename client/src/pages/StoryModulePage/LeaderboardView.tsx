@@ -260,6 +260,7 @@ interface LeaderboardViewProps {
   leaderboardMode?: 'points' | 'time' | 'both';
   leaderboardAsGrade?: boolean;
   showAllGroups?: boolean;
+  groupTotalsOnly?: boolean;
   onBack: () => void;
   onLogout: () => void;
   t: Record<string, string>;
@@ -276,29 +277,32 @@ export default function LeaderboardView({
   leaderboardMode = 'points',
   leaderboardAsGrade = false,
   showAllGroups = false,
+  groupTotalsOnly = false,
   onBack,
   onLogout,
   t,
 }: LeaderboardViewProps) {
   const isGroupActivity = groupLeaderboard.length > 0;
 
-  const rows = isGroupActivity
-    ? leaderboard.filter((e) => e.group === currentGroup).map((e, i) => ({ ...e, rank: i + 1 }))
-    : (() => {
-        const myIdx = currentParticipantName
-          ? leaderboard.findIndex((e) => e.name === currentParticipantName)
-          : -1;
-        const top = leaderboard.slice(0, 3);
-        const tail = myIdx > 2
-          ? leaderboard.slice(myIdx, myIdx + 4)
-          : leaderboard.slice(3, 6);
-        const seen = new Set<number>();
-        return [...top, ...tail].filter((e) => {
-          if (seen.has(e.rank)) return false;
-          seen.add(e.rank);
-          return true;
-        });
-      })();
+  const rows = groupTotalsOnly
+    ? []
+    : isGroupActivity
+      ? leaderboard.filter((e) => e.group === currentGroup).map((e, i) => ({ ...e, rank: i + 1 }))
+      : (() => {
+          const myIdx = currentParticipantName
+            ? leaderboard.findIndex((e) => e.name === currentParticipantName)
+            : -1;
+          const top = leaderboard.slice(0, 3);
+          const tail = myIdx > 2
+            ? leaderboard.slice(myIdx, myIdx + 4)
+            : leaderboard.slice(3, 6);
+          const seen = new Set<number>();
+          return [...top, ...tail].filter((e) => {
+            if (seen.has(e.rank)) return false;
+            seen.add(e.rank);
+            return true;
+          });
+        })();
 
   return (
     <PageRoot>
@@ -345,11 +349,11 @@ export default function LeaderboardView({
                   </PlayerCard>
                 ))}
               </PlayerList>
-              <SectionTitle>{t.leaderboardMyGroupTitle}</SectionTitle>
+              {!groupTotalsOnly && <SectionTitle>{t.leaderboardMyGroupTitle}</SectionTitle>}
             </>
           )}
 
-          {isLoading ? (
+          {groupTotalsOnly && groupLeaderboard.length > 0 ? null : isLoading ? (
             <LoadingText>{t.leaderboardLoading}</LoadingText>
           ) : rows.length === 0 ? (
             <EmptyText>{t.leaderboardEmpty}</EmptyText>

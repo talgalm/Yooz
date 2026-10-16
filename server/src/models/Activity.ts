@@ -149,6 +149,7 @@ export interface IActivity {
   leaderboardAsGrade?: boolean;
   hideLeaderboardInHeader?: boolean;
   leaderboardAllGroups?: boolean;
+  leaderboardGroupTotalsOnly?: boolean;
   leaderboardCurrentDayOnly?: boolean;
   dailyReset?: boolean;
   lastDailyResetDay?: string;
@@ -349,6 +350,7 @@ const activitySchema = new Schema<IActivity>({
   leaderboardAsGrade: { type: Boolean, default: false },
   hideLeaderboardInHeader: { type: Boolean, default: false },
   leaderboardAllGroups: { type: Boolean, default: false },
+  leaderboardGroupTotalsOnly: { type: Boolean, default: false },
   leaderboardCurrentDayOnly: { type: Boolean, default: true },
   dailyReset: { type: Boolean, default: false },
   lastDailyResetDay: { type: String },
