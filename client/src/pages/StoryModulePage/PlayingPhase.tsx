@@ -66,6 +66,7 @@ import { useHelpChat } from '../../components/HelpChat/HelpChatContext';
 import type { GameResult } from '../../components/games/types';
 import type { ModuleItemData, GameItemData, StationItemData, MissionItemData, GameData, CustomThemeData } from './types';
 import { getHeaderIconColor } from './roadmapThemes';
+import { themedTitleInk } from '../../utils/themeInk';
 
 const pageFadeIn = keyframes`
   from {
@@ -119,12 +120,8 @@ const StationTitleText = styled('h2')({
   paintOrder: 'stroke fill',
   margin: '0 0 16px',
   textAlign: 'center',
-  position: 'sticky',
-  top: 0,
-  zIndex: 10,
   paddingTop: 8,
   [DESKTOP_BREAKPOINT]: {
-    position: 'static',
     fontSize: 42,
     fontWeight: 600,
     color: '#111',
@@ -149,6 +146,8 @@ const StationDescriptionText = styled(StationHeadline)({
 
 const StationTopLayout = styled('div')({
   flex: 1,
+  minHeight: 0,
+  overflowY: 'auto',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -159,6 +158,15 @@ const StationTopLayout = styled('div')({
     justifyContent: 'flex-start',
     padding: '32px 24px 160px',
   },
+});
+
+const CenteredWindowArea = styled('div')({
+  flex: '1 0 auto',
+  display: 'flex',
+  flexDirection: 'column',
+  width: '100%',
+  paddingTop: 16,
+  '& > *': { marginBlock: 'auto' },
 });
 
 const MediaStationLayout = styled(StationTopLayout)({
@@ -275,10 +283,10 @@ function StationHeaderBlock({
   const DescriptionText = compactDesktop ? MediaStationDescriptionText : StationDescriptionText;
 
   const titleEl = (
-    <TitleText style={textColor ? { color: textColor } : undefined}>{title}</TitleText>
+    <TitleText style={themedTitleInk(textColor)}>{title}</TitleText>
   );
   const descEl = description ? (
-    <DescriptionText style={textColor ? { color: textColor } : undefined}>
+    <DescriptionText style={themedTitleInk(textColor)}>
       {description}
     </DescriptionText>
   ) : null;
@@ -472,11 +480,13 @@ export default function PlayingPhase({
               description={station.description}
               textColor={customTheme?.textColor}
             />
-            <StationWindow style={{ marginTop: 16 }}>
-              <StationBodyText>
-                {linkifyText((station.settings?.content as string) || '')}
-              </StationBodyText>
-            </StationWindow>
+            <CenteredWindowArea>
+              <StationWindow>
+                <StationBodyText>
+                  {linkifyText((station.settings?.content as string) || '')}
+                </StationBodyText>
+              </StationWindow>
+            </CenteredWindowArea>
             <FixedContinueButton onClick={onStationContinue}>
               {t.continueButton}
             </FixedContinueButton>

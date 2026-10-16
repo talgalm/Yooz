@@ -45,6 +45,7 @@ import {
   FixedContinue,
   CHARACTER_WIDTH,
 } from './avatar/styled';
+import { themedTitleInk } from '../../utils/themeInk';
 
 type Verdict = 'correct' | 'partial' | 'incorrect' | 'unrelated';
 type Phase = 'intro' | 'asking' | 'answering' | 'evaluating' | 'feedback' | 'summary';
@@ -856,8 +857,8 @@ export default function AvatarQuizStation({
     return (
       <Container>
         <StationHeader>
-          <StationTitle style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitle>
-          <StationDescriptionText style={textColor ? { color: textColor } : undefined}>
+          <StationTitle style={themedTitleInk(textColor)}>{station.name}</StationTitle>
+          <StationDescriptionText style={themedTitleInk(textColor)}>
             {t.noQuestions}
           </StationDescriptionText>
         </StationHeader>
@@ -885,9 +886,9 @@ export default function AvatarQuizStation({
   return (
     <QuizContainer>
       <StationHeader>
-        <StationTitle style={textColor ? { color: textColor } : undefined}>{station.name}</StationTitle>
+        <StationTitle style={themedTitleInk(textColor)}>{station.name}</StationTitle>
         {station.description && !descriptionAsPopup && (
-          <StationDescriptionText style={textColor ? { color: textColor } : undefined}>
+          <StationDescriptionText style={themedTitleInk(textColor)}>
             {station.description}
           </StationDescriptionText>
         )}

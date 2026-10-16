@@ -2035,6 +2035,9 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   **`facebookSdk.ts`** — `initFacebookSdk`, `shareViaFacebookDialog`.
   **`inAppBrowserEscape.ts`** — `isInAppBrowser`, `escapeToDefaultBrowser` (break out of
   Instagram/FB webview for camera/QR). **`storageHealth.ts`** — `isStorageHealthy`.
+  **`themeInk.ts`** — `isDarkColor`, `themedTitleInk(textColor)`: a custom theme's `textColor` on a
+  station title (text/image/video, riddle, entering-text, avatar); a dark one drops the black outline
+  for a light halo (most custom themes use `#111111`, which read black on black).
   **`formatDuration.ts`**, **`shuffleArray.ts`**, **`linkifyText.tsx`**,
   **`ganeiYehoshuaShareText.ts`** (customer-specific share copy, now only the trash-sort mission's badge share).
 
