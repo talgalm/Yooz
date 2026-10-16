@@ -211,6 +211,7 @@ export default function AdminStationConfigPage() {
   const [collageTemplate, setCollageTemplate] = useState<CollageTemplateId>('default');
   const [collageCustomVideo, setCollageCustomVideo] = useState<CustomCollageVideo | undefined>(undefined);
   const [collageDisclaimer, setCollageDisclaimer] = useState('');
+  const [collageShareText, setCollageShareText] = useState('');
   const collagePhotoCount = collageMultiSelect
     ? Math.max(1, parseInt(collageMultiSelectCount, 10) || 1)
     : Math.max(1, collageMissions.filter((m) => m.title.trim()).length);
@@ -397,6 +398,7 @@ export default function AdminStationConfigPage() {
             setCollageCustomVideo(settings.customVideo as CustomCollageVideo);
           }
           if (settings.disclaimer) setCollageDisclaimer(settings.disclaimer as string);
+          if (settings.shareText) setCollageShareText(settings.shareText as string);
         }
         if (s.type === 'feedback') {
           if (settings.title) setFeedbackTitle(settings.title as string);
@@ -520,6 +522,7 @@ export default function AdminStationConfigPage() {
         setCollageCustomVideo(settings.customVideo as CustomCollageVideo);
       }
       if (settings.disclaimer) setCollageDisclaimer(settings.disclaimer as string);
+      if (settings.shareText) setCollageShareText(settings.shareText as string);
     }
     if (lib.type === 'feedback') {
       if (settings.title) setFeedbackTitle(settings.title as string);
@@ -644,6 +647,9 @@ export default function AdminStationConfigPage() {
         if (collageCustomVideo) settings.customVideo = collageCustomVideo;
         const disc = collageDisclaimer.trim();
         if (disc) settings.disclaimer = disc;
+        const shareText = collageShareText.trim();
+        if (shareText) settings.shareText = shareText;
+        else delete settings.shareText;
       }
       if (stationType === 'feedback') {
         settings.title = feedbackTitle.trim();
@@ -1384,6 +1390,13 @@ export default function AdminStationConfigPage() {
                     placeholder={t.collageDisclaimerPlaceholder}
                     value={collageDisclaimer}
                     onChange={(e) => setCollageDisclaimer(e.target.value)}
+                  />
+
+                  <SectionLabelNoMargin>{t.collageShareText}</SectionLabelNoMargin>
+                  <Input
+                    placeholder={t.collageShareTextPlaceholder}
+                    value={collageShareText}
+                    onChange={(e) => setCollageShareText(e.target.value)}
                   />
 
                   <SectionLabelNoMargin>{t.collageTemplate}</SectionLabelNoMargin>
