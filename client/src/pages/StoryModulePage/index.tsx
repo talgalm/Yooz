@@ -843,12 +843,13 @@ export default function StoryModulePage() {
     const onTheWay = !reachedNext && getPopupsForTrigger('beforeItem', currentItemIndex, true).length > 0;
     if (finishedItem === null && !reachedNext && !onTheWay) return;
     const timer = setTimeout(() => {
+      const showBeforeNext = () => showPopupsOrRun('beforeItem', currentItemIndex, () => undefined, !reachedNext);
       if (finishedItem !== null) {
         pendingAfterItemPopupRef.current = null;
-        showPopupsOrRun('afterItem', finishedItem, () => undefined);
+        showPopupsOrRun('afterItem', finishedItem, showBeforeNext);
         return;
       }
-      showPopupsOrRun('beforeItem', currentItemIndex, () => undefined, onTheWay);
+      showBeforeNext();
     }, finishedItem !== null || onTheWay ? MAP_POPUP_DELAY_MS : ARRIVAL_POPUP_DELAY_MS);
     return () => clearTimeout(timer);
   }, [isMap, phase, progressChecked, showGuidelines, currentPopup, currentItemIndex, reachedIndex, getPopupsForTrigger, showPopupsOrRun]);
