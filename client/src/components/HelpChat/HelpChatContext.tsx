@@ -35,6 +35,15 @@ import {
   HelpHeaderIconButtonPuzzle,
   NudgeWrap,
   NudgeBubble,
+  HelpTabs,
+  HelpTab,
+  ContactList,
+  ContactsHeading,
+  ContactCard,
+  ContactText,
+  ContactName,
+  ContactPhone,
+  CallBadge,
 } from './styled';
 
 
@@ -62,6 +71,28 @@ function resolveResponse(entry: string | ((contacts?: OrganizerContact[]) => str
 }
 
 type View = 'menu' | 'faq' | 'other';
+
+type Tab = 'help' | 'contacts';
+
+function telHref(phone: string): string {
+  return `tel:${phone.replace(/[^\d+]/g, '')}`;
+}
+
+function ContactCards({ contacts, callLabel }: { contacts: OrganizerContact[]; callLabel: string }) {
+  return (
+    <ContactList>
+      {contacts.map((contact, i) => (
+        <ContactCard key={`${contact.phone}-${i}`} href={telHref(contact.phone)}>
+          <ContactText>
+            <ContactName>{contact.name}</ContactName>
+            <ContactPhone>{contact.phone}</ContactPhone>
+          </ContactText>
+          <CallBadge>📞 {callLabel}</CallBadge>
+        </ContactCard>
+      ))}
+    </ContactList>
+  );
+}
 
 export type HelpChatVariant = 'fab' | 'header';
 
@@ -100,6 +131,7 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
     () => document.body.classList.contains('yooz-ballgame-active')
   );
   const [view, setView] = useState<View>('menu');
+  const [tab, setTab] = useState<Tab>('help');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [typing, setTyping] = useState(false);
@@ -163,6 +195,7 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
 
   const resetChat = useCallback(() => {
     setView('menu');
+    setTab('help');
     setMessages([]);
     setInputValue('');
     setTyping(false);
@@ -310,8 +343,26 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
             <ChatCloseButton onClick={handleToggle}>&times;</ChatCloseButton>
           </ChatHeader>
 
+          {organizerContacts.length > 0 && (
+            <HelpTabs role="tablist">
+              <HelpTab type="button" role="tab" aria-selected={tab === 'help'} $active={tab === 'help'} onClick={() => setTab('help')}>
+                {t.helpTab}
+              </HelpTab>
+              <HelpTab type="button" role="tab" aria-selected={tab === 'contacts'} $active={tab === 'contacts'} onClick={() => setTab('contacts')}>
+                📞 {t.contactsTab}
+              </HelpTab>
+            </HelpTabs>
+          )}
+
           <ChatBody ref={bodyRef}>
-            {view === 'menu' && (
+            {tab === 'contacts' && (
+              <>
+                <BotMessage>{t.contactsIntro}</BotMessage>
+                <ContactCards contacts={organizerContacts} callLabel={t.callButton} />
+              </>
+            )}
+
+            {tab === 'help' && view === 'menu' && (
               <>
                 <BotMessage>{t.greeting}</BotMessage>
                 <OptionsGrid>
@@ -373,7 +424,7 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
               </>
             )}
 
-            {(view === 'faq' || view === 'other') && (
+            {tab === 'help' && (view === 'faq' || view === 'other') && (
               <>
                 {messages.map((msg, i) =>
                   msg.from === 'bot' ? (
@@ -389,6 +440,12 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
                     <span />
                   </TypingDots>
                 )}
+                {view === 'other' && organizerContacts.length > 0 && (
+                  <>
+                    <ContactsHeading>{t.phoneLine}</ContactsHeading>
+                    <ContactCards contacts={organizerContacts} callLabel={t.callButton} />
+                  </>
+                )}
                 <BackButton onClick={resetChat}>
                   ← {t.backToMenu}
                 </BackButton>
@@ -396,7 +453,7 @@ export function HelpChatProvider({ variant, hideLogin = false, children }: HelpC
             )}
           </ChatBody>
 
-          {view === 'other' && (
+          {tab === 'help' && view === 'other' && (
             <InputArea>
               <ChatInput
                 ref={inputRef}

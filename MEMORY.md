@@ -2189,6 +2189,9 @@ rendered inline in `PlayingPhase.tsx`.)
 
 ### Other components
 - **`HelpChat/`** — participant help FAB/drawer (`index`, `HelpChatContext`, `matcher`, styled).
+  When the activity has `organizerContacts`, the panel has two tabs, "עזרה" and "📞 אנשי קשר" (each
+  contact a card with name, phone and a "התקשרו" `tel:` button), and the "משהו אחר" free-text chat
+  shows the same cards under "או התקשרו:" above the input. With no contacts, no tabs.
   The field troubleshooting sheet (תקלות נפוצות בפעילות) lives in **three** places that must
   stay in sync: a menu chip + response string per item in `HelpChat.i18n.ts`, keyword topics in
   `matcher.ts` (collisions guarded by `matcher.test.ts`), and topics 15-18 of the Gemini prompt
