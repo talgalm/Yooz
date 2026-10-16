@@ -547,6 +547,7 @@ export default function AdminCreateActivityPage() {
   const [displayLeaderboardInHeader, setDisplayLeaderboardInHeader] = useState(false);
   const [leaderboardCurrentDayOnly, setLeaderboardCurrentDayOnly] = useState(true);
   const [leaderboardAllGroups, setLeaderboardAllGroups] = useState(false);
+  const [leaderboardGroupTotalsOnly, setLeaderboardGroupTotalsOnly] = useState(false);
   const [activityDurationMinutes, setActivityDurationMinutes] = useState('');
   const [roadmapTimerEnabled, setRoadmapTimerEnabled] = useState(false);
   const [roadmapTimerMinutes, setRoadmapTimerMinutes] = useState('');
@@ -758,6 +759,7 @@ export default function AdminCreateActivityPage() {
         setDisplayLeaderboardInHeader(!a.hideLeaderboardInHeader);
         setLeaderboardCurrentDayOnly(a.leaderboardCurrentDayOnly !== false);
         setLeaderboardAllGroups(a.leaderboardAllGroups === true);
+        setLeaderboardGroupTotalsOnly(a.leaderboardGroupTotalsOnly === true);
         setDailyReset(a.dailyReset === true);
         if (a.activityDurationMinutes) setActivityDurationMinutes(String(a.activityDurationMinutes));
         if (a.roadmapTimerMinutes) {
@@ -1303,6 +1305,7 @@ export default function AdminCreateActivityPage() {
       payload.hideLeaderboardInHeader = !displayLeaderboardInHeader;
       payload.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly;
       payload.leaderboardAllGroups = connectionType === 'group' && leaderboardAllGroups;
+      payload.leaderboardGroupTotalsOnly = connectionType === 'group' && leaderboardGroupTotalsOnly;
       payload.dailyReset = dailyReset;
       payload.userControl = userControl;
       if ((leaderboardMode === 'time' || leaderboardMode === 'both') && activityDurationMinutes.trim()) {
@@ -2165,7 +2168,7 @@ export default function AdminCreateActivityPage() {
                     />
                     {t.leaderboardCurrentDayOnly}
                   </label>
-                  {connectionType === 'group' && moduleType !== 'map' && (
+                  {connectionType === 'group' && moduleType !== 'map' && !leaderboardGroupTotalsOnly && (
                     <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, cursor: 'pointer', fontSize: 14, color: '#444' }}>
                       <input
                         type="checkbox"
@@ -2174,6 +2177,17 @@ export default function AdminCreateActivityPage() {
                         style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
                       />
                       {t.leaderboardAllGroups}
+                    </label>
+                  )}
+                  {connectionType === 'group' && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, cursor: 'pointer', fontSize: 14, color: '#444' }}>
+                      <input
+                        type="checkbox"
+                        checked={leaderboardGroupTotalsOnly}
+                        onChange={(e) => setLeaderboardGroupTotalsOnly(e.target.checked)}
+                        style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                      />
+                      {t.leaderboardGroupTotalsOnly}
                     </label>
                   )}
                 </SectionCardWide>

@@ -175,6 +175,7 @@ export interface Activity {
   includeOnRoadmap?: boolean;
   hideLeaderboardInHeader?: boolean;
   leaderboardAllGroups?: boolean;
+  leaderboardGroupTotalsOnly?: boolean;
   leaderboardCurrentDayOnly?: boolean;
   dailyReset?: boolean;
   leaderboardAsGrade?: boolean;

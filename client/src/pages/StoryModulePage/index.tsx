@@ -1674,7 +1674,8 @@ export default function StoryModulePage() {
       <>
         <LeaderboardView
           languages={data.languages}
-          showAllGroups={isMap || data.leaderboardAllGroups === true}
+          showAllGroups={isMap || data.leaderboardAllGroups === true || data.leaderboardGroupTotalsOnly === true}
+          groupTotalsOnly={data.leaderboardGroupTotalsOnly === true}
           activityName={data.name}
           leaderboard={leaderboard}
           groupLeaderboard={groupLeaderboard}

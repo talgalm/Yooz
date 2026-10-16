@@ -193,6 +193,7 @@ group activities too (participants of a story activity never see them).
 
 **Leaderboard/scoring flags**: `leaderboardMode: 'points'|'time'|'both'`,
 `leaderboardAsGrade?` (show points as 0-100 normalized grade), `hideLeaderboardInHeader?`,
+`leaderboardGroupTotalsOnly?` (group activities: participants see only each group's total),
 `leaderboardCurrentDayOnly?` (**default true** — only today's Israel-time reports),
 `activityDurationMinutes?` (time mode), `roadmapTimerMinutes?` (cosmetic count-up, turns red),
 `passThreshold?` (0-100, **default 70**; null = no pass grade), `includeOnRoadmap?`.
@@ -801,7 +802,10 @@ Shared: `StationDescriptionPopup`, floating clue button for info stations.
   real rank among all groups) and their own teammates, re-ranked 1..n *within* the group —
   never another group's players - unless `Activity.leaderboardAllGroups` ("כל המשתתפים רואים את
   הניקוד של כל הקבוצות" in the wizard) is on, which shows every group's standings, as a map
-  activity always does. Solo activities keep the top-3 + me-and-neighbours window.
+  activity always does. `Activity.leaderboardGroupTotalsOnly` ("בלידרבורד רואים רק את הניקוד הכללי
+  של כל קבוצה" in the wizard, for any group activity, map included) shows every group's total and
+  nothing else - no "הקבוצה שלי" list, so nobody sees how much each teammate scored; with it on,
+  the all-groups checkbox is hidden as implied. Solo activities keep the top-3 + me-and-neighbours window.
   The viewer's own row is bold pure white, everyone else 600/82% — that is the "which one is
   me" cue, alongside the highlighted card.
 - **Roadmap**: `RoadmapView` (story path) / `SpidersView` (graph, `isFinal` lock) — themed via
