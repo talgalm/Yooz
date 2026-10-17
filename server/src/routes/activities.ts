@@ -343,6 +343,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     ...(activity.hideLeaderboardInHeader && { hideLeaderboardInHeader: true }),
     ...(activity.leaderboardAllGroups && { leaderboardAllGroups: true }),
     ...(activity.leaderboardGroupTotalsOnly && { leaderboardGroupTotalsOnly: true }),
+    ...(activity.leaderboardAutoOpen && { leaderboardAutoOpen: true }),
     ...(activity.activityDurationMinutes && { activityDurationMinutes: activity.activityDurationMinutes }),
     ...(activity.roadmapTimerMinutes && { roadmapTimerMinutes: activity.roadmapTimerMinutes }),
     lockedFromIndex: typeof activity.lockedFromIndex === 'number' ? activity.lockedFromIndex : null,

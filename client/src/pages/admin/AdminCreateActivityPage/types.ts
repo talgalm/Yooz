@@ -176,6 +176,7 @@ export interface Activity {
   hideLeaderboardInHeader?: boolean;
   leaderboardAllGroups?: boolean;
   leaderboardGroupTotalsOnly?: boolean;
+  leaderboardAutoOpen?: boolean;
   leaderboardCurrentDayOnly?: boolean;
   dailyReset?: boolean;
   leaderboardAsGrade?: boolean;
