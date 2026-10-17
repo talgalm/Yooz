@@ -387,3 +387,83 @@ export const NudgeBubble = styled('span')({
     borderRadius: 2,
   },
 });
+
+export const HelpTabs = styled('div')({
+  display: 'flex',
+  gap: 8,
+  padding: '12px 16px 0',
+  background: '#fff',
+});
+
+export const HelpTab = styled('button', { shouldForwardProp: (prop) => prop !== '$active' })<{ $active: boolean }>(({ $active }) => ({
+  flex: 1,
+  padding: '9px 12px',
+  borderRadius: 999,
+  border: `1.5px solid ${$active ? PRIMARY : PRIMARY_LIGHT}`,
+  background: $active ? PRIMARY : '#fff',
+  color: $active ? '#fff' : PRIMARY,
+  fontFamily: 'inherit',
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: 'pointer',
+  transition: 'background 0.15s, color 0.15s',
+}));
+
+export const ContactList = styled('div')({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+});
+
+export const ContactsHeading = styled('div')({
+  fontSize: 13,
+  fontWeight: 700,
+  color: TEXT_LIGHT,
+  marginTop: 6,
+});
+
+export const ContactCard = styled('a')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+  padding: '12px 14px',
+  borderRadius: 12,
+  border: `1.5px solid ${PRIMARY_LIGHT}`,
+  background: '#fff',
+  color: TEXT,
+  textDecoration: 'none',
+  transition: 'background 0.15s',
+  '&:active': { background: '#f0eefa' },
+});
+
+export const ContactText = styled('span')({
+  flex: 1,
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: 2,
+});
+
+export const ContactName = styled('span')({
+  fontSize: 15,
+  fontWeight: 700,
+  color: TEXT,
+});
+
+export const ContactPhone = styled('span')({
+  fontSize: 14,
+  color: TEXT_LIGHT,
+  unicodeBidi: 'isolate',
+  direction: 'ltr',
+});
+
+export const CallBadge = styled('span')({
+  flexShrink: 0,
+  padding: '8px 14px',
+  borderRadius: 999,
+  background: '#27ae60',
+  color: '#fff',
+  fontSize: 14,
+  fontWeight: 700,
+});
