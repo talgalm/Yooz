@@ -545,6 +545,7 @@ export default function AdminCreateActivityPage() {
   const [leaderboardMode, setLeaderboardMode] = useState<'points' | 'time' | 'both'>('points');
   const [leaderboardAsGrade, setLeaderboardAsGrade] = useState(false);
   const [displayLeaderboardInHeader, setDisplayLeaderboardInHeader] = useState(false);
+  const [leaderboardAutoOpen, setLeaderboardAutoOpen] = useState(false);
   const [leaderboardCurrentDayOnly, setLeaderboardCurrentDayOnly] = useState(true);
   const [leaderboardAllGroups, setLeaderboardAllGroups] = useState(false);
   const [leaderboardGroupTotalsOnly, setLeaderboardGroupTotalsOnly] = useState(false);
@@ -757,6 +758,7 @@ export default function AdminCreateActivityPage() {
         if (a.leaderboardMode) setLeaderboardMode(a.leaderboardMode);
         setLeaderboardAsGrade(a.leaderboardAsGrade === true);
         setDisplayLeaderboardInHeader(!a.hideLeaderboardInHeader);
+        setLeaderboardAutoOpen(a.leaderboardAutoOpen === true);
         setLeaderboardCurrentDayOnly(a.leaderboardCurrentDayOnly !== false);
         setLeaderboardAllGroups(a.leaderboardAllGroups === true);
         setLeaderboardGroupTotalsOnly(a.leaderboardGroupTotalsOnly === true);
@@ -1303,6 +1305,7 @@ export default function AdminCreateActivityPage() {
       payload.leaderboardMode = leaderboardMode;
       payload.leaderboardAsGrade = leaderboardMode !== 'time' && leaderboardAsGrade;
       payload.hideLeaderboardInHeader = !displayLeaderboardInHeader;
+      payload.leaderboardAutoOpen = leaderboardAutoOpen;
       payload.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly;
       payload.leaderboardAllGroups = connectionType === 'group' && leaderboardAllGroups;
       payload.leaderboardGroupTotalsOnly = connectionType === 'group' && leaderboardGroupTotalsOnly;
@@ -2158,6 +2161,15 @@ export default function AdminCreateActivityPage() {
                       style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
                     />
                     {t.displayLeaderboardInHeader}
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, cursor: 'pointer', fontSize: 14, color: '#444' }}>
+                    <input
+                      type="checkbox"
+                      checked={leaderboardAutoOpen}
+                      onChange={(e) => setLeaderboardAutoOpen(e.target.checked)}
+                      style={{ width: 18, height: 18, accentColor: '#6c5ce7' }}
+                    />
+                    {t.leaderboardAutoOpen}
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, cursor: 'pointer', fontSize: 14, color: '#444' }}>
                     <input
