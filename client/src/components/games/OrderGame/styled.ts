@@ -15,6 +15,8 @@ const BTN_RED = '#e74c3c';
 const BTN_RED_DARK = '#c0392b';
 const BTN_GREEN = '#2ecc71';
 const BTN_GREEN_DARK = '#27ae60';
+const RETRY_AMBER = '#f39c12';
+const RETRY_AMBER_DARK = '#d35400';
 
 const BTN_PURPLE = '#6c5ce7';
 const BTN_PURPLE_DARK = '#5b4cd4';
@@ -256,6 +258,12 @@ export const NatureDragHandle = styled('span')({
   opacity: 0.5,
 });
 
+export const NatureLockMark = styled('span')({
+  display: 'inline-flex',
+  color: BTN_GREEN_DARK,
+  opacity: 0.85,
+});
+
 export const OrderActionBar = styled('div')({
   width: '100%',
   maxWidth: '100%',
@@ -300,8 +308,8 @@ export const OrderFeedbackFloater = styled('div')({
   boxSizing: 'border-box',
 });
 
-export const OrderFeedbackContainer = styled('div')<{ variant: 'correct' | 'incorrect' }>(({ variant }) => {
-  const border = variant === 'correct' ? BTN_GREEN : BTN_RED;
+export const OrderFeedbackContainer = styled('div')<{ variant: 'correct' | 'incorrect' | 'retry' }>(({ variant }) => {
+  const border = variant === 'correct' ? BTN_GREEN : variant === 'retry' ? RETRY_AMBER : BTN_RED;
   return {
     background: 'rgba(255,255,255,0.96)',
     border: `3px solid ${border}`,
@@ -331,6 +339,42 @@ export const OrderWrongText = styled('div')({
   color: BTN_RED,
   textShadow: '1px 1px 0 #fff',
   lineHeight: 1,
+});
+
+export const OrderRetryText = styled('div')({
+  fontSize: 24,
+  fontWeight: 900,
+  color: RETRY_AMBER_DARK,
+  textShadow: '1px 1px 0 #fff',
+  lineHeight: 1.1,
+  textAlign: 'center',
+});
+
+export const OrderRetryHow = styled('div')({
+  fontSize: 15,
+  fontWeight: 600,
+  color: '#555',
+  textAlign: 'center',
+  lineHeight: 1.35,
+  whiteSpace: 'pre-line',
+});
+
+export const SecondTryNote = styled('div')({
+  alignSelf: 'center',
+  maxWidth: '100%',
+  boxSizing: 'border-box',
+  margin: '4px 0 6px',
+  padding: '7px 14px',
+  borderRadius: 999,
+  background: 'rgba(255,255,255,0.94)',
+  border: `2px solid ${RETRY_AMBER}`,
+  color: RETRY_AMBER_DARK,
+  fontSize: 14,
+  fontWeight: 700,
+  textAlign: 'center',
+  lineHeight: 1.3,
+  flexShrink: 0,
+  animation: `${slideUp} 0.3s ease-out`,
 });
 
 export const OrderPlacedText = styled('div')({

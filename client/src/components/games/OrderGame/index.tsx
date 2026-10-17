@@ -42,6 +42,10 @@ import {
   NatureCardNumber,
   NatureCardText,
   NatureDragHandle,
+  NatureLockMark,
+  OrderRetryText,
+  OrderRetryHow,
+  SecondTryNote,
   OrderActionBar,
   NatureCheckButton,
   OrderFeedbackFloater,
@@ -71,6 +75,8 @@ import {
   FinishScoreNumber,
   FinishScoreLabel,
 } from './styled';
+import { LockIcon } from './OrderGame.icons';
+import { freeTarget, moveSkippingLocked } from './lockedReorder';
 
 interface OrderRound {
   title?: string;
@@ -110,6 +116,8 @@ function StumpRingsSvg() {
     </svg>
   );
 }
+
+const RETRY_FEEDBACK_MS = 2600;
 
 const CARD_COLORS = {
   neutral: { border: '#4a6572', bg: '#e3ebf3' },
@@ -340,7 +348,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
       setFirstTry(placed);
       setRoundScore(points);
       setAwaitingRetry(true);
-      hideFeedbackTimer.current = setTimeout(startRetry, GAME_CONSTANTS.FEEDBACK_DURATION_MS);
+      hideFeedbackTimer.current = setTimeout(startRetry, RETRY_FEEDBACK_MS);
       return;
     }
     finishRound(points, GAME_CONSTANTS.FEEDBACK_DURATION_MS, popupFor(round, allCorrect));
@@ -474,8 +482,10 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
   const round = rounds[currentRound];
   if (!round) return null;
 
+  const lockedSlots = cards.map((_, i) => firstTry?.[i] === true);
+
   const handlePointerDown = (index: number, e: React.PointerEvent) => {
-    if (checked) return;
+    if (checked || lockedSlots[index]) return;
     const listEl = listRef.current;
     if (!listEl) return;
     const firstCard = listEl.children[0] as HTMLElement | undefined;
@@ -498,12 +508,10 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
     const deltaY = dragInfo.currentY - dragInfo.startY;
     const shift = Math.round(deltaY / dragInfo.cardHeight);
     const fromIdx = dragInfo.index;
-    const toIdx = Math.max(0, Math.min(cards.length - 1, fromIdx + shift));
+    const toIdx = freeTarget(lockedSlots, fromIdx, fromIdx + shift);
 
     if (didDragRef.current && fromIdx !== toIdx) {
-      const newCards = [...cards];
-      const [removed] = newCards.splice(fromIdx, 1);
-      newCards.splice(toIdx, 0, removed);
+      const newCards = moveSkippingLocked(cards, lockedSlots, fromIdx, toIdx);
       setCards(newCards);
       setCardStatuses(newCards.map((card, i) => (card === cards[i] ? cardStatuses[i] : 'neutral')));
       setShowFeedback(null);
@@ -513,7 +521,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
   };
 
   const handleCardTap = (index: number) => {
-    if (checked || didDragRef.current) return;
+    if (checked || didDragRef.current || lockedSlots[index]) return;
     if (tapIndex === null) {
       setTapIndex(index);
     } else if (tapIndex === index) {
@@ -540,14 +548,11 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
       };
     }
     const shift = Math.round(deltaY / dragInfo.cardHeight);
-    const targetIdx = Math.max(0, Math.min(cards.length - 1, dragInfo.index + shift));
-    const draggedFrom = dragInfo.index;
-
-    if (draggedFrom < targetIdx && index > draggedFrom && index <= targetIdx) {
-      return { transform: `translateY(-${dragInfo.cardHeight}px)`, transition: 'transform 0.15s ease' };
-    }
-    if (draggedFrom > targetIdx && index < draggedFrom && index >= targetIdx) {
-      return { transform: `translateY(${dragInfo.cardHeight}px)`, transition: 'transform 0.15s ease' };
+    const targetIdx = freeTarget(lockedSlots, dragInfo.index, dragInfo.index + shift);
+    const slots = cards.map((_, slot) => slot);
+    const lands = moveSkippingLocked(slots, lockedSlots, dragInfo.index, targetIdx).indexOf(index);
+    if (lands !== index) {
+      return { transform: `translateY(${(lands - index) * dragInfo.cardHeight}px)`, transition: 'transform 0.15s ease' };
     }
     return { transition: 'transform 0.15s ease' };
   };
@@ -575,6 +580,8 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
           <OrderRoundBannerText>{round.title}</OrderRoundBannerText>
         </OrderRoundBanner>
       )}
+
+      {firstTry !== null && !checked && <SecondTryNote>{t.secondTryNote}</SecondTryNote>}
 
       {settings.hint?.enabled && (settings.hint.text || settings.hint.imageUrl) && !checked && (
         <NatureHintWrapper>
@@ -619,7 +626,7 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
               borderColor={borderColor}
               bgColor={bgColor}
               isDragging={isDragging}
-              roundComplete={checked}
+              roundComplete={checked || lockedSlots[index]}
               onPointerDown={(e) => handlePointerDown(index, e)}
               onClick={() => handleCardTap(index)}
               style={getCardDragStyle(index)}
@@ -628,9 +635,11 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
                 {index + 1}
               </NatureCardNumber>
               <NatureCardText>{card}</NatureCardText>
-              {!checked && (
+              {!checked && (lockedSlots[index] ? (
+                <NatureLockMark aria-label={t.lockedInPlace} title={t.lockedInPlace}><LockIcon /></NatureLockMark>
+              ) : (
                 <NatureDragHandle>&#x2807;</NatureDragHandle>
-              )}
+              ))}
             </NatureCard>
           );
         })}
@@ -638,27 +647,27 @@ function OrderQuizGame({ game, onComplete }: GameProps) {
 
       <OrderActionBar>
         <NatureCheckButton onClick={!checked ? handleCheck : undefined} disabled={checked || timeLeft === 0}>
-          {t.checkAnswer}
+          {firstTry !== null ? t.lastCheck : t.checkAnswer}
         </NatureCheckButton>
       </OrderActionBar>
 
       {showFeedback && (
         <OrderFeedbackFloater>
-          <OrderFeedbackContainer variant={showFeedback === 'correct' ? 'correct' : 'incorrect'}>
+          <OrderFeedbackContainer variant={showFeedback === 'correct' ? 'correct' : awaitingRetry ? 'retry' : 'incorrect'}>
             {showFeedback === 'correct' ? (
               <OrderCorrectText>{t.correct}</OrderCorrectText>
             ) : (
               <>
-                <OrderWrongText>{t.incorrect}</OrderWrongText>
+                {awaitingRetry ? <OrderRetryText>{t.retryTitle}</OrderRetryText> : <OrderWrongText>{t.incorrect}</OrderWrongText>}
                 {placedCount && (
                   <OrderPlacedText>
                     {t.placedOfTotal.replace('{placed}', String(placedCount.placed)).replace('{total}', String(placedCount.total))}
                   </OrderPlacedText>
                 )}
-                {awaitingRetry && <OrderPlacedText>{t.oneMoreTry}</OrderPlacedText>}
+                {awaitingRetry && <OrderRetryHow>{t.retryHow}</OrderRetryHow>}
               </>
             )}
-            {roundScore > 0 && (
+            {roundScore > 0 && !awaitingRetry && (
               <OrderPointsBadge>+{roundScore} {t.points}</OrderPointsBadge>
             )}
           </OrderFeedbackContainer>
