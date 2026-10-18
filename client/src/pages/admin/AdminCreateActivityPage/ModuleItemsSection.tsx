@@ -360,6 +360,8 @@ interface ModuleItemsSectionProps {
   onToggleItemFinal?: (index: number) => void;
   onToggleItemRevisitable?: (index: number) => void;
   onToggleItemOpenAnywhere?: (index: number) => void;
+  onUpdateItemProximity?: (index: number, meters: number | undefined) => void;
+  defaultProximityMeters?: number;
   onConfigureCollageSplit?: (index: number) => void;
   onUpdateItemLocation?: (index: number, location: ItemLocation | undefined) => void;
   onUpdateItemMapIcon?: (index: number, mapIcon: string | undefined) => void;
@@ -382,6 +384,8 @@ export default function ModuleItemsSection({
   onToggleItemFinal,
   onToggleItemRevisitable,
   onToggleItemOpenAnywhere,
+  onUpdateItemProximity,
+  defaultProximityMeters,
   onConfigureCollageSplit,
   onUpdateItemLocation,
   onUpdateItemMapIcon,
@@ -587,6 +591,7 @@ export default function ModuleItemsSection({
                   {isSpiders && item.isFinal && <StatusBadge tone="neutral">{t.spidersFinal}</StatusBadge>}
                   {item.revisitable && <StatusBadge tone="neutral">{t.revisitable}</StatusBadge>}
                   {onToggleItemOpenAnywhere && item.openAnywhere && <StatusBadge tone="blue">{t.itemOpenAnywhereBadge}</StatusBadge>}
+                  {onUpdateItemProximity && item.proximityMeters && <StatusBadge tone="blue">{t.itemProximityBadge.replace('{m}', String(item.proximityMeters))}</StatusBadge>}
                   {splitText && <StatusBadge tone="purple">{splitText}</StatusBadge>}
                   <RowButton type="button" onClick={(e) => { e.stopPropagation(); setSettingsItemIndex(index); }}>
                     {t.settingsButton}
@@ -793,6 +798,8 @@ export default function ModuleItemsSection({
           onToggleFinal={onToggleItemFinal}
           onToggleRevisitable={onToggleItemRevisitable}
           onToggleOpenAnywhere={onToggleItemOpenAnywhere}
+          onUpdateProximity={onUpdateItemProximity}
+          defaultProximityMeters={defaultProximityMeters}
           onConfigureSplit={onConfigureCollageSplit}
           onPreview={() => setPreviewItem(selectedItems[settingsItemIndex])}
           onClose={() => setSettingsItemIndex(null)}

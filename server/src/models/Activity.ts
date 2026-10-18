@@ -35,6 +35,7 @@ export interface IModuleItem {
   mapIcon?: string;
   cipherChar?: string;
   openAnywhere?: boolean;
+  proximityMeters?: number;
   groups?: string[];
   spiderSvg?: string;
   isFinal?: boolean;
@@ -271,6 +272,7 @@ const moduleItemSchema = new Schema<IModuleItem>({
   mapIcon: { type: String },
   cipherChar: { type: String },
   openAnywhere: { type: Boolean },
+  proximityMeters: { type: Number },
 }, { _id: false });
 
 const mapDesignSchema = new Schema<IMapDesign>({

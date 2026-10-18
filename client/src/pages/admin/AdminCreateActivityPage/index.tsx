@@ -669,6 +669,7 @@ export default function AdminCreateActivityPage() {
                 location: item.location,
                 mapIcon: item.mapIcon,
                 cipherChar: item.cipherChar,
+                proximityMeters: (item as { proximityMeters?: number }).proximityMeters,
               }));
             setSelectedItems(loadedItems);
             if (a.module.routes?.length) {
@@ -1038,6 +1039,9 @@ export default function AdminCreateActivityPage() {
       i === index ? { ...item, revisitable: item.revisitable ? undefined : true } : item
     )));
   };
+  const updateItemProximity = (index: number, meters: number | undefined) => {
+    setSelectedItems((prev) => prev.map((item, i) => (i === index ? { ...item, proximityMeters: meters } : item)));
+  };
   const toggleItemOpenAnywhere = (index: number) => {
     setSelectedItems((prev) => prev.map((item, i) => (
       i === index ? { ...item, openAnywhere: item.openAnywhere ? undefined : true } : item
@@ -1239,6 +1243,7 @@ export default function AdminCreateActivityPage() {
             ...(moduleType === 'map' && i.mapIcon && { mapIcon: i.mapIcon }),
             ...(moduleType === 'map' && i.cipherChar && { cipherChar: i.cipherChar }),
             ...(moduleType === 'map' && i.openAnywhere && { openAnywhere: true }),
+            ...(moduleType === 'map' && i.proximityMeters && { proximityMeters: i.proximityMeters }),
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
           ...(showItemTitleNumbers && { showItemTitleNumbers: true }),
@@ -2031,6 +2036,8 @@ export default function AdminCreateActivityPage() {
                       onToggleItemFinal={toggleItemFinal}
                       onToggleItemRevisitable={toggleItemRevisitable}
                       onToggleItemOpenAnywhere={moduleType === 'map' && !openAnywhere ? toggleItemOpenAnywhere : undefined}
+                      onUpdateItemProximity={moduleType === 'map' && !openAnywhere ? updateItemProximity : undefined}
+                      defaultProximityMeters={proximityMeters}
                       onConfigureCollageSplit={openSplitEditor}
                       moduleType={moduleType}
                       connectionType={connectionType}

@@ -20,6 +20,7 @@ export interface GameItemData {
   isFinal?: boolean;
   revisitable?: boolean;
   openAnywhere?: boolean;
+  proximityMeters?: number;
   location?: LatLng & { address?: string; placeName?: string };
   mapIcon?: string;
   cipherChar?: string;
@@ -51,6 +52,7 @@ export interface StationItemData {
   isFinal?: boolean;
   revisitable?: boolean;
   openAnywhere?: boolean;
+  proximityMeters?: number;
   location?: LatLng & { address?: string; placeName?: string };
   mapIcon?: string;
   cipherChar?: string;
@@ -97,6 +99,7 @@ export interface MissionItemData {
   isFinal?: boolean;
   revisitable?: boolean;
   openAnywhere?: boolean;
+  proximityMeters?: number;
   location?: LatLng & { address?: string; placeName?: string };
   mapIcon?: string;
   cipherChar?: string;

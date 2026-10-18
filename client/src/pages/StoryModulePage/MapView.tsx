@@ -340,7 +340,7 @@ export default function MapView({
   completedIndices,
   fix,
   geoError,
-  proximityMeters = DEFAULT_PROXIMITY_METERS,
+  proximityMeters: activityProximityMeters = DEFAULT_PROXIMITY_METERS,
   design,
   openAnywhere = false,
   showStationNames = false,
@@ -396,6 +396,7 @@ export default function MapView({
   const [overrideDueAt, setOverrideDueAt] = useState<number | null>(null);
 
   const target = items[currentItemIndex]?.location ?? placeOf(items, currentItemIndex);
+  const proximityMeters = items[currentItemIndex]?.proximityMeters ?? activityProximityMeters;
   const navigating = navigatingFor === currentItemIndex;
   const arrived = arrivedAt === currentItemIndex;
   useEffect(() => {

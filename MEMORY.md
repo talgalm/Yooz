@@ -168,7 +168,10 @@ Login config: `loginFields: ('email'|'phoneNumber'|'name')[]`, `emailGoogle?`,
   and arrival card show instead of the station name, e.g. the building the station is in),
   cipherChar? (map: the character this station reveals in the cipher, §16),
   openAnywhere? (map: this one station opens from anywhere - the module's `openAnywhere` for a single
-  station; the wizard offers it only while the module-wide option is off)}`.
+  station; the wizard offers it only while the module-wide option is off),
+  proximityMeters? (map: this station's opening distance, 5-200, overriding the module's
+  `proximityMeters` - smaller for stations close to each other; same rule: offered only while the
+  module-wide `openAnywhere` is off)}`.
 - `missionRef?` (when `type='mission'`), `showStationNumbers?`, `showItemTitleNumbers?`.
 - `routes?: {name, order[]}[]`, `groupRoutes?` (group name → route index), `startLocation?` -
   routes for groups (below). `groupOrders?` (group name → permutation of item indices) is what the
@@ -1217,7 +1220,8 @@ sum. A solo (single-login) map makes none of the team-marker calls below.
 
 **Config.** Per item: `location {lat,lng,address?}` — on the *module item*, never on the Station,
 because a Station is a reusable template that can appear in several activities at different
-addresses. Per module: `proximityMeters` (default 10) and `groupOrders` (group name → permutation
+addresses. Per module: `proximityMeters` (default 10; an item's own `proximityMeters` wins for that
+station, in both the arrival check and the "I'm here" offer) and `groupOrders` (group name → permutation
 of item indices, so each team walks its own order). Per-group order needs **preset** groups —
 self-service teams don't exist until the day, so they all walk the stored order. Admin UI:
 each item's settings dialog (`ItemSettingsModal` → `LocationSection`: address geocode **and** a

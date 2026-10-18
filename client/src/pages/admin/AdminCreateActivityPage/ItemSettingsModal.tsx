@@ -7,6 +7,7 @@ import FileUploadButton from '../../../components/FileUploadButton';
 import { itemDisplayName, type ItemLocation, type ModuleItem } from './types';
 import { geocodeAddress, isMapsAvailable, loadGoogleMaps } from '../../../utils/googleMaps';
 import { cleanCipherInput } from '../../../utils/cipher';
+import { DEFAULT_PROXIMITY_METERS } from '../../../utils/geo';
 
 const Overlay = styled('div')({
   position: 'fixed',
@@ -315,6 +316,52 @@ function CipherCharSection({
   );
 }
 
+const PROXIMITY_MIN_M = 5;
+const PROXIMITY_MAX_M = 200;
+
+function ProximitySection({
+  value,
+  fallback,
+  onChange,
+  t,
+}: {
+  value?: number;
+  fallback: number;
+  onChange: (meters: number | undefined) => void;
+  t: Record<string, string>;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const commit = () => {
+    if (draft === null) return;
+    const meters = Number(draft);
+    onChange(draft.trim() === '' || !Number.isFinite(meters)
+      ? undefined
+      : Math.min(PROXIMITY_MAX_M, Math.max(PROXIMITY_MIN_M, Math.round(meters))));
+    setDraft(null);
+  };
+  return (
+    <Section>
+      <SectionTitle>{t.itemProximityTitle}</SectionTitle>
+      <Hint>{t.itemProximityHint.replace('{m}', String(fallback))}</Hint>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Input
+          type="number"
+          min={PROXIMITY_MIN_M}
+          max={PROXIMITY_MAX_M}
+          value={draft ?? (value ?? '')}
+          placeholder={String(fallback)}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+          aria-label={t.itemProximityTitle}
+          style={{ maxWidth: 110 }}
+        />
+        {value !== undefined && <SecondaryBtn type="button" onClick={() => { setDraft(null); onChange(undefined); }}>{t.cipherCharClear}</SecondaryBtn>}
+      </div>
+    </Section>
+  );
+}
+
 interface ItemSettingsModalProps {
   item: ModuleItem;
   index: number;
@@ -330,6 +377,8 @@ interface ItemSettingsModalProps {
   onToggleFinal?: (index: number) => void;
   onToggleRevisitable?: (index: number) => void;
   onToggleOpenAnywhere?: (index: number) => void;
+  onUpdateProximity?: (index: number, meters: number | undefined) => void;
+  defaultProximityMeters?: number;
   onConfigureSplit?: (index: number) => void;
   onPreview: () => void;
   onClose: () => void;
@@ -351,6 +400,8 @@ export default function ItemSettingsModal({
   onToggleFinal,
   onToggleRevisitable,
   onToggleOpenAnywhere,
+  onUpdateProximity,
+  defaultProximityMeters = DEFAULT_PROXIMITY_METERS,
   onConfigureSplit,
   onPreview,
   onClose,
@@ -428,6 +479,15 @@ export default function ItemSettingsModal({
             title={t.mapLocation}
             hint={isMap ? undefined : t.locationForRoutesHint}
             placeNameFallback={isMap ? itemDisplayName(item) : undefined}
+            t={t}
+          />
+        )}
+
+        {isMap && onUpdateProximity && (
+          <ProximitySection
+            value={item.proximityMeters}
+            fallback={defaultProximityMeters}
+            onChange={(meters) => onUpdateProximity(index, meters)}
             t={t}
           />
         )}

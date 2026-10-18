@@ -115,6 +115,7 @@ export interface ModuleItemRequest {
   mapIcon?: string;
   cipherChar?: string;
   openAnywhere?: boolean;
+  proximityMeters?: number;
 }
 
 export interface ModuleConfigRequest {
