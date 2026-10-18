@@ -10,6 +10,15 @@ export function cipherSlots(items: { cipherChar?: string }[], completedIndices: 
   ));
 }
 
+export function cipherCodeChars(code: string): string[] {
+  return Array.from(code.replace(/\s+/g, ''));
+}
+
+export function fixedCipherSlots(code: string, items: { cipherChar?: string }[], completedIndices: number[]): CipherSlot[] {
+  const revealedCount = items.filter((item, itemIndex) => item.cipherChar && completedIndices.includes(itemIndex)).length;
+  return cipherCodeChars(code).map((char, position) => ({ itemIndex: position, char, revealed: position < revealedCount }));
+}
+
 function inRange(char: string, from: number, to: number): boolean {
   return Array.from(char).some((c) => {
     const code = c.codePointAt(0) ?? 0;

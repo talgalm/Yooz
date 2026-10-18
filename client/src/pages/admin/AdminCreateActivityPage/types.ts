@@ -137,6 +137,7 @@ export interface Activity {
     openAnywhere?: boolean;
     showStationNames?: boolean;
     cipherEnabled?: boolean;
+    cipherCode?: string;
     items: { type: 'game' | 'station'; ref: string; groups?: string[]; collageSplit?: CollageSplit; location?: ItemLocation; mapIcon?: string; cipherChar?: string; data?: { _id: string; name: string; type?: string; settings?: Record<string, unknown>; description?: string; customer?: string; theme?: string } }[];
     popups?: {
       _id?: string;

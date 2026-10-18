@@ -55,6 +55,14 @@ export function sanitizeMapDesign(raw: unknown): IMapDesign | undefined {
 
 const CIPHER_CHAR_MAX_CODE_POINTS = 2;
 
+const CIPHER_CODE_MAX_CODE_POINTS = 30;
+
+export function sanitizeCipherCode(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const code = Array.from(raw.replace(/\s+/g, '')).slice(0, CIPHER_CODE_MAX_CODE_POINTS).join('');
+  return code || undefined;
+}
+
 export function sanitizeCipherChar(raw: unknown): string | undefined {
   if (typeof raw !== 'string') return undefined;
   const char = raw.trim();

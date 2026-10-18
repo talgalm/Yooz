@@ -35,6 +35,7 @@ import { isWizardModule } from './types';
 import MapDesignSection from './MapDesignSection';
 import { DEFAULT_MAP_DESIGN, type MapDesign } from '../../../utils/mapDesign';
 import { DEFAULT_PROXIMITY_METERS } from '../../../utils/geo';
+import { cipherCodeChars } from '../../../utils/cipher';
 import type {
   LoginField,
   ConnectionType,
@@ -500,6 +501,7 @@ export default function AdminCreateActivityPage() {
   const [openAnywhere, setOpenAnywhere] = useState(false);
   const [showStationNames, setShowStationNames] = useState(false);
   const [cipherEnabled, setCipherEnabled] = useState(false);
+  const [cipherCode, setCipherCode] = useState('');
 
   const [openingType, setOpeningType] = useState<OpeningType>('none');
   const [openingUrl, setOpeningUrl] = useState('');
@@ -684,6 +686,7 @@ export default function AdminCreateActivityPage() {
           setOpenAnywhere(a.module.openAnywhere === true);
           setShowStationNames(a.module.showStationNames === true);
           setCipherEnabled(a.module.cipherEnabled === true);
+          setCipherCode(a.module.cipherCode ?? '');
           if (a.module.mapDesign) {
             setMapDesign({
               style: a.module.mapDesign.style ?? DEFAULT_MAP_DESIGN.style,
@@ -1240,7 +1243,7 @@ export default function AdminCreateActivityPage() {
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
           ...(showItemTitleNumbers && { showItemTitleNumbers: true }),
-          ...(moduleType === 'map' && { proximityMeters, mapDesign, openAnywhere, showStationNames, cipherEnabled }),
+          ...(moduleType === 'map' && { proximityMeters, mapDesign, openAnywhere, showStationNames, cipherEnabled, cipherCode: cipherEnabled ? cipherCode.trim() : '' }),
           ...(connectionType === 'group' && moduleType !== 'spiders' && {
             routes: draftsToRoutes(routes, selectedItems),
             groupRoutes,
@@ -1532,6 +1535,28 @@ export default function AdminCreateActivityPage() {
                         {t.mapCipher}
                       </label>
                       {cipherEnabled && <SectionDescription style={{ marginTop: 4 }}>{t.mapCipherHint}</SectionDescription>}
+                      {cipherEnabled && (
+                        <div style={{ marginTop: 12 }}>
+                          <SectionHeaderTitle as="div" style={{ fontSize: 14 }}>{t.cipherFixedCode}</SectionHeaderTitle>
+                          <Input
+                            value={cipherCode}
+                            onChange={(e) => setCipherCode(e.target.value)}
+                            placeholder={t.cipherFixedCodePlaceholder}
+                            dir="ltr"
+                            style={{ marginTop: 6, maxWidth: 320 }}
+                          />
+                          <SectionDescription style={{ marginTop: 4 }}>{t.cipherFixedCodeHint}</SectionDescription>
+                          {cipherCode.trim() && (() => {
+                            const stations = selectedItems.filter((item) => item.cipherChar).length;
+                            const chars = cipherCodeChars(cipherCode).length;
+                            return (
+                              <SectionDescription style={{ marginTop: 4, color: stations === chars ? '#1e8449' : '#c0392b', fontWeight: 600 }}>
+                                {t.cipherFixedCodeCount.replace('{stations}', String(stations)).replace('{chars}', String(chars))}
+                              </SectionDescription>
+                            );
+                          })()}
+                        </div>
+                      )}
                     </MapSettingsBlock>
                   )}
                 </SectionCard>
@@ -2035,6 +2060,7 @@ export default function AdminCreateActivityPage() {
                       onUpdateItemLocation={updateItemLocation}
                       onUpdateItemMapIcon={updateItemMapIcon}
                       onUpdateItemCipherChar={moduleType === 'map' && cipherEnabled ? updateItemCipherChar : undefined}
+                      cipherFixedCode={moduleType === 'map' && cipherEnabled && cipherCode.trim().length > 0}
                       t={t}
                     />
                   </div>

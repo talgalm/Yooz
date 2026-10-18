@@ -145,6 +145,7 @@ export interface ModuleData {
   openAnywhere?: boolean;
   showStationNames?: boolean;
   cipherEnabled?: boolean;
+  cipherCode?: string;
 }
 
 export interface CustomInstructionsData {

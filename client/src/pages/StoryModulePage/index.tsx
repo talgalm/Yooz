@@ -1511,6 +1511,7 @@ export default function StoryModulePage() {
             openAnywhere={data.module.openAnywhere === true}
             showStationNames={data.module.showStationNames === true}
             cipherEnabled={data.module.cipherEnabled === true}
+            cipherCode={data.module.cipherCode}
             cipherSeenKey={`yooz_cipher_seen_${code}_${participantSessionId()}`}
             onCipherRevealingChange={setCipherRevealing}
             onArrive={() => handleNodeTap(currentItemIndex)}

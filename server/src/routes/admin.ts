@@ -17,7 +17,7 @@ import { sanitizeOrganizerContacts } from '../utils/organizerContacts';
 import { resolveGroupRewardForSave } from '../utils/groupRewardConfig';
 import { sanitiseLanguages, sanitiseStartLanguage } from '../utils/requestLang';
 import { sanitizeLocation, sanitizeProximityMeters, sanitizeGroupOrders, sanitizeRoutes, sanitizeGroupRoutes, ordersFromRoutes, sanitizeCollageSplit, sanitizePopupTrigger } from '../utils/moduleItems';
-import { sanitizeCipherChar, sanitizeMapDesign, sanitizeMapIcon } from '../utils/mapDesign';
+import { sanitizeCipherChar, sanitizeCipherCode, sanitizeMapDesign, sanitizeMapIcon } from '../utils/mapDesign';
 import { pretranslateActivity } from '../services/activityPretranslate';
 import { IActivity, IScheduledReport } from '../models/Activity';
 import { provisionManagerCustomer, type ManagerProvisionResult } from '../utils/provisionManagerCustomer';
@@ -193,6 +193,7 @@ async function buildActivityData(
         ...(isMap && mod.openAnywhere === true && { openAnywhere: true }),
         ...(isMap && mod.showStationNames === true && { showStationNames: true }),
         ...(isMap && mod.cipherEnabled === true && { cipherEnabled: true }),
+        ...(isMap && mod.cipherEnabled === true && sanitizeCipherCode(mod.cipherCode) && { cipherCode: sanitizeCipherCode(mod.cipherCode) }),
         items,
         popups: Array.isArray(mod.popups) ? mod.popups.map((p: Record<string, unknown>) => {
           const ct = p.contentType === 'image' || p.contentType === 'video' ? p.contentType : 'text';

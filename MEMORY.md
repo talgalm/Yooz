@@ -1398,6 +1398,14 @@ right to left only when a character is Hebrew or Arabic (`cipherDirection`), so 
 its order. The characters reach the browser with the module, so the cipher is a game element, not a
 secret. The maths is in `utils/cipher.ts` and tested.
 
+**Fixed cipher code.** With routes, each route visits the stations in its own order, so letters tied
+to stations read scrambled. `module.cipherCode` ("קוד קבוע", under the cipher switch, e.g. `HaifaUni`,
+whitespace dropped, up to 30) fixes it: the strip always shows the code in its order, and the k-th
+station with a `cipherChar` that the participant finishes reveals the k-th character
+(`fixedCipherSlots`, tested), whatever station that is. A station's own character no longer matters -
+it only marks the station (the station setting becomes "התחנה חושפת את התו הבא בקוד", stored as `•`),
+and the wizard compares the number of marked stations with the code's length.
+
 **Look.** `module.mapDesign = {style, hidden[]}`, set in the activity wizard's step 1 under the
 theme row ("עיצוב מפה", `AdminCreateActivityPage/MapDesignSection.tsx`, with a live preview map).
 `style` is one of ten looks, in picker order (`standard`, `light`, `dark`, `night`, `satellite`,
