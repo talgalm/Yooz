@@ -13,6 +13,7 @@ import {
   StatsMobileValue,
 } from './styled';
 import { DesktopOnly, HideOnDesktop } from '../../../components/styled';
+import { rankGroups } from './groupStandings';
 import type { ActivityPeriod, GroupStats } from './types';
 
 interface Props {
@@ -36,24 +37,23 @@ export default function GroupComparison({ activityId, period, data }: Props) {
     return <div style={{ textAlign: 'center', padding: 24, color: '#888' }}>{t.noGroups}</div>;
   }
 
-  const chartData = groups.map((g) => ({
-    name: g.group || '—',
-    score: Math.round(g.avgScore),
-    completion: Math.round(g.completionRate),
+  const ranked = rankGroups(groups);
+  const chartData = ranked.map((g) => ({
+    name: g.group || '-',
+    score: g.totalScore,
   }));
 
   return (
     <>
       <ChartCard>
-        <ChartTitle>{t.groupsTab} — {t.avgScore}</ChartTitle>
+        <ChartTitle>{t.groupsTab} - {t.groupTotalScore}</ChartTitle>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#ececf3" />
             <XAxis dataKey="name" fontSize={12} tick={{ fill: '#888' }} />
             <YAxis fontSize={12} tick={{ fill: '#888' }} />
             <Tooltip />
-            <Bar dataKey="score" fill="#6c5ce7" radius={[6, 6, 0, 0]} name={t.avgScore} />
-            <Bar dataKey="completion" fill="#a29bfe" radius={[6, 6, 0, 0]} name={t.completionRate} />
+            <Bar dataKey="score" fill="#6c5ce7" radius={[6, 6, 0, 0]} name={t.groupTotalScore} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -63,19 +63,21 @@ export default function GroupComparison({ activityId, period, data }: Props) {
           <StatsTable>
             <thead>
               <tr>
+                <th>#</th>
                 <th>{t.group}</th>
+                <th>{t.groupTotalScore}</th>
                 <th>{t.members}</th>
-                <th>{t.avgScore}</th>
                 <th>{t.completionRate}</th>
                 <th>{t.avgDuration}</th>
               </tr>
             </thead>
             <tbody>
-              {groups.map((g) => (
+              {ranked.map((g) => (
                 <tr key={g.group} style={{ cursor: 'default' }}>
-                  <td style={{ fontWeight: 600 }}>{g.group || '—'}</td>
+                  <td style={{ fontWeight: 700 }}>{g.rank}</td>
+                  <td style={{ fontWeight: 600 }}>{g.group || '-'}</td>
+                  <td style={{ fontWeight: 700 }}>{g.totalScore.toLocaleString()}</td>
                   <td>{g.memberCount}</td>
-                  <td>{Math.round(g.avgScore)}</td>
                   <td>{Math.round(g.completionRate)}%</td>
                   <td>{formatDuration(g.avgDurationMs)}</td>
                 </tr>
@@ -86,15 +88,15 @@ export default function GroupComparison({ activityId, period, data }: Props) {
       </DesktopOnly>
 
       <HideOnDesktop>
-        {groups.map((g) => (
+        {ranked.map((g) => (
           <StatsMobileCard key={g.group} style={{ cursor: 'default' }}>
             <StatsMobileRow>
-              <StatsMobileValue>{g.group || '—'}</StatsMobileValue>
+              <StatsMobileValue>{`${g.rank}. ${g.group || '-'}`}</StatsMobileValue>
               <StatsMobileLabel>{g.memberCount} {t.members}</StatsMobileLabel>
             </StatsMobileRow>
             <StatsMobileRow>
-              <StatsMobileLabel>{t.avgScore}</StatsMobileLabel>
-              <StatsMobileValue>{Math.round(g.avgScore)}</StatsMobileValue>
+              <StatsMobileLabel>{t.groupTotalScore}</StatsMobileLabel>
+              <StatsMobileValue>{g.totalScore.toLocaleString()}</StatsMobileValue>
             </StatsMobileRow>
             <StatsMobileRow>
               <StatsMobileLabel>{t.completionRate}</StatsMobileLabel>

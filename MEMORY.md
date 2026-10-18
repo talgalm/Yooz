@@ -1945,7 +1945,9 @@ duplicate copies, which silently downgraded `day:` to `year`. Each fn takes
 `(activityId, period, excludeIds?)` and reads `Report`s, honoring `excludedReportIds`:
 `getActivityAnalytics` (overview KPIs + score histogram), `getFunnel` (joined→started→halfway→
 completed), `getItems` (per-item avg score/duration/hint/completion), `getQuestions`
-(per-question correctness), `getGroups` (group comparison), `getAnomalies` (high-dropout /
+(per-question correctness), `getGroups` (group comparison: `totalScore` = the sum of the members'
+`data.totalScore`, the same number the participant leaderboard ranks groups by, sorted by it;
+`avgScore` stays, normalized, for the "group gap" recommendation), `getAnomalies` (high-dropout /
 unusual-time flags), `getExportReports` (rows for Excel), `getCombinedReportCard` (cross-
 activity). Consumed by `routes/analytics.ts` + `routes/sharedStats.ts`.
 
@@ -2192,7 +2194,13 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 - **`AdminStatisticsTab/`** — `index` (view switch overview/activity/combined/audit),
   `OverviewSection` (KPIs, timeline, activities table, combined-select, audit-log button —
   hidden for customers), `ActivityAnalytics` (per-activity tabs), `FunnelChart`,
-  `ItemAnalyticsTable`, `GroupComparison`, `ParticipantsRoster` (exclusions), `ExportSection`,
+  `ItemAnalyticsTable`, `GroupComparison` (groups ranked by total score - chart, table and mobile
+  cards; the per-member average is not shown, it read as the team's score), `GroupWinnerCard`
+  (first thing on the overview of a group activity, also on the shared `/stats/:token` page: the
+  winner's name, then an Olympic podium - 2nd, 1st, 3rd, steps rising in one after another, gold/
+  silver/bronze by rank, so a tie for first shares the gold step and the next group gets bronze;
+  ranks past 3 get chips underneath; hidden until a group has points; `groupStandings.ts`:
+  `rankGroups`, `groupWinners`, `podiumSteps`), `ParticipantsRoster` (exclusions), `ExportSection`,
   `AutomatedReportSection` (scheduled reports, admin/super_admin only — see Activity model §4),
   `CombinedReportCard`, `AuditLogView`, `analyticsSource`.
 - **`AdminViewActivityPage`** — read-only activity detail.

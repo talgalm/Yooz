@@ -323,11 +323,12 @@ export async function getGroups(activityId: string | Types.ObjectId, period: Ana
         _id: '$group',
         memberCount: { $sum: 1 },
         avgScore: { $avg: '$data.totalScore' },
+        totalScore: { $sum: '$data.totalScore' },
         completedCount: { $sum: { $cond: [{ $eq: ['$completionStatus', 'completed'] }, 1, 0] } },
         avgDurationMs: { $avg: '$sessionDurationMs' },
       },
     },
-    { $sort: { avgScore: -1 } },
+    { $sort: { totalScore: -1, avgScore: -1 } },
   ]);
 
   const ceilingReports = await Report.find(
@@ -343,6 +344,7 @@ export async function getGroups(activityId: string | Types.ObjectId, period: Ana
     group: g._id,
     memberCount: g.memberCount,
     avgScore: normalizeScore(g.avgScore ?? 0, scoreCeiling),
+    totalScore: Math.round(g.totalScore ?? 0),
     completionRate: g.memberCount > 0 ? Math.round((g.completedCount / g.memberCount) * 100) : 0,
     avgDurationMs: Math.round(g.avgDurationMs ?? 0),
   }));

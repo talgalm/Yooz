@@ -94,6 +94,10 @@ export const texts = {
     group: 'Group',
     members: 'Members',
     noGroups: 'This activity has no group data',
+    groupWinner: 'Winning group',
+    groupWinnerTie: 'Tie for first place',
+    groupTotalScore: 'Total score',
+    groupPointsUnit: 'points',
 
     exportExecutive: 'Export Executive Report',
     exportParticipants: 'Export Participants',
@@ -304,6 +308,10 @@ export const texts = {
     group: 'קבוצה',
     members: 'חברים',
     noGroups: 'לפעילות זו אין נתוני קבוצות',
+    groupWinner: 'הקבוצה המנצחת',
+    groupWinnerTie: 'תיקו במקום הראשון',
+    groupTotalScore: 'ניקוד כולל',
+    groupPointsUnit: 'נקודות',
 
     exportExecutive: 'ייצוא דוח מנהלים מלא',
     exportParticipants: 'ייצוא משתתפים',

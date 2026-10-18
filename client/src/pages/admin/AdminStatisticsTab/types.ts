@@ -119,6 +119,7 @@ export interface GroupStats {
   group: string;
   memberCount: number;
   avgScore: number;
+  totalScore: number;
   completionRate: number;
   avgDurationMs: number;
 }
