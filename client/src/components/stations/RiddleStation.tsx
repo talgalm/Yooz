@@ -21,6 +21,7 @@ interface RiddleSettings {
   successImageUrl?: string;
   unlimitedAttempts?: boolean;
   attemptsText?: string;
+  lockedBoxes?: number[];
 }
 
 function isHebrewText(text: string): boolean {
@@ -149,14 +150,15 @@ const WordGroup = styled('div')({
   gap: 5,
 });
 
-const LetterBox = styled('div')<{ filled: string; shaking: string; active: string }>(({ filled, shaking, active }) => {
-  const isShaking = shaking === 'true';
-  const isActive = active === 'true';
+const LetterBox = styled('div')<{ filled: string; shaking: string; active: string; fixed?: string }>(({ filled, shaking, active, fixed }) => {
+  const isFixed = fixed === 'true';
+  const isShaking = shaking === 'true' && !isFixed;
+  const isActive = active === 'true' && !isFixed;
   return {
     width: 38,
     height: 46,
     boxSizing: 'border-box',
-    border: `2.5px solid ${isShaking ? '#e74c3c' : isActive ? '#8B2FC9' : filled === 'true' ? '#6c5ce7' : '#ccc'}`,
+    border: `2.5px solid ${isFixed ? '#6c5ce7' : isShaking ? '#e74c3c' : isActive ? '#8B2FC9' : filled === 'true' ? '#6c5ce7' : '#ccc'}`,
     borderRadius: 10,
     display: 'flex',
     alignItems: 'center',
@@ -165,10 +167,10 @@ const LetterBox = styled('div')<{ filled: string; shaking: string; active: strin
     fontWeight: 700,
     lineHeight: 1,
     fontVariantNumeric: 'tabular-nums',
-    color: isShaking ? '#c0392b' : '#111',
-    background: isShaking ? '#fdecea' : isActive ? '#f5f0ff' : filled === 'true' ? '#f0eefa' : '#fafafa',
+    color: isFixed ? '#fff' : isShaking ? '#c0392b' : '#111',
+    background: isFixed ? '#6c5ce7' : isShaking ? '#fdecea' : isActive ? '#f5f0ff' : filled === 'true' ? '#f0eefa' : '#fafafa',
     transition: 'border-color 0.15s, background 0.15s, box-shadow 0.15s, color 0.15s',
-    cursor: 'text',
+    cursor: isFixed ? 'default' : 'text',
     userSelect: 'none',
     animation: isShaking ? `${shakeAnim} 0.45s ease` : 'none',
     boxShadow: isShaking
@@ -423,11 +425,16 @@ export default function RiddleStation({
     wordGroups.push(indices);
   }
 
+  const lockedSet = new Set((settings.lockedBoxes ?? []).filter((i) => Number.isInteger(i) && i >= 0 && i < totalChars));
+  const locked = lockedSet.size < totalChars ? lockedSet : new Set<number>();
+  const freeBoxes = letters.map((_, i) => i).filter((i) => !locked.has(i));
+  const totalFree = freeBoxes.length;
+
   const [typed, setTyped] = useState('');
   const [cursor, setCursor] = useState(0);
   const [answerFocused, setAnswerFocused] = useState(false);
   const typedChars = Array.from(typed);
-  const inputs = Array.from({ length: totalChars }, (_, i) => typedChars[i] ?? '');
+  const inputs = Array.from({ length: totalChars }, (_, i) => (locked.has(i) ? letters[i] : typedChars[freeBoxes.indexOf(i)] ?? ''));
   const [attempt, setAttempt] = useState(0);
   const [shaking, setShaking] = useState(false);
   const [phase, setPhase] = useState<'playing' | 'success' | 'failure'>('playing');
@@ -470,11 +477,11 @@ export default function RiddleStation({
   }, [phase, inputs, answer, attempt, maxScore, startTime, onComplete, unlimitedAttempts]);
 
   const followCaret = (el: HTMLInputElement) => {
-    setCursor(Math.min(el.selectionStart ?? el.value.length, Math.max(totalChars - 1, 0)));
+    setCursor(Math.min(el.selectionStart ?? el.value.length, Math.max(totalFree - 1, 0)));
   };
 
   const handleAnswerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTyped(Array.from(e.target.value.replace(/\s/g, '')).slice(0, totalChars).join(''));
+    setTyped(Array.from(e.target.value.replace(/\s/g, '')).slice(0, totalFree).join(''));
     followCaret(e.target);
   };
 
@@ -488,9 +495,10 @@ export default function RiddleStation({
     const el = answerInput.current;
     if (!el || phase !== 'playing') return;
     el.focus();
-    const at = Math.min(index, typedChars.length);
+    const freePosition = freeBoxes.findIndex((box) => box >= index);
+    const at = Math.min(freePosition === -1 ? totalFree : freePosition, typedChars.length);
     el.setSelectionRange(at, at < typedChars.length ? at + 1 : at);
-    setCursor(Math.min(at, Math.max(totalChars - 1, 0)));
+    setCursor(Math.min(at, Math.max(totalFree - 1, 0)));
   };
 
   const allFilled = inputs.every((c) => c !== '');
@@ -546,7 +554,8 @@ export default function RiddleStation({
                   key={flatIndex}
                   filled={String(inputs[flatIndex] !== '')}
                   shaking={String(shaking)}
-                  active={String(answerFocused && phase === 'playing' && cursor === flatIndex)}
+                  active={String(answerFocused && phase === 'playing' && freeBoxes[cursor] === flatIndex)}
+                  fixed={String(locked.has(flatIndex))}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => focusBox(flatIndex)}
                 >
@@ -559,7 +568,7 @@ export default function RiddleStation({
             ref={answerInput}
             type="text"
             value={typed}
-            maxLength={totalChars}
+            maxLength={totalFree}
             onChange={handleAnswerChange}
             onKeyDown={handleAnswerKeyDown}
             onSelect={(e) => followCaret(e.currentTarget)}
