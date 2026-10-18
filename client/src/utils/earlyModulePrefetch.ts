@@ -1,6 +1,5 @@
 import { apiFetchWithRetry } from './api';
 import { getCachedModuleData, setCachedModuleData } from './moduleCache';
-import { optimizeActivityMediaData } from './participantMedia';
 import { preloadActivityMedia } from './mediaPreloader';
 import type { ActivityModuleResponse } from '../pages/StoryModulePage/types';
 
@@ -16,10 +15,9 @@ export async function prefetchActivityModule(code: string, group = ''): Promise<
     { headers: { 'Cache-Control': 'no-store' } },
     6,
   );
-  const optimized = optimizeActivityMediaData(data);
-  setCachedModuleData(code, group, optimized);
-  preloadActivityMedia(optimized);
-  return optimized;
+  setCachedModuleData(code, group, data);
+  preloadActivityMedia(data);
+  return data;
 }
 
 export function startEarlyModulePrefetch(code: string, group = ''): void {

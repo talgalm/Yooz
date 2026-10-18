@@ -44,7 +44,7 @@ test('the client offers exactly the styles and features the server keeps', () =>
 });
 
 test('a station icon is an uploaded image link, kept as given', () => {
-  const svg = 'https://res.cloudinary.com/yooz/image/upload/v1/yooz/icons/flag.svg';
+  const svg = 'https://cdn.example.com/yooz/icons/flag.svg';
   assert.equal(sanitizeMapIcon(svg), svg);
   assert.equal(sanitizeMapIcon(` ${svg} `), svg);
   assert.equal(sanitizeMapIcon('http://localhost:3000/icon.png'), 'http://localhost:3000/icon.png');

@@ -20,16 +20,6 @@ export function israelDateToday(): string {
   return `${Number(parts.day)}.${Number(parts.month)}.${parts.year}`;
 }
 
-export function cloudinaryAttachmentUrl(url: string): string {
-  if (!url.includes('res.cloudinary.com') || !url.includes('/upload/')) return url;
-  if (url.includes('/upload/fl_attachment')) return url;
-  const isPdf = /\.pdf(\?|$)/i.test(url);
-  const overlay = isPdf
-    ? ''
-    : `l_text:Arial_70_bold:${encodeURIComponent(israelDateToday())},co_white,g_south,y_60/`;
-  return url.replace('/upload/', `/upload/${overlay}fl_attachment/`);
-}
-
 export function renderWinnerSms(
   template: string,
   vars: { name: string; score: number; coupon: string; group: string; link: string },

@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import { s3KeyFromCloudinaryUrl } from './cloudinaryToS3';
 
 export type MediaResourceType = 'image' | 'video' | 'raw';
 
@@ -69,9 +68,7 @@ export function encodeKeyForUrl(key: string): string {
 }
 
 export function mediaKeyFromUrl(url: string, cdnBase: string): string | null {
-  if (cdnBase && url.startsWith(`${cdnBase}/`)) {
-    const path = url.slice(cdnBase.length + 1).split(/[?#]/)[0];
-    return path.split('/').map((s) => decodeURIComponent(s)).join('/') || null;
-  }
-  return s3KeyFromCloudinaryUrl(url);
+  if (!cdnBase || !url.startsWith(`${cdnBase}/`)) return null;
+  const path = url.slice(cdnBase.length + 1).split(/[?#]/)[0];
+  return path.split('/').map((s) => decodeURIComponent(s)).join('/') || null;
 }

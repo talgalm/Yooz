@@ -32,7 +32,7 @@ const POLL_INTERVAL = Number(__ENV.POLL_INTERVAL || 3);   // seconds
 // serialize on the 1-2 vCPU and 2-3min single-job time stretches to 5-8min.
 const POLL_TIMEOUT = Number(__ENV.POLL_TIMEOUT || 600);   // seconds
 const GROUP = __ENV.GROUP || `collage_load_${Date.now().toString(36)}`;
-const LOGO_URL = __ENV.LOGO_URL || 'https://res.cloudinary.com/drhc5tpmg/image/upload/v1779896769/yooz/aubdkrb6uwrg8ud4lrfn.png';
+const LOGO_URL = __ENV.LOGO_URL || 'https://d2gtmltd2d5ols.cloudfront.net/yooz/aubdkrb6uwrg8ud4lrfn.png';
 const SLOW = __ENV.SLOW === '1';   // bad-signal mode: add jitter + drop tolerance
 
 if (!CODE) throw new Error('CODE env var is required');

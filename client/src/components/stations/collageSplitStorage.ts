@@ -3,7 +3,7 @@ import { DB_NAME as JOBS_DB_NAME } from './collageJobStorage';
 
 export interface StoredCollagePart {
   partIndex: number;
-  photos: { blob: Blob; isVideo?: boolean; cloudinaryUrl?: string }[];
+  photos: { blob: Blob; isVideo?: boolean }[];
 }
 
 const DB_NAME = 'yooz_collage_split';

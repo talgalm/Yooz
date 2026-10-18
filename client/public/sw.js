@@ -1,8 +1,7 @@
-const CACHE = 'yooz-media-v1';
+const CACHE = 'yooz-media-v2';
 
 function isMediaRequest(url) {
   if (url.origin === self.location.origin && url.pathname.startsWith('/images/')) return true;
-  if (url.hostname === 'res.cloudinary.com') return !url.pathname.includes('/video/upload/');
   if (url.hostname.endsWith('.cloudfront.net')) return !/\.(mp4|webm|mov|ogg|ogv|mp3|wav|weba|m4a)$/i.test(url.pathname);
   return false;
 }

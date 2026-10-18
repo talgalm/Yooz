@@ -56,9 +56,8 @@ secret = {
     'ADMIN_PASSWORD':          '''$ADMIN_PASSWORD''',
     'MONGODB_URI':             '''$MONGODB_URI''',
     'VITE_GOOGLE_CLIENT_ID':   '''$VITE_GOOGLE_CLIENT_ID''',
-    'CLOUDINARY_CLOUD_NAME':   '''$CLOUDINARY_CLOUD_NAME''',
-    'CLOUDINARY_API_KEY':      '''$CLOUDINARY_API_KEY''',
-    'CLOUDINARY_API_SECRET':   '''$CLOUDINARY_API_SECRET''',
+    'MEDIA_BUCKET':            'yooz-media-535002865334',
+    'MEDIA_CDN_URL':           'https://d2gtmltd2d5ols.cloudfront.net',
     'GEMINI_API_KEY':          '''$GEMINI_API_KEY''',
     'CORS_ORIGIN':             'https://yooz.org.il,https://www.yooz.org.il'
 }

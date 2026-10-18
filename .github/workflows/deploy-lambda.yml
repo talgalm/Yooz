@@ -15,7 +15,6 @@ on:
       - 'server/src/utils/collageSlots.ts'
       - 'server/src/services/mediaStore.ts'
       - 'server/src/utils/mediaKeys.ts'
-      - 'server/src/utils/cloudinaryToS3.ts'
       - 'server/src/config.ts'
       - 'server/src/data/collage-template-*.json'
       - 'server/assets/collage-template*.mp4'

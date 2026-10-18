@@ -35,10 +35,12 @@ API and the built React SPA — no separate frontend host.
 - **Media**: S3 bucket `yooz-media-535002865334` (eu-west-1, private) behind CloudFront
   (`MEDIA_CDN_URL`, OAC-only reads) for all uploads, via `POST /api/admin/upload` (multer memory →
   `services/mediaStore.ts`, key `<folder>/<filename-slug>_<8 hex>.<ext>`, optional `folder` field →
-  upload straight into an open media-library folder). Moved off Cloudinary in Oct 2026 (free plan
-  over quota); every Cloudinary file was copied by `scripts/copy-cloudinary-to-s3.ts` with its
-  **public_id as the S3 key**, so a Cloudinary URL maps to its CDN URL by rule
-  (`s3KeyFromCloudinaryUrl`).
+  upload straight into an open media-library folder). Replaced Cloudinary in Oct 2026; the one-off
+  copy and URL-rewrite scripts were removed once done (backups of every rewritten document are in
+  the bucket under `_migration/`). CloudFront Function `yooz-media-always-cors` adds
+  `Access-Control-Allow-Origin: *` to **every** response: a response-headers policy only adds it
+  when the request has an `Origin`, and a browser that cached a file from an `<img>`/`<video>`
+  then failed the collage Share/Download `fetch()` of the same file.
   Client component: `FileUploadButton` (picker: computer *or* existing media). Browse/delete
   the cloud from the **Media tab** → `/api/admin/media`.
 - **Video collages**: ffmpeg encode runs on AWS Lambda (see `LAMBDA_SETUP.md`,
@@ -81,7 +83,7 @@ are first-time setup / manual ops. Lambda deploy: `.github/workflows/deploy-lamb
 
 ### Config / env (`server/src/config.ts`)
 `PORT`(3000) · `JWT_SECRET` · `MONGODB_URI` · `ADMIN_EMAIL`/`ADMIN_PASSWORD` (super-admin seed)
-· `MEDIA_BUCKET`/`MEDIA_REGION`/`MEDIA_CDN_URL` (S3 + CloudFront; `CLOUDINARY_*` only for the copy script) · `GEMINI_API_KEY`/`GEMINI_MODEL` · `AZURE_SPEECH_KEY`/`_REGION` ·
+· `MEDIA_BUCKET`/`MEDIA_REGION`/`MEDIA_CDN_URL` (S3 + CloudFront) · `GEMINI_API_KEY`/`GEMINI_MODEL` · `AZURE_SPEECH_KEY`/`_REGION` ·
 `TEXTME_API_TOKEN`/`_USERNAME`/`_SOURCE` · `RESEND_API_KEY` (automated reports, §4; sender is the `EMAIL_FROM` constant) ·
 `CORS_ORIGIN` (comma list; unset = allow all) ·
 `REGISTER_PHONE_KEY` (shared secret for the public register-phone API; unset = that one endpoint
@@ -600,13 +602,12 @@ No admin auth — the `statsShareToken` is the credential.
   `deleteMediaByPublicId` / `moveMediaByPublicId` (a public id is the key without its extension, so
   a video and its `.jpg` poster go together), `presignImageUpload` (presigned POST, 1-byte..max
   `content-length-range`), `storePosterFor(videoKey, pathOrUrl)` (ffmpeg `thumbnail` frame →
-  `<key>.jpg`, the same `.mp4 → .jpg` swap Cloudinary served). Folders are prefixes plus a
+  `<key>.jpg`, so a video's poster is its URL with `.jpg`). Folders are prefixes plus a
   `.folder` marker object. Objects are `Cache-Control: max-age=1y` - keys are never reused.
-- **Media delivery**: no on-the-fly transforms any more. Admin images are fitted to 2000px at
-  upload (`sharp`); collage photos are already compressed on the phone. Large Cloudinary files
-  were copied as their `w_2000` / `w_720` renditions. `utils/participantMedia.ts` still applies
-  `q_auto,w_720` / `f_auto,q_auto,w_1200` **only to Cloudinary URLs** and passes CDN URLs
-  through. `client/public/sw.js` serves CloudFront and Cloudinary images cache-first and leaves
+- **Media delivery**: no on-the-fly transforms. Admin images are fitted to 2000px at upload
+  (`sharp`); collage photos are already compressed on the phone; large files from before the
+  move were stored as 2000px images / 720p videos. Media URLs are used as stored.
+  `client/public/sw.js` serves CloudFront images cache-first and leaves
   videos and Range requests to the browser - the Cache API cannot store 206s, so intercepting
   them re-downloaded the video on every seek.
 - **`utils/groupStatus.ts`** — `getGroupStatus` (member/completion counts, **scoped to today**),
@@ -1726,8 +1727,8 @@ key prefixes, not a Mongo mirror — see `utils/mediaFolders.ts` for why that is
 - `POST /folders {parent,name}` / `DELETE /folders?folder=` — create writes a `.folder` marker;
   delete refuses a folder with any real object → 409 `folder_not_empty`.
 - `PATCH /move {publicId,folder}` — copy + delete, which **changes the URL**, so it is refused
-  (409) while `findMediaUsage` finds the file referenced. (Cloudinary's `asset_folder` moves kept
-  the URL; 46 copied images still carry their old folder in `x-amz-meta-cloudinary-folder`.)
+  (409) while `findMediaUsage` finds the file referenced. (46 images from before the move still
+  carry their old library folder in `x-amz-meta-cloudinary-folder`.)
 - `GET /usage?publicId=` — `findMediaUsage`, drives the delete warning.
 - `DELETE /?publicId=&force=` — `isDeletableAsset` guard (403), 409 `{error:'in_use', usage}`
   unless `force=true`, then `deleteMediaByPublicId` (file + poster) and clears the cache.
@@ -1736,8 +1737,8 @@ key prefixes, not a Mongo mirror — see `utils/mediaFolders.ts` for why that is
 ### `routes/rewardDownload.ts` — public reward file proxy (`GET /api/reward-download/:token`)
 `test_<base64url(url)>` tokens decode (test SMS, no DB). Real tokens look up `Activity` by
 `groupReward.downloadToken`. A CDN URL is fetched and sent as an attachment, with today's
-Israel date stamped on JPEG/PNG/WebP images (`sharp` + SVG text, 70px, 60px from the bottom); a
-Cloudinary URL still 302s to `cloudinaryAttachmentUrl`. 404 if not found.
+Israel date stamped on JPEG/PNG/WebP images (`sharp` + SVG text, 70px, 60px from the bottom); any
+other URL is a plain 302. Test tokens must decode to a CDN URL. 404 if not found.
 
 ### `routes/sharedStats.ts` — public read-only stats (`/api/shared/stats/:token`)
 No auth — the 16+ char `statsShareToken` is the credential (`resolveActivity` → 404 if short/
@@ -1835,9 +1836,8 @@ optional logo placeholder + iconRecolor. `DEFAULT_TEMPLATE_ID='default'`. Source
 - `GET /progress/:jobId` — progress + ETA (prefers Mongo `CollageJob`, falls back to in-memory).
 - `POST /upload-presign` *(loadShed)* — presigned S3 POST for a **direct-to-S3** upload (keeps
   upload bandwidth off the server; 15MB cap, key under `yooz/collage-inputs/<code>/`) →
-  `{uploadUrl, fields, url}`. `POST /photo-uploaded` — record the resulting URL on the job.
-  `POST /upload-sign` (the old Cloudinary signer) answers **410**, which a phone still running the
-  old bundle does not retry, so it falls back to `/upload-photo`.
+  `{uploadUrl, fields, url}`. `POST /photo-uploaded` — record the resulting URL on the job. If
+  presigning fails (any non-retryable status) the client falls back to `/upload-photo`.
 - `POST /upload-photo` — fallback: photo through the server (multer 15MB, re-encoded to JPEG).
 - `POST /upload-title` — upload the title image.
 - `POST /jobs` — create/get a `CollageJob` (idempotent by jobId; `requiredImages` from template).
@@ -1959,8 +1959,8 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   aggregatedRanking), `closeOrderSurveyVoting(activityCode)` (compute Borda → phase='results').
 - **`lockBroadcaster.ts`** — per-activity SSE registry: `subscribe(code,res)→unsubscribe`,
   `broadcastLock(code, idx)`, `sendLockEvent(res, idx)`.
-- **`groupRewardConfig.ts`** — `buildRewardDownloadUrl(token)`, `israelDateToday()`, `cloudinaryAttachmentUrl(url)` (Cloudinary URLs only)
-  (adds today's-date text overlay + `fl_attachment`; PDFs skip overlay), `renderWinnerSms(
+- **`groupRewardConfig.ts`** — `buildRewardDownloadUrl(token)`, `israelDateToday()` (the date the
+  reward download stamps on images), `renderWinnerSms(
   template, {name,score,coupon,group,link})`, `resolveGroupRewardForSave(reward, existing?)`
   (keeps stable `downloadToken` when attachment unchanged, else generates one). Has a companion
   `groupRewardConfig.test.ts`.
@@ -2050,8 +2050,8 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   activity code and login session, mirrored to localStorage), `forgetAllStorySessions`. **`moduleCache.ts`** — in-memory module cache by code+group.
 - **`earlyModulePrefetch.ts`** — `prefetchActivityModule`/`startEarlyModulePrefetch` (warm the
   module during login). **`mediaPreloader.ts`** — `preloadActivityMedia`. **`participantMedia.ts`**
-  — Cloudinary URL transforms, a no-op on CDN URLs (`participantImageUrl`/`participantVideoUrl`,
-  `optimizeActivityMediaData`, `load/preloadParticipantImage|Video`, `shouldDeferVideoPrefetch`).
+  — media URL checks (`isVideoMediaUrl`, `isParticipantImageUrl`), retrying
+  `load/preloadParticipantImage|Video`, `shouldDeferVideoPrefetch`.
 - **`videoSource.ts`** — `resolveVideoSource(url)` → `{kind:'iframe'|'file', src}` (YouTube/Vimeo
   vs direct). **`collageApi.ts`** — client collage flow (`ensureCollageJob`,
   `uploadCollagePhoto(sParallel)`, `renderTitlePng`, `startCollageJob`, `retryCollageJob`,

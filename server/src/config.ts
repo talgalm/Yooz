@@ -23,10 +23,6 @@ export const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@yooz.com';
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 
-export const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || '';
-export const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY || '';
-export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET || '';
-
 export const MEDIA_BUCKET = process.env.MEDIA_BUCKET || '';
 export const MEDIA_REGION = process.env.MEDIA_REGION || 'eu-west-1';
 export const MEDIA_CDN_URL = (process.env.MEDIA_CDN_URL || '').replace(/\/+$/, '');

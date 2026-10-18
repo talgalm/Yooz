@@ -4,13 +4,13 @@ import { customFfmpegArgs } from './collage';
 import type { CustomCollageVideo } from '../utils/collageSlots';
 
 const video: CustomCollageVideo = {
-  url: 'https://res.cloudinary.com/demo/video/upload/v.mp4',
+  url: 'https://cdn.example.com/yooz/v.mp4',
   width: 720,
   height: 1280,
   duration: 20,
   slots: [
     { startSec: 1, endSec: 4, x: 0.25, y: 0.3, w: 0.5, h: 0.4 },
-    { startSec: 6, endSec: 9, x: 0.25, y: 0.3, w: 0.5, h: 0.4, layer: 'behind', maskUrl: 'https://res.cloudinary.com/demo/image/upload/m.png' },
+    { startSec: 6, endSec: 9, x: 0.25, y: 0.3, w: 0.5, h: 0.4, layer: 'behind', maskUrl: 'https://cdn.example.com/yooz/m.png' },
   ],
 };
 

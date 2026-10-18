@@ -6,7 +6,6 @@ import { useParticipantExit } from '../../hooks/useParticipantExit';
 import { useTranslations } from '../../context/LanguageContext';
 import { apiFetchPersistSilent, apiFetchWithRetry } from '../../utils/api';
 import { getCachedModuleData } from '../../utils/moduleCache';
-import { optimizeActivityMediaData } from '../../utils/participantMedia';
 import { preloadActivityMedia } from '../../utils/mediaPreloader';
 import { texts } from './MissionPage.i18n';
 import {
@@ -242,7 +241,7 @@ export default function MissionPage() {
           10,
         );
         if (cancelled) return;
-        const data = optimizeActivityMediaData(raw);
+        const data = raw;
         const mod = data.module;
         if (mod.type !== 'mission' || !mod.mission) {
           throw new Error(t.errorNotMission);
