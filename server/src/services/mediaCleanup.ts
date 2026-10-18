@@ -1,17 +1,9 @@
 import mongoose from 'mongoose';
-import { v2 as cloudinary } from 'cloudinary';
-import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from '../config';
 import { ROOT_FOLDER, isDeletableAsset } from '../utils/mediaFolders';
-
-cloudinary.config({
-  cloud_name: CLOUDINARY_CLOUD_NAME,
-  api_key: CLOUDINARY_API_KEY,
-  api_secret: CLOUDINARY_API_SECRET,
-});
+import { MediaResourceType, publicIdOf, resourceTypeOf } from '../utils/mediaKeys';
+import { deleteMediaKeys, isFolderMarker, isMediaConfigured, listObjects } from './mediaStore';
 
 const DAY_MS = 86_400_000;
-const RESOURCE_TYPES = ['image', 'video', 'raw'] as const;
-type ResourceType = (typeof RESOURCE_TYPES)[number];
 
 export const RETENTION_DAYS = {
   collageInputs: 2,
@@ -20,8 +12,9 @@ export const RETENTION_DAYS = {
 };
 
 export interface CloudAsset {
+  key: string;
   publicId: string;
-  resourceType: ResourceType;
+  resourceType: MediaResourceType;
   bytes: number;
   createdAt: string;
 }
@@ -45,50 +38,33 @@ export function pickExpired(assets: CloudAsset[], now: number) {
 }
 
 async function listAllAssets(): Promise<CloudAsset[]> {
-  const assets: CloudAsset[] = [];
-  for (const resourceType of RESOURCE_TYPES) {
-    let cursor: string | undefined;
-    do {
-      const page: { resources: { public_id: string; bytes: number; created_at: string }[]; next_cursor?: string } = await cloudinary.api.resources({
-        resource_type: resourceType,
-        type: 'upload',
-        prefix: `${ROOT_FOLDER}/`,
-        max_results: 500,
-        ...(cursor && { next_cursor: cursor }),
-      });
-      for (const r of page.resources) {
-        assets.push({ publicId: r.public_id, resourceType, bytes: r.bytes, createdAt: r.created_at });
-      }
-      cursor = page.next_cursor;
-    } while (cursor);
-  }
-  return assets;
+  const { objects } = await listObjects(`${ROOT_FOLDER}/`);
+  return objects
+    .filter((o) => !isFolderMarker(o.key))
+    .map((o) => ({
+      key: o.key,
+      publicId: publicIdOf(o.key),
+      resourceType: resourceTypeOf(o.key),
+      bytes: o.bytes,
+      createdAt: (o.lastModified ?? new Date()).toISOString(),
+    }));
 }
 
 async function keepUnreferenced(candidates: CloudAsset[]): Promise<CloudAsset[]> {
-  const pending = new Map(candidates.map((a) => [a.publicId, a]));
+  const pending = new Map(candidates.map((a) => [a.key, a]));
   const db = mongoose.connection.db;
   if (!db) throw new Error('database not connected');
   for (const { name } of await db.listCollections().toArray()) {
     if (!pending.size) break;
     for await (const doc of db.collection(name).find({})) {
       const text = JSON.stringify(doc);
-      for (const publicId of pending.keys()) {
-        if (text.includes(publicId)) pending.delete(publicId);
+      for (const [key, asset] of pending) {
+        if (text.includes(asset.publicId)) pending.delete(key);
       }
       if (!pending.size) break;
     }
   }
   return [...pending.values()];
-}
-
-async function destroy(assets: CloudAsset[]): Promise<void> {
-  for (const resourceType of RESOURCE_TYPES) {
-    const ids = assets.filter((a) => a.resourceType === resourceType).map((a) => a.publicId);
-    for (let i = 0; i < ids.length; i += 100) {
-      await cloudinary.api.delete_resources(ids.slice(i, i + 100), { resource_type: resourceType, invalidate: true });
-    }
-  }
 }
 
 export async function runMediaCleanup({ dryRun }: { dryRun: boolean }): Promise<CleanupReport> {
@@ -99,13 +75,13 @@ export async function runMediaCleanup({ dryRun }: { dryRun: boolean }): Promise<
     unusedUploads: await keepUnreferenced(expired.uploadCandidates),
   };
   const all = [...deleted.collageInputs, ...deleted.collages, ...deleted.unusedUploads];
-  if (!dryRun) await destroy(all);
+  if (!dryRun) await deleteMediaKeys(all.map((a) => a.key));
   return { dryRun, deleted, freedMb: Math.round(all.reduce((sum, a) => sum + a.bytes, 0) / 1_048_576) };
 }
 
 export function startMediaCleanupScheduler(): void {
   if (process.env.NODE_ENV !== 'production') return;
-  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) return;
+  if (!isMediaConfigured()) return;
   const run = () =>
     runMediaCleanup({ dryRun: false })
       .then(({ deleted, freedMb }) =>

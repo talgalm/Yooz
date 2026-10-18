@@ -87,9 +87,10 @@ export async function findCollageJob(
   }
 }
 
-interface SignResp {
-  cloudName: string; apiKey: string; timestamp: number;
-  signature: string; folder: string; publicId: string;
+interface PresignResp {
+  uploadUrl: string;
+  fields: Record<string, string>;
+  url: string;
 }
 
 export async function uploadCollagePhoto(
@@ -100,26 +101,20 @@ export async function uploadCollagePhoto(
 ): Promise<string> {
   const compressed = await compressPhotoForCollage(blob);
   return withRetry(async () => {
-    const signRes = await apiFetchWithRetry<SignResp>('/api/collage/upload-sign', {
+    const presign = await apiFetchWithRetry<PresignResp>('/api/collage/upload-presign', {
       method: 'POST',
       body: JSON.stringify({ activityCode, jobId, imageIndex }),
     }).catch(() => null);
 
-    if (signRes) {
+    if (presign) {
       const fd = new FormData();
+      for (const [name, value] of Object.entries(presign.fields)) fd.append(name, value);
       fd.append('file', compressed, `photo_${imageIndex}.jpg`);
-      fd.append('api_key', signRes.apiKey);
-      fd.append('timestamp', String(signRes.timestamp));
-      fd.append('signature', signRes.signature);
-      fd.append('folder', signRes.folder);
-      fd.append('public_id', signRes.publicId);
-      const cloudRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`,
-        { method: 'POST', body: fd, signal: AbortSignal.timeout(45_000) },
-      );
-      if (!cloudRes.ok) throw new Error(`Cloudinary upload failed (${cloudRes.status})`);
-      const cloudData = (await cloudRes.json()) as { secure_url: string };
-      const url = cloudData.secure_url;
+      const storageRes = await fetch(presign.uploadUrl, {
+        method: 'POST', body: fd, signal: AbortSignal.timeout(45_000),
+      });
+      if (!storageRes.ok) throw new Error(`Photo upload failed (${storageRes.status})`);
+      const url = presign.url;
 
       await apiFetchWithRetry('/api/collage/photo-uploaded', {
         method: 'POST',

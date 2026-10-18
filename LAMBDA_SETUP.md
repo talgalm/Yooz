@@ -77,15 +77,15 @@ SECRET=$(aws secretsmanager get-secret-value \
   --query SecretString --output text)
 
 MONGO=$(echo "$SECRET" | python3 -c 'import sys,json;print(json.load(sys.stdin)["MONGODB_URI"])')
-C_CLOUD=$(echo "$SECRET" | python3 -c 'import sys,json;print(json.load(sys.stdin)["CLOUDINARY_CLOUD_NAME"])')
-C_KEY=$(echo "$SECRET" | python3 -c 'import sys,json;print(json.load(sys.stdin)["CLOUDINARY_API_KEY"])')
-C_SECRET=$(echo "$SECRET" | python3 -c 'import sys,json;print(json.load(sys.stdin)["CLOUDINARY_API_SECRET"])')
 
 aws lambda update-function-configuration \
   --function-name yooz-collage \
   --region eu-west-1 \
-  --environment "Variables={MONGODB_URI=$MONGO,CLOUDINARY_CLOUD_NAME=$C_CLOUD,CLOUDINARY_API_KEY=$C_KEY,CLOUDINARY_API_SECRET=$C_SECRET}"
+  --environment "Variables={MONGODB_URI=$MONGO,MEDIA_BUCKET=yooz-media-535002865334,MEDIA_REGION=eu-west-1,MEDIA_CDN_URL=https://d2gtmltd2d5ols.cloudfront.net}"
 ```
+
+The execution role needs the `yooz-media-s3` inline policy (put/get/delete/list on the media
+bucket) — it was added when the bucket was created.
 
 ## 6. MongoDB Atlas network access
 

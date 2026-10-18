@@ -1,22 +1,20 @@
 import { Router, Request, Response } from 'express';
-import { v2 as cloudinary } from 'cloudinary';
 import { authenticateAdmin, requireRole } from '../middleware/adminAuth';
-import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from '../config';
 import { findMediaUsage } from '../utils/mediaInUse';
 import { ROOT_FOLDER, MACHINE_FOLDERS, resolveFolder, isDeletableAsset } from '../utils/mediaFolders';
-
-function cloudinaryError(err: unknown): string {
-  const message = (err as { error?: { message?: string } })?.error?.message;
-  return message || (err instanceof Error ? err.message : 'unknown error');
-}
+import { extensionOf, posterKeyOf, publicIdOf, resourceTypeOf } from '../utils/mediaKeys';
+import {
+  createFolder,
+  deleteFolderIfEmpty,
+  deleteMediaByPublicId,
+  isFolderMarker,
+  isMediaConfigured,
+  listObjects,
+  mediaUrl,
+  moveMediaByPublicId,
+} from '../services/mediaStore';
 
 const router = Router();
-
-cloudinary.config({
-  cloud_name: CLOUDINARY_CLOUD_NAME,
-  api_key: CLOUDINARY_API_KEY,
-  api_secret: CLOUDINARY_API_SECRET,
-});
 
 const PAGE_SIZE = 60;
 const CACHE_TTL_MS = 60_000;
@@ -27,9 +25,6 @@ interface MediaItem {
   resourceType: string;
   format?: string;
   bytes?: number;
-  width?: number;
-  height?: number;
-  duration?: number;
   fileName?: string;
   folder?: string;
   createdAt?: string;
@@ -37,34 +32,29 @@ interface MediaItem {
 
 const cache = new Map<string, { items: MediaItem[]; expiresAt: number }>();
 
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : 'unknown error';
+}
+
 async function loadFolder(folder: string): Promise<MediaItem[]> {
   const cached = cache.get(folder);
   if (cached && cached.expiresAt > Date.now()) return cached.items;
 
-  const items: MediaItem[] = [];
-  let cursor: string | undefined;
-  do {
-    const page: Record<string, any> = await cloudinary.api.resources_by_asset_folder(folder, {
-      max_results: 500,
-      ...(cursor && { next_cursor: cursor }),
-    });
-    for (const r of page.resources as Record<string, any>[]) {
-      items.push({
-        publicId: r.public_id,
-        url: r.secure_url,
-        resourceType: r.resource_type,
-        format: r.format,
-        bytes: r.bytes,
-        width: r.width,
-        height: r.height,
-        duration: r.duration,
-        fileName: r.display_name || r.filename,
-        folder: r.asset_folder,
-        createdAt: r.created_at,
-      });
-    }
-    cursor = page.next_cursor;
-  } while (cursor);
+  const { objects } = await listObjects(`${folder}/`, '/');
+  const keys = objects.map((o) => o.key).filter((key) => !isFolderMarker(key));
+  const posters = new Set(keys.filter((key) => resourceTypeOf(key) === 'video').map(posterKeyOf));
+  const items: MediaItem[] = objects
+    .filter((o) => !isFolderMarker(o.key) && !posters.has(o.key))
+    .map((o) => ({
+      publicId: publicIdOf(o.key),
+      url: mediaUrl(o.key),
+      resourceType: resourceTypeOf(o.key),
+      format: extensionOf(o.key),
+      bytes: o.bytes,
+      fileName: o.key.slice(o.key.lastIndexOf('/') + 1),
+      folder,
+      createdAt: o.lastModified?.toISOString(),
+    }));
 
   items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   cache.set(folder, { items, expiresAt: Date.now() + CACHE_TTL_MS });
@@ -74,8 +64,8 @@ async function loadFolder(folder: string): Promise<MediaItem[]> {
 router.use(authenticateAdmin, requireRole('admin', 'super_admin'));
 
 router.get('/', async (req: Request, res: Response) => {
-  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
-    res.status(500).json({ error: 'Cloudinary not configured' });
+  if (!isMediaConfigured()) {
+    res.status(500).json({ error: 'Media storage not configured' });
     return;
   }
 
@@ -103,7 +93,7 @@ router.get('/', async (req: Request, res: Response) => {
       total: filtered.length,
     });
   } catch (err) {
-    console.error('[adminMedia] list failed:', cloudinaryError(err));
+    console.error('[adminMedia] list failed:', errorMessage(err));
     res.status(502).json({ error: 'Could not read media library' });
   }
 });
@@ -111,10 +101,11 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/folders', async (_req: Request, res: Response) => {
   try {
     const walk = async (path: string, depth: number): Promise<{ path: string; name: string; children: unknown[] }[]> => {
-      const { folders } = await cloudinary.api.sub_folders(path);
-      const visible = (folders as { name: string; path: string }[]).filter(
-        (f) => !(path === ROOT_FOLDER && MACHINE_FOLDERS.includes(f.name)),
-      );
+      const { folders } = await listObjects(`${path}/`, '/');
+      const visible = folders
+        .map((prefix) => prefix.replace(/\/$/, ''))
+        .map((childPath) => ({ path: childPath, name: childPath.slice(childPath.lastIndexOf('/') + 1) }))
+        .filter((f) => !(path === ROOT_FOLDER && MACHINE_FOLDERS.includes(f.name)));
       return Promise.all(
         visible.map(async (f) => ({
           path: f.path,
@@ -125,7 +116,7 @@ router.get('/folders', async (_req: Request, res: Response) => {
     };
     res.json({ root: ROOT_FOLDER, folders: await walk(ROOT_FOLDER, 2) });
   } catch (err) {
-    console.error('[adminMedia] folder list failed:', cloudinaryError(err));
+    console.error('[adminMedia] folder list failed:', errorMessage(err));
     res.status(502).json({ error: 'Could not read folders' });
   }
 });
@@ -149,10 +140,10 @@ router.post('/folders', async (req: Request, res: Response) => {
   }
 
   try {
-    await cloudinary.api.create_folder(path);
+    await createFolder(path);
     res.json({ success: true, path });
   } catch (err) {
-    console.error('[adminMedia] create folder failed:', cloudinaryError(err));
+    console.error('[adminMedia] create folder failed:', errorMessage(err));
     res.status(502).json({ error: 'Could not create folder' });
   }
 });
@@ -164,13 +155,15 @@ router.delete('/folders', async (req: Request, res: Response) => {
     return;
   }
   try {
-    await cloudinary.api.delete_folder(path);
+    if (!(await deleteFolderIfEmpty(path))) {
+      res.status(409).json({ error: 'folder_not_empty' });
+      return;
+    }
     cache.delete(path);
     res.json({ success: true });
   } catch (err) {
-    const message = cloudinaryError(err);
-    console.error('[adminMedia] delete folder failed:', message);
-    res.status(409).json({ error: message.toLowerCase().includes('empty') ? 'folder_not_empty' : message });
+    console.error('[adminMedia] delete folder failed:', errorMessage(err));
+    res.status(502).json({ error: 'Could not delete folder' });
   }
 });
 
@@ -187,12 +180,19 @@ router.patch('/move', async (req: Request, res: Response) => {
     return;
   }
 
+  const usage = await findMediaUsage(publicId);
+  if (usage.length > 0) {
+    res.status(409).json({ error: 'This file is in use, so moving it would break its links', usage });
+    return;
+  }
+
   try {
-    const updated: Record<string, any> = await cloudinary.api.update(publicId, { asset_folder: folder });
+    const moved = await moveMediaByPublicId(publicId, folder);
+    const main = moved.find((key) => !moved.some((other) => other !== key && posterKeyOf(other) === key));
     cache.clear();
-    res.json({ success: true, folder: updated.asset_folder, url: updated.secure_url });
+    res.json({ success: true, folder, url: main ? mediaUrl(main) : undefined });
   } catch (err) {
-    console.error('[adminMedia] move failed:', cloudinaryError(err));
+    console.error('[adminMedia] move failed:', errorMessage(err));
     res.status(502).json({ error: 'Move failed' });
   }
 });
@@ -208,7 +208,6 @@ router.get('/usage', async (req: Request, res: Response) => {
 
 router.delete('/', async (req: Request, res: Response) => {
   const publicId = typeof req.query.publicId === 'string' ? req.query.publicId : '';
-  const resourceType = req.query.resourceType === 'video' ? 'video' : 'image';
   const force = req.query.force === 'true';
 
   if (!publicId) {
@@ -229,15 +228,11 @@ router.delete('/', async (req: Request, res: Response) => {
   }
 
   try {
-    const result = await cloudinary.uploader.destroy(publicId, { resource_type: resourceType, invalidate: true });
-    if (result.result !== 'ok' && result.result !== 'not found') {
-      res.status(502).json({ error: `Cloudinary said: ${result.result}` });
-      return;
-    }
+    await deleteMediaByPublicId(publicId);
     cache.clear();
     res.json({ success: true });
   } catch (err) {
-    console.error('[adminMedia] destroy failed:', cloudinaryError(err));
+    console.error('[adminMedia] destroy failed:', errorMessage(err));
     res.status(502).json({ error: 'Delete failed' });
   }
 });

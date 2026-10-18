@@ -73,7 +73,7 @@ When running a single Playwright spec: `npx playwright test walkthroughs/02-crea
 
 - **Server**: Express 4 + TypeScript (`tsx` for dev, `tsc` for build), Mongoose 9 on MongoDB Atlas (cluster `Yooz-Cluster`, db `yooz`). Entry point `server/src/index.ts` wires ~30 route modules under `/api/*`, then falls back to SPA `index.html` for any non-API path. Connects to DB → runs migrations + seeds super-admin + built-in mission → listens.
 - **Client**: React 19 + Vite 6 + TypeScript, MUI v7 with `@emotion/styled` (no CSS files — only `App.css` for the global reset). React Router v7. No state library — context per auth realm.
-- **Storage**: Cloudinary for all uploaded media (images, video, audio). Uploaded via `POST /api/admin/upload` (multer memory storage → Cloudinary SDK). Reusable client component: `FileUploadButton`.
+- **Storage**: S3 (`yooz-media-535002865334`, eu-west-1) behind CloudFront for all uploaded media (images, video, audio). Every S3 call goes through `server/src/services/mediaStore.ts`; uploads via `POST /api/admin/upload` (multer memory storage → `putMedia`). Reusable client component: `FileUploadButton`.
 
 **Three independent auth realms** — this is the #1 thing to know before touching anything auth-related:
 

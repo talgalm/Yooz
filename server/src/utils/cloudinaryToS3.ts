@@ -38,6 +38,21 @@ export function isExpiredCollageInput(asset: CloudinaryAsset, now: number): bool
   return asset.publicId.startsWith(COLLAGE_INPUTS_PREFIX) && now - Date.parse(asset.createdAt) > COLLAGE_INPUT_KEEP_MS;
 }
 
+const CLOUDINARY_DELIVERY = /^https?:\/\/res\.cloudinary\.com\/[^/]+\/(?:image|video|raw)\/upload\/(.+)$/;
+const TRANSFORM_SEGMENT = /^[a-z]{1,3}_[^/]*$/;
+const VERSION_SEGMENT = /^v\d+$/;
+
+export function s3KeyFromCloudinaryUrl(url: string): string | null {
+  const match = CLOUDINARY_DELIVERY.exec(url.split(/[?#]/)[0]);
+  if (!match) return null;
+  const segments = match[1].split('/');
+  const versionAt = segments.findIndex((s) => VERSION_SEGMENT.test(s));
+  let start = versionAt >= 0 ? versionAt + 1 : 0;
+  if (versionAt < 0) while (start < segments.length - 1 && TRANSFORM_SEGMENT.test(segments[start])) start++;
+  const key = segments.slice(start).map((s) => decodeURIComponent(s)).join('/');
+  return key || null;
+}
+
 export function cloudinaryDeliveryUrl(cloudName: string, asset: CloudinaryAsset, transform: string | null, extension?: string): string {
   const ext = extension ?? (asset.resourceType === 'raw' ? '' : asset.format);
   const file = ext ? `${asset.publicId}.${ext}` : asset.publicId;
