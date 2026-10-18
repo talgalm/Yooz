@@ -220,6 +220,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.mapIcon && { mapIcon: item.mapIcon }),
         ...(cipherOn && item.cipherChar && { cipherChar: item.cipherChar }),
         ...(activity.module!.type === 'map' && item.openAnywhere && { openAnywhere: true }),
+        ...(activity.module!.type === 'map' && item.proximityMeters && { proximityMeters: item.proximityMeters }),
       };
     }
     const data = item.type === 'game'
@@ -241,6 +242,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.mapIcon && { mapIcon: item.mapIcon }),
         ...(cipherOn && item.cipherChar && { cipherChar: item.cipherChar }),
         ...(activity.module!.type === 'map' && item.openAnywhere && { openAnywhere: true }),
+        ...(activity.module!.type === 'map' && item.proximityMeters && { proximityMeters: item.proximityMeters }),
       }, data, lang);
     } else {
       return withReviewedTranslations({
@@ -258,6 +260,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
         ...(item.mapIcon && { mapIcon: item.mapIcon }),
         ...(cipherOn && item.cipherChar && { cipherChar: item.cipherChar }),
         ...(activity.module!.type === 'map' && item.openAnywhere && { openAnywhere: true }),
+        ...(activity.module!.type === 'map' && item.proximityMeters && { proximityMeters: item.proximityMeters }),
       }, data, lang);
     }
   });

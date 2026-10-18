@@ -86,6 +86,7 @@ export interface ModuleItem {
   isFinal?: boolean;
   revisitable?: boolean;
   openAnywhere?: boolean;
+  proximityMeters?: number;
   collageSplit?: CollageSplit;
   location?: ItemLocation;
   mapIcon?: string;

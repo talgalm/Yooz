@@ -149,10 +149,12 @@ async function buildActivityData(
               mapIcon?: unknown;
               cipherChar?: unknown;
               openAnywhere?: unknown;
+              proximityMeters?: unknown;
             }) => {
               const location = sanitizeLocation(item.location);
               const mapIcon = isMap ? sanitizeMapIcon(item.mapIcon) : undefined;
               const cipherChar = isMap ? sanitizeCipherChar(item.cipherChar) : undefined;
+              const stationProximity = isMap ? sanitizeProximityMeters(item.proximityMeters) : undefined;
               return {
                 type: item.type,
                 ref: item.ref,
@@ -165,6 +167,7 @@ async function buildActivityData(
                 ...(mapIcon && { mapIcon }),
                 ...(cipherChar && { cipherChar }),
                 ...(isMap && item.openAnywhere === true && { openAnywhere: true }),
+                ...(stationProximity !== undefined && { proximityMeters: stationProximity }),
               };
             })
         : [];
@@ -369,6 +372,7 @@ async function populateActivityItems(activities: any[]): Promise<any[]> {
           mapIcon: item.mapIcon,
           cipherChar: item.cipherChar,
           openAnywhere: item.openAnywhere,
+          proximityMeters: item.proximityMeters,
         };
       });
     }
