@@ -290,15 +290,31 @@ const CipherInput = styled(Input)({
   fontWeight: 700,
 });
 
+const FIXED_CODE_MARK = '•';
+
 function CipherCharSection({
   value,
+  fixedCode,
   onChange,
   t,
 }: {
   value?: string;
+  fixedCode: boolean;
   onChange: (cipherChar: string | undefined) => void;
   t: Record<string, string>;
 }) {
+  if (fixedCode) {
+    return (
+      <Section>
+        <SectionTitle>{t.cipherCharTitle}</SectionTitle>
+        <OptionRow>
+          <Checkbox type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked ? FIXED_CODE_MARK : undefined)} />
+          {t.cipherRevealsNext}
+        </OptionRow>
+        <Hint>{t.cipherRevealsNextHint}</Hint>
+      </Section>
+    );
+  }
   return (
     <Section>
       <SectionTitle>{t.cipherCharTitle}</SectionTitle>
@@ -373,6 +389,7 @@ interface ItemSettingsModalProps {
   onUpdateLocation?: (index: number, location: ItemLocation | undefined) => void;
   onUpdateMapIcon?: (index: number, mapIcon: string | undefined) => void;
   onUpdateCipherChar?: (index: number, cipherChar: string | undefined) => void;
+  cipherFixedCode?: boolean;
   onUpdateSvg?: (index: number, svgUrl: string) => void;
   onToggleFinal?: (index: number) => void;
   onToggleRevisitable?: (index: number) => void;
@@ -396,6 +413,7 @@ export default function ItemSettingsModal({
   onUpdateLocation,
   onUpdateMapIcon,
   onUpdateCipherChar,
+  cipherFixedCode = false,
   onUpdateSvg,
   onToggleFinal,
   onToggleRevisitable,
@@ -493,7 +511,7 @@ export default function ItemSettingsModal({
         )}
 
         {isMap && onUpdateCipherChar && (
-          <CipherCharSection value={item.cipherChar} onChange={(c) => onUpdateCipherChar(index, c)} t={t} />
+          <CipherCharSection value={item.cipherChar} fixedCode={cipherFixedCode} onChange={(c) => onUpdateCipherChar(index, c)} t={t} />
         )}
 
         {isMap && onUpdateMapIcon && (

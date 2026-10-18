@@ -366,6 +366,7 @@ interface ModuleItemsSectionProps {
   onUpdateItemLocation?: (index: number, location: ItemLocation | undefined) => void;
   onUpdateItemMapIcon?: (index: number, mapIcon: string | undefined) => void;
   onUpdateItemCipherChar?: (index: number, cipherChar: string | undefined) => void;
+  cipherFixedCode?: boolean;
   moduleType?: string;
   connectionType: string;
   groupNames: string[];
@@ -390,6 +391,7 @@ export default function ModuleItemsSection({
   onUpdateItemLocation,
   onUpdateItemMapIcon,
   onUpdateItemCipherChar,
+  cipherFixedCode = false,
   moduleType,
   connectionType,
   groupNames,
@@ -586,7 +588,7 @@ export default function ModuleItemsSection({
                       : <StatusBadge tone="red">{t.locationMissingLabel}</StatusBadge>;
                   })()}
                   {onUpdateItemCipherChar && item.cipherChar && (
-                    <StatusBadge tone="purple">{t.cipherBadgeLabel.replace('{c}', item.cipherChar)}</StatusBadge>
+                    <StatusBadge tone="purple">{cipherFixedCode ? t.cipherBadgeFixed : t.cipherBadgeLabel.replace('{c}', item.cipherChar)}</StatusBadge>
                   )}
                   {isSpiders && item.isFinal && <StatusBadge tone="neutral">{t.spidersFinal}</StatusBadge>}
                   {item.revisitable && <StatusBadge tone="neutral">{t.revisitable}</StatusBadge>}
@@ -794,6 +796,7 @@ export default function ModuleItemsSection({
           onUpdateLocation={onUpdateItemLocation}
           onUpdateMapIcon={onUpdateItemMapIcon}
           onUpdateCipherChar={onUpdateItemCipherChar}
+          cipherFixedCode={cipherFixedCode}
           onUpdateSvg={onUpdateItemSvg}
           onToggleFinal={onToggleItemFinal}
           onToggleRevisitable={onToggleItemRevisitable}

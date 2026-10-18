@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { REEL_LENGTH, cipherDirection, cipherSlots, cleanCipherInput, reelStrip, unseenSlots } from './cipher';
+import { REEL_LENGTH, cipherCodeChars, cipherDirection, cipherSlots, cleanCipherInput, fixedCipherSlots, reelStrip, unseenSlots } from './cipher';
 
 const shin = String.fromCharCode(0x05e9);
 const alef = String.fromCharCode(0x05d0);
@@ -38,4 +38,16 @@ test('admin input keeps at most two characters', () => {
   assert.equal(cleanCipherInput(' 12 '), '12');
   assert.equal(cleanCipherInput('abc'), 'ab');
   assert.equal(cleanCipherInput('   '), '');
+});
+
+test('a fixed code reveals in its own order, whatever station a route reaches first', () => {
+  const route = [{ cipherChar: 'I' }, {}, { cipherChar: 'A' }, { cipherChar: 'H' }];
+  assert.deepEqual(fixedCipherSlots('HaifaUni', route, [0]).map((slot) => slot.revealed), [true, false, false, false, false, false, false, false]);
+  assert.deepEqual(fixedCipherSlots('HaifaUni', route, [0, 1, 2]).filter((slot) => slot.revealed).map((slot) => slot.char), ['H', 'a']);
+  assert.deepEqual(fixedCipherSlots('HaifaUni', route, []).map((slot) => slot.char).join(''), 'HaifaUni');
+  assert.deepEqual(fixedCipherSlots('HaifaUni', route, [0, 2, 3]).map((slot) => slot.itemIndex), [0, 1, 2, 3, 4, 5, 6, 7]);
+});
+
+test('spaces in a fixed code are not characters', () => {
+  assert.deepEqual(cipherCodeChars(' Haifa Uni '), ['H', 'a', 'i', 'f', 'a', 'U', 'n', 'i']);
 });
