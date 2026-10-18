@@ -220,6 +220,7 @@ export default function AdminStationConfigPage() {
   const [feedbackItems, setFeedbackItems] = useState<KeyedFeedbackItem[]>(() => withFeedbackKeys(DEFAULT_FEEDBACK_ITEMS));
   const [riddleClue, setRiddleClue] = useState('');
   const [riddleAnswer, setRiddleAnswer] = useState('');
+  const [riddleLockedBoxes, setRiddleLockedBoxes] = useState<number[]>([]);
   const [riddleMediaUrl, setRiddleMediaUrl] = useState('');
   const [riddleMediaType, setRiddleMediaType] = useState<'image' | 'video'>('image');
   const [riddleMaxScore, setRiddleMaxScore] = useState('100');
@@ -395,6 +396,7 @@ export default function AdminStationConfigPage() {
         if (s.type === 'riddle') {
           if (settings.clue) setRiddleClue(settings.clue as string);
           if (settings.answer) setRiddleAnswer(settings.answer as string);
+          if (Array.isArray(settings.lockedBoxes)) setRiddleLockedBoxes((settings.lockedBoxes as unknown[]).filter((i): i is number => Number.isInteger(i)));
           if (settings.mediaUrl) setRiddleMediaUrl(settings.mediaUrl as string);
           if (settings.mediaType) setRiddleMediaType(settings.mediaType as 'image' | 'video');
           if (typeof settings.maxScore === 'number') setRiddleMaxScore(String(settings.maxScore));
@@ -518,6 +520,7 @@ export default function AdminStationConfigPage() {
     if (lib.type === 'riddle') {
       if (settings.clue) setRiddleClue(settings.clue as string);
       if (settings.answer) setRiddleAnswer(settings.answer as string);
+      if (Array.isArray(settings.lockedBoxes)) setRiddleLockedBoxes((settings.lockedBoxes as unknown[]).filter((i): i is number => Number.isInteger(i)));
       if (settings.mediaUrl) setRiddleMediaUrl(settings.mediaUrl as string);
       if (settings.mediaType) setRiddleMediaType(settings.mediaType as 'image' | 'video');
       if (typeof settings.maxScore === 'number') setRiddleMaxScore(String(settings.maxScore));
@@ -648,6 +651,10 @@ export default function AdminStationConfigPage() {
       if (stationType === 'riddle') {
         settings.clue = riddleClue.trim();
         settings.answer = riddleAnswer.trim();
+        const boxCount = riddleAnswer.trim().replace(/ /g, '').split('').length;
+        const lockedBoxes = riddleLockedBoxes.filter((i) => i >= 0 && i < boxCount).sort((a, b) => a - b);
+        if (lockedBoxes.length > 0 && lockedBoxes.length < boxCount) settings.lockedBoxes = lockedBoxes;
+        else delete settings.lockedBoxes;
         if (riddleMediaUrl.trim()) {
           settings.mediaUrl = riddleMediaUrl.trim();
           settings.mediaType = riddleMediaType;
@@ -898,6 +905,7 @@ export default function AdminStationConfigPage() {
     setFeedbackItems(withFeedbackKeys(DEFAULT_FEEDBACK_ITEMS));
     setRiddleClue('');
     setRiddleAnswer('');
+    setRiddleLockedBoxes([]);
     setRiddleMediaUrl('');
     setRiddleMediaType('image');
     setRiddleMaxScore('100');
@@ -960,6 +968,7 @@ export default function AdminStationConfigPage() {
     } else if (randomType === 'riddle') {
       setRiddleClue('אני יש לי ידיים אבל אין לי אצבעות. אני מראה לך את הזמן. מה אני?');
       setRiddleAnswer('שעון');
+      setRiddleLockedBoxes([]);
       setRiddleMaxScore('100');
       setRiddleSuccessMsg('כל הכבוד! ניחשת נכון!');
       setRiddleFailureMsg('לא הצלחת הפעם. התשובה הייתה: שעון');
@@ -1588,19 +1597,36 @@ export default function AdminStationConfigPage() {
                   />
                   <span style={{ fontSize: 12, color: '#999', marginTop: -8 }}>{t.riddleAnswerHint}</span>
 
-                  {riddleAnswer.trim() && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '10px 0', direction: /[\u0590-\u05FF]/.test(riddleAnswer) ? 'rtl' : 'ltr' }}>
-                      {riddleAnswer.trim().split(' ').map((word, wi) => (
-                        <div key={wi} style={{ display: 'flex', gap: 4 }}>
-                          {word.split('').map((ch, ci) => (
-                            <div key={ci} style={{ width: 30, height: 36, border: '2px solid #6c5ce7', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, background: '#f0eefa', color: '#6c5ce7' }}>
-                              {ch}
+                  {riddleAnswer.trim() && (() => {
+                    const words = riddleAnswer.trim().split(' ');
+                    const starts = words.map((_, wi) => words.slice(0, wi).join('').length);
+                    return (
+                      <>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '10px 0 4px', direction: /[\u0590-\u05FF]/.test(riddleAnswer) ? 'rtl' : 'ltr' }}>
+                          {words.map((word, wi) => (
+                            <div key={wi} style={{ display: 'flex', gap: 4 }}>
+                              {word.split('').map((ch, ci) => {
+                                const box = starts[wi] + ci;
+                                const isLocked = riddleLockedBoxes.includes(box);
+                                return (
+                                  <button
+                                    key={ci}
+                                    type="button"
+                                    aria-pressed={isLocked}
+                                    onClick={() => setRiddleLockedBoxes((prev) => (prev.includes(box) ? prev.filter((i) => i !== box) : [...prev, box]))}
+                                    style={{ width: 30, height: 36, padding: 0, border: '2px solid #6c5ce7', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', background: isLocked ? '#6c5ce7' : '#f0eefa', color: isLocked ? '#fff' : '#6c5ce7' }}
+                                  >
+                                    {ch}
+                                  </button>
+                                );
+                              })}
                             </div>
                           ))}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        <span style={{ fontSize: 12, color: '#999', marginBottom: 4 }}>{t.riddleLockedBoxesHint}</span>
+                      </>
+                    );
+                  })()}
 
                   <SectionLabel>{t.riddleMaxScore}</SectionLabel>
                   <Input
