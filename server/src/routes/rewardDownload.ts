@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import sharp from 'sharp';
 import { Activity } from '../models';
-import { cloudinaryAttachmentUrl, israelDateToday } from '../utils/groupRewardConfig';
+import { israelDateToday } from '../utils/groupRewardConfig';
 import { isMediaUrl, keyOfMediaUrl } from '../services/mediaStore';
 
 const router = Router();
@@ -38,7 +38,7 @@ async function deliver(res: Response, url: string): Promise<void> {
     await sendAsAttachment(res, url);
     return;
   }
-  res.redirect(302, cloudinaryAttachmentUrl(url));
+  res.redirect(302, url);
 }
 
 router.get('/:token', async (req: Request<{ token: string }>, res: Response) => {
@@ -52,7 +52,7 @@ router.get('/:token', async (req: Request<{ token: string }>, res: Response) => 
       res.status(400).send('Invalid test link');
       return;
     }
-    if (!/^https:\/\/res\.cloudinary\.com\//.test(decoded) && !isMediaUrl(decoded)) {
+    if (!isMediaUrl(decoded)) {
       res.status(400).send('Invalid test link');
       return;
     }

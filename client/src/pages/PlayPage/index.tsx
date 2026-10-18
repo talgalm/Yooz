@@ -8,7 +8,6 @@ import ActivityLogin from '../../components/login/ActivityLogin';
 import { apiFetchWithRetry } from '../../utils/api';
 import { participantMissionPath, participantStoryPath, rememberActivityCode } from '../../utils/participantActivity';
 import { startEarlyModulePrefetch } from '../../utils/earlyModulePrefetch';
-import { participantImageUrl, participantVideoUrl } from '../../utils/participantMedia';
 import { useMediaPreload } from '../../hooks/useMediaPreload';
 import { GameLoadingSpinner } from '../../components/games/styled';
 import GroupEntryChoice from '../../components/groupEntry/GroupEntryChoice';
@@ -118,10 +117,7 @@ function CustomOpeningOverlay({
   onStartVideo,
 }: CustomOpeningOverlayProps) {
   const opening = activity.opening!;
-  const mediaUrl = opening.type === 'video'
-    ? participantVideoUrl(opening.url)
-    : participantImageUrl(opening.url);
-  const { ready, failed, retry } = useMediaPreload([mediaUrl]);
+  const { ready, failed, retry } = useMediaPreload([opening.url]);
 
   return (
     <OpeningOverlay
@@ -141,7 +137,7 @@ function CustomOpeningOverlay({
         <>
           <OpeningMedia
             ref={videoRef}
-            src={participantVideoUrl(opening.url)}
+            src={opening.url}
             playsInline
             preload="auto"
             muted={!videoStarted}
@@ -162,7 +158,7 @@ function CustomOpeningOverlay({
         </>
       ) : ready ? (
         <OpeningImage
-          src={participantImageUrl(opening.url)}
+          src={opening.url}
           alt=""
         />
       ) : null}

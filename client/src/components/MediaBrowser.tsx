@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { styled } from '@mui/material/styles';
 import { useTranslations } from '../context/LanguageContext';
 import { adminApiFetch } from '../utils/adminApi';
-import { insertCloudinaryTransform } from '../utils/participantMedia';
 import { texts } from './MediaBrowser.i18n';
 import { PRIMARY, BORDER, TEXT_LIGHT, ERROR } from './styled';
 
@@ -59,11 +58,8 @@ function childrenOf(nodes: FolderNode[], path: string): FolderNode[] {
 }
 
 function thumbUrl(item: MediaItem): string {
-  if (item.resourceType === 'video') {
-    const posterUrl = item.url.replace(/\.[a-z0-9]+$/i, '.jpg');
-    return insertCloudinaryTransform(posterUrl, 'video', 'w_300,h_300,c_fill,q_auto');
-  }
-  return insertCloudinaryTransform(item.url, 'image', 'w_300,h_300,c_fill,q_auto');
+  if (item.resourceType === 'video') return item.url.replace(/\.[a-z0-9]+$/i, '.jpg');
+  return item.url;
 }
 
 function formatBytes(bytes?: number): string {

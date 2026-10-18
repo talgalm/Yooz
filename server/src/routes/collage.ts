@@ -815,10 +815,6 @@ const photoUpload = multer({
   limits: { fileSize: 15 * 1024 * 1024 },
 });
 
-router.post('/upload-sign', (_req: Request, res: Response) => {
-  res.status(410).json({ error: 'Direct uploads moved to /upload-presign' });
-});
-
 const COLLAGE_PHOTO_MAX_BYTES = 15 * 1024 * 1024;
 
 router.post('/upload-presign', loadShed, async (req: Request, res: Response) => {
@@ -1087,8 +1083,7 @@ async function renderVideoSharePage(
   activityUrl: string,
   lang: string,
 ): Promise<string> {
-  const hasPoster = isMediaUrl(videoUrl) || videoUrl.includes('res.cloudinary.com');
-  const posterUrl = hasPoster ? videoUrl.replace(/\.\w+$/, '.jpg') : '';
+  const posterUrl = isMediaUrl(videoUrl) ? videoUrl.replace(/\.\w+$/, '.jpg') : '';
   const { locale, dir } = languageOf(lang);
   const [pageTitle, ogTitle, ogDescription, shareLabel, backLabel, preparingLabel] = await Promise.all([
     translateText('הסרטון שלכם', lang),

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { TEMPLATES, editableTemplateVideo, iconRecolorFilter } from './collage';
 
 test('a built-in video opens in the editor as a custom video with its photos in the green windows', () => {
-  const video = editableTemplateVideo(TEMPLATES['gan-yehoshua'], 'https://res.cloudinary.com/demo/video/upload/g.mp4', 2);
+  const video = editableTemplateVideo(TEMPLATES['gan-yehoshua'], 'https://cdn.example.com/yooz/g.mp4', 2);
   assert.ok(video);
   assert.equal(video.trimEnd, 10.9);
   assert.equal(video.keyColor, '#4fde69');
@@ -13,7 +13,7 @@ test('a built-in video opens in the editor as a custom video with its photos in 
 });
 
 test('all six photos keep the whole built-in video', () => {
-  const video = editableTemplateVideo(TEMPLATES.default, 'https://res.cloudinary.com/demo/video/upload/d.mp4', 6);
+  const video = editableTemplateVideo(TEMPLATES.default, 'https://cdn.example.com/yooz/d.mp4', 6);
   assert.equal(video?.slots.length, 6);
   assert.equal(video?.trimEnd, undefined);
 });

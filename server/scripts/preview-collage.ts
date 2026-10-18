@@ -1,5 +1,5 @@
 /**
- * Generates a collage video locally (no Cloudinary, no Mongo) using the EXACT
+ * Generates a collage video locally (no S3, no Mongo) using the EXACT
  * production filter chain + ffmpeg args. Writes the result to /tmp/collage-preview.mp4
  * so we can verify the streaming-pipeline changes produce a visually-correct video.
  *
@@ -87,7 +87,7 @@ async function main(): Promise<void> {
   });
 
   // Drain ffmpeg's stdout to a local file — mirrors how the production route
-  // pipes it to cloudinary.upload_stream, just with a file sink instead.
+  // streams it into S3 (putMedia), just with a file sink instead.
   const outStream = fs.createWriteStream(OUTPUT_PATH);
   stdout.pipe(outStream);
 

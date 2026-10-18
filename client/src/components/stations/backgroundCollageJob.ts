@@ -20,7 +20,6 @@ import {
 export interface CollagePhoto {
   blob: Blob;
   isVideo?: boolean;
-  cloudinaryUrl?: string;
 }
 
 export interface CollageResult {
@@ -121,9 +120,7 @@ async function runAsyncCollageJob(
   };
 
   if (!opts?.skipPhotoUpload) {
-    const toUpload = params.photos
-      .map((p, i) => ({ photo: p, index: params.photoIndices[i] }))
-      .filter((x) => !x.photo.cloudinaryUrl);
+    const toUpload = params.photos.map((p, i) => ({ photo: p, index: params.photoIndices[i] }));
 
     if (toUpload.length > 0) {
       setUploadPct(5);
@@ -174,7 +171,7 @@ async function runAsyncCollageJob(
 export function uploadSplitPhotosInBackground(
   activityCode: string,
   splitGroupId: string,
-  items: { globalIndex: number; blob: Blob; cloudinaryUrl?: string }[],
+  items: { globalIndex: number; blob: Blob }[],
   jobParams: Omit<CollageJobParams, 'activityCode' | 'jobId' | 'splitGroupId'>,
   effectiveTitle?: string,
 ): void {
@@ -187,12 +184,11 @@ export function uploadSplitPhotosInBackground(
         splitGroupId,
         ...jobParams,
       });
-      const pending = items.filter((i) => !i.cloudinaryUrl);
-      if (pending.length > 0) {
+      if (items.length > 0) {
         await uploadCollagePhotosParallel(
           activityCode,
           jobId,
-          pending.map((i) => ({ index: i.globalIndex, blob: i.blob })),
+          items.map((i) => ({ index: i.globalIndex, blob: i.blob })),
         );
       }
       await savePersistedCollageJob({

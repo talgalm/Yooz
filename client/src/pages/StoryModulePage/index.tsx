@@ -11,7 +11,6 @@ import { isRequestQueued, subscribeOfflineQueue } from '../../utils/offlineQueue
 import { participantPlayPath, rememberActivityCode } from '../../utils/participantActivity';
 import { useParticipantExit } from '../../hooks/useParticipantExit';
 import { preloadActivityMedia } from '../../utils/mediaPreloader';
-import { optimizeActivityMediaData } from '../../utils/participantMedia';
 import { getCachedModuleData, setCachedModuleData } from '../../utils/moduleCache';
 import { rememberActivityLanguages } from '../../utils/activityLanguages';
 import { clearStorySession, loadStorySessionRaw, saveStorySessionRaw } from '../../utils/storySession';
@@ -507,7 +506,7 @@ export default function StoryModulePage() {
         { signal, headers: { 'Cache-Control': 'no-store' } },
         10,
       );
-      const d = optimizeActivityMediaData(raw);
+      const d = raw;
       setCachedModuleData(code, participant?.group || '', d);
       rememberActivityLanguages(code, d.languages);
       restrictToLanguages(d.languages ?? []);

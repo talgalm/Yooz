@@ -28,7 +28,7 @@ import {
 } from './collageSlots';
 
 const video = {
-  url: 'https://res.cloudinary.com/demo/video/upload/clip.mp4',
+  url: 'https://cdn.example.com/yooz/clip.mp4',
   width: 1080,
   height: 1920,
   duration: 20,
@@ -130,14 +130,14 @@ test('a slot keeps its layer, and only a slot behind a layer keeps a mask', () =
     keyColor: '#12AB34',
     keySimilarity: 5,
     slots: [
-      { ...video.slots[0], layer: 'behind', maskUrl: 'https://res.cloudinary.com/demo/image/upload/mask.png' },
+      { ...video.slots[0], layer: 'behind', maskUrl: 'https://cdn.example.com/yooz/mask.png' },
       { ...video.slots[0], layer: 'green', maskUrl: 'https://x/m.png' },
       { ...video.slots[0], layer: 'sideways' },
       { ...video.slots[0], layer: 'behind', maskUrl: 'javascript:1' },
     ],
   });
   assert.equal(clean?.slots[0].layer, 'behind');
-  assert.equal(clean?.slots[0].maskUrl, 'https://res.cloudinary.com/demo/image/upload/mask.png');
+  assert.equal(clean?.slots[0].maskUrl, 'https://cdn.example.com/yooz/mask.png');
   assert.equal(clean?.slots[1].layer, 'green');
   assert.equal(clean?.slots[1].maskUrl, undefined);
   assert.equal(clean?.slots[2].layer, undefined);

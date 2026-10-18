@@ -4,7 +4,7 @@
 #   /var/task/                       (LAMBDA_TASK_ROOT, cwd at runtime)
 #     lambda/collageHandler.js       (entrypoint)
 #     routes/, services/, models/, data/, config.js
-#     node_modules/                  (incl. sharp linux-x64 + cloudinary + mongoose + aws-sdk)
+#     node_modules/                  (incl. sharp linux-x64 + mongoose + aws-sdk)
 #     assets/collage-template*.mp4   (baked-in template videos)
 #   /usr/local/bin/ffmpeg            (static binary)
 
