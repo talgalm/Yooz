@@ -82,6 +82,8 @@ import {
 import FunnelChart from './FunnelChart';
 import ItemAnalyticsTable from './ItemAnalyticsTable';
 import GroupComparison from './GroupComparison';
+import GroupWinnerCard from './GroupWinnerCard';
+import { rankGroups } from './groupStandings';
 import ParticipantsRoster from './ParticipantsRoster';
 import ExportSection from './ExportSection';
 import AutomatedReportSection from './AutomatedReportSection';
@@ -371,6 +373,8 @@ export default function ActivityAnalytics({ activityId }: Props) {
 
       {subTab === 'overview' && (
         <DashboardGrid>
+          <GroupWinnerCard groups={groups} />
+
           {anomalies.length > 0 && (
             <FullPanel>
               {anomalies.map((a) => (
@@ -596,19 +600,19 @@ export default function ActivityAnalytics({ activityId }: Props) {
             <FullPanel>
               <PanelTitle>{t.groupHighlights}</PanelTitle>
               <InsightList>
-                {groups.slice(0, 5).map((group) => (
+                {rankGroups(groups).slice(0, 5).map((group, _, ranked) => (
                   <InsightItem key={group.group}>
                     <InsightMain>
-                      <InsightTitle>{group.group || '-'}</InsightTitle>
+                      <InsightTitle>{`${group.rank}. ${group.group || '-'}`}</InsightTitle>
                       <InsightMeta>
                         {group.memberCount} {t.members} / {t.avgDuration}: {formatDuration(group.avgDurationMs)}
                       </InsightMeta>
                       <ProgressTrack>
-                        <ProgressFill pct={group.avgScore} tone={percentTone(group.avgScore)} />
+                        <ProgressFill pct={percent(group.totalScore, ranked[0].totalScore)} tone={group.rank === 1 ? 'green' : 'blue'} />
                       </ProgressTrack>
                     </InsightMain>
-                    <ValueBadge tone={percentTone(group.completionRate)}>
-                      {Math.round(group.avgScore)} {t.score} / {Math.round(group.completionRate)}%
+                    <ValueBadge tone={group.rank === 1 ? 'green' : 'neutral'}>
+                      {group.totalScore.toLocaleString()} {t.groupPointsUnit} / {Math.round(group.completionRate)}%
                     </ValueBadge>
                   </InsightItem>
                 ))}
