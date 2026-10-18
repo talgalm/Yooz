@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import {
@@ -9,6 +9,7 @@ import {
   KEY_SIMILARITY_MAX,
   KEY_SIMILARITY_MIN,
   formatShort,
+  resizeSlotTo,
   slotFit,
   type CollageSlot,
   type CustomCollageVideo,
@@ -19,6 +20,7 @@ import type { PaintSession } from './CollageStage';
 import {
   BrushIcon,
   CenterIcon,
+  LockIcon,
   EraserIcon,
   FullFrameIcon,
   LayerBehindIcon,
@@ -198,6 +200,21 @@ const SegmentButton = styled('button', noForward)<{ $active: boolean }>(({ $acti
   fontFamily: 'inherit',
   cursor: 'pointer',
 }));
+const LockToggle = styled('button', noForward)<{ $on: boolean }>(({ $on }) => ({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 6,
+  height: 32,
+  padding: '0 12px',
+  borderRadius: 8,
+  border: `1px solid ${$on ? PURPLE : LINE}`,
+  background: $on ? '#f1eefb' : '#fff',
+  color: $on ? PURPLE : INK,
+  fontSize: 13,
+  fontWeight: 700,
+  fontFamily: 'inherit',
+  cursor: 'pointer',
+}));
 const Failure = styled('div')({ fontSize: 12.5, fontWeight: 700, color: '#c0392b' });
 
 interface Props {
@@ -228,6 +245,29 @@ interface Props {
   onAddFreeze: () => void;
   onFreezeHold: (index: number, seconds: number) => void;
   onFreezeRemove: (index: number) => void;
+  lockRatio: boolean;
+  onToggleLockRatio: () => void;
+}
+
+function PixelInput({ value, onCommit, label }: { value: number; onCommit: (px: number) => void; label: string }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const commit = () => {
+    const px = Number(draft);
+    if (draft !== null && px > 0) onCommit(px);
+    setDraft(null);
+  };
+  return (
+    <NumberInput
+      type="number"
+      min={1}
+      step={1}
+      aria-label={label}
+      value={draft ?? String(value)}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+    />
+  );
 }
 
 export default function CollageInspector(props: Props) {
@@ -324,6 +364,36 @@ export default function CollageInspector(props: Props) {
               <CenterIcon />{t.center}
             </IconButton>
           </ButtonRow>
+          <TimeGrid>
+            <Field>
+              {t.width}
+              <PixelInput
+                label={t.width}
+                value={Math.round(slot.w * video.width)}
+                onCommit={(px) => {
+                  const w = px / video.width;
+                  props.onSlotChange(selected, resizeSlotTo(slot, w, props.lockRatio ? w * (slot.h / slot.w) : slot.h));
+                }}
+              />
+            </Field>
+            <Field>
+              {t.height}
+              <PixelInput
+                label={t.height}
+                value={Math.round(slot.h * video.height)}
+                onCommit={(px) => {
+                  const h = px / video.height;
+                  props.onSlotChange(selected, resizeSlotTo(slot, props.lockRatio ? h * (slot.w / slot.h) : slot.w, h));
+                }}
+              />
+            </Field>
+          </TimeGrid>
+          <ButtonRow>
+            <LockToggle type="button" $on={props.lockRatio} aria-pressed={props.lockRatio} onClick={props.onToggleLockRatio}>
+              <LockIcon />{t.lockRatio}
+            </LockToggle>
+          </ButtonRow>
+          <Hint>{t.lockRatioHint}</Hint>
         </Section>
         <Section>
           <SectionTitle>{t.layer}</SectionTitle>

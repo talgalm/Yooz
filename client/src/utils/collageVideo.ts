@@ -208,6 +208,34 @@ export function resizeSlot(slot: CollageSlot, corner: SlotCorner, dx: number, dy
   return { ...slot, x: round3(left), y: round3(top), w: round3(right - left), h: round3(bottom - top) };
 }
 
+export function resizeSlotKeepingShape(slot: CollageSlot, corner: SlotCorner, dx: number, dy: number): CollageSlot {
+  const pullsRight = corner === 'ne' || corner === 'se';
+  const pullsDown = corner === 'sw' || corner === 'se';
+  const anchorX = pullsRight ? slot.x : slot.x + slot.w;
+  const anchorY = pullsDown ? slot.y : slot.y + slot.h;
+  const grow = Math.max((pullsRight ? slot.w + dx : slot.w - dx) / slot.w, (pullsDown ? slot.h + dy : slot.h - dy) / slot.h);
+  const smallest = Math.max(SLOT_MIN_SIZE / slot.w, SLOT_MIN_SIZE / slot.h);
+  const largest = Math.min((pullsRight ? 1 - anchorX : anchorX) / slot.w, (pullsDown ? 1 - anchorY : anchorY) / slot.h);
+  const k = clamp(grow, smallest, largest);
+  const w = slot.w * k;
+  const h = slot.h * k;
+  return { ...slot, x: round3(pullsRight ? anchorX : anchorX - w), y: round3(pullsDown ? anchorY : anchorY - h), w: round3(w), h: round3(h) };
+}
+
+export function resizeSlotTo(slot: CollageSlot, w: number, h: number): CollageSlot {
+  const width = clamp(w, SLOT_MIN_SIZE, 1);
+  const height = clamp(h, SLOT_MIN_SIZE, 1);
+  const centerX = slot.x + slot.w / 2;
+  const centerY = slot.y + slot.h / 2;
+  return {
+    ...slot,
+    x: round3(clamp(centerX - width / 2, 0, 1 - width)),
+    y: round3(clamp(centerY - height / 2, 0, 1 - height)),
+    w: round3(width),
+    h: round3(height),
+  };
+}
+
 export function newSlot(atSec: number, duration: number, width: number, height: number): CollageSlot {
   const aspect = height > 0 ? width / height : 1;
   let w = NEW_SLOT_WIDTH;

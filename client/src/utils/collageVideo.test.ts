@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  resizeSlotKeepingShape,
+  resizeSlotTo,
   customVideoProblem,
   formatSeconds,
   formatShort,
@@ -188,4 +190,36 @@ test('a photo fades in and out over a quarter second', () => {
   assert.equal(slotOpacityAt(slot, 2.125), 0.5);
   assert.equal(slotOpacityAt(slot, 3.5), 1);
   assert.equal(slotOpacityAt(slot, 5), 0);
+});
+
+const box = { startSec: 0, endSec: 2, x: 0.2, y: 0.2, w: 0.4, h: 0.2 };
+
+test('a locked corner drag keeps the box shape and the opposite corner', () => {
+  const grown = resizeSlotKeepingShape(box, 'se', 0.2, 0);
+  assert.equal(grown.x, 0.2);
+  assert.equal(grown.y, 0.2);
+  assert.ok(Math.abs(grown.w / grown.h - 2) < 0.02);
+  assert.ok(grown.w > box.w);
+  const fromTopLeft = resizeSlotKeepingShape(box, 'nw', -0.1, 0);
+  assert.equal(Math.round((fromTopLeft.x + fromTopLeft.w) * 1000), 600);
+  assert.equal(Math.round((fromTopLeft.y + fromTopLeft.h) * 1000), 400);
+  assert.ok(Math.abs(fromTopLeft.w / fromTopLeft.h - 2) < 0.02);
+});
+
+test('a locked box never leaves the frame or shrinks below the minimum', () => {
+  const huge = resizeSlotKeepingShape(box, 'se', 5, 5);
+  assert.ok(huge.x + huge.w <= 1.0005 && huge.y + huge.h <= 1.0005);
+  assert.ok(Math.abs(huge.w / huge.h - 2) < 0.02);
+  const tiny = resizeSlotKeepingShape(box, 'se', -5, -5);
+  assert.ok(tiny.w >= 0.05 && tiny.h >= 0.05);
+});
+
+test('an exact size keeps the centre and stays inside the frame', () => {
+  const sized = resizeSlotTo(box, 0.2, 0.1);
+  assert.equal(Math.round((sized.x + sized.w / 2) * 1000), 400);
+  assert.equal(Math.round((sized.y + sized.h / 2) * 1000), 300);
+  const edge = resizeSlotTo({ ...box, x: 0.8, w: 0.2 }, 0.6, 0.2);
+  assert.equal(edge.x, 0.4);
+  assert.equal(resizeSlotTo(box, 3, 0.001).w, 1);
+  assert.equal(resizeSlotTo(box, 3, 0.001).h, 0.05);
 });

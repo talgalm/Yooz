@@ -932,7 +932,10 @@ layer?: 'front'|'behind'|'green', maskUrl?, track?}` with the box as fractions o
   (`shiftSlotsFrom`, `withFreezeAdded`, `withTrim`...), so photos stay on the moment they were put on.
 - **Placing photos:** drag the frame over the video, drag its corners, drag a slot's edges on the
   final timeline or type its times; clicking a slot's bar jumps to that point. Slots stay in order of
-  appearance, which is the photo order.
+  appearance, which is the photo order. Under "where" the admin types a box's exact width and height
+  in video pixels (`resizeSlotTo`, keeps the centre, stays in the frame), and "lock ratio" (on by
+  default, editor state, not saved) keeps the box shape both there and when dragging a corner
+  (`resizeSlotKeepingShape`, the opposite corner stays put).
 - **Which photo is in front.** Each slot sits on a timeline row (`track`, 0 = top); the top row is
   in front, the same on the editor canvas and in the render (`stackOrder`, back to front, mirrored
   in `collageSlots.ts`). Slots without a `track` are packed into the first free row by start time

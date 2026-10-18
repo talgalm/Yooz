@@ -5,6 +5,7 @@ import {
   DEFAULT_KEY_SIMILARITY,
   moveSlot,
   resizeSlot,
+  resizeSlotKeepingShape,
   slotActiveAt,
   slotOpacityAt,
   stackOrder,
@@ -101,6 +102,7 @@ interface Props {
   onMediaError: () => void;
   onKeyPreviewBlocked: () => void;
   onPainted: () => void;
+  lockRatio?: boolean;
 }
 
 function stageSize(width: number, height: number): { w: number; h: number } {
@@ -122,7 +124,7 @@ type Drag = { mode: 'move' | SlotCorner; index: number; x0: number; y0: number; 
 export default function CollageStage(props: Props) {
   const {
     video, videoRef, outTime, selected, masks, painting, pickingColor, corsBlocked,
-    onSelect, onSlotChange, onColorPicked, onMetadata, onMediaError, onKeyPreviewBlocked, onPainted,
+    onSelect, onSlotChange, onColorPicked, onMetadata, onMediaError, onKeyPreviewBlocked, onPainted, lockRatio = false,
   } = props;
   const screenRef = useRef<HTMLCanvasElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -268,7 +270,8 @@ export default function CollageStage(props: Props) {
     if (!d) return;
     const dx = (e.clientX - d.x0) / d.width;
     const dy = (e.clientY - d.y0) / d.height;
-    onSlotChange(d.index, d.mode === 'move' ? moveSlot(d.base, dx, dy) : resizeSlot(d.base, d.mode, dx, dy));
+    const resize = lockRatio ? resizeSlotKeepingShape : resizeSlot;
+    onSlotChange(d.index, d.mode === 'move' ? moveSlot(d.base, dx, dy) : resize(d.base, d.mode, dx, dy));
   };
 
   const visible = stackOrder(video.slots)
