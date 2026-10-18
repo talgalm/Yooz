@@ -6,6 +6,7 @@ import { authenticateToken } from '../middleware/auth';
 import { Activity, Report, Game, Station, Mission, CustomTheme } from '../models';
 import mongoose from 'mongoose';
 import { stationIndexFor } from '../utils/stationIndex';
+import { progressUpdateFor } from '../utils/progressUpdate';
 import { subscribe, sendLockEvent } from '../utils/lockBroadcaster';
 import { getParticipantCount } from '../utils/participantCountCache';
 import { getOrderSurveyLiveState } from '../utils/orderSurveySession';
@@ -482,22 +483,14 @@ router.patch('/:code/progress', authenticateToken, async (req: Request<{ code: s
     }
   }
 
-  const updateOps: Record<string, unknown> = {
-    completionStatus: 'in_progress',
-    lastActiveItemIndex: lastActiveItemIndex ?? itemResult?.itemIndex,
-  };
-  if (typeof totalItemsCompleted === 'number') {
-    updateOps.totalItemsCompleted = totalItemsCompleted;
-  }
-  if (typeof runningTotal === 'number' && isFinite(runningTotal)) {
-    updateOps['data.totalScore'] = runningTotal;
-  }
-
-  const updatePayload: Record<string, unknown> = { $set: updateOps };
+  const activity = await Activity.findOne({ code: activityCode })
+    .select('module.type module.items.ref module.items.groups module.groupOrders')
+    .lean();
+  const updatePayload: Record<string, unknown> = progressUpdateFor(
+    { lastActiveItemIndex, totalItemsCompleted, runningTotal, itemResult },
+    activity?.module?.type,
+  );
   if (!progressOnly && itemResult) {
-    const activity = await Activity.findOne({ code: activityCode })
-      .select('module.items.ref module.items.groups module.groupOrders')
-      .lean();
     const stationIndex = activity?.module
       ? stationIndexFor(activity.module, req.participant!.group, itemResult.itemIndex, itemResult.itemId)
       : undefined;

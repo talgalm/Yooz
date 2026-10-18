@@ -122,7 +122,6 @@
     "client/src/pages/StoryModulePage/RoadmapView.tsx": 1,
     "server/src/routes/activities.ts": 3,
     "server/src/routes/admin.ts": 11,
-    "server/src/routes/adminMedia.ts": 3,
     "server/src/routes/library.ts": 1,
     "server/src/routes/manager.ts": 6,
     "server/src/routes/manageTime.ts": 2,
