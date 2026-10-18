@@ -229,6 +229,7 @@ export default function CollageVideoEditor({ value, onChange, photoCount }: Prop
   const [outTime, setOutTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
+  const [lockRatio, setLockRatio] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [corsBlocked, setCorsBlocked] = useState(false);
   const [keyPreviewBlocked, setKeyPreviewBlocked] = useState(false);
@@ -507,6 +508,7 @@ export default function CollageVideoEditor({ value, onChange, photoCount }: Prop
             }}
             onKeyPreviewBlocked={() => setKeyPreviewBlocked(true)}
             onPainted={() => setPaintTick((n) => n + 1)}
+            lockRatio={lockRatio}
           />
           <Transport>
             <PlayButton type="button" onClick={togglePlay} disabled={!ready || !!painting} aria-label={playing ? t.pause : t.play}>
@@ -543,6 +545,8 @@ export default function CollageVideoEditor({ value, onChange, photoCount }: Prop
             onCancelPaint={() => setPainting(null)}
             onSaveMask={() => void saveMask()}
             onVideoChange={update}
+            lockRatio={lockRatio}
+            onToggleLockRatio={() => setLockRatio((on) => !on)}
             onTogglePick={() => setPickingColor((v) => !v)}
             onAddSlot={addSlot}
             onAddFreeze={addFreeze}
