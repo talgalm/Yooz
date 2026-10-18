@@ -327,7 +327,7 @@ CONTINUOUS ACTIVITY + PORTAL
 ================================================================
 CUSTOM THEMES (visual)
 ================================================================
-Stored as CustomTheme docs. Fields: name, mainColor (required hex), roadmapImage (Cloudinary URL), stationsImage, textColor, bgColor, roadmapActiveNodeColor, roadmapPathColor, headerIconColor.
+Stored as CustomTheme docs. Fields: name, mainColor (required hex), roadmapImage (media URL), stationsImage, textColor, bgColor, roadmapActiveNodeColor, roadmapPathColor, headerIconColor.
 Create from Activity → theme picker "+" button (opens ThemeFormModal). Themes are then selectable in any activity's theme picker. Edit/delete via the pencil/× on the custom theme card.
 
 ================================================================
@@ -493,16 +493,16 @@ Files: GameBg.mp3, Gameover.mp3, applause.mp3, backgtound-music.mp3, backgroundM
 useGameSounds hook (in OrderGame, TriviaGame, PuzzleGame, TrueFalseGame, TrashSortGame) plays them at gameplay events. MuteButton toggles a localStorage-backed mute preference.
 
 ================================================================
-FILE UPLOAD (Cloudinary)
+FILE UPLOAD (S3 + CloudFront)
 ================================================================
 - Reusable component: FileUploadButton (client/src/components/FileUploadButton.tsx). Props: accept, onUploaded(url).
 - Used in: Opening URL, Module background image, Popup image, Media station URL, Trivia/Puzzle question media, Theme images, Trash sort item images, etc.
-- Backend: POST /api/admin/upload (multer memory → Cloudinary SDK). Returns { url, publicId, resourceType }. Max 100MB. Folder: yooz/.
+- Backend: POST /api/admin/upload (multer memory → S3, served through CloudFront; videos get a .jpg poster beside them). Returns { url, publicId, resourceType }. Max 100MB. Folder: yooz/.
 
 ================================================================
 SUPPORTING SERVER ROUTES (for completeness)
 ================================================================
-- /api/collage — collage compositing. Direct-to-Cloudinary uploads with an encode semaphore on the server. Heavy ffmpeg encode is offloaded to AWS Lambda; Express handles job orchestration + boot recovery (skips stale jobs, runs on primary worker only). Endpoints: POST (start), GET /progress/:jobId.
+- /api/collage — collage compositing. Direct-to-S3 uploads (presigned POST) with an encode semaphore on the server. Heavy ffmpeg encode is offloaded to AWS Lambda; Express handles job orchestration + boot recovery (skips stale jobs, runs on primary worker only). Endpoints: POST (start), GET /progress/:jobId.
 - /api/admin/sms/test — send a test SMS to an arbitrary number (body: { phoneNumber, message }). Used by the Test SMS box in activity Step 3.
 - SMS auto-send: when a self-service group finishes (all members complete) and groupReward.enabled, the highest scorer is messaged via the SMS provider with the template (variables {name}/{score}/{coupon}/{group}/{link}) + attachmentUrl. Storage: SmsNotification doc per activity+group.
 - /api/shared/stats/:token/* — public read-only stats mirror (no auth). Powers /stats/:token client route. Honors excludedReportIds the same way the admin endpoints do.

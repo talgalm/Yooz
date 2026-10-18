@@ -27,6 +27,10 @@ export const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || '';
 export const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY || '';
 export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET || '';
 
+export const MEDIA_BUCKET = process.env.MEDIA_BUCKET || '';
+export const MEDIA_REGION = process.env.MEDIA_REGION || 'eu-west-1';
+export const MEDIA_CDN_URL = (process.env.MEDIA_CDN_URL || '').replace(/\/+$/, '');
+
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 

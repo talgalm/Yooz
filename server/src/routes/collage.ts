@@ -1,6 +1,5 @@
 
 import { Router, Request, Response } from 'express';
-import { v2 as cloudinary } from 'cloudinary';
 import multer from 'multer';
 import { spawn, spawnSync } from 'child_process';
 import { Readable } from 'stream';
@@ -9,7 +8,16 @@ import path from 'path';
 import os from 'os';
 import ffmpegPath from 'ffmpeg-static';
 import sharp from 'sharp';
-import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from '../config';
+import {
+  isMediaConfigured,
+  isMediaUrl,
+  mediaExists,
+  mediaUrl,
+  presignImageUpload,
+  putMedia,
+  storePosterFor,
+} from '../services/mediaStore';
+import { extensionForUpload, newMediaKey } from '../utils/mediaKeys';
 import { Activity, CollageJob } from '../models';
 import { readLang } from '../utils/requestLang';
 import { DEFAULT_LANG, languageOf } from '../utils/languages';
@@ -42,12 +50,6 @@ import {
 } from '../utils/collageSlots';
 
 const router = Router();
-
-cloudinary.config({
-  cloud_name: CLOUDINARY_CLOUD_NAME,
-  api_key: CLOUDINARY_API_KEY,
-  api_secret: CLOUDINARY_API_SECRET,
-});
 
 interface MotionScene {
   index: number;
@@ -608,16 +610,14 @@ async function sampleImageUrl(index: number): Promise<string> {
   if (cached) return cached;
   const label = index + 1;
   const svg = `<svg width="900" height="1200" xmlns="http://www.w3.org/2000/svg"><rect width="900" height="1200" fill="${SAMPLE_COLORS[index % SAMPLE_COLORS.length]}"/><text x="450" y="600" font-family="Arial, sans-serif" font-size="520" font-weight="900" fill="white" text-anchor="middle" dominant-baseline="central">${label}</text></svg>`;
-  const jpeg = await sharp(Buffer.from(svg)).jpeg({ quality: 85 }).toBuffer();
-  const uploaded = await new Promise<{ secure_url: string }>((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { resource_type: 'image', folder: 'yooz/collage-samples', public_id: `sample-${label}`, overwrite: false },
-      (error, result) => (error || !result ? reject(error ?? new Error('Upload failed')) : resolve(result as { secure_url: string })),
-    );
-    stream.end(jpeg);
-  });
-  sampleImageUrls.set(index, uploaded.secure_url);
-  return uploaded.secure_url;
+  const key = `yooz/collage-samples/sample-${label}.jpg`;
+  if (!(await mediaExists(key))) {
+    const jpeg = await sharp(Buffer.from(svg)).jpeg({ quality: 85 }).toBuffer();
+    await putMedia(key, jpeg, 'image/jpeg');
+  }
+  const url = mediaUrl(key);
+  sampleImageUrls.set(index, url);
+  return url;
 }
 
 router.post('/admin-preview', authenticateAdmin, async (req: Request, res: Response) => {
@@ -684,7 +684,6 @@ router.get('/templates/:id/video', (req: Request<{ id: string }>, res: Response)
 const EDITABLE_LEAD_SECONDS = 0.3;
 const EDITABLE_TAIL_SECONDS = 0.4;
 const EDITABLE_VERSION = 'v1';
-const EDITABLE_UPLOAD_CHUNK_BYTES = 20_000_000;
 const editableTemplateUrls = new Map<string, Promise<string>>();
 
 export function editableTemplateVideo(template: TemplateMeta, url: string, photoCount: number): CustomCollageVideo | undefined {
@@ -741,9 +740,8 @@ function runFfmpegToFile(args: string[]): Promise<void> {
 }
 
 async function prepareEditableTemplate(id: string, template: TemplateMeta): Promise<string> {
-  const publicId = `yooz/collage-templates/${id}-${EDITABLE_VERSION}`;
-  const existing = await cloudinary.api.resource(publicId, { resource_type: 'video' }).catch(() => null);
-  if (existing?.secure_url) return existing.secure_url as string;
+  const key = `yooz/collage-templates/${id}-${EDITABLE_VERSION}.mp4`;
+  if (await mediaExists(key)) return mediaUrl(key);
   const source = path.join(process.cwd(), 'assets', template.videoFile);
   const filter = iconRecolorFilter(template);
   const baked = filter ? path.join(os.tmpdir(), `editable-${id}-${Date.now()}.mp4`) : null;
@@ -759,14 +757,8 @@ async function prepareEditableTemplate(id: string, template: TemplateMeta): Prom
         baked,
       ]);
     }
-    const uploaded = await new Promise<{ secure_url: string }>((resolve, reject) => {
-      cloudinary.uploader.upload_large(
-        baked ?? source,
-        { resource_type: 'video', public_id: publicId, overwrite: false, chunk_size: EDITABLE_UPLOAD_CHUNK_BYTES },
-        (error, result) => (error || !result ? reject(error ?? new Error('Upload failed')) : resolve(result as { secure_url: string })),
-      );
-    });
-    return uploaded.secure_url;
+    const uploaded = await putMedia(key, fs.createReadStream(baked ?? source), 'video/mp4');
+    return uploaded.url;
   } finally {
     if (baked) fs.promises.rm(baked, { force: true }).catch(() => undefined);
   }
@@ -823,7 +815,13 @@ const photoUpload = multer({
   limits: { fileSize: 15 * 1024 * 1024 },
 });
 
-router.post('/upload-sign', loadShed, async (req: Request, res: Response) => {
+router.post('/upload-sign', (_req: Request, res: Response) => {
+  res.status(410).json({ error: 'Direct uploads moved to /upload-presign' });
+});
+
+const COLLAGE_PHOTO_MAX_BYTES = 15 * 1024 * 1024;
+
+router.post('/upload-presign', loadShed, async (req: Request, res: Response) => {
   const { activityCode, jobId, imageIndex } = req.body as {
     activityCode?: string; jobId?: string; imageIndex?: number;
   };
@@ -831,8 +829,8 @@ router.post('/upload-sign', loadShed, async (req: Request, res: Response) => {
     res.status(400).json({ error: 'activityCode, jobId, imageIndex required' });
     return;
   }
-  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
-    res.status(500).json({ error: 'Cloudinary not configured' });
+  if (!isMediaConfigured()) {
+    res.status(500).json({ error: 'Media storage not configured' });
     return;
   }
   const activity = await Activity.findOne({ code: activityCode }).select('_id').lean();
@@ -840,18 +838,8 @@ router.post('/upload-sign', loadShed, async (req: Request, res: Response) => {
     res.status(404).json({ error: 'Activity not found' });
     return;
   }
-  const timestamp = Math.round(Date.now() / 1000);
-  const folder = `yooz/collage-inputs/${activityCode}`;
-  const public_id = `${jobId}_${imageIndex}_${Math.random().toString(36).slice(2, 8)}`;
-  const signature = cloudinary.utils.api_sign_request(
-    { timestamp, folder, public_id },
-    CLOUDINARY_API_SECRET,
-  );
-  res.json({
-    cloudName: CLOUDINARY_CLOUD_NAME,
-    apiKey: CLOUDINARY_API_KEY,
-    timestamp, signature, folder, publicId: public_id,
-  });
+  const key = newMediaKey(`yooz/collage-inputs/${activityCode}`, `${jobId}_${imageIndex}`, 'jpg');
+  res.json(await presignImageUpload(key, COLLAGE_PHOTO_MAX_BYTES));
 });
 
 router.post('/photo-uploaded', async (req: Request, res: Response) => {
@@ -900,8 +888,8 @@ router.post('/upload-photo', photoUpload.single('file'), async (req: Request, re
     return;
   }
 
-  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
-    res.status(500).json({ error: 'Cloudinary not configured' });
+  if (!isMediaConfigured()) {
+    res.status(500).json({ error: 'Media storage not configured' });
     return;
   }
 
@@ -912,20 +900,8 @@ router.post('/upload-photo', photoUpload.single('file'), async (req: Request, re
   }
 
   try {
-    const cloudResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          resource_type: 'image',
-          folder: `yooz/collage-inputs/${activityCode}`,
-          format: 'jpg',
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result as { secure_url: string });
-        },
-      );
-      stream.end(req.file!.buffer);
-    });
+    const jpeg = await sharp(req.file.buffer).rotate().jpeg({ quality: 85 }).toBuffer();
+    const stored = await putMedia(newMediaKey(`yooz/collage-inputs/${activityCode}`, `${jobId}_${idx}`, 'jpg'), jpeg, 'image/jpeg');
 
     const job = await CollageJob.findOne({ jobId });
     if (!job) {
@@ -934,12 +910,12 @@ router.post('/upload-photo', photoUpload.single('file'), async (req: Request, re
     }
 
     while (job.imageUrls.length <= idx) job.imageUrls.push('');
-    job.imageUrls[idx] = cloudResult.secure_url;
+    job.imageUrls[idx] = stored.url;
     job.phase = job.phase === 'error' ? 'collecting' : job.phase;
     job.message = `הועלו ${job.imageUrls.filter(Boolean).length}/${job.requiredImages} תמונות`;
     await job.save();
 
-    res.json({ url: cloudResult.secure_url, jobId, imageIndex: idx });
+    res.json({ url: stored.url, jobId, imageIndex: idx });
   } catch (err) {
     console.error('[collage] upload-photo error:', err);
     res.status(500).json({ error: 'Upload failed' });
@@ -960,25 +936,17 @@ router.post('/upload-title', photoUpload.single('file'), async (req: Request, re
   }
 
   try {
-    const cloudResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { resource_type: 'image', folder: `yooz/collage-inputs/${activityCode}` },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result as { secure_url: string });
-        },
-      );
-      stream.end(req.file!.buffer);
-    });
+    const extension = extensionForUpload(req.file.mimetype, req.file.originalname);
+    const stored = await putMedia(newMediaKey(`yooz/collage-inputs/${activityCode}`, `${jobId}_title`, extension), req.file.buffer, req.file.mimetype);
 
     const job = await CollageJob.findOne({ jobId });
     if (!job) {
       res.status(404).json({ error: 'Job not found' });
       return;
     }
-    job.titleImageUrl = cloudResult.secure_url;
+    job.titleImageUrl = stored.url;
     await job.save();
-    res.json({ url: cloudResult.secure_url });
+    res.json({ url: stored.url });
   } catch (err) {
     console.error('[collage] upload-title error:', err);
     res.status(500).json({ error: 'Upload failed' });
@@ -1119,7 +1087,8 @@ async function renderVideoSharePage(
   activityUrl: string,
   lang: string,
 ): Promise<string> {
-  const posterUrl = videoUrl.includes('res.cloudinary.com') ? videoUrl.replace(/\.\w+$/, '.jpg') : '';
+  const hasPoster = isMediaUrl(videoUrl) || videoUrl.includes('res.cloudinary.com');
+  const posterUrl = hasPoster ? videoUrl.replace(/\.\w+$/, '.jpg') : '';
   const { locale, dir } = languageOf(lang);
   const [pageTitle, ogTitle, ogDescription, shareLabel, backLabel, preparingLabel] = await Promise.all([
     translateText('הסרטון שלכם', lang),
@@ -1296,8 +1265,8 @@ router.post(
       return;
     }
 
-    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
-      res.status(500).json({ error: 'Cloudinary not configured' });
+    if (!isMediaConfigured()) {
+      res.status(500).json({ error: 'Media storage not configured' });
       return;
     }
 
@@ -1382,22 +1351,12 @@ router.post(
         },
       );
 
-      const uploadPromise = new Promise<{ secure_url: string; bytes: number }>((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { resource_type: 'video', folder: 'yooz/collages', eager: [], eager_async: true },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result as { secure_url: string; bytes: number });
-          },
-        );
-        encodedStream.pipe(stream);
-        encodedStream.on('error', (err) => stream.destroy(err));
-      });
-
-      const [, cloudResult] = await Promise.all([ffmpegDone, uploadPromise]);
+      const videoKey = newMediaKey('yooz/collages', jobId ?? sessionId, 'mp4');
+      const [, stored] = await Promise.all([ffmpegDone, putMedia(videoKey, encodedStream, 'video/mp4')]);
       console.log(
-        `[collage] ffmpeg+upload took ${Date.now() - ffStart}ms → ${(cloudResult.bytes / 1024 / 1024).toFixed(1)}MB`,
+        `[collage] ffmpeg+upload took ${Date.now() - ffStart}ms → ${(stored.bytes / 1024 / 1024).toFixed(1)}MB`,
       );
+      await storePosterFor(videoKey, stored.url);
 
       setJobProgress(jobId, {
         phase: 'done',
@@ -1405,7 +1364,7 @@ router.post(
         message: 'הסרטון מוכן!',
       });
 
-      res.json({ url: cloudResult.secure_url, isVideo: true });
+      res.json({ url: stored.url, isVideo: true });
     } catch (err) {
       console.error('[collage] generation error:', err);
       const msg = err instanceof Error ? err.message : 'Collage generation failed';

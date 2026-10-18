@@ -4,7 +4,7 @@ import { pickExpired, type CloudAsset } from './mediaCleanup';
 
 const now = Date.parse('2026-10-10T00:00:00Z');
 const daysAgo = (days: number) => new Date(now - days * 86_400_000).toISOString();
-const asset = (publicId: string, days: number): CloudAsset => ({ publicId, resourceType: 'image', bytes: 1, createdAt: daysAgo(days) });
+const asset = (publicId: string, days: number): CloudAsset => ({ key: `${publicId}.jpg`, publicId, resourceType: 'image', bytes: 1, createdAt: daysAgo(days) });
 const ids = (assets: CloudAsset[]) => assets.map((a) => a.publicId);
 
 test('collage inputs go after 2 days, finished collages after 30', () => {

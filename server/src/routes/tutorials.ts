@@ -1,19 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { exec } from 'child_process';
-import { writeFileSync, readFileSync, existsSync, unlinkSync, mkdirSync, readdirSync, rmSync, statSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, unlinkSync, mkdirSync, readdirSync, rmSync, statSync, createReadStream } from 'fs';
 import path from 'path';
-import { v2 as cloudinary } from 'cloudinary';
 import { authenticateAdmin, requireRole } from '../middleware/adminAuth';
-import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, GEMINI_API_KEY, GEMINI_MODEL } from '../config';
+import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
 import { Tutorial } from '../models';
+import { deleteMediaByPublicId, putMedia, storePosterFor } from '../services/mediaStore';
+import { newMediaKey, publicIdOf } from '../utils/mediaKeys';
 
 const router = Router();
-
-cloudinary.config({
-  cloud_name: CLOUDINARY_CLOUD_NAME,
-  api_key: CLOUDINARY_API_KEY,
-  api_secret: CLOUDINARY_API_SECRET,
-});
 
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..', '..');
 
@@ -493,7 +488,7 @@ router.delete('/:id', authenticateAdmin, requireRole('super_admin'), async (req:
   }
 
   if (tutorial.publicId) {
-    await cloudinary.uploader.destroy(tutorial.publicId, { resource_type: 'video' }).catch(() => {});
+    await deleteMediaByPublicId(tutorial.publicId).catch(() => {});
   }
 
   await Tutorial.findByIdAndDelete(req.params.id);
@@ -687,18 +682,20 @@ async function generateVideo(tutorialId: string, title: string, description: str
     const finalVideoPath = existsSync(outputPath) ? outputPath : videoFile;
 
     await setStep(tutorialId, 3, 'running');
-    console.log(`[Tutorial ${safeId}] Uploading to Cloudinary...`);
-    const uploadResult = await uploadToCloudinary(finalVideoPath);
+    console.log(`[Tutorial ${safeId}] Uploading to media storage...`);
+    const videoKey = newMediaKey('yooz/tutorials', safeId, 'mp4');
+    const stored = await putMedia(videoKey, createReadStream(finalVideoPath), 'video/mp4');
+    const thumbnailUrl = await storePosterFor(videoKey, finalVideoPath);
     await setStep(tutorialId, 3, 'done');
 
     await Tutorial.findByIdAndUpdate(tutorialId, {
       status: 'ready',
-      videoUrl: uploadResult.secure_url,
-      publicId: uploadResult.public_id,
-      thumbnailUrl: uploadResult.secure_url.replace(/\.\w+$/, '.jpg'),
+      videoUrl: stored.url,
+      publicId: publicIdOf(videoKey),
+      thumbnailUrl: thumbnailUrl ?? '',
     });
 
-    console.log(`[Tutorial ${safeId}] ✅ Done! ${uploadResult.secure_url}`);
+    console.log(`[Tutorial ${safeId}] ✅ Done! ${stored.url}`);
 
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);
@@ -775,22 +772,6 @@ function runCommand(
         if (error && (error as any).killed) output += `\n[command timed out after ${timeoutMs}ms]`;
         const exitCode = error ? ((error as any).code ?? 1) : 0;
         resolve({ output, exitCode });
-      },
-    );
-  });
-}
-
-function uploadToCloudinary(filePath: string): Promise<{ secure_url: string; public_id: string }> {
-  return new Promise((resolve, reject) => {
-    cloudinary.uploader.upload(
-      filePath,
-      {
-        resource_type: 'video',
-        folder: 'yooz/tutorials',
-      },
-      (error, result) => {
-        if (error) reject(error);
-        else resolve(result as { secure_url: string; public_id: string });
       },
     );
   });

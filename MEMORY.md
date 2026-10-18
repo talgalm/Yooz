@@ -32,9 +32,13 @@ API and the built React SPA — no separate frontend host.
   (cluster `Yooz-Cluster`, db `yooz`). Entry `server/src/index.ts`.
 - **Client**: React 19 + Vite 6 + TS, MUI v7 with `@emotion/styled` (no CSS files except
   `App.css` global reset), React Router v7. No state library — React context per auth realm.
-- **Media**: Cloudinary for all uploads (image/video/audio), via `POST /api/admin/upload`
-  (multer memory → Cloudinary SDK, `use_filename` so the public_id keeps the original name,
-  optional `folder` field → upload straight into an open media-library folder).
+- **Media**: S3 bucket `yooz-media-535002865334` (eu-west-1, private) behind CloudFront
+  (`MEDIA_CDN_URL`, OAC-only reads) for all uploads, via `POST /api/admin/upload` (multer memory →
+  `services/mediaStore.ts`, key `<folder>/<filename-slug>_<8 hex>.<ext>`, optional `folder` field →
+  upload straight into an open media-library folder). Moved off Cloudinary in Oct 2026 (free plan
+  over quota); every Cloudinary file was copied by `scripts/copy-cloudinary-to-s3.ts` with its
+  **public_id as the S3 key**, so a Cloudinary URL maps to its CDN URL by rule
+  (`s3KeyFromCloudinaryUrl`).
   Client component: `FileUploadButton` (picker: computer *or* existing media). Browse/delete
   the cloud from the **Media tab** → `/api/admin/media`.
 - **Video collages**: ffmpeg encode runs on AWS Lambda (see `LAMBDA_SETUP.md`,
@@ -77,7 +81,7 @@ are first-time setup / manual ops. Lambda deploy: `.github/workflows/deploy-lamb
 
 ### Config / env (`server/src/config.ts`)
 `PORT`(3000) · `JWT_SECRET` · `MONGODB_URI` · `ADMIN_EMAIL`/`ADMIN_PASSWORD` (super-admin seed)
-· `CLOUDINARY_*` · `GEMINI_API_KEY`/`GEMINI_MODEL` · `AZURE_SPEECH_KEY`/`_REGION` ·
+· `MEDIA_BUCKET`/`MEDIA_REGION`/`MEDIA_CDN_URL` (S3 + CloudFront; `CLOUDINARY_*` only for the copy script) · `GEMINI_API_KEY`/`GEMINI_MODEL` · `AZURE_SPEECH_KEY`/`_REGION` ·
 `TEXTME_API_TOKEN`/`_USERNAME`/`_SOURCE` · `RESEND_API_KEY` (automated reports, §4; sender is the `EMAIL_FROM` constant) ·
 `CORS_ORIGIN` (comma list; unset = allow all) ·
 `REGISTER_PHONE_KEY` (shared secret for the public register-phone API; unset = that one endpoint
@@ -344,7 +348,7 @@ hashed via a `pre('validate')` hook.
   header-icon colors. Applied to a module via `module.theme`.
 - **LibraryItem** (`library_items`): reusable game/station templates (`kind`, `type`, `lang`,
   `settings`) — copied into an activity's own Game/Station via `POST /admin/library/:id/copy`.
-- **Tutorial** (`tutorials`): AI-generated walkthrough videos (status pipeline + Cloudinary).
+- **Tutorial** (`tutorials`): AI-generated walkthrough videos (status pipeline + S3).
 - **DevTask** (`dev_tasks`): in-app feature/bug/change tracker (admin help chat).
 - **CollageJob** (`collagejobs`): async video/photo collage encode state machine (§12).
 - **SmsNotification** (`sms_notifications`): group-reward SMS audit trail.
@@ -413,8 +417,8 @@ lets async handlers throw. `/api/health` (DB check) and `/api/load-status` are p
   /public/:code/login`, `/google-login`, `/register`, `PATCH /public/:code/profile`,
   `GET /public/:code/history`.
 - `/api/admin/themes` (CustomTheme CRUD), `/api/admin/tutorials` (super_admin; AI video gen),
-  `/api/admin/users` (super_admin only, CRUD), `/api/admin/upload` (Cloudinary),
-  `/api/admin/media` (admin/super_admin; browse + delete Cloudinary assets),
+  `/api/admin/users` (super_admin only, CRUD), `/api/admin/upload` (S3),
+  `/api/admin/media` (admin/super_admin; browse + delete S3 media),
   `/api/admin/dev-tasks` (admin/super_admin).
 
 ### Admin analytics — `/api/admin/analytics` (`analytics.ts`, roles admin/super_admin/customer)
@@ -584,16 +588,27 @@ No admin auth — the `statsShareToken` is the credential.
   live in free-form bags like `game.settings`, so a field list would silently rot) and
   `findMediaUsage(publicId)` → every activity/game/station/mission/theme/library/siteContent/
   portal/layout/tutorial still pointing at the asset. Delete-time only, never on list.
-- **`services/mediaCleanup.ts`** — daily Cloudinary sweep (`startMediaCleanupScheduler`,
+- **`services/mediaCleanup.ts`** — daily S3 sweep (`startMediaCleanupScheduler`,
   production + primary worker only, first run 10 min after boot). `RETENTION_DAYS`: collage
   inputs 2 days, finished collages 30 days (SMS/share links die with them), admin uploads
   (`isDeletableAsset`) 30 days *and* not mentioned in any document of any Mongo collection.
-  Only touches the `yooz/` prefix. Dry run: `runMediaCleanup({ dryRun: true })`.
-- **Cloudinary bandwidth** is the credit that runs out (free plan: 25 credits/month, ~1 credit per
-  GB delivered). `client/public/sw.js` serves Cloudinary images cache-first (URLs are versioned,
-  never revalidate) and leaves videos and Range requests to the browser - the Cache API cannot
-  store 206s, so intercepting them re-downloaded the video on every seek. Participant media
-  goes through `utils/participantMedia.ts` (`q_auto,w_720` video, `f_auto,q_auto,w_1200` image).
+  Only touches the `yooz/` prefix. Dry run: `runMediaCleanup({ dryRun: true })`. The bucket's
+  **lifecycle rules** delete `yooz/collage-inputs/` after 2 days and `yooz/collages/` after 30
+  on their own, plus abandoned multipart uploads after 1 day.
+- **`services/mediaStore.ts`** — the only S3 caller: `putMedia(key, Buffer|Readable, type)`
+  (lib-storage multipart, so ffmpeg output streams straight in), `mediaExists`, `listObjects`,
+  `deleteMediaByPublicId` / `moveMediaByPublicId` (a public id is the key without its extension, so
+  a video and its `.jpg` poster go together), `presignImageUpload` (presigned POST, 1-byte..max
+  `content-length-range`), `storePosterFor(videoKey, pathOrUrl)` (ffmpeg `thumbnail` frame →
+  `<key>.jpg`, the same `.mp4 → .jpg` swap Cloudinary served). Folders are prefixes plus a
+  `.folder` marker object. Objects are `Cache-Control: max-age=1y` - keys are never reused.
+- **Media delivery**: no on-the-fly transforms any more. Admin images are fitted to 2000px at
+  upload (`sharp`); collage photos are already compressed on the phone. Large Cloudinary files
+  were copied as their `w_2000` / `w_720` renditions. `utils/participantMedia.ts` still applies
+  `q_auto,w_720` / `f_auto,q_auto,w_1200` **only to Cloudinary URLs** and passes CDN URLs
+  through. `client/public/sw.js` serves CloudFront and Cloudinary images cache-first and leaves
+  videos and Range requests to the browser - the Cache API cannot store 206s, so intercepting
+  them re-downloaded the video on every seek.
 - **`utils/groupStatus.ts`** — `getGroupStatus` (member/completion counts, **scoped to today**),
   `resolveGroupMinMembers`.
 - **`utils/orderSurveyBorda.ts` / `orderSurveySession.ts`** — live order-game Borda aggregation.
@@ -834,7 +849,7 @@ Shared: `StationDescriptionPopup`, floating clue button for info stations.
 
 ## 12. Collage / video system
 
-Participant photos → Cloudinary → an ffmpeg collage (video or static). State machine in
+Participant photos → S3 → an ffmpeg collage (video or static). State machine in
 `CollageJob` (`collecting→queued→preparing→encoding→uploading→done|error`, `percent`,
 `resultUrl`, `isVideo`). Encoding runs on **AWS Lambda** (`lambda/collageHandler.ts`,
 `LAMBDA_SETUP.md`), kicked fire-and-forget by `services/collageProcessor.ts` - there is no local
@@ -844,7 +859,7 @@ Boot recovery in `index.ts` resurrects jobs 30s–15min stale, aborts older ones
 with `COLLAGE_LAMBDA_FUNCTION_NAME` set, because a dev server on the shared database used to abort
 or fail production jobs every time it restarted. A warm Lambda keeps the last custom collage video
 in `/tmp/last-custom-video` (keyed by its versioned URL) instead of pulling 20-85MB from
-Cloudinary on every render. A split collage
+the CDN on every render. A split collage
 (`module.items[].collageSplit`) spreads photo capture across several stations. Every job is created
 with `autoStart` (since 2026-10-16 always - the station toggle "יצירת הסרטון ברקע כשכל התמונות נאספו"
 and `settings.startWhenComplete` are gone; old stations may still carry the field, unread), and `POST /photo-uploaded` queues it
@@ -957,7 +972,7 @@ result. Locally that needs a Lambda; the render paths were checked with `ffmpeg-
 **Editing a built-in video's timing.** "Edit timing" on the built-in preview calls
 `POST /api/collage/templates/:id/editable` (admin JWT, body `{photoCount}`), which turns the template
 into a custom video and switches the station to `template: 'custom'`: the template MP4 is uploaded once
-to Cloudinary (`yooz/collage-templates/<id>-v1`, looked up first so it uploads only once; a template
+to S3 (`yooz/collage-templates/<id>-v1.mp4`, looked up first so it uploads only once; a template
 with `iconRecolor` is baked with that recolour first, since the custom render does not do it), and
 each used scene becomes a `green` slot over its window (panel + `buffer`, from 0.3s before to 0.4s
 after the scene) with the template's chroma as `keyColor`/`keySimilarity` and `trimEnd` where the
@@ -1694,42 +1709,35 @@ admin routes.
   tag, adds `from-library`, stamps owner). Returns `{created:'game'|'station', ...}`.
 - `DELETE /:id`.
 
-### `routes/upload.ts` — Cloudinary upload (`POST /api/admin/upload`)
+### `routes/upload.ts` — media upload (`POST /api/admin/upload`)
 `authenticateAdmin` + `multer.memoryStorage` (100MB cap). Whitelists image/video/audio/
-pdf/office/text mimetypes → 400 otherwise. Chooses Cloudinary `resource_type` (`raw` for
-docs, `video` for video/audio, `image` else), uploads to folder `yooz`, returns
-`{url, publicId, resourceType, format, size, fileName}`.
+pdf/office/text mimetypes → 400 otherwise. JPEG/PNG/WebP are rotated and fitted to 2000px,
+videos get a poster beside them, then `putMedia` → returns
+`{url, publicId, resourceType, format, size, fileName}` (`resourceType` from the extension:
+`raw` for docs, `video` for video/audio, `image` else).
 
-### `routes/adminMedia.ts` — Cloudinary media library (`/api/admin/media`)
-`authenticateAdmin` + `requireRole('admin','super_admin')` on the whole router. Folders are
-**Cloudinary's own**, not a Mongo mirror — see `utils/mediaFolders.ts` for why that is safe.
-- `GET /` — `?folder=&type=image|video&q=&offset=`. Loads one folder via
-  **`api.resources_by_asset_folder`** (500/page, cursor loop) into a per-folder 60s cache, then
-  filters/paginates in memory (`PAGE_SIZE` 60) → `{folder, items, nextOffset, total}`.
-  **Not `cloudinary.search`**: that reads a search index which lags several seconds behind a
-  move or delete, it cannot express "not in these folders" (`-folder:x` is accepted and then
-  silently ignored), and it has **no substring match** (`filename:*x*` is a 400). Doing it this
-  way also keeps user input out of the expression entirely.
-- `GET /folders` — the tree under `yooz/`, 3 levels, machine folders removed (1 API call per
-  folder).
-- `POST /folders {parent,name}` / `DELETE /folders?folder=` — create / delete. Cloudinary
-  refuses to delete a non-empty folder → 409 `folder_not_empty`; no recursive wipe exists.
-- `PATCH /move {publicId,folder}` — `api.update(publicId,{asset_folder})`. **URL-safe only
-  because the account is in `dynamic` folder mode** (verified live): `asset_folder` is
-  metadata, `public_id` and every stored URL are untouched. On a `fixed`-mode account this
-  same call is a rename that breaks every reference — re-check the mode before reusing this.
+### `routes/adminMedia.ts` — media library (`/api/admin/media`)
+`authenticateAdmin` + `requireRole('admin','super_admin')` on the whole router. Folders are S3
+key prefixes, not a Mongo mirror — see `utils/mediaFolders.ts` for why that is safe.
+- `GET /` — `?folder=&type=image|video&q=&offset=`. Lists one prefix (`Delimiter: '/'`) into a
+  per-folder 60s cache, hides `.folder` markers and video posters, then filters/paginates in
+  memory (`PAGE_SIZE` 60) → `{folder, items, nextOffset, total}`.
+- `GET /folders` — the tree under `yooz/`, 3 levels, machine folders removed (1 list per folder).
+- `POST /folders {parent,name}` / `DELETE /folders?folder=` — create writes a `.folder` marker;
+  delete refuses a folder with any real object → 409 `folder_not_empty`.
+- `PATCH /move {publicId,folder}` — copy + delete, which **changes the URL**, so it is refused
+  (409) while `findMediaUsage` finds the file referenced. (Cloudinary's `asset_folder` moves kept
+  the URL; 46 copied images still carry their old folder in `x-amz-meta-cloudinary-folder`.)
 - `GET /usage?publicId=` — `findMediaUsage`, drives the delete warning.
-- `DELETE /?publicId=&resourceType=&force=` — `isDeletableAsset` guard (403), 409
-  `{error:'in_use', usage}` unless `force=true`, then `uploader.destroy` (`invalidate: true`)
-  and clears the cache. A destroyed file can still serve from Cloudinary's **CDN edge** for a
-  few seconds; the asset store is the source of truth.
-- `cloudinaryError(err)` — Cloudinary rejections embed `request_options.auth` (**api key +
-  secret in plain text**); only the message is ever logged.
+- `DELETE /?publicId=&force=` — `isDeletableAsset` guard (403), 409 `{error:'in_use', usage}`
+  unless `force=true`, then `deleteMediaByPublicId` (file + poster) and clears the cache.
+  CloudFront may serve a deleted file from its edge cache for a while.
 
 ### `routes/rewardDownload.ts` — public reward file proxy (`GET /api/reward-download/:token`)
-`test_<base64url(cloudinaryUrl)>` tokens decode + redirect (test SMS, no DB). Real tokens
-look up `Activity` by `groupReward.downloadToken` → 302 redirect to
-`cloudinaryAttachmentUrl(attachmentUrl)`. 404 if not found.
+`test_<base64url(url)>` tokens decode (test SMS, no DB). Real tokens look up `Activity` by
+`groupReward.downloadToken`. A CDN URL is fetched and sent as an attachment, with today's
+Israel date stamped on JPEG/PNG/WebP images (`sharp` + SVG text, 70px, 60px from the bottom); a
+Cloudinary URL still 302s to `cloudinaryAttachmentUrl`. 404 if not found.
 
 ### `routes/sharedStats.ts` — public read-only stats (`/api/shared/stats/:token`)
 No auth — the 16+ char `statsShareToken` is the credential (`resolveActivity` → 404 if short/
@@ -1801,7 +1809,7 @@ cached 1h. 429 rate-limited, 503 if unconfigured, 502 on provider error. Text ca
 
 ### `routes/collage.ts` — photo→video collage engine (`/api/collage`)
 The most complex route. Overlays participant photos onto a green-screen template MP4 via
-ffmpeg chromakey, uploads to Cloudinary, optional SMS delivery.
+ffmpeg chromakey, streams into S3 (+ poster), optional SMS delivery.
 **Templates**: `TEMPLATES` (`default` 1080×1350, `gan-yehoshua` 1080×1920) — each has a source
 video, chroma color, per-scene motion keyframes (from `data/collage-template-*-motion.json`),
 optional logo placeholder + iconRecolor. `DEFAULT_TEMPLATE_ID='default'`. Source videos in
@@ -1825,9 +1833,12 @@ optional logo placeholder + iconRecolor. `DEFAULT_TEMPLATE_ID='default'`. Source
 `scheduleCollageEncode` (Lambda/local).
 **Endpoints**:
 - `GET /progress/:jobId` — progress + ETA (prefers Mongo `CollageJob`, falls back to in-memory).
-- `POST /upload-sign` *(loadShed)* — signs a **direct-to-Cloudinary** upload (keeps upload
-  bandwidth off the server). `POST /photo-uploaded` — record the resulting URL on the job.
-- `POST /upload-photo` — legacy: stream a photo through the server to Cloudinary (multer 15MB).
+- `POST /upload-presign` *(loadShed)* — presigned S3 POST for a **direct-to-S3** upload (keeps
+  upload bandwidth off the server; 15MB cap, key under `yooz/collage-inputs/<code>/`) →
+  `{uploadUrl, fields, url}`. `POST /photo-uploaded` — record the resulting URL on the job.
+  `POST /upload-sign` (the old Cloudinary signer) answers **410**, which a phone still running the
+  old bundle does not retry, so it falls back to `/upload-photo`.
+- `POST /upload-photo` — fallback: photo through the server (multer 15MB, re-encoded to JPEG).
 - `POST /upload-title` — upload the title image.
 - `POST /jobs` — create/get a `CollageJob` (idempotent by jobId; `requiredImages` from template).
   With `template: 'custom'` + `stationId`, copies the station's `customVideo` onto the job (§12).
@@ -1841,9 +1852,9 @@ optional logo placeholder + iconRecolor. `DEFAULT_TEMPLATE_ID='default'`. Source
 - `POST /jobs/:jobId/notify-sms` — save `smsPhone` (requires `activity.smsForCollage`); fires
   immediately if already done.
 - `GET /share/:jobId` — public RTL share landing page (video + Web Share API + WhatsApp
-  fallback + `?dl=1` download redirect via `fl_attachment`).
+  fallback; the poster is the video URL with `.jpg`).
 - `POST /generate` — synchronous legacy path: multer images+title → sharp pre-scale to 1080 →
-  `runFfmpeg` piped to Cloudinary upload_stream → `{url, isVideo}`. Cleans temp dir in finally.
+  `runFfmpeg` streamed into `putMedia` + poster → `{url, isVideo}`. Cleans temp dir in finally.
 
 ### AI / Gemini routes (all build a system prompt + call Gemini `generateContent`)
 - **`routes/help.ts`** — `POST /api/help` (public, per-IP rate-limited). Participant help chat.
@@ -1872,8 +1883,8 @@ optional logo placeholder + iconRecolor. `DEFAULT_TEMPLATE_ID='default'`. Source
   videos: `POST /generate` creates a `Tutorial` doc then runs `generateVideo()` in the
   background — Gemini writes a Playwright spec (`buildSystemPrompt` + `loadExampleSpecs` +
   `generateFallbackSpec`/`detectTargetHint` fallback), `setStep()` tracks the step pipeline,
-  Playwright records the video + Hebrew captions + voice narration, uploads to Cloudinary.
-  `GET /`, `GET /:id/progress`, `DELETE /:id` (also destroys the Cloudinary asset).
+  Playwright records the video + Hebrew captions + voice narration, uploads to S3 with a poster as `thumbnailUrl`.
+  `GET /`, `GET /:id/progress`, `DELETE /:id` (also deletes the video and poster).
 
 ## B2. Server services
 
@@ -1948,7 +1959,7 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   aggregatedRanking), `closeOrderSurveyVoting(activityCode)` (compute Borda → phase='results').
 - **`lockBroadcaster.ts`** — per-activity SSE registry: `subscribe(code,res)→unsubscribe`,
   `broadcastLock(code, idx)`, `sendLockEvent(res, idx)`.
-- **`groupRewardConfig.ts`** — `buildRewardDownloadUrl(token)`, `cloudinaryAttachmentUrl(url)`
+- **`groupRewardConfig.ts`** — `buildRewardDownloadUrl(token)`, `israelDateToday()`, `cloudinaryAttachmentUrl(url)` (Cloudinary URLs only)
   (adds today's-date text overlay + `fl_attachment`; PDFs skip overlay), `renderWinnerSms(
   template, {name,score,coupon,group,link})`, `resolveGroupRewardForSave(reward, existing?)`
   (keeps stable `downloadToken` when attachment unchanged, else generates one). Has a companion
@@ -2023,7 +2034,7 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 - **`api.ts`** — `apiFetch<T>` (adds `yooz_token` bearer, throws `HttpError`),
   `apiFetchWithRetry` (retries 502/503/504/429 + network, 6 tries, backoff),
   `apiFetchPersistSilent` (retry then queue offline for POST/PATCH/PUT/DELETE).
-- **`adminApi.ts`** — `adminApiFetch<T>` (`yooz_admin_token`), `adminUploadFile(file)` → Cloudinary
+- **`adminApi.ts`** — `adminApiFetch<T>` (`yooz_admin_token`), `adminUploadFile(file)` → S3
   via `/api/admin/upload`.
 - **`managerApi.ts`** — `managerApiFetch<T>` (`yooz_manager_token`).
 - **`fetchErrors.ts`** — `HttpError`, `isRetryableHttpStatus`, `isRetryableFetchError`,
@@ -2039,7 +2050,7 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   activity code and login session, mirrored to localStorage), `forgetAllStorySessions`. **`moduleCache.ts`** — in-memory module cache by code+group.
 - **`earlyModulePrefetch.ts`** — `prefetchActivityModule`/`startEarlyModulePrefetch` (warm the
   module during login). **`mediaPreloader.ts`** — `preloadActivityMedia`. **`participantMedia.ts`**
-  — Cloudinary URL transforms (`participantImageUrl`/`participantVideoUrl`,
+  — Cloudinary URL transforms, a no-op on CDN URLs (`participantImageUrl`/`participantVideoUrl`,
   `optimizeActivityMediaData`, `load/preloadParticipantImage|Video`, `shouldDeferVideoPrefetch`).
 - **`videoSource.ts`** — `resolveVideoSource(url)` → `{kind:'iframe'|'file', src}` (YouTube/Vimeo
   vs direct). **`collageApi.ts`** — client collage flow (`ensureCollageJob`,
@@ -2143,7 +2154,7 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 - **`AdminStationConfigPage`** - station editor (all 11 types). **`AdminMissionConfigPage`** -
   mission editor. **`AdminPortalConfigPage`** — portal editor (users, Excel import, activities).
 - Dashboard tabs: **`AdminGamesTab`**, **`AdminStationsTab`**, **`AdminLibraryTab`**,
-  **`AdminMediaTab`** (Cloudinary browser, admin/super_admin — `MediaBrowser` + upload into
+  **`AdminMediaTab`** (media browser, admin/super_admin — `MediaBrowser` + upload into
   the open folder),
   **`AdminPortalsTab`**, **`AdminPublicityTab`** (site content + leads), **`AdminUsersTab`**,
   **`AdminTutorialsTab`**, and **`AdminStatisticsTab/`** (see below).

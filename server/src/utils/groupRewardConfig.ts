@@ -7,7 +7,7 @@ export function buildRewardDownloadUrl(downloadToken: string): string {
   return `${base}/api/reward-download/${downloadToken}`;
 }
 
-function israelDateToday(): string {
+export function israelDateToday(): string {
   const parts: Record<string, string> = {};
   for (const p of new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Jerusalem',

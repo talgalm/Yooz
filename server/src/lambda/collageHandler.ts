@@ -1,5 +1,4 @@
 
-import { v2 as cloudinary } from 'cloudinary';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -8,18 +7,9 @@ import mongoose from 'mongoose';
 import { CollageJob } from '../models/CollageJob';
 import { TEMPLATES, DEFAULT_TEMPLATE_ID, CUSTOM_TEMPLATE_ID, runFfmpeg, runCustomFfmpeg, templateForPhotos } from '../routes/collage';
 import { outputDuration, photoForSlot, sanitizeCustomCollageVideo } from '../utils/collageSlots';
-import {
-  CLOUDINARY_CLOUD_NAME,
-  CLOUDINARY_API_KEY,
-  CLOUDINARY_API_SECRET,
-  MONGODB_URI,
-} from '../config';
-
-cloudinary.config({
-  cloud_name: CLOUDINARY_CLOUD_NAME,
-  api_key: CLOUDINARY_API_KEY,
-  api_secret: CLOUDINARY_API_SECRET,
-});
+import { MONGODB_URI } from '../config';
+import { putMedia, storePosterFor } from '../services/mediaStore';
+import { newMediaKey } from '../utils/mediaKeys';
 
 let mongoReady: Promise<void> | null = null;
 async function ensureMongo(): Promise<void> {
@@ -180,28 +170,18 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
         )
       : runFfmpeg(template, templatePath, imagePaths, { logoPath, logoRightPath, titlePath, onProgress });
 
-    const uploadPromise = new Promise<{ secure_url: string; bytes: number }>((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { resource_type: 'video', folder: 'yooz/collages', eager: [], eager_async: true },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result as { secure_url: string; bytes: number });
-        },
-      );
-      encodedStream.pipe(stream);
-      encodedStream.on('error', (err) => stream.destroy(err));
-    });
-
-    const [, cloudResult] = await Promise.all([ffmpegDone, uploadPromise]);
+    const videoKey = newMediaKey('yooz/collages', jobId, 'mp4');
+    const [, stored] = await Promise.all([ffmpegDone, putMedia(videoKey, encodedStream, 'video/mp4')]);
     console.log(
-      `[lambda-collage] job ${jobId} ffmpeg+upload ${Date.now() - ffStart}ms → ${(cloudResult.bytes / 1024 / 1024).toFixed(1)}MB`,
+      `[lambda-collage] job ${jobId} ffmpeg+upload ${Date.now() - ffStart}ms → ${(stored.bytes / 1024 / 1024).toFixed(1)}MB`,
     );
+    await storePosterFor(videoKey, stored.url);
 
     await patchJob(jobId, {
       phase: 'done',
       percent: 100,
       message: 'הסרטון מוכן!',
-      resultUrl: cloudResult.secure_url,
+      resultUrl: stored.url,
       isVideo: true,
     });
     const finalJob = await CollageJob.findOne({ jobId }).select('smsPhone').lean();
