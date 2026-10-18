@@ -79,17 +79,34 @@ export async function runMediaCleanup({ dryRun }: { dryRun: boolean }): Promise<
   return { dryRun, deleted, freedMb: Math.round(all.reduce((sum, a) => sum + a.bytes, 0) / 1_048_576) };
 }
 
+const CHECK_EVERY_MS = 60 * 60_000;
+const FIRST_CHECK_AFTER_MS = 60_000;
+
+async function claimDailyRun(now: Date): Promise<boolean> {
+  const db = mongoose.connection.db;
+  if (!db) return false;
+  const jobs = db.collection<{ _id: string; lastRunAt: Date }>('scheduledjobs');
+  await jobs.updateOne({ _id: 'mediaCleanup' }, { $setOnInsert: { lastRunAt: new Date(0) } }, { upsert: true });
+  const claimed = await jobs.findOneAndUpdate(
+    { _id: 'mediaCleanup', lastRunAt: { $lte: new Date(now.getTime() - DAY_MS) } },
+    { $set: { lastRunAt: now } },
+  );
+  return Boolean(claimed);
+}
+
 export function startMediaCleanupScheduler(): void {
   if (process.env.NODE_ENV !== 'production') return;
   if (!isMediaConfigured()) return;
-  const run = () =>
-    runMediaCleanup({ dryRun: false })
-      .then(({ deleted, freedMb }) =>
+  const tick = () =>
+    claimDailyRun(new Date())
+      .then(async (due) => {
+        if (!due) return;
+        const { deleted, freedMb } = await runMediaCleanup({ dryRun: false });
         console.log(
           `[mediaCleanup] removed ${deleted.collageInputs.length} collage inputs, ${deleted.collages.length} collages, ${deleted.unusedUploads.length} unused uploads (${freedMb}MB)`,
-        ),
-      )
+        );
+      })
       .catch((err) => console.error('[mediaCleanup] sweep crashed', err));
-  setInterval(run, DAY_MS);
-  setTimeout(run, 10 * 60_000);
+  setInterval(tick, CHECK_EVERY_MS);
+  setTimeout(tick, FIRST_CHECK_AFTER_MS);
 }

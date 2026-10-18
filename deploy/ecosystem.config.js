@@ -25,7 +25,7 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '1000M',
-      env: loadEnvFile('/etc/yooz/prod.env'),
+      env: { ...loadEnvFile('/etc/yooz/prod.env'), NODE_ENV: 'production' },
       error_file: '/var/log/yooz/error.log',
       out_file: '/var/log/yooz/out.log',
       merge_logs: true,

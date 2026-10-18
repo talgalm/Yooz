@@ -590,8 +590,13 @@ No admin auth — the `statsShareToken` is the credential.
   live in free-form bags like `game.settings`, so a field list would silently rot) and
   `findMediaUsage(publicId)` → every activity/game/station/mission/theme/library/siteContent/
   portal/layout/tutorial still pointing at the asset. Delete-time only, never on list.
-- **`services/mediaCleanup.ts`** — daily S3 sweep (`startMediaCleanupScheduler`,
-  production + primary worker only, first run 10 min after boot). `RETENTION_DAYS`: collage
+- **`services/mediaCleanup.ts`** — daily S3 sweep (`startMediaCleanupScheduler`, production +
+  primary worker only). Checks hourly from 1 min after boot and runs when the last run, stored in
+  Mongo `scheduledjobs` (`_id: 'mediaCleanup'`, `lastRunAt`), is over 24h old; the claim is one
+  atomic `findOneAndUpdate`, so frequent deploys cannot skip a day and two workers cannot both
+  run it. **`NODE_ENV=production` comes from `deploy/ecosystem.config.js`**, not `prod.env`:
+  before it was set there the sweep never ran, and putting it in `prod.env` would make the
+  deploy's `npm install` skip dev dependencies. `RETENTION_DAYS`: collage
   inputs 2 days, finished collages 30 days (SMS/share links die with them), admin uploads
   (`isDeletableAsset`) 30 days *and* not mentioned in any document of any Mongo collection.
   Only touches the `yooz/` prefix. Dry run: `runMediaCleanup({ dryRun: true })`. The bucket's
