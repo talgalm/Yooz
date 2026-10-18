@@ -35,7 +35,7 @@ import { isWizardModule } from './types';
 import MapDesignSection from './MapDesignSection';
 import { DEFAULT_MAP_DESIGN, type MapDesign } from '../../../utils/mapDesign';
 import { DEFAULT_PROXIMITY_METERS } from '../../../utils/geo';
-import { cipherCodeChars } from '../../../utils/cipher';
+import { cipherCodeChars, cipherCodeCoverage } from '../../../utils/cipher';
 import type {
   LoginField,
   ConnectionType,
@@ -502,6 +502,7 @@ export default function AdminCreateActivityPage() {
   const [showStationNames, setShowStationNames] = useState(false);
   const [cipherEnabled, setCipherEnabled] = useState(false);
   const [cipherCode, setCipherCode] = useState('');
+  const [cipherInPlace, setCipherInPlace] = useState(false);
 
   const [openingType, setOpeningType] = useState<OpeningType>('none');
   const [openingUrl, setOpeningUrl] = useState('');
@@ -689,6 +690,7 @@ export default function AdminCreateActivityPage() {
           setShowStationNames(a.module.showStationNames === true);
           setCipherEnabled(a.module.cipherEnabled === true);
           setCipherCode(a.module.cipherCode ?? '');
+          setCipherInPlace(a.module.cipherInPlace === true);
           if (a.module.mapDesign) {
             setMapDesign({
               style: a.module.mapDesign.style ?? DEFAULT_MAP_DESIGN.style,
@@ -1250,7 +1252,7 @@ export default function AdminCreateActivityPage() {
           })),
           ...(moduleType === 'spiders' && showStationNumbers && { showStationNumbers: true }),
           ...(showItemTitleNumbers && { showItemTitleNumbers: true }),
-          ...(moduleType === 'map' && { proximityMeters, mapDesign, openAnywhere, showStationNames, cipherEnabled, cipherCode: cipherEnabled ? cipherCode.trim() : '' }),
+          ...(moduleType === 'map' && { proximityMeters, mapDesign, openAnywhere, showStationNames, cipherEnabled, cipherCode: cipherEnabled ? cipherCode.trim() : '', cipherInPlace: cipherEnabled && cipherInPlace }),
           ...(connectionType === 'group' && moduleType !== 'spiders' && {
             routes: draftsToRoutes(routes, selectedItems),
             groupRoutes,
@@ -1554,12 +1556,35 @@ export default function AdminCreateActivityPage() {
                             style={{ marginTop: 6, maxWidth: 320 }}
                           />
                           <SectionDescription style={{ marginTop: 4 }}>{t.cipherFixedCodeHint}</SectionDescription>
-                          {cipherCode.trim() && (() => {
+                          {cipherCode.trim() && (
+                            <SelectionGroup style={{ marginTop: 10 }}>
+                              <SelectionButton type="button" selected={!cipherInPlace} onClick={() => setCipherInPlace(false)}>
+                                {t.cipherOrderInSequence}
+                              </SelectionButton>
+                              <SelectionButton type="button" selected={cipherInPlace} onClick={() => setCipherInPlace(true)}>
+                                {t.cipherOrderInPlace}
+                              </SelectionButton>
+                            </SelectionGroup>
+                          )}
+                          {cipherCode.trim() && cipherInPlace && <SectionDescription style={{ marginTop: 4 }}>{t.cipherInPlaceHint}</SectionDescription>}
+                          {cipherCode.trim() && !cipherInPlace && (() => {
                             const stations = selectedItems.filter((item) => item.cipherChar).length;
                             const chars = cipherCodeChars(cipherCode).length;
                             return (
                               <SectionDescription style={{ marginTop: 4, color: stations === chars ? '#1e8449' : '#c0392b', fontWeight: 600 }}>
                                 {t.cipherFixedCodeCount.replace('{stations}', String(stations)).replace('{chars}', String(chars))}
+                              </SectionDescription>
+                            );
+                          })()}
+                          {cipherCode.trim() && cipherInPlace && (() => {
+                            const { missing, extra } = cipherCodeCoverage(cipherCode, selectedItems.flatMap((item) => (item.cipherChar ? [item.cipherChar] : [])));
+                            const covered = missing.length === 0 && extra.length === 0;
+                            return (
+                              <SectionDescription style={{ marginTop: 4, color: covered ? '#1e8449' : '#c0392b', fontWeight: 600 }}>
+                                {covered ? t.cipherCoverageOk : [
+                                  missing.length > 0 && t.cipherCoverageMissing.replace('{chars}', missing.join(' ')),
+                                  extra.length > 0 && t.cipherCoverageExtra.replace('{chars}', extra.join(' ')),
+                                ].filter(Boolean).join(' ')}
                               </SectionDescription>
                             );
                           })()}
@@ -2070,7 +2095,8 @@ export default function AdminCreateActivityPage() {
                       onUpdateItemLocation={updateItemLocation}
                       onUpdateItemMapIcon={updateItemMapIcon}
                       onUpdateItemCipherChar={moduleType === 'map' && cipherEnabled ? updateItemCipherChar : undefined}
-                      cipherFixedCode={moduleType === 'map' && cipherEnabled && cipherCode.trim().length > 0}
+                      cipherFixedCode={moduleType === 'map' && cipherEnabled && cipherCode.trim().length > 0 && !cipherInPlace}
+                      cipherInPlaceCode={moduleType === 'map' && cipherEnabled && cipherCode.trim().length > 0 && cipherInPlace}
                       t={t}
                     />
                   </div>

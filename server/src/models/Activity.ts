@@ -87,6 +87,7 @@ export interface IModuleConfig {
   showStationNames?: boolean;
   cipherEnabled?: boolean;
   cipherCode?: string;
+  cipherInPlace?: boolean;
   mapDesign?: IMapDesign;
 }
 
@@ -299,6 +300,7 @@ const moduleConfigSchema = new Schema<IModuleConfig>({
   showStationNames: { type: Boolean, default: undefined },
   cipherEnabled: { type: Boolean, default: undefined },
   cipherCode: { type: String, default: undefined },
+  cipherInPlace: { type: Boolean, default: undefined },
   mapDesign: { type: mapDesignSchema, default: undefined },
 }, { _id: false });
 

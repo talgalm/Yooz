@@ -19,6 +19,31 @@ export function fixedCipherSlots(code: string, items: { cipherChar?: string }[],
   return cipherCodeChars(code).map((char, position) => ({ itemIndex: position, char, revealed: position < revealedCount }));
 }
 
+const sameChar = (a: string, b: string) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
+
+export function placedCipherSlots(code: string, items: { cipherChar?: string }[], completedIndices: number[]): CipherSlot[] {
+  const chars = cipherCodeChars(code);
+  const revealed = chars.map(() => false);
+  items.forEach((item, itemIndex) => {
+    const own = item.cipherChar;
+    if (!own || !completedIndices.includes(itemIndex)) return;
+    const position = chars.findIndex((char, p) => !revealed[p] && sameChar(char, own));
+    if (position >= 0) revealed[position] = true;
+  });
+  return chars.map((char, position) => ({ itemIndex: position, char, revealed: revealed[position] }));
+}
+
+export function cipherCodeCoverage(code: string, stationChars: string[]): { missing: string[]; extra: string[] } {
+  const missing = cipherCodeChars(code);
+  const extra: string[] = [];
+  stationChars.forEach((char) => {
+    const at = missing.findIndex((left) => sameChar(left, char));
+    if (at >= 0) missing.splice(at, 1);
+    else extra.push(char);
+  });
+  return { missing, extra };
+}
+
 function inRange(char: string, from: number, to: number): boolean {
   return Array.from(char).some((c) => {
     const code = c.codePointAt(0) ?? 0;

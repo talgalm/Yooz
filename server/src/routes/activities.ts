@@ -320,6 +320,7 @@ router.get('/:code/module', async (req: Request<{ code: string }>, res: Response
     ...(activity.module.type === 'map' && activity.module.showStationNames && { showStationNames: true }),
     ...(cipherOn && { cipherEnabled: true }),
     ...(cipherOn && activity.module.cipherCode && { cipherCode: activity.module.cipherCode }),
+    ...(cipherOn && activity.module.cipherCode && activity.module.cipherInPlace && { cipherInPlace: true }),
     items: populatedItems,
     popups: popupsForServedItems(filteredPopups, servedIndices).map((p) => ({
       _id: p._id,

@@ -197,6 +197,7 @@ async function buildActivityData(
         ...(isMap && mod.showStationNames === true && { showStationNames: true }),
         ...(isMap && mod.cipherEnabled === true && { cipherEnabled: true }),
         ...(isMap && mod.cipherEnabled === true && sanitizeCipherCode(mod.cipherCode) && { cipherCode: sanitizeCipherCode(mod.cipherCode) }),
+        ...(isMap && mod.cipherEnabled === true && sanitizeCipherCode(mod.cipherCode) && mod.cipherInPlace === true && { cipherInPlace: true }),
         items,
         popups: Array.isArray(mod.popups) ? mod.popups.map((p: Record<string, unknown>) => {
           const ct = p.contentType === 'image' || p.contentType === 'video' ? p.contentType : 'text';

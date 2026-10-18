@@ -295,11 +295,13 @@ const FIXED_CODE_MARK = '•';
 function CipherCharSection({
   value,
   fixedCode,
+  inPlaceCode,
   onChange,
   t,
 }: {
   value?: string;
   fixedCode: boolean;
+  inPlaceCode: boolean;
   onChange: (cipherChar: string | undefined) => void;
   t: Record<string, string>;
 }) {
@@ -318,7 +320,7 @@ function CipherCharSection({
   return (
     <Section>
       <SectionTitle>{t.cipherCharTitle}</SectionTitle>
-      <Hint>{t.cipherCharHint}</Hint>
+      <Hint>{inPlaceCode ? t.cipherCharInPlaceHint : t.cipherCharHint}</Hint>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <CipherInput
           value={value ?? ''}
@@ -390,6 +392,7 @@ interface ItemSettingsModalProps {
   onUpdateMapIcon?: (index: number, mapIcon: string | undefined) => void;
   onUpdateCipherChar?: (index: number, cipherChar: string | undefined) => void;
   cipherFixedCode?: boolean;
+  cipherInPlaceCode?: boolean;
   onUpdateSvg?: (index: number, svgUrl: string) => void;
   onToggleFinal?: (index: number) => void;
   onToggleRevisitable?: (index: number) => void;
@@ -414,6 +417,7 @@ export default function ItemSettingsModal({
   onUpdateMapIcon,
   onUpdateCipherChar,
   cipherFixedCode = false,
+  cipherInPlaceCode = false,
   onUpdateSvg,
   onToggleFinal,
   onToggleRevisitable,
@@ -511,7 +515,7 @@ export default function ItemSettingsModal({
         )}
 
         {isMap && onUpdateCipherChar && (
-          <CipherCharSection value={item.cipherChar} fixedCode={cipherFixedCode} onChange={(c) => onUpdateCipherChar(index, c)} t={t} />
+          <CipherCharSection value={item.cipherChar} fixedCode={cipherFixedCode} inPlaceCode={cipherInPlaceCode} onChange={(c) => onUpdateCipherChar(index, c)} t={t} />
         )}
 
         {isMap && onUpdateMapIcon && (
