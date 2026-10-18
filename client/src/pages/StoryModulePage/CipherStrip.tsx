@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../context/LanguageContext';
 import { REEL_LENGTH, cipherDirection, reelStrip, unseenSlots, type CipherSlot } from '../../utils/cipher';
+import { cipherRows } from '../../utils/cipherRows';
 import { useCipherSeen } from '../../hooks/useCipherSeen';
 import { playCipherRevealSound, stopCipherRevealSound } from '../../utils/cipherRevealSound';
 import { texts } from './CipherStrip.i18n';
@@ -58,11 +59,19 @@ const Caption = styled('div')({
   textShadow: '0 1px 3px rgba(0,0,0,0.5)',
 });
 
+const Rows = styled('div', noForward)<{ $gap: number }>(({ $gap }) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: $gap,
+  width: '100%',
+}));
+
 const Row = styled('div', noForward)<{ $gap: number }>(({ $gap }) => ({
   display: 'flex',
   justifyContent: 'center',
-  flexWrap: 'wrap',
+  flexWrap: 'nowrap',
   gap: $gap,
+  width: '100%',
 }));
 
 interface TileSize {
@@ -75,7 +84,9 @@ interface TileSize {
 
 const Tile = styled('div', noForward)<{ $size: TileSize; $filled: boolean }>(({ $size, $filled }) => ({
   position: 'relative',
-  width: $size.w,
+  flex: `0 1 ${$size.w}px`,
+  minWidth: 0,
+  containerType: 'inline-size',
   height: $size.h,
   boxSizing: 'border-box',
   borderRadius: $size.radius,
@@ -91,7 +102,7 @@ const Glyph = styled('div', noForward)<{ $h: number; $font: number }>(({ $h, $fo
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: $font,
+  fontSize: `min(${$font}px, 80cqw)`,
   fontWeight: 800,
   lineHeight: 1,
   fontVariantNumeric: 'tabular-nums',
@@ -106,9 +117,8 @@ const HiddenGlyph = styled(Glyph)({
 
 function tileSize(count: number): TileSize {
   if (count <= 6) return { w: 46, h: 56, font: 34, radius: 12, gap: 8 };
-  if (count <= 8) return { w: 38, h: 48, font: 29, radius: 11, gap: 7 };
-  if (count <= 10) return { w: 31, h: 41, font: 25, radius: 9, gap: 5 };
-  return { w: 26, h: 35, font: 21, radius: 8, gap: 5 };
+  if (count <= 16) return { w: 38, h: 48, font: 29, radius: 11, gap: 7 };
+  return { w: 31, h: 41, font: 25, radius: 9, gap: 5 };
 }
 
 interface Props {
@@ -195,44 +205,48 @@ export default function CipherStrip({ slots, seenKey, onRevealingChange }: Props
   return (
     <Wrap>
       <Caption>{cracked ? t.cracked : t.caption}</Caption>
-      <Row
+      <Rows
         $gap={size.gap}
         role="img"
         aria-label={t.label(slots.map((slot) => (slot.revealed ? slot.char.toUpperCase() : '_')).join(' '))}
         style={{ direction: cipherDirection(slots) }}
       >
-        {slots.map((slot) => {
-          const spinning = slot.revealed && fresh.includes(slot.itemIndex);
-          return (
-            <Tile
-              key={slot.itemIndex}
-              ref={(el: HTMLDivElement | null) => {
-                if (el) tiles.current.set(slot.itemIndex, el);
-                else tiles.current.delete(slot.itemIndex);
-              }}
-              $size={size}
-              $filled={slot.revealed}
-            >
-              {spinning ? (
-                <div
-                  ref={(el) => {
-                    if (el) reels.current.set(slot.itemIndex, el);
-                    else reels.current.delete(slot.itemIndex);
+        {cipherRows(slots).map((row) => (
+          <Row key={row[0].itemIndex} $gap={size.gap}>
+            {row.map((slot) => {
+              const spinning = slot.revealed && fresh.includes(slot.itemIndex);
+              return (
+                <Tile
+                  key={slot.itemIndex}
+                  ref={(el: HTMLDivElement | null) => {
+                    if (el) tiles.current.set(slot.itemIndex, el);
+                    else tiles.current.delete(slot.itemIndex);
                   }}
+                  $size={size}
+                  $filled={slot.revealed}
                 >
-                  {reelStrip(slot.char, slot.itemIndex + 1).map((c, k) => (
-                    <Glyph key={k} $h={innerHeight} $font={size.font}>{c}</Glyph>
-                  ))}
-                </div>
-              ) : (
-                slot.revealed
-                  ? <Glyph $h={innerHeight} $font={size.font}>{slot.char}</Glyph>
-                  : <HiddenGlyph $h={innerHeight} $font={size.font}>?</HiddenGlyph>
-              )}
-            </Tile>
-          );
-        })}
-      </Row>
+                  {spinning ? (
+                    <div
+                      ref={(el) => {
+                        if (el) reels.current.set(slot.itemIndex, el);
+                        else reels.current.delete(slot.itemIndex);
+                      }}
+                    >
+                      {reelStrip(slot.char, slot.itemIndex + 1).map((c, k) => (
+                        <Glyph key={k} $h={innerHeight} $font={size.font}>{c}</Glyph>
+                      ))}
+                    </div>
+                  ) : (
+                    slot.revealed
+                      ? <Glyph $h={innerHeight} $font={size.font}>{slot.char}</Glyph>
+                      : <HiddenGlyph $h={innerHeight} $font={size.font}>?</HiddenGlyph>
+                  )}
+                </Tile>
+              );
+            })}
+          </Row>
+        ))}
+      </Rows>
     </Wrap>
   );
 }

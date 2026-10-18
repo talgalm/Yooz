@@ -1376,7 +1376,9 @@ always on screen, in the floating header under the session buttons (`CipherStrip
 same fading blur): dark characters on white rounded tiles (hidden ones are translucent white with a white "?"), one per station with a character, in
 station order; a slot fills when the participant has done its station (`completedIndices`). Letters always show as capitals
 (CSS `uppercase`, so stored characters keep their case), and tiles scale by count (`tileSize`: 34px characters for up to 6 tiles,
-down to 21px past 10). A white caption above the tiles reads "הצופן", and "פיצחתם את הצופן!" once every tile is full.
+29px up to 16, 25px past that). Up to 8 characters always sit on one row - the tiles shrink to the
+screen width instead of wrapping (`flex: 0 1 <w>px`); 9 and more split into balanced rows of at most
+8 (`cipherRows`: 9 is 5+4, 16 is 8+8, 17 is 6+6+5). A white caption above the tiles reads "הצופן", and "פיצחתם את הצופן!" once every tile is full.
 A lock icon beside it and a frosted bar around the tiles (label on the side) were tried and dropped. A modal behind a lock button was tried first and rejected - the
 code has to be visible all the time. Stations revealed since the strip last showed (seen indices in
 `localStorage`, `yooz_cipher_seen_<code>`, `hooks/useCipherSeen.ts`) spin in like a slot-machine
