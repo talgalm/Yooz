@@ -24,7 +24,7 @@ import { useCompassHeading } from '../../hooks/useCompassHeading';
 import { texts } from './MapView.i18n';
 import { CheckMark, CompassNeedle, DirectionArrow, LocateArrow } from './MapView.icons';
 import CipherStrip from './CipherStrip';
-import { cipherSlots, fixedCipherSlots } from '../../utils/cipher';
+import { cipherSlots, fixedCipherSlots, placedCipherSlots } from '../../utils/cipher';
 import type { CustomThemeData, ModuleItemData } from './types';
 
 const Wrap = styled('div')({ position: 'relative', width: '100%', height: '100dvh', overflow: 'hidden' });
@@ -316,6 +316,7 @@ interface Props {
   showStationNames?: boolean;
   cipherEnabled?: boolean;
   cipherCode?: string;
+  cipherInPlace?: boolean;
   cipherSeenKey: string;
   onCipherRevealingChange?: (revealing: boolean) => void;
   sessionTexts: Record<string, string>;
@@ -347,6 +348,7 @@ export default function MapView({
   showStationNames = false,
   cipherEnabled = false,
   cipherCode,
+  cipherInPlace = false,
   cipherSeenKey,
   onCipherRevealingChange,
   sessionTexts,
@@ -415,7 +417,8 @@ export default function MapView({
   const [mapSpin, setMapSpin] = useState(0);
   const offerOverride = (navigating || mapsError) && !arrived && overrideDueAt === currentItemIndex
     && distance !== null && distance <= proximityMeters + OVERRIDE_NEAR_EXTRA_M;
-  const cipher = !cipherEnabled ? [] : cipherCode ? fixedCipherSlots(cipherCode, items, completedIndices) : cipherSlots(items, completedIndices);
+  const codeSlots = cipherInPlace ? placedCipherSlots : fixedCipherSlots;
+  const cipher = !cipherEnabled ? [] : cipherCode ? codeSlots(cipherCode, items, completedIndices) : cipherSlots(items, completedIndices);
 
   useEffect(() => onMapsAuthFailure(() => setMapsError(true)), []);
 

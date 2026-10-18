@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { REEL_LENGTH, cipherCodeChars, cipherDirection, cipherSlots, cleanCipherInput, fixedCipherSlots, reelStrip, unseenSlots } from './cipher';
+import { REEL_LENGTH, cipherCodeChars, cipherCodeCoverage, cipherDirection, cipherSlots, cleanCipherInput, fixedCipherSlots, placedCipherSlots, reelStrip, unseenSlots } from './cipher';
 
 const shin = String.fromCharCode(0x05e9);
 const alef = String.fromCharCode(0x05d0);
@@ -50,4 +50,19 @@ test('a fixed code reveals in its own order, whatever station a route reaches fi
 
 test('spaces in a fixed code are not characters', () => {
   assert.deepEqual(cipherCodeChars(' Haifa Uni '), ['H', 'a', 'i', 'f', 'a', 'U', 'n', 'i']);
+});
+
+test('in place, each station reveals its own letter where it sits in the code', () => {
+  const route = [{ cipherChar: 'F' }, { cipherChar: 'a' }, {}, { cipherChar: 'A' }, { cipherChar: 'X' }];
+  const shown = (done: number[]) => placedCipherSlots('HaifaUni', route, done).map((slot) => (slot.revealed ? slot.char : '_')).join('');
+  assert.equal(shown([0]), '___f____');
+  assert.equal(shown([0, 1]), '_a_f____');
+  assert.equal(shown([0, 1, 3]), '_a_fa___');
+  assert.equal(shown([4]), '________');
+  assert.deepEqual(placedCipherSlots('HaifaUni', route, [0]).map((slot) => slot.itemIndex), [0, 1, 2, 3, 4, 5, 6, 7]);
+});
+
+test('the wizard can tell which code letters no station reveals', () => {
+  assert.deepEqual(cipherCodeCoverage('HaifaUni', ['A', 'I', 'H', 'U', 'A', 'N', 'F', 'I']), { missing: [], extra: [] });
+  assert.deepEqual(cipherCodeCoverage('HaifaUni', ['h', 'a', 'Z']), { missing: ['i', 'f', 'a', 'U', 'n', 'i'], extra: ['Z'] });
 });

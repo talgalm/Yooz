@@ -134,6 +134,7 @@ export interface ModuleConfigRequest {
   showStationNames?: boolean;
   cipherEnabled?: boolean;
   cipherCode?: string;
+  cipherInPlace?: boolean;
 }
 
 export interface OrderGameRound {

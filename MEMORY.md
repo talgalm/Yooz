@@ -1417,6 +1417,11 @@ station with a `cipherChar` that the participant finishes reveals the k-th chara
 (`fixedCipherSlots`, tested), whatever station that is. A station's own character no longer matters -
 it only marks the station (the station setting becomes "התחנה חושפת את התו הבא בקוד", stored as `•`),
 and the wizard compares the number of marked stations with the code's length.
+A third way, `module.cipherInPlace` ("כל תחנה חושפת את האות שלה במקומה", picked under the code):
+each station keeps its own letter and reveals it at that letter's place in the code, so the word
+can fill from the middle (`_ _ _ F _ _ _ _`; `placedCipherSlots`, tested). Repeated letters fill
+their places in route order, case is ignored, and a letter not in the code reveals nothing; the
+wizard lists code letters no station has and station letters the code lacks (`cipherCodeCoverage`).
 
 **Look.** `module.mapDesign = {style, hidden[]}`, set in the activity wizard's step 1 under the
 theme row ("עיצוב מפה", `AdminCreateActivityPage/MapDesignSection.tsx`, with a live preview map).

@@ -367,6 +367,7 @@ interface ModuleItemsSectionProps {
   onUpdateItemMapIcon?: (index: number, mapIcon: string | undefined) => void;
   onUpdateItemCipherChar?: (index: number, cipherChar: string | undefined) => void;
   cipherFixedCode?: boolean;
+  cipherInPlaceCode?: boolean;
   moduleType?: string;
   connectionType: string;
   groupNames: string[];
@@ -392,6 +393,7 @@ export default function ModuleItemsSection({
   onUpdateItemMapIcon,
   onUpdateItemCipherChar,
   cipherFixedCode = false,
+  cipherInPlaceCode = false,
   moduleType,
   connectionType,
   groupNames,
@@ -797,6 +799,7 @@ export default function ModuleItemsSection({
           onUpdateMapIcon={onUpdateItemMapIcon}
           onUpdateCipherChar={onUpdateItemCipherChar}
           cipherFixedCode={cipherFixedCode}
+          cipherInPlaceCode={cipherInPlaceCode}
           onUpdateSvg={onUpdateItemSvg}
           onToggleFinal={onToggleItemFinal}
           onToggleRevisitable={onToggleItemRevisitable}
