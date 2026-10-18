@@ -1623,9 +1623,11 @@ Module-level: `activityConfigCache` (Map, 30s TTL) memoizes `GET /:code`.
   `normalizeScore`). Day-scoped by default (`leaderboardCurrentDayOnly`, `startOfTodayIsrael`;
   `dailyReset` forces it). Top 50, or top 500 for group activities.
   For group activities also returns per-group standings (aggregate: sum of member scores).
-- `PATCH /:code/progress` *(JWT)* — incremental save. `$set` completionStatus=`in_progress`,
-  `lastActiveItemIndex`, `totalItemsCompleted`, `data.totalScore` (runningTotal); `$push`
-  `data.itemResults` unless `progressOnly`. Matches the token's own report
+- `PATCH /:code/progress` *(JWT)* — incremental save (`progressUpdateFor`). `$set`
+  completionStatus=`in_progress`, `data.totalScore` (runningTotal); `lastActiveItemIndex` and
+  `totalItemsCompleted` go through `$max`, so a save that arrives late (retried or flushed from the
+  offline queue after a newer one) can't move the report back. Spiders, where stations come in any
+  order, `$set` them as sent. `$push` `data.itemResults` unless `progressOnly`. Matches the token's own report
   (`ownReportFilter`). 403 on code mismatch.
 - `DELETE /:code/my-report` *(JWT)* — continuous activities only; `deleteMany` on
   `ownReportFilter` (early-exit replay).
@@ -2104,7 +2106,11 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   the `Phase` state (`roadmap`|`playing`|`finish`|`leaderboard`), `currentItemIndex`, `scores`,
   popup queue, guidelines, per-station hint tracking, spiders completion set, timers
   (elapsed/roadmap/finish countdown). Persists progress to `storySession` + `PATCH /progress`;
-  resumes via `/my-progress`. Renders child views:
+  resumes via `/my-progress` **once per page load**, and only forward: the station is the later of
+  the local one and the server's, and the server's scores replace local ones only when it has at
+  least as many. It must not rerun when `data` refreshes (the module is refetched every time the
+  page becomes visible again, e.g. back from the camera); a server still behind on a retrying save
+  used to pull the participant back a station and drop the cipher letter. Renders child views:
   - **`WelcomeScreen.tsx`** — intro/guidelines gate. **`GuidelinesPopup.tsx`** — the rules popup.
   - **`RoadmapView.tsx`** — the story path of item nodes (locked/active/done); themed.
     **`SpidersView.tsx`** — graph layout for `module.type==='spiders'` (`isFinal` node locks

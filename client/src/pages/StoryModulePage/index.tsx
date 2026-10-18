@@ -394,6 +394,7 @@ export default function StoryModulePage() {
   }, []);
 
   const [sessionRestored, setSessionRestored] = useState(false);
+  const serverProgressApplied = useRef(false);
 
   useEffect(() => {
     if (!code) return;
@@ -569,7 +570,8 @@ export default function StoryModulePage() {
   }, [data, currentItemIndex]);
 
   useEffect(() => {
-    if (!sessionRestored || !data || !code) return;
+    if (!sessionRestored || !data || !code || serverProgressApplied.current) return;
+    serverProgressApplied.current = true;
     apiFetch<{
       completionStatus: string;
       lastActiveItemIndex: number;
@@ -585,19 +587,21 @@ export default function StoryModulePage() {
           setShowGuidelines(false);
           setPhase('finish');
         } else if (progress.completionStatus === 'in_progress' && progress.totalItemsCompleted > 0) {
-          if (data.module.type === 'spiders' && progress.itemResults?.length) {
-            setCompletedSpiderItems(new Set(progress.itemResults.map((ir) => ir.itemIndex)));
+          const doneOnServer = progress.itemResults ?? [];
+          if (data.module.type === 'spiders' && doneOnServer.length) {
+            setCompletedSpiderItems((local) => new Set([...local, ...doneOnServer.map((ir) => ir.itemIndex)]));
           } else {
             const resumeIndex = Math.min(progress.lastActiveItemIndex + 1, data.module.items.length - 1);
-            setCurrentItemIndex(resumeIndex);
+            setCurrentItemIndex((local) => Math.max(local, resumeIndex));
           }
-          if (progress.itemResults?.length) {
-            setScores(progress.itemResults.map((ir) => ({ itemIndex: ir.itemIndex, gameName: ir.itemName, score: ir.score })));
+          if (doneOnServer.length) {
+            const serverScores = doneOnServer.map((ir) => ({ itemIndex: ir.itemIndex, gameName: ir.itemName, score: ir.score }));
+            setScores((local) => (serverScores.length >= local.length ? serverScores : local));
           }
           setShowGuidelines(false);
         }
       })
-      .catch(() => { })
+      .catch(() => { serverProgressApplied.current = false; })
       .finally(() => setProgressChecked(true));
   }, [sessionRestored, data, code]);
 
