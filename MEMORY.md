@@ -205,6 +205,7 @@ group activities too (participants of a story activity never see them).
 **Leaderboard/scoring flags**: `leaderboardMode: 'points'|'time'|'both'`,
 `leaderboardAsGrade?` (show points as 0-100 normalized grade), `hideLeaderboardInHeader?`,
 `leaderboardGroupTotalsOnly?` (group activities: participants see only each group's total),
+`leaderboardAutoOpen?` (the leaderboard opens by itself 3s after the finish screen, once, after any open popup),
 `leaderboardCurrentDayOnly?` (**default true** — only today's Israel-time reports),
 `activityDurationMinutes?` (time mode), `roadmapTimerMinutes?` (cosmetic count-up, turns red),
 `passThreshold?` (0-100, **default 70**; null = no pass grade), `includeOnRoadmap?`.

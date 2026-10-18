@@ -260,6 +260,7 @@ const ENTRY_TRANSITION_CLOSE_MS = 320;
 const ENTRY_TRANSITION_OPEN_MS = 480;
 
 const MAP_POPUP_DELAY_MS = 1200;
+const FINISH_LEADERBOARD_DELAY_MS = 3000;
 const ARRIVAL_POPUP_DELAY_MS = 700;
 
 export default function StoryModulePage() {
@@ -1294,6 +1295,17 @@ export default function StoryModulePage() {
     fetchLeaderboard();
     setPhase('leaderboard');
   };
+
+  const leaderboardAutoOpened = useRef(false);
+  useEffect(() => {
+    if (phase !== 'finish' || data?.leaderboardAutoOpen !== true || currentPopup || leaderboardAutoOpened.current) return;
+    const timer = setTimeout(() => {
+      leaderboardAutoOpened.current = true;
+      handleViewLeaderboard();
+    }, FINISH_LEADERBOARD_DELAY_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, data?.leaderboardAutoOpen, currentPopup]);
 
   const [isGolfChallengeActive, setIsGolfChallengeActive] = useState(false);
 

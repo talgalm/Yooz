@@ -85,7 +85,7 @@ async function buildActivityData(
   existingPasswordHash?: string,
   existing?: IActivity,
 ): Promise<Record<string, unknown>> {
-  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, userControl, guidelines, extraSupportInfo, organizerContactName, organizerContactPhone, helpCategoriesDisabled, helpCategoryResponses, helpOtherCategoryEnabled, customInstructions, languages, defaultLanguage, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardAllGroups, leaderboardGroupTotalsOnly, leaderboardCurrentDayOnly, dailyReset, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
+  const { name, loginFields, emailGoogle, connectionType, groupEntryMode, groupMinMembers, groupMaxMembers, groupReward, smsForCollage, smsForCollageMessage, smsForCollageShare, groups, opening, module: moduleConfig, managerEmail, managerPassword, userControl, guidelines, extraSupportInfo, organizerContactName, organizerContactPhone, helpCategoriesDisabled, helpCategoryResponses, helpOtherCategoryEnabled, customInstructions, languages, defaultLanguage, scheduledStart, scheduledEnd, isContinuous, portalId, leaderboardMode, leaderboardAsGrade, hideLeaderboardInHeader, leaderboardAllGroups, leaderboardGroupTotalsOnly, leaderboardAutoOpen, leaderboardCurrentDayOnly, dailyReset, activityDurationMinutes, roadmapTimerMinutes, includeOnRoadmap, passThreshold } = body;
   const data: Record<string, unknown> = {
     name: name.trim(),
     loginFields,
@@ -278,6 +278,7 @@ async function buildActivityData(
   data.hideLeaderboardInHeader = hideLeaderboardInHeader === true;
   data.leaderboardAllGroups = leaderboardAllGroups === true;
   data.leaderboardGroupTotalsOnly = leaderboardGroupTotalsOnly === true;
+  data.leaderboardAutoOpen = leaderboardAutoOpen === true;
   data.leaderboardCurrentDayOnly = leaderboardCurrentDayOnly !== false;
   data.dailyReset = dailyReset === true;
   data.userControl = userControl === true;

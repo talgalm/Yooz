@@ -169,6 +169,7 @@ export interface ActivityModuleResponse {
   hideLeaderboardInHeader?: boolean;
   leaderboardAllGroups?: boolean;
   leaderboardGroupTotalsOnly?: boolean;
+  leaderboardAutoOpen?: boolean;
   activityDurationMinutes?: number;
   roadmapTimerMinutes?: number;
   lockedFromIndex?: number | null;
