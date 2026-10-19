@@ -12,6 +12,9 @@ import {
   markCollageSkipped,
   isCollageSkipped,
   clearCollageSkipped,
+  saveCollageDraft,
+  loadCollageDraft,
+  clearCollageDraft,
 } from './collageSplitStorage';
 import {
   startBackgroundCollage,
@@ -461,6 +464,36 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     }
   }, [isSplit, isFirstPart, splitMeta, code, onContinue]);
 
+  const photoDraftKey = `${splitGroupId}::${partIndex}`;
+
+  const rememberPhotos = (list: CapturedPhoto[]) => {
+    if (!code || !isSplit) return;
+    const draft = list.map((p) => ({ missionIndex: p.missionIndex, blob: p.blob, isVideo: p.isVideo }));
+    void saveCollageDraft(code, photoDraftKey, draft).catch(() => undefined);
+  };
+
+  const forgetPhotos = () => {
+    if (code && isSplit) void clearCollageDraft(code, photoDraftKey).catch(() => undefined);
+  };
+
+  useEffect(() => {
+    if (!code || !isSplit || isVideoPart) return;
+    let cancelled = false;
+    loadCollageDraft(code, photoDraftKey)
+      .then((saved) => {
+        if (cancelled || saved.length === 0) return;
+        const restored = saved.map((p) => ({ ...p, previewUrl: URL.createObjectURL(p.blob) }));
+        setPhotos(restored);
+        const taken = new Set(restored.map((p) => p.missionIndex));
+        const nextMission = missions.findIndex((_, i) => !taken.has(i));
+        if (nextMission >= 0) setCurrentMission(nextMission);
+        setPhase('capture');
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, photoDraftKey, isSplit, isVideoPart]);
+
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -483,7 +516,11 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
       previewUrl: URL.createObjectURL(file),
       isVideo: file.type.startsWith('video/'),
     }));
-    setPhotos((prev) => [...prev, ...newPhotos]);
+    setPhotos((prev) => {
+      const next = [...prev, ...newPhotos];
+      rememberPhotos(next);
+      return next;
+    });
   };
 
   const removeMultiPhoto = (idx: number) => {
@@ -530,6 +567,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
 
   const finishLocalPart = async (localPhotos: CapturedPhoto[]) => {
     if (isSplit && !finalizesCollage) {
+      forgetPhotos();
       const activityCode = code ?? '';
       if (activityCode && splitMeta) {
         try {
@@ -598,8 +636,10 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     setPreviewIsVideo(false);
 
     if (currentMission < missions.length - 1) {
+      rememberPhotos(updated);
       setCurrentMission((i) => i + 1);
     } else {
+      rememberPhotos(updated);
       void finishLocalPart(updated);
     }
   };
@@ -621,6 +661,7 @@ export default function CollageStation({ station, onContinue, code, smsForCollag
     setProgressLabel(t.uploading);
     setEtaSeconds(null);
     setError('');
+    forgetPhotos();
 
     const activityCode = code ?? '';
     const orderedPhotos = [...source].sort((a, b) => a.missionIndex - b.missionIndex);
