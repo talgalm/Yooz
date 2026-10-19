@@ -396,6 +396,23 @@ export default function StoryModulePage() {
 
   const [sessionRestored, setSessionRestored] = useState(false);
   const serverProgressApplied = useRef(false);
+  const liveItemIndex = useRef(0);
+  const finishedItem = useRef<number | null>(null);
+
+  useEffect(() => {
+    liveItemIndex.current = currentItemIndex;
+    finishedItem.current = null;
+  }, [currentItemIndex]);
+
+  useEffect(() => {
+    if (phase === 'playing') finishedItem.current = null;
+  }, [phase]);
+
+  const claimCompletion = (index: number) => {
+    if (index !== liveItemIndex.current || finishedItem.current === index) return false;
+    finishedItem.current = index;
+    return true;
+  };
 
   useEffect(() => {
     if (!code) return;
@@ -771,7 +788,7 @@ export default function StoryModulePage() {
   };
 
   const advanceToNextItem = () => {
-    if (!data) return;
+    if (!data || currentItemIndex !== liveItemIndex.current) return;
     if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const completedIdx = currentItemIndex;
 
@@ -952,7 +969,7 @@ export default function StoryModulePage() {
   }, [phase, data]);
 
   const handleGameComplete = (result: GameResult) => {
-    if (!data) return;
+    if (!data || !claimCompletion(currentItemIndex)) return;
     if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const currentItem = data.module.items[currentItemIndex];
     const now = new Date();
@@ -1054,7 +1071,7 @@ export default function StoryModulePage() {
   };
 
   const handleOrderSurveyComplete = (result: GameResult) => {
-    if (!data) return;
+    if (!data || !claimCompletion(currentItemIndex)) return;
     if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const currentItem = data.module.items[currentItemIndex];
     const completedCount = currentItemIndex + 1;
@@ -1083,8 +1100,9 @@ export default function StoryModulePage() {
     advanceToNextItem();
   };
 
-  const handleStationContinue = async () => {
-    await saveItemProgress();
+  const handleStationContinue = () => {
+    if (!claimCompletion(currentItemIndex)) return;
+    void saveItemProgress();
     advanceToNextItem();
   };
 
@@ -1092,9 +1110,10 @@ export default function StoryModulePage() {
     setPhase('roadmap');
   };
 
-  const handleStationFinishActivity = async () => {
+  const handleStationFinishActivity = () => {
+    if (!claimCompletion(currentItemIndex)) return;
     if (revisitReturnIndex.current !== null) { endRevisit(); return; }
-    await saveItemProgress();
+    void saveItemProgress();
     showPopupsOrRun('afterItem', currentItemIndex, () => {
       showPopupsOrRun('endOfActivity', undefined, () => {
         setPhase('finish');
@@ -1102,8 +1121,8 @@ export default function StoryModulePage() {
     });
   };
 
-  const handleFeedbackContinue = async (feedbackResult: { answers: { questionIndex: number; questionText: string; value: number; label: string }[]; notes: string; texts?: { itemIndex: number; prompt: string; text: string }[] }) => {
-    if (!data) return;
+  const handleFeedbackContinue = (feedbackResult: { answers: { questionIndex: number; questionText: string; value: number; label: string }[]; notes: string; texts?: { itemIndex: number; prompt: string; text: string }[] }) => {
+    if (!data || !claimCompletion(currentItemIndex)) return;
     if (revisitReturnIndex.current !== null) { endRevisit(); return; }
     const currentItem = data.module.items[currentItemIndex];
     const now = new Date();
@@ -1132,7 +1151,7 @@ export default function StoryModulePage() {
     const runningTotal = scores.reduce((sum, s) => sum + s.score, 0);
 
     if (code) {
-      await apiFetchPersistSilent(`/api/activities/${code}/progress`, {
+      void apiFetchPersistSilent(`/api/activities/${code}/progress`, {
         method: 'PATCH',
         body: JSON.stringify({
           itemResult,

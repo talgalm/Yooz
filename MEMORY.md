@@ -2137,7 +2137,14 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   the local one and the server's, and the server's scores replace local ones only when it has at
   least as many. It must not rerun when `data` refreshes (the module is refetched every time the
   page becomes visible again, e.g. back from the camera); a server still behind on a retrying save
-  used to pull the participant back a station and drop the cipher letter. Renders child views:
+  used to pull the participant back a station and drop the cipher letter. A station completes once:
+  every completion handler first claims the current item (`claimCompletion` - a second tap, or a
+  collage part that calls "continue" again on re-render, is ignored) and advances at once, with the
+  progress save running in the background (`apiFetchPersistSilent` queues it if the network drops).
+  `advanceToNextItem` also ignores a call whose item is no longer the live one. Until 2026-10-19 the
+  handlers awaited the save first: on weak reception participants tapped again, and each late save
+  then advanced from the station it was tapped on, throwing them back (live in a 27-person run).
+  Renders child views:
   - **`WelcomeScreen.tsx`** — intro/guidelines gate. **`GuidelinesPopup.tsx`** — the rules popup.
   - **`RoadmapView.tsx`** — the story path of item nodes (locked/active/done); themed.
     **`SpidersView.tsx`** — graph layout for `module.type==='spiders'` (`isFinal` node locks
