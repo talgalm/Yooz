@@ -64,6 +64,48 @@ export async function loadCollageParts(
   return result.sort((a, b) => a.partIndex - b.partIndex);
 }
 
+export interface CollageDraftPhoto {
+  missionIndex: number;
+  blob: Blob;
+  isVideo?: boolean;
+}
+
+const draftKey = (activityCode: string, key: string) => `draft::${activityCode}::${key}`;
+
+export async function saveCollageDraft(activityCode: string, key: string, photos: CollageDraftPhoto[]): Promise<void> {
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).put(photos, draftKey(activityCode, key));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
+export async function loadCollageDraft(activityCode: string, key: string): Promise<CollageDraftPhoto[]> {
+  const db = await openDb();
+  const result = await new Promise<CollageDraftPhoto[]>((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).get(draftKey(activityCode, key));
+    req.onsuccess = () => resolve((req.result as CollageDraftPhoto[] | undefined) ?? []);
+    req.onerror = () => reject(req.error);
+  });
+  db.close();
+  return result;
+}
+
+export async function clearCollageDraft(activityCode: string, key: string): Promise<void> {
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).delete(draftKey(activityCode, key));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+  db.close();
+}
+
 const skipKey = (activityCode: string, splitGroupId: string) =>
   `yooz_collage_skip::${activityCode}::${splitGroupId}`;
 

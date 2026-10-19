@@ -422,7 +422,7 @@ export default function StoryModulePage() {
       const session = JSON.parse(raw);
       setCurrentItemIndex(session.currentItemIndex ?? 0);
       setScores(session.scores ?? []);
-      setPhase(session.phase === 'playing' ? 'roadmap' : (session.phase ?? 'roadmap'));
+      setPhase(session.phase ?? 'roadmap');
       (session.shownPopupIds ?? []).forEach((id: string) => shownPopupIds.current.add(id));
       setStationHintUsed(new Set(session.stationHintUsed ?? []));
       setCompletedSpiderItems(new Set(session.completedSpiderItems ?? []));
@@ -452,10 +452,15 @@ export default function StoryModulePage() {
 
   useEffect(() => {
     if (!code || !sessionRestored) return;
+    const openItem = data?.module.items[currentItemIndex];
+    const reopensAfterReload = phase === 'playing'
+      && revisitReturnIndex.current === null
+      && openItem?.type === 'station'
+      && openItem.stationType === 'collage';
     const session = {
       currentItemIndex: revisitReturnIndex.current ?? currentItemIndex,
       scores,
-      phase: phase === 'playing' ? 'roadmap' : phase,
+      phase: phase === 'playing' && !reopensAfterReload ? 'roadmap' : phase,
       shownPopupIds: Array.from(shownPopupIds.current),
       stationHintUsed: Array.from(stationHintUsed),
       completedSpiderItems: Array.from(completedSpiderItems),
@@ -464,7 +469,7 @@ export default function StoryModulePage() {
       lastActive: Date.now(),
     };
     saveStorySessionRaw(code, JSON.stringify(session));
-  }, [code, sessionRestored, currentItemIndex, scores, phase, stationHintUsed, completedSpiderItems, showGuidelines, scoresSaveStatus]);
+  }, [code, sessionRestored, currentItemIndex, scores, phase, stationHintUsed, completedSpiderItems, showGuidelines, scoresSaveStatus, data]);
 
   useEffect(() => {
     hasModuleData.current = !!data;
