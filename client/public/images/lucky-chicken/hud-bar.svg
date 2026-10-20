@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1023" height="250" viewBox="0 0 1023 250" preserveAspectRatio="xMidYMid meet">
+<defs>
+<radialGradient id="lcBody" cx="42%" cy="12%" r="95%">
+<stop offset="0%" stop-color="#5e3a1c" />
+<stop offset="38%" stop-color="#3a200f" />
+<stop offset="74%" stop-color="#22120a" />
+<stop offset="100%" stop-color="#0e0602" />
+</radialGradient>
+<radialGradient id="lcTopGlow" cx="42%" cy="0%" r="75%">
+<stop offset="0%" stop-color="#ff9a3c" stop-opacity="0.40" />
+<stop offset="55%" stop-color="#ff7a1e" stop-opacity="0.06" />
+<stop offset="100%" stop-color="#ff7a1e" stop-opacity="0" />
+</radialGradient>
+<linearGradient id="lcSlot" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0%" stop-color="#080402" />
+<stop offset="55%" stop-color="#1b0d05" />
+<stop offset="100%" stop-color="#301a0a" />
+</linearGradient>
+<radialGradient id="lcCombo" cx="50%" cy="30%" r="82%">
+<stop offset="0%" stop-color="#8e3219" />
+<stop offset="52%" stop-color="#591d0d" />
+<stop offset="100%" stop-color="#2c0f05" />
+</radialGradient>
+<linearGradient id="lcRim" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0%" stop-color="#ffdc86" />
+<stop offset="32%" stop-color="#e4a23c" />
+<stop offset="68%" stop-color="#a9651f" />
+<stop offset="100%" stop-color="#6e3d12" />
+</linearGradient>
+<filter id="lcGrain">
+<feTurbulence type="fractalNoise" baseFrequency="0.011 0.05" numOctaves="3" seed="5" result="n" />
+<feColorMatrix in="n" type="saturate" values="0" />
+<feComponentTransfer><feFuncA type="linear" slope="0.07" /></feComponentTransfer>
+</filter>
+</defs>
+<path
+d="M0,0 H1023 V204 C 730,176 590,170 511,170 C 432,170 293,176 0,204 Z"
+fill="url(#lcBody)"
+/>
+<path
+d="M0,0 H1023 V204 C 730,176 590,170 511,170 C 432,170 293,176 0,204 Z"
+filter="url(#lcGrain)"
+opacity="0.5"
+/>
+<rect x="0" y="0" width="1023" height="150" fill="url(#lcTopGlow)" />
+<rect x="0" y="0" width="1023" height="4" fill="rgba(255,190,95,0.28)" />
+<path
+d="M0,204 C 293,176 432,170 511,170 C 590,170 730,176 1023,204"
+fill="none"
+stroke="#5a2c0c"
+stroke-width="18"
+stroke-linecap="round"
+/>
+<path
+d="M0,204 C 293,176 432,170 511,170 C 590,170 730,176 1023,204"
+fill="none"
+stroke="url(#lcRim)"
+stroke-width="10"
+stroke-linecap="round"
+/>
+<g>
+<rect x="223" y="26" width="196" height="108" rx="30" fill="#0a0502" />
+<rect x="227" y="30" width="188" height="100" rx="27" fill="url(#lcSlot)" stroke="rgba(120,62,22,0.85)" stroke-width="2.5" />
+<rect x="237" y="118" width="168" height="8" rx="4" fill="rgba(255,150,60,0.12)" />
+</g>
+<g>
+<rect x="603" y="26" width="196" height="108" rx="30" fill="#0a0502" />
+<rect x="607" y="30" width="188" height="100" rx="27" fill="url(#lcSlot)" stroke="rgba(120,62,22,0.85)" stroke-width="2.5" />
+<rect x="617" y="118" width="168" height="8" rx="4" fill="rgba(255,150,60,0.12)" />
+</g>
+<g>
+<rect x="434" y="12" width="154" height="150" rx="48" fill="#150a04" />
+<rect x="439" y="17" width="144" height="140" rx="44" fill="url(#lcRim)" />
+<rect x="453" y="31" width="116" height="112" rx="37" fill="url(#lcCombo)" stroke="#2a0f06" stroke-width="2.5" />
+<path d="M461,46 Q479,30 507,29" fill="none" stroke="rgba(255,235,180,0.45)" stroke-width="3.5" stroke-linecap="round" />
+</g>
+<g>
+<circle cx="952" cy="82" r="48" fill="#150a04" />
+<circle cx="952" cy="82" r="45" fill="url(#lcRim)" />
+<circle cx="952" cy="82" r="37" fill="#1c0e06" />
+<rect x="937" y="64" width="11" height="36" rx="5" fill="#ffcf5a" />
+<rect x="956" y="64" width="11" height="36" rx="5" fill="#ffcf5a" />
+</g>
+</svg>

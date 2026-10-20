@@ -1274,6 +1274,7 @@ export default function AdminDashboardPage() {
                   { type: 'puzzle', emoji: '🧩', label: t.createTypePuzzle },
                   { type: 'trueFalse', emoji: '✅', label: t.createTypeTrueFalse },
                   { type: 'ballGame', emoji: '🏀', label: t.createTypeBallGame },
+                  { type: 'luckyChicken', emoji: '🍗', label: t.createTypeLuckyChicken },
                 ].map(({ type, emoji, label }) => (
                   <TypeTile
                     key={type}

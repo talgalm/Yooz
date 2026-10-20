@@ -263,7 +263,7 @@ const FilterRow = styled('div')({
   flexWrap: 'wrap',
 });
 
-export const GAME_SUBTABS = ['all', 'order', 'trivia', 'puzzle', 'trueFalse', 'ballGame'] as const;
+export const GAME_SUBTABS = ['all', 'order', 'trivia', 'puzzle', 'trueFalse', 'ballGame', 'luckyChicken'] as const;
 
 const TagGroupsContainer = styled('div')({
   display: 'flex',

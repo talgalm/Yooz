@@ -474,7 +474,7 @@ export default function AdminLibraryTab() {
     }
 
     const SUPPORTED_STATION_TYPES = ['text', 'video', 'image', 'collage', 'riddle'];
-    const SUPPORTED_GAME_TYPES = ['trivia', 'order', 'puzzle', 'trueFalse', 'ballGame', 'trashSort'];
+    const SUPPORTED_GAME_TYPES = ['trivia', 'order', 'puzzle', 'trueFalse', 'ballGame', 'trashSort', 'luckyChicken'];
 
     if (item.kind === 'station') {
       if (!SUPPORTED_STATION_TYPES.includes(item.type)) {

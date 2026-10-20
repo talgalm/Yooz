@@ -10,6 +10,7 @@ import PuzzleGame from '../../components/games/PuzzleGame';
 import TrueFalseGame from '../../components/games/TrueFalseGame';
 import BallGame from '../../components/games/BallGame';
 import TrashSortGame from '../../components/games/TrashSortGame';
+import LuckyChickenGame from '../../components/games/LuckyChickenGame';
 import NarrativeStation from '../../components/stations/NarrativeStation';
 import BadgeStation from '../../components/stations/BadgeStation';
 import CollageStation from '../../components/stations/CollageStation';
@@ -703,6 +704,10 @@ export default function PlayingPhase({
       );
     }
 
+    if (gameData.type === 'luckyChicken') {
+      return <LuckyChickenGame game={gameData} onComplete={onGameComplete} />;
+    }
+
     if (gameData.type === 'ballGame') {
       return (
         <BallGame
@@ -829,6 +834,15 @@ export default function PlayingPhase({
 
   if (currentItem.type === 'mission') {
     return renderContent();
+  }
+
+  if (currentItem.type === 'game' && (currentItem as GameItemData).gameType === 'luckyChicken') {
+    return (
+      <>
+        {renderContent()}
+        {hintModals}
+      </>
+    );
   }
 
   if (currentItem.type === 'game' && (currentItem as GameItemData).gameType === 'ballGame') {

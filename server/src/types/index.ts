@@ -227,6 +227,17 @@ export interface BallGameSettings {
   scoring: { timeLimitSeconds: number };
 }
 
+export interface LuckyChickenGameSettings {
+  instructions?: string;
+  durationSeconds?: number;
+  pointsPerCatch?: number;
+  badItemChance?: number;
+  spawnIntervalMs?: number;
+  fallDurationMin?: number;
+  fallDurationMax?: number;
+  maxLives?: number;
+}
+
 export interface CreateGameRequest {
   name: string;
   type?: string;

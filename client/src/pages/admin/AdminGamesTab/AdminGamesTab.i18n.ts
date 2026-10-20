@@ -52,6 +52,7 @@ export const texts = {
     subTabPuzzle: 'Puzzle',
     subTabTrueFalse: 'True/False',
     subTabBallGame: 'Ball Game',
+    subTabLuckyChicken: 'Lucky Chicken',
   },
   he: {
     title: 'משחקים',
@@ -106,5 +107,6 @@ export const texts = {
     subTabPuzzle: 'פאזל',
     subTabTrueFalse: 'נכון/לא',
     subTabBallGame: 'כדור לסל',
+    subTabLuckyChicken: 'לאקי צ׳יקן',
   },
 };

@@ -225,7 +225,7 @@ GAMES — 5 user-creatable types (KNOW THE EXACT SETTINGS)
 Created at /admin/games/new?type=<type> or via Stations tab → Games segmented → "+ Create".
 Shared header fields: name, type, description, customer, theme, tags[]. Shared body fields: instructions (with type-specific placeholder), hint toggle ({ enabled, text }). Save button bottom. 🎲 Random button (create mode) fills realistic Hebrew test data.
 
-5 types selectable in UI (validTypes = ['order','trivia','puzzle','trueFalse','ballGame']):
+6 types selectable in UI (validTypes = ['order','trivia','puzzle','trueFalse','ballGame','luckyChicken']):
 
 ORDER (סדר נכון):
 - Has mode: 'quiz' (graded) | 'survey' (collect-only, single round).
