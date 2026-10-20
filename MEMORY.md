@@ -299,7 +299,7 @@ needs `RESEND_API_KEY`).
 Legacy: `stations[]`, `loginComponent` (migrated by `migrateActivities()`).
 
 ### Game (`games`) — reusable game template
-`name`, `type` (`'trivia'|'order'|'ballGame'|'puzzle'|'trueFalse'|'trashSort'|'generic'…`),
+`name`, `type` (`'trivia'|'order'|'ballGame'|'puzzle'|'trueFalse'|'trashSort'|'luckyChicken'|'generic'…`),
 `description?`, `customer?`, `theme?`, `tags[]`, `settings: Record<string,unknown>` (typed
 per game type client-side — see §9), `createdByEmail?`, `folderId?`. Text index on
 name/description/`settings.questions.text`.
@@ -736,6 +736,18 @@ hand-rolled (HTML5 drag API + tap-to-swap touch fallback) — no dnd library.
   `components/games/TrueFalseGame/`.
 - **Trash Sort**: sort falling items into correct bins (also embedded in Missions).
   `components/games/TrashSortGame/`.
+- **Lucky Chicken** (`LuckyChickenGameSettings`): an arcade catch game with no questions. Items fall and the
+  player drags a bucket along the bottom to catch the good ones (crispy and spicy wings, corn, lemon for a
+  combo bonus, celery for 5 s of slow motion) and avoid the bad ones (burnt wing, bone, chili), each of which
+  costs one of 3 lives. Settings: `durationSeconds` (75), `pointsPerCatch` (10), `badItemChance` (0-1, the
+  form edits it as a percent, default 0.22), `spawnIntervalMs` (900), `fallDurationMin`/`fallDurationMax`
+  (2800/5200 ms), `maxLives` (3, not in the form). Difficulty ramps every 30 s: faster falls and spawns and
+  more bad items. Every 5th combo shows a Hot Streak overlay. Phases start, instructions, playing (pause,
+  resume and quit in the HUD), then fail or result. `maxPossibleScore` is `expectedMaxScore`, estimated from
+  duration, spawn rate and bad-item chance, and quitting reports against it too. Renders full screen without
+  the activity header (`PlayingPhase`). Art is in `client/public/images/lucky-chicken/` as WebP, the HUD bar
+  is `hud-bar.svg`, and the five small item icons there are emoji drawn into SVG.
+  `components/games/LuckyChickenGame/`.
 
 **Scoring summary** (full table in `QA_REQUIREMENTS_AND_TESTS.md` Appendix A): each game reports
 a per-item `score` + `maxPossibleScore`; hints deduct `GAME_CONSTANTS.HINT_PENALTY` (**4**, though
@@ -2195,7 +2207,8 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   **Admin UI here is deliberately icon-free** — state reads through colour, border and text
   badges; drag handles are CSS dot-grids, not glyphs.
 - **`AdminGameConfigPage/`** — per-type config forms: `TriviaGameConfig`, `OrderGameConfig`,
-  `PuzzleGameConfig`, `TrueFalseGameConfig`, `BallGameConfig`, `TrashSortGameConfig` (+ `index`).
+  `PuzzleGameConfig`, `TrueFalseGameConfig`, `BallGameConfig`, `TrashSortGameConfig`, `LuckyChickenGameConfig`
+  (+ `index`).
 - **`AdminStationConfigPage`** - station editor (all 11 types). **`AdminMissionConfigPage`** -
   mission editor. **`AdminPortalConfigPage`** — portal editor (users, Excel import, activities).
 - Dashboard tabs: **`AdminGamesTab`**, **`AdminStationsTab`**, **`AdminLibraryTab`**,
@@ -2244,7 +2257,8 @@ questionAnswers?}` up to `PlayingPhase`. **`TriviaGame`** (MCQ, timer, helpers, 
 **`OrderGame`** (`index` drag-order quiz + `OrderSurveyGame` live poll + `GolfChallenge`
 variant), **`PuzzleGame`**, **`TrueFalseGame`**, **`TrashSortGame`**, **`BallGame`** (`index.tsx`
 iframes the Phaser game in `client/public/assets/games/ballgame/`: `js/main.js` + `js/customizedTimer.js`;
-`BallGameCanvas`/`BallGamePlay`/`usePhysicsEngine`/`useBallGameSounds` are not imported anywhere).
+`BallGameCanvas`/`BallGamePlay`/`usePhysicsEngine`/`useBallGameSounds` are not imported anywhere),
+**`LuckyChickenGame`** (catch game, see §9).
 Shared: `GameInstructionsScreen`, `GameCompleteScreen`, `HintButton`/`HintModals`, `MuteButton`,
 `types.ts`, `styled.ts`.
 

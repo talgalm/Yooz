@@ -459,7 +459,7 @@ interface Activity {
 
 const GAME_ICONS: Record<string, string> = {
   trivia: '❓', order: '🔢', puzzle: '🧩', trueFalse: '✅',
-  ballGame: '🏀', trashSort: '♻️',
+  ballGame: '🏀', trashSort: '♻️', luckyChicken: '🍗',
 };
 
 const MODULE_ICONS: Record<string, string> = {

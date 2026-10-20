@@ -9,6 +9,7 @@ import PuzzleGame from '../../../components/games/PuzzleGame';
 import TrueFalseGame from '../../../components/games/TrueFalseGame';
 import BallGame from '../../../components/games/BallGame';
 import TrashSortGame from '../../../components/games/TrashSortGame';
+import LuckyChickenGame from '../../../components/games/LuckyChickenGame';
 
 import NarrativeStation from '../../../components/stations/NarrativeStation';
 import BadgeStation from '../../../components/stations/BadgeStation';
@@ -163,6 +164,7 @@ export default function ItemPreviewModal({ item, onClose }: ItemPreviewModalProp
         case 'trueFalse': return <TrueFalseGame game={gameData} onComplete={noOp} />;
         case 'ballGame': return <BallGame game={gameData} onComplete={noOp} />;
         case 'trashSort': return <TrashSortGame game={gameData} onComplete={noOp} />;
+        case 'luckyChicken': return <LuckyChickenGame game={gameData} onComplete={noOp} />;
         default: return <UnknownType>Unknown game type: {item.subType}</UnknownType>;
       }
     }
