@@ -87,7 +87,7 @@ export default function ExpensesPanel({ projectId, onChanged }: { projectId?: st
                 {!projectId && refName(e.projectId) ? `${refName(e.projectId)} · ` : ''}
                 {t.categories[e.category]}
                 {e.vendor ? ` · ${e.vendor}` : ''}
-                {e.description ? ` — ${e.description}` : ''}
+                {e.description ? ` - ${e.description}` : ''}
                 {` · ${formatDate(e.date)}`}
               </Meta>
               {e.billable && <Pill>{t.billable}</Pill>}

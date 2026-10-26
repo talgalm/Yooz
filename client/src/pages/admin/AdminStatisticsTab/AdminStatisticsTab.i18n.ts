@@ -60,7 +60,7 @@ export const texts = {
     readyForClientBody: 'Completion, score, and player activity are all in a presentable range for a client or boss summary.',
 
     anomalyDropout: '"{item}" has {pct}% drop-off rate',
-    anomalySlow: '"{item}" takes {sec}s avg — {mult}x the average',
+    anomalySlow: '"{item}" takes {sec}s avg - {mult}x the average',
 
     statusHeader: 'Status',
     station: 'Station',
@@ -158,7 +158,7 @@ export const texts = {
     searchParticipants: 'Search by name or group…',
     noParticipants: 'No participants yet',
     reportLoadFailed: 'Could not load the report. Please try again.',
-    excludeHint: 'Unchecked players are removed from all statistics — the dashboard panels, the Excel exports, and the public share link. Reversible at any time.',
+    excludeHint: 'Unchecked players are removed from all statistics - the dashboard panels, the Excel exports, and the public share link. Reversible at any time.',
     exclusionSaveFailed: 'Could not save the change. Please try again.',
 
     combinedReport: 'Combined report',
@@ -178,7 +178,7 @@ export const texts = {
     passGradeNone: 'None',
 
     shareTitle: 'Share statistics page',
-    shareDesc: 'Anyone with this link can view this activity\'s statistics and download the reports (including participant names, emails and phone numbers) — with no access to the admin panel.',
+    shareDesc: 'Anyone with this link can view this activity\'s statistics and download the reports (including participant names, emails and phone numbers) - with no access to the admin panel.',
     shareCreate: 'Create share link',
     shareCopy: 'Copy',
     shareCopied: 'Copied',
@@ -274,7 +274,7 @@ export const texts = {
     readyForClientBody: 'ההשלמה, הציונים ופעילות השחקנים נמצאים בטווח שניתן להציג ללקוח או מנהל.',
 
     anomalyDropout: '"{item}" עם {pct}% נשירה',
-    anomalySlow: '"{item}" אורכת {sec} שניות בממוצע — פי {mult} מהממוצע',
+    anomalySlow: '"{item}" אורכת {sec} שניות בממוצע - פי {mult} מהממוצע',
 
     statusHeader: 'סטטוס',
     station: 'תחנה',
@@ -372,7 +372,7 @@ export const texts = {
     searchParticipants: 'חיפוש לפי שם או קבוצה…',
     noParticipants: 'אין עדיין משתתפים',
     reportLoadFailed: 'לא ניתן לטעון את הדוח. נסה שוב.',
-    excludeHint: 'שחקנים שאינם מסומנים מוסרים מכל הסטטיסטיקות — מהפאנלים בלוח הבקרה, מקובצי האקסל ומקישור השיתוף הציבורי. ניתן לבטל בכל רגע.',
+    excludeHint: 'שחקנים שאינם מסומנים מוסרים מכל הסטטיסטיקות - מהפאנלים בלוח הבקרה, מקובצי האקסל ומקישור השיתוף הציבורי. ניתן לבטל בכל רגע.',
     exclusionSaveFailed: 'לא ניתן לשמור את השינוי. נסה שוב.',
 
     combinedReport: 'דוח משולב',
@@ -392,7 +392,7 @@ export const texts = {
     passGradeNone: 'ללא',
 
     shareTitle: 'שיתוף דף הסטטיסטיקה',
-    shareDesc: 'כל מי שיש לו את הקישור יכול לצפות בסטטיסטיקה של הפעילות ולהוריד את הדוחות (כולל שמות, אימיילים וטלפונים של המשתתפים) — ללא גישה לפאנל הניהול.',
+    shareDesc: 'כל מי שיש לו את הקישור יכול לצפות בסטטיסטיקה של הפעילות ולהוריד את הדוחות (כולל שמות, אימיילים וטלפונים של המשתתפים) - ללא גישה לפאנל הניהול.',
     shareCreate: 'צור קישור שיתוף',
     shareCopy: 'העתק',
     shareCopied: 'הועתק',

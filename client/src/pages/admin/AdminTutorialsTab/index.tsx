@@ -524,7 +524,7 @@ export default function AdminTutorialsTab() {
                        step.status === 'running' ? t.stepRunning :
                        step.status === 'failed' ? t.stepFailed :
                        t.stepPending}
-                      {step.detail ? ` — ${step.detail}` : ''}
+                      {step.detail ? ` - ${step.detail}` : ''}
                     </StepDetail>
                   </StepInfo>
                 </StepRow>

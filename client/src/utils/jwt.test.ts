@@ -18,7 +18,7 @@ test('drops a dailyReset session issued on an earlier Israel day', () => {
   assert.equal(isStaleDailyResetToken(tokenFor({ dailyReset: true, iat: yesterday })), true);
 });
 
-test('leaves a normal activity alone — multi-day resume is a feature there', () => {
+test('leaves a normal activity alone - multi-day resume is a feature there', () => {
   assert.equal(isStaleDailyResetToken(tokenFor({ iat: yesterday })), false);
 });
 

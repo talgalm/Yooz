@@ -848,7 +848,7 @@ router.post('/photo-uploaded', async (req: Request, res: Response) => {
   }
   const job = await CollageJob.findOne({ jobId });
   if (!job) {
-    res.status(404).json({ error: 'Job not found — create it first' });
+    res.status(404).json({ error: 'Job not found - create it first' });
     return;
   }
   while (job.imageUrls.length <= imageIndex) job.imageUrls.push('');
@@ -901,7 +901,7 @@ router.post('/upload-photo', photoUpload.single('file'), async (req: Request, re
 
     const job = await CollageJob.findOne({ jobId });
     if (!job) {
-      res.status(404).json({ error: 'Job not found — create it first' });
+      res.status(404).json({ error: 'Job not found - create it first' });
       return;
     }
 
@@ -1105,7 +1105,7 @@ ${posterUrl ? `<meta property="og:image" content="${posterUrl}">` : ''}
 <meta property="og:video" content="${videoUrl}">
 <meta property="og:url" content="${pageUrl}">
 <style>
-  /* Everything fits one screen — no scrolling. 100dvh so the mobile address
+  /* Everything fits one screen - no scrolling. 100dvh so the mobile address
      bar doesn't push the buttons off; the video flexes down to whatever is
      left after them. */
   body { margin: 0; font-family: system-ui, sans-serif; background: #f5f3ff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; height: 100vh; height: 100dvh; box-sizing: border-box; overflow: hidden; }

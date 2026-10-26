@@ -248,7 +248,7 @@ export async function uploadCollagePhotosParallel(
   const deadline = Date.now() + 5 * 60_000;
   const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
     while (queue.length > 0) {
-      if (Date.now() > deadline) throw new Error('Upload timed out — connection too slow');
+      if (Date.now() > deadline) throw new Error('Upload timed out - connection too slow');
       const item = queue.shift();
       if (!item) break;
       await uploadCollagePhoto(activityCode, jobId, item.index, item.blob);

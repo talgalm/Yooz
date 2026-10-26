@@ -6,7 +6,7 @@ export const texts = {
     answerLabel: 'Your answer',
     attempt: (n: number) => `Attempt ${n}`,
     attemptOfThree: (n: number) => `Attempt ${n} of 3`,
-    wrong: '❌ Not quite — try again',
+    wrong: '❌ Not quite - try again',
     hint: 'Hint',
     wellDone: 'Well done!',
     earned: (score: number) => `You got ${score} points`,

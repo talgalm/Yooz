@@ -1,6 +1,6 @@
 export const texts = {
   en: {
-    title: 'Order Survey — Main Screen',
+    title: 'Order Survey - Main Screen',
     back: 'Back to dashboard',
     selectItem: 'Select survey item',
     startVoting: 'Start voting',
@@ -18,7 +18,7 @@ export const texts = {
     score: 'Score',
   },
   he: {
-    title: 'סקר דירוג — מסך ראשי',
+    title: 'סקר דירוג - מסך ראשי',
     back: 'חזרה ללוח בקרה',
     selectItem: 'בחרו פריט סקר',
     startVoting: 'פתחו הצבעה',

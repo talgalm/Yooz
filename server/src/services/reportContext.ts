@@ -226,7 +226,7 @@ export async function buildReportContext(opts: ReportContextOptions): Promise<Re
       anomalies.push({
         type: 'unusual_time',
         severity: 'warning',
-        message: `"${it.itemName}" takes ${Math.round(it.avgDurationMs / 1000)}s avg — ${Math.round(it.avgDurationMs / overallAvgDuration)}x average`,
+        message: `"${it.itemName}" takes ${Math.round(it.avgDurationMs / 1000)}s avg - ${Math.round(it.avgDurationMs / overallAvgDuration)}x average`,
       });
     }
   }

@@ -3,14 +3,14 @@ export const texts = {
     page: 'Page',
     of: 'of',
     showing: 'Showing',
-    to: '–',
+    to: '-',
     outOf: 'of',
   },
   he: {
     page: 'עמוד',
     of: 'מתוך',
     showing: 'מציג',
-    to: '–',
+    to: '-',
     outOf: 'מתוך',
   },
 };

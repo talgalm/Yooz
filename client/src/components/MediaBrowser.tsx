@@ -42,7 +42,7 @@ function parentOf(path: string): string {
 
 function flatten(nodes: FolderNode[], depth = 0): { path: string; label: string }[] {
   return nodes.flatMap((node) => [
-    { path: node.path, label: `${'— '.repeat(depth)}${node.name}` },
+    { path: node.path, label: `${'- '.repeat(depth)}${node.name}` },
     ...flatten(node.children, depth + 1),
   ]);
 }
@@ -545,7 +545,7 @@ export default function MediaBrowser({ accept, onPick, allowManage, refreshKey =
             <strong>{t.inUseTitle}</strong>
             <div style={{ fontSize: 13, color: '#555' }}>{t.inUseBody}</div>
             <UsageList>
-              {pendingDelete.usage.map((u, i) => <li key={i}>{u.collection} — {u.name}</li>)}
+              {pendingDelete.usage.map((u, i) => <li key={i}>{u.collection} - {u.name}</li>)}
             </UsageList>
             <div style={{ display: 'flex', gap: 8 }}>
               <MiniBtn type="button" onClick={() => setPendingDelete(null)}>{t.cancel}</MiniBtn>

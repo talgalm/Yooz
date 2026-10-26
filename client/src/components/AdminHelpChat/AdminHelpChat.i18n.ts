@@ -38,7 +38,7 @@ export const texts = {
     inputPlaceholder: 'How do I…?',
     inputPlaceholderDevTask: 'Describe the task…',
     errorGeneral: 'Something went wrong. Please try again.',
-    errorRate: 'Too many requests — wait a minute and try again.',
+    errorRate: 'Too many requests - wait a minute and try again.',
     footnote: 'Powered by AI · Answers based on admin docs',
   },
   he: {
@@ -80,7 +80,7 @@ export const texts = {
     inputPlaceholder: 'איך אני…?',
     inputPlaceholderDevTask: 'תארו את המשימה…',
     errorGeneral: 'משהו השתבש. נסו שוב.',
-    errorRate: 'יותר מדי בקשות — המתינו דקה ונסו שוב.',
+    errorRate: 'יותר מדי בקשות - המתינו דקה ונסו שוב.',
     footnote: 'מופעל ב-AI · תשובות מבוססות על מדריך הניהול',
   },
 };

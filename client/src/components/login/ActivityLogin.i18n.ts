@@ -8,7 +8,7 @@ export const texts = {
     googleSignIn: 'Continue with Google',
     or: 'or',
     needHelp: 'Need help?',
-    notPortalUser: 'Cannot play — you must sign in through the portal',
+    notPortalUser: 'Cannot play - you must sign in through the portal',
     groupFull: 'This team is full',
   },
   he: {

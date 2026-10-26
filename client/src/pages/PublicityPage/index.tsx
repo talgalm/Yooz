@@ -377,7 +377,7 @@ export default function PublicityPage() {
                           ) : (
                             <strong>{L(p.title)}</strong>
                           )}
-                          {L(p.description) ? ` — ${L(p.description)}` : ''}
+                          {L(p.description) ? ` - ${L(p.description)}` : ''}
                         </li>
                       ))}
                     </ProjectList>

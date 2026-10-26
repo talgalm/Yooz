@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { GEMINI_API_KEY, GEMINI_MODEL } from '../config';
 import { ContentTranslation } from '../models/ContentTranslation';
 import { DEFAULT_LANG, languageOf } from '../utils/languages';
+import { plainDashes } from '../utils/plainDashes';
 
 const HEBREW = /[֐-׿]/;
 
@@ -95,7 +96,7 @@ async function askGemini(lang: string, sources: string[]): Promise<string[] | nu
 
     const parsed: unknown = JSON.parse(text);
     if (!Array.isArray(parsed) || parsed.length !== sources.length) return null;
-    return parsed.map((v, i) => (typeof v === 'string' && v.trim() ? v : sources[i]));
+    return parsed.map((v, i) => (typeof v === 'string' && v.trim() ? plainDashes(v) : sources[i]));
   } catch {
     return null;
   } finally {

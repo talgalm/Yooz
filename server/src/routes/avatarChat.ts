@@ -6,6 +6,7 @@ import { DEFAULT_LANG } from '../utils/languages';
 import { readLang } from '../utils/requestLang';
 import { createRateLimiter } from '../utils/participantRateLimit';
 import { translateText } from '../services/contentTranslation';
+import { plainDashes } from '../utils/plainDashes';
 
 const router = Router();
 
@@ -62,8 +63,8 @@ function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
   }
   lines.push(
     lang === DEFAULT_LANG
-      ? 'ענה/י תמיד בעברית, בגוף ראשון, בטון קצר וטבעי (1–2 משפטים).'
-      : 'ענה/י בגוף ראשון, בטון קצר וטבעי (1–2 משפטים).'
+      ? 'ענה/י תמיד בעברית, בגוף ראשון, בטון קצר וטבעי (1-2 משפטים).'
+      : 'ענה/י בגוף ראשון, בטון קצר וטבעי (1-2 משפטים).'
   );
   lines.push('אל תצא/י מהדמות. אל תחשוף/י שאת/ה בינה מלאכותית.');
 
@@ -127,7 +128,7 @@ function buildSystemPrompt(settings: AvatarSettings, lang: string): string {
   const videos = (settings.videos || []).filter((v) => v.url?.trim());
   if (videos.length > 0) {
     lines.push('');
-    lines.push('סרטונים זמינים (המשתמש יכול לצפות בהם אם ישאל על המילים המתאימות — אל תכתוב URL):');
+    lines.push('סרטונים זמינים (המשתמש יכול לצפות בהם אם ישאל על המילים המתאימות - אל תכתוב URL):');
     videos.forEach((v, i) => {
       const words = (v.matchingWords || []).map((w) => w.trim()).filter(Boolean).join(', ');
       lines.push(`- סרטון ${i + 1} (מילים: ${words || 'ללא'})`);
@@ -188,7 +189,7 @@ async function askGemini(
     };
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     if (!text) throw new Error('Empty Gemini response');
-    return text.trim();
+    return plainDashes(text.trim());
   } finally {
     clearTimeout(timeout);
   }

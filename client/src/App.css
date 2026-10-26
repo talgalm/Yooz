@@ -122,7 +122,7 @@ select[dir='rtl'] {
  * Modal blur.
  *
  * `backdrop-filter` on an overlay samples a composited copy of the page, and in
- * this app that copy comes back offset and rescaled — the "doubled background"
+ * this app that copy comes back offset and rescaled - the "doubled background"
  * behind popups. Blurring the app content directly avoids the sampling step
  * entirely. Overlays are portalled to <body>, so they sit outside #root and
  * stay sharp.
@@ -136,8 +136,8 @@ select[dir='rtl'] {
  * Freeze the page while it is blurred.
  *
  * The blur turns all of #root into one composited layer, and anything still
- * animating inside it — the roadmap's drifting balloons and clouds, which are
- * `position: fixed` and cross the whole viewport — forces that whole layer to
+ * animating inside it - the roadmap's drifting balloons and clouds, which are
+ * `position: fixed` and cross the whole viewport - forces that whole layer to
  * be re-blurred every frame. On weaker Android GPUs that shows up as the map
  * visibly shifting and wobbling behind the popup. Nothing behind a modal needs
  * to animate anyway.

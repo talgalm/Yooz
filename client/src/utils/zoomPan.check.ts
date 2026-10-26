@@ -1,7 +1,7 @@
 import assert from 'assert';
 import { clampPan, clampScale, distance, MAX_SCALE } from './zoomPan';
 
-assert.strictEqual(clampScale(0.4), 1, 'never below 1× — the image must fill its frame');
+assert.strictEqual(clampScale(0.4), 1, 'never below 1× - the image must fill its frame');
 assert.strictEqual(clampScale(99), MAX_SCALE, 'capped at MAX_SCALE');
 assert.strictEqual(clampScale(2.5), 2.5, 'in-range scale is untouched');
 

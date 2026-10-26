@@ -121,7 +121,7 @@ export const DEFAULT_SITE_CONTENT = {
   brandLogoUrl: '/images/logo-purple.png',
   hero: {
     badge: T('פלטפורמה', 'Platform'),
-    title: T('YOOZ – Marketing Engine', 'YOOZ – Marketing Engine'),
+    title: T('YOOZ - Marketing Engine', 'YOOZ - Marketing Engine'),
     subtitle: T('הופכים חוויות למנוע צמיחה עסקי דיגיטלי', 'Turning experiences into a digital business-growth engine'),
     ctaLabel: T('קבעו דמו עכשיו', 'Book a demo now'),
     ctaUrl: '#contact',
@@ -134,8 +134,8 @@ export const DEFAULT_SITE_CONTENT = {
       description: T('פארקים עירוניים, אתרי תיירות וחברות טיולים', 'Urban parks, tourist sites and travel companies'),
       imageUrl: '',
       projects: [
-        { title: T('גני יהושוע – פארקוד', 'Yehoshua Gardens – ParKod'), description: T('פרויקט לדוגמא', 'Featured project'), linkUrl: 'https://youtu.be/8Fzy4t5Sm-E' },
-        { title: T('תל קאקון – המטמון של ביברס', "Tel Qaqun – Baybars' Treasure"), description: T('', '') },
+        { title: T('גני יהושוע - פארקוד', 'Yehoshua Gardens - ParKod'), description: T('פרויקט לדוגמא', 'Featured project'), linkUrl: 'https://youtu.be/8Fzy4t5Sm-E' },
+        { title: T('תל קאקון - המטמון של ביברס', "Tel Qaqun - Baybars' Treasure"), description: T('', '') },
         { title: T('מרכז מבקרים שדה אליהו', 'Sde Eliyahu Visitor Center'), description: T('', '') },
         { title: T('משחק נסיעה לטיולי בתי ספר', 'A travel game for school trips'), description: T('פתרונות משחוק לחברות טיולים', 'Gamified solutions for travel companies') },
       ],
@@ -150,10 +150,10 @@ export const DEFAULT_SITE_CONTENT = {
     {
       key: 'academy',
       title: T('מוסדות אקדמאיים', 'Academic Institutions'),
-      description: T('מכללות ואוניברסיטאות – לצבוע את הלמידה וההדרכה בעזרת GAMIFICATION', 'Colleges and universities – coloring learning and training with GAMIFICATION'),
+      description: T('מכללות ואוניברסיטאות - לצבוע את הלמידה וההדרכה בעזרת GAMIFICATION', 'Colleges and universities - coloring learning and training with GAMIFICATION'),
       imageUrl: '',
       projects: [
-        { title: T('האקדמית תל אביב יפו – החוג לסיעוד', 'Academic College of Tel Aviv-Yafo – Nursing Dept.'), description: T('משחוק קורסים (כ-5 שנים)', 'Gamified courses (~5 years)') },
+        { title: T('האקדמית תל אביב יפו - החוג לסיעוד', 'Academic College of Tel Aviv-Yafo - Nursing Dept.'), description: T('משחוק קורסים (כ-5 שנים)', 'Gamified courses (~5 years)') },
         { title: T('סימולטור לקבלת החלטות רפואיות משולב AI', 'AI-integrated medical decision-making simulator'), description: T('', '') },
         { title: T('המכללה האקדמית כנרת', 'Kinneret Academic College'), description: T('הקמת פרויקט על ידי הסטודנטים', 'A project built by the students') },
         { title: T('מכללת פרס', 'Peres College'), description: T('פרויקט לסטודנטים', 'A student project') },
@@ -162,12 +162,12 @@ export const DEFAULT_SITE_CONTENT = {
     {
       key: 'organizations',
       title: T('ארגונים', 'Organizations'),
-      description: T('הי-טק, שירותים, בריאות, פיננסים וציבורי – משחוק תהליכי שינוי בעזרת GAMIFICATION', 'Hi-tech, services, health, finance and public – gamifying change processes with GAMIFICATION'),
+      description: T('הי-טק, שירותים, בריאות, פיננסים וציבורי - משחוק תהליכי שינוי בעזרת GAMIFICATION', 'Hi-tech, services, health, finance and public - gamifying change processes with GAMIFICATION'),
       imageUrl: '',
       projects: [
         { title: T('הטמעת תקן בינלאומי לאיכות סביבה', 'Rolling out an international environmental-quality standard'), description: T('פיתוח ערכת הפעלה (בטרולי) ושליחת הערכה ל-52 אתרי החברה בעולם', 'An activation kit (trolley) sent to 52 company sites worldwide') },
-        { title: T('חברת חשמל – הטמעת הקוד האתי', 'Israel Electric Corp. – embedding the code of ethics'), description: T('', '') },
-        { title: T('MAX – הטמעת הערך "חוסן קבוצתי"', 'MAX – embedding the value of "group resilience"'), description: T('באמצעות ערכת הפעלה', 'Via an activation kit') },
+        { title: T('חברת חשמל - הטמעת הקוד האתי', 'Israel Electric Corp. - embedding the code of ethics'), description: T('', '') },
+        { title: T('MAX - הטמעת הערך "חוסן קבוצתי"', 'MAX - embedding the value of "group resilience"'), description: T('באמצעות ערכת הפעלה', 'Via an activation kit') },
         { title: T('משחוק תהליכי שינוי בארגונים', 'Gamifying organizational change'), description: T('out4in', 'out4in'), linkUrl: 'https://www.out4in.com/organizational-process' },
       ],
     },
@@ -179,7 +179,7 @@ export const DEFAULT_SITE_CONTENT = {
       'Turns a customer visit into a marketing cycle: three core boosters turn visitors into digital ambassadors, deepen their experience and drive repeat purchases and visits.',
     ),
     boosters: [
-      { key: 'share', title: T('Share Booster', 'Share Booster'), subtitle: T('מכונת תוכן לרשתות חברתיות', 'Content machine for social networks'), description: T('Yooz AutoClip מייצר סרטון אישי אוטומטי שהמבקר משתף בלחיצת כפתור – והאתר מרוויח תוכן אורגני.', 'Yooz AutoClip auto-generates a personal clip visitors share in one tap – free organic content for the site.'), imageUrl: '' },
+      { key: 'share', title: T('Share Booster', 'Share Booster'), subtitle: T('מכונת תוכן לרשתות חברתיות', 'Content machine for social networks'), description: T('Yooz AutoClip מייצר סרטון אישי אוטומטי שהמבקר משתף בלחיצת כפתור - והאתר מרוויח תוכן אורגני.', 'Yooz AutoClip auto-generates a personal clip visitors share in one tap - free organic content for the site.'), imageUrl: '' },
       { key: 'stay', title: T('Stay Booster', 'Stay Booster'), subtitle: T('חוויה הוליסטית סוחפת', 'An immersive holistic experience'), description: T('משימות מאתגרות ופעילות משחקית יוצרות חיבור רגשי ומאריכות את השהות.', 'Challenging missions and gameplay create emotional connection and extend the stay.'), imageUrl: '' },
       { key: 'spend', title: T('Spend Booster', 'Spend Booster'), subtitle: T('הגדלת פדיון ורכישות', 'Growing revenue and purchases'), description: T('המערכת שולחת קופוני הנחה לרכישות באתר ולביקור הבא.', 'The system sends discount coupons for on-site purchases and the next visit.'), imageUrl: '' },
     ],
