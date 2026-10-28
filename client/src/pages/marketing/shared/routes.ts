@@ -1,3 +1,5 @@
+import { LANGS, type Lang } from '../../../utils/languages';
+import { localizedPath } from '../../../utils/currentLang';
 
 type SectorKey = 'business' | 'tourism' | 'academy';
 
@@ -13,6 +15,15 @@ export const MARKETING_ROUTES: MarketingRoute[] = [
   { key: 'academy', path: '/academy' },
   { key: 'about', path: '/about' },
 ];
+
+export interface LocalizedMarketingRoute extends MarketingRoute {
+  lang: Lang;
+  localPath: string;
+}
+
+export const LOCALIZED_MARKETING_ROUTES: LocalizedMarketingRoute[] = LANGS.flatMap(({ code }) =>
+  MARKETING_ROUTES.map((route) => ({ ...route, lang: code, localPath: localizedPath(route.path, code) })),
+);
 
 export const SECTOR_ROUTES = MARKETING_ROUTES.filter(
   (r): r is MarketingRoute & { key: SectorKey } => r.key !== 'home' && r.key !== 'about',

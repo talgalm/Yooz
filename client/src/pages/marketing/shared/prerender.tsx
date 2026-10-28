@@ -4,10 +4,11 @@ import { LanguageProvider } from '../../../context/LanguageContext';
 import { DEFAULT_LANG } from '../../../utils/languages';
 import MarketingLayout from './MarketingLayout';
 import { MARKETING_PAGES } from './marketingPages';
-import { MARKETING_ROUTES, type MarketingRoute } from './routes';
+import { LOCALIZED_MARKETING_ROUTES, type LocalizedMarketingRoute } from './routes';
 import { pageHead, withPrerenderedPage } from './pageMeta';
 
 export { sitemapXml } from './pageMeta';
+export { llmsTxt } from './llmsTxt';
 
 export interface PrerenderedPage {
   path: string;
@@ -15,14 +16,14 @@ export interface PrerenderedPage {
   html: string;
 }
 
-function renderPageBody(route: MarketingRoute): string {
+function renderPageBody(route: LocalizedMarketingRoute): string {
   const Page = MARKETING_PAGES[route.key];
   return renderToString(
-    <LanguageProvider>
-      <StaticRouter location={route.path}>
+    <LanguageProvider initialLang={route.lang}>
+      <StaticRouter location={route.localPath}>
         <Routes>
           <Route element={<MarketingLayout />}>
-            <Route path={route.path} element={<Page />} />
+            <Route path={route.localPath} element={<Page />} />
           </Route>
         </Routes>
       </StaticRouter>
@@ -31,9 +32,9 @@ function renderPageBody(route: MarketingRoute): string {
 }
 
 export function prerenderMarketingPages(shell: string): PrerenderedPage[] {
-  return MARKETING_ROUTES.map((route) => ({
-    path: route.path,
-    file: `${route.key}.html`,
-    html: withPrerenderedPage(shell, pageHead(route, DEFAULT_LANG), renderPageBody(route)),
+  return LOCALIZED_MARKETING_ROUTES.map((route) => ({
+    path: route.localPath,
+    file: route.lang === DEFAULT_LANG ? `${route.key}.html` : `${route.lang}-${route.key}.html`,
+    html: withPrerenderedPage(shell, route.lang, pageHead(route, route.lang), renderPageBody(route)),
   }));
 }

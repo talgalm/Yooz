@@ -1,14 +1,15 @@
 import { useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import { useLang } from '../../../context/LanguageContext';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { DEFAULT_LANG, useLang } from '../../../context/LanguageContext';
+import { langPrefixOf, localizedPath } from '../../../utils/currentLang';
 import Nav from './Nav';
 import Footer from './Footer';
 import { Page } from './styled';
 import useMarketingTitle from './useMarketingTitle';
 
 export default function MarketingLayout() {
-  const { dir } = useLang();
-  const { pathname, hash } = useLocation();
+  const { dir, lang } = useLang();
+  const { pathname, search, hash } = useLocation();
   useMarketingTitle(pathname);
 
   useEffect(() => {
@@ -22,6 +23,10 @@ export default function MarketingLayout() {
     if (hash) return;
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [pathname, hash]);
+
+  if ((langPrefixOf(pathname) ?? DEFAULT_LANG) !== lang) {
+    return <Navigate to={localizedPath(pathname, lang) + search + hash} replace />;
+  }
 
   return (
     <Page dir={dir}>

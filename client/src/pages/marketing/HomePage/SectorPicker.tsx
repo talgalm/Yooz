@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
-import { useTranslations } from '../../../context/LanguageContext';
+import { useLang, useTranslations } from '../../../context/LanguageContext';
+import { localizedPath } from '../../../utils/currentLang';
 import { texts as navTexts } from '../shared/Nav.i18n';
 import { texts } from './SectorPicker.i18n';
 import Reveal from '../shared/Reveal';
@@ -121,6 +122,7 @@ const ArrowDisc = styled('span')({
 export default function SectorPicker() {
   const t = useTranslations(texts);
   const nav = useTranslations(navTexts);
+  const { lang } = useLang();
 
   return (
     <Band style={{ background: SECTORS_GRADIENT, paddingBlock: '88px 96px' }}>
@@ -130,7 +132,7 @@ export default function SectorPicker() {
         <Reveal>
           <Row>
             {SECTORS.map((s) => (
-              <Tile key={s.key} to={s.path}>
+              <Tile key={s.key} to={localizedPath(s.path, lang)}>
                 <Photo src={s.photo} alt="" loading="lazy" />
                 <Shade aria-hidden />
                 <Foot>

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import {
   langInScope,
+  langPrefixOf,
   langScope,
   storeLangInScope,
   type LangScope,
@@ -27,6 +28,11 @@ function readStoredLang(scope: LangScope): Lang {
   return LANGS.some((l) => l.code === stored) ? (stored as Lang) : DEFAULT_LANG;
 }
 
+function langForPage(scope: LangScope): Lang {
+  const urlLang = typeof window === 'undefined' ? null : langPrefixOf(window.location.pathname);
+  return urlLang ?? readStoredLang(scope);
+}
+
 interface LanguageContextType {
   lang: Lang;
   dir: 'ltr' | 'rtl';
@@ -37,11 +43,11 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
+export function LanguageProvider({ children, initialLang }: { children: ReactNode; initialLang?: Lang }) {
   const [scope, setScope] = useState<LangScope>(() =>
     langScope(typeof window === 'undefined' ? '/' : window.location.pathname)
   );
-  const [chosen, setChosen] = useState<Lang>(() => readStoredLang(scope));
+  const [chosen, setChosen] = useState<Lang>(() => initialLang ?? langForPage(scope));
   const [activityLangs, setActivityLangs] = useState<string[] | null>(null);
 
   const restricted = activityLangs !== null && chosen !== DEFAULT_LANG && !activityLangs.includes(chosen);
@@ -67,7 +73,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    setChosen(readStoredLang(scope));
+    setChosen(langForPage(scope));
   }, [scope]);
 
   return (

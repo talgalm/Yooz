@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { langScope, langStorageKey, allLangStorageKeys } from './currentLang';
+import { langScope, langStorageKey, allLangStorageKeys, langPrefixOf, localizedPath, withoutLangPrefix } from './currentLang';
 
 test('the pages a participant plays are their own scope', () => {
   for (const p of [
@@ -59,4 +59,27 @@ test('the three scopes are stored under three different keys', () => {
 
 test('the retired shared key is not one of them', () => {
   assert.ok(!allLangStorageKeys().includes('yooz_lang'));
+});
+
+test('a site address names its language only when it is not the default one', () => {
+  assert.equal(langPrefixOf('/en'), 'en');
+  assert.equal(langPrefixOf('/en/business'), 'en');
+  assert.equal(langPrefixOf('/'), null);
+  assert.equal(langPrefixOf('/business'), null);
+  assert.equal(langPrefixOf('/he/business'), null);
+  assert.equal(langPrefixOf('/english'), null);
+});
+
+test('moving a page between languages keeps the page and swaps only the prefix', () => {
+  assert.equal(localizedPath('/', 'en'), '/en');
+  assert.equal(localizedPath('/business', 'en'), '/en/business');
+  assert.equal(localizedPath('/en/business', 'he'), '/business');
+  assert.equal(localizedPath('/en', 'he'), '/');
+  assert.equal(localizedPath('/en/business', 'en'), '/en/business');
+  assert.equal(withoutLangPrefix('/en/about'), '/about');
+});
+
+test('an English marketing page is still the site scope', () => {
+  assert.equal(langScope('/en'), 'site');
+  assert.equal(langScope('/en/business'), 'site');
 });

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
-import { useTranslations } from '../../../context/LanguageContext';
+import { useLang, useTranslations } from '../../../context/LanguageContext';
+import { localizedPath } from '../../../utils/currentLang';
 import { texts } from './Footer.i18n';
 import { SECTOR_ROUTES, CONTACT_ANCHOR } from './routes';
 import { C, RADIUS, BP } from './tokens';
@@ -112,6 +113,7 @@ const BottomLinks = styled('div')({ display: 'flex', gap: 18, flexWrap: 'wrap' }
 
 export default function Footer() {
   const t = useTranslations(texts);
+  const { lang } = useLang();
 
   return (
     <Root>
@@ -130,7 +132,7 @@ export default function Footer() {
             <ColList>
               {SECTOR_ROUTES.map((r) => (
                 <li key={r.key}>
-                  <ColLink to={r.path}>{t[r.key]}</ColLink>
+                  <ColLink to={localizedPath(r.path, lang)}>{t[r.key]}</ColLink>
                 </li>
               ))}
             </ColList>
@@ -139,7 +141,7 @@ export default function Footer() {
           <div>
             <ColTitle>{t.colCompany}</ColTitle>
             <ColList>
-              <li><ColLink to="/about">{t.about}</ColLink></li>
+              <li><ColLink to={localizedPath('/about', lang)}>{t.about}</ColLink></li>
               <li><ColAnchor href="#faq">{t.faqLink}</ColAnchor></li>
               <li><ColAnchor href={CONTACT_ANCHOR}>{t.contact}</ColAnchor></li>
             </ColList>

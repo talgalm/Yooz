@@ -21,7 +21,7 @@ await build({
 });
 
 try {
-  const { prerenderMarketingPages, sitemapXml } = await import(pathToFileURL(path.join(bundleDir, 'prerender.js')).href);
+  const { prerenderMarketingPages, sitemapXml, llmsTxt } = await import(pathToFileURL(path.join(bundleDir, 'prerender.js')).href);
   const shell = fs.readFileSync(path.join(distDir, 'index.html'), 'utf8');
   const pages = prerenderMarketingPages(shell);
 
@@ -31,6 +31,7 @@ try {
   const manifest = Object.fromEntries(pages.map((page) => [page.path, page.file]));
   fs.writeFileSync(path.join(pagesDir, 'pages.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   fs.writeFileSync(path.join(distDir, 'sitemap.xml'), sitemapXml());
+  fs.writeFileSync(path.join(distDir, 'llms.txt'), llmsTxt());
 
   console.log(`Prerendered ${pages.length} marketing pages: ${pages.map((page) => page.path).join(' ')}`);
 } finally {
