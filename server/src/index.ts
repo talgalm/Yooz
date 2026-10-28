@@ -16,6 +16,7 @@ import {
   isSocialCrawler,
   requestOrigin,
 } from './utils/shareOgPage';
+import { servePrerenderedPages } from './utils/prerenderedPages';
 import { migrateActivities, migrateActivityGroups, seedSuperAdmin, seedBuiltInMission, migrateManageLoginsToUsers, seedInternalProject, dropManageProjectCodeIndex } from './db/seed';
 import { processExpiredRewardTimers } from './services/groupRewardService';
 import { CollageJob } from './models/CollageJob';
@@ -175,6 +176,7 @@ app.get('/play/:code', async (req, res, next) => {
   }
 });
 
+app.use(servePrerenderedPages(CLIENT_BUILD_PATH));
 app.use(express.static(CLIENT_BUILD_PATH));
 
 app.get('*', (req, res) => {

@@ -42,11 +42,8 @@ import { ManageTimerProvider } from './pages/manage/TimerContext';
 import PrivacyPage from './pages/PrivacyPage';
 import ArDemoPage from './pages/ArDemoPage';
 import MarketingLayout from './pages/marketing/shared/MarketingLayout';
-import MarketingHomePage from './pages/marketing/HomePage';
-import BusinessPage from './pages/marketing/BusinessPage';
-import AcademyPage from './pages/marketing/AcademyPage';
-import TourismPage from './pages/marketing/TourismPage';
-import AboutPage from './pages/marketing/AboutPage';
+import { LOCALIZED_MARKETING_ROUTES } from './pages/marketing/shared/routes';
+import { MARKETING_PAGES } from './pages/marketing/shared/marketingPages';
 import SharedStatsPage from './pages/shared/SharedStatsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpChatProvider, HelpChatFab } from './components/HelpChat';
@@ -56,6 +53,7 @@ import ParticipantActivityScope from './components/ParticipantActivityScope';
 import LangScopeSync from './components/LangScopeSync';
 import './App.css';
 import { participantPlayPath, resolveParticipantActivityCode } from './utils/participantActivity';
+import { langPrefixOf, localizedPath } from './utils/currentLang';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -68,6 +66,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function FallbackRedirect() {
   const { pathname } = useLocation();
+  const sitePrefix = langPrefixOf(pathname);
+  if (sitePrefix) return <Navigate to={localizedPath('/', sitePrefix)} replace />;
   if (
     pathname.startsWith('/admin')
     || pathname.startsWith('/manager')
@@ -200,11 +200,10 @@ export default function App() {
                 <Route path="/stats/:token" element={<SharedStatsPage />} />
 
                 <Route element={<MarketingLayout />}>
-                  <Route path="/" element={<MarketingHomePage />} />
-                  <Route path="/business" element={<BusinessPage />} />
-                  <Route path="/academy" element={<AcademyPage />} />
-                  <Route path="/tourism" element={<TourismPage />} />
-                  <Route path="/about" element={<AboutPage />} />
+                  {LOCALIZED_MARKETING_ROUTES.map(({ key, localPath }) => {
+                    const Page = MARKETING_PAGES[key];
+                    return <Route key={localPath} path={localPath} element={<Page />} />;
+                  })}
                 </Route>
                 <Route path="*" element={<FallbackRedirect />} />
               </Routes>

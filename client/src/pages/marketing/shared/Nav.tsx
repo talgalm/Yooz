@@ -1,9 +1,9 @@
 import type { ComponentType } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import { useTranslations, useLang, LANGS } from '../../../context/LanguageContext';
 import { texts } from './Nav.i18n';
-import { storeLang } from '../../../utils/currentLang';
+import { localizedPath, storeLang } from '../../../utils/currentLang';
 import { HomeIcon, InfoIcon, GlobeIcon } from './Nav.icons';
 import { MARKETING_ROUTES, CONTACT_ANCHOR, type MarketingRoute } from './routes';
 import { C, RADIUS, CONTAINER, BP } from './tokens';
@@ -161,18 +161,19 @@ const GlobeButton = styled('button')({
 export default function Nav() {
   const t = useTranslations(texts);
   const { lang } = useLang();
+  const { pathname, search, hash } = useLocation();
 
   const cycleLang = () => {
     const i = LANGS.findIndex((l) => l.code === lang);
     const next = LANGS[(i + 1) % LANGS.length];
     storeLang(next.code);
-    window.location.reload();
+    window.location.assign(localizedPath(pathname, next.code) + search + hash);
   };
 
   return (
     <Bar>
       <Inner>
-        <Brand to="/">
+        <Brand to={localizedPath('/', lang)}>
           <BrandMark src="/images/marketing/logo-yooz.png" alt={t.logoAlt} />
         </Brand>
 
@@ -184,10 +185,10 @@ export default function Nav() {
             const end = r.path === '/';
             const Icon = NAV_ICONS[r.key];
             if (!Icon) {
-              return <Item key={r.key} to={r.path} end={end}>{t[r.key]}</Item>;
+              return <Item key={r.key} to={localizedPath(r.path, lang)} end={end}>{t[r.key]}</Item>;
             }
             return (
-              <IconItem key={r.key} to={r.path} end={end}>
+              <IconItem key={r.key} to={localizedPath(r.path, lang)} end={end}>
                 <ItemIcon aria-hidden>
                   <Icon />
                 </ItemIcon>

@@ -1088,7 +1088,8 @@ Publicity tab; of that router only `POST /leads` is used by the new site (`Conta
 - Academy has its own `AcademyPage/FeaturedTestimonial.tsx` (one named quote + signature)
   instead of the shared `Testimonials` pair, which runs on Home and on Tourism, where it
   carries two named client quotes under the title "לקוחות ממליצים". Business dropped it.
-- `shared/routes.ts` - `MARKETING_ROUTES` is the single source for both the nav and the footer,
+- `shared/routes.ts` - `MARKETING_ROUTES` is the single source for the nav, the footer, the
+  `App.tsx` routes and the prerender (below),
   and its array order is display order (first = rightmost under RTL): ראשי, המגזר העסקי,
   תיירות, אקדמיה, אודות. "ראשי" (`home`, `/`) was added on request - the comps had none - and
   renders with `end` so it is not active on every page. `SECTOR_ROUTES` (footer "תחומים")
@@ -1106,6 +1107,53 @@ Publicity tab; of that router only `POST /leads` is used by the new site (`Conta
   (`flex` 1.7, only under `(hover: hover) and (min-width: 701px)`) and dims its siblings via a
   rule on the row; phones stack the tiles full width. Labels come from `Nav.i18n`; the heading
   and taglines from `SectorPicker.i18n`.
+
+**Prerendered for search engines and AI crawlers.** The SPA shell is an empty `<div id="root">`
+titled "Yooz", so a crawler that does not run JavaScript (ChatGPT, Claude, Perplexity, link
+previews) read nothing, and Google listed the site with no description. Now:
+
+- `MARKETING_ROUTES` x `LANGS` = `LOCALIZED_MARKETING_ROUTES` (each with its `lang` and
+  `localPath`, see "A marketing address can carry its language" in B4) and
+  `shared/marketingPages.ts` (`MARKETING_PAGES`, key -> component) drive the `App.tsx` marketing
+  routes, the prerender, the sitemap and `llms.txt`, so a page added to the list gets all of them.
+- `client/scripts/prerender.mjs` runs as the last step of `npm run build` (`npm run prerender`
+  alone after a `vite build`). It SSR-builds `shared/prerender.tsx` into `dist/.prerender`,
+  renders every route in every language with `renderToString` + `StaticRouter` +
+  `LanguageProvider initialLang`, and writes `dist/prerendered/<key>.html` (Hebrew) and
+  `<lang>-<key>.html`, plus `pages.json` (route -> file), `dist/sitemap.xml` and `dist/llms.txt`.
+  Each file is the built `index.html` with `<html lang dir>` set for its language, its `<title>`
+  replaced by the page head and the rendered page inside `#root`.
+- The head (`pageHead` in `shared/pageMeta.ts`): title, description, canonical on
+  `https://www.yooz.org.il` (each language canonical to itself), `hreflang` alternates for every
+  language plus `x-default` (Hebrew), Open Graph with `og:locale:alternate`, Twitter, and one
+  JSON-LD `@graph`: `Organization` on every page (description, slogan from `Footer.i18n`,
+  founder from `AboutPage.i18n`, `areaServed` IL), then `WebSite` on Home, `AboutPage` on About,
+  `Service` on the three sector pages, and `FAQPage` wherever the page has an FAQ
+  (`shared/pageFaq.ts` reads the same `faq` arrays the pages render). Titles and descriptions
+  are in `shared/PageMeta.i18n.ts`; `pageMeta.test.ts` holds them to 20-60 and 100-160
+  characters, what Google shows whole.
+- `dist/llms.txt` (`shared/llmsTxt.ts`) is a Markdown summary for AI tools: the home
+  description, every page with its title and description in English then Hebrew, and every FAQ.
+  Generated from the same texts, so it cannot drift from the site.
+- `server/src/utils/prerenderedPages.ts` (`servePrerenderedPages`, mounted just before
+  `express.static`) answers an exact GET/HEAD of a listed route with its file. Everything else,
+  including `/business/` and every participant/admin route, still gets the empty shell. No
+  `pages.json` (an old build, or dev) means the shell everywhere, as before.
+- The client still mounts with `createRoot`, not hydration: React replaces the prerendered markup
+  on load (emotion moves the inline SSR `<style data-emotion>` tags to `<head>` first).
+  `shared/useMarketingTitle.ts` keeps `document.title` in step on client-side navigation, and
+  puts "Yooz" back when leaving the marketing site.
+- **Keep marketing render code browser-free.** `window`, `document` and `localStorage` only inside
+  effects and handlers. `shared/prerender.test.ts` renders every page in every language through
+  Vite's `ssrLoadModule` in `npm test`, so a page that breaks server rendering fails CI, not the
+  deploy.
+- `client/public/robots.txt` allows everything except `/admin`, `/manager`, `/manage`,
+  `/control`, `/stats/` and `/api/`, and points at the sitemap. `/play` stays crawlable for the
+  share-preview page.
+- Contact details live in `shared/contact.ts` (`info@yooz.plus`, `054-4484792`): the Footer's
+  company column shows them as `tel:`/`mailto:` links (`dir="ltr"`, so the number does not flip
+  under RTL), and `Organization` carries them as `email`, `telephone` and a sales `contactPoint`,
+  as does `llms.txt`. Still missing: social profile links, for `Organization.sameAs`.
 
 **RTL is the default, and the main hazard here.** The first flex child lands *rightmost*;
 `inset-inline-start` measures from the right; SVG paths and CSS gradients carry no logical
@@ -2072,6 +2120,18 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   from the path so it also works outside React (`apiFetch`, the module cache, the avatar's
   fetch helper), and `LangScopeSync` (inside the router, since the provider sits above it)
   re-reads the right preference when a client-side navigation crosses between them.
+- **A marketing address can carry its language.** Every language but the default gets a path
+  prefix (`/en`, `/en/business`); Hebrew has none. `langPrefixOf`, `withoutLangPrefix` and
+  `localizedPath` in `currentLang.ts` are the whole mapping, generic over `LANGS`, so a new row
+  gets `/<code>` pages for free. `LanguageProvider` lets a prefix win over the stored
+  `yooz_site_lang` (`langForPage`), and takes `initialLang` for server rendering, where there is
+  no `window`. `MarketingLayout` keeps the address in step with the language: if they disagree it
+  redirects (`replace`, query and hash kept) to the current language's address, so a visitor who
+  chose English and opens `/tourism` lands on `/en/tourism`, and an unprefixed link clicked from
+  an English page stays English. Nav, Footer and `SectorPicker` build links with
+  `localizedPath`; the globe button stores the next language and does a full load of the other
+  language's address, as the old reload did. Pages outside the marketing site (`/privacy`,
+  `/stats`) have no prefix and follow the in-memory or stored choice, as before.
 - **`activityPlayingHeaderContext`** / **`themedSceneOverlayContext`** — share header state /
   themed scene overlays across the play flow.
 
