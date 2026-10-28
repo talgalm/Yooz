@@ -1,7 +1,7 @@
 export const texts = {
   en: {
     nameRequired: 'Theme name is required',
-    badColor: 'Invalid colour — a hex code like #ff6b6b is required',
+    badColor: 'Invalid colour - a hex code like #ff6b6b is required',
     saveError: 'Could not save',
     editTitle: 'Edit theme',
     createTitle: 'New theme',
@@ -26,7 +26,7 @@ export const texts = {
   },
   he: {
     nameRequired: 'שם הערכה הוא שדה חובה',
-    badColor: 'צבע לא תקין — נדרש קוד hex כמו #ff6b6b',
+    badColor: 'צבע לא תקין - נדרש קוד hex כמו #ff6b6b',
     saveError: 'שגיאה בשמירה',
     editTitle: 'עריכת ערכת עיצוב',
     createTitle: 'ערכת עיצוב חדשה',

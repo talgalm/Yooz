@@ -5,7 +5,7 @@ export const texts = {
     loading: 'טוען...',
     nothingOnThisDay: 'אין אירועים ביום הזה.',
     dayShort: ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'],
-    readOnlyNote: 'היומן מציג משימות, פגישות, מעקבים ותאריכי פרויקט. משימה חדשה נפתחת עם תאריך היעד של היום שנבחר — פגישות ותאריכי פרויקט נשמרים במקומם.',
+    readOnlyNote: 'היומן מציג משימות, פגישות, מעקבים ותאריכי פרויקט. משימה חדשה נפתחת עם תאריך היעד של היום שנבחר - פגישות ותאריכי פרויקט נשמרים במקומם.',
     kinds: {
       task_due: 'משימה',
       meeting: 'פגישה',
@@ -21,7 +21,7 @@ export const texts = {
     loading: 'Loading...',
     nothingOnThisDay: 'Nothing on this day.',
     dayShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-    readOnlyNote: 'The calendar shows tasks, meetings, follow-ups and project dates. A new task opens due on the selected day — meetings and project dates are still edited on their own records.',
+    readOnlyNote: 'The calendar shows tasks, meetings, follow-ups and project dates. A new task opens due on the selected day - meetings and project dates are still edited on their own records.',
     kinds: {
       task_due: 'Task due',
       meeting: 'Meeting',

@@ -33,7 +33,7 @@ export const texts = {
     employerFactor: 'מקדם עלות מעסיק',
     maxHoursPerDay: 'מקסימום שעות ליום',
 
-    notIncluded: 'לא נכללות כאן: תבניות תזכורת ולוח חגים — אין עדיין מנוע תזכורות ומסך עומסים שיקראו אותן, והגדרה שאף אחד לא קורא היא הגדרה מטעה.',
+    notIncluded: 'לא נכללות כאן: תבניות תזכורת ולוח חגים - אין עדיין מנוע תזכורות ומסך עומסים שיקראו אותן, והגדרה שאף אחד לא קורא היא הגדרה מטעה.',
 
     errors: {
       percentages_must_total_100: 'האחוזים חייבים להסתכם ב-100%.',
@@ -83,7 +83,7 @@ export const texts = {
     employerFactor: 'Employer cost factor',
     maxHoursPerDay: 'Max hours per day',
 
-    notIncluded: 'Not here: reminder templates and the holiday calendar — there is no reminder engine or capacity screen to read them yet, and a setting nothing reads is a misleading setting.',
+    notIncluded: 'Not here: reminder templates and the holiday calendar - there is no reminder engine or capacity screen to read them yet, and a setting nothing reads is a misleading setting.',
 
     errors: {
       percentages_must_total_100: 'The percentages must total 100%.',

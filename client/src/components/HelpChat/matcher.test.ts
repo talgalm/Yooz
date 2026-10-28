@@ -6,7 +6,7 @@ function topicOf(input: string) {
   return matchTopic(input)?.topicId ?? null;
 }
 
-test('field sheet — Hebrew phrasings route to their own topic', () => {
+test('field sheet - Hebrew phrasings route to their own topic', () => {
   assert.equal(topicOf('נזרקתי מהפעילות'), 'kickedOut');
   assert.equal(topicOf('אין לי קישור לפעילות'), 'kickedOut');
   assert.equal(topicOf('הכפתור לא עובד'), 'buttonStuck');
@@ -16,7 +16,7 @@ test('field sheet — Hebrew phrasings route to their own topic', () => {
   assert.equal(topicOf('לא קיבלתי סרטון'), 'videoMissing');
 });
 
-test('field sheet — English phrasings route to their own topic', () => {
+test('field sheet - English phrasings route to their own topic', () => {
   assert.equal(topicOf('I got kicked out'), 'kickedOut');
   assert.equal(topicOf('the button does nothing'), 'buttonStuck');
   assert.equal(topicOf('I cant solve this'), 'taskStuck');

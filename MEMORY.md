@@ -624,6 +624,13 @@ No admin auth — the `statsShareToken` is the credential.
 - **`utils/orderSurveyBorda.ts` / `orderSurveySession.ts`** — live order-game Borda aggregation.
 - **`utils/shareOgPage.ts`** — server-rendered OG HTML for `/play/:code` (Facebook crawler
   short-circuit before the SPA fallback — **don't move it**). `isSocialCrawler`, `buildPlayOgHtml`.
+- **`utils/plainDashes.ts`** - `plainDashes(text)` turns em and en dashes into plain hyphens
+  (`2–50` -> `2-50`, a spaced dash -> ` - `, a dash opening a line -> `- `). Every text a model
+  writes passes through it before anyone sees it: the help chat (`help.ts`), the admin assistant
+  (`adminHelpAssistant.ts`), the avatar chat and quiz follow-ups (`avatarChat.ts`,
+  `avatarQuiz.ts`) and the Gemini output in `contentTranslation`. Copy in code and `.i18n.ts`
+  files follows the same rule: plain hyphens only, except a lone `—` standing for an empty table
+  cell. What admins type into the panel is stored and shown as written.
 - **`utils/lockBroadcaster.ts`** — SSE broadcast of manager progress lock.
 - **`utils/analyticsExcelExport.ts`** — ExcelJS workbook builders for exports.
 - **`utils/participantCountCache.ts`** — cached participant counts (popup participantCount trigger).

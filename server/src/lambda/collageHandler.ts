@@ -87,7 +87,7 @@ export async function handler(event: { jobId?: string }): Promise<{ ok: boolean;
   const template = templateForPhotos(TEMPLATES[templateId], job.requiredImages);
   const orderedUrls = Array.from({ length: job.requiredImages }, (_, i) => job.imageUrls[i] || '');
   if (orderedUrls.some((u) => !u)) {
-    await patchJob(jobId, { phase: 'error', error: 'Missing photo uploads', message: 'שגיאה — חסרות תמונות' });
+    await patchJob(jobId, { phase: 'error', error: 'Missing photo uploads', message: 'שגיאה - חסרות תמונות' });
     return { ok: false, jobId };
   }
 

@@ -9,7 +9,7 @@ test('owner and pm see every task', () => {
   assert.deepEqual(taskVisibility({ role: 'pm', userId }), {});
 });
 
-test('a member sees own, watched and published tasks — and nothing else', () => {
+test('a member sees own, watched and published tasks - and nothing else', () => {
   const f = taskVisibility({ role: 'member', userId }) as { $or: Record<string, unknown>[] };
   const keys = f.$or.map((c) => Object.keys(c)[0]);
   assert.deepEqual(keys, ['assigneeUserId', 'createdBy', 'watcherUserIds', 'visibleToAll']);

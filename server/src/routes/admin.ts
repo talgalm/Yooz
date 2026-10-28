@@ -873,7 +873,7 @@ router.post('/activities/:activityId/scheduled-report/send-now', authenticateAdm
     return;
   }
   if (!activity.scheduledReport) {
-    res.status(400).json({ error: 'No scheduled report is configured for this activity yet — save the settings first' });
+    res.status(400).json({ error: 'No scheduled report is configured for this activity yet - save the settings first' });
     return;
   }
 

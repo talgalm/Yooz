@@ -8,6 +8,7 @@ import { DEFAULT_LANG } from '../utils/languages';
 import { readLang } from '../utils/requestLang';
 import { translateText } from '../services/contentTranslation';
 import { createRateLimiter } from '../utils/participantRateLimit';
+import { plainDashes } from '../utils/plainDashes';
 
 const router = Router();
 
@@ -394,7 +395,7 @@ async function answerFollowUp(
     };
     const text = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
     if (!text) throw new Error('Empty Gemini response');
-    return text.slice(0, MAX_FIELD_CHARS);
+    return plainDashes(text).slice(0, MAX_FIELD_CHARS);
   } finally {
     clearTimeout(timeout);
   }

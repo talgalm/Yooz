@@ -52,16 +52,16 @@ export const texts = {
     thinkingDots: 'Thinking...',
 
     responseFaq1:
-      "Fill in your name, and email or phone if required — no password or code needed. Make sure the details are spelled correctly. If using Google login, allow the popup. Try refreshing the page and entering again.",
+      "Fill in your name, and email or phone if required - no password or code needed. Make sure the details are spelled correctly. If using Google login, allow the popup. Try refreshing the page and entering again.",
     responseFaq2:
-      "If you haven't logged in yet: fill in your name (and email or phone if the fields appear), then press the button to enter the activity — that's how it starts.\n\nIf you're already inside the activity: tap a station card in the roadmap to open and begin a game.",
+      "If you haven't logged in yet: fill in your name (and email or phone if the fields appear), then press the button to enter the activity - that's how it starts.\n\nIf you're already inside the activity: tap a station card in the roadmap to open and begin a game.",
     responseFaq3:
-      'Scores are saved automatically after each game. If your score seems wrong, it may include hint penalties (-5 points each). The leaderboard shows the latest scores — check there after finishing.',
+      'Scores are saved automatically after each game. If your score seems wrong, it may include hint penalties (-5 points each). The leaderboard shows the latest scores - check there after finishing.',
     responseFaq4:
       'Try refreshing the page. Make sure you have a stable internet connection. If the problem continues, try a different browser or clear your cache.',
 
     responseLogin:
-      "For login issues: No password or activity code is needed — just fill in your name and any other required fields (email or phone, depending on the activity). Make sure the details are spelled correctly. The login is valid for 24 hours. Try refreshing the page. If using Google login, allow the popup.",
+      "For login issues: No password or activity code is needed - just fill in your name and any other required fields (email or phone, depending on the activity). Make sure the details are spelled correctly. The login is valid for 24 hours. Try refreshing the page. If using Google login, allow the popup.",
     responseEmail:
       'An email address is only required if the activity organizer configured it. The email is used for identification only. The system does not send any emails to participants. If Google login is available, you can use your Google account instead of typing an email.',
     responsePrivacy:
@@ -75,7 +75,7 @@ export const texts = {
     responseLanguage:
       'To change the language, tap the language icon (globe) in the top corner of the page. You can switch between English and Hebrew at any time.',
     responseHowToPlay:
-      "Each activity has games and stations. Follow the instructions on screen — games have rules shown before they start. Complete each item to advance to the next. Your scores are saved automatically.",
+      "Each activity has games and stations. Follow the instructions on screen - games have rules shown before they start. Complete each item to advance to the next. Your scores are saved automatically.",
     responseConnection:
       'If you lost your internet connection, wait for it to reconnect then refresh the page. Your progress should be saved. If you were in the middle of a game, you may need to restart that game.',
     responseLeaderboard:
@@ -88,13 +88,13 @@ export const texts = {
       `If you're having trouble, try refreshing the page first. If the issue persists, ${contactClause('en', contacts)} or call our support line.`,
 
     responseKickedOut: (contacts?: OrganizerContact[]) =>
-      `Open the activity again from the link you were sent. If you don't have the link any more, ${askClause('en', contacts)} for a new one.\n\nWhen you log back in, pick your group from the list and type exactly the same name you used before — that's how your progress is found again.`,
+      `Open the activity again from the link you were sent. If you don't have the link any more, ${askClause('en', contacts)} for a new one.\n\nWhen you log back in, pick your group from the list and type exactly the same name you used before - that's how your progress is found again.`,
     responseButtonStuck:
-      'Refresh the page and try again. If it still does nothing, it is usually weak reception — move somewhere with a better signal and try once more.',
+      'Refresh the page and try again. If it still does nothing, it is usually weak reception - move somewhere with a better signal and try once more.',
     responseTaskStuck: (contacts?: OrganizerContact[]) =>
-      `Try the hint inside the game first (it costs 5 points). If there's no hint, or it isn't enough, ${askClause('en', contacts)} — they can reveal the solution from the answer sheet.`,
+      `Try the hint inside the game first (it costs 5 points). If there's no hint, or it isn't enough, ${askClause('en', contacts)} - they can reveal the solution from the answer sheet.`,
     responseVideoMissing:
-      "If the screen is still loading, choose to receive it by SMS and the video will arrive as a message.\n\nIf you already chose SMS, or you don't want it, just wait — the video is still being built. If the finish screen appeared straight away, some of the photos were probably never taken, and no video can be made this time.",
+      "If the screen is still loading, choose to receive it by SMS and the video will arrive as a message.\n\nIf you already chose SMS, or you don't want it, just wait - the video is still being built. If the finish screen appeared straight away, some of the photos were probably never taken, and no video can be made this time.",
   },
   he: {
     helpAria: 'עזרה ותמיכה',
@@ -123,16 +123,16 @@ export const texts = {
     thinkingDots: 'חושב...',
 
     responseFaq1:
-      'הזינו שם, ואם נדרש — אימייל או טלפון. אין צורך בסיסמה או קוד. וודאו שהפרטים מאוייתים נכון. אם משתמשים בגוגל, אפשרו את הפופאפ. נסו לרענן את הדף ולהיכנס שוב.',
+      'הזינו שם, ואם נדרש - אימייל או טלפון. אין צורך בסיסמה או קוד. וודאו שהפרטים מאוייתים נכון. אם משתמשים בגוגל, אפשרו את הפופאפ. נסו לרענן את הדף ולהיכנס שוב.',
     responseFaq2:
-      'אם עדיין לא נכנסתם: מלאו את השם שלכם (ואם מופיעים שדות נוספים — אימייל או טלפון), ולחצו על הכפתור — כך נכנסים לפעילות.\n\nאם כבר בפנים: לחצו על כרטיסיית תחנה במפת הדרכים כדי לפתוח ולהתחיל משחק.',
+      'אם עדיין לא נכנסתם: מלאו את השם שלכם (ואם מופיעים שדות נוספים - אימייל או טלפון), ולחצו על הכפתור - כך נכנסים לפעילות.\n\nאם כבר בפנים: לחצו על כרטיסיית תחנה במפת הדרכים כדי לפתוח ולהתחיל משחק.',
     responseFaq3:
-      'ניקוד נשמר אוטומטית אחרי כל משחק. אם הניקוד נראה לא נכון, ייתכן שהוא כולל קנסות רמז (-5 נקודות כל אחד). טבלת המובילים מציגה את הניקוד העדכני — בדקו שם לאחר סיום.',
+      'ניקוד נשמר אוטומטית אחרי כל משחק. אם הניקוד נראה לא נכון, ייתכן שהוא כולל קנסות רמז (-5 נקודות כל אחד). טבלת המובילים מציגה את הניקוד העדכני - בדקו שם לאחר סיום.',
     responseFaq4:
       'נסו לרענן את הדף. וודאו שיש לכם חיבור אינטרנט יציב. אם הבעיה ממשיכה, נסו דפדפן אחר או נקו את המטמון.',
 
     responseLogin:
-      'לבעיות התחברות: אין צורך בסיסמה או קוד — פשוט הזינו את הפרטים הנדרשים (שם, ואם נדרש — מייל או טלפון). וודאו שהפרטים מאוייתים נכון. ההתחברות תקפה ל-24 שעות. נסו לרענן את הדף. אם משתמשים בגוגל, אפשרו את הפופאפ.',
+      'לבעיות התחברות: אין צורך בסיסמה או קוד - פשוט הזינו את הפרטים הנדרשים (שם, ואם נדרש - מייל או טלפון). וודאו שהפרטים מאוייתים נכון. ההתחברות תקפה ל-24 שעות. נסו לרענן את הדף. אם משתמשים בגוגל, אפשרו את הפופאפ.',
     responseEmail:
       'כתובת מייל נדרשת רק אם מארגן הפעילות הגדיר זאת. המייל משמש לצורכי זיהוי בלבד. המערכת אינה שולחת הודעות מייל למשתתפים. אם כניסה עם גוגל זמינה, אפשר להשתמש בחשבון הגוגל במקום להקליד מייל ידנית.',
     responsePrivacy:
@@ -146,7 +146,7 @@ export const texts = {
     responseLanguage:
       'כדי לשנות שפה, לחצו על אייקון השפה (גלובוס) בפינה העליונה של הדף. אפשר לעבור בין אנגלית לעברית בכל רגע.',
     responseHowToPlay:
-      'כל פעילות כוללת משחקים ותחנות. עקבו אחר ההוראות על המסך — למשחקים יש חוקים שמוצגים לפני שהם מתחילים. השלימו כל פריט כדי להתקדם הלאה. הניקוד נשמר אוטומטית.',
+      'כל פעילות כוללת משחקים ותחנות. עקבו אחר ההוראות על המסך - למשחקים יש חוקים שמוצגים לפני שהם מתחילים. השלימו כל פריט כדי להתקדם הלאה. הניקוד נשמר אוטומטית.',
     responseConnection:
       'אם איבדתם חיבור אינטרנט, חכו שהחיבור יחזור ואז רעננו את הדף. ההתקדמות שלכם אמורה להישמר. אם הייתם באמצע משחק, ייתכן שתצטרכו להתחיל אותו מחדש.',
     responseLeaderboard:
@@ -159,12 +159,12 @@ export const texts = {
       `אם אתם חווים בעיות, נסו לרענן את הדף קודם. אם הבעיה ממשיכה, ${contactClause('he', contacts)} או התקשרו לקו התמיכה שלנו.`,
 
     responseKickedOut: (contacts?: OrganizerContact[]) =>
-      `היכנסו שוב מהקישור שנשלח אליכם. אם אין לכם יותר את הקישור — ${askClause('he', contacts)} קישור חדש לפעילות.\n\nבכניסה מחדש בחרו את שם הקבוצה מהרשימה, והזינו בדיוק את אותו השם שהזנתם קודם — כך ההתקדמות שלכם נמצאת שוב.`,
+      `היכנסו שוב מהקישור שנשלח אליכם. אם אין לכם יותר את הקישור - ${askClause('he', contacts)} קישור חדש לפעילות.\n\nבכניסה מחדש בחרו את שם הקבוצה מהרשימה, והזינו בדיוק את אותו השם שהזנתם קודם - כך ההתקדמות שלכם נמצאת שוב.`,
     responseButtonStuck:
-      'רעננו את הדף ונסו שוב. אם עדיין לא קורה כלום, זו בדרך כלל קליטה חלשה — עברו למקום עם קליטה טובה יותר ונסו פעם נוספת.',
+      'רעננו את הדף ונסו שוב. אם עדיין לא קורה כלום, זו בדרך כלל קליטה חלשה - עברו למקום עם קליטה טובה יותר ונסו פעם נוספת.',
     responseTaskStuck: (contacts?: OrganizerContact[]) =>
-      `נסו קודם את הרמז שבתוך המשחק (הוא עולה 5 נקודות). אם אין רמז, או שהוא לא מספיק — ${contactClause('he', contacts)}, שיכול לחשוף לכם את הפתרון מדף התשובות.`,
+      `נסו קודם את הרמז שבתוך המשחק (הוא עולה 5 נקודות). אם אין רמז, או שהוא לא מספיק - ${contactClause('he', contacts)}, שיכול לחשוף לכם את הפתרון מדף התשובות.`,
     responseVideoMissing:
-      'אם המסך עדיין טוען — בחרו לקבל את הסרטון ב-SMS והוא יגיע אליכם בהודעה.\n\nאם כבר בחרתם SMS, או שאינכם מעוניינים — פשוט המתינו, הסרטון עדיין בהכנה. אם קפץ ישר מסך הסיום, כנראה שלא צולמו כל התמונות ולא ניתן ליצור סרטון הפעם.',
+      'אם המסך עדיין טוען - בחרו לקבל את הסרטון ב-SMS והוא יגיע אליכם בהודעה.\n\nאם כבר בחרתם SMS, או שאינכם מעוניינים - פשוט המתינו, הסרטון עדיין בהכנה. אם קפץ ישר מסך הסיום, כנראה שלא צולמו כל התמונות ולא ניתן ליצור סרטון הפעם.',
   },
 };

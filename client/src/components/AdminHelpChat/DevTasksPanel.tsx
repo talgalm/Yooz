@@ -215,7 +215,7 @@ export default function DevTasksPanel({ open, onClose }: DevTasksPanelProps) {
               )}
               {previewKind === 'other' && (
                 <DevDocOpenLink href={viewingDoc.url} target="_blank" rel="noopener noreferrer">
-                  {t.devOpenDoc} — {viewingDoc.name || viewingDoc.url}
+                  {t.devOpenDoc} - {viewingDoc.name || viewingDoc.url}
                 </DevDocOpenLink>
               )}
             </DevDocViewerBody>

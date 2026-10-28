@@ -47,26 +47,26 @@ function buildSystemPrompt(): string {
 
   return `You are a Playwright spec generator for the Yooz system.
 The user (in the next message) describes, in Hebrew or English, the walkthrough video they want.
-You must output ONLY valid TypeScript code — a complete Playwright test file. No markdown fences, no explanation, just code.
+You must output ONLY valid TypeScript code - a complete Playwright test file. No markdown fences, no explanation, just code.
 
 === #1 PRIORITY: MATCH THE REQUEST ===
 Build a walkthrough for EXACTLY the flow the user asked for, and nothing else.
 - If they ask to navigate tabs, the video navigates tabs. If they ask to view statistics, it views statistics. If they ask about the library, it shows the library.
 - Do NOT default to a "create activity" walkthrough. Only create/edit/delete something if the user explicitly asked to.
 - Pick the ONE example below whose flow is closest to the request and adapt it; ignore the others.
-- Log in first ONLY if the requested flow needs an authenticated admin page (most do). Keep login to the 4 quick lines shown in the login example — it is a means to reach the requested screen, not the subject of the video.
+- Log in first ONLY if the requested flow needs an authenticated admin page (most do). Keep login to the 4 quick lines shown in the login example - it is a means to reach the requested screen, not the subject of the video.
 The title/description are the source of truth for WHAT the video shows.
 
 Available imports from './helpers':
-  - startNarration() — call once at the start
-  - showCaption(page, text, durationMs?) — show a Hebrew caption overlay (default 3500ms). Also records timestamp for voice narration.
-  - highlightAndClick(page, selector, caption?) — highlight element, show caption, then click. Resilient: if the selector matches nothing it skips the click but still narrates.
-  - highlightAndFill(page, selector, value, caption?) — highlight element, type slowly, show caption. Resilient like highlightAndClick.
-  - pause(page, ms?) — wait (default 2000ms)
-  - saveNarrationLog(path) — save narration JSON. Call at the end.
+  - startNarration() - call once at the start
+  - showCaption(page, text, durationMs?) - show a Hebrew caption overlay (default 3500ms). Also records timestamp for voice narration.
+  - highlightAndClick(page, selector, caption?) - highlight element, show caption, then click. Resilient: if the selector matches nothing it skips the click but still narrates.
+  - highlightAndFill(page, selector, value, caption?) - highlight element, type slowly, show caption. Resilient like highlightAndClick.
+  - pause(page, ms?) - wait (default 2000ms)
+  - saveNarrationLog(path) - save narration JSON. Call at the end.
 
-RESILIENCE — the video MUST be able to run to the end even if a step's element is missing:
-- PREFER the helpers (highlightAndClick / highlightAndFill) for every interaction — they never throw on a missing element.
+RESILIENCE - the video MUST be able to run to the end even if a step's element is missing:
+- PREFER the helpers (highlightAndClick / highlightAndFill) for every interaction - they never throw on a missing element.
 - If you must use a raw Playwright call (page.click / page.fill / page.goto / page.waitForURL), you MUST append .catch(() => {}) so it can never abort the test. Example: await page.click('...').catch(() => {});
 - The only raw calls without .catch allowed are the 4 login lines and the very first page.goto.
 
@@ -76,10 +76,10 @@ OTHER RULES:
 3. Always call saveNarrationLog('NARRATION_OUTPUT_PATH') at the very end (narration is also auto-saved, but keep this line).
 4. All captions MUST be in Hebrew.
 5. Use pause(page, 1500) between major actions so the video is watchable.
-6. Keep the total video under 60 seconds — 4–8 focused steps, all on the requested flow.
+6. Keep the total video under 60 seconds - 4-8 focused steps, all on the requested flow.
 7. Use ONLY selectors documented in the UI MAP below. Do NOT invent selectors.
 8. For tab/button switching, use both English and Hebrew text: button:has-text("Stations"), button:has-text("תחנות").
-9. NEVER chain .first()/.last() on a string selector passed to highlightAndClick/highlightAndFill — they call .first() internally.
+9. NEVER chain .first()/.last() on a string selector passed to highlightAndClick/highlightAndFill - they call .first() internally.
 
 === COMPLETE UI MAP (routes, selectors, Hebrew labels, navigation flows) ===
 
@@ -87,7 +87,7 @@ ${uiMap}
 
 === END UI MAP ===
 
-=== EXAMPLE SPECS (reference for STYLE and helper patterns — pick the closest ONE to adapt) ===
+=== EXAMPLE SPECS (reference for STYLE and helper patterns - pick the closest ONE to adapt) ===
 
 ${examples}
 
@@ -178,7 +178,7 @@ export function detectTargetHint(title: string, description: string): string {
   const wantsTabs = has(['tab', 'לשוני', 'ניווט', 'סיור', 'navigat']);
 
   const target = (name: string, extra: string) =>
-    `TARGET SCREEN: ${name}. After login, ${extra} The whole walkthrough must stay on this screen — do NOT drift to "create activity", "library/export", or any other flow the user did not ask for.`;
+    `TARGET SCREEN: ${name}. After login, ${extra} The whole walkthrough must stay on this screen - do NOT drift to "create activity", "library/export", or any other flow the user did not ask for.`;
 
   if (wantsParticipant) return `TARGET: the participant play flow (go to /play/<code>, enter a name, start). Do NOT show the admin dashboard.`;
   if (wantsDuplicate) return target('an existing item you duplicate', 'open the row actions and use Duplicate / שכפול.');
@@ -198,10 +198,10 @@ export function detectTargetHint(title: string, description: string): string {
         ? ` If the request describes a game/station with specific content (e.g. questions), FIRST build it: go to Stations → Games (or Stations), create it at /admin/games/new (or /admin/stations/new), name it, pick the type (e.g. Trivia / טריוויה), add the content, and Save / שמור. THEN create the activity and select it.`
         : '';
       return (
-        `TARGET: creating a NEW ACTIVITY — the full multi-step flow, NOT a single tab.${buildFirst} ` +
+        `TARGET: creating a NEW ACTIVITY - the full multi-step flow, NOT a single tab.${buildFirst} ` +
         `Then: click Create Activity / צור פעילות (→ /admin/activities/new), fill the activity name in step 1, ` +
         `click Next / הבא, in step 2 (Select Games / בחירת משחקים) pick ${embed}, and submit with Create Activity / צור פעילות. ` +
-        `Show the whole create flow end to end — do NOT stop after only opening a tab or the games list.`
+        `Show the whole create flow end to end - do NOT stop after only opening a tab or the games list.`
       );
     }
     if (wantsGames)
@@ -306,7 +306,7 @@ ${steps.join('\n')}
   await showCaption(page, 'לוחצים על שכפול ליצירת עותק של התחנה');
   await page.click('button:has-text("Duplicate"), button:has-text("שכפול")').catch(() => {});
   await pause(page, 2500);
-  await showCaption(page, 'נוצרה תחנה חדשה בשם "(עותק)" — אפשר לערוך אותה כעת');
+  await showCaption(page, 'נוצרה תחנה חדשה בשם "(עותק)" - אפשר לערוך אותה כעת');
   await pause(page, 2000);`);
     } else {
       steps.push(`
@@ -333,8 +333,8 @@ ${steps.join('\n')}
   await page.waitForURL('**/activities/new', { timeout: 10000 }).catch(() => page.goto('/admin/activities/new'));
   await pause(page, 1500);
   await highlightAndFill(page, 'input[placeholder*="Activity Name"], input[placeholder*="שם הפעילות"]', 'הרפתקה בטבע', 'נותנים שם לפעילות');
-  await showCaption(page, 'אפשר להגדיר הגדרות נוספות — סוג מודול, שדות כניסה, ערכת נושא');
-  await showCaption(page, 'עוברים לשלב 2 — בחירת משחקים ותחנות');
+  await showCaption(page, 'אפשר להגדיר הגדרות נוספות - סוג מודול, שדות כניסה, ערכת נושא');
+  await showCaption(page, 'עוברים לשלב 2 - בחירת משחקים ותחנות');
   await page.click('button:has-text("Select Games"), button:has-text("בחירת משחקים")').catch(() => page.click('button:has-text("Next"), button:has-text("הבא")').catch(() => {}));
   await pause(page, 1500);
   await showCaption(page, 'בוחרים משחקים ותחנות מהרשימה');
@@ -347,7 +347,7 @@ ${steps.join('\n')}
   await showCaption(page, 'נכנסים ללשונית ספרייה');
   await page.click(':text("Library"), :text("ספרייה")').catch(() => {});
   await pause(page, 2000);
-  await showCaption(page, 'כאן רואים את כל התוכן שיובא — משחקים ותחנות');
+  await showCaption(page, 'כאן רואים את כל התוכן שיובא - משחקים ותחנות');
   await pause(page, 1500);
   await showCaption(page, 'לוחצים על ייצוא כדי להעביר פריט למערכת החדשה');
   await pause(page, 1500);`);
@@ -359,7 +359,7 @@ ${steps.join('\n')}
   await showCaption(page, 'נכנסים ללשונית סטטיסטיקות');
   await page.click(':text("Statistics"), :text("סטטיסטיקות")').catch(() => {});
   await pause(page, 2000);
-  await showCaption(page, 'כאן רואים סקירה כללית — משתתפים, השלמות, ציונים');
+  await showCaption(page, 'כאן רואים סקירה כללית - משתתפים, השלמות, ציונים');
   await pause(page, 2000);
   await showCaption(page, 'לוחצים על פעילות כדי לראות נתונים מפורטים');
   await pause(page, 1500);`);
@@ -373,7 +373,7 @@ ${steps.join('\n')}
   await pause(page, 1000);
   await page.click(':text("Games"), :text("משחקים")').catch(() => {});
   await pause(page, 2000);
-  await showCaption(page, 'כאן רואים את כל המשחקים — אפשר ליצור חדש או לערוך קיים');
+  await showCaption(page, 'כאן רואים את כל המשחקים - אפשר ליצור חדש או לערוך קיים');
   await pause(page, 1500);`);
   }
 
@@ -383,13 +383,13 @@ ${steps.join('\n')}
   await showCaption(page, 'נכנסים ללשונית משתמשים');
   await page.click(':text("Users"), :text("משתמשים")').catch(() => {});
   await pause(page, 2000);
-  await showCaption(page, 'כאן מנהלים את המשתמשים במערכת — אפשר להוסיף, לערוך או למחוק');
+  await showCaption(page, 'כאן מנהלים את המשתמשים במערכת - אפשר להוסיף, לערוך או למחוק');
   await pause(page, 1500);`);
   }
 
   if (!wantsCreate && !wantsLibrary && !wantsStats && !wantsGames && !wantsStations && !wantsUsers && !wantsLogin && !wantsDuplicate) {
     steps.push(`
-  await showCaption(page, 'זהו לוח הבקרה הראשי — כאן מנהלים את כל המערכת');
+  await showCaption(page, 'זהו לוח הבקרה הראשי - כאן מנהלים את כל המערכת');
   await pause(page, 2000);
   await showCaption(page, 'בלשוניות למעלה אפשר לנווט בין פעילויות, תחנות, ספרייה וסטטיסטיקות');
   await pause(page, 2000);`);
@@ -536,14 +536,14 @@ function classifyListFailure(output: string): { kind: 'env' | 'syntax'; hint: st
     return {
       kind: 'env',
       hint:
-        'Playwright found no tests to compile — the generated spec file did not match the test ' +
+        'Playwright found no tests to compile - the generated spec file did not match the test ' +
         'filter. This is a path/config issue on the server, not a script error.',
     };
   }
   if (o.includes('timed out') || o.includes('timeout')) {
     return {
       kind: 'env',
-      hint: 'The Playwright compile check timed out — the server may be overloaded. Try again.',
+      hint: 'The Playwright compile check timed out - the server may be overloaded. Try again.',
     };
   }
   return { kind: 'syntax', hint: '' };
@@ -579,14 +579,14 @@ async function generateVideo(tutorialId: string, title: string, description: str
     console.log(`[Tutorial ${safeId}] Asking Gemini to generate spec for: "${description.slice(0, 80)}..."`);
     const hint = detectTargetHint(title, description);
     if (hint) console.log(`[Tutorial ${safeId}] Target hint: ${hint.slice(0, 90)}...`);
-    const userRequest = `${hint ? hint + '\n\n' : ''}Generate the Playwright walkthrough spec for EXACTLY this request — build this specific flow, not a different one:\n\nTitle: ${title}\nDescription: ${description}`;
+    const userRequest = `${hint ? hint + '\n\n' : ''}Generate the Playwright walkthrough spec for EXACTLY this request - build this specific flow, not a different one:\n\nTitle: ${title}\nDescription: ${description}`;
     const rawSpec = await askGemini(userRequest, buildSystemPrompt());
     specContent = extractCode(rawSpec);
     specContent = specContent.replace(/NARRATION_OUTPUT_PATH/g, narrationJson.replace(/\\/g, '/'));
     specContent = normalizeHelperImport(specContent);
 
     if (!specContent.includes('import') || !specContent.includes('test(')) {
-      throw new Error('Gemini returned invalid spec — missing import or test()');
+      throw new Error('Gemini returned invalid spec - missing import or test()');
     }
     console.log(`[Tutorial ${safeId}] Gemini spec generated (${specContent.length} chars)`);
 
@@ -602,7 +602,7 @@ async function generateVideo(tutorialId: string, title: string, description: str
       }
 
       const errSnippet = listOutput.slice(-800);
-      console.log(`[Tutorial ${safeId}] Gemini spec has TypeScript errors — asking Gemini to fix:\n${errSnippet}`);
+      console.log(`[Tutorial ${safeId}] Gemini spec has TypeScript errors - asking Gemini to fix:\n${errSnippet}`);
       try { unlinkSync(specFile); } catch {}
 
       const fixPrompt = `The following TypeScript Playwright spec has compilation errors. Fix ONLY the TypeScript errors and output the corrected spec. Output ONLY the TypeScript code, nothing else.\n\nOriginal spec:\n\`\`\`typescript\n${specContent}\n\`\`\`\n\nCompiler errors:\n${errSnippet}`;
@@ -619,7 +619,7 @@ async function generateVideo(tutorialId: string, title: string, description: str
           try { unlinkSync(specFile); } catch {}
           throw new Error(`${retryFail.hint}\n\nPlaywright output:\n${retryOutput.slice(-500).trim()}`);
         }
-        console.log(`[Tutorial ${safeId}] Corrected spec still has TS errors — falling back to keyword template:\n${retryOutput.slice(-600)}`);
+        console.log(`[Tutorial ${safeId}] Corrected spec still has TS errors - falling back to keyword template:\n${retryOutput.slice(-600)}`);
         specContent = generateFallbackSpec(title, description, narrationJson);
         writeFileSync(specFile, specContent);
         const { output: fbOutput, exitCode: fbExit } = await runCommand(listCmd, 30_000);
@@ -659,11 +659,11 @@ async function generateVideo(tutorialId: string, title: string, description: str
     if (!videoFile) {
       const errDetail = playwrightOutput.slice(-500);
       await setStep(tutorialId, 1, 'failed', errDetail);
-      throw new Error(`Playwright failed (exit ${exitCode}) — no video recorded.\n${errDetail}`);
+      throw new Error(`Playwright failed (exit ${exitCode}) - no video recorded.\n${errDetail}`);
     }
     console.log(`[Tutorial ${safeId}] Video recorded: ${videoFile}`);
     if (exitCode !== 0) {
-      console.log(`[Tutorial ${safeId}] ⚠ Playwright exited ${exitCode} but video was recorded — continuing`);
+      console.log(`[Tutorial ${safeId}] ⚠ Playwright exited ${exitCode} but video was recorded - continuing`);
     }
     await setStep(tutorialId, 1, 'done');
 
@@ -674,7 +674,7 @@ async function generateVideo(tutorialId: string, title: string, description: str
       const voiceCmd = `npx tsx "${path.join(PROJECT_ROOT, 'walkthroughs', 'add-voice.ts')}" "${videoFile}" "${narrationJson}" "${outputPath}"`;
       const { exitCode: voiceExit } = await runCommand(voiceCmd, 120_000);
       if (voiceExit !== 0) {
-        console.log(`[Tutorial ${safeId}] ⚠ Voice narration failed — continuing without it`);
+        console.log(`[Tutorial ${safeId}] ⚠ Voice narration failed - continuing without it`);
       }
     }
     await setStep(tutorialId, 2, 'done');

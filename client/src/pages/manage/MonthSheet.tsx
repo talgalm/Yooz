@@ -222,7 +222,7 @@ export default function MonthSheet({ userId, editable = true }: Props) {
               <Mins>{formatMoney(e.amount)}</Mins>
               <What>
                 {t.travel}
-                {e.note ? <Note> — {e.note}</Note> : null}
+                {e.note ? <Note> - {e.note}</Note> : null}
               </What>
               {editable && (
                 <>
@@ -242,7 +242,7 @@ export default function MonthSheet({ userId, editable = true }: Props) {
                 <What>
                   {t.categories[e.category]}
                   {refName(e.projectId) ? ` · ${refName(e.projectId)}` : ''}
-                  {e.note ? <Note> — {e.note}</Note> : null}
+                  {e.note ? <Note> - {e.note}</Note> : null}
                 </What>
                 {e.afterProjectClose && <Pill tone="warn">{t.afterClose}</Pill>}
                 {e.autoStopped && <Pill tone="warn">{t.autoStopped}</Pill>}

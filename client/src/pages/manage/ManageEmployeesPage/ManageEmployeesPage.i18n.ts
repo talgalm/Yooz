@@ -24,7 +24,7 @@ export const texts = {
     edit: 'עריכה',
     deactivate: 'השבתה',
     confirmDeactivate: (name: string) => `להשבית את ${name}? המשתמש לא יוכל להיכנס ל-Manage, אבל כל דיווחי השעות שלו נשמרים.`,
-    deactivateNote: 'עובד שעוזב מושבת ולא נמחק — דיווחי השעות שלו הם ההיסטוריה של מה שהפרויקטים עלו.',
+    deactivateNote: 'עובד שעוזב מושבת ולא נמחק - דיווחי השעות שלו הם ההיסטוריה של מה שהפרויקטים עלו.',
     addInAdmin: 'הוספת עובד, אימייל וסיסמה מנוהלים בפאנל האדמין ← משתמשים.',
     tracksTimeNote: 'כיבוי מוציא את העובד מהתראות הדיווח החסר ומווידג׳ט שעות הצוות.',
 
@@ -65,7 +65,7 @@ export const texts = {
     edit: 'Edit',
     deactivate: 'Deactivate',
     confirmDeactivate: (name: string) => `Deactivate ${name}? They can no longer open Manage, but every hour they logged is kept.`,
-    deactivateNote: 'People who leave are deactivated, never deleted — their time entries are the history of what projects cost.',
+    deactivateNote: 'People who leave are deactivated, never deleted - their time entries are the history of what projects cost.',
     addInAdmin: 'Adding employees, emails and passwords is done in the admin panel → Users.',
     tracksTimeNote: 'Turning this off removes them from missing-timesheet alerts and the team hours widget.',
 
