@@ -6,6 +6,7 @@ import { texts, type PageMetaText } from './PageMeta.i18n';
 import { texts as footerTexts } from './Footer.i18n';
 import { texts as aboutTexts } from '../AboutPage/AboutPage.i18n';
 import { pageFaq } from './pageFaq';
+import { CONTACT_EMAIL, CONTACT_PHONE_INTERNATIONAL } from './contact';
 
 export const SITE_ORIGIN = 'https://www.yooz.org.il';
 export const SITE_NAME = 'Yooz';
@@ -62,6 +63,16 @@ function organization(lang: Lang) {
     description: translate(texts, lang).home.description,
     founder: { '@type': 'Person', name: translate(aboutTexts, lang).founderName },
     areaServed: COUNTRY_SERVED,
+    email: CONTACT_EMAIL,
+    telephone: CONTACT_PHONE_INTERNATIONAL,
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'sales',
+      email: CONTACT_EMAIL,
+      telephone: CONTACT_PHONE_INTERNATIONAL,
+      areaServed: COUNTRY_SERVED,
+      availableLanguage: LANGS.map((l) => l.locale),
+    },
   };
 }
 

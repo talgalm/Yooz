@@ -4,6 +4,7 @@ import { useLang, useTranslations } from '../../../context/LanguageContext';
 import { localizedPath } from '../../../utils/currentLang';
 import { texts } from './Footer.i18n';
 import { SECTOR_ROUTES, CONTACT_ANCHOR } from './routes';
+import { CONTACT_EMAIL, CONTACT_EMAIL_HREF, CONTACT_PHONE, CONTACT_PHONE_HREF } from './contact';
 import { C, RADIUS, BP } from './tokens';
 import { Container } from './styled';
 
@@ -144,6 +145,8 @@ export default function Footer() {
               <li><ColLink to={localizedPath('/about', lang)}>{t.about}</ColLink></li>
               <li><ColAnchor href="#faq">{t.faqLink}</ColAnchor></li>
               <li><ColAnchor href={CONTACT_ANCHOR}>{t.contact}</ColAnchor></li>
+              <li><ColAnchor href={CONTACT_PHONE_HREF} dir="ltr" aria-label={t.phoneLabel(CONTACT_PHONE)}>{CONTACT_PHONE}</ColAnchor></li>
+              <li><ColAnchor href={CONTACT_EMAIL_HREF} dir="ltr" aria-label={t.emailLabel(CONTACT_EMAIL)}>{CONTACT_EMAIL}</ColAnchor></li>
             </ColList>
           </div>
 

@@ -11,6 +11,7 @@ import { texts as academyTexts } from '../AcademyPage/AcademyPage.i18n';
 import { texts as aboutTexts } from '../AboutPage/AboutPage.i18n';
 import { texts as metaTexts } from './PageMeta.i18n';
 import { texts as navTexts } from './Nav.i18n';
+import { CONTACT_EMAIL_HREF, CONTACT_PHONE_HREF } from './contact';
 
 const SHELL = '<!DOCTYPE html><html lang="he" dir="rtl"><head><title>Yooz</title></head><body><div id="root"></div></body></html>';
 
@@ -58,6 +59,14 @@ test('an English page is English all the way down: html, direction and links', (
   assert.ok(html.includes('href="/en/business"'));
   assert.ok(!html.includes(navTexts.he.business));
   assert.ok(htmlAt('/tourism').includes('href="/business"'));
+});
+
+test('every page shows the phone and email in the footer, as links', () => {
+  for (const route of LOCALIZED_MARKETING_ROUTES) {
+    const html = htmlAt(route.localPath);
+    assert.ok(html.includes(`href="${CONTACT_PHONE_HREF}"`), route.localPath);
+    assert.ok(html.includes(`href="${CONTACT_EMAIL_HREF}"`), route.localPath);
+  }
 });
 
 test('each page replaces the bare title with its own title and description', () => {

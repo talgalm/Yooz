@@ -5,12 +5,13 @@ import { MARKETING_ROUTES } from './routes';
 import { SITE_ORIGIN, marketingRouteAt, pageHead, pageMeta, pageUrl, sitemapXml, withPrerenderedPage } from './pageMeta';
 import { llmsTxt } from './llmsTxt';
 import { pageFaq } from './pageFaq';
+import { CONTACT_EMAIL, CONTACT_PHONE_INTERNATIONAL } from './contact';
 
 const SHELL = '<html lang="he" dir="rtl"><head>\n    <title>Yooz</title>\n</head><body><div id="root"></div></body></html>';
 
 function jsonLd(head: string) {
   const json = /<script type="application\/ld\+json">(.*?)<\/script>/.exec(head)?.[1] ?? '{}';
-  return JSON.parse(json) as { '@graph': { '@type': string; mainEntity?: unknown[] }[] };
+  return JSON.parse(json) as { '@graph': { '@type': string; mainEntity?: unknown[]; email?: string; telephone?: string }[] };
 }
 
 test('every page has a title and a description Google will show whole, in every language', () => {
@@ -52,6 +53,13 @@ test('structured data describes the company everywhere and each page for what it
   assert.deepEqual(types('/about'), ['Organization', 'AboutPage']);
   const faq = jsonLd(pageHead(marketingRouteAt('/tourism')!, 'en'))['@graph'].find((node) => node['@type'] === 'FAQPage');
   assert.equal(faq?.mainEntity?.length, pageFaq('tourism', 'en').length);
+});
+
+test('the company in the structured data and in llms.txt can be reached', () => {
+  const company = jsonLd(pageHead(marketingRouteAt('/about')!, 'en'))['@graph'][0];
+  assert.equal(company.email, CONTACT_EMAIL);
+  assert.equal(company.telephone, CONTACT_PHONE_INTERNATIONAL);
+  assert.ok(llmsTxt().includes(`Contact: ${CONTACT_EMAIL}, ${CONTACT_PHONE_INTERNATIONAL}`));
 });
 
 test('the prerendered body lands in #root, in the page language and direction', () => {

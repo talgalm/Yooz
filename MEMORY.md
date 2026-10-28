@@ -1139,8 +1139,10 @@ previews) read nothing, and Google listed the site with no description. Now:
 - `client/public/robots.txt` allows everything except `/admin`, `/manager`, `/manage`,
   `/control`, `/stats/` and `/api/`, and points at the sitemap. `/play` stays crawlable for the
   share-preview page.
-- Not done yet, and needed: official contact details (phone, email, address) and social profile
-  links. The site shows none, so `Organization` has no `contactPoint` or `sameAs`.
+- Contact details live in `shared/contact.ts` (`info@yooz.plus`, `054-4484792`): the Footer's
+  company column shows them as `tel:`/`mailto:` links (`dir="ltr"`, so the number does not flip
+  under RTL), and `Organization` carries them as `email`, `telephone` and a sales `contactPoint`,
+  as does `llms.txt`. Still missing: social profile links, for `Organization.sameAs`.
 
 **RTL is the default, and the main hazard here.** The first flex child lands *rightmost*;
 `inset-inline-start` measures from the right; SVG paths and CSS gradients carry no logical

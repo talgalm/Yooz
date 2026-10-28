@@ -2,6 +2,7 @@ import { DEFAULT_LANG, LANGS, type Lang } from '../../../utils/languages';
 import { MARKETING_ROUTES } from './routes';
 import { SITE_NAME, SITE_ORIGIN, pageMeta, pageUrl } from './pageMeta';
 import { pageFaq } from './pageFaq';
+import { CONTACT_EMAIL, CONTACT_PHONE_INTERNATIONAL } from './contact';
 
 const HOME = MARKETING_ROUTES.find((route) => route.key === 'home')!;
 
@@ -35,6 +36,7 @@ export function llmsTxt(): string {
     ...order.slice(1).map((lang) => pageMeta(HOME, lang).description),
     '',
     `Website: ${SITE_ORIGIN}/`,
+    `Contact: ${CONTACT_EMAIL}, ${CONTACT_PHONE_INTERNATIONAL}`,
     '',
   ];
   for (const lang of order) {
