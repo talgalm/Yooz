@@ -886,7 +886,11 @@ id minted on each login — so a second participant on the same phone can't be h
 one's finished video. Never derive that scope from name/email/phone: those collide. Optional SMS
 delivery of the finished video (`smsForCollage*`, polled every 15s). Client:
 `components/stations/CollageStation.tsx` + `collageJobStorage`/`collageSplitStorage`/
-`backgroundCollageJob` + `utils/collageApi`/`collagePhotoCompress`. The text under the finished
+`backgroundCollageJob` + `utils/collageApi`/`collagePhotoCompress`. Photos taken in a split part
+that is not finished yet are kept on the phone as they are confirmed (`saveCollageDraft`, key
+`draft::<code>::<splitGroupId>::<partIndex>`, cleared when the part is saved or the video starts) and
+restored when the station opens, so a page the browser killed while the camera was open comes back
+at the next photo. A single collage already kept its photos (the `singleGroupId` part). The text under the finished
 video, which is also the share text, is `settings.shareText` ("טקסט מתחת לסרטון המוכן ובשיתוף"),
 else the neutral `videoShareText` ("ככה נראים רגעי השיא שלי בפעילות 🎬"); the shared file is named
 after the collage. Until 2026-10-16 every collage showed the Ganei Yehoshua "Secret Suitcase" line
@@ -2137,7 +2141,8 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
 - **`StoryModulePage/index.tsx`** (`/story/:code`) — the **orchestrator**. Loads `/module`, holds
   the `Phase` state (`roadmap`|`playing`|`finish`|`leaderboard`), `currentItemIndex`, `scores`,
   popup queue, guidelines, per-station hint tracking, spiders completion set, timers
-  (elapsed/roadmap/finish countdown). Persists progress to `storySession` + `PATCH /progress`;
+  (elapsed/roadmap/finish countdown). Persists progress to `storySession` + `PATCH /progress`
+  (an open station is saved as `roadmap`, except a collage station, which reopens after a reload);
   resumes via `/my-progress` **once per page load**, and only forward: the station is the later of
   the local one and the server's, and the server's scores replace local ones only when it has at
   least as many. It must not rerun when `data` refreshes (the module is refetched every time the
