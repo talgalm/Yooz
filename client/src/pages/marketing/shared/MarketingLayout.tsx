@@ -4,10 +4,12 @@ import { useLang } from '../../../context/LanguageContext';
 import Nav from './Nav';
 import Footer from './Footer';
 import { Page } from './styled';
+import useMarketingTitle from './useMarketingTitle';
 
 export default function MarketingLayout() {
   const { dir } = useLang();
   const { pathname, hash } = useLocation();
+  useMarketingTitle(pathname);
 
   useEffect(() => {
     const root = document.documentElement;

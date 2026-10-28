@@ -42,11 +42,8 @@ import { ManageTimerProvider } from './pages/manage/TimerContext';
 import PrivacyPage from './pages/PrivacyPage';
 import ArDemoPage from './pages/ArDemoPage';
 import MarketingLayout from './pages/marketing/shared/MarketingLayout';
-import MarketingHomePage from './pages/marketing/HomePage';
-import BusinessPage from './pages/marketing/BusinessPage';
-import AcademyPage from './pages/marketing/AcademyPage';
-import TourismPage from './pages/marketing/TourismPage';
-import AboutPage from './pages/marketing/AboutPage';
+import { MARKETING_ROUTES } from './pages/marketing/shared/routes';
+import { MARKETING_PAGES } from './pages/marketing/shared/marketingPages';
 import SharedStatsPage from './pages/shared/SharedStatsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelpChatProvider, HelpChatFab } from './components/HelpChat';
@@ -200,11 +197,10 @@ export default function App() {
                 <Route path="/stats/:token" element={<SharedStatsPage />} />
 
                 <Route element={<MarketingLayout />}>
-                  <Route path="/" element={<MarketingHomePage />} />
-                  <Route path="/business" element={<BusinessPage />} />
-                  <Route path="/academy" element={<AcademyPage />} />
-                  <Route path="/tourism" element={<TourismPage />} />
-                  <Route path="/about" element={<AboutPage />} />
+                  {MARKETING_ROUTES.map(({ key, path }) => {
+                    const Page = MARKETING_PAGES[key];
+                    return <Route key={key} path={path} element={<Page />} />;
+                  })}
                 </Route>
                 <Route path="*" element={<FallbackRedirect />} />
               </Routes>

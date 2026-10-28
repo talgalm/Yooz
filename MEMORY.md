@@ -1077,7 +1077,8 @@ Publicity tab; of that router only `POST /leads` is used by the new site (`Conta
 - Academy has its own `AcademyPage/FeaturedTestimonial.tsx` (one named quote + signature)
   instead of the shared `Testimonials` pair, which runs on Home and on Tourism, where it
   carries two named client quotes under the title "לקוחות ממליצים". Business dropped it.
-- `shared/routes.ts` - `MARKETING_ROUTES` is the single source for both the nav and the footer,
+- `shared/routes.ts` - `MARKETING_ROUTES` is the single source for the nav, the footer, the
+  `App.tsx` routes and the prerender (below),
   and its array order is display order (first = rightmost under RTL): ראשי, המגזר העסקי,
   תיירות, אקדמיה, אודות. "ראשי" (`home`, `/`) was added on request - the comps had none - and
   renders with `end` so it is not active on every page. `SECTOR_ROUTES` (footer "תחומים")
@@ -1095,6 +1096,37 @@ Publicity tab; of that router only `POST /leads` is used by the new site (`Conta
   (`flex` 1.7, only under `(hover: hover) and (min-width: 701px)`) and dims its siblings via a
   rule on the row; phones stack the tiles full width. Labels come from `Nav.i18n`; the heading
   and taglines from `SectorPicker.i18n`.
+
+**Prerendered for search engines and AI crawlers.** The SPA shell is an empty `<div id="root">`
+titled "Yooz", so a crawler that does not run JavaScript (ChatGPT, Claude, Perplexity, link
+previews) read nothing, and Google listed the site with no description. Now:
+
+- `MARKETING_ROUTES` + `shared/marketingPages.ts` (`MARKETING_PAGES`, key -> component) drive the
+  `App.tsx` marketing routes, the prerender and the sitemap, so a page added to the list gets all three.
+- `client/scripts/prerender.mjs` runs as the last step of `npm run build` (`npm run prerender`
+  alone after a `vite build`). It SSR-builds `shared/prerender.tsx` into `dist/.prerender`,
+  renders every route in Hebrew with `renderToString` + `StaticRouter`, and writes
+  `dist/prerendered/<key>.html` plus `pages.json` (route -> file) and `dist/sitemap.xml`. Each
+  file is the built `index.html` with its `<title>` replaced by the page head (`pageHead` in
+  `shared/pageMeta.ts`: title, description, canonical on `https://www.yooz.org.il`, Open Graph,
+  Twitter, and `WebSite` + `Organization` JSON-LD on Home) and the rendered page inside `#root`.
+  Titles and descriptions are in `shared/PageMeta.i18n.ts`; `pageMeta.test.ts` holds them to
+  20-60 and 100-160 characters, what Google shows whole.
+- `server/src/utils/prerenderedPages.ts` (`servePrerenderedPages`, mounted just before
+  `express.static`) answers an exact GET/HEAD of a listed route with its file. Everything else,
+  including `/business/` and every participant/admin route, still gets the empty shell. No
+  `pages.json` (an old build, or dev) means the shell everywhere, as before.
+- The client still mounts with `createRoot`, not hydration: React replaces the prerendered markup
+  on load (emotion moves the inline SSR `<style data-emotion>` tags to `<head>` first), so a
+  visitor whose saved language is English sees Hebrew only until the bundle runs.
+  `shared/useMarketingTitle.ts` keeps `document.title` in step on client-side navigation and
+  language switches, and puts "Yooz" back when leaving the marketing site.
+- **Keep marketing render code browser-free.** `window`, `document` and `localStorage` only inside
+  effects and handlers. `shared/prerender.test.ts` renders every page through Vite's
+  `ssrLoadModule` in `npm test`, so a page that breaks server rendering fails CI, not the deploy.
+- `client/public/robots.txt` allows everything except `/admin`, `/manager`, `/manage`,
+  `/control`, `/stats/` and `/api/`, and points at the sitemap. `/play` stays crawlable for the
+  share-preview page.
 
 **RTL is the default, and the main hazard here.** The first flex child lands *rightmost*;
 `inset-inline-start` measures from the right; SVG paths and CSS gradients carry no logical

@@ -72,7 +72,7 @@ const Blurb = styled('p')<{ color: string }>(({ color }) => ({
   margin: '0 0 26px',
 }));
 
-const Panel = styled('div')<{ on: boolean }>(({ on }) => ({
+const Panel = styled('div', { shouldForwardProp: (p) => p !== 'on' })<{ on: boolean }>(({ on }) => ({
   background: on ? C.white : 'transparent',
   borderRadius: on ? 18 : 0,
   padding: on ? '30px 28px' : 0,
