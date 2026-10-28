@@ -10,6 +10,7 @@ import { participantMissionPath, participantStoryPath, rememberActivityCode } fr
 import { startEarlyModulePrefetch } from '../../utils/earlyModulePrefetch';
 import { useMediaPreload } from '../../hooks/useMediaPreload';
 import { GameLoadingSpinner } from '../../components/games/styled';
+import { decodeJwtPayload } from '../../utils/jwt';
 import GroupEntryChoice from '../../components/groupEntry/GroupEntryChoice';
 import CreateGroupForm from '../../components/groupEntry/CreateGroupForm';
 import GroupCreatedSuccess from '../../components/groupEntry/GroupCreatedSuccess';
@@ -246,13 +247,26 @@ export default function PlayPage() {
   const [loadError, setLoadError] = useState(false);
   const [slowLoad, setSlowLoad] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const { login, establishSession, isAuthenticated, participant } = useAuth();
+  const { login, establishSession, isAuthenticated, participant, token } = useAuth();
   const navigate = useNavigate();
   const t = useTranslations(texts);
   const { restrictToLanguages, setLang } = useLang();
   const resumeCheckedForCode = useRef<string | null>(null);
 
   const isSelfService = activity?.connectionType === 'group' && activity?.groupEntryMode === 'selfService';
+  const tokenResetsDaily = (() => {
+    try {
+      return !!token && decodeJwtPayload<{ dailyReset?: boolean }>(token).dailyReset === true;
+    } catch {
+      return false;
+    }
+  })();
+  const alreadyInThisActivity = isAuthenticated
+    && !!activity?.moduleType
+    && participant?.activityCode === activity.code
+    && !isSelfService
+    && !tokenResetsDaily
+    && !inviteTokenParam;
   const [groupFlow, setGroupFlow] = useState<GroupFlow | null>(inviteTokenParam ? 'join-login' : null);
   const [resolvedInvite, setResolvedInvite] = useState<{ token: string; name: string } | null>(null);
   const [inviteError, setInviteError] = useState(false);
@@ -411,6 +425,12 @@ export default function PlayPage() {
     if (resumeCheckedForCode.current === code) return;
     resumeCheckedForCode.current = code;
 
+    if (alreadyInThisActivity) {
+      prefetchModuleIfNeeded(activity.code, participant?.group || '');
+      navigate(activity.moduleType === 'mission' ? participantMissionPath(activity.code) : participantStoryPath(activity.code), { replace: true });
+      return;
+    }
+
     let cancelled = false;
     (async () => {
       try {
@@ -441,7 +461,7 @@ export default function PlayPage() {
     })();
 
     return () => { cancelled = true; };
-  }, [isAuthenticated, activity, code, scheduleStatus, isSelfService, navigate, participant?.group, prefetchModuleIfNeeded]);
+  }, [isAuthenticated, activity, code, scheduleStatus, isSelfService, navigate, participant?.group, prefetchModuleIfNeeded, alreadyInThisActivity]);
 
   const startFadeOut = useCallback(() => {
     if (fadeStartedRef.current) return;
@@ -699,6 +719,16 @@ export default function PlayPage() {
   }
 
   if (scheduleStatus === null && (activity.scheduledStart || activity.scheduledEnd)) {
+    return (
+      <PurpleLoadingScreen>
+        <LoaderWave aria-label={t.loading}>
+          <span>Y</span><span>o</span><span>o</span><span>z</span>
+        </LoaderWave>
+      </PurpleLoadingScreen>
+    );
+  }
+
+  if (alreadyInThisActivity && scheduleStatus !== 'pending' && scheduleStatus !== 'expired') {
     return (
       <PurpleLoadingScreen>
         <LoaderWave aria-label={t.loading}>

@@ -2127,7 +2127,12 @@ error?}`), `StubSmsProvider` (logs only, default), `getSmsProvider()`/`setSmsPro
   groups: a `GroupFlow` state machine (`choice`→`create`/`join-paste`/`join-login`→`success`)
   wiring the `groupEntry/*` components. Prefetches the module (`startEarlyModulePrefetch`) and
   preloads media, then redirects by moduleType: `mission` → `participantMissionPath`, any other
-  module (story, spiders, map) → `participantStoryPath`, none → `/home`.
+  module (story, spiders, map) → `participantStoryPath`, none → `/home`. A phone already logged in
+  to this activity (the token's `activityCode`, not self-service, not a `dailyReset` token) goes
+  straight back into the game with a loader instead of the form - no `/my-progress` round trip and
+  no "at least one station done" condition. Until 2026-10-19 tapping the link again from WhatsApp
+  showed the login form whenever that check failed on weak reception or the participant was still on
+  the first station, and logging in again dropped the progress kept on the phone.
   Handles in-app-browser escape for camera/QR.
 - **`StoryModulePage/index.tsx`** (`/story/:code`) — the **orchestrator**. Loads `/module`, holds
   the `Phase` state (`roadmap`|`playing`|`finish`|`leaderboard`), `currentItemIndex`, `scores`,
