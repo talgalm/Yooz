@@ -53,7 +53,7 @@ export interface GameOption {
 export interface StationOption {
   _id: string;
   name: string;
-  type: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText';
+  type: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText' | 'scan';
   description?: string;
   customer?: string;
   theme?: string;

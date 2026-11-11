@@ -12,6 +12,8 @@ import CollageVideoEditor from './CollageVideoEditor';
 import CollageTemplatePreview from './CollageTemplatePreview';
 import CollageRenderPreview from './CollageRenderPreview';
 import FeedbackItemsEditor, { withFeedbackKeys, type KeyedFeedbackItem } from './FeedbackItemsEditor';
+import ScanStationForm from './ScanStationForm';
+import { emptyScanSettings, newScanCode, scanSettingsFrom, scanSettingsToSave, type ScanStationSettings } from '../../../utils/scanCode';
 import { customVideoProblem, type CollageTemplateId, type CustomCollageVideo } from '../../../utils/collageVideo';
 import {
   AdminPage,
@@ -65,7 +67,7 @@ const TextArea = styled('textarea')({
   '&:focus': { borderColor: '#6c5ce7' },
 });
 
-type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText';
+type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText' | 'scan';
 
 interface AvatarVideoConfig {
   url: string;
@@ -166,7 +168,7 @@ export default function AdminStationConfigPage() {
   const location = useLocation();
   const t = useTranslations(texts);
 
-  const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle', 'avatar', 'avatarQuiz', 'enteringText'];
+  const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle', 'avatar', 'avatarQuiz', 'enteringText', 'scan'];
   const stationTypesWithoutHint: StationTypeOption[] = ['feedback', 'avatar', 'avatarQuiz'];
   const typeFromUrl = searchParams.get('type') as StationTypeOption | null;
   const defaultType: StationTypeOption =
@@ -277,6 +279,7 @@ export default function AdminStationConfigPage() {
   const [enteringTextLastStep, setEnteringTextLastStep] = useState(false);
   const [enteringTextSolutionHintEnabled, setEnteringTextSolutionHintEnabled] = useState(false);
   const [enteringTextShowBackButton, setEnteringTextShowBackButton] = useState(true);
+  const [scanSettings, setScanSettings] = useState<ScanStationSettings>(() => emptyScanSettings());
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -450,6 +453,10 @@ export default function AdminStationConfigPage() {
           }
           setEnteringTextShowBackButton(settings.showBackButton !== false);
         }
+        if (s.type === 'scan') {
+          const loaded = scanSettingsFrom(settings);
+          setScanSettings(loaded.code ? loaded : { ...loaded, code: newScanCode() });
+        }
         setInitialLoading(false);
       })
       .catch(() => navigate('/admin/dashboard?tab=stations'));
@@ -572,6 +579,9 @@ export default function AdminStationConfigPage() {
         const sh = settings.solutionHint as Record<string, unknown>;
         setEnteringTextSolutionHintEnabled(!!sh.enabled);
       }
+    }
+    if (lib.type === 'scan') {
+      setScanSettings({ ...scanSettingsFrom(settings), code: newScanCode() });
     }
   }, []);
 
@@ -797,6 +807,9 @@ export default function AdminStationConfigPage() {
         }
         settings.showBackButton = enteringTextShowBackButton;
       }
+      if (stationType === 'scan') {
+        Object.assign(settings, scanSettingsToSave(scanSettings));
+      }
 
       const payload = {
         name: name.trim(),
@@ -837,6 +850,7 @@ export default function AdminStationConfigPage() {
     avatar: 'תחנת אוואטר - טסט',
     avatarQuiz: 'תחנת אוואטר מנחה - טסט',
     enteringText: 'תחנת מילוי טקסט - טסט',
+    scan: t.randomScanName,
   };
 
   const infoSecurityQuizQuestions = (): AvatarQuizQuestionConfig[] => [
@@ -939,6 +953,7 @@ export default function AdminStationConfigPage() {
     setEnteringTextSuccessMediaType('');
     setEnteringTextSuccessMediaUrl('');
     setEnteringTextLastStep(false);
+    setScanSettings(emptyScanSettings());
     if (randomType === 'text') {
       setTextContent('זהו תוכן טקסט לדוגמה עבור תחנת בדיקה. כאן יופיע המידע שהמשתתף צריך לקרוא.');
     } else if (randomType === 'video') {
@@ -1001,6 +1016,13 @@ export default function AdminStationConfigPage() {
       setEnteringTextSubmitButtonText('שליחה');
       setEnteringTextReturnButtonText('ניקוי');
       setEnteringTextMaxAttempts('3');
+    } else if (randomType === 'scan') {
+      setScanSettings({
+        ...emptyScanSettings(),
+        instructions: t.randomScanInstructions,
+        rewardTitle: t.randomScanRewardTitle,
+        rewardText: t.randomScanRewardText,
+      });
     }
   };
 
@@ -1074,6 +1096,10 @@ export default function AdminStationConfigPage() {
                     <SelectionButton type="button" selected={stationType === 'enteringText'} onClick={() => setStationType('enteringText')}>
                       <div>{t.typeEnteringText}</div>
                       <SelectionSubtextSmall>{t.typeEnteringTextDesc}</SelectionSubtextSmall>
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={stationType === 'scan'} onClick={() => setStationType('scan')}>
+                      <div>{t.typeScan}</div>
+                      <SelectionSubtextSmall>{t.typeScanDesc}</SelectionSubtextSmall>
                     </SelectionButton>
                   </StationTypeGroup>
                 </div>
@@ -2466,6 +2492,13 @@ export default function AdminStationConfigPage() {
                     </div>
                   </div>
                 </VerticalStack>
+              )}
+              {stationType === 'scan' && (
+                <ScanStationForm
+                  value={scanSettings}
+                  onChange={setScanSettings}
+                  confirmBeforeNewCode={Boolean(id)}
+                />
               )}
             </FormSectionCardWide>
 

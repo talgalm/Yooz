@@ -348,6 +348,7 @@ export function stationTypeLabel(t: Record<string, string>, type?: string) {
     case 'avatar': return t.typeAvatar;
     case 'avatarQuiz': return t.typeAvatarQuiz;
     case 'enteringText': return t.typeEnteringText;
+    case 'scan': return t.typeScan;
     default: return type || '—';
   }
 }
