@@ -827,7 +827,7 @@ export interface Game {
 export interface Station {
   _id: string;
   name: string;
-  type?: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText';
+  type?: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText' | 'scan';
   description?: string;
   customer?: string;
   theme?: string;
@@ -1296,6 +1296,7 @@ export default function AdminDashboardPage() {
                   { type: 'avatar', emoji: '🕵️', label: t.createTypeAvatar },
                   { type: 'avatarQuiz', emoji: '🎓', label: t.createTypeAvatarQuiz },
                   { type: 'enteringText', emoji: '⌨️', label: t.createTypeEnteringText },
+                  { type: 'scan', emoji: '📷', label: t.createTypeScan },
                 ].map(({ type, emoji, label }) => (
                   <TypeTile
                     key={type}

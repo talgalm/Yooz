@@ -306,7 +306,7 @@ name/description/`settings.questions.text`.
 
 ### Station (`stations`) — info/media/interactive screen
 `type: StationType` = `'text'|'video'|'image'|'narrative'|'badge'|'collage'|'feedback'|
-'riddle'|'avatar'|'avatarQuiz'|'enteringText'` (11 types; union lives in `models/Station.ts`). Same shape as Game (`settings`, `customer`, `theme`,
+'riddle'|'avatar'|'avatarQuiz'|'enteringText'|'scan'` (12 types; union lives in `models/Station.ts`). Same shape as Game (`settings`, `customer`, `theme`,
 `tags`, `folderId`). See §10.
 
 ### Mission (`missions`) — 3-part recycling-style activity
@@ -796,6 +796,19 @@ Rendered in `pages/StoryModulePage/PlayingPhase.tsx` (story) / `StationStage` / 
   `questions[]: {text, idealAnswer, keywords[], teachingPoint, hint?, points?, learnMoreUrl?,
   level?1|2|3}`, and optional `reactionVideos{asking,correct,partial,incorrect}`.
 - **enteringText** — free-text entry station (`EnteringTextStation`).
+- **scan** - barcode hunt (`ScanStation`). The admin form (`AdminStationConfigPage/ScanStationForm.tsx`)
+  generates `settings.code`, 6 characters from an alphabet without 0/O/1/I, shows the QR of
+  `YOOZ:<code>` (`qrcode.react`) with the code under it, and downloads exactly that as a PNG - no title;
+  "ברקוד חדש" replaces the code (with a warning on a saved station - printed stickers stop working). A
+  station copied from the library gets a fresh code. The participant opens the camera in the app
+  (`getUserMedia`, rear camera); `utils/qrFrameReader.ts` reads frames with the browser's
+  `BarcodeDetector` where it exists and `jsqr` elsewhere (iOS). Only this station's code unlocks it;
+  another QR shows "זה לא הברקוד של התחנה הזאת". Without a camera the participant types the code
+  printed under the barcode.
+  Reward: `rewardType:'message'|'image'|'video'`, `rewardTitle`, `rewardText`, `rewardMediaUrl`,
+  `continueButtonText`; screen text `title`, `instructions`. Matching and settings parsing live in
+  `utils/scanCode.ts` (tested). The code is checked on the client, like the riddle answers. Shares
+  `ConfettiOverlay` with enteringText.
 
 Shared: `StationDescriptionPopup`, floating clue button for info stations.
 

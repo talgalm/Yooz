@@ -19,6 +19,7 @@
     "@fontsource/secular-one": "^5.2.8",
     "@mui/material": "^7.3.8",
     "date-fns": "^4.1.0",
+    "jsqr": "^1.4.0",
     "matter-js": "^0.20.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
