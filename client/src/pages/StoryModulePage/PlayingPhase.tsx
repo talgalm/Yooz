@@ -19,6 +19,7 @@ import AvatarStation from '../../components/stations/AvatarStation';
 import AvatarQuizStation from '../../components/stations/AvatarQuizStation';
 import EnteringTextStation from '../../components/stations/EnteringTextStation';
 import ScanStation from '../../components/stations/ScanStation';
+import ArStation from '../../components/stations/ArStation';
 import { styled, keyframes } from '@mui/material/styles';
 import {
   OutlineButton,
@@ -443,7 +444,7 @@ export default function PlayingPhase({
   const isPuzzleGame = isGameStep && (currentItem as GameItemData).gameType === 'puzzle';
   const isOrderGame = isGameStep && (currentItem as GameItemData).gameType === 'order';
   const isBallGame = isGameStep && (currentItem as GameItemData).gameType === 'ballGame';
-  const isTextVideoImageStation = currentItem.type === 'station' && ['text', 'video', 'image', 'riddle', 'avatar', 'avatarQuiz', 'enteringText', 'scan'].includes((currentItem as StationItemData).stationType);
+  const isTextVideoImageStation = currentItem.type === 'station' && ['text', 'video', 'image', 'riddle', 'avatar', 'avatarQuiz', 'enteringText', 'scan', 'ar'].includes((currentItem as StationItemData).stationType);
   const puzzleSessionChrome = (isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation) ? 'puzzle' : 'default';
   const useDarkChrome = isPuzzleGame || isOrderGame || isBallGame || isTextVideoImageStation;
   const headerIconColor = getHeaderIconColor(theme, customTheme);
@@ -645,6 +646,17 @@ export default function PlayingPhase({
           <ScanStation
             station={station}
             onContinue={onStationContinue}
+            code={code}
+            textColor={customTheme?.textColor}
+          />
+        );
+      }
+
+      if (station.stationType === 'ar') {
+        return (
+          <ArStation
+            station={station}
+            onComplete={onGameComplete}
             code={code}
             textColor={customTheme?.textColor}
           />

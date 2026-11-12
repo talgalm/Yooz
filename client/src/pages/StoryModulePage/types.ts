@@ -45,7 +45,7 @@ export interface StationItemData {
   stationIndex?: number;
   _id: string;
   name: string;
-  stationType: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText' | 'scan';
+  stationType: 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText' | 'scan' | 'ar';
   description?: string;
   settings?: Record<string, unknown>;
   spiderSvg?: string;

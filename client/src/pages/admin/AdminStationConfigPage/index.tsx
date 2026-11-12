@@ -13,6 +13,8 @@ import CollageTemplatePreview from './CollageTemplatePreview';
 import CollageRenderPreview from './CollageRenderPreview';
 import FeedbackItemsEditor, { withFeedbackKeys, type KeyedFeedbackItem } from './FeedbackItemsEditor';
 import ScanStationForm from './ScanStationForm';
+import ArStationForm from './ArStationForm';
+import { arSettingsFrom, arSettingsToSave, emptyArSettings, type ArStationSettings } from '../../../utils/arStation';
 import { emptyScanSettings, newScanCode, scanSettingsFrom, scanSettingsToSave, type ScanStationSettings } from '../../../utils/scanCode';
 import { customVideoProblem, type CollageTemplateId, type CustomCollageVideo } from '../../../utils/collageVideo';
 import {
@@ -67,7 +69,7 @@ const TextArea = styled('textarea')({
   '&:focus': { borderColor: '#6c5ce7' },
 });
 
-type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText' | 'scan';
+type StationTypeOption = 'text' | 'video' | 'image' | 'narrative' | 'badge' | 'collage' | 'feedback' | 'riddle' | 'avatar' | 'avatarQuiz' | 'enteringText' | 'scan' | 'ar';
 
 interface AvatarVideoConfig {
   url: string;
@@ -168,8 +170,8 @@ export default function AdminStationConfigPage() {
   const location = useLocation();
   const t = useTranslations(texts);
 
-  const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle', 'avatar', 'avatarQuiz', 'enteringText', 'scan'];
-  const stationTypesWithoutHint: StationTypeOption[] = ['feedback', 'avatar', 'avatarQuiz'];
+  const creatableTypes: StationTypeOption[] = ['text', 'video', 'image', 'collage', 'feedback', 'riddle', 'avatar', 'avatarQuiz', 'enteringText', 'scan', 'ar'];
+  const stationTypesWithoutHint: StationTypeOption[] = ['feedback', 'avatar', 'avatarQuiz', 'ar'];
   const typeFromUrl = searchParams.get('type') as StationTypeOption | null;
   const defaultType: StationTypeOption =
     typeFromUrl && creatableTypes.includes(typeFromUrl) ? typeFromUrl : 'text';
@@ -280,6 +282,7 @@ export default function AdminStationConfigPage() {
   const [enteringTextSolutionHintEnabled, setEnteringTextSolutionHintEnabled] = useState(false);
   const [enteringTextShowBackButton, setEnteringTextShowBackButton] = useState(true);
   const [scanSettings, setScanSettings] = useState<ScanStationSettings>(() => emptyScanSettings());
+  const [arSettings, setArSettings] = useState<ArStationSettings>(() => emptyArSettings());
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -457,6 +460,9 @@ export default function AdminStationConfigPage() {
           const loaded = scanSettingsFrom(settings);
           setScanSettings(loaded.code ? loaded : { ...loaded, code: newScanCode() });
         }
+        if (s.type === 'ar') {
+          setArSettings(arSettingsFrom(settings));
+        }
         setInitialLoading(false);
       })
       .catch(() => navigate('/admin/dashboard?tab=stations'));
@@ -582,6 +588,9 @@ export default function AdminStationConfigPage() {
     }
     if (lib.type === 'scan') {
       setScanSettings({ ...scanSettingsFrom(settings), code: newScanCode() });
+    }
+    if (lib.type === 'ar') {
+      setArSettings(arSettingsFrom(settings));
     }
   }, []);
 
@@ -810,6 +819,9 @@ export default function AdminStationConfigPage() {
       if (stationType === 'scan') {
         Object.assign(settings, scanSettingsToSave(scanSettings));
       }
+      if (stationType === 'ar') {
+        Object.assign(settings, arSettingsToSave(arSettings));
+      }
 
       const payload = {
         name: name.trim(),
@@ -851,6 +863,7 @@ export default function AdminStationConfigPage() {
     avatarQuiz: 'תחנת אוואטר מנחה - טסט',
     enteringText: 'תחנת מילוי טקסט - טסט',
     scan: t.randomScanName,
+    ar: t.randomArName,
   };
 
   const infoSecurityQuizQuestions = (): AvatarQuizQuestionConfig[] => [
@@ -954,6 +967,7 @@ export default function AdminStationConfigPage() {
     setEnteringTextSuccessMediaUrl('');
     setEnteringTextLastStep(false);
     setScanSettings(emptyScanSettings());
+    setArSettings(emptyArSettings());
     if (randomType === 'text') {
       setTextContent('זהו תוכן טקסט לדוגמה עבור תחנת בדיקה. כאן יופיע המידע שהמשתתף צריך לקרוא.');
     } else if (randomType === 'video') {
@@ -1023,6 +1037,8 @@ export default function AdminStationConfigPage() {
         rewardTitle: t.randomScanRewardTitle,
         rewardText: t.randomScanRewardText,
       });
+    } else if (randomType === 'ar') {
+      setArSettings({ ...emptyArSettings(), finishText: t.randomArFinishText });
     }
   };
 
@@ -1100,6 +1116,10 @@ export default function AdminStationConfigPage() {
                     <SelectionButton type="button" selected={stationType === 'scan'} onClick={() => setStationType('scan')}>
                       <div>{t.typeScan}</div>
                       <SelectionSubtextSmall>{t.typeScanDesc}</SelectionSubtextSmall>
+                    </SelectionButton>
+                    <SelectionButton type="button" selected={stationType === 'ar'} onClick={() => setStationType('ar')}>
+                      <div>{t.typeAr}</div>
+                      <SelectionSubtextSmall>{t.typeArDesc}</SelectionSubtextSmall>
                     </SelectionButton>
                   </StationTypeGroup>
                 </div>
@@ -2500,6 +2520,7 @@ export default function AdminStationConfigPage() {
                   confirmBeforeNewCode={Boolean(id)}
                 />
               )}
+              {stationType === 'ar' && <ArStationForm value={arSettings} onChange={setArSettings} />}
             </FormSectionCardWide>
 
             <FormSectionCardWide>
