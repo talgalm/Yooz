@@ -16,17 +16,20 @@ export interface ArGameState {
   elapsedSeconds: number;
 }
 
-export interface ArStepResult {
+export interface ArCollectResult {
   state: ArGameState;
-  collectedIds: number[];
+  collected: boolean;
+  meters: number;
 }
 
 export const NEAREST_START_M = 1.4;
 export const FIRST_COIN_MAX_M = 2.6;
 export const FIRST_COIN_SPREAD_RAD = 0.2;
-export const COLLECT_RADIUS_TRACKED_M = 0.55;
-export const COLLECT_RADIUS_STEPS_M = 0.9;
+export const REACH_TRACKED_M = 1.6;
+export const REACH_STEPS_M = 2.2;
+export const SUITCASE_MIN_M = 2.2;
 const EDGE_RATIO = 0.95;
+const SUITCASE_FAR_RATIO = 0.55;
 const COIN_GAP_M = 0.9;
 const PLACEMENT_TRIES = 200;
 
@@ -62,20 +65,37 @@ function placeCoins(count: number, center: FloorPoint, forward: FloorPoint, radi
   return placed;
 }
 
+const asTargets = (spots: FloorPoint[], random: () => number): ArCoin[] =>
+  spots.map((spot, id) => ({ id, x: spot.x, z: spot.z, phase: random() * Math.PI * 2, collectedAt: null }));
+
 export function createArGame(count: number, start: FloorPoint, forward: FloorPoint, radius: number, random: () => number): ArGameState {
-  const coins = placeCoins(count, start, forward, radius, random).map((spot, id) => ({ id, x: spot.x, z: spot.z, phase: random() * Math.PI * 2, collectedAt: null }));
-  return { coins, elapsedSeconds: 0 };
+  return { coins: asTargets(placeCoins(count, start, forward, radius, random), random), elapsedSeconds: 0 };
 }
 
-export function stepArGame(state: ArGameState, player: FloorPoint, dt: number, collectRadius: number): ArStepResult {
-  const elapsedSeconds = state.elapsedSeconds + dt;
-  const collectedIds: number[] = [];
-  const coins = state.coins.map((coin) => {
-    if (coin.collectedAt !== null || distance(coin, player) > collectRadius) return coin;
-    collectedIds.push(coin.id);
-    return { ...coin, collectedAt: elapsedSeconds };
-  });
-  return { state: { ...state, coins, elapsedSeconds }, collectedIds };
+export function createSuitcaseHunt(start: FloorPoint, radius: number, random: () => number): ArGameState {
+  const far = Math.max(SUITCASE_MIN_M + 0.2, radius * EDGE_RATIO);
+  const near = Math.min(far - 0.2, Math.max(SUITCASE_MIN_M, radius * SUITCASE_FAR_RATIO));
+  const angle = random() * Math.PI * 2;
+  const meters = near + (far - near) * random();
+  const spot = { x: start.x + Math.cos(angle) * meters, z: start.z + Math.sin(angle) * meters };
+  return { coins: asTargets([spot], random), elapsedSeconds: 0 };
+}
+
+export function stepArGame(state: ArGameState, dt: number): ArGameState {
+  return { ...state, elapsedSeconds: state.elapsedSeconds + dt };
+}
+
+export function inReach(coin: ArCoin, player: FloorPoint, reach: number): boolean {
+  return coin.collectedAt === null && distance(coin, player) <= reach;
+}
+
+export function tryCollect(state: ArGameState, id: number, player: FloorPoint, reach: number): ArCollectResult {
+  const coin = state.coins.find((c) => c.id === id);
+  if (!coin || coin.collectedAt !== null) return { state, collected: false, meters: coin ? distance(coin, player) : Number.POSITIVE_INFINITY };
+  const meters = distance(coin, player);
+  if (meters > reach) return { state, collected: false, meters };
+  const coins = state.coins.map((c) => (c.id === id ? { ...c, collectedAt: state.elapsedSeconds } : c));
+  return { state: { ...state, coins }, collected: true, meters };
 }
 
 export function nearestCoin(state: ArGameState, player: FloorPoint): { coin: ArCoin; meters: number } | null {

@@ -809,9 +809,13 @@ Rendered in `pages/StoryModulePage/PlayingPhase.tsx` (story) / `StationStage` / 
   `continueButtonText`; screen text `title`, `instructions`. Matching and settings parsing live in
   `utils/scanCode.ts` (tested). The code is checked on the client, like the riddle answers. Shares
   `ConfettiOverlay` with enteringText.
-- **ar** - AR coin hunt: the participant physically walks to 3D gold coins floating around them
-  (`ArStation` -> lazy `ArPlayfield`; three.js loads only for this station). Two tracking modes,
-  picked at start:
+- **ar** - AR hunt: the participant physically walks with the phone to 3D targets in the camera
+  view and taps them to collect (`ArStation` -> lazy `ArPlayfield`; three.js loads only for this
+  station). Two game types (`mode`): **coins** (`coinCount` gold coins floating around) and
+  **suitcase** (one brown leather suitcase standing on the floor, placed 2.2m to 95% of the area
+  radius away in a random direction, `createSuitcaseHunt`). `showMap` (default true) turns the radar,
+  the distance tag and the edge arrow on or off; without it the participant searches with the camera
+  alone. Two tracking modes, picked at start:
   - **WebXR `immersive-ar`** (Android Chrome and other browsers that support it): real 6DoF tracking
     from the camera, reference space `local`, floor from hit-test (start height - 1.4m until a hit),
     the HUD rides along through `dom-overlay`. The session is requested inside the start click
@@ -819,22 +823,37 @@ Rendered in `pages/StoryModulePage/PlayingPhase.tsx` (story) / `StationStage` / 
   - **Sensors fallback** (iPhone Safari has no WebXR): rear camera behind a transparent WebGL canvas,
     `deviceorientation` turns the view (`utils/arCamera.ts`, three.js's DeviceOrientationControls
     math) and walking is counted from `devicemotion` steps (`utils/arSteps.ts`, 0.7m a step in the
-    facing direction). Coarser, so the collect radius is 0.9m instead of 0.55m. No sensors (desktop):
-    arrow keys turn and walk.
-  Coins (`components/stations/arCoins3d.ts`): a 0.34m gold coin built from a cylinder, a raised rim
-  and an extruded star, metallic with a RoomEnvironment reflection map, floating 1.2m above the floor
-  with a soft floor shadow and a glow. The intro has no card: flat coins (`/images/ar-coin.svg`,
-  `ar-coin-turned.svg`) float over the activity background with breathing ground shadows, above a white
-  speech bubble with the instructions and "N מטבעות · N שניות". Collecting plays a synthesized chime, vibrates, bursts sparkles
-  and pops "+N". HUD: timer, counter, a radar (coins relative to where the phone faces), the nearest
-  distance, and an edge arrow when the nearest coin is off screen. `utils/arGame.ts` (tested): coins
-  spread around the start within `areaRadiusMeters`, the first one 1.4-2.6m straight ahead. Coins
-  never move: step counting on iPhone is too coarse to chase a moving target. Settings
-  (`utils/arStation.ts`, tested): `coinCount` 3-20 (10), `timeLimitSeconds` 15-300 (90),
-  `areaRadiusMeters` 2-20 (5), `pointsPerCoin`, `allCoinsBonus`,
-  `title`, `instructions`, `finishText`. Score = coins x `pointsPerCoin`, plus the bonus when all are
-  collected, reported through `onComplete` like the riddle. A finished result waits in sessionStorage
-  until "המשיכו", so a reload cannot replay for a better score. No station hint.
+    facing direction). No sensors (desktop): arrow keys turn and walk.
+  Collecting is a tap, never automatic. A tap on the stage picks the target under the finger
+  (`arCoins3d` `pick`: projected centre, hit radius max(46px, 1.5x the on-screen radius)) and
+  `tryCollect` takes it only within reach: `REACH_TRACKED_M` 1.6m with WebXR, `REACH_STEPS_M` 2.2m
+  with step counting, which is coarser. Too far shows "רחוק מדי. מתקרבים עוד X מ' ולוחצים שוב". A
+  target in reach and on screen glows and pulses, and a white "לחצו עליי!" speech bubble bobs above it
+  (below it when the target is near the top of the screen); tapping the bubble collects that target
+  too. A coach
+  line under the HUD says what to do next: search (turn slowly and look), walk (a target is on
+  screen) or tap (a target is in reach and on screen).
+  3D (`components/stations/arCoins3d.ts`): a 0.34m gold coin built from a cylinder, a raised rim and
+  an extruded star, metallic with a RoomEnvironment reflection map, floating 1.2m above the floor; or
+  the suitcase (0.56 x 0.4 x 0.2m rounded box, straps, gold buckles, lock and handle, a "47" tag).
+  Both get a soft black floor shadow and a glow. The intro has no card: flat art
+  (`/images/ar-coin.svg`, `ar-coin-turned.svg`, `ar-suitcase.svg`) floats over the activity
+  background, above a white speech bubble: the admin's `instructions` or "איך משחקים?", four numbered
+  steps per type, "N מטבעות / מזוודה אחת · N שניות" (plus "בלי מפה" without a map) and a safety line.
+  Collecting plays a sound (`/sounds/ar-coin.wav`, or `ar-suitcase.wav`: clasp clicks and a rising
+  flourish; both synthesized for this station), vibrates, bursts sparkles and pops "+N". The sound is
+  an `HTMLAudioElement` (`createCollectSound`), primed with a muted play inside the start click and
+  played inside the tap handler, so iPhone lets it play. HUD: timer, coin
+  counter (coins only), and with the map a radar, the nearest distance and an edge arrow when the
+  nearest target is off screen. `utils/arGame.ts` (tested): coins spread around the start within
+  `areaRadiusMeters`, the first one 1.4-2.6m straight ahead. Targets never move: step counting on
+  iPhone is too coarse to chase a moving target. Settings (`utils/arStation.ts`, tested): `mode`
+  (`coins`), `showMap` (true), `coinCount` 3-20 (10), `timeLimitSeconds` 15-300 (90),
+  `areaRadiusMeters` 2-20 (5), `pointsPerCoin` (10), `allCoinsBonus` (20), `findPoints` (50, suitcase),
+  `title`, `instructions`, `finishText`. Score: coins x `pointsPerCoin` plus the bonus when all are
+  collected, or `findPoints` for the suitcase, reported through `onComplete` like the riddle. A
+  finished result waits in sessionStorage until "המשיכו", so a reload cannot replay for a better
+  score. No station hint.
 
 Shared: `StationDescriptionPopup`, floating clue button for info stations.
 
