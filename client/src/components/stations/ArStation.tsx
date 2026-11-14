@@ -196,38 +196,13 @@ const BubbleText = styled('p')({
   },
 });
 
-const StepList = styled('ol')({
+const RulesText = styled('p')({
   position: 'relative',
-  margin: '12px 0 0',
-  padding: 0,
-  listStyle: 'none',
-  display: 'grid',
-  gap: 7,
-  textAlign: 'right',
-});
-
-const StepItem = styled('li')({
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: 9,
-  fontSize: 14.5,
-  fontWeight: 700,
-  lineHeight: 1.35,
+  margin: '8px 0 0',
+  fontSize: 15,
+  fontWeight: 600,
+  lineHeight: 1.45,
   color: '#2c3a22',
-});
-
-const StepNumber = styled('span')({
-  flex: 'none',
-  width: 22,
-  height: 22,
-  borderRadius: '50%',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: '#ffcf33',
-  color: '#3b2a0a',
-  fontSize: 13,
-  fontWeight: 900,
 });
 
 const SafetyLine = styled('div')({
@@ -677,7 +652,7 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
   const targetTotal = arTargetCount(settings);
   const result = collected === null ? null : arScore(collected, settings);
   const allCollected = collected !== null && collected >= targetTotal;
-  const steps = suitcase ? t.stepsSuitcase : t.stepsCoins;
+  const rules = suitcase ? t.rulesSuitcase : t.rulesCoins;
   const resultTitle = allCollected ? (suitcase ? t.foundTitle : t.allTitle) : t.timeUpTitle;
   const resultLine = suitcase
     ? (allCollected ? t.foundLine : t.notFoundLine)
@@ -712,17 +687,10 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
       </Scene>
       <Bubble>
         <BubbleText>{settings.instructions || t.howToPlay}</BubbleText>
-        <StepList>
-          {steps.map((step, index) => (
-            <StepItem key={step}>
-              <StepNumber>{index + 1}</StepNumber>
-              <span>{step}</span>
-            </StepItem>
-          ))}
-        </StepList>
+        <RulesText>{rules}</RulesText>
         <MetaRow>
           <MetaItem>
-            <CoinDot />
+            {!suitcase && <CoinDot />}
             {suitcase ? t.suitcaseMeta : t.coinsMeta(settings.coinCount)}
           </MetaItem>
           <MetaDivider />
