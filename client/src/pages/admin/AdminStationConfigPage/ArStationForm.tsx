@@ -1,16 +1,22 @@
 import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './ArStationForm.i18n';
-import { Input } from '../../../components/styled';
-import { SectionLabel, SectionLabelNoMargin, SectionDescription, SubLabel, VerticalStack } from '../styled';
+import FileUploadButton from '../../../components/FileUploadButton';
+import { Input, SelectionButton } from '../../../components/styled';
+import { SectionLabel, SectionLabelNoMargin, SectionDescription, SubLabel, VerticalStack, SelectionGroupWrap, SelectionSubtextSmall, InlineRowGap12, UrlInput } from '../styled';
 import {
   AR_ALL_COINS_BONUS,
   AR_AREA_RADIUS_METERS,
   AR_COIN_COUNT,
+  AR_FIND_POINTS,
   AR_POINTS_PER_COIN,
   AR_TIME_LIMIT_SECONDS,
+  arHints,
   arScore,
   arSettingsFrom,
+  hintsSettings,
+  type ArHints,
+  type ArHuntMode,
   type ArStationSettings,
 } from '../../../utils/arStation';
 
@@ -56,71 +62,86 @@ interface ArStationFormProps {
   onChange: (next: ArStationSettings) => void;
 }
 
+interface NumberInputProps {
+  label: string;
+  value: number;
+  range: { min: number; max: number };
+  allowZero?: boolean;
+  onChange: (next: number) => void;
+}
+
+function NumberInput({ label, value, range, allowZero, onChange }: NumberInputProps) {
+  return (
+    <NumberField>
+      <SubLabel>{label}</SubLabel>
+      <Input
+        type="number"
+        min={range.min}
+        max={range.max}
+        value={allowZero ? String(value) : value || ''}
+        onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
+      />
+    </NumberField>
+  );
+}
+
 export default function ArStationForm({ value, onChange }: ArStationFormProps) {
   const t = useTranslations(texts);
   const update = (patch: Partial<ArStationSettings>) => onChange({ ...value, ...patch });
-  const numberFrom = (raw: string) => (raw === '' ? 0 : Number(raw));
   const maxScore = arScore(0, arSettingsFrom(value)).maxPossibleScore;
+  const suitcase = value.mode === 'suitcase';
+
+  const modes: Array<[ArHuntMode, string, string]> = [
+    ['coins', t.modeCoins, t.modeCoinsDesc],
+    ['suitcase', t.modeSuitcase, t.modeSuitcaseDesc],
+  ];
+  const hintChoices: Array<[ArHints, string, string]> = [
+    ['map', t.mapOn, t.mapOnDesc],
+    ['hotCold', t.hotCold, t.hotColdDesc],
+    ['none', t.mapOff, t.mapOffDesc],
+  ];
+  const hints = arHints(value);
 
   return (
     <VerticalStack>
-      <SectionLabelNoMargin>{t.gameSection}</SectionLabelNoMargin>
+      <SectionLabelNoMargin>{t.modeSection}</SectionLabelNoMargin>
+      <SelectionGroupWrap>
+        {modes.map(([mode, label, desc]) => (
+          <SelectionButton key={mode} type="button" selected={value.mode === mode} onClick={() => update({ mode })}>
+            <div>{label}</div>
+            <SelectionSubtextSmall>{desc}</SelectionSubtextSmall>
+          </SelectionButton>
+        ))}
+      </SelectionGroupWrap>
+
+      <SectionLabel>{t.mapSection}</SectionLabel>
+      <SelectionGroupWrap>
+        {hintChoices.map(([choice, label, desc]) => (
+          <SelectionButton key={choice} type="button" selected={hints === choice} onClick={() => update(hintsSettings(choice))}>
+            <div>{label}</div>
+            <SelectionSubtextSmall>{desc}</SelectionSubtextSmall>
+          </SelectionButton>
+        ))}
+      </SelectionGroupWrap>
+
+      <SectionLabel>{t.gameSection}</SectionLabel>
       <SectionDescription>{t.gameHelp}</SectionDescription>
       <NumberGrid>
-        <NumberField>
-          <SubLabel>{t.coinCount}</SubLabel>
-          <Input
-            type="number"
-            min={AR_COIN_COUNT.min}
-            max={AR_COIN_COUNT.max}
-            value={value.coinCount || ''}
-            onChange={(e) => update({ coinCount: numberFrom(e.target.value) })}
-          />
-        </NumberField>
-        <NumberField>
-          <SubLabel>{t.timeLimit}</SubLabel>
-          <Input
-            type="number"
-            min={AR_TIME_LIMIT_SECONDS.min}
-            max={AR_TIME_LIMIT_SECONDS.max}
-            value={value.timeLimitSeconds || ''}
-            onChange={(e) => update({ timeLimitSeconds: numberFrom(e.target.value) })}
-          />
-        </NumberField>
-        <NumberField>
-          <SubLabel>{t.areaRadius}</SubLabel>
-          <Input
-            type="number"
-            min={AR_AREA_RADIUS_METERS.min}
-            max={AR_AREA_RADIUS_METERS.max}
-            value={value.areaRadiusMeters || ''}
-            onChange={(e) => update({ areaRadiusMeters: numberFrom(e.target.value) })}
-          />
-        </NumberField>
+        {!suitcase && <NumberInput label={t.coinCount} value={value.coinCount} range={AR_COIN_COUNT} onChange={(coinCount) => update({ coinCount })} />}
+        <NumberInput label={t.timeLimit} value={value.timeLimitSeconds} range={AR_TIME_LIMIT_SECONDS} onChange={(timeLimitSeconds) => update({ timeLimitSeconds })} />
+        <NumberInput label={t.areaRadius} value={value.areaRadiusMeters} range={AR_AREA_RADIUS_METERS} onChange={(areaRadiusMeters) => update({ areaRadiusMeters })} />
       </NumberGrid>
 
       <SectionLabel>{t.scoreSection}</SectionLabel>
       <NumberGrid>
-        <NumberField>
-          <SubLabel>{t.pointsPerCoin}</SubLabel>
-          <Input
-            type="number"
-            min={AR_POINTS_PER_COIN.min}
-            max={AR_POINTS_PER_COIN.max}
-            value={String(value.pointsPerCoin)}
-            onChange={(e) => update({ pointsPerCoin: numberFrom(e.target.value) })}
-          />
-        </NumberField>
-        <NumberField>
-          <SubLabel>{t.allCoinsBonus}</SubLabel>
-          <Input
-            type="number"
-            min={AR_ALL_COINS_BONUS.min}
-            max={AR_ALL_COINS_BONUS.max}
-            value={String(value.allCoinsBonus)}
-            onChange={(e) => update({ allCoinsBonus: numberFrom(e.target.value) })}
-          />
-        </NumberField>
+        {suitcase ? (
+          <NumberInput label={t.findPoints} value={value.findPoints} range={AR_FIND_POINTS} allowZero onChange={(findPoints) => update({ findPoints })} />
+        ) : (
+          <>
+            <NumberInput label={t.pointsPerCoin} value={value.pointsPerCoin} range={AR_POINTS_PER_COIN} allowZero onChange={(pointsPerCoin) => update({ pointsPerCoin })} />
+            <NumberInput label={t.allCoinsBonus} value={value.allCoinsBonus} range={AR_ALL_COINS_BONUS} allowZero onChange={(allCoinsBonus) => update({ allCoinsBonus })} />
+          </>
+        )}
       </NumberGrid>
       <ScoreSummary>{t.maxScore(maxScore)}</ScoreSummary>
 
@@ -136,6 +157,27 @@ export default function ArStationForm({ value, onChange }: ArStationFormProps) {
         value={value.finishText}
         onChange={(e) => update({ finishText: e.target.value })}
       />
+
+      {suitcase && (
+        <>
+          <SectionLabel>{t.insideSection}</SectionLabel>
+          <SectionDescription>{t.insideHelp}</SectionDescription>
+          <TextArea
+            placeholder={t.insideTextPlaceholder}
+            value={value.insideText}
+            onChange={(e) => update({ insideText: e.target.value })}
+          />
+          <InlineRowGap12>
+            <FileUploadButton accept="image/*" onUploaded={(url) => update({ insideImageUrl: url })} />
+            <UrlInput
+              placeholder={t.insideImagePlaceholder}
+              value={value.insideImageUrl}
+              onChange={(e) => update({ insideImageUrl: e.target.value })}
+            />
+          </InlineRowGap12>
+          <Input placeholder={t.insideCodePlaceholder} value={value.insideCode} onChange={(e) => update({ insideCode: e.target.value })} />
+        </>
+      )}
     </VerticalStack>
   );
 }

@@ -15,36 +15,40 @@ export async function immersiveArSupported(): Promise<boolean> {
   }
 }
 
-export interface CoinChime {
-  play: () => void;
+export interface ArSound {
+  play: (rate?: number) => void;
   close: () => void;
 }
 
-export function createCoinChime(): CoinChime {
-  const AudioContextClass = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!AudioContextClass) return { play: () => undefined, close: () => undefined };
-  const context = new AudioContextClass();
-  const note = (frequency: number, start: number, length: number) => {
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = 'square';
-    oscillator.frequency.value = frequency;
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(0.12, start + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + length);
-    oscillator.connect(gain).connect(context.destination);
-    oscillator.start(start);
-    oscillator.stop(start + length + 0.02);
-  };
+export function createArSound(src: string): ArSound {
+  const audio = new Audio(src);
+  audio.preload = 'auto';
+  audio.muted = true;
+  let played = false;
+  audio.play().then(
+    () => {
+      if (played) return;
+      audio.pause();
+      audio.currentTime = 0;
+      audio.muted = false;
+    },
+    () => {
+      audio.muted = false;
+    },
+  );
   return {
-    play() {
-      if (context.state === 'suspended') context.resume().catch(() => undefined);
-      const now = context.currentTime;
-      note(988, now, 0.09);
-      note(1319, now + 0.08, 0.38);
+    play(rate = 1) {
+      played = true;
+      audio.muted = false;
+      audio.preservesPitch = false;
+      audio.playbackRate = rate;
+      audio.currentTime = 0;
+      audio.play().catch(() => undefined);
     },
     close() {
-      context.close().catch(() => undefined);
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
     },
   };
 }

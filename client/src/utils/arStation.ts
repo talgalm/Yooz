@@ -1,12 +1,22 @@
+export type ArHuntMode = 'coins' | 'suitcase';
+export type ArHints = 'map' | 'hotCold' | 'none';
+
 export interface ArStationSettings {
   title: string;
   instructions: string;
+  mode: ArHuntMode;
+  showMap: boolean;
+  hotCold: boolean;
   coinCount: number;
   timeLimitSeconds: number;
   areaRadiusMeters: number;
   pointsPerCoin: number;
   allCoinsBonus: number;
+  findPoints: number;
   finishText: string;
+  insideText: string;
+  insideImageUrl: string;
+  insideCode: string;
 }
 
 interface NumberRange {
@@ -20,6 +30,7 @@ export const AR_TIME_LIMIT_SECONDS: NumberRange = { min: 15, max: 300, fallback:
 export const AR_AREA_RADIUS_METERS: NumberRange = { min: 2, max: 20, fallback: 5 };
 export const AR_POINTS_PER_COIN: NumberRange = { min: 0, max: 1000, fallback: 10 };
 export const AR_ALL_COINS_BONUS: NumberRange = { min: 0, max: 1000, fallback: 20 };
+export const AR_FIND_POINTS: NumberRange = { min: 0, max: 1000, fallback: 50 };
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value : '';
@@ -36,12 +47,19 @@ export function emptyArSettings(): ArStationSettings {
   return {
     title: '',
     instructions: '',
+    mode: 'coins',
+    showMap: true,
+    hotCold: true,
     coinCount: AR_COIN_COUNT.fallback,
     timeLimitSeconds: AR_TIME_LIMIT_SECONDS.fallback,
     areaRadiusMeters: AR_AREA_RADIUS_METERS.fallback,
     pointsPerCoin: AR_POINTS_PER_COIN.fallback,
     allCoinsBonus: AR_ALL_COINS_BONUS.fallback,
+    findPoints: AR_FIND_POINTS.fallback,
     finishText: '',
+    insideText: '',
+    insideImageUrl: '',
+    insideCode: '',
   };
 }
 
@@ -50,12 +68,19 @@ export function arSettingsFrom(raw: unknown): ArStationSettings {
   return {
     title: asText(source.title),
     instructions: asText(source.instructions),
+    mode: source.mode === 'suitcase' ? 'suitcase' : 'coins',
+    showMap: source.showMap !== false,
+    hotCold: source.hotCold !== false,
     coinCount: clampToRange(source.coinCount, AR_COIN_COUNT),
     timeLimitSeconds: clampToRange(source.timeLimitSeconds, AR_TIME_LIMIT_SECONDS),
     areaRadiusMeters: clampToRange(source.areaRadiusMeters, AR_AREA_RADIUS_METERS),
     pointsPerCoin: clampToRange(source.pointsPerCoin, AR_POINTS_PER_COIN),
     allCoinsBonus: clampToRange(source.allCoinsBonus, AR_ALL_COINS_BONUS),
+    findPoints: clampToRange(source.findPoints, AR_FIND_POINTS),
     finishText: asText(source.finishText),
+    insideText: asText(source.insideText),
+    insideImageUrl: asText(source.insideImageUrl),
+    insideCode: asText(source.insideCode),
   };
 }
 
@@ -66,7 +91,27 @@ export function arSettingsToSave(settings: ArStationSettings): ArStationSettings
     title: parsed.title.trim(),
     instructions: parsed.instructions.trim(),
     finishText: parsed.finishText.trim(),
+    insideText: parsed.insideText.trim(),
+    insideImageUrl: parsed.insideImageUrl.trim(),
+    insideCode: parsed.insideCode.trim(),
   };
+}
+
+export function arHints(settings: Pick<ArStationSettings, 'showMap' | 'hotCold'>): ArHints {
+  if (settings.showMap) return 'map';
+  return settings.hotCold ? 'hotCold' : 'none';
+}
+
+export function hintsSettings(hints: ArHints): Pick<ArStationSettings, 'showMap' | 'hotCold'> {
+  return { showMap: hints === 'map', hotCold: hints !== 'none' };
+}
+
+export function hasSuitcaseInside(settings: Pick<ArStationSettings, 'mode' | 'insideText' | 'insideImageUrl' | 'insideCode'>): boolean {
+  return settings.mode === 'suitcase' && Boolean(settings.insideText.trim() || settings.insideImageUrl.trim() || settings.insideCode.trim());
+}
+
+export function arTargetCount(settings: Pick<ArStationSettings, 'mode' | 'coinCount'>): number {
+  return settings.mode === 'suitcase' ? 1 : settings.coinCount;
 }
 
 export interface ArScore {
@@ -75,7 +120,13 @@ export interface ArScore {
   bonus: number;
 }
 
-export function arScore(collected: number, settings: Pick<ArStationSettings, 'coinCount' | 'pointsPerCoin' | 'allCoinsBonus'>): ArScore {
+export function arScore(
+  collected: number,
+  settings: Pick<ArStationSettings, 'mode' | 'coinCount' | 'pointsPerCoin' | 'allCoinsBonus' | 'findPoints'>,
+): ArScore {
+  if (settings.mode === 'suitcase') {
+    return { score: collected > 0 ? settings.findPoints : 0, maxPossibleScore: settings.findPoints, bonus: 0 };
+  }
   const got = Math.max(0, Math.min(settings.coinCount, collected));
   const bonus = got === settings.coinCount ? settings.allCoinsBonus : 0;
   return {
