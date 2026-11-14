@@ -844,8 +844,8 @@ Rendered in `pages/StoryModulePage/PlayingPhase.tsx` (story) / `StationStage` / 
   that same 3D coin (`/images/ar-coin-3d.webp` face-on, `-tilt`, `-turned`, and `ar-coin-spin.webp`,
   a 16-frame spin sprite), rendered once from `arCoins3d` in headless Chromium. The intro has no
   card: that coin art (or `ar-suitcase.svg`) floats over the activity
-  background, above a white speech bubble: the admin's `instructions` or "איך משחקים?", four numbered
-  steps per type, "N מטבעות / מזוודה אחת · N שניות" (plus "חם-קר" or "בלי מפה") and a safety line.
+  background, above a white speech bubble: the admin's `instructions` or "איך משחקים?", one line of
+  rules per type, "N מטבעות / מזוודה אחת · N שניות" (plus "חם-קר" or "בלי מפה") and a safety line.
   Collecting plays a sound (`/sounds/ar-coin.wav`, or `ar-suitcase.wav`: clasp clicks and a rising
   flourish; both synthesized for this station), vibrates, bursts sparkles and pops "+N" where the
   target was. A collected coin leaves the 3D scene at once and the coin flies from the tap spot
