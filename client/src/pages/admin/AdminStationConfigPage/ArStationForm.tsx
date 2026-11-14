@@ -1,8 +1,9 @@
 import { styled } from '@mui/material/styles';
 import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './ArStationForm.i18n';
+import FileUploadButton from '../../../components/FileUploadButton';
 import { Input, SelectionButton } from '../../../components/styled';
-import { SectionLabel, SectionLabelNoMargin, SectionDescription, SubLabel, VerticalStack, SelectionGroupWrap, SelectionSubtextSmall } from '../styled';
+import { SectionLabel, SectionLabelNoMargin, SectionDescription, SubLabel, VerticalStack, SelectionGroupWrap, SelectionSubtextSmall, InlineRowGap12, UrlInput } from '../styled';
 import {
   AR_ALL_COINS_BONUS,
   AR_AREA_RADIUS_METERS,
@@ -10,8 +11,11 @@ import {
   AR_FIND_POINTS,
   AR_POINTS_PER_COIN,
   AR_TIME_LIMIT_SECONDS,
+  arHints,
   arScore,
   arSettingsFrom,
+  hintsSettings,
+  type ArHints,
   type ArHuntMode,
   type ArStationSettings,
 } from '../../../utils/arStation';
@@ -91,10 +95,12 @@ export default function ArStationForm({ value, onChange }: ArStationFormProps) {
     ['coins', t.modeCoins, t.modeCoinsDesc],
     ['suitcase', t.modeSuitcase, t.modeSuitcaseDesc],
   ];
-  const maps: Array<[boolean, string, string]> = [
-    [true, t.mapOn, t.mapOnDesc],
-    [false, t.mapOff, t.mapOffDesc],
+  const hintChoices: Array<[ArHints, string, string]> = [
+    ['map', t.mapOn, t.mapOnDesc],
+    ['hotCold', t.hotCold, t.hotColdDesc],
+    ['none', t.mapOff, t.mapOffDesc],
   ];
+  const hints = arHints(value);
 
   return (
     <VerticalStack>
@@ -110,8 +116,8 @@ export default function ArStationForm({ value, onChange }: ArStationFormProps) {
 
       <SectionLabel>{t.mapSection}</SectionLabel>
       <SelectionGroupWrap>
-        {maps.map(([showMap, label, desc]) => (
-          <SelectionButton key={label} type="button" selected={value.showMap === showMap} onClick={() => update({ showMap })}>
+        {hintChoices.map(([choice, label, desc]) => (
+          <SelectionButton key={choice} type="button" selected={hints === choice} onClick={() => update(hintsSettings(choice))}>
             <div>{label}</div>
             <SelectionSubtextSmall>{desc}</SelectionSubtextSmall>
           </SelectionButton>
@@ -151,6 +157,27 @@ export default function ArStationForm({ value, onChange }: ArStationFormProps) {
         value={value.finishText}
         onChange={(e) => update({ finishText: e.target.value })}
       />
+
+      {suitcase && (
+        <>
+          <SectionLabel>{t.insideSection}</SectionLabel>
+          <SectionDescription>{t.insideHelp}</SectionDescription>
+          <TextArea
+            placeholder={t.insideTextPlaceholder}
+            value={value.insideText}
+            onChange={(e) => update({ insideText: e.target.value })}
+          />
+          <InlineRowGap12>
+            <FileUploadButton accept="image/*" onUploaded={(url) => update({ insideImageUrl: url })} />
+            <UrlInput
+              placeholder={t.insideImagePlaceholder}
+              value={value.insideImageUrl}
+              onChange={(e) => update({ insideImageUrl: e.target.value })}
+            />
+          </InlineRowGap12>
+          <Input placeholder={t.insideCodePlaceholder} value={value.insideCode} onChange={(e) => update({ insideCode: e.target.value })} />
+        </>
+      )}
     </VerticalStack>
   );
 }

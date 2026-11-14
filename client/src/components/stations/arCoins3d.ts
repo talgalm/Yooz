@@ -73,7 +73,7 @@ export interface ScreenSpot {
 export interface CoinScene {
   renderer: WebGLRenderer;
   camera: PerspectiveCamera;
-  update: (game: ArGameState | null, time: number, dt: number, floorY: number, reachable: ReadonlySet<number>) => number;
+  update: (game: ArGameState | null, time: number, dt: number, floorY: number, reachable: ReadonlySet<number>) => void;
   render: () => void;
   focalPixels: (height: number) => number;
   screenOf: (id: number, width: number, height: number) => ScreenSpot | null;
@@ -254,6 +254,7 @@ export function createCoinScene(canvas: HTMLCanvasElement, mode: ArHuntMode = 'c
   const built = suitcase ? buildSuitcase(gold) : buildCoin(gold);
   const template = built.model;
   const targetRadius = suitcase ? SUITCASE_PICK_RADIUS_M : COIN_RADIUS_M;
+  const vanishAfter = suitcase ? COLLECT_ANIM_S : 0;
   const camera = new PerspectiveCamera(60, 1, 0.05, 100);
   const shadowTexture = gradientTexture([[0, `rgba(0, 0, 0, ${suitcase ? 0.45 : 0.32})`], [0.4, 'rgba(0, 0, 0, 0.16)'], [1, 'rgba(0, 0, 0, 0)']]);
   const haloTexture = gradientTexture([[0, 'rgba(255, 214, 90, 0.55)'], [0.45, 'rgba(255, 190, 40, 0.18)'], [1, 'rgba(255, 180, 0, 0)']]);
@@ -342,7 +343,6 @@ export function createCoinScene(canvas: HTMLCanvasElement, mode: ArHuntMode = 'c
     renderer,
     camera,
     update(game, time, dt, floorY, reachable) {
-      let newlyCollected = 0;
       if (game) {
         while (entities.length < game.coins.length) addEntity();
         game.coins.forEach((coin, i) => {
@@ -350,11 +350,10 @@ export function createCoinScene(canvas: HTMLCanvasElement, mode: ArHuntMode = 'c
           const rest = suitcase ? floorY + SUITCASE_H / 2 + 0.01 : floorY + COIN_HEIGHT_M + Math.sin(time * 2 + coin.phase) * BOB_M;
           if (coin.collectedAt !== null && entity.collectedAt === null) {
             entity.collectedAt = time;
-            newlyCollected += 1;
             addBurst(new Vector3(coin.x, rest, coin.z), time);
           }
           const age = entity.collectedAt === null ? -1 : time - entity.collectedAt;
-          const gone = age >= COLLECT_ANIM_S;
+          const gone = age >= vanishAfter;
           entity.root.visible = !gone;
           entity.shadow.visible = !gone;
           if (gone) return;
@@ -378,7 +377,6 @@ export function createCoinScene(canvas: HTMLCanvasElement, mode: ArHuntMode = 'c
         });
       }
       updateBursts(time, dt);
-      return newlyCollected;
     },
     render() {
       renderer.render(scene, camera);

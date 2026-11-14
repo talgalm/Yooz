@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { styled, keyframes } from '@mui/material/styles';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './ArStation.i18n';
-import { COIN_HEIGHT_M, createCoinScene } from './arCoins3d';
+import { COIN_HEIGHT_M, createCoinScene, type ScreenSpot } from './arCoins3d';
 import {
   EYE_HEIGHT_M,
   cameraFromQuat,
@@ -26,18 +26,21 @@ import {
   collectedCount,
   createArGame,
   createSuitcaseHunt,
+  heatOf,
   inReach,
   isArGameOver,
   nearestCoin,
+  pingIntervalSeconds,
   seededRandom,
   stepArGame,
   tryCollect,
   type ArGameState,
   type FloorPoint,
+  type HeatLevel,
 } from '../../utils/arGame';
 import { STRIDE_M, createStepDetector } from '../../utils/arSteps';
-import type { CollectSound } from '../../utils/arSensors';
-import type { ArStationSettings } from '../../utils/arStation';
+import type { ArSound } from '../../utils/arSensors';
+import { arHints, type ArStationSettings } from '../../utils/arStation';
 
 const FALLBACK_PITCH_DEG = -8;
 const ORIENTATION_EASE = 0.35;
@@ -59,6 +62,30 @@ const POPUP_HEIGHT_RATIO = 0.42;
 const BUBBLE_GAP_PX = 6;
 const BUBBLE_TOP_SAFE_PX = 190;
 const BUBBLE_EDGE_PX = 76;
+const FLY_MS = 620;
+const FLY_MIN_PX = 36;
+const FLY_MAX_PX = 72;
+const LAND_BUMP_MS = 280;
+const FLY_SPIN_SRC = '/images/ar-coin-spin.webp';
+const FLY_SPIN_FRAMES = 16;
+const FLY_SPIN_MS = 480;
+const COIN_FACE_SRC = '/images/ar-coin-3d.webp';
+const PING_LOW_RATE = 0.85;
+const PING_HIGH_RATE = 1.35;
+const PING_HOLD_S = 1.2;
+const PING_VIBRATE_MS = 12;
+const GLOW_PULSE_MS = 420;
+const HEAT_GLOW: Record<HeatLevel, { rgb: string; strength: number }> = {
+  cold: { rgb: '47, 123, 255', strength: 0.6 },
+  warm: { rgb: '242, 165, 22', strength: 0.7 },
+  hot: { rgb: '255, 106, 26', strength: 0.8 },
+  burning: { rgb: '232, 32, 42', strength: 0.85 },
+};
+
+function glowShadow(level: HeatLevel): string {
+  const { rgb } = HEAT_GLOW[level];
+  return `inset 0 0 64px 18px rgba(${rgb}, 0.62), inset 0 0 16px 3px rgba(${rgb}, 0.7)`;
+}
 const DEG = Math.PI / 180;
 const WALK_KEYS: Record<string, { walk: number; turn: number }> = {
   ArrowUp: { walk: 1, turn: 0 },
@@ -79,6 +106,52 @@ type Coach = 'search' | 'walk' | 'tap';
 function screenAngle(): number {
   const legacy = (window as Window & { orientation?: number }).orientation;
   return window.screen?.orientation?.angle ?? legacy ?? 0;
+}
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
+function bump(element: HTMLElement | null, scale: number, durationMs: number) {
+  element?.animate([{ transform: 'scale(1)' }, { transform: `scale(${scale})` }, { transform: 'scale(1)' }], { duration: durationMs, easing: 'cubic-bezier(0.3, 0.7, 0.4, 1)' });
+}
+
+function flyCoin(stage: HTMLElement, from: ScreenSpot, target: HTMLElement, onLand: () => void) {
+  const size = Math.min(FLY_MAX_PX, Math.max(FLY_MIN_PX, from.radius * 2));
+  const box = stage.getBoundingClientRect();
+  const goal = target.getBoundingClientRect();
+  const dx = goal.left - box.left + goal.width / 2 - from.x;
+  const dy = goal.top - box.top + goal.height / 2 - from.y;
+  const across = document.createElement('div');
+  const up = document.createElement('div');
+  const coin = document.createElement('div');
+  Object.assign(across.style, { position: 'absolute', left: `${from.x - size / 2}px`, top: `${from.y - size / 2}px`, width: `${size}px`, height: `${size}px`, pointerEvents: 'none' });
+  Object.assign(up.style, { width: '100%', height: '100%' });
+  Object.assign(coin.style, { width: '100%', height: '100%', backgroundImage: `url(${FLY_SPIN_SRC})`, backgroundSize: `${FLY_SPIN_FRAMES * 100}% 100%`, backgroundRepeat: 'no-repeat' });
+  up.append(coin);
+  across.append(up);
+  stage.append(across);
+  const timing = { duration: FLY_MS, fill: 'forwards' as const };
+  across.animate([{ transform: 'translateX(0)' }, { transform: `translateX(${dx}px)` }], { ...timing, easing: 'cubic-bezier(0.55, 0, 0.75, 0.45)' });
+  up.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${dy}px)` }], { ...timing, easing: 'cubic-bezier(0.2, 0.65, 0.35, 1)' });
+  coin.animate([{ backgroundPosition: '0% 0%' }, { backgroundPosition: '100% 0%' }], { duration: FLY_SPIN_MS, iterations: Infinity, easing: `steps(${FLY_SPIN_FRAMES}, jump-none)` });
+  const shrink = coin.animate(
+    [
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.2)', offset: 0.2 },
+      { transform: `scale(${goal.width / size})` },
+    ],
+    { ...timing, easing: 'ease-in' },
+  );
+  shrink.onfinish = () => {
+    across.remove();
+    onLand();
+  };
+}
+
+function pulseGlow(glow: HTMLElement | null, level: HeatLevel) {
+  const base = HEAT_GLOW[level].strength;
+  glow?.animate([{ opacity: base }, { opacity: Math.min(1, base + 0.15) }, { opacity: base }], { duration: GLOW_PULSE_MS, easing: 'ease-out' });
 }
 
 function formatClock(seconds: number): string {
@@ -193,12 +266,9 @@ const ClockFace = styled('span')({
 });
 
 const CoinIcon = styled('span')({
-  width: 20,
-  height: 20,
-  borderRadius: '50%',
-  background: 'radial-gradient(circle at 35% 30%, #fff3b0 0%, #ffcf33 50%, #e09a00 100%)',
-  border: '2px solid #9a6200',
-  boxSizing: 'border-box',
+  width: 26,
+  height: 26,
+  background: `url(${COIN_FACE_SRC}) center / contain no-repeat`,
 });
 
 const ExitButton = styled('button')({
@@ -370,6 +440,13 @@ const RadarCanvas = styled('canvas')({
   boxShadow: '0 6px 18px rgba(0, 0, 0, 0.3)',
 });
 
+const HeatGlow = styled('div')({
+  position: 'absolute',
+  inset: 0,
+  pointerEvents: 'none',
+  transition: 'box-shadow 0.5s ease, opacity 0.5s ease',
+});
+
 const PointsPopup = styled('div')({
   position: 'absolute',
   fontSize: 52,
@@ -442,12 +519,13 @@ interface ArPlayfieldProps {
   seed: number;
   session: XRSession | null;
   overlayRoot: HTMLElement;
-  sound: CollectSound | null;
+  sound: ArSound | null;
+  ping: ArSound | null;
   onFinish: (collected: number) => void;
   onExit: () => void;
 }
 
-export default function ArPlayfield({ settings, seed, session, overlayRoot, sound, onFinish, onExit }: ArPlayfieldProps) {
+export default function ArPlayfield({ settings, seed, session, overlayRoot, sound, ping, onFinish, onExit }: ArPlayfieldProps) {
   const t = useTranslations(texts);
   const immersive = session !== null;
   const stageRef = useRef<HTMLDivElement>(null);
@@ -457,12 +535,15 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
   const arrowRef = useRef<HTMLDivElement>(null);
   const nearestRef = useRef<HTMLDivElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
+  const counterRef = useRef<HTMLDivElement>(null);
+  const coinIconRef = useRef<HTMLSpanElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
   const readingRef = useRef<OrientationReading | null>(null);
   const keysRef = useRef<Set<string>>(new Set());
   const stepsRef = useRef<FloorPoint>({ x: 0, z: 0 });
   const headingRef = useRef<FloorPoint>({ x: 0, z: -1 });
   const phaseRef = useRef<PlayPhase>('waiting');
-  const callbacksRef = useRef({ onFinish, onExit, sound, t });
+  const callbacksRef = useRef({ onFinish, onExit, sound, ping, t });
   const [secondsLeft, setSecondsLeft] = useState(settings.timeLimitSeconds);
   const [collected, setCollected] = useState(0);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -472,10 +553,12 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
   const [cameraFailed, setCameraFailed] = useState(false);
   const [over, setOver] = useState(false);
   const [popups, setPopups] = useState<Popup[]>([]);
+  const [inFlight, setInFlight] = useState(0);
+  const [heat, setHeat] = useState<HeatLevel | null>(null);
 
   useEffect(() => {
-    callbacksRef.current = { onFinish, onExit, sound, t };
-  }, [onFinish, onExit, sound, t]);
+    callbacksRef.current = { onFinish, onExit, sound, ping, t };
+  }, [onFinish, onExit, sound, ping, t]);
 
   useEffect(() => {
     if (immersive) return;
@@ -569,10 +652,13 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
     const stage = stageRef.current;
     if (!canvas || !stage) return;
     const coins = createCoinScene(canvas, settings.mode);
+    new Image().src = FLY_SPIN_SRC;
     const { renderer, camera: threeCamera } = coins;
     const random = seededRandom(seed);
     const reach = immersive ? REACH_TRACKED_M : REACH_STEPS_M;
     const pointsPerTarget = settings.mode === 'suitcase' ? settings.findPoints : settings.pointsPerCoin;
+    const hotCold = arHints(settings) === 'hotCold';
+    const calm = prefersReducedMotion();
     let game: ArGameState | null = null;
     let view: Quat = quatFromYawPitch(0, FALLBACK_PITCH_DEG);
     let yawFix: Quat | null = null;
@@ -590,6 +676,10 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
     let hitSource: XRHitTestSource | null = null;
     let popupKey = 0;
     let bubbleTargetId: number | null = null;
+    let shownHeat: HeatLevel | null = null;
+    let nextPingAt = 0;
+    let holdPings = false;
+    let disposed = false;
 
     if (session) {
       renderer.xr.enabled = true;
@@ -615,11 +705,32 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
       const onBubble = event.target instanceof Node && Boolean(bubbleRef.current?.contains(event.target));
       const id = onBubble ? bubbleTargetId : coins.pick(event.clientX - box.left, event.clientY - box.top, stage.clientWidth, stage.clientHeight);
       if (id === null) return;
+      const spot = coins.screenOf(id, stage.clientWidth, stage.clientHeight);
       const result = tryCollect(game, id, player, reach);
       if (result.collected) {
         game = result.state;
+        holdPings = true;
         callbacksRef.current.sound?.play();
         navigator.vibrate?.(30);
+        shownCollected = collectedCount(game);
+        setCollected(shownCollected);
+        if (pointsPerTarget > 0) {
+          const key = ++popupKey;
+          const at = spot ?? { x: stage.clientWidth / 2, y: stage.clientHeight * POPUP_HEIGHT_RATIO, radius: 0 };
+          setPopups((list) => [...list, { key, x: at.x, y: at.y - at.radius, text: `+${pointsPerTarget}` }]);
+          window.setTimeout(() => setPopups((list) => list.filter((popup) => popup.key !== key)), POPUP_MS);
+        }
+        const icon = coinIconRef.current;
+        if (settings.mode === 'coins' && spot && icon && !calm) {
+          setInFlight((count) => count + 1);
+          flyCoin(stage, spot, icon, () => {
+            if (disposed) return;
+            setInFlight((count) => Math.max(0, count - 1));
+            bump(counterRef.current, 1.22, LAND_BUMP_MS);
+          });
+        } else {
+          bump(counterRef.current, 1.22, LAND_BUMP_MS);
+        }
         return;
       }
       setToast(callbacksRef.current.t.tooFar(Math.max(0.1, result.meters - reach).toFixed(1)));
@@ -726,15 +837,27 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
       const playing = phaseRef.current === 'playing';
       const current = game;
       const reachable = new Set(playing ? current.coins.filter((coin) => inReach(coin, player, reach)).map((coin) => coin.id) : []);
-      const newlyCollected = coins.update(current, time, dt, floorY, reachable);
-      for (let i = 0; i < newlyCollected; i++) {
-        if (pointsPerTarget <= 0) continue;
-        const key = ++popupKey;
-        setPopups((list) => [...list, { key, x: width / 2, y: height * POPUP_HEIGHT_RATIO, text: `+${pointsPerTarget}` }]);
-        window.setTimeout(() => setPopups((list) => list.filter((popup) => popup.key !== key)), POPUP_MS);
-      }
+      coins.update(current, time, dt, floorY, reachable);
 
       const nearest = phaseRef.current === 'over' ? null : nearestCoin(game, player);
+      if (hotCold) {
+        const warmth = playing && nearest ? heatOf(nearest.meters, reach, settings.areaRadiusMeters) : null;
+        const level = warmth?.level ?? null;
+        if (level !== shownHeat) {
+          shownHeat = level;
+          setHeat(level);
+        }
+        if (holdPings) {
+          holdPings = false;
+          nextPingAt = time + PING_HOLD_S;
+        }
+        if (warmth && time >= nextPingAt) {
+          nextPingAt = time + pingIntervalSeconds(warmth.closeness);
+          callbacksRef.current.ping?.play(PING_LOW_RATE + (PING_HIGH_RATE - PING_LOW_RATE) * warmth.closeness);
+          navigator.vibrate?.(PING_VIBRATE_MS);
+          if (!calm) pulseGlow(glowRef.current, warmth.level);
+        }
+      }
       const bubble = bubbleRef.current;
       const onScreen = (point: { x: number; y: number } | null) => Boolean(point && point.x > 0 && point.x < width && point.y > 0 && point.y < height);
       let spot: ReturnType<typeof coins.screenOf> = null;
@@ -787,6 +910,7 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
 
     renderer.setAnimationLoop(frame);
     return () => {
+      disposed = true;
       window.clearTimeout(finishTimer);
       session?.removeEventListener('end', onSessionEnd);
       stage.removeEventListener('pointerdown', onTap);
@@ -796,8 +920,12 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
   }, [settings, seed, session, immersive]);
 
   const suitcase = settings.mode === 'suitcase';
+  const hints = arHints(settings);
+  const searchCoach = hints === 'hotCold'
+    ? (suitcase ? t.coachHotColdSuitcase : t.coachHotColdCoins)
+    : (suitcase ? t.coachSearchSuitcase : t.coachSearchCoins);
   const coachText = coach === null ? '' : {
-    search: suitcase ? t.coachSearchSuitcase : t.coachSearchCoins,
+    search: searchCoach,
     walk: suitcase ? t.coachWalkSuitcase : t.coachWalkCoins,
     tap: suitcase ? t.coachTapSuitcase : t.coachTapCoins,
   }[coach];
@@ -807,6 +935,9 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
     <Stage ref={stageRef} immersive={immersive}>
       {!immersive && <CameraVideo ref={videoRef} playsInline muted autoPlay />}
       <SceneCanvas ref={canvasRef} />
+      {!over && hints === 'hotCold' && (
+        <HeatGlow ref={glowRef} style={{ boxShadow: heat ? glowShadow(heat) : 'none', opacity: heat ? HEAT_GLOW[heat].strength : 0 }} />
+      )}
       {settings.showMap && <EdgeArrow ref={arrowRef} />}
       <TapBubble ref={bubbleRef}>
         <TapBubbleBody>{t.tapLabel}</TapBubbleBody>
@@ -818,9 +949,9 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
         <ExitButton type="button" aria-label={t.exit} onClick={onExit}>✕</ExitButton>
         <Spacer />
         {!suitcase && (
-          <Pill aria-live="polite">
-            <CoinIcon />
-            {collected}/{settings.coinCount}
+          <Pill ref={counterRef} aria-live="polite">
+            <CoinIcon ref={coinIconRef} />
+            {collected - inFlight}/{settings.coinCount}
           </Pill>
         )}
         <TimerPill low={secondsLeft <= LOW_TIME_SECONDS && !over}>
@@ -834,7 +965,7 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
           <CountdownBubble key={countdown}>{countdown > 0 ? countdown : t.go}</CountdownBubble>
         </CountdownWrap>
       )}
-      {!over && settings.showMap && (
+      {!over && hints === 'map' && (
         <BottomDock>
           <NearestTag ref={nearestRef} />
           <RadarCanvas ref={radarRef} aria-label={t.radar} />

@@ -8,8 +8,8 @@ import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './ArStation.i18n';
 import { themedTitleInk } from '../../utils/themeInk';
 import { participantSessionId } from '../../utils/participantActivity';
-import { arScore, arSettingsFrom, arTargetCount, type ArHuntMode } from '../../utils/arStation';
-import { createCollectSound, immersiveArSupported, requestMotionAccess, startImmersiveAr, type CollectSound } from '../../utils/arSensors';
+import { arHints, arScore, arSettingsFrom, arTargetCount, hasSuitcaseInside, type ArHuntMode } from '../../utils/arStation';
+import { createArSound, immersiveArSupported, requestMotionAccess, startImmersiveAr, type ArSound } from '../../utils/arSensors';
 import ConfettiOverlay from './ConfettiOverlay';
 
 const loadPlayfield = () => import('./ArPlayfield');
@@ -19,6 +19,8 @@ const COLLECT_SOUND: Record<ArHuntMode, string> = {
   coins: '/sounds/ar-coin.wav',
   suitcase: '/sounds/ar-suitcase.wav',
 };
+const PING_SOUND = '/sounds/ar-ping.wav';
+const CODE_TILES_PATTERN = /^[0-9A-Za-z]{1,8}$/;
 
 const Wrap = styled('div')({
   flex: 1,
@@ -269,10 +271,9 @@ const MetaDivider = styled('span')({
 });
 
 const CoinDot = styled('span')({
-  width: 13,
-  height: 13,
-  borderRadius: '50%',
-  background: 'radial-gradient(circle at 35% 30%, #ffe68a 0%, #ffbe1a 60%, #d98a00 100%)',
+  width: 17,
+  height: 17,
+  background: 'url(/images/ar-coin-3d.webp) center / contain no-repeat',
 });
 
 const ClockFace = styled('span')({
@@ -421,8 +422,138 @@ const ResultFinishText = styled('p')({
   whiteSpace: 'pre-line',
 });
 
+const revealUp = keyframes`
+  0% { transform: translateY(18px) scale(0.92); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+`;
+
+const InsideCard = styled('div')({
+  position: 'relative',
+  width: '100%',
+  maxWidth: 330,
+  minHeight: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  boxSizing: 'border-box',
+  background: '#fffaf0',
+  border: '3px solid #ffcf33',
+  borderRadius: 22,
+  boxShadow: '0 12px 30px rgba(0, 0, 0, 0.3)',
+  textAlign: 'center',
+  flexShrink: 1,
+  animation: `${revealUp} 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) 0.25s both`,
+  ...calmMotion,
+  [DESKTOP_BREAKPOINT]: {
+    maxWidth: 440,
+  },
+});
+
+const InsideTab = styled('div')({
+  position: 'absolute',
+  top: -16,
+  left: '50%',
+  transform: 'translateX(-50%)',
+  padding: '5px 16px',
+  borderRadius: 999,
+  background: '#ffcf33',
+  color: '#3b2a0a',
+  fontSize: 14,
+  fontWeight: 900,
+  whiteSpace: 'nowrap',
+  boxShadow: '0 3px 0 #d98a00',
+});
+
+const InsideBody = styled('div')({
+  minHeight: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  padding: '24px 16px 14px',
+  overflowY: 'auto',
+});
+
+const InsideImage = styled('img')({
+  display: 'block',
+  flex: '0 1 auto',
+  width: '100%',
+  minHeight: 64,
+  maxHeight: 170,
+  objectFit: 'contain',
+  borderRadius: 12,
+  marginBottom: 10,
+});
+
+const InsideScore = styled('div')({
+  flex: 'none',
+  marginTop: 12,
+  paddingTop: 10,
+  borderTop: '1px dashed #e7dcc0',
+  fontSize: 24,
+  fontWeight: 900,
+  color: '#e09a00',
+});
+
+const InsideText = styled('p')({
+  margin: 0,
+  fontSize: 17,
+  fontWeight: 800,
+  lineHeight: 1.45,
+  color: '#23301b',
+  whiteSpace: 'pre-line',
+});
+
+const CodeBlock = styled('div')({
+  marginTop: 12,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 6,
+});
+
+const CodeLabel = styled('div')({
+  fontSize: 13,
+  fontWeight: 700,
+  color: '#8a7a55',
+});
+
+const CodeTiles = styled('div')({
+  display: 'flex',
+  flexWrap: 'wrap',
+  justifyContent: 'center',
+  gap: 6,
+  direction: 'ltr',
+});
+
+const CodeTile = styled('span')({
+  minWidth: 32,
+  height: 40,
+  padding: '0 6px',
+  borderRadius: 9,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxSizing: 'border-box',
+  background: '#1d0838',
+  color: '#ffd54f',
+  fontSize: 24,
+  fontWeight: 900,
+  boxShadow: 'inset 0 -3px 0 rgba(255, 255, 255, 0.12)',
+});
+
+const CodeText = styled('span')({
+  maxWidth: '100%',
+  padding: '8px 16px',
+  borderRadius: 12,
+  background: '#1d0838',
+  color: '#ffd54f',
+  fontSize: 22,
+  fontWeight: 900,
+  overflowWrap: 'anywhere',
+  unicodeBidi: 'plaintext',
+});
+
 const ResultActions = styled('div')({
   position: 'fixed',
+  zIndex: 1401,
   bottom: 24,
   left: '50%',
   transform: 'translateX(-50%)',
@@ -477,7 +608,8 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
   const [xrSupported, setXrSupported] = useState(false);
   const [session, setSession] = useState<XRSession | null>(null);
   const [overlay, setOverlay] = useState<HTMLElement | null>(null);
-  const [sound, setSound] = useState<CollectSound | null>(null);
+  const [sound, setSound] = useState<ArSound | null>(null);
+  const [ping, setPing] = useState<ArSound | null>(null);
   const startedAtRef = useRef(0);
 
   useEffect(() => {
@@ -493,12 +625,14 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
 
   useEffect(() => () => overlay?.remove(), [overlay]);
   useEffect(() => () => sound?.close(), [sound]);
+  useEffect(() => () => ping?.close(), [ping]);
 
   const start = () => {
     requestMotionAccess();
     const root = overlay ?? document.body.appendChild(document.createElement('div'));
     setOverlay(root);
-    if (!sound) setSound(createCollectSound(COLLECT_SOUND[settings.mode]));
+    if (!sound) setSound(createArSound(COLLECT_SOUND[settings.mode]));
+    if (!ping && arHints(settings) === 'hotCold') setPing(createArSound(PING_SOUND));
     startedAtRef.current = Date.now();
     setSeed(Math.floor(Math.random() * 2 ** 31));
     setPlayedNow(true);
@@ -535,7 +669,7 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
       maxPossibleScore,
       durationMs: startedAtRef.current ? Date.now() - startedAtRef.current : 0,
       hintUsed: false,
-      metadata: { mode: settings.mode, collected: total, targets: arTargetCount(settings), showMap: settings.showMap },
+      metadata: { mode: settings.mode, collected: total, targets: arTargetCount(settings), hints: arHints(settings) },
     });
   };
 
@@ -549,6 +683,9 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
     ? (allCollected ? t.foundLine : t.notFoundLine)
     : allCollected ? t.collectedAllLine(targetTotal) : t.collectedLine(collected ?? 0, targetTotal);
   const showPlayfield = overlay && (phase === 'playing' || (phase === 'done' && playedNow && !session));
+  const hints = arHints(settings);
+  const opened = suitcase && allCollected && hasSuitcaseInside(settings);
+  const insideCode = settings.insideCode.trim();
 
   return (
     <Wrap>
@@ -563,9 +700,9 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
           <>
             <SideShadow style={{ top: 158 }} />
             <SmallShadow style={{ top: 150 }} />
-            <HeroCoin src="/images/ar-coin.svg" alt="" style={{ top: 16, width: 116, height: 116, marginLeft: -58 }} />
-            <SideCoin src="/images/ar-coin-turned.svg" alt="" style={{ top: 70, width: 56, height: 56 }} />
-            <SmallCoin src="/images/ar-coin.svg" alt="" style={{ top: 60, width: 48, height: 48 }} />
+            <HeroCoin src="/images/ar-coin-3d.webp" alt="" style={{ top: 16, width: 116, height: 116, marginLeft: -58 }} />
+            <SideCoin src="/images/ar-coin-3d-turned.webp" alt="" style={{ top: 70, width: 56, height: 56 }} />
+            <SmallCoin src="/images/ar-coin-3d-tilt.webp" alt="" style={{ top: 60, width: 48, height: 48 }} />
           </>
         )}
         <Sparkle style={{ left: '22%', top: 14, width: 20, height: 20 }} />
@@ -593,10 +730,10 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
             <ClockFace />
             {t.secondsMeta(settings.timeLimitSeconds)}
           </MetaItem>
-          {!settings.showMap && (
+          {hints !== 'map' && (
             <>
               <MetaDivider />
-              <MetaItem>{t.noMapMeta}</MetaItem>
+              <MetaItem>{hints === 'hotCold' ? t.hotColdMeta : t.noMapMeta}</MetaItem>
             </>
           )}
         </MetaRow>
@@ -614,6 +751,7 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
             session={session}
             overlayRoot={overlay}
             sound={sound}
+            ping={ping}
             onFinish={handleFinish}
             onExit={handleExit}
           />
@@ -626,38 +764,71 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
               <ConfettiOverlay />
             </ConfettiLayer>
           )}
-          <ResultOverlay>
-            <CelebrationScene aria-hidden="true">
+          <ResultOverlay style={opened ? { overflowY: 'hidden', padding: '20px 16px 108px' } : undefined}>
+            <CelebrationScene aria-hidden="true" style={opened ? { height: 124 } : undefined}>
               <CelebrationGlow />
-              {suitcase ? (
+              {opened ? (
+                <SuitcaseHero src="/images/ar-suitcase-open.svg" alt="" style={{ top: 0, width: 132, height: 121, marginLeft: -66 }} />
+              ) : suitcase ? (
                 <SuitcaseHero src="/images/ar-suitcase.svg" alt="" style={{ top: 44 }} />
               ) : (
                 <>
-                  <HeroCoin src="/images/ar-coin.svg" alt="" style={{ top: 40, width: 120, height: 120, marginLeft: -60 }} />
-                  <SideCoin src="/images/ar-coin-turned.svg" alt="" style={{ top: 92, width: 64, height: 64 }} />
-                  <SmallCoin src="/images/ar-coin.svg" alt="" style={{ top: 84 }} />
+                  <HeroCoin src="/images/ar-coin-3d.webp" alt="" style={{ top: 40, width: 120, height: 120, marginLeft: -60 }} />
+                  <SideCoin src="/images/ar-coin-3d-turned.webp" alt="" style={{ top: 92, width: 64, height: 64 }} />
+                  <SmallCoin src="/images/ar-coin-3d-tilt.webp" alt="" style={{ top: 84 }} />
                 </>
               )}
               <Sparkle style={{ left: '26%', top: 34, width: 20, height: 20 }} />
               <Sparkle style={{ right: '22%', top: 40, width: 15, height: 15, background: '#fff2a8', animationDelay: '-0.8s' }} />
-              <Sparkle style={{ right: '10%', top: 160, width: 12, height: 12, animationDelay: '-1.4s' }} />
+              {!opened && <Sparkle style={{ right: '10%', top: 160, width: 12, height: 12, animationDelay: '-1.4s' }} />}
               <Sparkle style={{ left: '12%', top: 70, width: 11, height: 11, background: '#fff2a8', animationDelay: '-0.4s' }} />
             </CelebrationScene>
-            <ResultHeadline>{resultTitle}</ResultHeadline>
-            <ResultBox>
-              <ResultLine>{resultLine}</ResultLine>
-              {result.score > 0 && (
-                <ResultPoints>
-                  <SignedNumber>+{result.score}</SignedNumber> {t.pointsWord}
-                </ResultPoints>
-              )}
-              {result.bonus > 0 && <ResultBonus>{t.bonusLine(result.bonus)}</ResultBonus>}
-              {settings.finishText && <ResultFinishText>{settings.finishText}</ResultFinishText>}
-            </ResultBox>
-            <ResultActions>
-              <PrimaryActionButton type="button" onClick={handleContinue}>{t.continue}</PrimaryActionButton>
-            </ResultActions>
+            <ResultHeadline style={opened ? { margin: '0 0 24px', fontSize: 34 } : undefined}>{resultTitle}</ResultHeadline>
+            {opened && (
+              <InsideCard>
+                <InsideTab>{t.insideLabel}</InsideTab>
+                <InsideBody>
+                  {settings.insideImageUrl && <InsideImage src={settings.insideImageUrl} alt="" />}
+                  {settings.insideText && <InsideText>{settings.insideText}</InsideText>}
+                  {insideCode && (
+                    <CodeBlock>
+                      <CodeLabel>{t.insideCodeLabel}</CodeLabel>
+                      {CODE_TILES_PATTERN.test(insideCode) ? (
+                        <CodeTiles>
+                          {[...insideCode].map((char, index) => (
+                            <CodeTile key={index}>{char}</CodeTile>
+                          ))}
+                        </CodeTiles>
+                      ) : (
+                        <CodeText>{insideCode}</CodeText>
+                      )}
+                    </CodeBlock>
+                  )}
+                  {settings.finishText && <ResultFinishText>{settings.finishText}</ResultFinishText>}
+                  {result.score > 0 && (
+                    <InsideScore>
+                      <SignedNumber>+{result.score}</SignedNumber> {t.pointsWord}
+                    </InsideScore>
+                  )}
+                </InsideBody>
+              </InsideCard>
+            )}
+            {!opened && (
+              <ResultBox>
+                <ResultLine>{resultLine}</ResultLine>
+                {result.score > 0 && (
+                  <ResultPoints>
+                    <SignedNumber>+{result.score}</SignedNumber> {t.pointsWord}
+                  </ResultPoints>
+                )}
+                {result.bonus > 0 && <ResultBonus>{t.bonusLine(result.bonus)}</ResultBonus>}
+                {settings.finishText && <ResultFinishText>{settings.finishText}</ResultFinishText>}
+              </ResultBox>
+            )}
           </ResultOverlay>
+          <ResultActions>
+            <PrimaryActionButton type="button" onClick={handleContinue}>{t.continue}</PrimaryActionButton>
+          </ResultActions>
         </>,
         document.body,
       )}

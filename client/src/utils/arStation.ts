@@ -1,10 +1,12 @@
 export type ArHuntMode = 'coins' | 'suitcase';
+export type ArHints = 'map' | 'hotCold' | 'none';
 
 export interface ArStationSettings {
   title: string;
   instructions: string;
   mode: ArHuntMode;
   showMap: boolean;
+  hotCold: boolean;
   coinCount: number;
   timeLimitSeconds: number;
   areaRadiusMeters: number;
@@ -12,6 +14,9 @@ export interface ArStationSettings {
   allCoinsBonus: number;
   findPoints: number;
   finishText: string;
+  insideText: string;
+  insideImageUrl: string;
+  insideCode: string;
 }
 
 interface NumberRange {
@@ -44,6 +49,7 @@ export function emptyArSettings(): ArStationSettings {
     instructions: '',
     mode: 'coins',
     showMap: true,
+    hotCold: true,
     coinCount: AR_COIN_COUNT.fallback,
     timeLimitSeconds: AR_TIME_LIMIT_SECONDS.fallback,
     areaRadiusMeters: AR_AREA_RADIUS_METERS.fallback,
@@ -51,6 +57,9 @@ export function emptyArSettings(): ArStationSettings {
     allCoinsBonus: AR_ALL_COINS_BONUS.fallback,
     findPoints: AR_FIND_POINTS.fallback,
     finishText: '',
+    insideText: '',
+    insideImageUrl: '',
+    insideCode: '',
   };
 }
 
@@ -61,6 +70,7 @@ export function arSettingsFrom(raw: unknown): ArStationSettings {
     instructions: asText(source.instructions),
     mode: source.mode === 'suitcase' ? 'suitcase' : 'coins',
     showMap: source.showMap !== false,
+    hotCold: source.hotCold !== false,
     coinCount: clampToRange(source.coinCount, AR_COIN_COUNT),
     timeLimitSeconds: clampToRange(source.timeLimitSeconds, AR_TIME_LIMIT_SECONDS),
     areaRadiusMeters: clampToRange(source.areaRadiusMeters, AR_AREA_RADIUS_METERS),
@@ -68,6 +78,9 @@ export function arSettingsFrom(raw: unknown): ArStationSettings {
     allCoinsBonus: clampToRange(source.allCoinsBonus, AR_ALL_COINS_BONUS),
     findPoints: clampToRange(source.findPoints, AR_FIND_POINTS),
     finishText: asText(source.finishText),
+    insideText: asText(source.insideText),
+    insideImageUrl: asText(source.insideImageUrl),
+    insideCode: asText(source.insideCode),
   };
 }
 
@@ -78,7 +91,23 @@ export function arSettingsToSave(settings: ArStationSettings): ArStationSettings
     title: parsed.title.trim(),
     instructions: parsed.instructions.trim(),
     finishText: parsed.finishText.trim(),
+    insideText: parsed.insideText.trim(),
+    insideImageUrl: parsed.insideImageUrl.trim(),
+    insideCode: parsed.insideCode.trim(),
   };
+}
+
+export function arHints(settings: Pick<ArStationSettings, 'showMap' | 'hotCold'>): ArHints {
+  if (settings.showMap) return 'map';
+  return settings.hotCold ? 'hotCold' : 'none';
+}
+
+export function hintsSettings(hints: ArHints): Pick<ArStationSettings, 'showMap' | 'hotCold'> {
+  return { showMap: hints === 'map', hotCold: hints !== 'none' };
+}
+
+export function hasSuitcaseInside(settings: Pick<ArStationSettings, 'mode' | 'insideText' | 'insideImageUrl' | 'insideCode'>): boolean {
+  return settings.mode === 'suitcase' && Boolean(settings.insideText.trim() || settings.insideImageUrl.trim() || settings.insideCode.trim());
 }
 
 export function arTargetCount(settings: Pick<ArStationSettings, 'mode' | 'coinCount'>): number {

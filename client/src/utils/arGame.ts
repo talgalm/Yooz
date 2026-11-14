@@ -115,3 +115,29 @@ export function collectedCount(state: ArGameState): number {
 export function isArGameOver(state: ArGameState, timeLimitSeconds: number): boolean {
   return state.elapsedSeconds >= timeLimitSeconds || state.coins.every((coin) => coin.collectedAt !== null);
 }
+
+export type HeatLevel = 'cold' | 'warm' | 'hot' | 'burning';
+
+export interface Heat {
+  closeness: number;
+  level: HeatLevel;
+}
+
+const HEAT_SPAN_RATIO = 1.8;
+const HEAT_MIN_SPAN_M = 2.5;
+const HEAT_HOT = 0.7;
+const HEAT_WARM = 0.4;
+const PING_SLOWEST_S = 1.5;
+const PING_FASTEST_S = 0.3;
+
+export function heatOf(meters: number, reach: number, areaRadius: number): Heat {
+  if (meters <= reach) return { closeness: 1, level: 'burning' };
+  const span = Math.max(HEAT_MIN_SPAN_M, areaRadius * HEAT_SPAN_RATIO - reach);
+  const closeness = Math.max(0, Math.min(1, 1 - (meters - reach) / span));
+  return { closeness, level: closeness >= HEAT_HOT ? 'hot' : closeness >= HEAT_WARM ? 'warm' : 'cold' };
+}
+
+export function pingIntervalSeconds(closeness: number): number {
+  const clamped = Math.max(0, Math.min(1, closeness));
+  return clamped * PING_FASTEST_S + (1 - clamped) * PING_SLOWEST_S;
+}

@@ -15,12 +15,12 @@ export async function immersiveArSupported(): Promise<boolean> {
   }
 }
 
-export interface CollectSound {
-  play: () => void;
+export interface ArSound {
+  play: (rate?: number) => void;
   close: () => void;
 }
 
-export function createCollectSound(src: string): CollectSound {
+export function createArSound(src: string): ArSound {
   const audio = new Audio(src);
   audio.preload = 'auto';
   audio.muted = true;
@@ -37,9 +37,11 @@ export function createCollectSound(src: string): CollectSound {
     },
   );
   return {
-    play() {
+    play(rate = 1) {
       played = true;
       audio.muted = false;
+      audio.preservesPitch = false;
+      audio.playbackRate = rate;
       audio.currentTime = 0;
       audio.play().catch(() => undefined);
     },

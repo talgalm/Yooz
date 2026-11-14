@@ -9,14 +9,16 @@ import {
   collectedCount,
   createArGame,
   createSuitcaseHunt,
+  heatOf,
   inReach,
   isArGameOver,
   nearestCoin,
+  pingIntervalSeconds,
   seededRandom,
   stepArGame,
   tryCollect,
 } from './arGame';
-import { AR_COIN_COUNT, arScore, arSettingsFrom, arSettingsToSave, arTargetCount, emptyArSettings } from './arStation';
+import { AR_COIN_COUNT, arHints, arScore, arSettingsFrom, arSettingsToSave, arTargetCount, emptyArSettings, hasSuitcaseInside, hintsSettings } from './arStation';
 
 const start = { x: 0, z: 0 };
 const ahead = { x: 0, z: -1 };
@@ -123,4 +125,36 @@ test('settings fall back to sensible values and keep within their ranges', () =>
   assert.equal(saved.title, 'Coins');
   assert.equal(saved.coinCount, 5);
   assert.equal('coinMotion' in arSettingsToSave(arSettingsFrom({ coinMotion: 'fast' })), false);
+});
+
+test('hot-cold warms up as the player closes in and burns once the target is in reach', () => {
+  assert.deepEqual(heatOf(1.2, REACH_TRACKED_M, 5), { closeness: 1, level: 'burning' });
+  assert.equal(heatOf(3.4, REACH_TRACKED_M, 5).level, 'hot');
+  assert.equal(heatOf(5, REACH_TRACKED_M, 5).level, 'warm');
+  assert.equal(heatOf(8, REACH_TRACKED_M, 5).level, 'cold');
+  assert.equal(heatOf(40, REACH_TRACKED_M, 5).closeness, 0);
+  assert.ok(heatOf(3, REACH_TRACKED_M, 5).closeness > heatOf(4, REACH_TRACKED_M, 5).closeness);
+  assert.ok(heatOf(2.4, REACH_TRACKED_M, 2).closeness < 1);
+  assert.equal(pingIntervalSeconds(0), 1.5);
+  assert.equal(pingIntervalSeconds(1), 0.3);
+  assert.equal(pingIntervalSeconds(7), 0.3);
+  assert.ok(pingIntervalSeconds(0.5) < pingIntervalSeconds(0.2));
+});
+
+test('hints read as map, hot-cold or none, and older stations keep the map', () => {
+  assert.equal(arHints(arSettingsFrom({})), 'map');
+  assert.equal(arHints(arSettingsFrom({ showMap: false })), 'hotCold');
+  assert.equal(arHints(arSettingsFrom({ showMap: false, hotCold: false })), 'none');
+  for (const hints of ['map', 'hotCold', 'none'] as const) assert.equal(arHints(hintsSettings(hints)), hints);
+});
+
+test('the suitcase has content inside only when something was filled in, and only in suitcase mode', () => {
+  const suitcase = { ...emptyArSettings(), mode: 'suitcase' as const };
+  assert.equal(hasSuitcaseInside(suitcase), false);
+  assert.equal(hasSuitcaseInside({ ...suitcase, insideText: '   ' }), false);
+  assert.equal(hasSuitcaseInside({ ...suitcase, insideCode: '4721' }), true);
+  assert.equal(hasSuitcaseInside({ ...suitcase, mode: 'coins', insideCode: '4721' }), false);
+  const saved = arSettingsToSave({ ...suitcase, insideText: '  Next clue  ', insideImageUrl: ' https://x/y.png ', insideCode: ' 47 ' });
+  assert.deepEqual([saved.insideText, saved.insideImageUrl, saved.insideCode], ['Next clue', 'https://x/y.png', '47']);
+  assert.equal(arSettingsFrom({ insideCode: 4721 }).insideCode, '');
 });
