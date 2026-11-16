@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { styled, keyframes } from '@mui/material/styles';
 import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './ArStation.i18n';
 import { COIN_HEIGHT_M, createCoinScene, type ScreenSpot } from './arCoins3d';
+import ArRiddleCard, { PauseBars } from './ArRiddleCard';
 import {
   EYE_HEIGHT_M,
   cameraFromQuat,
@@ -32,15 +33,17 @@ import {
   nearestCoin,
   pingIntervalSeconds,
   seededRandom,
+  shuffledOrder,
   stepArGame,
   tryCollect,
+  withRiddleCoin,
   type ArGameState,
   type FloorPoint,
   type HeatLevel,
 } from '../../utils/arGame';
 import { STRIDE_M, createStepDetector } from '../../utils/arSteps';
 import type { ArSound } from '../../utils/arSensors';
-import { arHints, type ArStationSettings } from '../../utils/arStation';
+import { arHints, arRiddle, type ArRunResult, type ArStationSettings } from '../../utils/arStation';
 
 const FALLBACK_PITCH_DEG = -8;
 const ORIENTATION_EASE = 0.35;
@@ -48,6 +51,10 @@ const COUNTDOWN_STEP_MS = 800;
 const FINISH_DELAY_MS = 1200;
 const MAX_STEP_S = 0.05;
 const LOW_TIME_SECONDS = 10;
+const RIDDLE_ORDER_SALT = 0x5bd1e995;
+const RIDDLE_RIGHT_RATE = 1.3;
+const RIDDLE_RIGHT_BUZZ = [30, 50, 30];
+const RIDDLE_WRONG_BUZZ = 90;
 const TOAST_MS = 2400;
 const POSITION_EASE_RATE = 7;
 const KEY_WALK_MPS = 1.3;
@@ -99,7 +106,7 @@ const WALK_KEYS: Record<string, { walk: number; turn: number }> = {
 };
 
 type OrientationReading = { alpha: number; beta: number; gamma: number };
-type PlayPhase = 'waiting' | 'countdown' | 'playing' | 'over';
+type PlayPhase = 'waiting' | 'countdown' | 'playing' | 'riddle' | 'over';
 type Popup = { key: number; x: number; y: number; text: string };
 type Coach = 'search' | 'walk' | 'tap';
 
@@ -239,11 +246,11 @@ const Pill = styled('div')({
   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
 });
 
-const TimerPill = styled(Pill, { shouldForwardProp: (prop) => prop !== 'low' })<{ low: boolean }>(({ low }) => ({
+const TimerPill = styled(Pill, { shouldForwardProp: (prop) => prop !== 'low' && prop !== 'paused' })<{ low: boolean; paused: boolean }>(({ low, paused }) => ({
   minWidth: 92,
   justifyContent: 'center',
-  background: low ? '#d62839' : 'rgba(29, 8, 56, 0.72)',
-  animation: low ? `${pulse} 0.8s ease-in-out infinite` : 'none',
+  background: paused ? '#6a3df0' : low ? '#d62839' : 'rgba(29, 8, 56, 0.72)',
+  animation: low && !paused ? `${pulse} 0.8s ease-in-out infinite` : 'none',
 }));
 
 const ClockFace = styled('span')({
@@ -503,8 +510,8 @@ function drawRadar(canvas: HTMLCanvasElement, game: ArGameState | null, player: 
     if (coin.collectedAt !== null) continue;
     const dot = radarDot(coin, player, camera, range);
     ctx.globalAlpha = dot.inRange ? 1 : 0.55;
-    ctx.fillStyle = '#ffcf33';
-    ctx.strokeStyle = '#7a4a00';
+    ctx.fillStyle = coin.riddle ? '#a27dff' : '#ffcf33';
+    ctx.strokeStyle = coin.riddle ? '#2e1170' : '#7a4a00';
     ctx.lineWidth = 1.5 * ratio;
     ctx.beginPath();
     ctx.arc(half + dot.x * reach, half + dot.y * reach, (dot.inRange ? 5 : 3.5) * ratio, 0, Math.PI * 2);
@@ -521,7 +528,7 @@ interface ArPlayfieldProps {
   overlayRoot: HTMLElement;
   sound: ArSound | null;
   ping: ArSound | null;
-  onFinish: (collected: number) => void;
+  onFinish: (result: ArRunResult) => void;
   onExit: () => void;
 }
 
@@ -553,6 +560,11 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
   const [cameraFailed, setCameraFailed] = useState(false);
   const [over, setOver] = useState(false);
   const [popups, setPopups] = useState<Popup[]>([]);
+  const [riddleOpen, setRiddleOpen] = useState(false);
+  const [riddlePick, setRiddlePick] = useState<number | null>(null);
+  const riddleSolvedRef = useRef(false);
+  const riddle = useMemo(() => arRiddle(settings), [settings]);
+  const riddleOrder = useMemo(() => (riddle ? shuffledOrder(riddle.answers.length, seededRandom(seed ^ RIDDLE_ORDER_SALT)) : []), [riddle, seed]);
   const [inFlight, setInFlight] = useState(0);
   const [heat, setHeat] = useState<HeatLevel | null>(null);
 
@@ -658,6 +670,7 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
     const reach = immersive ? REACH_TRACKED_M : REACH_STEPS_M;
     const pointsPerTarget = settings.mode === 'suitcase' ? settings.findPoints : settings.pointsPerCoin;
     const hotCold = arHints(settings) === 'hotCold';
+    const hasRiddle = arRiddle(settings) !== null;
     const calm = prefersReducedMotion();
     let game: ArGameState | null = null;
     let view: Quat = quatFromYawPitch(0, FALLBACK_PITCH_DEG);
@@ -709,6 +722,7 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
       const result = tryCollect(game, id, player, reach);
       if (result.collected) {
         game = result.state;
+        const riddleCoin = game.coins.some((coin) => coin.id === id && coin.riddle);
         holdPings = true;
         callbacksRef.current.sound?.play();
         navigator.vibrate?.(30);
@@ -721,7 +735,12 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
           window.setTimeout(() => setPopups((list) => list.filter((popup) => popup.key !== key)), POPUP_MS);
         }
         const icon = coinIconRef.current;
-        if (settings.mode === 'coins' && spot && icon && !calm) {
+        if (riddleCoin) {
+          phaseRef.current = 'riddle';
+          bump(counterRef.current, 1.22, LAND_BUMP_MS);
+          setRiddlePick(null);
+          setRiddleOpen(true);
+        } else if (settings.mode === 'coins' && spot && icon && !calm) {
           setInFlight((count) => count + 1);
           flyCoin(stage, spot, icon, () => {
             if (disposed) return;
@@ -789,7 +808,7 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
     const finish = (total: number) => {
       finishing = true;
       finishTimer = window.setTimeout(() => {
-        const done = () => callbacksRef.current.onFinish(total);
+        const done = () => callbacksRef.current.onFinish({ collected: total, riddleSolved: riddleSolvedRef.current });
         if (session) session.end().then(done, done);
         else done();
       }, FINISH_DELAY_MS);
@@ -812,6 +831,7 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
         game = settings.mode === 'suitcase'
           ? createSuitcaseHunt(player, settings.areaRadiusMeters, random)
           : createArGame(settings.coinCount, player, floorForward(camera), settings.areaRadiusMeters, random);
+        if (hasRiddle) game = withRiddleCoin(game, random);
       }
 
       if (phaseRef.current === 'playing') {
@@ -839,7 +859,7 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
       const reachable = new Set(playing ? current.coins.filter((coin) => inReach(coin, player, reach)).map((coin) => coin.id) : []);
       coins.update(current, time, dt, floorY, reachable);
 
-      const nearest = phaseRef.current === 'over' ? null : nearestCoin(game, player);
+      const nearest = phaseRef.current === 'over' || phaseRef.current === 'riddle' ? null : nearestCoin(game, player);
       if (hotCold) {
         const warmth = playing && nearest ? heatOf(nearest.meters, reach, settings.areaRadiusMeters) : null;
         const level = warmth?.level ?? null;
@@ -919,6 +939,20 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
     };
   }, [settings, seed, session, immersive]);
 
+  const pickRiddleAnswer = (answer: number) => {
+    if (!riddle || riddlePick !== null) return;
+    const right = answer === riddle.correct;
+    riddleSolvedRef.current = right;
+    setRiddlePick(answer);
+    if (right) sound?.play(RIDDLE_RIGHT_RATE);
+    navigator.vibrate?.(right ? RIDDLE_RIGHT_BUZZ : RIDDLE_WRONG_BUZZ);
+  };
+
+  const continueAfterRiddle = () => {
+    setRiddleOpen(false);
+    phaseRef.current = 'playing';
+  };
+
   const suitcase = settings.mode === 'suitcase';
   const hints = arHints(settings);
   const searchCoach = hints === 'hotCold'
@@ -945,6 +979,9 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
       {popups.map((popup) => (
         <PointsPopup key={popup.key} style={{ left: popup.x, top: popup.y }}>{popup.text}</PointsPopup>
       ))}
+      {riddleOpen && riddle && (
+        <ArRiddleCard riddle={riddle} order={riddleOrder} picked={riddlePick} onPick={pickRiddleAnswer} onContinue={continueAfterRiddle} />
+      )}
       <TopBar>
         <ExitButton type="button" aria-label={t.exit} onClick={onExit}>✕</ExitButton>
         <Spacer />
@@ -954,19 +991,19 @@ export default function ArPlayfield({ settings, seed, session, overlayRoot, soun
             {collected - inFlight}/{settings.coinCount}
           </Pill>
         )}
-        <TimerPill low={secondsLeft <= LOW_TIME_SECONDS && !over}>
-          <ClockFace />
+        <TimerPill low={secondsLeft <= LOW_TIME_SECONDS && !over} paused={riddleOpen}>
+          {riddleOpen ? <PauseBars /> : <ClockFace />}
           {formatClock(secondsLeft)}
         </TimerPill>
       </TopBar>
-      {notice && !over && <Notice>{notice}</Notice>}
+      {notice && !over && !riddleOpen && <Notice>{notice}</Notice>}
       {countdown !== null && (
         <CountdownWrap>
           <CountdownBubble key={countdown}>{countdown > 0 ? countdown : t.go}</CountdownBubble>
         </CountdownWrap>
       )}
       {!over && hints === 'map' && (
-        <BottomDock>
+        <BottomDock style={{ opacity: riddleOpen ? 0 : 1 }}>
           <NearestTag ref={nearestRef} />
           <RadarCanvas ref={radarRef} aria-label={t.radar} />
         </BottomDock>

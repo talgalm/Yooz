@@ -17,7 +17,26 @@ export interface ArStationSettings {
   insideText: string;
   insideImageUrl: string;
   insideCode: string;
+  riddleQuestion: string;
+  riddleAnswers: string[];
+  riddleCorrect: number;
+  riddleBonus: number;
 }
+
+export interface ArRiddle {
+  question: string;
+  answers: string[];
+  correct: number;
+  bonus: number;
+}
+
+export interface ArRunResult {
+  collected: number;
+  riddleSolved: boolean;
+}
+
+export const AR_RIDDLE_ANSWER_SLOTS = 4;
+export const AR_RIDDLE_MIN_ANSWERS = 2;
 
 interface NumberRange {
   min: number;
@@ -31,9 +50,19 @@ export const AR_AREA_RADIUS_METERS: NumberRange = { min: 2, max: 20, fallback: 5
 export const AR_POINTS_PER_COIN: NumberRange = { min: 0, max: 1000, fallback: 10 };
 export const AR_ALL_COINS_BONUS: NumberRange = { min: 0, max: 1000, fallback: 20 };
 export const AR_FIND_POINTS: NumberRange = { min: 0, max: 1000, fallback: 50 };
+export const AR_RIDDLE_BONUS: NumberRange = { min: 0, max: 1000, fallback: 30 };
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value : '';
+}
+
+function asAnswers(value: unknown): string[] {
+  return Array.isArray(value) ? value.slice(0, AR_RIDDLE_ANSWER_SLOTS).map(asText) : [];
+}
+
+function asAnswerIndex(value: unknown): number {
+  const index = typeof value === 'number' ? value : Number(value);
+  return Number.isInteger(index) && index >= 0 && index < AR_RIDDLE_ANSWER_SLOTS ? index : 0;
 }
 
 export function clampToRange(value: unknown, range: NumberRange): number {
@@ -60,6 +89,10 @@ export function emptyArSettings(): ArStationSettings {
     insideText: '',
     insideImageUrl: '',
     insideCode: '',
+    riddleQuestion: '',
+    riddleAnswers: [],
+    riddleCorrect: 0,
+    riddleBonus: AR_RIDDLE_BONUS.fallback,
   };
 }
 
@@ -81,7 +114,26 @@ export function arSettingsFrom(raw: unknown): ArStationSettings {
     insideText: asText(source.insideText),
     insideImageUrl: asText(source.insideImageUrl),
     insideCode: asText(source.insideCode),
+    riddleQuestion: asText(source.riddleQuestion),
+    riddleAnswers: asAnswers(source.riddleAnswers),
+    riddleCorrect: asAnswerIndex(source.riddleCorrect),
+    riddleBonus: clampToRange(source.riddleBonus, AR_RIDDLE_BONUS),
   };
+}
+
+function filledAnswers(answers: string[], correct: number): { answers: string[]; correct: number } {
+  const filled = answers.map((text, index) => ({ text: text.trim(), index })).filter((answer) => answer.text);
+  return { answers: filled.map((answer) => answer.text), correct: filled.findIndex((answer) => answer.index === correct) };
+}
+
+export function arRiddle(
+  settings: Pick<ArStationSettings, 'mode' | 'riddleQuestion' | 'riddleAnswers' | 'riddleCorrect' | 'riddleBonus'>,
+): ArRiddle | null {
+  if (settings.mode !== 'coins') return null;
+  const question = settings.riddleQuestion.trim();
+  const { answers, correct } = filledAnswers(settings.riddleAnswers, settings.riddleCorrect);
+  if (!question || answers.length < AR_RIDDLE_MIN_ANSWERS || correct < 0) return null;
+  return { question, answers, correct, bonus: settings.riddleBonus };
 }
 
 export function arSettingsToSave(settings: ArStationSettings): ArStationSettings {
@@ -94,6 +146,8 @@ export function arSettingsToSave(settings: ArStationSettings): ArStationSettings
     insideText: parsed.insideText.trim(),
     insideImageUrl: parsed.insideImageUrl.trim(),
     insideCode: parsed.insideCode.trim(),
+    riddleQuestion: parsed.riddleQuestion.trim(),
+    riddleAnswers: parsed.riddleAnswers.map((answer) => answer.trim()),
   };
 }
 
@@ -118,20 +172,28 @@ export interface ArScore {
   score: number;
   maxPossibleScore: number;
   bonus: number;
+  riddleBonus: number;
 }
 
 export function arScore(
   collected: number,
-  settings: Pick<ArStationSettings, 'mode' | 'coinCount' | 'pointsPerCoin' | 'allCoinsBonus' | 'findPoints'>,
+  settings: Pick<
+    ArStationSettings,
+    'mode' | 'coinCount' | 'pointsPerCoin' | 'allCoinsBonus' | 'findPoints' | 'riddleQuestion' | 'riddleAnswers' | 'riddleCorrect' | 'riddleBonus'
+  >,
+  riddleSolved = false,
 ): ArScore {
   if (settings.mode === 'suitcase') {
-    return { score: collected > 0 ? settings.findPoints : 0, maxPossibleScore: settings.findPoints, bonus: 0 };
+    return { score: collected > 0 ? settings.findPoints : 0, maxPossibleScore: settings.findPoints, bonus: 0, riddleBonus: 0 };
   }
   const got = Math.max(0, Math.min(settings.coinCount, collected));
   const bonus = got === settings.coinCount ? settings.allCoinsBonus : 0;
+  const riddle = arRiddle(settings);
+  const riddleBonus = riddle && riddleSolved ? riddle.bonus : 0;
   return {
-    score: got * settings.pointsPerCoin + bonus,
-    maxPossibleScore: settings.coinCount * settings.pointsPerCoin + settings.allCoinsBonus,
+    score: got * settings.pointsPerCoin + bonus + riddleBonus,
+    maxPossibleScore: settings.coinCount * settings.pointsPerCoin + settings.allCoinsBonus + (riddle?.bonus ?? 0),
     bonus,
+    riddleBonus,
   };
 }
