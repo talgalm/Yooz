@@ -20,6 +20,7 @@ import {
   PointsMaterial,
   Scene,
   Shape,
+  SphereGeometry,
   Sprite,
   SpriteMaterial,
   TorusGeometry,
@@ -49,12 +50,17 @@ const SHADOW_SIZE_M = 0.6;
 const HALO_SIZE_M = 0.75;
 const MIN_TAP_RADIUS_PX = 46;
 const TAP_SLACK = 1.5;
+const RIDDLE_SCALE = 1.18;
+const RIDDLE_RELIEF_DEPTH = 0.55;
+const GOLD_SPARK = 0xffe8a0;
+const RIDDLE_SPARK = 0xd2b6ff;
 
 interface CoinEntity {
   root: Group;
   spinner: Group;
   halo: Sprite;
   shadow: Mesh;
+  size: number;
   collectedAt: number | null;
 }
 
@@ -158,10 +164,7 @@ interface GoldMaterials {
   relief: MeshStandardMaterial;
 }
 
-function buildCoin({ face, edge, relief }: GoldMaterials) {
-  const body = new CylinderGeometry(COIN_RADIUS_M, COIN_RADIUS_M, COIN_THICKNESS_M, 72, 1, false);
-  body.rotateX(Math.PI / 2);
-  const rim = new TorusGeometry(COIN_RADIUS_M * 0.9, COIN_THICKNESS_M * 0.2, 14, 72);
+function starEmblem(): { parts: BufferGeometry[]; lift: number } {
   const star = new ExtrudeGeometry(starShape(COIN_RADIUS_M * 0.52, COIN_RADIUS_M * 0.22), {
     depth: COIN_THICKNESS_M * 0.18,
     bevelEnabled: true,
@@ -170,6 +173,31 @@ function buildCoin({ face, edge, relief }: GoldMaterials) {
     bevelSegments: 3,
   });
   star.center();
+  return { parts: [star], lift: COIN_THICKNESS_M * 0.12 };
+}
+
+function questionEmblem(): { parts: BufferGeometry[]; lift: number } {
+  const tube = COIN_RADIUS_M * 0.085;
+  const bend = COIN_RADIUS_M * 0.24;
+  const middle = COIN_RADIUS_M * 0.26;
+  const stem = COIN_RADIUS_M * 0.2;
+  const dotRadius = COIN_RADIUS_M * 0.11;
+  const hook = new TorusGeometry(bend, tube, 14, 48, Math.PI * 1.5);
+  hook.rotateZ(-Math.PI / 2);
+  hook.translate(0, middle, 0);
+  const neck = new CylinderGeometry(tube, tube, stem, 14);
+  neck.translate(0, middle - bend - stem / 2, 0);
+  const dot = new SphereGeometry(dotRadius, 18, 12);
+  dot.translate(0, middle - bend - stem - COIN_RADIUS_M * 0.1 - dotRadius, 0);
+  const parts = [hook, neck, dot];
+  parts.forEach((part) => part.scale(1, 1, RIDDLE_RELIEF_DEPTH));
+  return { parts, lift: 0 };
+}
+
+function buildCoin({ face, edge, relief }: GoldMaterials, emblem: { parts: BufferGeometry[]; lift: number }) {
+  const body = new CylinderGeometry(COIN_RADIUS_M, COIN_RADIUS_M, COIN_THICKNESS_M, 72, 1, false);
+  body.rotateX(Math.PI / 2);
+  const rim = new TorusGeometry(COIN_RADIUS_M * 0.9, COIN_THICKNESS_M * 0.2, 14, 72);
   const coin = new Group();
   coin.add(new Mesh(body, [edge, face, face]));
   const front = COIN_THICKNESS_M / 2;
@@ -177,12 +205,20 @@ function buildCoin({ face, edge, relief }: GoldMaterials) {
     const ring = new Mesh(rim, relief);
     ring.position.z = side * front;
     coin.add(ring);
-    const emblem = new Mesh(star, relief);
-    emblem.position.z = side * (front + COIN_THICKNESS_M * 0.12);
-    if (side < 0) emblem.rotation.y = Math.PI;
-    coin.add(emblem);
+    const mark = new Group();
+    emblem.parts.forEach((part) => mark.add(new Mesh(part, relief)));
+    mark.position.z = side * (front + emblem.lift);
+    if (side < 0) mark.rotation.y = Math.PI;
+    coin.add(mark);
   }
-  return { model: coin, disposables: [body, rim, star] };
+  return { model: coin, disposables: [body, rim, ...emblem.parts] };
+}
+
+function buildRiddleCoin(gold: GoldMaterials) {
+  const face = new MeshStandardMaterial({ color: 0x7b4dff, metalness: 0.85, roughness: 0.26 });
+  const edge = new MeshStandardMaterial({ color: 0x4f22c4, metalness: 0.9, roughness: 0.36 });
+  const built = buildCoin({ face, edge, relief: gold.relief }, questionEmblem());
+  return { model: built.model, disposables: [face, edge, ...built.disposables] };
 }
 
 function buildSuitcase({ face }: GoldMaterials) {
@@ -251,36 +287,39 @@ function goldStage(canvas: HTMLCanvasElement) {
 export function createCoinScene(canvas: HTMLCanvasElement, mode: ArHuntMode = 'coins'): CoinScene {
   const { renderer, scene, gold, disposables } = goldStage(canvas);
   const suitcase = mode === 'suitcase';
-  const built = suitcase ? buildSuitcase(gold) : buildCoin(gold);
+  const built = suitcase ? buildSuitcase(gold) : buildCoin(gold, starEmblem());
+  const riddleBuilt = suitcase ? null : buildRiddleCoin(gold);
   const template = built.model;
   const targetRadius = suitcase ? SUITCASE_PICK_RADIUS_M : COIN_RADIUS_M;
   const vanishAfter = suitcase ? COLLECT_ANIM_S : 0;
   const camera = new PerspectiveCamera(60, 1, 0.05, 100);
   const shadowTexture = gradientTexture([[0, `rgba(0, 0, 0, ${suitcase ? 0.45 : 0.32})`], [0.4, 'rgba(0, 0, 0, 0.16)'], [1, 'rgba(0, 0, 0, 0)']]);
   const haloTexture = gradientTexture([[0, 'rgba(255, 214, 90, 0.55)'], [0.45, 'rgba(255, 190, 40, 0.18)'], [1, 'rgba(255, 180, 0, 0)']]);
+  const riddleHaloTexture = gradientTexture([[0, 'rgba(176, 130, 255, 0.7)'], [0.45, 'rgba(140, 90, 255, 0.24)'], [1, 'rgba(120, 70, 255, 0)']]);
   const sparkle = sparkleTexture();
   const shadowGeometry = new PlaneGeometry(SHADOW_SIZE_M, SHADOW_SIZE_M);
   shadowGeometry.rotateX(-Math.PI / 2);
 
   const entities: CoinEntity[] = [];
   const bursts: Burst[] = [];
-  disposables.push(shadowTexture, haloTexture, sparkle, shadowGeometry, ...built.disposables);
+  disposables.push(shadowTexture, haloTexture, riddleHaloTexture, sparkle, shadowGeometry, ...built.disposables, ...(riddleBuilt?.disposables ?? []));
 
-  const addEntity = () => {
+  const addEntity = (riddle: boolean) => {
+    const special = riddle && riddleBuilt !== null;
     const root = new Group();
-    const spinner = template.clone();
+    const spinner = (special ? riddleBuilt.model : template).clone();
     root.add(spinner);
-    const halo = new Sprite(new SpriteMaterial({ map: haloTexture, blending: AdditiveBlending, depthWrite: false, transparent: true }));
+    const halo = new Sprite(new SpriteMaterial({ map: special ? riddleHaloTexture : haloTexture, blending: AdditiveBlending, depthWrite: false, transparent: true }));
     const haloSize = suitcase ? HALO_SIZE_M * 1.5 : HALO_SIZE_M;
     halo.scale.set(haloSize, haloSize, 1);
     root.add(halo);
     const shadow = new Mesh(shadowGeometry, new MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false, toneMapped: false }));
     scene.add(root, shadow);
     disposables.push(halo.material, shadow.material as Material);
-    entities.push({ root, spinner, halo, shadow, collectedAt: null });
+    entities.push({ root, spinner, halo, shadow, size: special ? RIDDLE_SCALE : 1, collectedAt: null });
   };
 
-  const addBurst = (at: Vector3, time: number) => {
+  const addBurst = (at: Vector3, time: number, color: number) => {
     const positions = new Float32Array(BURST_PARTICLES * 3);
     const velocities = new Float32Array(BURST_PARTICLES * 3);
     for (let i = 0; i < BURST_PARTICLES; i++) {
@@ -292,7 +331,7 @@ export function createCoinScene(canvas: HTMLCanvasElement, mode: ArHuntMode = 'c
     }
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', new BufferAttribute(positions, 3));
-    const material = new PointsMaterial({ map: sparkle, size: 0.07, transparent: true, depthWrite: false, blending: AdditiveBlending, color: 0xffe8a0 });
+    const material = new PointsMaterial({ map: sparkle, size: 0.07, transparent: true, depthWrite: false, blending: AdditiveBlending, color });
     const points = new Points(geometry, material);
     scene.add(points);
     bursts.push({ points, velocities, bornAt: time });
@@ -335,7 +374,7 @@ export function createCoinScene(canvas: HTMLCanvasElement, mode: ArHuntMode = 'c
     return {
       x: ((projected.x + 1) / 2) * width,
       y: ((1 - projected.y) / 2) * height,
-      radius: (focalPixels(height) * targetRadius) / Math.max(0.1, meters),
+      radius: (focalPixels(height) * targetRadius * entity.size) / Math.max(0.1, meters),
     };
   };
 
@@ -344,13 +383,13 @@ export function createCoinScene(canvas: HTMLCanvasElement, mode: ArHuntMode = 'c
     camera,
     update(game, time, dt, floorY, reachable) {
       if (game) {
-        while (entities.length < game.coins.length) addEntity();
+        while (entities.length < game.coins.length) addEntity(game.coins[entities.length].riddle);
         game.coins.forEach((coin, i) => {
           const entity = entities[i];
           const rest = suitcase ? floorY + SUITCASE_H / 2 + 0.01 : floorY + COIN_HEIGHT_M + Math.sin(time * 2 + coin.phase) * BOB_M;
           if (coin.collectedAt !== null && entity.collectedAt === null) {
             entity.collectedAt = time;
-            addBurst(new Vector3(coin.x, rest, coin.z), time);
+            addBurst(new Vector3(coin.x, rest, coin.z), time, coin.riddle ? RIDDLE_SPARK : GOLD_SPARK);
           }
           const age = entity.collectedAt === null ? -1 : time - entity.collectedAt;
           const gone = age >= vanishAfter;
@@ -363,14 +402,13 @@ export function createCoinScene(canvas: HTMLCanvasElement, mode: ArHuntMode = 'c
           const ready = age < 0 && reachable.has(coin.id);
           const pulse = ready ? 1 + 0.12 * Math.sin(time * 7) : 1;
           entity.root.position.set(coin.x, rest + rise, coin.z);
-          entity.root.scale.setScalar(Math.max(0.001, shrink * (suitcase ? 1 : pulse)));
+          entity.root.scale.setScalar(Math.max(0.001, shrink * entity.size * (suitcase ? 1 : pulse)));
           entity.spinner.rotation.y = suitcase
             ? coin.phase + (age < 0 ? 0 : t * Math.PI * 2)
             : time * (age < 0 ? SPIN_RATE : SPIN_RATE * 7) + coin.phase;
           const haloMaterial = entity.halo.material as SpriteMaterial;
           haloMaterial.opacity = age >= 0 ? 1 - t : ready ? 0.75 + 0.25 * Math.sin(time * 7) : suitcase ? 0.45 : 1;
-          entity.halo.scale.setScalar((suitcase ? HALO_SIZE_M * 1.5 : HALO_SIZE_M) * (ready ? 1.35 : 1));
-          entity.shadow.position.set(coin.x, floorY + 0.004, coin.z);
+          entity.halo.scale.setScalar((suitcase ? HALO_SIZE_M * 1.5 : HALO_SIZE_M) * (ready ? 1.35 : 1));          entity.shadow.position.set(coin.x, floorY + 0.004, coin.z);
           const shadowScale = suitcase ? (age < 0 ? 1 : 1 - t) : (1 - Math.sin(time * 2 + coin.phase) * 0.12) * (age < 0 ? 1 : 1 - t);
           entity.shadow.rotation.y = suitcase ? coin.phase : 0;
           entity.shadow.scale.set(shadowScale * (suitcase ? 1.25 : 1), 1, shadowScale * (suitcase ? 0.6 : 1));

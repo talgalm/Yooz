@@ -15,10 +15,12 @@ import {
   nearestCoin,
   pingIntervalSeconds,
   seededRandom,
+  shuffledOrder,
   stepArGame,
   tryCollect,
+  withRiddleCoin,
 } from './arGame';
-import { AR_COIN_COUNT, arHints, arScore, arSettingsFrom, arSettingsToSave, arTargetCount, emptyArSettings, hasSuitcaseInside, hintsSettings } from './arStation';
+import { AR_COIN_COUNT, AR_RIDDLE_BONUS, arHints, arRiddle, arScore, arSettingsFrom, arSettingsToSave, arTargetCount, emptyArSettings, hasSuitcaseInside, hintsSettings } from './arStation';
 
 const start = { x: 0, z: 0 };
 const ahead = { x: 0, z: -1 };
@@ -99,11 +101,11 @@ test('the game ends when the time runs out or the last target is collected', () 
 
 test('coins score per coin plus a bonus for all of them, the suitcase scores once when found', () => {
   const coins = { ...emptyArSettings(), coinCount: 10, pointsPerCoin: 10, allCoinsBonus: 20 };
-  assert.deepEqual(arScore(7, coins), { score: 70, maxPossibleScore: 120, bonus: 0 });
-  assert.deepEqual(arScore(10, coins), { score: 120, maxPossibleScore: 120, bonus: 20 });
+  assert.deepEqual(arScore(7, coins), { score: 70, maxPossibleScore: 120, bonus: 0, riddleBonus: 0 });
+  assert.deepEqual(arScore(10, coins), { score: 120, maxPossibleScore: 120, bonus: 20, riddleBonus: 0 });
   assert.equal(arScore(14, coins).score, 120);
   const suitcase = { ...coins, mode: 'suitcase' as const, findPoints: 60 };
-  assert.deepEqual(arScore(1, suitcase), { score: 60, maxPossibleScore: 60, bonus: 0 });
+  assert.deepEqual(arScore(1, suitcase), { score: 60, maxPossibleScore: 60, bonus: 0, riddleBonus: 0 });
   assert.equal(arScore(0, suitcase).score, 0);
   assert.equal(arTargetCount(suitcase), 1);
   assert.equal(arTargetCount(coins), 10);
@@ -157,4 +159,51 @@ test('the suitcase has content inside only when something was filled in, and onl
   const saved = arSettingsToSave({ ...suitcase, insideText: '  Next clue  ', insideImageUrl: ' https://x/y.png ', insideCode: ' 47 ' });
   assert.deepEqual([saved.insideText, saved.insideImageUrl, saved.insideCode], ['Next clue', 'https://x/y.png', '47']);
   assert.equal(arSettingsFrom({ insideCode: 4721 }).insideCode, '');
+});
+
+test('one coin becomes the riddle coin, never the first one in front of the player', () => {
+  for (let seed = 0; seed < 40; seed++) {
+    const game = withRiddleCoin(createArGame(10, start, ahead, 5, seededRandom(seed)), seededRandom(seed));
+    const riddles = game.coins.filter((coin) => coin.riddle);
+    assert.equal(riddles.length, 1);
+    assert.notEqual(riddles[0].id, 0);
+  }
+  const lone = withRiddleCoin(createArGame(1, start, ahead, 5, seededRandom(1)), seededRandom(1));
+  assert.equal(lone.coins[0].riddle, true);
+  assert.equal(createArGame(5, start, ahead, 5, seededRandom(1)).coins.some((coin) => coin.riddle), false);
+});
+
+test('riddle answers are shuffled into a full order with nothing lost or repeated', () => {
+  for (let seed = 0; seed < 20; seed++) {
+    const order = shuffledOrder(4, seededRandom(seed));
+    assert.deepEqual([...order].sort(), [0, 1, 2, 3]);
+  }
+  assert.deepEqual(shuffledOrder(1, seededRandom(3)), [0]);
+});
+
+test('the riddle counts only with a question, two filled answers and a filled right answer, in coins mode', () => {
+  const coins = { ...emptyArSettings(), riddleQuestion: 'What year?', riddleAnswers: ['1990', '', '2001', '  '], riddleCorrect: 2 };
+  assert.deepEqual(arRiddle(coins), { question: 'What year?', answers: ['1990', '2001'], correct: 1, bonus: AR_RIDDLE_BONUS.fallback });
+  assert.equal(arRiddle({ ...coins, riddleQuestion: '  ' }), null);
+  assert.equal(arRiddle({ ...coins, riddleCorrect: 1 }), null);
+  assert.equal(arRiddle({ ...coins, riddleAnswers: ['1990'] }), null);
+  assert.equal(arRiddle({ ...coins, mode: 'suitcase' }), null);
+});
+
+test('a right riddle answer adds its bonus, and the maximum counts it only when the riddle is set up', () => {
+  const plain = { ...emptyArSettings(), coinCount: 5, pointsPerCoin: 10, allCoinsBonus: 20 };
+  const withRiddle = { ...plain, riddleQuestion: 'Q', riddleAnswers: ['A', 'B'], riddleCorrect: 0, riddleBonus: 40 };
+  assert.deepEqual(arScore(3, withRiddle, true), { score: 70, maxPossibleScore: 110, bonus: 0, riddleBonus: 40 });
+  assert.deepEqual(arScore(3, withRiddle, false), { score: 30, maxPossibleScore: 110, bonus: 0, riddleBonus: 0 });
+  assert.deepEqual(arScore(3, plain, true), { score: 30, maxPossibleScore: 70, bonus: 0, riddleBonus: 0 });
+});
+
+test('riddle settings load safely and save trimmed, keeping each answer in its slot', () => {
+  const loaded = arSettingsFrom({ riddleAnswers: ['A', 7, 'C', 'D', 'E'], riddleCorrect: 9, riddleBonus: 'x' });
+  assert.deepEqual(loaded.riddleAnswers, ['A', '', 'C', 'D']);
+  assert.equal(loaded.riddleCorrect, 0);
+  assert.equal(loaded.riddleBonus, AR_RIDDLE_BONUS.fallback);
+  assert.equal(arSettingsFrom({ riddleBonus: 0 }).riddleBonus, 0);
+  const saved = arSettingsToSave({ ...emptyArSettings(), riddleQuestion: '  Q  ', riddleAnswers: [' A ', '', ' C '], riddleCorrect: 2 });
+  assert.deepEqual([saved.riddleQuestion, saved.riddleAnswers, saved.riddleCorrect], ['Q', ['A', '', 'C'], 2]);
 });

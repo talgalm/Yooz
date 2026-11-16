@@ -3,15 +3,18 @@ import { useTranslations } from '../../../context/LanguageContext';
 import { texts } from './ArStationForm.i18n';
 import FileUploadButton from '../../../components/FileUploadButton';
 import { Input, SelectionButton } from '../../../components/styled';
-import { SectionLabel, SectionLabelNoMargin, SectionDescription, SubLabel, VerticalStack, SelectionGroupWrap, SelectionSubtextSmall, InlineRowGap12, UrlInput } from '../styled';
+import { SectionLabel, SectionLabelNoMargin, SectionDescription, SubLabel, VerticalStack, SelectionGroupWrap, SelectionSubtextSmall, InlineRowGap12, UrlInput, FlexInput } from '../styled';
 import {
   AR_ALL_COINS_BONUS,
   AR_AREA_RADIUS_METERS,
   AR_COIN_COUNT,
   AR_FIND_POINTS,
   AR_POINTS_PER_COIN,
+  AR_RIDDLE_ANSWER_SLOTS,
+  AR_RIDDLE_BONUS,
   AR_TIME_LIMIT_SECONDS,
   arHints,
+  arRiddle,
   arScore,
   arSettingsFrom,
   hintsSettings,
@@ -37,6 +40,31 @@ const ScoreSummary = styled('div')({
   borderRadius: 999,
   background: '#ede7ff',
   color: '#5a2bd4',
+  fontSize: 13,
+  fontWeight: 700,
+});
+
+const AnswerRow = styled('label')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+});
+
+const CorrectRadio = styled('input')({
+  flex: 'none',
+  width: 18,
+  height: 18,
+  margin: 0,
+  accentColor: '#23a55a',
+  cursor: 'pointer',
+});
+
+const RiddleWarning = styled('div')({
+  alignSelf: 'flex-start',
+  padding: '6px 14px',
+  borderRadius: 999,
+  background: '#fff1e6',
+  color: '#b4540a',
   fontSize: 13,
   fontWeight: 700,
 });
@@ -101,6 +129,9 @@ export default function ArStationForm({ value, onChange }: ArStationFormProps) {
     ['none', t.mapOff, t.mapOffDesc],
   ];
   const hints = arHints(value);
+  const answerSlots = Array.from({ length: AR_RIDDLE_ANSWER_SLOTS }, (_, index) => value.riddleAnswers[index] ?? '');
+  const setAnswer = (index: number, text: string) => update({ riddleAnswers: answerSlots.map((answer, slot) => (slot === index ? text : answer)) });
+  const riddleIncomplete = value.riddleQuestion.trim() !== '' && arRiddle(value) === null;
 
   return (
     <VerticalStack>
@@ -144,6 +175,35 @@ export default function ArStationForm({ value, onChange }: ArStationFormProps) {
         )}
       </NumberGrid>
       <ScoreSummary>{t.maxScore(maxScore)}</ScoreSummary>
+
+      {!suitcase && (
+        <>
+          <SectionLabel>{t.riddleSection}</SectionLabel>
+          <SectionDescription>{t.riddleHelp}</SectionDescription>
+          <TextArea
+            placeholder={t.riddleQuestionPlaceholder}
+            value={value.riddleQuestion}
+            onChange={(e) => update({ riddleQuestion: e.target.value })}
+          />
+          <SubLabel>{t.riddleAnswersLabel}</SubLabel>
+          {answerSlots.map((answer, index) => (
+            <AnswerRow key={index}>
+              <CorrectRadio
+                type="radio"
+                name="ar-riddle-correct"
+                aria-label={t.riddleCorrectLabel(index + 1)}
+                checked={value.riddleCorrect === index}
+                onChange={() => update({ riddleCorrect: index })}
+              />
+              <FlexInput placeholder={t.riddleAnswerPlaceholder(index + 1)} value={answer} onChange={(e) => setAnswer(index, e.target.value)} />
+            </AnswerRow>
+          ))}
+          {riddleIncomplete && <RiddleWarning>{t.riddleIncomplete}</RiddleWarning>}
+          <NumberGrid>
+            <NumberInput label={t.riddleBonus} value={value.riddleBonus} range={AR_RIDDLE_BONUS} allowZero onChange={(riddleBonus) => update({ riddleBonus })} />
+          </NumberGrid>
+        </>
+      )}
 
       <SectionLabel>{t.screenSection}</SectionLabel>
       <Input placeholder={t.titlePlaceholder} value={value.title} onChange={(e) => update({ title: e.target.value })} />

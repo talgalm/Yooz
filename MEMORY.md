@@ -867,10 +867,25 @@ Rendered in `pages/StoryModulePage/PlayingPhase.tsx` (story) / `StationStage` / 
   opened screen never scrolls: the image shrinks to fit and the points sit at the bottom of the card,
   above the continue button (which lives outside the blurred overlay, since `backdrop-filter` would
   otherwise pin a fixed child to the overlay and let it scroll with the content).
+  **Riddle coin** (coins mode only, optional): `riddleQuestion`, `riddleAnswers` (up to 4 slots,
+  kept in place on save), `riddleCorrect` (slot index) and `riddleBonus` 0-1000 (30). `arRiddle`
+  makes it live only with a question, at least two filled answers and a filled right answer; it
+  drops empty slots and remaps the right one. `withRiddleCoin` marks one coin (never the first one in
+  front of the player) as `riddle`: 18% bigger, purple with a gold "?" relief and a purple glow,
+  purple sparkles and a purple radar dot (`/images/ar-coin-riddle.webp` is its snapshot, used on the
+  card and the intro). Tapping it counts as a coin (no flight) and opens `ArRiddleCard`: the phase
+  becomes `riddle`, which freezes the game clock (`stepArGame` runs only while `playing`), step
+  counting, hot-cold pings, the coach line, the bubble, the arrow and the radar; the timer pill
+  turns purple with a pause sign. Answers are shuffled per run (`shuffledOrder`). After a pick the
+  right answer turns green (the wrong pick red) with "נכון! +N נקודות" or "לא הפעם", and play
+  resumes only on "ממשיכים לאסוף". The intro adds "מטבע חידה" to the meta row and the end screen a
+  "כולל N נקודות על החידה" line.
   Score: coins x `pointsPerCoin` plus the bonus when all are
-  collected, or `findPoints` for the suitcase, reported through `onComplete` like the riddle. A
-  finished result waits in sessionStorage until "המשיכו", so a reload cannot replay for a better
-  score. No station hint.
+  collected, plus `riddleBonus` for a right riddle answer (counted in the maximum only when the
+  riddle is live), or `findPoints` for the suitcase, reported through `onComplete` like the riddle
+  station (`metadata.riddleSolved` when there is a riddle). A finished result (`{ collected,
+  riddleSolved }`, old plain counts still read) waits in sessionStorage until "המשיכו", so a reload
+  cannot replay for a better score. No station hint.
 
 Shared: `StationDescriptionPopup`, floating clue button for info stations.
 

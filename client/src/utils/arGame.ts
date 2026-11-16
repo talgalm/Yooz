@@ -9,6 +9,7 @@ export interface ArCoin {
   z: number;
   phase: number;
   collectedAt: number | null;
+  riddle: boolean;
 }
 
 export interface ArGameState {
@@ -66,7 +67,7 @@ function placeCoins(count: number, center: FloorPoint, forward: FloorPoint, radi
 }
 
 const asTargets = (spots: FloorPoint[], random: () => number): ArCoin[] =>
-  spots.map((spot, id) => ({ id, x: spot.x, z: spot.z, phase: random() * Math.PI * 2, collectedAt: null }));
+  spots.map((spot, id) => ({ id, x: spot.x, z: spot.z, phase: random() * Math.PI * 2, collectedAt: null, riddle: false }));
 
 export function createArGame(count: number, start: FloorPoint, forward: FloorPoint, radius: number, random: () => number): ArGameState {
   return { coins: asTargets(placeCoins(count, start, forward, radius, random), random), elapsedSeconds: 0 };
@@ -79,6 +80,22 @@ export function createSuitcaseHunt(start: FloorPoint, radius: number, random: ()
   const meters = near + (far - near) * random();
   const spot = { x: start.x + Math.cos(angle) * meters, z: start.z + Math.sin(angle) * meters };
   return { coins: asTargets([spot], random), elapsedSeconds: 0 };
+}
+
+export function withRiddleCoin(state: ArGameState, random: () => number): ArGameState {
+  const count = state.coins.length;
+  if (count === 0) return state;
+  const pick = count === 1 ? 0 : 1 + Math.floor(random() * (count - 1));
+  return { ...state, coins: state.coins.map((coin) => ({ ...coin, riddle: coin.id === pick })) };
+}
+
+export function shuffledOrder(count: number, random: () => number): number[] {
+  const order = Array.from({ length: count }, (_, index) => index);
+  for (let i = count - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
 }
 
 export function stepArGame(state: ArGameState, dt: number): ArGameState {

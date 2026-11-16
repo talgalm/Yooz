@@ -8,7 +8,7 @@ import { useTranslations } from '../../context/LanguageContext';
 import { texts } from './ArStation.i18n';
 import { themedTitleInk } from '../../utils/themeInk';
 import { participantSessionId } from '../../utils/participantActivity';
-import { arHints, arScore, arSettingsFrom, arTargetCount, hasSuitcaseInside, type ArHuntMode } from '../../utils/arStation';
+import { arHints, arRiddle, arScore, arSettingsFrom, arTargetCount, hasSuitcaseInside, type ArHuntMode, type ArRunResult } from '../../utils/arStation';
 import { createArSound, immersiveArSupported, requestMotionAccess, startImmersiveAr, type ArSound } from '../../utils/arSensors';
 import ConfettiOverlay from './ConfettiOverlay';
 
@@ -250,7 +250,9 @@ const MetaRow = styled('div')({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
+  flexWrap: 'wrap',
   gap: 7,
+  rowGap: 4,
   fontSize: 14,
   fontWeight: 700,
   color: '#5b6b4e',
@@ -274,6 +276,10 @@ const CoinDot = styled('span')({
   width: 17,
   height: 17,
   background: 'url(/images/ar-coin-3d.webp) center / contain no-repeat',
+});
+
+const RiddleDot = styled(CoinDot)({
+  backgroundImage: 'url(/images/ar-coin-riddle.webp)',
 });
 
 const ClockFace = styled('span')({
@@ -567,22 +573,26 @@ const ResultActions = styled('div')({
   },
 });
 
-function readStoredResult(key: string | undefined): number | null {
+function readStoredResult(key: string | undefined): ArRunResult | null {
   if (!key) return null;
   try {
     const raw = window.sessionStorage.getItem(key);
-    const value = raw === null ? Number.NaN : Number(raw);
-    return Number.isInteger(value) && value >= 0 ? value : null;
+    if (raw === null) return null;
+    const parsed: unknown = JSON.parse(raw);
+    const stored = typeof parsed === 'number' ? { collected: parsed, riddleSolved: false } : (parsed as Partial<ArRunResult> | null);
+    const collected = stored?.collected;
+    if (typeof collected !== 'number' || !Number.isInteger(collected) || collected < 0) return null;
+    return { collected, riddleSolved: stored?.riddleSolved === true };
   } catch {
     return null;
   }
 }
 
-function writeStoredResult(key: string | undefined, collected: number | null) {
+function writeStoredResult(key: string | undefined, run: ArRunResult | null) {
   if (!key) return;
   try {
-    if (collected === null) window.sessionStorage.removeItem(key);
-    else window.sessionStorage.setItem(key, String(collected));
+    if (run === null) window.sessionStorage.removeItem(key);
+    else window.sessionStorage.setItem(key, JSON.stringify(run));
   } catch {
     return;
   }
@@ -601,8 +611,8 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
   const t = useTranslations(texts);
   const settings = useMemo(() => arSettingsFrom(station.settings), [station.settings]);
   const resultKey = code ? `yooz_ar_${code}_${station._id}_${participantSessionId()}` : undefined;
-  const [collected, setCollected] = useState<number | null>(() => readStoredResult(resultKey));
-  const [phase, setPhase] = useState<StationPhase>(() => (collected === null ? 'intro' : 'done'));
+  const [run, setRun] = useState<ArRunResult | null>(() => readStoredResult(resultKey));
+  const [phase, setPhase] = useState<StationPhase>(() => (run === null ? 'intro' : 'done'));
   const [seed, setSeed] = useState(0);
   const [playedNow, setPlayedNow] = useState(false);
   const [xrSupported, setXrSupported] = useState(false);
@@ -648,9 +658,9 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
     });
   };
 
-  const handleFinish = (total: number) => {
-    writeStoredResult(resultKey, total);
-    setCollected(total);
+  const handleFinish = (finished: ArRunResult) => {
+    writeStoredResult(resultKey, finished);
+    setRun(finished);
     setPhase('done');
   };
 
@@ -660,22 +670,32 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
     setPhase('intro');
   };
 
+  const riddle = arRiddle(settings);
+
   const handleContinue = () => {
-    const total = collected ?? 0;
-    const { score, maxPossibleScore } = arScore(total, settings);
+    const total = run?.collected ?? 0;
+    const riddleSolved = run?.riddleSolved === true;
+    const { score, maxPossibleScore } = arScore(total, settings, riddleSolved);
     writeStoredResult(resultKey, null);
     onComplete({
       score,
       maxPossibleScore,
       durationMs: startedAtRef.current ? Date.now() - startedAtRef.current : 0,
       hintUsed: false,
-      metadata: { mode: settings.mode, collected: total, targets: arTargetCount(settings), hints: arHints(settings) },
+      metadata: {
+        mode: settings.mode,
+        collected: total,
+        targets: arTargetCount(settings),
+        hints: arHints(settings),
+        ...(riddle ? { riddleSolved } : {}),
+      },
     });
   };
 
   const suitcase = settings.mode === 'suitcase';
   const targetTotal = arTargetCount(settings);
-  const result = collected === null ? null : arScore(collected, settings);
+  const collected = run?.collected ?? null;
+  const result = run === null ? null : arScore(run.collected, settings, run.riddleSolved);
   const allCollected = collected !== null && collected >= targetTotal;
   const steps = suitcase ? t.stepsSuitcase : t.stepsCoins;
   const resultTitle = allCollected ? (suitcase ? t.foundTitle : t.allTitle) : t.timeUpTitle;
@@ -734,6 +754,15 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
             <>
               <MetaDivider />
               <MetaItem>{hints === 'hotCold' ? t.hotColdMeta : t.noMapMeta}</MetaItem>
+            </>
+          )}
+          {riddle && (
+            <>
+              <MetaDivider />
+              <MetaItem>
+                <RiddleDot />
+                {t.riddleKicker}
+              </MetaItem>
             </>
           )}
         </MetaRow>
@@ -822,6 +851,7 @@ export default function ArStation({ station, onComplete, code, textColor }: ArSt
                   </ResultPoints>
                 )}
                 {result.bonus > 0 && <ResultBonus>{t.bonusLine(result.bonus)}</ResultBonus>}
+                {result.riddleBonus > 0 && <ResultBonus>{t.riddleBonusLine(result.riddleBonus)}</ResultBonus>}
                 {settings.finishText && <ResultFinishText>{settings.finishText}</ResultFinishText>}
               </ResultBox>
             )}
